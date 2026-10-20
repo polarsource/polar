@@ -5,30 +5,30 @@ import typing
 
 from polar import PolarError
 from polar.base import AsyncClientBase, parse_response_json
-from polar.ingestion.buffered import (
-    BufferedIngestionOptions,
-    BufferedIngestionStrategy,
+from polar.metering.buffered import (
+    BufferedMeteringOptions,
+    BufferedMeteringStrategy,
     DropReason,
 )
-from polar.ingestion.client import PolarClient
-from polar.ingestion.events import (
+from polar.metering.client import PolarClient
+from polar.metering.events import (
     ContextualEventInput,
     EventCustomerInput,
     EventExternalCustomerInput,
     EventInput,
 )
-from polar.ingestion.meter import CustomerMeter, CustomerMeterList, MeterProtocol
+from polar.metering.meter import CustomerMeter, CustomerMeterList, MeterProtocol
 
 
-class IngestionError(PolarError):
-    """Base error for ingestion configuration and operations."""
+class MeteringError(PolarError):
+    """Base error for metering configuration and operations."""
 
 
-class InvalidActorError(IngestionError):
+class InvalidActorError(MeteringError):
     """Raised when customer or member identifiers are inconsistent."""
 
 
-class IngestionOutpostOptions(typing.TypedDict, total=False):
+class MeteringOutpostOptions(typing.TypedDict, total=False):
     """Configure the optional Outpost strategy.
 
     Attributes:
@@ -41,8 +41,8 @@ class IngestionOutpostOptions(typing.TypedDict, total=False):
     telemetry: bool
 
 
-class IngestionStrategyProtocol(
-    contextlib.AbstractAsyncContextManager["IngestionStrategyProtocol"], typing.Protocol
+class MeteringStrategyProtocol(
+    contextlib.AbstractAsyncContextManager["MeteringStrategyProtocol"], typing.Protocol
 ):
     """Strategy contract: manage resources with an async context manager.
 
@@ -87,8 +87,8 @@ class ActorWarmupProtocol(typing.Protocol):
         ...
 
 
-class ActorIngestion:
-    """Customer-bound helper returned by Ingestion.actor().
+class ActorMetering:
+    """Customer-bound helper returned by Metering.actor().
 
     Member identifiers apply to events; meter reads remain customer-wide.
     The helper shares its parent's lifecycle and owns no resources.
@@ -96,23 +96,23 @@ class ActorIngestion:
 
     def __init__(
         self,
-        ingestion: "Ingestion",
+        metering: "Metering",
         *,
         customer_id: str | None = None,
         member_id: str | None = None,
         external_customer_id: str | None = None,
         external_member_id: str | None = None,
     ) -> None:
-        """Bind an ingestion helper to a validated actor identity.
+        """Bind an metering helper to a validated actor identity.
 
         Args:
-            ingestion: Parent helper that dispatches operations.
+            metering: Parent helper that dispatches operations.
             customer_id: Polar customer ID; mutually exclusive with external_customer_id.
             member_id: Polar member ID, paired with customer_id.
             external_customer_id: Customer ID in your application.
             external_member_id: Member ID paired with external_customer_id.
         """
-        self.ingestion = ingestion
+        self.metering = metering
         self.customer_id = customer_id
         self.member_id = member_id
         self.external_customer_id = external_customer_id
@@ -125,12 +125,12 @@ class ActorIngestion:
             **event: Event name and optional metadata, timestamp, or external ID.
         """
         if self.customer_id is not None:
-            await self.ingestion.ingest(
+            await self.metering.ingest(
                 customer_id=self.customer_id, member_id=self.member_id, **event
             )
         else:
             assert self.external_customer_id is not None
-            await self.ingestion.ingest(
+            await self.metering.ingest(
                 external_customer_id=self.external_customer_id,
                 external_member_id=self.external_member_id,
                 **event,
@@ -146,26 +146,26 @@ class ActorIngestion:
             Consumption, credits, and balance, or None if no meter is found.
         """
         if self.customer_id is not None:
-            return await self.ingestion.meter(
+            return await self.metering.meter(
                 meter_id=meter_id, customer_id=self.customer_id
             )
         assert self.external_customer_id is not None
-        return await self.ingestion.meter(
+        return await self.metering.meter(
             meter_id=meter_id, external_customer_id=self.external_customer_id
         )
 
 
-class Ingestion:
-    """Dispatch events, actor warmup, and meter reads to ingestion strategies.
+class Metering:
+    """Dispatch events, actor warmup, and meter reads to metering strategies.
 
-    Create with polar.ingestion() and use as an async context manager. By
+    Create with polar.metering() and use as an async context manager. By
     default, events are buffered for HTTP delivery, with Outpost added when
     a Redis URL is configured. Accepting an event does not confirm delivery.
     """
 
     def __init__(
         self,
-        strategies: list[IngestionStrategyProtocol],
+        strategies: list[MeteringStrategyProtocol],
         *,
         client: AsyncClientBase,
     ) -> None:
@@ -216,7 +216,7 @@ class Ingestion:
                 except Exception as error:  # noqa: BLE001
                     errors.append(error)
         if errors:
-            raise ExceptionGroup("Ingestion flush failed", errors)
+            raise ExceptionGroup("Metering flush failed", errors)
 
     @typing.overload
     async def ingest(self, **event: typing.Unpack[EventCustomerInput]) -> None: ...
@@ -249,12 +249,12 @@ class Ingestion:
     @typing.overload
     async def actor(
         self, *, customer_id: str, member_id: str | None = None
-    ) -> ActorIngestion: ...
+    ) -> ActorMetering: ...
 
     @typing.overload
     async def actor(
         self, *, external_customer_id: str, external_member_id: str | None = None
-    ) -> ActorIngestion: ...
+    ) -> ActorMetering: ...
 
     async def actor(
         self,
@@ -263,7 +263,7 @@ class Ingestion:
         member_id: str | None = None,
         external_customer_id: str | None = None,
         external_member_id: str | None = None,
-    ) -> ActorIngestion:
+    ) -> ActorMetering:
         """Create customer-bound helper.
 
         For strategies that support it, it warms up their state in memory.
@@ -288,7 +288,7 @@ class Ingestion:
                 await strategy.actor(
                     customer_id=customer_id, external_customer_id=external_customer_id
                 )
-        return ActorIngestion(
+        return ActorMetering(
             self,
             customer_id=customer_id,
             member_id=member_id,
@@ -298,18 +298,18 @@ class Ingestion:
 
     @typing.overload
     async def meter(
-        self, *, meter_id: str, customer_id: str
+        self, meter_id: str, *, customer_id: str
     ) -> CustomerMeter | None: ...
 
     @typing.overload
     async def meter(
-        self, *, meter_id: str, external_customer_id: str
+        self, meter_id: str, *, external_customer_id: str
     ) -> CustomerMeter | None: ...
 
     async def meter(
         self,
-        *,
         meter_id: str,
+        *,
         customer_id: str | None = None,
         external_customer_id: str | None = None,
     ) -> CustomerMeter | None:
@@ -356,15 +356,15 @@ class Ingestion:
         cls,
         polar: PolarClient,
         *,
-        buffered: BufferedIngestionOptions | None = None,
-        outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
-        strategies: list[IngestionStrategyProtocol] | None = None,
+        buffered: BufferedMeteringOptions | None = None,
+        outpost: MeteringOutpostOptions | typing.Literal[False] | None = None,
+        strategies: list[MeteringStrategyProtocol] | None = None,
     ) -> typing.Self:
-        """Create an unstarted helper, usually via polar.ingestion().
+        """Create an unstarted helper, usually via polar.metering().
 
         Args:
             polar: Async Polar client used for event delivery and meter reads.
-            buffered: Buffer options; omitted fields use BufferedIngestionOptions defaults.
+            buffered: Buffer options; omitted fields use BufferedMeteringOptions defaults.
             outpost: Outpost options. Defaults to enabling Outpost when REDIS_URL
                 is set. False disables it; explicit options require a Redis URL.
             strategies: Replace all default strategies. Cannot be combined with
@@ -374,22 +374,22 @@ class Ingestion:
             A helper to enter with async with before use.
 
         Raises:
-            IngestionError: Options conflict or Outpost has no Redis URL.
+            MeteringError: Options conflict or Outpost has no Redis URL.
         """
         if strategies is not None:
             if buffered is not None or outpost is not None:
-                raise IngestionError(
+                raise MeteringError(
                     "Cannot combine strategies with buffered or outpost options"
                 )
             return cls(strategies=strategies, client=polar._client)
-        strategies = [BufferedIngestionStrategy(polar, **(buffered or {}))]
+        strategies = [BufferedMeteringStrategy(polar, **(buffered or {}))]
         if outpost is not False:
             outpost_options = (
-                outpost if outpost is not None else IngestionOutpostOptions()
+                outpost if outpost is not None else MeteringOutpostOptions()
             )
             redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
             if outpost is not None and not redis_url:
-                raise IngestionError("Outpost requires redis_url or REDIS_URL")
+                raise MeteringError("Outpost requires redis_url or REDIS_URL")
             if redis_url:
                 from polar.outpost import Outpost
 
@@ -420,15 +420,15 @@ def _validate_actor(
 
 
 __all__ = [
-    "ActorIngestion",
-    "BufferedIngestionOptions",
+    "ActorMetering",
+    "BufferedMeteringOptions",
     "ContextualEventInput",
     "CustomerMeter",
     "DropReason",
     "EventInput",
-    "Ingestion",
-    "IngestionError",
-    "IngestionOutpostOptions",
-    "IngestionStrategyProtocol",
     "InvalidActorError",
+    "Metering",
+    "MeteringError",
+    "MeteringOutpostOptions",
+    "MeteringStrategyProtocol",
 ]

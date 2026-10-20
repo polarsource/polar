@@ -33,7 +33,7 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar import __version__
-from polar.ingestion import EventInput
+from polar.metering import EventInput
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     WRITE_BUCKET_SCRIPT,

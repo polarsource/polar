@@ -1,5 +1,5 @@
 import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
-import { createIngestion, type IngestionOptions } from "../ingestion/client";
+import { createMetering, type MeteringOptions } from "../metering/client";
 {% for service in api.services %}
 import { create{{ service.name }}Service } from "./services/{{ service.name | snake }}";
 {% endfor %}
@@ -54,9 +54,9 @@ export function createPolar(options: PolarOptions) {
      * Pass false to disable; explicit options require a Redis URL.
      * @param options.strategies Replace all defaults with custom strategies. Cannot be
      * combined with buffered or outpost.
-     * @returns An ingestion helper to start before use.
+     * @returns An metering helper to start before use.
      */
-    ingestion: (options?: IngestionOptions) => createIngestion(services, client, options),
+    metering: (options?: MeteringOptions) => createMetering(services, client, options),
   };
 }
 

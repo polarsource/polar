@@ -2,11 +2,11 @@ import types
 import typing
 
 from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
-from polar.ingestion import (
-    BufferedIngestionOptions,
-    Ingestion,
-    IngestionOutpostOptions,
-    IngestionStrategyProtocol,
+from polar.metering import (
+    BufferedMeteringOptions,
+    Metering,
+    MeteringOutpostOptions,
+    MeteringStrategyProtocol,
 )
 
 {% for service in api.services %}
@@ -88,25 +88,25 @@ class PolarAsync:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
     @typing.overload
-    def ingestion(
+    def metering(
         self,
         *,
-        buffered: BufferedIngestionOptions | None = None,
-        outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
-    ) -> Ingestion: ...
+        buffered: BufferedMeteringOptions | None = None,
+        outpost: MeteringOutpostOptions | typing.Literal[False] | None = None,
+    ) -> Metering: ...
 
     @typing.overload
-    def ingestion(
-        self, *, strategies: list[IngestionStrategyProtocol]
-    ) -> Ingestion: ...
+    def metering(
+        self, *, strategies: list[MeteringStrategyProtocol]
+    ) -> Metering: ...
 
-    def ingestion(
+    def metering(
         self,
         *,
-        buffered: BufferedIngestionOptions | None = None,
-        outpost: IngestionOutpostOptions | typing.Literal[False] | None = None,
-        strategies: list[IngestionStrategyProtocol] | None = None,
-    ) -> Ingestion:
+        buffered: BufferedMeteringOptions | None = None,
+        outpost: MeteringOutpostOptions | typing.Literal[False] | None = None,
+        strategies: list[MeteringStrategyProtocol] | None = None,
+    ) -> Metering:
         """Create a helper for buffered event delivery and customer meter reads.
 
         Args:
@@ -118,9 +118,9 @@ class PolarAsync:
                 combined with buffered or outpost.
 
         Returns:
-            An ingestion helper.
+            An metering helper.
         """
-        return Ingestion.create(
+        return Metering.create(
             self, buffered=buffered, outpost=outpost, strategies=strategies
         )
 

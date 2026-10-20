@@ -5,8 +5,8 @@ import anyio.lowlevel
 import pytest
 
 from polar import PolarClientError, PolarError, PolarNetworkError, PolarRateLimitError
-from polar.ingestion.buffered import BufferedIngestionStrategy, DropReason
-from polar.ingestion.events import EventInput
+from polar.metering.buffered import BufferedMeteringStrategy, DropReason
+from polar.metering.events import EventInput
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def events() -> list[EventInput]:
 async def test_flush_drains_batches_and_keeps_accepting_events(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
-    strategy = BufferedIngestionStrategy(client, batch_size=2, batch_interval=60)
+    strategy = BufferedMeteringStrategy(client, batch_size=2, batch_interval=60)
     with pytest.raises(PolarError, match="has not started"):
         await strategy.flush()
     with anyio.fail_after(1):
@@ -55,7 +55,7 @@ async def test_batching_without_explicit_flush(
     sent = anyio.Event()
     client.events.ingest.side_effect = lambda **kwargs: sent.set()
     with anyio.fail_after(1):
-        async with BufferedIngestionStrategy(
+        async with BufferedMeteringStrategy(
             client, batch_size=batch_size, batch_interval=batch_interval
         ) as strategy:
             await strategy.ingest(events[0])
@@ -83,7 +83,7 @@ async def test_overlapping_flushes_have_independent_boundaries(
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
         async with (
-            BufferedIngestionStrategy(client, batch_size=1) as strategy,
+            BufferedMeteringStrategy(client, batch_size=1) as strategy,
             anyio.create_task_group() as callers,
         ):
             for index in range(2):
@@ -111,7 +111,7 @@ async def test_flush_waits_for_retries(
 ) -> None:
     client.events.ingest.side_effect = [PolarRateLimitError(429, 0), None]
     with anyio.fail_after(1):
-        async with BufferedIngestionStrategy(client, batch_interval=60) as strategy:
+        async with BufferedMeteringStrategy(client, batch_interval=60) as strategy:
             await strategy.ingest(events[0])
             await strategy.flush()
             first, second = client.events.ingest.await_args_list
@@ -147,7 +147,7 @@ async def test_flush_waits_for_drop_reporting(
     client.events.ingest.side_effect = error
     with anyio.fail_after(1):
         async with (
-            BufferedIngestionStrategy(
+            BufferedMeteringStrategy(
                 client, batch_interval=60, max_attempts=1, on_dropped=on_dropped
             ) as strategy,
             anyio.create_task_group() as callers,
@@ -182,7 +182,7 @@ async def test_worker_exit_releases_active_and_queued_flushes(
 
     client.events.ingest.side_effect = send
     on_dropped = AsyncMock()
-    strategy = BufferedIngestionStrategy(
+    strategy = BufferedMeteringStrategy(
         client, batch_interval=60, shutdown_timeout=0.02, on_dropped=on_dropped
     )
     with anyio.fail_after(1):
@@ -215,7 +215,7 @@ async def test_exit_drains_batches(
     client: AsyncMock, events: list[EventInput], event_count: int
 ) -> None:
     with anyio.fail_after(1):
-        async with BufferedIngestionStrategy(
+        async with BufferedMeteringStrategy(
             client, batch_size=2, batch_interval=60
         ) as strategy:
             for event in events[:event_count]:
@@ -240,7 +240,7 @@ async def test_exit_shields_in_flight_batch_from_cancellation(
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
         with anyio.CancelScope() as scope:
-            async with BufferedIngestionStrategy(client, batch_size=1) as strategy:
+            async with BufferedMeteringStrategy(client, batch_size=1) as strategy:
                 await strategy.ingest(events[0])
                 await started.wait()
                 scope.cancel()
@@ -255,7 +255,7 @@ async def test_exit_bounds_retry_wait(
 ) -> None:
     client.events.ingest.side_effect = PolarNetworkError("unavailable")
     with anyio.fail_after(1):
-        async with BufferedIngestionStrategy(
+        async with BufferedMeteringStrategy(
             client, batch_size=1, shutdown_timeout=0.02
         ) as strategy:
             await strategy.ingest(events[0])
@@ -268,7 +268,7 @@ async def test_exit_flushes_before_propagating_body_error(
 ) -> None:
     with anyio.fail_after(1):
         with pytest.raises(ValueError, match="body failed"):
-            async with BufferedIngestionStrategy(client, batch_interval=60) as strategy:
+            async with BufferedMeteringStrategy(client, batch_interval=60) as strategy:
                 await strategy.ingest(events[0])
                 raise ValueError("body failed")
     client.events.ingest.assert_awaited_once_with(events=events[:1])
@@ -294,7 +294,7 @@ async def test_shutdown_reports_only_unfinished_events(
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
-        async with BufferedIngestionStrategy(
+        async with BufferedMeteringStrategy(
             client,
             batch_size=1,
             shutdown_timeout=0.02,
@@ -310,7 +310,7 @@ async def test_shutdown_reports_only_unfinished_events(
 
 
 @pytest.mark.anyio
-async def test_structural_ingestion_client(events: list[EventInput]) -> None:
+async def test_structural_metering_client(events: list[EventInput]) -> None:
     received: list[EventInput] = []
 
     class Events:
@@ -321,7 +321,7 @@ async def test_structural_ingestion_client(events: list[EventInput]) -> None:
         events = Events()
 
     client = Client()
-    async with BufferedIngestionStrategy(client, batch_interval=60) as strategy:
+    async with BufferedMeteringStrategy(client, batch_interval=60) as strategy:
         await strategy.ingest(events[0])
     assert received == events[:1]
 
@@ -329,4 +329,4 @@ async def test_structural_ingestion_client(events: list[EventInput]) -> None:
 @pytest.mark.parametrize("batch_size", [0, -1])
 def test_rejects_non_positive_batch_size(client: AsyncMock, batch_size: int) -> None:
     with pytest.raises(ValueError, match="batch_size must be greater than zero"):
-        BufferedIngestionStrategy(client, batch_size=batch_size)
+        BufferedMeteringStrategy(client, batch_size=batch_size)

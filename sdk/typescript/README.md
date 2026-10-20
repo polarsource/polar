@@ -97,9 +97,9 @@ const customerState = await getStateExternalCustomers(polar)("customer_external_
 console.log(customerState);
 ```
 
-## Event Ingestion
+## Metering
 
-The event ingestion helper adds buffering, batching, and optional local reduction to the Polar Event Ingestion API.
+The metering helper adds buffering, batching, and optional local reduction to the Polar Event Ingestion API.
 
 ### Basic usage
 
@@ -109,8 +109,8 @@ import { createPolar } from "@polar-sh/sdk/2026-10";
 const polar = createPolar({ accessToken: "polar_oat_xxx" });
 
 async function recordUsage() {
-    await using ingestion = await polar.ingestion().start();
-    await ingestion.ingest({
+    await using metering = await polar.metering().start();
+    await metering.ingest({
         name: "api_request",
         external_customer_id: "customer_123",
         metadata: { tokens: 42 },
@@ -123,18 +123,18 @@ async function recordUsage() {
 It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event:
 
 ```typescript
-await using ingestion = await polar.ingestion().start();
-const actor = await ingestion.actor({ external_customer_id: "customer_123" });
+await using metering = await polar.metering().start();
+const actor = await metering.actor({ external_customer_id: "customer_123" });
 await actor.ingest({ name: "api_request", metadata: { tokens: 42 } });
 await actor.ingest({ name: "api_request", metadata: { tokens: 17 } });
 ```
 
 ### Read meters
 
-The ingestion helper can read meters. Under the hood, it can leverage Outpost to have low-latency reads.
+The metering helper can read meters. Under the hood, it can leverage Outpost to have low-latency reads.
 
 ```typescript
-const meter = await ingestion.meter("meter_uuid", {
+const meter = await metering.meter("meter_uuid", {
     external_customer_id: "customer_123",
 });
 ```
@@ -142,7 +142,7 @@ const meter = await ingestion.meter("meter_uuid", {
 With an actor context:
 
 ```typescript
-const actor = await ingestion.actor({ external_customer_id: "customer_123" });
+const actor = await metering.actor({ external_customer_id: "customer_123" });
 const meter = await actor.meter("meter_uuid");
 ```
 
@@ -152,7 +152,7 @@ Outpost is our local reduction engine. It can reduce events locally and share a 
 
 In high throughput scenarios, Outpost can return you accurate meter reads only milliseconds after the event is ingested.
 
-To disable it, pass `outpost: false` to `polar.ingestion()`. You can also configure it explicitly with an object.
+To disable it, pass `outpost: false` to `polar.metering()`. You can also configure it explicitly with an object.
 
 ### Serverless environments
 
@@ -162,9 +162,9 @@ while the invocation is still active.
 
 ```typescript
 async function handleRequest() {
-  await ingestion.ingest({ name: "api_request", external_customer_id: "customer_123" });
-  await ingestion.flush();
-  return { ok: true };
+    await metering.ingest({ name: "api_request", external_customer_id: "customer_123" });
+    await metering.flush();
+    return { ok: true };
 }
 ```
 
@@ -172,7 +172,7 @@ async function handleRequest() {
 
 #### Buffered
 
-The ingestion helper buffers events in memory and sends them in batches to Polar. It retries network errors, rate limits, and server errors with exponential backoff and jitter. Other Polar API errors drop the batch without retrying.
+The metering helper buffers events in memory and sends them in batches to Polar. It retries network errors, rate limits, and server errors with exponential backoff and jitter. Other Polar API errors drop the batch without retrying.
 
 | Option              | Default     | Meaning                                                         |
 | ------------------- | ----------- | --------------------------------------------------------------- |

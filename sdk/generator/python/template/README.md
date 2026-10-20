@@ -147,9 +147,9 @@ from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | rep
 customer = deserialize(data, Customer)
 ```
 
-## Event Ingestion
+## Metering
 
-The event ingestion helper adds buffering, batching, and optional local reduction to the Polar Event Ingestion API.
+The metering helper adds buffering, batching, and optional local reduction to the Polar Event Ingestion API.
 
 ### Basic usage
 
@@ -159,8 +159,8 @@ from polar.v{{ (ir.versions[-2] | default({})).version | replace("-", "_") | rep
 
 async def record_usage() -> None:
     async with PolarAsync("polar_oat_xxx") as polar:
-        async with polar.ingestion() as ingestion:
-            await ingestion.ingest(
+        async with polar.metering() as metering:
+            await metering.ingest(
                 name="api_request",
                 external_customer_id="customer_123",
                 metadata={"tokens": 42},
@@ -172,18 +172,18 @@ async def record_usage() -> None:
 It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event:
 
 ```python
-async with polar.ingestion() as ingestion:
-    actor = await ingestion.actor(external_customer_id="customer_123")
+async with polar.metering() as metering:
+    actor = await metering.actor(external_customer_id="customer_123")
     await actor.ingest(name="api_request", metadata={"tokens": 42})
     await actor.ingest(name="api_request", metadata={"tokens": 17})
 ```
 
 ### Read meters
 
-The ingestion helper can read meters. Under the hood, it can leverage Outpost to have low-latency reads.
+The metering helper can read meters. Under the hood, it can leverage Outpost to have low-latency reads.
 
 ```python
-meter = await ingestion.meter(
+meter = await metering.meter(
     "meter_uuid", external_customer_id="customer_123"
 )
 ```
@@ -191,7 +191,7 @@ meter = await ingestion.meter(
 With an actor context:
 
 ```python
-actor = await ingestion.actor(external_customer_id="customer_123")
+actor = await metering.actor(external_customer_id="customer_123")
 meter = await actor.meter("meter_uuid")
 ```
 
@@ -201,7 +201,7 @@ Outpost is our local reduction engine. It can reduce events locally and share a 
 
 In high throughput scenarios, Outpost can return you accurate meter reads only milliseconds after the event is ingested.
 
-To disable it, pass `outpost=False` to `polar.ingestion()`. You can also configure it explicitly with a dictionary.
+To disable it, pass `outpost=False` to `polar.metering()`. You can also configure it explicitly with a dictionary.
 
 ### Serverless environments
 
@@ -211,8 +211,8 @@ while the invocation is still active.
 
 ```python
 async def handle_request() -> dict[str, bool]:
-    await ingestion.ingest(name="api_request", external_customer_id="customer_123")
-    await ingestion.flush()
+    await metering.ingest(name="api_request", external_customer_id="customer_123")
+    await metering.flush()
     return {"ok": True}
 ```
 
@@ -220,7 +220,7 @@ async def handle_request() -> dict[str, bool]:
 
 #### Buffered
 
-The ingestion helper buffers events in memory and sends them in batches to Polar. It retries network errors, rate limits, and server errors with exponential backoff and jitter. Other Polar API errors drop the batch without retrying.
+The metering helper buffers events in memory and sends them in batches to Polar. It retries network errors, rate limits, and server errors with exponential backoff and jitter. Other Polar API errors drop the batch without retrying.
 
 | Option             | Default | Meaning                                                    |
 | ------------------ | ------- | ---------------------------------------------------------- |

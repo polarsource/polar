@@ -16,8 +16,8 @@ import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import WebSocket from "ws";
 
-import type { EventInput } from "../ingestion/event";
-import type { CustomerMeter } from "../ingestion/meter";
+import type { EventInput } from "../metering/event";
+import type { CustomerMeter } from "../metering/meter";
 
 import { ClientBase, PolarError } from "../base";
 import { customerKey, parseEvent } from "./event";

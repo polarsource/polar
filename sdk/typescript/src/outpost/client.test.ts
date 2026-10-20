@@ -1002,10 +1002,10 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
   const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
   const reader = await start();
   {
-    await using ingestion = await polar
-      .ingestion({ outpost: { redisUrl: redisServer.socket } })
+    await using metering = await polar
+      .metering({ outpost: { redisUrl: redisServer.socket } })
       .start();
-    await ingestion.ingest({ ...customer, name: "api", timestamp, metadata: { tokens: 2 } });
+    await metering.ingest({ ...customer, name: "api", timestamp, metadata: { tokens: 2 } });
     expect((await reader.meter(meter))?.consumed_units).toBe(12);
     expect(fetch).not.toHaveBeenCalled();
   }

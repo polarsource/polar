@@ -42,9 +42,9 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
-from polar.ingestion.client import PolarClient
-from polar.ingestion.events import EventInput
-from polar.ingestion.meter import CustomerMeter
+from polar.metering.client import PolarClient
+from polar.metering.events import EventInput
+from polar.metering.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,

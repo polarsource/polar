@@ -9,7 +9,7 @@ import {
   PolarServerError,
   type RequestOptions,
 } from "../base";
-import { BufferedIngestionStrategy } from "./buffered";
+import { BufferedMeteringStrategy } from "./buffered";
 
 const events: EventInput[] = Array.from({ length: 5 }, (_, i) => ({
   name: `usage-${i}`,
@@ -23,7 +23,7 @@ afterEach(() => {
 
 it("flushes empty and bounded batches, then accepts more events", async () => {
   const ingest = vi.fn().mockResolvedValue(undefined);
-  const strategy = new BufferedIngestionStrategy(
+  const strategy = new BufferedMeteringStrategy(
     { events: { ingest } },
     { batchSize: 2, batchIntervalMs: 60_000 },
   );
@@ -50,7 +50,7 @@ it("flushes empty and bounded batches, then accepts more events", async () => {
 it("starts the batch interval with the first event without resetting it", async () => {
   vi.useFakeTimers();
   const ingest = vi.fn().mockResolvedValue(undefined);
-  await using strategy = await new BufferedIngestionStrategy(
+  await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     { batchIntervalMs: 100 },
   ).start();
@@ -73,7 +73,7 @@ it("keeps concurrent flush boundaries separate while a batch is in flight", asyn
         finishDelivery = resolve;
       }),
   );
-  await using strategy = await new BufferedIngestionStrategy(
+  await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     { batchSize: 1 },
   ).start();
@@ -117,7 +117,7 @@ it.each(["shutdown timeout", "worker error"])(
       });
     });
     const onDropped = vi.fn();
-    const strategy = await new BufferedIngestionStrategy(
+    const strategy = await new BufferedMeteringStrategy(
       { events: { ingest } },
       { batchIntervalMs: 60_000, shutdownTimeoutMs: 10, onDropped },
     ).start();
@@ -149,7 +149,7 @@ it.each(["shutdown timeout", "worker error"])(
 it.each([0, 1, 5])("drains %i events in bounded batches on disposal", async (count) => {
   const ingest = vi.fn().mockResolvedValue(undefined);
   {
-    await using strategy = await new BufferedIngestionStrategy(
+    await using strategy = await new BufferedMeteringStrategy(
       { events: { ingest } },
       { batchSize: 2, batchIntervalMs: 60_000 },
     ).start();
@@ -167,7 +167,7 @@ it.each([
   "automatically sends with batch size $batchSize and interval $batchIntervalMs",
   async (options) => {
     const ingest = vi.fn().mockResolvedValue(undefined);
-    await using strategy = await new BufferedIngestionStrategy(
+    await using strategy = await new BufferedMeteringStrategy(
       { events: { ingest } },
       options,
     ).start();
@@ -183,7 +183,7 @@ it("honors Retry-After and preserves the batch through retries", async () => {
     .fn()
     .mockRejectedValueOnce(new PolarRateLimitError(429, 0.001))
     .mockResolvedValue(undefined);
-  await using strategy = await new BufferedIngestionStrategy(
+  await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     { onDropped },
   ).start();
@@ -209,7 +209,7 @@ it.each([
         finishDrop = resolve;
       }),
   );
-  await using strategy = await new BufferedIngestionStrategy(
+  await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     { maxAttempts: 1, onDropped },
   ).start();
@@ -245,7 +245,7 @@ it.each([false, true])(
         });
       },
     );
-    const strategy = await new BufferedIngestionStrategy(
+    const strategy = await new BufferedMeteringStrategy(
       { events: { ingest } },
       {
         batchSize: 1,
@@ -267,7 +267,7 @@ it("cancels a retry wait at the shutdown deadline", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const ingest = vi.fn().mockRejectedValue(new PolarNetworkError("offline"));
   const onDropped = vi.fn();
-  const strategy = await new BufferedIngestionStrategy(
+  const strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
     {
       shutdownTimeoutMs: 10,
@@ -283,7 +283,7 @@ it("cancels a retry wait at the shutdown deadline", async () => {
 it("flushes before propagating the scope error", async () => {
   const ingest = vi.fn().mockResolvedValue(undefined);
   await expect(async () => {
-    await using strategy = await new BufferedIngestionStrategy({ events: { ingest } }).start();
+    await using strategy = await new BufferedMeteringStrategy({ events: { ingest } }).start();
     await strategy.ingest(events[0]);
     throw new Error("body failed");
   }).rejects.toThrow("body failed");

@@ -9,17 +9,17 @@ import type { CustomerMeter, MeterInput } from "./meter";
 
 import { PolarError, type ClientBase } from "../base";
 import {
-  BufferedIngestionStrategy,
-  type BufferedIngestionOptions,
-  type IngestionClient,
+  BufferedMeteringStrategy,
+  type BufferedMeteringOptions,
+  type MeteringClient,
 } from "./buffered";
 
-/** Base error for ingestion configuration and operations. */
-export class IngestionError extends PolarError {}
+/** Base error for metering configuration and operations. */
+export class MeteringError extends PolarError {}
 /**
  * Raised when customer or member identifiers are inconsistent.
  */
-export class InvalidActorError extends IngestionError {}
+export class InvalidActorError extends MeteringError {}
 
 /** Exactly one customer identity, with an optional member of the same identifier kind. */
 export type ActorInput =
@@ -33,12 +33,12 @@ export type ActorInput =
     });
 
 /**
- * Customer-bound helper returned by Ingestion.actor().
+ * Customer-bound helper returned by Metering.actor().
  *
  * Member identifiers apply to events; meter reads remain customer-wide.
  * The helper shares its parent's lifecycle and owns no resources.
  */
-export interface ActorIngestion {
+export interface ActorMetering {
   /**
    * Ingest an event with this actor's identifiers attached.
    *
@@ -60,9 +60,9 @@ export interface ActorIngestion {
  * Strategies receive events in order. Implement actor(), meter(), or flush()
  * to opt into warmup, meter reads, or explicit draining respectively.
  */
-export interface IngestionStrategy {
+export interface MeteringStrategy {
   /** Start strategy resources. */
-  start(): Promise<IngestionStrategy | void>;
+  start(): Promise<MeteringStrategy | void>;
   /**
    * Warm customer state using exactly one customer identifier.
    *
@@ -85,33 +85,33 @@ export interface IngestionStrategy {
 /**
  * Configure the optional Outpost strategy.
  */
-export type IngestionOutpostOptions = Omit<OutpostOptions, "client"> & {
+export type MeteringOutpostOptions = Omit<OutpostOptions, "client"> & {
   /** Redis connection URL. Defaults to the REDIS_URL environment variable. */
   redisUrl?: string;
 };
 
 /** Configure the built-in strategies, or replace them with an explicit strategies list. */
-export type IngestionOptions =
+export type MeteringOptions =
   | {
-      buffered?: BufferedIngestionOptions;
-      outpost?: false | IngestionOutpostOptions;
+      buffered?: BufferedMeteringOptions;
+      outpost?: false | MeteringOutpostOptions;
       strategies?: never;
     }
   | {
-      strategies: readonly IngestionStrategy[];
+      strategies: readonly MeteringStrategy[];
       buffered?: never;
       outpost?: never;
     };
 
 /**
- * Dispatch events, actor warmup, and meter reads to ingestion strategies.
+ * Dispatch events, actor warmup, and meter reads to metering strategies.
  *
- * Create with polar.ingestion(), then await start() before use and close() on
+ * Create with polar.metering(), then await start() before use and close() on
  * shutdown. By default, events are buffered for HTTP delivery, with Outpost added
  * when a Redis URL is configured. Accepting an event does not confirm delivery.
  */
-export class Ingestion {
-  readonly strategies: readonly IngestionStrategy[];
+export class Metering {
+  readonly strategies: readonly MeteringStrategy[];
   private stack?: AsyncDisposableStack;
   private started = false;
   private closing?: Promise<void>;
@@ -129,7 +129,7 @@ export class Ingestion {
     strategies,
     client,
   }: {
-    strategies: readonly IngestionStrategy[];
+    strategies: readonly MeteringStrategy[];
     client: ClientBase;
   }) {
     this.strategies = strategies;
@@ -137,7 +137,7 @@ export class Ingestion {
   }
 
   async start(): Promise<this> {
-    if (this.stack || this.closing) throw new PolarError("Ingestion has already started");
+    if (this.stack || this.closing) throw new PolarError("Metering has already started");
     this.stack = new AsyncDisposableStack();
     try {
       for (const strategy of this.strategies) {
@@ -150,7 +150,7 @@ export class Ingestion {
       try {
         await this.close();
       } catch (cleanupError) {
-        throw new AggregateError([error, cleanupError], "Ingestion startup and cleanup failed");
+        throw new AggregateError([error, cleanupError], "Metering startup and cleanup failed");
       }
       throw error;
     }
@@ -164,7 +164,7 @@ export class Ingestion {
    * @throws InvalidActorError if customer or member identifiers are inconsistent.
    */
   async ingest(event: EventInput): Promise<void> {
-    if (!this.started) throw new PolarError("Ingestion is not running");
+    if (!this.started) throw new PolarError("Metering is not running");
     validateActor(event);
     this.activeOperations++;
     try {
@@ -183,8 +183,8 @@ export class Ingestion {
    * @returns A helper that attaches this identity to events and reads customer meters.
    * @throws InvalidActorError if customer or member identifiers are inconsistent.
    */
-  async actor(input: ActorInput): Promise<ActorIngestion> {
-    if (!this.started) throw new IngestionError("Ingestion is not running");
+  async actor(input: ActorInput): Promise<ActorMetering> {
+    if (!this.started) throw new MeteringError("Metering is not running");
     validateActor(input);
     const identity: ActorInput =
       input.customer_id != null
@@ -217,7 +217,7 @@ export class Ingestion {
    * @throws InvalidActorError if exactly one customer identifier was not provided.
    */
   async meter(meterId: string, input: MeterInput): Promise<CustomerMeter | null> {
-    if (!this.started) throw new IngestionError("Ingestion is not running");
+    if (!this.started) throw new MeteringError("Metering is not running");
     validateActor(input);
     this.activeOperations++;
     try {
@@ -255,7 +255,7 @@ export class Ingestion {
    * @throws AggregateError if one or more strategy flushes failed.
    */
   async flush(): Promise<void> {
-    if (!this.started) throw new IngestionError("Ingestion is not running");
+    if (!this.started) throw new MeteringError("Metering is not running");
     this.activeOperations++;
     try {
       const errors: unknown[] = [];
@@ -266,7 +266,7 @@ export class Ingestion {
           errors.push(error);
         }
       }
-      if (errors.length) throw new AggregateError(errors, "Ingestion flush failed");
+      if (errors.length) throw new AggregateError(errors, "Metering flush failed");
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }
@@ -310,34 +310,34 @@ const validateActor = (input: {
 };
 
 /**
- * Create an unstarted helper, usually via polar.ingestion().
+ * Create an unstarted helper, usually via polar.metering().
  *
  * @param polar Polar client used for event delivery.
  * @param client Authenticated HTTP client used for meter reads.
- * @param options.buffered Buffer options; omitted fields use BufferedIngestionOptions defaults.
+ * @param options.buffered Buffer options; omitted fields use BufferedMeteringOptions defaults.
  * @param options.outpost Outpost options. Defaults to enabling Outpost when REDIS_URL
  * is set. false disables it; explicit options require a Redis URL.
  * @param options.strategies Replace all default strategies. Cannot be combined with
  * buffered or outpost options.
  * @returns A helper to start before use.
- * @throws IngestionError if options conflict or Outpost has no Redis URL.
+ * @throws MeteringError if options conflict or Outpost has no Redis URL.
  */
-export const createIngestion = (
-  polar: IngestionClient,
+export const createMetering = (
+  polar: MeteringClient,
   client: ClientBase,
-  options: IngestionOptions = {},
-): Ingestion => {
+  options: MeteringOptions = {},
+): Metering => {
   if (options.strategies !== undefined) {
     if (options.buffered !== undefined || options.outpost !== undefined) {
-      throw new IngestionError("Cannot combine strategies with buffered or outpost options");
+      throw new MeteringError("Cannot combine strategies with buffered or outpost options");
     }
-    return new Ingestion({ strategies: options.strategies, client });
+    return new Metering({ strategies: options.strategies, client });
   }
-  const strategies: IngestionStrategy[] = [new BufferedIngestionStrategy(polar, options.buffered)];
+  const strategies: MeteringStrategy[] = [new BufferedMeteringStrategy(polar, options.buffered)];
   const { redisUrl: configuredRedisUrl, ...outpostOptions } = options.outpost || {};
   const redisUrl = configuredRedisUrl ?? process.env.REDIS_URL;
   if (options.outpost !== undefined && options.outpost !== false && !redisUrl) {
-    throw new IngestionError("Outpost requires redisUrl or REDIS_URL");
+    throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
   }
   if (options.outpost !== false && redisUrl) {
     let outpost: import("../outpost/client").Outpost | undefined;
@@ -361,5 +361,5 @@ export const createIngestion = (
       },
     });
   }
-  return new Ingestion({ strategies, client });
+  return new Metering({ strategies, client });
 };

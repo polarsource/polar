@@ -5,16 +5,16 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { EventInput } from "./event";
 import type { CustomerMeter } from "./meter";
 
-import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
+import { createPolar } from "../2026-10/client";
 import { ClientBase, PolarError, PolarNetworkError } from "../base";
-import { BufferedIngestionStrategy } from "./buffered";
+import { BufferedMeteringStrategy } from "./buffered";
 import {
-  Ingestion,
-  IngestionError,
+  Metering,
+  MeteringError,
   InvalidActorError,
   type ActorInput,
-  type IngestionStrategy,
-  type IngestionOutpostOptions,
+  type MeteringStrategy,
+  type MeteringOutpostOptions,
 } from "./client";
 
 const client = new ClientBase({
@@ -45,19 +45,19 @@ it.each([false, true])("flushes supporting strategies and collects failures: %s"
     }),
   };
   const second = { ...ordinary, flush: vi.fn().mockResolvedValue(undefined) };
-  await using ingestion = await new Ingestion({
+  await using metering = await new Metering({
     client,
     strategies: [first, ordinary, second],
   }).start();
   if (fail) {
-    await expect(ingestion.flush()).rejects.toMatchObject({ errors: [error] });
+    await expect(metering.flush()).rejects.toMatchObject({ errors: [error] });
   } else {
-    await ingestion.flush();
+    await metering.flush();
   }
   expect(first.flush).toHaveBeenCalledOnce();
   expect(second.flush).toHaveBeenCalledOnce();
   expect(ordinary.close).not.toHaveBeenCalled();
-  await ingestion.ingest(event);
+  await metering.ingest(event);
   expect(ordinary.ingest).toHaveBeenCalledTimes(3);
 });
 
@@ -74,22 +74,22 @@ it("waits for an active flush before closing", async () => {
     ),
     close: vi.fn().mockResolvedValue(undefined),
   };
-  const ingestion = new Ingestion({ client, strategies: [strategy] });
-  await expect(ingestion.flush()).rejects.toThrow("not running");
-  await ingestion.start();
-  const flushing = ingestion.flush();
-  const closing = ingestion.close();
+  const metering = new Metering({ client, strategies: [strategy] });
+  await expect(metering.flush()).rejects.toThrow("not running");
+  await metering.start();
+  const flushing = metering.flush();
+  const closing = metering.close();
   expect(strategy.close).not.toHaveBeenCalled();
   finishFlush();
   await flushing;
   await closing;
   expect(strategy.close).toHaveBeenCalledOnce();
-  await expect(ingestion.flush()).rejects.toThrow("not running");
+  await expect(metering.flush()).rejects.toThrow("not running");
 });
 
 it("starts and ingests in order, then closes in reverse order", async () => {
   const calls: string[] = [];
-  const strategies: IngestionStrategy[] = ["buffered", "local"].map((name) => ({
+  const strategies: MeteringStrategy[] = ["buffered", "local"].map((name) => ({
     async start() {
       calls.push(`start:${name}`);
     },
@@ -102,8 +102,8 @@ it("starts and ingests in order, then closes in reverse order", async () => {
     },
   }));
   {
-    await using ingestion = await new Ingestion({ client, strategies }).start();
-    await ingestion.ingest(event);
+    await using metering = await new Metering({ client, strategies }).start();
+    await metering.ingest(event);
   }
   expect(calls).toEqual([
     "start:buffered",
@@ -132,8 +132,8 @@ it.each([false, true])(
       }),
     };
     const third = { ...second, start: vi.fn().mockRejectedValue(startupError) };
-    const ingestion = new Ingestion({ client, strategies: [first, second, third] });
-    const started = ingestion.start();
+    const metering = new Metering({ client, strategies: [first, second, third] });
+    const started = metering.start();
     if (failCleanup) {
       await expect(started).rejects.toBeInstanceOf(AggregateError);
       await expect(started).rejects.toMatchObject({ errors: [startupError, cleanupError] });
@@ -145,23 +145,23 @@ it.each([false, true])(
   },
 );
 
-it("stops at the failing strategy and rejects ingestion outside its lifecycle", async () => {
+it("stops at the failing strategy and rejects metering outside its lifecycle", async () => {
   const first = {
     start: vi.fn().mockResolvedValue(undefined),
     ingest: vi.fn().mockRejectedValue(new Error("ingest failed")),
     close: vi.fn().mockResolvedValue(undefined),
   };
   const second = { ...first, ingest: vi.fn() };
-  const ingestion = new Ingestion({ client, strategies: [first, second] });
-  await expect(ingestion.ingest(event)).rejects.toThrow("not running");
-  await expect(ingestion.actor({ external_customer_id: "alice" })).rejects.toThrow("not running");
-  await ingestion.start();
-  await expect(ingestion.start()).rejects.toThrow("already started");
-  await expect(ingestion.ingest(event)).rejects.toThrow("ingest failed");
+  const metering = new Metering({ client, strategies: [first, second] });
+  await expect(metering.ingest(event)).rejects.toThrow("not running");
+  await expect(metering.actor({ external_customer_id: "alice" })).rejects.toThrow("not running");
+  await metering.start();
+  await expect(metering.start()).rejects.toThrow("already started");
+  await expect(metering.ingest(event)).rejects.toThrow("ingest failed");
   expect(second.ingest).not.toHaveBeenCalled();
-  await ingestion.close();
-  await expect(ingestion.ingest(event)).rejects.toThrow("not running");
-  await expect(ingestion.actor({ external_customer_id: "alice" })).rejects.toThrow("not running");
+  await metering.close();
+  await expect(metering.ingest(event)).rejects.toThrow("not running");
+  await expect(metering.actor({ external_customer_id: "alice" })).rejects.toThrow("not running");
 });
 
 it.each<ActorInput>([
@@ -180,8 +180,8 @@ it.each<ActorInput>([
     actor: vi.fn().mockResolvedValue(undefined),
     ingest: vi.fn().mockResolvedValue(undefined),
   };
-  await using ingestion = await new Ingestion({ client, strategies: [ordinary, warmup] }).start();
-  const actor = await ingestion.actor(input);
+  await using metering = await new Metering({ client, strategies: [ordinary, warmup] }).start();
+  const actor = await metering.actor(input);
   expect(warmup.actor).toHaveBeenCalledExactlyOnceWith(input);
   const payload = { name: "usage", metadata: { tokens: 3 } };
   await actor.ingest(payload);
@@ -203,19 +203,19 @@ it.each([
   { external_member_id: "member" },
   { customer_id: "customer", external_member_id: "member" },
   { external_customer_id: "customer", member_id: "member" },
-])("rejects an invalid actor before warmup or ingestion: %j", async (input) => {
+])("rejects an invalid actor before warmup or metering: %j", async (input) => {
   const strategy = {
     start: vi.fn().mockResolvedValue(undefined),
     actor: vi.fn().mockResolvedValue(undefined),
     ingest: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
   };
-  await using ingestion = await new Ingestion({ client, strategies: [strategy] }).start();
-  const result = ingestion.actor(input as unknown as ActorInput);
+  await using metering = await new Metering({ client, strategies: [strategy] }).start();
+  const result = metering.actor(input as unknown as ActorInput);
   await expect(result).rejects.toBeInstanceOf(InvalidActorError);
-  await expect(result).rejects.toBeInstanceOf(IngestionError);
+  await expect(result).rejects.toBeInstanceOf(MeteringError);
   await expect(result).rejects.toBeInstanceOf(PolarError);
-  await expect(ingestion.ingest({ name: "usage", ...input } as EventInput)).rejects.toBeInstanceOf(
+  await expect(metering.ingest({ name: "usage", ...input } as EventInput)).rejects.toBeInstanceOf(
     InvalidActorError,
   );
   expect(strategy.actor).not.toHaveBeenCalled();
@@ -232,8 +232,8 @@ it("captures the actor identity before awaiting warmup", async () => {
     ingest: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined),
   };
-  await using ingestion = await new Ingestion({ client, strategies: [strategy] }).start();
-  const actor = await ingestion.actor(input);
+  await using metering = await new Metering({ client, strategies: [strategy] }).start();
+  const actor = await metering.actor(input);
   await actor.ingest({ name: "usage", external_customer_id: "carol" } as EventInput);
   expect(strategy.ingest).toHaveBeenCalledExactlyOnceWith({
     name: "usage",
@@ -259,10 +259,10 @@ it.each([false, true])(
       ingest: vi.fn().mockResolvedValue(undefined),
       close: vi.fn().mockResolvedValue(undefined),
     };
-    const ingestion = await new Ingestion({ client, strategies: [strategy] }).start();
-    const actor = ingestion.actor({ external_customer_id: "alice" });
+    const metering = await new Metering({ client, strategies: [strategy] }).start();
+    const actor = metering.actor({ external_customer_id: "alice" });
     const result = Promise.allSettled([actor]);
-    const closing = ingestion.close();
+    const closing = metering.close();
     expect(strategy.close).not.toHaveBeenCalled();
     release();
     const [settled] = await result;
@@ -274,7 +274,7 @@ it.each([false, true])(
   },
 );
 
-it("creates buffered ingestion using the configured HTTP client", async () => {
+it("creates buffered metering using the configured HTTP client", async () => {
   const fetch = vi
     .spyOn(globalThis, "fetch")
     .mockResolvedValue(new Response('{"inserted":1,"duplicates":0}'));
@@ -284,8 +284,8 @@ it("creates buffered ingestion using the configured HTTP client", async () => {
     baseUrl: "https://custom.test",
   });
   {
-    await using ingestion = await polar.ingestion().start();
-    await ingestion.ingest(event);
+    await using metering = await polar.metering().start();
+    await metering.ingest(event);
     expect(fetch).not.toHaveBeenCalled();
   }
   const [url, request] = fetch.mock.calls[0];
@@ -293,11 +293,11 @@ it("creates buffered ingestion using the configured HTTP client", async () => {
   const headers = new Headers(request!.headers);
   expect(headers.get("Authorization")).toBe("Bearer token");
   expect(headers.get("Polar-Organization")).toBe("org");
-  expect(headers.get("Polar-Version")).toBe("{{ (ir.versions[-2] | default(ir.versions[0])).version }}");
+  expect(headers.get("Polar-Version")).toBe("2026-10");
   expect(JSON.parse(request!.body as string)).toEqual({ events: [event] });
 });
 
-it.each<[string | undefined, false | IngestionOutpostOptions | undefined, string | undefined]>([
+it.each<[string | undefined, false | MeteringOutpostOptions | undefined, string | undefined]>([
   [undefined, undefined, undefined],
   ["", undefined, undefined],
   ["redis://environment:6379", undefined, "redis://environment:6379"],
@@ -314,12 +314,12 @@ it.each<[string | undefined, false | IngestionOutpostOptions | undefined, string
       return this;
     });
   const close = vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
-  const ingestion = createPolar({ accessToken: "token" }).ingestion({ outpost });
+  const metering = createPolar({ accessToken: "token" }).metering({ outpost });
   vi.stubEnv("REDIS_URL", "redis://changed:6379");
-  await ingestion.start();
-  await ingestion.close();
-  expect(ingestion.strategies[0]).toBeInstanceOf(BufferedIngestionStrategy);
-  expect(ingestion.strategies).toHaveLength(expectedUrl ? 2 : 1);
+  await metering.start();
+  await metering.close();
+  expect(metering.strategies[0]).toBeInstanceOf(BufferedMeteringStrategy);
+  expect(metering.strategies).toHaveLength(expectedUrl ? 2 : 1);
   if (expectedUrl) {
     expect(start.mock.instances[0]).toMatchObject({ redisUrl: expectedUrl });
     expect(close).toHaveBeenCalledOnce();
@@ -329,7 +329,7 @@ it.each<[string | undefined, false | IngestionOutpostOptions | undefined, string
 });
 
 it.each([{}, { redisUrl: "" }])("rejects Outpost without a Redis URL: %j", (outpost) => {
-  expect(() => createPolar({ accessToken: "token" }).ingestion({ outpost })).toThrow(
+  expect(() => createPolar({ accessToken: "token" }).metering({ outpost })).toThrow(
     "Outpost requires redisUrl or REDIS_URL",
   );
 });
@@ -339,7 +339,7 @@ it.each([{ buffered: {} }, { outpost: false as const }])(
   (options) => {
     expect(() =>
       // @ts-expect-error Explicit strategies exclude built-in configuration.
-      createPolar({ accessToken: "token" }).ingestion({ strategies: [], ...options }),
+      createPolar({ accessToken: "token" }).metering({ strategies: [], ...options }),
     ).toThrow("Cannot combine strategies");
   },
 );
@@ -355,11 +355,11 @@ it.each([false, true])(
     };
     const strategies = empty ? [] : [strategy];
     {
-      await using ingestion = await createPolar({ accessToken: "token" })
-        .ingestion({ strategies })
+      await using metering = await createPolar({ accessToken: "token" })
+        .metering({ strategies })
         .start();
-      expect(ingestion.strategies).toEqual(strategies);
-      await ingestion.ingest(event);
+      expect(metering.strategies).toEqual(strategies);
+      await metering.ingest(event);
     }
     expect(strategy.start).toHaveBeenCalledTimes(empty ? 0 : 1);
     expect(strategy.ingest).toHaveBeenCalledTimes(empty ? 0 : 1);
@@ -373,12 +373,12 @@ it("forwards buffer options and reports failed delivery", async () => {
   const send = vi.spyOn(polar.events, "ingest").mockRejectedValue(new PolarNetworkError("offline"));
   const onDropped = vi.fn();
   {
-    await using ingestion = await polar
-      .ingestion({
+    await using metering = await polar
+      .metering({
         buffered: { batchSize: 1, batchIntervalMs: 60_000, maxAttempts: 1, onDropped },
       })
       .start();
-    await ingestion.ingest(event);
+    await metering.ingest(event);
     await vi.waitFor(() =>
       expect(onDropped).toHaveBeenCalledExactlyOnceWith([event], "retry_exhausted"),
     );
@@ -390,8 +390,8 @@ it("propagates Outpost startup failures and closes the buffer", async () => {
   vi.stubEnv("REDIS_URL", "redis://environment:6379");
   const { Outpost } = await import("../outpost/client");
   vi.spyOn(Outpost.prototype, "start").mockRejectedValue(new Error("Redis unavailable"));
-  const close = vi.spyOn(BufferedIngestionStrategy.prototype, "close");
-  await expect(createPolar({ accessToken: "token" }).ingestion().start()).rejects.toThrow(
+  const close = vi.spyOn(BufferedMeteringStrategy.prototype, "close");
+  await expect(createPolar({ accessToken: "token" }).metering().start()).rejects.toThrow(
     "Redis unavailable",
   );
   expect(close).toHaveBeenCalledOnce();
@@ -408,15 +408,15 @@ it("forwards Outpost options and actor warmup", async () => {
   const warmup = vi.spyOn(Outpost.prototype, "actor").mockResolvedValue(undefined);
   const meter = vi.spyOn(Outpost.prototype, "meter").mockResolvedValue(null);
   const polar = createPolar({ accessToken: "token" });
-  await using ingestion = await polar
-    .ingestion({
+  await using metering = await polar
+    .metering({
       outpost: { redisUrl: "redis://localhost:6379", telemetry: false, snapshotTimeout: 250 },
     })
     .start();
   expect(vi.mocked(Outpost.prototype.start).mock.instances[0]).toMatchObject({
     options: { telemetry: false, snapshotTimeout: 250 },
   });
-  const actor = await ingestion.actor({ external_customer_id: "alice" });
+  const actor = await metering.actor({ external_customer_id: "alice" });
   expect(await actor.meter("meter")).toBeNull();
   expect(meter).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({ external_customer_id: "alice", meter_id: "meter" }),
@@ -447,16 +447,16 @@ it.each([false, true])(
       organizationId: "org",
       baseUrl: "https://custom.test",
     });
-    await using ingestion = await polar.ingestion().start();
-    const actor = await ingestion.actor({
+    await using metering = await polar.metering().start();
+    const actor = await metering.actor({
       external_customer_id: "external",
       external_member_id: "member",
     });
     expect(await actor.meter("meter")).toEqual(missing ? null : value);
-    expect(await ingestion.meter("meter", { customer_id: "customer" })).toEqual(
+    expect(await metering.meter("meter", { customer_id: "customer" })).toEqual(
       missing ? null : value,
     );
-    expect(await ingestion.meter("meter", { external_customer_id: "external" })).toEqual(
+    expect(await metering.meter("meter", { external_customer_id: "external" })).toEqual(
       missing ? null : value,
     );
     const [rawUrl, request] = fetch.mock.calls[0];
@@ -495,8 +495,8 @@ it.each<CustomerMeter | null | Error>([
     }),
   };
   const second = { ...strategy, meter: vi.fn().mockResolvedValue(null) };
-  await using ingestion = await new Ingestion({ client, strategies: [strategy, second] }).start();
-  const actor = await ingestion.actor({ customer_id: "customer" });
+  await using metering = await new Metering({ client, strategies: [strategy, second] }).start();
+  const actor = await metering.actor({ customer_id: "customer" });
   const read = actor.meter("meter");
   if (result instanceof Error) await expect(read).rejects.toBe(result);
   else expect(await read).toBe(result);
@@ -508,10 +508,8 @@ it.each<CustomerMeter | null | Error>([
 
 it("propagates meter API errors", async () => {
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("Forbidden", { status: 403 }));
-  await using ingestion = await createPolar({ accessToken: "token" }).ingestion().start();
-  await expect(ingestion.meter("meter", { customer_id: "customer" })).rejects.toThrow(
-    "403",
-  );
+  await using metering = await createPolar({ accessToken: "token" }).metering().start();
+  await expect(metering.meter("meter", { customer_id: "customer" })).rejects.toThrow("403");
 });
 
 it("waits for active meter reads before closing", async () => {
@@ -528,13 +526,11 @@ it("waits for active meter reads before closing", async () => {
       return null;
     }),
   };
-  const ingestion = await new Ingestion({ client, strategies: [strategy] }).start();
-  const read = ingestion.meter("meter", { customer_id: "customer" });
-  const closing = ingestion.close();
+  const metering = await new Metering({ client, strategies: [strategy] }).start();
+  const read = metering.meter("meter", { customer_id: "customer" });
+  const closing = metering.close();
   expect(strategy.close).not.toHaveBeenCalled();
-  await expect(ingestion.meter("meter", { customer_id: "customer" })).rejects.toThrow(
-    "not running",
-  );
+  await expect(metering.meter("meter", { customer_id: "customer" })).rejects.toThrow("not running");
   release();
   await read;
   await closing;
@@ -551,9 +547,9 @@ it("aborts an in-flight HTTP delivery on shutdown", async () => {
     );
   });
   const polar = createPolar({ accessToken: "token" });
-  const { BufferedIngestionStrategy } = await import("./buffered");
+  const { BufferedMeteringStrategy } = await import("./buffered");
   const onDropped = vi.fn();
-  const strategy = await new BufferedIngestionStrategy(polar, {
+  const strategy = await new BufferedMeteringStrategy(polar, {
     shutdownTimeoutMs: 10,
     onDropped,
   }).start();
@@ -563,14 +559,14 @@ it("aborts an in-flight HTTP delivery on shutdown", async () => {
   expect(onDropped).toHaveBeenCalledExactlyOnceWith([event], "shutdown_timeout");
 });
 
-it("ships ingestion for both ESM and CommonJS", async () => {
-  const esm = await import("../../dist/ingestion/index.mjs");
-  const cjs = createRequire(import.meta.url)("../../dist/ingestion/index.cjs");
-  expect(esm.Ingestion).toBeTypeOf("function");
-  expect(cjs.BufferedIngestionStrategy).toBeTypeOf("function");
+it("ships metering for both ESM and CommonJS", async () => {
+  const esm = await import("../../dist/metering/index.mjs");
+  const cjs = createRequire(import.meta.url)("../../dist/metering/index.cjs");
+  expect(esm.Metering).toBeTypeOf("function");
+  expect(cjs.BufferedMeteringStrategy).toBeTypeOf("function");
 });
 
-it("uses buffered ingestion without loading optional Outpost dependencies", () => {
+it("uses buffered metering without loading optional Outpost dependencies", () => {
   const child = spawnSync(
     process.execPath,
     [
@@ -582,9 +578,9 @@ it("uses buffered ingestion without loading optional Outpost dependencies", () =
       if (specifier === "ioredis" || specifier === "ws") throw new Error("Optional dependency loaded");
       return next(specifier, context);
     }});
-    const { createPolar } = await import("@polar-sh/sdk/{{ (ir.versions[-2] | default(ir.versions[0])).version }}");
-    await using ingestion = await createPolar({ accessToken: "token" }).ingestion().start();
-    await ingestion.actor({ external_customer_id: "alice" });
+    const { createPolar } = await import("@polar-sh/sdk/2026-10");
+    await using metering = await createPolar({ accessToken: "token" }).metering().start();
+    await metering.actor({ external_customer_id: "alice" });
   `,
     ],
     { encoding: "utf8" },
@@ -621,14 +617,14 @@ it.each([false, true])(
       ingest: vi.fn().mockResolvedValue(undefined),
       close: vi.fn().mockResolvedValue(undefined),
     };
-    const ingestion = await new Ingestion({ client, strategies: [first, second] }).start();
-    const firstIngest = ingestion.ingest(event);
-    const secondIngest = ingestion.ingest(event);
+    const metering = await new Metering({ client, strategies: [first, second] }).start();
+    const firstIngest = metering.ingest(event);
+    const secondIngest = metering.ingest(event);
     const results = Promise.allSettled([firstIngest, secondIngest]);
-    const closing = ingestion.close();
-    const closingAgain = ingestion.close();
+    const closing = metering.close();
+    const closingAgain = metering.close();
 
-    await expect(ingestion.ingest(event)).rejects.toThrow("not running");
+    await expect(metering.ingest(event)).rejects.toThrow("not running");
     expect(second.close).not.toHaveBeenCalled();
     expect(first.close).not.toHaveBeenCalled();
 

@@ -36,14 +36,14 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./ingestion": {
+    "./metering": {
       "import": {
-        "types": "./dist/ingestion/index.d.mts",
-        "default": "./dist/ingestion/index.mjs"
+        "types": "./dist/metering/index.d.mts",
+        "default": "./dist/metering/index.mjs"
       },
       "require": {
-        "types": "./dist/ingestion/index.d.cts",
-        "default": "./dist/ingestion/index.cjs"
+        "types": "./dist/metering/index.d.cts",
+        "default": "./dist/metering/index.cjs"
       }
     },
     "./outpost": {

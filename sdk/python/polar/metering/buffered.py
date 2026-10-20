@@ -8,9 +8,9 @@ import typing
 import anyio
 
 from polar import PolarError, PolarNetworkError, PolarRateLimitError, PolarServerError
-from polar.ingestion.client import IngestionClient
-from polar.ingestion.events import EventInput
 from polar.logging import get_logger
+from polar.metering.client import MeteringClient
+from polar.metering.events import EventInput
 
 log = get_logger(__name__)
 
@@ -22,7 +22,7 @@ def _jittered_delay(base: float, jitter: float = 0.1) -> float:
 DropReason = typing.Literal["retry_exhausted", "shutdown_timeout", "permanent_error"]
 
 
-class BufferedIngestionOptions(typing.TypedDict, total=False):
+class BufferedMeteringOptions(typing.TypedDict, total=False):
     """Configure in-memory batching and delivery to Polar.
 
     Attributes:
@@ -49,12 +49,12 @@ class _FlushRequest:
     error: BaseException | None = None
 
 
-class BufferedIngestionStrategy:
+class BufferedMeteringStrategy:
     """Batch events in memory and deliver them through Polar's HTTP API."""
 
     def __init__(
         self,
-        polar: IngestionClient,
+        polar: MeteringClient,
         batch_size: int = 100,
         batch_interval: float = 1.0,
         shutdown_timeout: float = 5.0,
@@ -93,7 +93,7 @@ class BufferedIngestionStrategy:
 
     async def __aenter__(self) -> typing.Self:
         if self._flush_cancel_scope is not None:
-            raise PolarError("Buffered ingestion has already started")
+            raise PolarError("Buffered metering has already started")
         self._worker_task_group = await self._stack.enter_async_context(
             anyio.create_task_group()
         )
@@ -126,7 +126,7 @@ class BufferedIngestionStrategy:
     async def flush(self) -> None:
         """Wait until earlier events are delivered or reported as dropped."""
         if self._flush_cancel_scope is None:
-            raise PolarError("Buffered ingestion has not started")
+            raise PolarError("Buffered metering has not started")
         request = _FlushRequest()
         await self._send_queue.send(request)
         await request.completed.wait()
@@ -176,7 +176,7 @@ class BufferedIngestionStrategy:
                             request.completed.set()
                             request = None
                 if cancel_scope.cancelled_caught:
-                    failure = TimeoutError("Buffered ingestion shutdown timed out")
+                    failure = TimeoutError("Buffered metering shutdown timed out")
             except BaseException as error:
                 failure = error
                 raise

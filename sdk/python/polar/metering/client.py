@@ -1,18 +1,18 @@
 import typing
 
 from polar.base import AsyncClientBase
-from polar.ingestion.events import EventInput
+from polar.metering.events import EventInput
 
 
 class EventsClient(typing.Protocol):
     async def ingest(self, *, events: list[EventInput]) -> object: ...
 
 
-class IngestionClient(typing.Protocol):
+class MeteringClient(typing.Protocol):
     @property
     def events(self) -> EventsClient: ...
 
 
-class PolarClient(IngestionClient, typing.Protocol):
+class PolarClient(MeteringClient, typing.Protocol):
     @property
     def _client(self) -> AsyncClientBase: ...

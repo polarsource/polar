@@ -98,6 +98,19 @@ ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {
     OrganizationRole.finance: _FINANCE_PERMISSIONS,
 }
 
+# An unclaimed agent isn't a member of its organization, so it holds this fixed
+# role there instead: org settings and catalog, never members or finance.
+# Checkout sessions are gated by the sales permissions.
+AGENT_PERMISSIONS: set[OrganizationPermission] = {
+    OrganizationPermission.organization_manage,
+    OrganizationPermission.products_read,
+    OrganizationPermission.products_manage,
+    OrganizationPermission.sales_read,
+    OrganizationPermission.sales_manage,
+    OrganizationPermission.analytics_read,
+    OrganizationPermission.events_ingest,
+}
+
 
 PERMISSION_DENIED_MESSAGE: dict[OrganizationPermission, str] = {
     OrganizationPermission.organization_manage: "You don't have permission to manage the organization",

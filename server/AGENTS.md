@@ -188,6 +188,12 @@ authenticator then validates the resolved subject type and its scopes. **Scopes*
 operations: an `Authenticator` declares `required_scopes`, and access is granted if the
 subject holds at least one of them.
 
+An AI agent that signed up on its own and isn't claimed yet is an `Agent` subject (ADR-0014),
+with one organization and only `UNCLAIMED_AGENT_SCOPES`. To open an endpoint to it, list
+`Agent` in the authenticator's `allowed_subjects`, handle `is_agent` in the service's subject
+branches, test it with `AuthSubjectFixture(subject="agent")`, and add the route to
+`AGENT_ROUTES` in `tests/test_agent_routes.py`.
+
 Define per-module authenticators in the module's `auth.py`:
 
 ```python

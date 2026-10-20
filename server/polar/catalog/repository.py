@@ -47,14 +47,12 @@ class CatalogProductRepository(
 ):
     model = CatalogProduct
 
-    async def get_all_by_catalog(
-        self, catalog_id: UUID, *, with_products: bool = False
-    ) -> Sequence[CatalogProduct]:
-        statement = self.get_base_statement().where(
-            CatalogProduct.catalog_id == catalog_id
+    async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogProduct]:
+        statement = (
+            self.get_base_statement()
+            .where(CatalogProduct.catalog_id == catalog_id)
+            .options(joinedload(CatalogProduct.product))
         )
-        if with_products:
-            statement = statement.options(joinedload(CatalogProduct.product))
         return await self.get_all(statement)
 
     async def get_product(self, catalog_id: UUID, external_id: str) -> Product | None:

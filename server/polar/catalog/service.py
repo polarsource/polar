@@ -87,7 +87,7 @@ class CatalogService:
             else {
                 member.external_id: member.product
                 for member in await catalog_product_repository.get_all_by_catalog(
-                    live.id, with_products=True
+                    live.id
                 )
             }
         )

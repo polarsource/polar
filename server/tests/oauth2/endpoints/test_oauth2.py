@@ -7,7 +7,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
-from polar.auth.scope import Scope
+from polar.auth.scope import UNCLAIMED_AGENT_SCOPES, Scope
 from polar.auth.service import USER_SESSION_TOKEN_PREFIX
 from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
@@ -16,6 +16,7 @@ from polar.kit.encryption import EncryptedString
 from polar.kit.hash_secrets import HashSecrets
 from polar.kit.utils import utc_now
 from polar.models import (
+    Agent,
     OAuth2AuthorizationCode,
     OAuth2Client,
     OAuth2Grant,
@@ -2451,3 +2452,56 @@ class TestOAuth2Token:
         response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 400
+
+
+@pytest.mark.anyio
+class TestOAuth2Revoke:
+    async def test_agent_token_without_client_credentials(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        agent: Agent,
+    ) -> None:
+        token = await create_oauth2_token(
+            save_fixture,
+            client=agent.oauth2_client,
+            access_token="polar_at_a_123",
+            refresh_token=None,
+            scopes=sorted(UNCLAIMED_AGENT_SCOPES),
+            agent=agent,
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={"token": "polar_at_a_123", "token_type_hint": "access_token"},
+        )
+
+        assert response.status_code == 200
+        saved_token = sync_session.get(OAuth2Token, token.id)
+        assert saved_token is not None
+        assert saved_token.access_token_revoked_at > 0
+
+    async def test_public_client_token_without_client_credentials(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        public_oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=public_oauth2_client,
+            access_token="polar_at_u_123",
+            refresh_token=None,
+            scopes=["openid"],
+            user=user,
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={"token": "polar_at_u_123", "token_type_hint": "access_token"},
+        )
+
+        assert response.status_code == 401
+        assert response.json()["error"] == "invalid_client"

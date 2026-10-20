@@ -10,6 +10,7 @@ from authlib.oauth2.rfc6749.errors import (
     UnsupportedResponseTypeError,
 )
 from authlib.oauth2.rfc6749.hooks import hooked
+from authlib.oauth2.rfc6749.util import extract_basic_authorization
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
 from authlib.oauth2.rfc7591 import (
@@ -296,6 +297,40 @@ class _QueryTokenMixin:
 
 class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
     CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+
+    def authenticate_endpoint_client(
+        self, request: StarletteOAuth2Request
+    ) -> OAuth2Client:
+        client = self._authenticate_agent_client(request)
+        if client is None:
+            return super().authenticate_endpoint_client(request)
+        request.client = client
+        return client
+
+    def _authenticate_agent_client(
+        self, request: StarletteOAuth2Request
+    ) -> OAuth2Client | None:
+        """Agent clients have no secret, and agents don't know their client ID:
+        holding one of their tokens is enough to revoke it."""
+        basic_client_id, _ = extract_basic_authorization(request.headers)
+        if basic_client_id is not None or request.form.get("client_secret"):
+            return None
+
+        token_string = request.form.get("token")
+        if not token_string:
+            return None
+        token = self.query_token(token_string, None)
+        if token is None:
+            return None
+
+        client_id = request.payload.client_id
+        if client_id is not None and client_id != token.client_id:
+            return None
+
+        client = self.server.query_client(token.client_id)
+        if client is None or not client.is_agent:
+            return None
+        return client
 
     def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
         now = int(time.time())

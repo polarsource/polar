@@ -1,6 +1,7 @@
 from authlib.oauth2.rfc6750 import InvalidTokenError as _InvalidTokenError
 
 from polar.config import settings
+from polar.exceptions import get_resource_metadata_attribute
 
 
 class InvalidTokenError(_InvalidTokenError):
@@ -12,7 +13,10 @@ class InvalidTokenError(_InvalidTokenError):
         super().__init__(
             description,
             realm=settings.WWW_AUTHENTICATE_REALM,
-            extra_attributes=extra_attributes,
+            extra_attributes={
+                **get_resource_metadata_attribute(),
+                **(extra_attributes or {}),
+            },
         )
 
 

@@ -1,5 +1,6 @@
 import json
 import pathlib
+import typing
 
 from polar.outpost.reducer import BUCKET_SIZE, Reducer
 
@@ -11,6 +12,7 @@ BUCKET_COUNTS: list[int] = DATA["bucket_counts"]
 CHANNEL: str = DATA["channel"]
 EPOCH: str = DATA["epoch"]
 REDUCER: Reducer = DATA["reducer"]
+SNAPSHOT: dict[str, typing.Any] = DATA["snapshot"]
 
 
 # The flat field list decode_state reads: one `bucket:<start>:<statistic>` entry per bucket.

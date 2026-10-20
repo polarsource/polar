@@ -1,14 +1,12 @@
 import { Redis } from "ioredis";
 import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe, vi } from "vitest";
-import { WebSocketServer } from "ws";
 
-import { ClientBase } from "../base";
 import { BUCKET_COUNTS, COLD_UNTIL, encodeState } from "./benchmark";
 import benchmark from "./benchmark.json";
 import { Outpost } from "./client";
 import { BUCKET_SIZE, type Reducer } from "./reducer";
-import { startRedisServer, type RedisServer } from "./testing";
+import { startPolarServer, startRedisServer, type PolarServer, type RedisServer } from "./testing";
 
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 // encodeState seeds every bucket with 10 events.
@@ -51,7 +49,7 @@ const stateKey = (scenario: Scenario, reducer: string) =>
 
 let redisServer: RedisServer;
 let redis: Redis;
-let server: WebSocketServer;
+let polar: PolarServer;
 let outpost: Outpost;
 
 beforeAll(async () => {
@@ -63,26 +61,8 @@ beforeAll(async () => {
   for (const scenario of SCENARIOS)
     for (const reducer of scenario.reducers)
       await redis.hset(stateKey(scenario, reducer), ...encodeState(scenario.buckets));
-
-  // Polar's side of the WebSocket: the configuration, nothing else. Snapshots only matter to reads.
-  server = new WebSocketServer({ port: 0, host: "127.0.0.1", path: "/v1/outpost/" });
-  await once(server, "listening");
-  server.on("connection", (ws) => {
-    ws.send(JSON.stringify({ type: "connection", payload: { id: "bench" } }));
-    ws.on("message", (data) => {
-      if (JSON.parse(data.toString()).type === "configuration")
-        ws.send(JSON.stringify({ type: "configuration", payload: { reducers: REDUCERS } }));
-    });
-  });
-  const address = server.address();
-  if (typeof address === "string" || !address) throw new Error("Missing WebSocket address");
-  const client = new ClientBase({
-    baseUrl: `http://127.0.0.1:${address.port}`,
-    accessToken: "bench-token",
-    version: "2026-10",
-    organizationId: "org",
-  });
-  outpost = await new Outpost(redisServer.socket, { client }).start();
+  polar = await startPolarServer(REDUCERS);
+  outpost = await new Outpost(redisServer.socket, { client: polar.client }).start();
 });
 
 // Vitest runs no hook nested in a describe during benchmarks.
@@ -98,8 +78,7 @@ afterAll(async () => {
     }
   } finally {
     await outpost?.close();
-    for (const ws of server?.clients ?? []) ws.terminate();
-    if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+    await polar?.stop();
     redis?.disconnect();
     await redisServer?.stop();
     vi.unstubAllGlobals();

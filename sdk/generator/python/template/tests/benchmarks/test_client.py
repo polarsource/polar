@@ -1,13 +1,16 @@
 import asyncio
 import json
+import typing
 
 import httpx
 import pytest
 from pytest_codspeed import BenchmarkFixture
 from redis.asyncio import Redis
 
+from polar.metering import CustomerMeter
 from polar.outpost.client import LocalState, Outpost, consumed_units, decode_state
-from tests.benchmarks import BUCKET_COUNTS, EPOCH, REDUCER, encode_state
+from polar.outpost.reducer import Reducer
+from tests.benchmarks import BUCKET_COUNTS, EPOCH, REDUCER, SNAPSHOT, encode_state
 
 pytestmark = pytest.mark.benchmark
 
@@ -38,15 +41,28 @@ async def warm_outpost() -> Outpost:
     return outpost
 
 
+@pytest.fixture(scope="module")
+def reducers() -> list[Reducer]:
+    return [REDUCER]
+
+
+@pytest.fixture(scope="module")
+def snapshot() -> dict[str, typing.Any]:
+    return SNAPSHOT
+
+
 def test_warm_meter_read(
-    benchmark: BenchmarkFixture, loop: asyncio.AbstractEventLoop
+    benchmark: BenchmarkFixture, loop: asyncio.AbstractEventLoop, outpost: Outpost
 ) -> None:
-    outpost = loop.run_until_complete(warm_outpost())
-    benchmark(
-        lambda: loop.run_until_complete(
+    def read() -> CustomerMeter | None:
+        return loop.run_until_complete(
             outpost.meter(meter_id="meter", external_customer_id="alice")
         )
-    )
+
+    loop.run_until_complete(outpost.actor(external_customer_id="alice"))
+    meter = read()
+    assert meter is not None and meter.credited_units == 1_000_000
+    benchmark(read)
 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)

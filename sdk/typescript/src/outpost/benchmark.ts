@@ -7,6 +7,7 @@ export const {
   bucket_counts: BUCKET_COUNTS,
   channel: CHANNEL,
   epoch: EPOCH,
+  snapshot: SNAPSHOT,
 } = benchmark;
 export const REDUCER = benchmark.reducer as Reducer;
 

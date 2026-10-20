@@ -1,4 +1,5 @@
 import hashlib
+import re
 from collections.abc import Sequence
 from functools import partial
 
@@ -17,6 +18,11 @@ from polar.redis import Redis
 _IDENTITY_KEY_PREFIX = "rl:ident:"
 _IDENTITY_TTL_SECONDS = 300
 _ANONYMOUS_IDENTITY = "anonymous"
+
+_AGENT_SIGN_UP_PATH = "^/v1/agent/identity/?$"
+# Keyed by IP whatever credentials the request carries: a fresh bearer token per
+# request would otherwise get a fresh `pending_auth` bucket each time.
+_IP_KEYED_PATHS = [re.compile(_AGENT_SIGN_UP_PATH)]
 
 
 def _bearer_token(scope: Scope) -> str | None:
@@ -100,7 +106,18 @@ def _get_ip(scope: Scope) -> tuple[str, RateLimitGroup]:
     return ip, RateLimitGroup.default
 
 
+def _get_ip_or_anonymous(scope: Scope) -> tuple[str, RateLimitGroup]:
+    try:
+        return _get_ip(scope)
+    except EmptyInformation, ValueError, TypeError:
+        return _ANONYMOUS_IDENTITY, RateLimitGroup.default
+
+
 async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGroup]:
+    path = scope.get("path", "")
+    if any(pattern.match(path) for pattern in _IP_KEYED_PATHS):
+        return _get_ip_or_anonymous(scope)
+
     token = _bearer_token(scope)
     if token is not None:
         cached = await _read_cached_identity(redis, token)
@@ -122,10 +139,7 @@ async def _authenticate(scope: Scope, *, redis: Redis) -> tuple[str, RateLimitGr
             RateLimitGroup.default,
         )
 
-    try:
-        return _get_ip(scope)
-    except EmptyInformation, ValueError, TypeError:
-        return _ANONYMOUS_IDENTITY, RateLimitGroup.default
+    return _get_ip_or_anonymous(scope)
 
 
 # Each sensitive endpoint gets a `pending_auth` twin so requests with an
@@ -304,11 +318,9 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
         ),
     ],
     # Each agent sign-up creates an OAuth client and an agent, so it's capped per
-    # caller: per IP, as callers are anonymous. All groups listed — an unmatched
-    # one falls through to `api`.
-    "^/v1/agent/identity/?$": [
-        Rule(group=group, minute=5, hour=20, block_time=3600, zone="agent-sign-up")
-        for group in RateLimitGroup
+    # IP (see `_IP_KEYED_PATHS`).
+    _AGENT_SIGN_UP_PATH: [
+        Rule(minute=5, hour=20, block_time=3600, zone="agent-sign-up"),
     ],
     # SDK telemetry exports share the token with event ingestion; their own zone
     # keeps a chatty exporter from spending the `api` budget of the events.

@@ -76,22 +76,30 @@ class TestProtectedResourceMetadata:
         assert json["bearer_methods_supported"] == ["header"]
 
 
-@pytest.mark.anyio
-@pytest.mark.usefixtures("agent_sign_up_enabled")
-@pytest.mark.parametrize(
-    "headers",
-    [
-        pytest.param({}, id="no token"),
-        pytest.param({"Authorization": "Bearer polar_at_u_invalid"}, id="bad token"),
-    ],
-)
-async def test_unauthorized_points_to_protected_resource_metadata(
-    client: AsyncClient, headers: dict[str, str]
-) -> None:
-    response = await client.get("/v1/oauth2/userinfo", headers=headers)
+UNAUTHORIZED_HEADERS = [
+    pytest.param({}, id="no token"),
+    pytest.param({"Authorization": "Bearer polar_at_u_invalid"}, id="bad token"),
+]
 
-    assert response.status_code == 401
-    assert (
-        f'resource_metadata="{ISSUER}/.well-known/oauth-protected-resource"'
-        in response.headers["WWW-Authenticate"]
-    )
+
+@pytest.mark.anyio
+class TestUnauthorizedChallenge:
+    @pytest.mark.usefixtures("agent_sign_up_enabled")
+    @pytest.mark.parametrize("headers", UNAUTHORIZED_HEADERS)
+    async def test_points_to_protected_resource_metadata(
+        self, client: AsyncClient, headers: dict[str, str]
+    ) -> None:
+        response = await client.get("/v1/oauth2/userinfo", headers=headers)
+
+        assert response.status_code == 401
+        assert (
+            f'resource_metadata="{ISSUER}/.well-known/oauth-protected-resource"'
+            in response.headers["WWW-Authenticate"]
+        )
+
+    @pytest.mark.parametrize("headers", UNAUTHORIZED_HEADERS)
+    async def test_disabled(self, client: AsyncClient, headers: dict[str, str]) -> None:
+        response = await client.get("/v1/oauth2/userinfo", headers=headers)
+
+        assert response.status_code == 401
+        assert "resource_metadata" not in response.headers["WWW-Authenticate"]

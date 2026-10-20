@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import Any, Literal
 
@@ -67,7 +68,11 @@ def _verification_key(token: str) -> Any:
 
 
 def decode_unsafe(
-    *, token: str, audience: str | None = None, issuer: str | None = None
+    *,
+    token: str,
+    audience: str | None = None,
+    issuer: str | None = None,
+    require: Sequence[str] = (),
 ) -> dict[str, Any]:
     return jwt.decode(
         token,
@@ -75,6 +80,7 @@ def decode_unsafe(
         algorithms=[ALGORITHM],
         audience=audience,
         issuer=issuer,
+        options={"require": list(require)},
     )
 
 
@@ -84,8 +90,9 @@ def decode_sync(
     type: TYPE,
     audience: str | None = None,
     issuer: str | None = None,
+    require: Sequence[str] = (),
 ) -> dict[str, Any]:
-    res = decode_unsafe(token=token, audience=audience, issuer=issuer)
+    res = decode_unsafe(token=token, audience=audience, issuer=issuer, require=require)
 
     token_type = res.get("type", "")
     if token_type != type:

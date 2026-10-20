@@ -1,3 +1,4 @@
+import base64
 import uuid
 from datetime import timedelta
 from typing import Any
@@ -116,6 +117,12 @@ class TestJWTBearerGrant:
             pytest.param(
                 IDENTITY_ASSERTION_TYPE, {}, timedelta(seconds=-1), id="expired"
             ),
+            pytest.param(
+                IDENTITY_ASSERTION_TYPE,
+                {"sub": "not-a-uuid"},
+                timedelta(days=1),
+                id="malformed subject",
+            ),
         ],
     )
     async def test_invalid_assertion(
@@ -189,19 +196,27 @@ class TestJWTBearerGrant:
         assert response.json()["error"] == "invalid_grant"
 
     @pytest.mark.usefixtures("agent_sign_up_enabled")
+    @pytest.mark.parametrize("credentials", ["form", "basic"])
     async def test_other_agent_client(
-        self, save_fixture: SaveFixture, client: AsyncClient, agent: Agent
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        agent: Agent,
+        credentials: str,
     ) -> None:
-        other_agent = await create_agent(save_fixture)
+        other_client_id = (await create_agent(save_fixture)).oauth2_client.client_id
+        data = {
+            "grant_type": JWT_BEARER_GRANT_TYPE,
+            "assertion": create_identity_assertion(agent.id).token,
+        }
+        headers: dict[str, str] = {}
+        if credentials == "form":
+            data["client_id"] = other_client_id
+        else:
+            basic = base64.b64encode(f"{other_client_id}:x".encode()).decode()
+            headers["Authorization"] = f"Basic {basic}"
 
-        response = await client.post(
-            "/v1/oauth2/token",
-            data={
-                "grant_type": JWT_BEARER_GRANT_TYPE,
-                "assertion": create_identity_assertion(agent.id).token,
-                "client_id": other_agent.oauth2_client.client_id,
-            },
-        )
+        response = await client.post("/v1/oauth2/token", data=data, headers=headers)
 
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_client"

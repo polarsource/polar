@@ -32,6 +32,7 @@ from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_servi
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_agent
 
 from ..conftest import create_oauth2_authorization_code, create_oauth2_token
 
@@ -2481,6 +2482,38 @@ class TestOAuth2Revoke:
         saved_token = sync_session.get(OAuth2Token, token.id)
         assert saved_token is not None
         assert saved_token.access_token_revoked_at > 0
+
+    async def test_agent_token_with_other_client_id(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        agent: Agent,
+    ) -> None:
+        other_agent = await create_agent(save_fixture)
+        token = await create_oauth2_token(
+            save_fixture,
+            client=agent.oauth2_client,
+            access_token="polar_at_a_123",
+            refresh_token=None,
+            scopes=sorted(UNCLAIMED_AGENT_SCOPES),
+            agent=agent,
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={
+                "token": "polar_at_a_123",
+                "token_type_hint": "access_token",
+                "client_id": other_agent.oauth2_client.client_id,
+            },
+        )
+
+        assert response.status_code == 401
+        assert response.json()["error"] == "invalid_client"
+        saved_token = sync_session.get(OAuth2Token, token.id)
+        assert saved_token is not None
+        assert saved_token.access_token_revoked_at == 0
 
     async def test_public_client_token_without_client_credentials(
         self,

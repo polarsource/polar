@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+import time
 from datetime import datetime, timedelta
 
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
@@ -32,7 +33,9 @@ class AgentService:
         self, session: AsyncSession, identity_create: AgentIdentityCreate
     ) -> AgentSignUp:
         oauth2_client = OAuth2Client(
-            client_id=generate_token(prefix=CLIENT_ID_PREFIX), is_agent=True
+            client_id=generate_token(prefix=CLIENT_ID_PREFIX),
+            client_id_issued_at=int(time.time()),
+            is_agent=True,
         )
         oauth2_client.set_client_metadata(
             {
@@ -60,7 +63,6 @@ class AgentService:
             flush=True,
         )
 
-        # Signing is a blocking KMS call in production.
         identity_assertion = await asyncio.to_thread(
             create_identity_assertion, agent.id
         )

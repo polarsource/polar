@@ -13,6 +13,9 @@ RUN apt-get -qq update \
     wget \
     dnsutils \
   > /dev/null \
+  && sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+    -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates \
   && apt-get -qq clean \
   && rm -rf \
     /var/lib/apt/lists/* \

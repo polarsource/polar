@@ -1,4 +1,4 @@
-import { getProperty, type Event } from "./event";
+import { getPropertyReader, type Event, type PropertyReader } from "./event";
 
 export interface FilterClause {
   property: string;
@@ -63,7 +63,7 @@ export const getBucketStart = (timestamp: number): number => {
 };
 
 export type EventMatcher = (event: Event) => boolean;
-export type ReducerMatchers = readonly (readonly [Reducer, EventMatcher])[];
+export type ReducerMatchers = readonly (readonly [Reducer, EventMatcher, PropertyReader])[];
 
 export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   if (!("property" in filter)) {
@@ -72,8 +72,9 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
       ? (event) => children.every((match) => match(event))
       : (event) => children.some((match) => match(event));
   }
+  const read = getPropertyReader(filter.property);
   return (event) => {
-    const actual = getProperty(event, filter.property);
+    const actual = read(event);
     if (actual === undefined || actual === null) return false;
     if (filter.operator === "eq" || filter.operator === "ne") {
       const actualValue = typeof actual === "boolean" ? Number(actual) : actual;
@@ -102,7 +103,16 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
 };
 
 export const withMatchers = (reducers: readonly Reducer[]): ReducerMatchers =>
-  reducers.map((reducer) => [reducer, getMatcher(reducer.filter)] as const);
+  reducers.map(
+    (reducer) =>
+      [
+        reducer,
+        getMatcher(reducer.filter),
+        reducer.aggregation.func === "count"
+          ? () => 1
+          : getPropertyReader(reducer.aggregation.property),
+      ] as const,
+  );
 
 export const reduce = (
   matchers: ReducerMatchers,
@@ -113,10 +123,10 @@ export const reduce = (
   for (const event of events) {
     const bucketStart = getBucketStart(event.timestamp);
     if (bucketStart < oldestBucketStart) continue;
-    for (const [reducer, match] of matchers) {
+    for (const [reducer, match, read] of matchers) {
       if (!match(event)) continue;
       const { aggregation } = reducer;
-      const value = aggregation.func === "count" ? 1 : getProperty(event, aggregation.property);
+      const value = read(event);
       if (typeof value !== "number") continue;
       if (!Number.isFinite(value)) throw new TypeError("Aggregation values must be finite");
       const key = JSON.stringify([event.customer, reducer.id, bucketStart]);

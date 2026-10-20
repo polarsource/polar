@@ -22,7 +22,7 @@ Anyone who signs in through your connection becomes a member of your organizatio
 
 New members join with the **Member** role. To grant more access, [change their role](/features/team-management#changing-a-members-role) after their first sign-in.
 
-Your identity provider decides who can authenticate, so it also decides who can join. Grant and revoke access to the Polar application there.
+Your identity provider decides who can authenticate, so it also decides who can join. Grant and revoke access to the Polar application there. Polar adds one check of its own: the email address must belong to one of your [verified domains](#verified-domains).
 
 <Warning>
 **Removing a member in Polar does not keep them out.** If they can still authenticate against your identity provider, they rejoin on their next sign-in. To remove someone's access, revoke it in your identity provider.
@@ -30,9 +30,22 @@ Your identity provider decides who can authenticate, so it also decides who can 
 
 Polar only accepts an identity whose email address your provider marks as verified. If the email is unverified, the sign-in is refused and no account is created.
 
+## Verified domains
+
+SSO sign-ins are limited to your organization's verified email domains. If someone authenticates against your identity provider with an address outside them — a personal address, or a domain you haven't registered — Polar refuses the sign-in with *This email address is not in a verified domain of this organization*, and no account is created.
+
+Domains are registered by Polar. [Contact Polar support](/support) with the domains your team signs in with. Once enforcement is on, your verified domains are listed under **Domains** on the SSO settings page, with the date each one was verified.
+
+<Note>
+The domain must match exactly. Registering `example.com` doesn't cover `eu.example.com` — register each domain your team's addresses use.
+</Note>
+
 ## Setting up a connection
 
 <Steps>
+  <Step title="Register your domains">
+    [Contact Polar support](/support) to verify your email domains. Until a domain is verified, nobody can sign in through your connection with an address in it.
+  </Step>
   <Step title="Add the connection in Polar">
     Go to [**Settings → SSO**](https://polar.sh/to/dashboard/settings/sso) and click **Add connection**. Pick **Google Workspace** or **Custom OIDC provider**.
   </Step>
@@ -71,6 +84,19 @@ Enforcement makes your identity provider the only door. Anyone who can't authent
 
 You can stop enforcing at any time from the same screen.
 
+### Automatic routing to SSO
+
+Once you enforce SSO and have a verified domain, members don't need a special link. When someone with an address in your domain signs in on the standard Polar sign-in page — by email code, Google, GitHub, or Apple — Polar sends them to your organization's SSO instead. If you have a single connection, they go straight to your identity provider.
+
+This replaces the **Login link**: it's hidden from the SSO settings page once routing is automatic.
+
+### Members of other organizations
+
+A session started through your SSO only reaches your organization. If a member also belongs to other organizations, those show in the organization switcher with a badge:
+
+- **Sign in** — the organization doesn't enforce SSO. Selecting it opens the standard sign-in page without routing them back to your SSO, so they can sign in with their usual method and land on that organization's dashboard.
+- **SSO** — the organization enforces its own SSO. Selecting it opens that organization's SSO sign-in page.
+
 <Note>
 Enforcement applies to dashboard sessions. Personal access tokens and organization access tokens keep working, so scripts and integrations aren't interrupted.
 </Note>
@@ -88,6 +114,12 @@ Enforcement applies to dashboard sessions. Personal access tokens and organizati
     Yes, as long as you don't enforce SSO. [Invitations](/features/team-management#inviting-a-member) work alongside it, which is useful for contractors who aren't in your identity provider.
 
     Once you enforce SSO, invitations stop being a way in. The invited person becomes a member, but reaching your organization requires signing in through your identity provider. Add them there instead.
+  </Accordion>
+  <Accordion title="Why was a sign-in refused with “not in a verified domain”?">
+    The address your identity provider returned isn't in one of your organization's verified domains. Check that the user signs in with their work address, and that its exact domain — including any subdomain — is verified. [Contact Polar support](/support) to add a domain.
+  </Accordion>
+  <Accordion title="Why isn't a member sent to SSO automatically?">
+    Automatic routing needs SSO to be enforced, an enabled connection, and the member's email domain to be verified. Without all three, share the **Login link** from the SSO settings page instead.
   </Accordion>
   <Accordion title="Can I use more than one identity provider?">
     Yes. Add a connection per provider. Each one appears as a separate button on your organization's sign-in page, so give them names.

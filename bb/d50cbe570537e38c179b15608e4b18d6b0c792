@@ -1,0 +1,19 @@
+server/polar/benefit/auth.py
+  s_5baa939665e021::t_ff67fdc6d2c3a1 6,14,16-18,21-29,32-43,49-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "bbd50cbe570537e38c179b15608e4b18d6b0c792",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

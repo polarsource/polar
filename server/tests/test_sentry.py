@@ -93,6 +93,7 @@ class TestBeforeSend:
                 "data": {
                     "access_token": "polar_at_xxx",
                     "api_key": "sk_test_xxx",
+                    "assertion": "eyJ.xxx.yyy",
                     "client_secret": "polar_cs_xxx",
                     "cf-turnstile-response": "cf_xxx",
                     "code": "123456",
@@ -121,6 +122,7 @@ class TestBeforeSend:
         data = cast(dict[str, Any], cast(dict[str, Any], result["request"])["data"])
         assert "access_token" not in data
         assert "api_key" not in data
+        assert "assertion" not in data
         assert "client_secret" not in data
         assert "cf-turnstile-response" not in data
         assert "code" not in data

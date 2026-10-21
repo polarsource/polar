@@ -71,6 +71,12 @@ export interface MeteringStrategy {
   actor?(input: ActorInput): Promise<void>;
   meter?(input: MeterInput & { meter_id: string }): Promise<CustomerMeter | null>;
   /**
+   * Reject an event before any strategy accepts it.
+   *
+   * @param event Event including its customer identity.
+   */
+  validate?(event: EventInput): void;
+  /**
    * Accept an event for this strategy.
    *
    * @param event Event including its customer identity.

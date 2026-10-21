@@ -164,6 +164,25 @@ it("stops at the failing strategy and rejects metering outside its lifecycle", a
   await expect(metering.actor({ external_customer_id: "alice" })).rejects.toThrow("not running");
 });
 
+it("rejects an event a strategy refuses before any strategy tracks it", async () => {
+  const accepting = {
+    start: vi.fn().mockResolvedValue(undefined),
+    track: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+  };
+  const refusing = {
+    ...accepting,
+    validate: vi.fn(() => {
+      throw new Error("refused");
+    }),
+    track: vi.fn().mockResolvedValue(undefined),
+  };
+  await using metering = await new Metering({ client, strategies: [accepting, refusing] }).start();
+  await expect(metering.track(event)).rejects.toThrow("refused");
+  expect(accepting.track).not.toHaveBeenCalled();
+  expect(refusing.track).not.toHaveBeenCalled();
+});
+
 it.each<ActorInput>([
   { customer_id: "customer" },
   { customer_id: "customer", member_id: "member" },

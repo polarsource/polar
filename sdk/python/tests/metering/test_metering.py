@@ -1,7 +1,7 @@
 import subprocess
 import sys
 import typing
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 
 import anyio
 import anyio.lowlevel
@@ -20,6 +20,7 @@ from polar.metering import (
     MeteringError,
     MeteringOutpostOptions,
     MeteringStrategyProtocol,
+    ValidateProtocol,
 )
 from polar.metering.buffered import BufferedMeteringStrategy
 from polar.outpost import Outpost
@@ -202,7 +203,11 @@ async def test_metering_enters_and_calls_both_strategies(
             monkeypatch.setattr(strategy, "track", ingest)
             mocks.append((enter, exit, ingest))
 
-        event: EventInput = {"name": "usage", "external_customer_id": "customer"}
+        event: EventInput = {
+            "name": "usage",
+            "external_id": "event",
+            "external_customer_id": "customer",
+        }
         async with Metering(
             strategies=[buffered, outpost], client=polar._client
         ) as metering:
@@ -218,6 +223,23 @@ async def test_metering_enters_and_calls_both_strategies(
 
         for _, exit, _ in mocks:
             exit.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_strategy_validation_runs_before_any_track() -> None:
+    accepting = AsyncMock(spec=MeteringStrategyProtocol)
+    refusing = AsyncMock(spec=MeteringStrategyProtocol)
+    refusing.validate = Mock(side_effect=RuntimeError("refused"))
+    assert isinstance(refusing, ValidateProtocol)
+    assert not isinstance(accepting, ValidateProtocol)
+    async with (
+        PolarAsync("token") as polar,
+        polar.metering(strategies=[accepting, refusing]) as metering,
+    ):
+        with pytest.raises(RuntimeError, match="refused"):
+            await metering.track(name="usage", external_customer_id="customer")
+        accepting.track.assert_not_awaited()
+        refusing.track.assert_not_awaited()
 
 
 @pytest.mark.anyio

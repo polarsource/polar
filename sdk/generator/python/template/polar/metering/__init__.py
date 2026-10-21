@@ -60,6 +60,15 @@ class MeteringStrategyProtocol(
 
 
 @typing.runtime_checkable
+class ValidateProtocol(typing.Protocol):
+    """Optional strategy capability for rejecting an event before any strategy accepts it."""
+
+    def validate(self, event: EventInput) -> None:
+        """Raise when the strategy cannot accept the event."""
+        ...
+
+
+@typing.runtime_checkable
 class FlushProtocol(typing.Protocol):
     """Optional strategy capability for explicit draining."""
 

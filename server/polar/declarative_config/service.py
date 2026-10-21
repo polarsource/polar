@@ -66,7 +66,7 @@ from .validation import (
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
-_PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id_current"
+_PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
 _WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
 
 

@@ -104,7 +104,7 @@ class Product(
             postgresql_using="gin",
         ),
         Index(
-            "ix_products_organization_id_external_id_current",
+            "ix_products_organization_id_external_id",
             "organization_id",
             "external_id",
             unique=True,

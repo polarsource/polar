@@ -2,11 +2,10 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 
-from polar.catalog.repository import CatalogRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.repository import DiscountRepository
 from polar.models import Product
-from polar.postgres import AsyncReadSession, AsyncSession
+from polar.postgres import AsyncSession
 
 from .schemas import (
     ConfigChange,
@@ -42,10 +41,7 @@ def benefit_issues(changes: ConfigChanges) -> list[ConfigIssue]:
             severity=ConfigIssueSeverity.error,
             type=ConfigIssueType.not_supported,
             loc=["body", "benefits", change.index],
-            msg=(
-                "Benefits can't be changed yet for organizations using catalog "
-                "versioning."
-            ),
+            msg="Benefits can't be changed yet.",
             input=change.config.external_id,
         )
         for change in changes.benefits
@@ -53,28 +49,18 @@ def benefit_issues(changes: ConfigChanges) -> list[ConfigIssue]:
     ]
 
 
-async def add_catalog_diffs(
-    session: AsyncReadSession,
+def add_catalog_diffs(
     product_changes: Sequence[ConfigChange],
     changes: Sequence[ProductChange],
     catalog_before: str | None,
     catalog_after: str,
 ) -> None:
-    hashes = await CatalogRepository.from_session(session).get_hashes(
-        [
-            change.existing.catalog_id
-            for change in changes
-            if change.existing is not None and change.existing.catalog_id is not None
-        ]
-    )
     for product_change, change in zip(product_changes, changes, strict=True):
-        if change.existing is not None and _publishes_new_row(change):
+        if _publishes_new_row(change):
             product_change.diff.append(
                 ConfigFieldChange(
                     field="catalog",
-                    before=hashes.get(change.existing.catalog_id, catalog_before)
-                    if change.existing.catalog_id is not None
-                    else catalog_before,
+                    before=catalog_before,
                     after=catalog_after,
                 )
             )

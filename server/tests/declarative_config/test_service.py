@@ -580,7 +580,7 @@ class TestApply:
         meter = await create_meter(
             save_fixture, organization=organization, external_id="sdk-tool-calls"
         )
-        benefit = await create_benefit(
+        await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.meter_credit,
@@ -592,16 +592,12 @@ class TestApply:
             {"meters": [TOOL_CALLS_METER], "benefits": [CREDITS_BENEFIT]}
         )
 
-        result = await declarative_config_service.apply(
-            session, redis, auth_subject, config
-        )
-        rerun = await declarative_config_service.apply(
-            session, redis, auth_subject, config
-        )
+        with pytest.raises(ConfigInvalid) as error:
+            await declarative_config_service.apply(session, redis, auth_subject, config)
 
-        assert result.changes[1].action == ConfigAction.updated
-        assert dict(benefit.properties)["units"] == 1000
-        assert rerun.changes[1].action == ConfigAction.unchanged
+        [issue] = error.value.errors
+        assert issue.type == ConfigIssueType.not_supported
+        assert issue.loc == ["body", "benefits", 0]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_benefit_visibility(
@@ -620,21 +616,23 @@ class TestApply:
         [benefit] = await BenefitRepository.from_session(
             session
         ).get_all_by_external_ids(organization.id, ["beta"])
-        created_visibility = benefit.visibility
+        assert benefit.visibility == Visibility.private
 
         plan = await declarative_config_service.plan(session, auth_subject, default)
-        await declarative_config_service.apply(session, redis, auth_subject, default)
-        rerun = await declarative_config_service.apply(
-            session, redis, auth_subject, default
-        )
-
         assert [
             (change.field, change.before, change.after)
             for change in plan.changes[0].diff
         ] == [("visibility", Visibility.private, Visibility.public)]
-        assert created_visibility == Visibility.private
-        assert benefit.visibility == Visibility.public
-        assert rerun.changes[0].action == ConfigAction.unchanged
+        assert [issue.type for issue in plan.issues] == [ConfigIssueType.not_supported]
+
+        with pytest.raises(ConfigInvalid) as error:
+            await declarative_config_service.apply(
+                session, redis, auth_subject, default
+            )
+
+        [issue] = error.value.errors
+        assert issue.type == ConfigIssueType.not_supported
+        assert issue.loc == ["body", "benefits", 0]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_concurrent_benefit_create(
@@ -751,14 +749,16 @@ class TestApply:
 
         assert created.changes[3].action == ConfigAction.created
         assert updated.changes[3].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.name == "Pro Plus"
         assert product.description is None
         assert [price.amount_type for price in product.prices] == [
             ProductPriceAmountType.fixed,
             ProductPriceAmountType.metered_unit,
         ]
-        assert product.prices[1].id == metered_price.id
+        assert product.prices[1].id != metered_price.id
         assert [benefit.description for benefit in product.benefits] == ["Beta access"]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -838,7 +838,9 @@ class TestApply:
             ),
         )
         assert updated.changes[0].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.trial_interval == TrialInterval.day
         assert product.trial_interval_count == 7
 
@@ -860,7 +862,9 @@ class TestApply:
             ),
         )
         assert cleared.changes[0].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.trial_interval is None
         assert product.trial_interval_count is None
 
@@ -1029,9 +1033,13 @@ class TestApply:
         assert isinstance(price, ProductPriceMeteredTiers)
         assert price.meter_id == meter.id
         assert updated.changes[1].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["usage"])
         assert product.name == "Usage Plus"
-        assert [price.id for price in product.prices] == [price.id]
+        assert [p.amount_type for p in product.prices] == [
+            ProductPriceAmountType.metered_tiers
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_and_update_unit_based_price(
@@ -1062,9 +1070,13 @@ class TestApply:
         assert isinstance(price, ProductPriceUnit)
         assert price.get_minimum_purchasable_units() == 1
         assert updated.changes[0].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["devices"])
         assert product.name == "Devices Plus"
-        assert [price.id for price in product.prices] == [price.id]
+        assert [p.amount_type for p in product.prices] == [
+            ProductPriceAmountType.unit_based
+        ]
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
@@ -1961,12 +1973,13 @@ class TestPlan:
         assert [(issue.severity, issue.loc) for issue in plan.issues] == [
             (ConfigIssueSeverity.warning, ["body", "products", 0, "prices"])
         ]
-        assert [change.field for change in plan.changes[0].diff] == ["name"]
-        await session.refresh(product)
+        assert [change.field for change in plan.changes[0].diff] == ["name", "catalog"]
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["team"])
         assert product.name == "Team"
         assert [price.amount_type for price in product.prices] == [
             ProductPriceAmountType.fixed,
-            ProductPriceAmountType.custom,
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -2034,7 +2047,10 @@ class TestPlan:
         )
 
         assert plan.changes[0].action == ConfigAction.updated
-        assert [change.field for change in plan.changes[0].diff] == ["prices"]
+        assert [change.field for change in plan.changes[0].diff] == [
+            "prices",
+            "catalog",
+        ]
 
     @pytest.mark.parametrize(
         "update",
@@ -2089,13 +2105,13 @@ class TestPlan:
                     },
                 },
                 ConfigAction.updated,
-                ["prices"],
+                ["prices", "catalog"],
                 id="tier_rate",
             ),
             pytest.param(
                 {**UNIT_BASED_PRICE, "minimum_units": 5},
                 ConfigAction.updated,
-                ["prices"],
+                ["prices", "catalog"],
                 id="minimum_units",
             ),
             pytest.param(
@@ -2104,7 +2120,7 @@ class TestPlan:
                     "unit_label": {"en": {"=1": "device", "other": "devices"}},
                 },
                 ConfigAction.updated,
-                ["prices"],
+                ["prices", "catalog"],
                 id="unit_label",
             ),
         ],
@@ -2202,7 +2218,7 @@ class TestPlan:
                     },
                 },
                 ConfigAction.updated,
-                ["prices"],
+                ["prices", "catalog"],
                 id="tier_rate",
             ),
         ],
@@ -2386,9 +2402,11 @@ class TestPlan:
 
         [change] = plan.changes
         assert change.action == ConfigAction.updated
-        assert [(field.field, field.before, field.after) for field in change.diff] == [
-            ("trial_interval_count", 14, 7)
-        ]
+        assert [
+            (field.field, field.before, field.after)
+            for field in change.diff
+            if field.field != "catalog"
+        ] == [("trial_interval_count", 14, 7)]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_trial_unchanged(
@@ -2749,7 +2767,7 @@ MONTHLY_PRO_25 = {
 
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-@pytest.mark.usefixtures("catalog_versioning_enabled")
+@pytest.mark.usefixtures("config_as_code_enabled")
 class TestApplyCatalogVersioning:
     async def test_create_publishes_first_catalog(
         self,
@@ -3001,42 +3019,6 @@ class TestApplyCatalogVersioning:
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 @pytest.mark.usefixtures("config_as_code_enabled")
-class TestApplyWithoutCatalogVersioning:
-    async def test_update_in_place(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO]}),
-        )
-        repository = ProductRepository.from_session(session)
-        [product] = await repository.get_all_by_external_ids(organization.id, ["pro"])
-
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO_25]}),
-        )
-
-        assert await repository.get_all_by_external_ids(organization.id, ["pro"]) == [
-            product
-        ]
-        assert (
-            await CatalogRepository.from_session(session).get_live(organization.id)
-            is None
-        )
-
-
-@pytest.mark.anyio
-@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-@pytest.mark.usefixtures("catalog_versioning_enabled")
 class TestPlanCatalogVersioning:
     async def test_new_version(
         self,
@@ -3045,6 +3027,16 @@ class TestPlanCatalogVersioning:
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO]})
+        )
+        [created_change] = plan.changes
+        assert created_change.action == ConfigAction.created
+        created_catalog = created_change.diff[-1]
+        assert created_catalog.field == "catalog"
+        assert created_catalog.before is None
+        assert created_catalog.after is not None
+
         await declarative_config_service.apply(
             session,
             redis,
@@ -3059,6 +3051,7 @@ class TestPlanCatalogVersioning:
         repository = CatalogRepository.from_session(session)
         first = await repository.get_live(organization.id)
         assert first is not None
+        assert first.hash == created_catalog.after
         [change] = plan.changes
         assert change.action == ConfigAction.updated
         catalog = change.diff[-1]

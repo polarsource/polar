@@ -18,7 +18,7 @@ from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Catalog, Organization, Product, User
+from polar.models import Organization, Product, User
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -186,27 +186,21 @@ class DeclarativeConfigService:
                 OrganizationPermission.organization_manage,
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
-        versioned = organization.is_catalog_versioning_enabled
-        if versioned:
-            await CatalogRepository.from_session(session).lock(organization.id)
+        await CatalogRepository.from_session(session).lock(organization.id)
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
-        if versioned:
-            issues.extend(catalogs.benefit_issues(changes))
+        issues.extend(catalogs.benefit_issues(changes))
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
         if errors:
             raise ConfigInvalid(errors)
 
-        live: Catalog | None = None
-        catalog_hash: str | None = None
-        if versioned:
-            live = await catalog_service.get_or_create_live(session, organization)
-            _, catalog_hash = await catalog_service.get_next_hash(
-                session, organization, catalogs.product_definitions(changes)
-            )
+        live = await catalog_service.get_or_create_live(session, organization)
+        _, catalog_hash = await catalog_service.get_next_hash(
+            session, organization, catalogs.product_definitions(changes)
+        )
         settings_result = await self._apply_settings(
             session, organization, changes.settings
         )
@@ -226,7 +220,6 @@ class DeclarativeConfigService:
             changes.products,
             meter_ids,
             benefit_ids,
-            versioned=versioned,
         )
         if new_products:
             assert catalog_hash is not None
@@ -274,17 +267,13 @@ class DeclarativeConfigService:
         changes, issues = await validation.check(
             session, organization, config, for_update=False
         )
-        catalog_before: str | None = None
-        catalog_after: str | None = None
-        if organization.is_catalog_versioning_enabled:
-            issues.extend(catalogs.benefit_issues(changes))
-            catalog_before, catalog_after = await catalog_service.get_next_hash(
-                session, organization, catalogs.product_definitions(changes)
-            )
+        issues.extend(catalogs.benefit_issues(changes))
+        catalog_before, catalog_after = await catalog_service.get_next_hash(
+            session, organization, catalogs.product_definitions(changes)
+        )
         product_changes = self._plan_changes(ConfigResource.product, changes.products)
         if catalog_after is not None and catalog_after != catalog_before:
-            await catalogs.add_catalog_diffs(
-                session,
+            catalogs.add_catalog_diffs(
                 product_changes,
                 changes.products,
                 catalog_before,
@@ -579,8 +568,6 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
-        *,
-        versioned: bool,
     ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
@@ -594,7 +581,9 @@ class DeclarativeConfigService:
         for change in changes:
             config = change.config
             product = change.existing
-            copy_on_write = versioned and product is not None and change.update_dict
+            copy_on_write = product is not None and bool(
+                change.update_dict and not product.is_archived
+            )
             try:
                 if product is None or copy_on_write:
                     try:
@@ -627,18 +616,7 @@ class DeclarativeConfigService:
                         if _constraint_name(e) != _PRODUCT_EXTERNAL_ID_INDEX:
                             raise
                         raise ConfigProductConflict() from e
-                elif change.update_dict.keys() - {"benefits"}:
-                    product = await product_service.update(
-                        session,
-                        product,
-                        products.product_update(
-                            change, product, meter_ids, external_ids
-                        ),
-                        auth_subject,
-                    )
-                if ((change.existing is None or copy_on_write) and config.benefits) or (
-                    "benefits" in change.update_dict and not copy_on_write
-                ):
+                if (change.existing is None or copy_on_write) and config.benefits:
                     await product_service.update_benefits(
                         session,
                         product,
@@ -648,11 +626,7 @@ class DeclarativeConfigService:
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
             product_ids[config.external_id] = product.id
-            if (
-                versioned
-                and (change.existing is None or copy_on_write)
-                and not product.is_archived
-            ):
+            if (change.existing is None or copy_on_write) and not product.is_archived:
                 new_products[config.external_id] = product
             results.append(
                 ConfigResult(

@@ -269,6 +269,7 @@ class ProductRepository(
             )
             .where(
                 Product.organization_id == organization_id,
+                Product.is_current,
                 ~Product.is_archived,
                 ProductPrice.id.is_(None),
             )

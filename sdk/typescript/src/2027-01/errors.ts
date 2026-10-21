@@ -7,7 +7,9 @@ import type {
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
   CheckoutLocked as CheckoutLockedModel,
+  CheckoutPaymentError as CheckoutPaymentErrorModel,
   CustomerMeterCreditExternalIDConflict as CustomerMeterCreditExternalIDConflictModel,
+  CustomerMeterCreditNotReversible as CustomerMeterCreditNotReversibleModel,
   CustomerNotReady as CustomerNotReadyModel,
   DisputeAutoAcceptNotEnabled as DisputeAutoAcceptNotEnabledModel,
   DisputeNotOpenError as DisputeNotOpenErrorModel,
@@ -25,7 +27,6 @@ import type {
   PauseResumeNotAllowed as PauseResumeNotAllowedModel,
   PaymentActionRequired as PaymentActionRequiredModel,
   PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
-  PaymentError as PaymentErrorModel,
   PaymentFailed as PaymentFailedModel,
   PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
   PaymentMethodRequired as PaymentMethodRequiredModel,
@@ -349,15 +350,15 @@ export class CheckoutLocked extends PolarClientError<CheckoutLockedModel> {
   }
 }
 /**
- * The payment failed.
+ * The payment failed or the shared payment token was rejected.
  */
-export class PaymentError extends PolarClientError<PaymentErrorModel> {
+export class CheckoutsClientConfirm400Error extends PolarClientError<CheckoutPaymentErrorModel> {
   constructor(
     public readonly statusCode: 400,
-    public readonly error: PaymentErrorModel,
+    public readonly error: CheckoutPaymentErrorModel,
   ) {
     super(statusCode, error);
-    this.name = "PaymentError";
+    this.name = "CheckoutsClientConfirm400Error";
   }
 }
 /**
@@ -1179,5 +1180,17 @@ export class CustomerMetersCredits409Error extends PolarClientError<
   ) {
     super(statusCode, error);
     this.name = "CustomerMetersCredits409Error";
+  }
+}
+/**
+ * The credit can't be reversed, or the customer meter is being updated: retry shortly.
+ */
+export class CustomerMeterCreditNotReversible extends PolarClientError<CustomerMeterCreditNotReversibleModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: CustomerMeterCreditNotReversibleModel,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerMeterCreditNotReversible";
   }
 }

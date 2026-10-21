@@ -216,17 +216,14 @@ On a long-running server, let the interval deliver. Leaving the `async with pola
 block drains the queue; it waits up to `shutdown_timeout`.
 
 In serverless environments such as Vercel or AWS Lambda, the process may stop when the handler
-returns. Call `flush()` once per request before returning, with a timeout. `flush()` returns once
-every event queued before it is delivered or reported to `on_dropped`. Events queued by other
-requests in the meantime share the same HTTP requests, so concurrent handlers don't send one
-event each. A timed-out flush leaves the events in memory; the platform may discard them with
-the instance.
+returns. Call `flush()` once per request before returning. `flush()` returns once every event
+queued before it is delivered or reported to `on_dropped`. Events queued by other requests in
+the meantime share the same HTTP requests, so concurrent handlers don't send one event each.
 
 ```python
 async def handle_request() -> dict[str, bool]:
     await metering.track(name="api_request", external_customer_id="customer_123")
-    with anyio.move_on_after(2):
-        await metering.flush()
+    await metering.flush()
     return {"ok": True}
 ```
 

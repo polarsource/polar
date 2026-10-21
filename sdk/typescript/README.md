@@ -185,8 +185,7 @@ async function handleRequest() {
 }
 ```
 
-Where no such hook exists, `await metering.flush()` before returning, with a timeout. A
-timed-out flush leaves the events in memory; the platform may discard them with the instance.
+Where no such hook exists, `await metering.flush()` before returning.
 
 When Polar answers `429 Too Many Requests`, the helper keeps the events, waits for the
 `Retry-After` delay, then sends them in full batches. A `flush()` in flight resolves after that

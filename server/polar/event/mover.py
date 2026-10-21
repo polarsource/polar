@@ -13,12 +13,17 @@ import logfire
 import structlog
 
 from polar import tasks  # noqa: F401
+from polar.config import settings
+from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.utils import utc_now
 from polar.logfire import configure_logfire
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
-from polar.postgres import create_async_engine
+from polar.observability import STAGED_EVENTS_BACKLOG, STAGED_EVENTS_OLDEST_AGE
+from polar.observability.remote_write import start_remote_write_pusher
+from polar.postgres import AsyncSession, create_async_engine
 from polar.redis import create_redis
 from polar.sentry import configure_sentry
 from polar.worker import JobQueueManager
@@ -38,17 +43,35 @@ def _is_mover_healthy() -> bool:
     return (time.monotonic() - _last_heartbeat) < HEARTBEAT_STALENESS_SECONDS
 
 
+async def _report_backlog(session: AsyncSession) -> None:
+    repository = EventRepository.from_session(session)
+    count, oldest_ingested_at = await repository.get_staged_events_backlog()
+    STAGED_EVENTS_BACKLOG.set(count)
+    STAGED_EVENTS_OLDEST_AGE.set(
+        (utc_now() - oldest_ingested_at).total_seconds()
+        if oldest_ingested_at is not None
+        else 0
+    )
+
+
 async def run() -> None:
     global _last_heartbeat
     engine = create_async_engine("worker")
     sessionmaker = create_async_sessionmaker(engine)
     redis = create_redis("worker")
     broker = dramatiq.get_broker()
+    last_backlog_report = 0.0
     while True:
         began = time.monotonic()
         try:
             async with JobQueueManager.open(broker, redis):
                 async with sessionmaker() as session:
+                    if (
+                        began - last_backlog_report
+                        >= settings.GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL
+                    ):
+                        await _report_backlog(session)
+                        last_backlog_report = began
                     moved = await event_service.move_staged_events(session, BATCH_SIZE)
                     await session.commit()
             _last_heartbeat = time.monotonic()
@@ -73,6 +96,7 @@ def start() -> None:
 
     set_heartbeat_checker(_is_mover_healthy)
     threading.Thread(target=_run_exposition_server, daemon=True).start()
+    start_remote_write_pusher(include_queue_metrics=False)
 
     asyncio.run(run())
 

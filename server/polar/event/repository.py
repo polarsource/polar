@@ -187,6 +187,14 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         inserted_ids = [id for id, _, _ in inserted if id not in duplicate_id_set]
         return inserted_ids, len(events) - len(inserted_ids)
 
+    async def get_staged_events_backlog(self) -> tuple[int, datetime | None]:
+        """Return the number of rows in `staged_events` and the oldest `ingested_at`."""
+        result = await self.session.execute(
+            select(func.count(), func.min(StagedEvent.ingested_at))
+        )
+        count, oldest_ingested_at = result.one()
+        return count, oldest_ingested_at
+
     async def move_staged_events(self, limit: int) -> tuple[int, Sequence[UUID]]:
         """Move up to `limit` rows from `staged_events` to `events`, returning how
         many were moved and the IDs inserted into `events`."""

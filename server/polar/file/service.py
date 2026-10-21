@@ -266,6 +266,11 @@ class FileService:
                     file_name=file.name,
                     organization_name=organization.name,
                     organization_slug=organization.slug,
+                    threat_names=[
+                        threat["name"]
+                        for threat in scan_result_details.get("threats", [])
+                        if threat.get("name")
+                    ],
                 ),
             ),
         )

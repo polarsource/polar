@@ -206,12 +206,8 @@ class DeclarativeConfigService:
         settings_result = await self._apply_settings(
             session, organization, changes.settings
         )
-        webhook_results = (
-            await self._apply_webhooks(
-                session, auth_subject, organization, changes.webhooks
-            )
-            if is_user(auth_subject) or is_organization(auth_subject)
-            else []
+        webhook_results = await self._apply_webhooks(
+            session, auth_subject, organization, changes.webhooks
         )
         meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
@@ -493,10 +489,14 @@ class DeclarativeConfigService:
     async def _apply_webhooks(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         changes: Sequence[WebhookChange],
     ) -> list[ConfigResult]:
+        if not changes:
+            return []
+        # `_assert_section_scopes` rejects a webhooks section from an agent.
+        assert is_user(auth_subject) or is_organization(auth_subject)
         repository = WebhookEndpointRepository.from_session(session)
         results: list[ConfigResult] = []
         for change in changes:

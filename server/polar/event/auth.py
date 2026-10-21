@@ -13,8 +13,7 @@ from polar.auth.scope import Scope
 from polar.exceptions import NotPermitted
 from polar.models.organization import Organization
 
-# Not for unclaimed agents: events embed the customer they belong to. Agents check
-# their ingestion through meter quantities instead.
+# Not for unclaimed agents: events embed the customer they belong to.
 _EventRead = Authenticator(
     required_scopes={
         Scope.events_read,

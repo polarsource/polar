@@ -386,6 +386,7 @@ class TestListNames:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     async def test_basic(
         self,

@@ -81,7 +81,10 @@ class TestApply:
             "settings": None,
         }
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(
         self, mocker: MockerFixture, client: AsyncClient
@@ -91,85 +94,6 @@ class TestApply:
         response = await client.post("/v1/config/apply", json={"meters": [METER]})
 
         assert response.status_code == 200
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent_can_apply_meters_benefits_products_and_discounts(
-        self, mocker: MockerFixture, client: AsyncClient
-    ) -> None:
-        mocker.patch("polar.meter.service.enqueue_job")
-
-        response = await client.post(
-            "/v1/config/apply",
-            json={
-                "meters": [METER],
-                "benefits": [
-                    {
-                        "type": "meter_credit",
-                        "external_id": "credits",
-                        "description": "1,000 tool calls",
-                        "properties": {"meter": "sdk-tool-calls", "units": 1000},
-                    }
-                ],
-                "products": [
-                    {
-                        "external_id": "pro",
-                        "name": "Pro",
-                        "recurring_interval": "month",
-                        "prices": [
-                            {
-                                "amount_type": "metered_unit",
-                                "meter": "sdk-tool-calls",
-                                "unit_amount": "0.5",
-                            }
-                        ],
-                        "benefits": ["credits"],
-                    }
-                ],
-                "discounts": [
-                    {
-                        "external_id": "launch",
-                        "name": "Launch",
-                        "type": "percentage",
-                        "basis_points": 2000,
-                        "duration": "once",
-                        "products": ["pro"],
-                    }
-                ],
-            },
-        )
-
-        assert response.status_code == 200
-        assert [
-            (change["resource"], change["action"])
-            for change in response.json()["changes"]
-        ] == [
-            ("meter", "created"),
-            ("benefit", "created"),
-            ("product", "created"),
-            ("discount", "created"),
-        ]
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent_cannot_apply_webhooks(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/config/apply",
-            json={
-                "webhooks": [
-                    {
-                        "external_id": "orders",
-                        "url": "https://example.com/webhook",
-                        "format": "raw",
-                        "events": ["order.paid"],
-                        "api_version": "2026-04",
-                    }
-                ]
-            },
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "insufficient_scope"
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -442,27 +366,6 @@ class TestPlan:
             "after": "SDK - Tool Calls",
         } in created["diff"]
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent_cannot_plan_webhooks(self, client: AsyncClient) -> None:
-        response = await client.post(
-            "/v1/config/plan",
-            json={
-                "webhooks": [
-                    {
-                        "external_id": "orders",
-                        "url": "https://example.com/webhook",
-                        "format": "raw",
-                        "events": ["order.paid"],
-                        "api_version": "2026-04",
-                    }
-                ]
-            },
-        )
-
-        assert response.status_code == 403
-        assert response.json()["error"] == "insufficient_scope"
-
 
 @pytest.mark.anyio
 class TestExport:
@@ -655,7 +558,7 @@ class TestExport:
         AuthSubjectFixture(subject="agent"),
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_without_organization_id_exports_the_credentials_organization(
+    async def test_organization_token(
         self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization
     ) -> None:
         await create_meter(

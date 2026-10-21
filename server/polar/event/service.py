@@ -1313,16 +1313,16 @@ class EventService:
         allowed_organizations = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.events_ingest
         )
-        agent_organization_id = (
-            next(iter(allowed_organizations), None) if is_agent(auth_subject) else None
+        default_organization_id = (
+            auth_subject.subject.organization_id if is_agent(auth_subject) else None
         )
 
-        def _validate_organization_id(
+        def _validate_organization_id_by_user(
             index: int, organization_id: uuid.UUID | None
         ) -> uuid.UUID:
             if organization_id is None:
-                if agent_organization_id is not None:
-                    return agent_organization_id
+                organization_id = default_organization_id
+            if organization_id is None:
                 raise EventIngestValidationError(
                     [
                         {
@@ -1347,7 +1347,7 @@ class EventService:
 
             return organization_id
 
-        return _validate_organization_id
+        return _validate_organization_id_by_user
 
     async def _get_customer_validation_function(
         self,

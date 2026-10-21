@@ -31,6 +31,12 @@ class TestListEvents:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/")
+
+        assert response.status_code == 401
+
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_missing_scope(
         self,
@@ -499,7 +505,7 @@ class TestAggregateFieldsValidation:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.get(
-            "/v1/events/00000000-0000-0000-0000-000000000000",
+            f"/v1/events/{uuid4()}",
             params={"aggregate_fields": payload},
         )
 
@@ -535,10 +541,22 @@ class TestGetStatisticsByProperty:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-property")
+
+        assert response.status_code == 401
+
 
 @pytest.mark.anyio
 class TestGetStatisticsByCustomer:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-customer")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-customer")
 
         assert response.status_code == 401
@@ -551,10 +569,22 @@ class TestGetStatisticsByVariance:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-variance")
+
+        assert response.status_code == 401
+
 
 @pytest.mark.anyio
 class TestListStatisticsTimeseries:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/timeseries")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/timeseries")
 
         assert response.status_code == 401
@@ -588,33 +618,16 @@ class TestListEventNames:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_lists_only_its_own_organizations_event_names(
-        self,
-        buffered_save_fixture: SaveFixture,
-        flush_tinybird_events: Callable[[], Awaitable[None]],
-        client: AsyncClient,
-        organization: Organization,
-        organization_second: Organization,
-    ) -> None:
-        await create_event(
-            buffered_save_fixture, organization=organization, name="tool_call"
-        )
-        await create_event(
-            buffered_save_fixture, organization=organization_second, name="other"
-        )
-        await flush_tinybird_events()
-
-        response = await client.get("/v1/events/names")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert [item["name"] for item in json["items"]] == ["tool_call"]
-
 
 @pytest.mark.anyio
 class TestGetEvent:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/events/{uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/events/{uuid4()}")
 
         assert response.status_code == 401
@@ -630,25 +643,3 @@ class TestGetEvent:
         response = await client.get(f"/v1/events/{event_organization_second.id}")
 
         assert response.status_code == 404
-
-
-@pytest.mark.anyio
-class TestAgentClosedRoutes:
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    @pytest.mark.parametrize(
-        "path",
-        [
-            "/v1/events/",
-            "/v1/events/statistics/by-property",
-            "/v1/events/statistics/by-customer",
-            "/v1/events/statistics/by-variance",
-            "/v1/events/statistics/timeseries",
-            "/v1/events/00000000-0000-0000-0000-000000000000",
-        ],
-    )
-    async def test_agent_cannot_read_events(
-        self, client: AsyncClient, path: str
-    ) -> None:
-        response = await client.get(path)
-
-        assert response.status_code == 401

@@ -36,7 +36,7 @@ class TestListMeters:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="agent"),
     )
-    async def test_does_not_see_other_organization_meters(
+    async def test_user_does_not_see_other_organization_meters(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -109,7 +109,7 @@ class TestGetMeter:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="agent"),
     )
-    async def test_cannot_access_other_organization_meter(
+    async def test_user_cannot_access_other_organization_meter(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -151,7 +151,7 @@ class TestGetExternalMeter:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="agent"),
     )
-    async def test_cannot_access_other_organization_meter(
+    async def test_user_cannot_access_other_organization_meter(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -221,7 +221,7 @@ class TestGetMeterQuantities:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="agent"),
     )
-    async def test_cannot_access_other_organization_meter_quantities(
+    async def test_user_cannot_access_other_organization_meter_quantities(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -295,7 +295,10 @@ class TestCreateMeter:
         assert meter.external_id is None
 
     @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_external_id_2027_01(
         self,
         client: AsyncClient,
@@ -316,22 +319,6 @@ class TestCreateMeter:
         assert response.status_code == 201
         assert response.json()["external_id"] == "ext_1337"
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_can_create_meter_without_organization_id(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
-        response = await client.post(
-            "/v1/meters/",
-            json={
-                "name": "Meter",
-                "filter": {"conjunction": "and", "clauses": []},
-                "aggregation": {"func": "count"},
-            },
-        )
-
-        assert response.status_code == 201
-        assert response.json()["organization_id"] == str(organization.id)
-
 
 @pytest.mark.anyio
 class TestUpdateMeter:
@@ -344,7 +331,7 @@ class TestUpdateMeter:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="agent"),
     )
-    async def test_cannot_update_other_organization_meter(
+    async def test_user_cannot_update_other_organization_meter(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,

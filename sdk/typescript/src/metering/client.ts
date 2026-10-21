@@ -343,14 +343,34 @@ export const createMetering = (
     }
     return new Metering({ strategies: options.strategies, client });
   }
-  const strategies: MeteringStrategy[] = [new BufferedMeteringStrategy(polar, options.buffered)];
   const { redisUrl: configuredRedisUrl, ...outpostOptions } = options.outpost || {};
   const redisUrl = configuredRedisUrl ?? process.env.REDIS_URL;
   if (options.outpost !== undefined && options.outpost !== false && !redisUrl) {
     throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
   }
+  let buffered = options.buffered;
+  const strategies: MeteringStrategy[] = [];
   if (options.outpost !== false && redisUrl) {
     let outpost: import("../outpost/client").Outpost | undefined;
+
+    const confirm = async (events: EventInput[]): Promise<void> => {
+      try {
+        await outpost?.confirm(events);
+      } catch (error) {
+        console.warn(`Could not confirm ${events.length} events in Outpost: ${String(error)}`);
+      }
+    };
+    buffered = {
+      ...options.buffered,
+      async onDelivered(events) {
+        await confirm(events);
+        await options.buffered?.onDelivered?.(events);
+      },
+      async onDropped(events, reason) {
+        await confirm(events);
+        await options.buffered?.onDropped?.(events, reason);
+      },
+    };
     strategies.push({
       async start() {
         const { Outpost } = await import("../outpost/client");
@@ -374,5 +394,8 @@ export const createMetering = (
       },
     });
   }
-  return new Metering({ strategies, client });
+  return new Metering({
+    strategies: [new BufferedMeteringStrategy(polar, buffered), ...strategies],
+    client,
+  });
 };

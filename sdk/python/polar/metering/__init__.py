@@ -6,6 +6,7 @@ import typing
 
 from polar import PolarError
 from polar.base import AsyncClientBase, parse_response_json
+from polar.logging import get_logger
 from polar.metering.buffered import (
     BufferedMeteringOptions,
     BufferedMeteringStrategy,
@@ -19,6 +20,11 @@ from polar.metering.events import (
     EventInput,
 )
 from polar.metering.meter import CustomerMeter, CustomerMeterList, MeterProtocol
+
+if typing.TYPE_CHECKING:
+    from polar.outpost import Outpost
+
+log = get_logger(__name__)
 
 
 class MeteringError(PolarError):
@@ -398,7 +404,8 @@ class Metering:
                     "Cannot combine strategies with buffered or outpost options"
                 )
             return cls(strategies=strategies, client=polar._client)
-        strategies = [BufferedMeteringStrategy(polar, **(buffered or {}))]
+        buffered = buffered or BufferedMeteringOptions()
+        strategies = []
         if outpost is not False:
             outpost_options = (
                 outpost if outpost is not None else MeteringOutpostOptions()
@@ -409,14 +416,44 @@ class Metering:
             if redis_url:
                 from polar.outpost import Outpost
 
-                strategies.append(
-                    Outpost.create(
-                        polar,
-                        redis_url,
-                        telemetry=outpost_options.get("telemetry", True),
-                    )
+                outpost_strategy = Outpost.create(
+                    polar, redis_url, telemetry=outpost_options.get("telemetry", True)
                 )
-        return cls(strategies=strategies, client=polar._client)
+                strategies.append(outpost_strategy)
+                buffered = _confirming(buffered, outpost_strategy)
+        return cls(
+            strategies=[BufferedMeteringStrategy(polar, **buffered), *strategies],
+            client=polar._client,
+        )
+
+
+def _confirming(
+    buffered: BufferedMeteringOptions, outpost: "Outpost"
+) -> BufferedMeteringOptions:
+    """Confirm in Outpost the events the buffer delivered or dropped, before the user's callbacks.
+    """
+    user_delivered = buffered.get("on_delivered")
+    user_dropped = buffered.get("on_dropped")
+
+    async def confirm(events: list[EventInput]) -> None:
+        try:
+            await outpost.confirm(events)
+        except Exception:
+            log.warning(
+                "Could not confirm %s events in Outpost", len(events), exc_info=True
+            )
+
+    async def on_delivered(events: list[EventInput]) -> None:
+        await confirm(events)
+        if user_delivered is not None:
+            await user_delivered(events)
+
+    async def on_dropped(events: list[EventInput], reason: DropReason) -> None:
+        await confirm(events)
+        if user_dropped is not None:
+            await user_dropped(events, reason)
+
+    return {**buffered, "on_delivered": on_delivered, "on_dropped": on_dropped}
 
 
 def _validate_actor(

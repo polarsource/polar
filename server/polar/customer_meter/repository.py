@@ -15,6 +15,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
+from polar.meter.aggregation import AggregationFunction
 from polar.models import Customer, CustomerMeter, Meter, MeterReducer
 
 from .sorting import CustomerMeterSortProperty
@@ -42,10 +43,12 @@ class CustomerMeterRepository(
         return await self.get_all(statement)
 
     async def get_all_by_highest_consumed_units(
-        self, limit: int
+        self, aggregation_function: AggregationFunction, limit: int
     ) -> Sequence[CustomerMeter]:
         statement = (
             self.get_base_statement()
+            .join(CustomerMeter.meter)
+            .where(Meter.aggregation["func"].astext == aggregation_function)
             .order_by(CustomerMeter.consumed_units.desc())
             .limit(limit)
             .options(joinedload(CustomerMeter.customer))

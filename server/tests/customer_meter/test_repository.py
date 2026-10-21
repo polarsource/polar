@@ -6,7 +6,11 @@ from pytest_mock import MockerFixture
 
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.kit.utils import utc_now
-from polar.meter.aggregation import AggregationFunction, PropertyAggregation
+from polar.meter.aggregation import (
+    AggregationFunction,
+    CountAggregation,
+    PropertyAggregation,
+)
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Customer, CustomerMeter, Meter, Organization
 from polar.postgres import AsyncSession
@@ -104,7 +108,7 @@ class TestGetOrCreate:
 
 @pytest.mark.anyio
 class TestGetAllByHighestConsumedUnits:
-    async def test_orders_by_consumed_units(
+    async def test_orders_meters_of_the_aggregation_function(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -113,8 +117,11 @@ class TestGetAllByHighestConsumedUnits:
         customer_second: Customer,
         meter: Meter,
     ) -> None:
-        other_meter = await create_meter(
-            save_fixture, id=uuid.uuid4(), organization=organization
+        count_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=CountAggregation(),
         )
         highest = CustomerMeter(
             customer=customer_second, meter=meter, consumed_units=Decimal(30)
@@ -122,24 +129,29 @@ class TestGetAllByHighestConsumedUnits:
         second = CustomerMeter(
             customer=customer, meter=meter, consumed_units=Decimal(20)
         )
-        lowest = CustomerMeter(
-            customer=customer, meter=other_meter, consumed_units=Decimal(10)
+        other_function = CustomerMeter(
+            customer=customer, meter=count_meter, consumed_units=Decimal(50)
         )
         deleted = CustomerMeter(
             customer=customer_second,
-            meter=other_meter,
+            meter=count_meter,
             consumed_units=Decimal(40),
             deleted_at=utc_now(),
         )
-        for customer_meter in (highest, second, lowest, deleted):
+        for customer_meter in (highest, second, other_function, deleted):
             await save_fixture(customer_meter)
         session.expunge_all()
 
         repository = CustomerMeterRepository.from_session(session)
-        customer_meters = await repository.get_all_by_highest_consumed_units(2)
+        sum_meters = await repository.get_all_by_highest_consumed_units(
+            AggregationFunction.sum, 1
+        )
+        count_meters = await repository.get_all_by_highest_consumed_units(
+            AggregationFunction.cnt, 10
+        )
 
-        assert [customer_meter.id for customer_meter in customer_meters] == [
-            highest.id,
-            second.id,
+        assert [customer_meter.id for customer_meter in sum_meters] == [highest.id]
+        assert sum_meters[0].customer.id == customer_second.id
+        assert [customer_meter.id for customer_meter in count_meters] == [
+            other_function.id
         ]
-        assert customer_meters[0].customer.id == customer_second.id

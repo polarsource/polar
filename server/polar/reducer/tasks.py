@@ -5,6 +5,7 @@ from typing import Annotated
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.exceptions import PolarTaskError
+from polar.meter.aggregation import AggregationFunction
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
     AsyncReadSessionMaker,
@@ -41,14 +42,17 @@ async def invalidate_cache(
 )
 async def compare_busiest_customer_meters() -> None:
     async with AsyncReadSessionMaker() as session:
-        customer_meters = await CustomerMeterRepository.from_session(
-            session
-        ).get_all_by_highest_consumed_units(10)
+        repository = CustomerMeterRepository.from_session(session)
         redis = RedisMiddleware.get()
-        for customer_meter in customer_meters:
-            await reducer_service.log_customer_meter_comparison(
-                session, redis, customer_meter
-            )
+        for aggregation_function in AggregationFunction:
+            if aggregation_function == AggregationFunction.unique:
+                continue
+            for customer_meter in await repository.get_all_by_highest_consumed_units(
+                aggregation_function, 10
+            ):
+                await reducer_service.log_customer_meter_comparison(
+                    session, redis, customer_meter
+                )
 
 
 @actor(actor_name="reducer.seal", priority=TaskPriority.LOW)

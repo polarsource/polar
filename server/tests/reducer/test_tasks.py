@@ -1,6 +1,7 @@
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.meter.aggregation import AggregationFunction
 from polar.models import CustomerMeter
 from polar.postgres import AsyncSession
 from polar.reducer.service import reducer as reducer_service
@@ -10,7 +11,7 @@ from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 
 @pytest.mark.anyio
 class TestCompareBusiestCustomerMeters:
-    async def test_compares_each_customer_meter(
+    async def test_compares_meters_per_aggregation_function(
         self, mocker: MockerFixture, session: AsyncSession
     ) -> None:
         customer_meters = [CustomerMeter(), CustomerMeter()]
@@ -28,7 +29,13 @@ class TestCompareBusiestCustomerMeters:
 
         await compare_busiest_customer_meters()
 
-        get_all.assert_called_once_with(10)
+        assert [call.args for call in get_all.call_args_list] == [
+            (AggregationFunction.cnt, 10),
+            (AggregationFunction.sum, 10),
+            (AggregationFunction.max, 10),
+            (AggregationFunction.min, 10),
+            (AggregationFunction.avg, 10),
+        ]
         assert [
             call.args[2] for call in log_customer_meter_comparison.call_args_list
-        ] == customer_meters
+        ] == customer_meters * 5

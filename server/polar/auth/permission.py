@@ -101,7 +101,7 @@ ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {
 # An unclaimed agent owns its organization through `Agent.organization_id`, not a
 # membership, so it has no role in ROLE_PERMISSIONS and gets this set instead.
 # The sales permissions are here for checkout sessions; they also cover orders and
-# subscriptions, which the agent route allowlist and scopes keep closed.
+# subscriptions, which stay closed because their routes don't list `Agent`.
 AGENT_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.organization_manage,
     OrganizationPermission.products_read,

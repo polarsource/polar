@@ -18,6 +18,7 @@ from dramatiq import Retry
 from dramatiq.middleware.current_message import CurrentMessage
 
 from polar.config import settings
+from polar.event.service import event as event_service
 from polar.kit.db.postgres import AsyncSession
 from polar.redis import Redis
 from polar.worker import JobQueueManager
@@ -204,6 +205,12 @@ class TaskDrain:
             # Only suppress "not initialized" — let other RuntimeErrors propagate
             if "not initialized" not in str(exc).lower():
                 raise
+
+        # Do what the staged events mover does in production
+        jqm = JobQueueManager.set()
+        while await event_service.move_staged_events(self._session, 1000):
+            pass
+        await jqm.flush(broker, self._redis)
 
         for _ in range(MAX_DRAIN_ITERATIONS):
             message = await self._pop_next_message()

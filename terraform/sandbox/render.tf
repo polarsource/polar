@@ -142,6 +142,11 @@ module "sandbox" {
       custom_domains     = [{ name = "worker-sandbox.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
+    worker-sandbox-event-mover = {
+      start_command      = "uv run python -m polar.event.mover"
+      num_instances      = 2
+      dramatiq_prom_port = "10001"
+    }
     worker-sandbox-drain = {
       start_command  = "uv run dramatiq polar.worker.run -p 2 -t 8"
       custom_domains = [{ name = "worker-sandbox-drain.polar.sh" }]

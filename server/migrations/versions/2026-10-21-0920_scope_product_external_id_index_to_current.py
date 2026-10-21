@@ -25,20 +25,29 @@ def _replace_index(new_name: str, old_name: str, where: str) -> None:
     with op.get_context().autocommit_block():
         op.execute("SET lock_timeout = '5min'")
         try:
-            op.drop_index(
-                new_name,
-                table_name="products",
-                if_exists=True,
-                postgresql_concurrently=True,
+            valid = op.get_bind().scalar(
+                sa.text(
+                    "SELECT indisvalid FROM pg_index "
+                    "WHERE indexrelid = to_regclass(:name)"
+                ),
+                {"name": new_name},
             )
-            op.create_index(
-                new_name,
-                "products",
-                ["organization_id", "external_id"],
-                unique=True,
-                postgresql_where=sa.text(where),
-                postgresql_concurrently=True,
-            )
+            # Preserve completed replacements and recover interrupted builds.
+            if valid is False:
+                op.drop_index(
+                    new_name,
+                    table_name="products",
+                    postgresql_concurrently=True,
+                )
+            if not valid:
+                op.create_index(
+                    new_name,
+                    "products",
+                    ["organization_id", "external_id"],
+                    unique=True,
+                    postgresql_where=sa.text(where),
+                    postgresql_concurrently=True,
+                )
             op.drop_index(
                 old_name,
                 table_name="products",

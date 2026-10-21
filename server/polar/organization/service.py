@@ -527,7 +527,6 @@ class OrganizationService:
                 ]
             ) from e
 
-        # The steps below need a human owner: they run when the agent is claimed.
         if is_agent(auth_subject):
             agent_repository = AgentRepository.from_session(session)
             agent = await agent_repository.set_organization(

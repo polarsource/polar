@@ -32,7 +32,7 @@ class CatalogRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_hashes(self, ids: Sequence[UUID]) -> dict[UUID, str]:
+    async def get_hashes(self, ids: Sequence[UUID]) -> dict[UUID, str | None]:
         statement = select(Catalog.id, Catalog.hash).where(Catalog.id.in_(ids))
         result = await self.session.execute(statement)
         return {id: hash for id, hash in result.tuples()}

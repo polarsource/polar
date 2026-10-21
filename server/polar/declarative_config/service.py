@@ -581,9 +581,7 @@ class DeclarativeConfigService:
         for change in changes:
             config = change.config
             product = change.existing
-            copy_on_write = product is not None and bool(
-                change.update_dict and not product.is_archived
-            )
+            copy_on_write = product is not None and bool(change.update_dict)
             try:
                 if product is None or copy_on_write:
                     try:

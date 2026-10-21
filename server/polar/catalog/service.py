@@ -137,7 +137,6 @@ class CatalogService:
             Catalog(
                 organization=organization,
                 hash=hash,
-                parent=live,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
             ),

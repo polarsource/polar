@@ -2788,7 +2788,7 @@ class TestApplyCatalogVersioning:
         ).get_all_by_external_ids(organization.id, ["pro"])
         live = await CatalogRepository.from_session(session).get_live(organization.id)
         assert live is not None
-        assert live.parent_id is None
+        assert live.hash is not None
         assert len(live.hash) == 64
         assert product.catalog_id == live.id
         [member] = await CatalogProductRepository.from_session(
@@ -2805,6 +2805,8 @@ class TestApplyCatalogVersioning:
     ) -> None:
         config = Config.model_validate({"products": [MONTHLY_PRO]})
         await declarative_config_service.apply(session, redis, auth_subject, config)
+        first = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert first is not None
 
         result = await declarative_config_service.apply(
             session, redis, auth_subject, config
@@ -2813,7 +2815,7 @@ class TestApplyCatalogVersioning:
         assert result.changes[0].action == ConfigAction.unchanged
         live = await CatalogRepository.from_session(session).get_live(organization.id)
         assert live is not None
-        assert live.parent_id is None
+        assert live.id == first.id
 
     async def test_update_creates_new_row(
         self,
@@ -2862,7 +2864,7 @@ class TestApplyCatalogVersioning:
         assert subscription.product_id == old_product.id
         live = await CatalogRepository.from_session(session).get_live(organization.id)
         assert live is not None
-        assert live.parent_id == old_product.catalog_id
+        assert live.id != old_product.catalog_id
         assert new_product.catalog_id == live.id
         [member] = await CatalogProductRepository.from_session(
             session
@@ -2983,6 +2985,9 @@ class TestApplyCatalogVersioning:
             session
         ).get_all_by_external_ids(organization.id, ["pro"])
         assert new_product.is_archived is True
+        [new_price] = new_product.prices
+        assert isinstance(new_price, ProductPriceFixed)
+        assert new_price.price_amount == 2500
         assert (
             await CatalogRepository.from_session(session).get_live(organization.id)
             is None
@@ -3104,10 +3109,10 @@ class TestPlanCatalogVersioning:
         live = await repository.get_live(organization.id)
         assert live is not None
         assert live.hash == catalog.after
-        assert live.parent_id is not None
-        assert (await repository.get_hashes([live.parent_id])) == {
-            live.parent_id: catalog.before
-        }
         await session.refresh(existing)
         assert existing.is_current is False
-        assert existing.catalog_id == live.parent_id
+        assert existing.catalog_id is not None
+        assert existing.catalog_id != live.id
+        assert (await repository.get_hashes([existing.catalog_id])) == {
+            existing.catalog_id: catalog.before
+        }

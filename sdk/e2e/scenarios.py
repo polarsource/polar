@@ -1,3 +1,5 @@
+import itertools
+
 from polar.outpost.client import Configuration, Snapshot
 from polar.outpost.reducer import BUCKET_SIZE
 
@@ -25,6 +27,7 @@ CONFIGURATION: Configuration = {
         }
     ],
 }
+_ids = itertools.count(1)
 CUSTOMER: ExternalCustomerID = {"external_customer_id": "alice"}
 METER: ExternalCustomerMeterRequest = {**CUSTOMER, "meter_id": "meter"}
 INITIAL: Snapshot = {
@@ -55,6 +58,7 @@ def emit(
                 {
                     **CUSTOMER,
                     "name": "call",
+                    "external_id": f"event-{next(_ids)}",
                     "timestamp": timestamp,
                     "metadata": {"tokens": units},
                 }
@@ -336,7 +340,16 @@ SCENARIOS = [
             IngestStep(
                 0.7,
                 "writer",
-                {"events": [{**CUSTOMER, "name": "call", "metadata": {"tokens": 1}}]},
+                {
+                    "events": [
+                        {
+                            **CUSTOMER,
+                            "name": "call",
+                            "external_id": "redis-outage",
+                            "metadata": {"tokens": 1},
+                        }
+                    ]
+                },
                 failure=Failure("Redis is unavailable", within=0.5),
             ),
             RedisStep(1, available=True),

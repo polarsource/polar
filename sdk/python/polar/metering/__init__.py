@@ -60,6 +60,15 @@ class MeteringStrategyProtocol(
 
 
 @typing.runtime_checkable
+class ValidateProtocol(typing.Protocol):
+    """Optional strategy capability for rejecting an event before any strategy accepts it."""
+
+    def validate(self, event: EventInput) -> None:
+        """Raise when the strategy cannot accept the event."""
+        ...
+
+
+@typing.runtime_checkable
 class FlushProtocol(typing.Protocol):
     """Optional strategy capability for explicit draining."""
 
@@ -243,6 +252,9 @@ class Metering:
             event.get("external_member_id"),
         )
         actor_event = typing.cast(EventInput, event)
+        for strategy in self.strategies:
+            if isinstance(strategy, ValidateProtocol):
+                strategy.validate(actor_event)
         for strategy in self.strategies:
             await strategy.track(actor_event)
 

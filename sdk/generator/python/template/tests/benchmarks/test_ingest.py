@@ -76,6 +76,7 @@ def benchmark_ingest(
         EventInput,
         {
             **scenario.event,
+            "external_id": scenario.customer,
             "external_customer_id": scenario.customer,
             "timestamp": timestamp.isoformat(),
         },

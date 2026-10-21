@@ -71,6 +71,12 @@ export interface MeteringStrategy {
   actor?(input: ActorInput): Promise<void>;
   meter?(input: MeterInput & { meter_id: string }): Promise<CustomerMeter | null>;
   /**
+   * Reject an event before any strategy accepts it.
+   *
+   * @param event Event including its customer identity.
+   */
+  validate?(event: EventInput): void;
+  /**
    * Accept an event for this strategy.
    *
    * @param event Event including its customer identity.
@@ -166,6 +172,7 @@ export class Metering {
   async track(event: EventInput): Promise<void> {
     if (!this.started) throw new PolarError("Metering is not running");
     validateActor(event);
+    for (const strategy of this.strategies) strategy.validate?.(event);
     this.activeOperations++;
     try {
       for (const strategy of this.strategies) await strategy.track(event);
@@ -346,6 +353,9 @@ export const createMetering = (
         const { Outpost } = await import("../outpost/client");
         outpost = new Outpost(redisUrl, { ...outpostOptions, client });
         await outpost.start();
+      },
+      validate(event) {
+        outpost!.validate(event);
       },
       async track(event) {
         await outpost!.track(event);

@@ -205,8 +205,8 @@ AuthorizeOrgManageUserRead = Annotated[
 AuthorizeOrgAccess = Annotated[
     AuthzContext[User | Organization], Depends(OrgPolicyGuard())
 ]
-# Variants that also accept an unclaimed agent (ADR-0014), for the routes
-# pinned in `AGENT_ROUTES` only.
+# Variants that also accept an unclaimed agent (ADR-0014), only for the
+# organization routes opened to it.
 AuthorizeOrgAccessWithAgent = Annotated[
     AuthzContext[User | Organization | Agent],
     Depends(OrgPolicyGuard(allowed_subjects={User, Organization, Agent})),

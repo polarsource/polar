@@ -80,9 +80,13 @@ const detailOf = (body: unknown) => {
     : describeIssues(detail)
 }
 
-const describeFailure = (statusCode: number | undefined, detail?: string) => {
+const describeFailure = (
+  statusCode: number | undefined,
+  detail: string | undefined,
+  errorName: string,
+) => {
   if (statusCode === undefined) {
-    return 'Polar API request failed. Check your connection and try again.'
+    return `Polar API request failed (${errorName}). Check your connection and try again.`
   }
   if (detail) return detail
   return statusCode >= 500
@@ -164,6 +168,7 @@ export const make = Effect.gen(function* () {
                   : undefined,
               organizationNotAccessible: isOrganizationNotAccessible(body),
               detail: detailOf(body),
+              errorName: error instanceof Error ? error.name : typeof error,
             }
           },
         })
@@ -204,7 +209,11 @@ export const make = Effect.gen(function* () {
             default:
               return new AuthError({
                 statusCode: error.statusCode,
-                message: describeFailure(error.statusCode, error.detail),
+                message: describeFailure(
+                  error.statusCode,
+                  error.detail,
+                  error.errorName,
+                ),
               })
           }
         }),

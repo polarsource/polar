@@ -125,6 +125,42 @@ class TestUpdateOrganizationAccessToken:
         assert response.json()["comment"] == "updated"
 
     @pytest.mark.auth
+    async def test_keeps_unsupported_scopes(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = await _build_oat(
+            save_fixture,
+            organization,
+            scopes={
+                Scope.metrics_read,
+                Scope.organization_access_tokens_read,
+                Scope.organization_access_tokens_write,
+            },
+        )
+
+        response = await client.patch(
+            f"/v1/organization-access-tokens/{existing.id}",
+            json={
+                "comment": "renamed",
+                "scopes": ["metrics:read", "orders:read"],
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["comment"] == "renamed"
+        assert set(json["scopes"]) == {
+            "metrics:read",
+            "orders:read",
+            "organization_access_tokens:read",
+            "organization_access_tokens:write",
+        }
+
+    @pytest.mark.auth
     async def test_stale_session(
         self,
         client: AsyncClient,

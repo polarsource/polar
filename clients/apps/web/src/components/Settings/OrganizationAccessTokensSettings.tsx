@@ -126,6 +126,17 @@ export const AccessTokenForm = ({ update }: { update?: boolean }) => {
   )
 }
 
+const AVAILABLE_SCOPES: ReadonlySet<string> = new Set(
+  enums.availableScopeValues,
+)
+
+const toAvailableScopes = (
+  scopes: readonly string[],
+): schemas['AvailableScope'][] =>
+  scopes.filter((scope): scope is schemas['AvailableScope'] =>
+    AVAILABLE_SCOPES.has(scope),
+  )
+
 interface UpdateAccessTokenModalProps {
   token: schemas['OrganizationAccessToken']
   onSuccess: (token: schemas['OrganizationAccessToken']) => void
@@ -141,7 +152,7 @@ const UpdateAccessTokenModal = ({
   const form = useForm<AccessTokenUpdate>({
     defaultValues: {
       ...token,
-      scopes: token.scopes as schemas['AvailableScope'][],
+      scopes: toAvailableScopes(token.scopes),
     },
   })
   const { handleSubmit } = form
@@ -151,7 +162,7 @@ const UpdateAccessTokenModal = ({
     async (data: AccessTokenUpdate) => {
       const { data: updated } = await updateToken.mutateAsync({
         comment: data.comment ? data.comment : '',
-        scopes: data.scopes,
+        scopes: toAvailableScopes(data.scopes),
       })
       if (updated) {
         onSuccess(updated)

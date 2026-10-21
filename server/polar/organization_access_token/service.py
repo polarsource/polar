@@ -8,7 +8,7 @@ from sqlalchemy import UnaryExpression, asc, desc
 
 from polar.auth.models import AuthSubject, Organization
 from polar.auth.permission import OrganizationPermission
-from polar.auth.scope import Scope
+from polar.auth.scope import SCOPES_SUPPORTED, Scope
 from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
@@ -40,6 +40,7 @@ from .sorting import OrganizationAccessTokenSortProperty
 log: Logger = structlog.get_logger()
 
 TOKEN_PREFIX = "polar_oat_"
+_SUPPORTED_SCOPES = frozenset(SCOPES_SUPPORTED)
 
 
 class OrganizationAccessTokenService:
@@ -165,7 +166,12 @@ class OrganizationAccessTokenService:
         update_dict = update_schema.model_dump(exclude={"scopes"}, exclude_unset=True)
         if update_schema.scopes is not None:
             self._validate_scopes_within_caller(auth_subject, update_schema.scopes)
-            update_dict["scope"] = " ".join(update_schema.scopes)
+            retained = sorted(
+                scope.value
+                for scope in organization_access_token.scopes
+                if scope.value not in _SUPPORTED_SCOPES
+            )
+            update_dict["scope"] = " ".join((*update_schema.scopes, *retained))
 
         return await repository.update(
             organization_access_token, update_dict=update_dict

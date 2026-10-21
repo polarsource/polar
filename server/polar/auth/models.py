@@ -4,6 +4,7 @@ from uuid import UUID
 
 from polar.enums import RateLimitGroup
 from polar.models import (
+    Agent,
     Customer,
     CustomerSession,
     Member,
@@ -24,9 +25,14 @@ ORGANIZATION_HEADER = "Polar-Organization"
 class Anonymous: ...
 
 
-Subject = User | Organization | Customer | Member | Anonymous
+Subject = User | Organization | Customer | Member | Agent | Anonymous
 SubjectType = (
-    type[User] | type[Organization] | type[Customer] | type[Member] | type[Anonymous]
+    type[User]
+    | type[Organization]
+    | type[Customer]
+    | type[Member]
+    | type[Agent]
+    | type[Anonymous]
 )
 Session = (
     UserSession
@@ -81,6 +87,8 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
                 return f"customer:{self.subject.id}"
             case Member():
                 return f"member:{self.subject.id}"
+            case Agent():
+                return f"agent:{self.subject.id}"
             case Anonymous():
                 return "anonymous"
 
@@ -104,7 +112,7 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
             "rate_limit_group": self.rate_limit_group.value,
             "rate_limit_user": self.rate_limit_user,
         }
-        if isinstance(self.subject, User | Organization | Customer | Member):
+        if isinstance(self.subject, User | Organization | Customer | Member | Agent):
             baggage["subject_id"] = str(self.subject.id)
 
         if self.session:
@@ -141,6 +149,10 @@ def is_member[S: Subject](
     return isinstance(auth_subject.subject, Member)
 
 
+def is_agent[S: Subject](auth_subject: AuthSubject[S]) -> TypeGuard[AuthSubject[Agent]]:
+    return isinstance(auth_subject.subject, Agent)
+
+
 def is_web_session(auth_subject: AuthSubject[Any]) -> bool:
     """Check if the auth subject is authenticated via a web session (not API token)."""
     return isinstance(auth_subject.session, UserSession)
@@ -149,10 +161,10 @@ def is_web_session(auth_subject: AuthSubject[Any]) -> bool:
 def is_single_organization_credential(auth_subject: AuthSubject[Any]) -> bool:
     """
     Check if the credential itself is bound to one organization: an organization
-    token, or a user OAuth token down-scoped to exactly one organization. Narrowing
-    a request with the ``Polar-Organization`` header does not count.
+    token, an agent, or a user OAuth token down-scoped to exactly one organization.
+    Narrowing a request with the ``Polar-Organization`` header does not count.
     """
-    if is_organization(auth_subject):
+    if is_organization(auth_subject) or is_agent(auth_subject):
         return True
     credential = auth_subject.session
     return (
@@ -164,6 +176,7 @@ def is_single_organization_credential(auth_subject: AuthSubject[Any]) -> bool:
 
 __all__ = [
     # Re-export subject types for convenience
+    "Agent",
     "Anonymous",
     "AuthSubject",
     "Customer",
@@ -172,6 +185,7 @@ __all__ = [
     "Subject",
     "SubjectType",
     "User",
+    "is_agent",
     "is_anonymous",
     "is_customer",
     "is_member",

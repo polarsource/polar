@@ -491,15 +491,16 @@ class TestOAuth2Authorize:
         assert "error=login_required" in location
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("sub_type", ["foo", "agent"])
     async def test_authenticated_invalid_sub_type(
-        self, client: AsyncClient, oauth2_client: OAuth2Client
+        self, sub_type: str, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
         params = {
             "client_id": oauth2_client.client_id,
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
-            "sub_type": "foo",
+            "sub_type": sub_type,
         }
         response = await client.get("/v1/oauth2/authorize", params=params)
 
@@ -1950,6 +1951,35 @@ class TestOAuth2Token:
         access_token = json["access_token"]
         assert access_token.startswith("polar_at_u_")
         assert "refresh_token" not in json
+
+    async def test_web_grant_sub_agent(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "sub_type": "agent",
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
 
     async def test_web_grant_sub_organization(
         self,

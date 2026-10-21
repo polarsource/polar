@@ -79,3 +79,7 @@ class Agent(RecordModel):
     revoked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
+
+    @property
+    def can_authenticate(self) -> bool:
+        return not self.is_deleted and self.status == AgentStatus.unclaimed

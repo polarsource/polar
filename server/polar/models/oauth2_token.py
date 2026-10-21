@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 from authlib.integrations.sqla_oauth2 import OAuth2TokenMixin
-from sqlalchemy import ForeignKey, Index, String, Uuid, text
+from sqlalchemy import Index, String, text
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.auth.scope import Scope, scope_to_set
@@ -10,7 +10,6 @@ from polar.kit.db.models import RecordModel
 from polar.oauth2.sub_type import SubType, SubTypeModelMixin
 
 if TYPE_CHECKING:
-    from .agent import Agent
     from .oauth2_client import OAuth2Client
     from .oauth2_token_organization import OAuth2TokenOrganization
 
@@ -32,14 +31,6 @@ class OAuth2Token(RecordModel, OAuth2TokenMixin, SubTypeModelMixin):
 
     client_id: Mapped[str] = mapped_column(String(52), nullable=False)
     nonce: Mapped[str | None] = mapped_column(String, index=True, nullable=True)
-
-    agent_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("agents.id", ondelete="cascade"), nullable=True, index=True
-    )
-
-    @declared_attr
-    def agent(cls) -> Mapped["Agent | None"]:
-        return relationship("Agent", lazy="joined")
 
     @declared_attr
     def client(cls) -> "Mapped[OAuth2Client]":

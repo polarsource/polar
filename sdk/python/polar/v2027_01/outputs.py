@@ -4412,6 +4412,13 @@ class CustomerMeterCreditExternalIDConflict:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CustomerMeterCreditNotReversible:
+    error: typing.Literal["CustomerMeterCreditNotReversible"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerNotReady:
     error: typing.Literal["CustomerNotReady"]
 
@@ -8907,9 +8914,6 @@ class OrganizationFeatureSettings:
     off_session_charges_enabled: bool = False
     """If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method)."""
 
-    meter_cycling_enabled: bool = False
-    """If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval)."""
-
     slack_benefit_enabled: bool = False
     """Enables the slack shared channel benefit"""
 
@@ -8930,6 +8934,9 @@ class OrganizationFeatureSettings:
 
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
+
+    agentic_payments_enabled: bool = False
+    """If this organization accepts payments from AI agents through Stripe shared payment tokens."""
 
     config_as_code_enabled: bool = False
     """If this organization can manage its configuration from a declarative config document."""
@@ -9785,6 +9792,13 @@ class SeatsList:
 
     total_seats: int
     """Total number of seats for the subscription"""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SharedPaymentTokenError:
+    error: typing.Literal["SharedPaymentTokenError"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -11437,6 +11451,8 @@ CheckoutForbiddenError: typing.TypeAlias = (
     | TrialAlreadyRedeemed
     | DiscountRedemptionLimitReached
 )
+
+CheckoutPaymentError: typing.TypeAlias = PaymentError | SharedPaymentTokenError
 
 CustomField: typing.TypeAlias = (
     CustomFieldText

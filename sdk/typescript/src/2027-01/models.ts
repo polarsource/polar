@@ -6879,6 +6879,82 @@ export interface CheckoutBillingAddressFields {
 }
 
 /**
+ * Confirm a checkout session using a Stripe shared payment token granted by an agent.
+
+Only supported for one-time payments.
+ */
+export interface CheckoutConfirmSharedPaymentToken {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * ID of the product to checkout. Must be present in the checkout's product list.
+   */
+  product_id?: string | null;
+  /**
+   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+   */
+  product_price_id?: string | null;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Number of seats for seat-based pricing.
+   */
+  seats?: number | null;
+  /**
+   * Number of units for unit-based pricing.
+   */
+  units?: number | null;
+  /**
+   * is_business_customer
+   */
+  is_business_customer?: boolean | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+   */
+  payment_method_type?: string | null;
+  /**
+   * Discount code to apply to the checkout.
+   */
+  discount_code?: string | null;
+  /**
+   * Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+   */
+  allow_trial?: false | null;
+  /**
+   * ID of the Stripe shared payment token (`spt_...`).
+   */
+  shared_payment_token_id: string;
+}
+
+/**
  * Confirm a checkout session using a Stripe confirmation token.
  */
 export interface CheckoutConfirmStripe {
@@ -6950,178 +7026,6 @@ export interface CheckoutConfirmStripe {
    * ID of the Stripe confirmation token. Required for fixed prices and custom prices.
    */
   confirmation_token_id?: string | null;
-}
-
-/**
- * Create a new checkout session from a list of products.
-Customers will be able to switch between those products.
-
-Metadata set on the checkout will be copied
-to the resulting order and/or subscription.
- */
-export interface CheckoutCreate {
-  /**
-   * The interval unit for the trial period.
-   */
-  trial_interval?: TrialInterval | null;
-  /**
-   * The number of interval units for the trial period.
-   */
-  trial_interval_count?: number | null;
-  /**
-   * Key-value object allowing you to store additional information.
-
-The key must be a string with a maximum length of **40 characters**.
-The value must be either:
-
-* A string with a maximum length of **500 characters**
-* An integer
-* A floating-point number
-* A boolean
-
-You can store up to **50 key-value pairs**.
-   */
-  metadata?: Record<string, string | number | boolean>;
-  /**
-   * Key-value object storing custom field values.
-   */
-  custom_field_data?: Record<string, string | number | boolean | null>;
-  /**
-   * ID of the discount to apply to the checkout.
-   */
-  discount_id?: string | null;
-  /**
-   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-   */
-  allow_discount_codes?: boolean;
-  /**
-   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
-   */
-  require_billing_address?: boolean;
-  /**
-   * amount
-   */
-  amount?: number | null;
-  /**
-   * Predefined number of seats (works with seat-based pricing only)
-   */
-  seats?: number | null;
-  /**
-   * Minimum number of seats (works with seat-based pricing only)
-   */
-  min_seats?: number | null;
-  /**
-   * Maximum number of seats (works with seat-based pricing only)
-   */
-  max_seats?: number | null;
-  /**
-   * Predefined number of units (works with unit-based pricing only)
-   */
-  units?: number | null;
-  /**
-   * Minimum number of units (works with unit-based pricing only)
-   */
-  min_units?: number | null;
-  /**
-   * Maximum number of units (works with unit-based pricing only)
-   */
-  max_units?: number | null;
-  /**
-   * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
-   */
-  allow_trial?: boolean;
-  /**
-   * ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
-   */
-  customer_id?: string | null;
-  /**
-   * Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
-   */
-  is_business_customer?: boolean;
-  /**
-   * ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
-   */
-  external_customer_id?: string | null;
-  /**
-   * customer_name
-   */
-  customer_name?: string | null;
-  /**
-   * customer_email
-   */
-  customer_email?: string | null;
-  /**
-   * customer_ip_address
-   */
-  customer_ip_address?: string | null;
-  /**
-   * customer_billing_name
-   */
-  customer_billing_name?: string | null;
-  /**
-   * customer_billing_address
-   */
-  customer_billing_address?: AddressInput | null;
-  /**
-   * customer_tax_id
-   */
-  customer_tax_id?: string | null;
-  /**
-   * Key-value object allowing you to store additional information that'll be copied to the created customer.
-
-The key must be a string with a maximum length of **40 characters**.
-The value must be either:
-
-* A string with a maximum length of **500 characters**
-* An integer
-* A floating-point number
-* A boolean
-
-You can store up to **50 key-value pairs**.
-   */
-  customer_metadata?: Record<string, string | number | boolean>;
-  /**
-   * ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
-   */
-  subscription_id?: string | null;
-  /**
-   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-   */
-  success_url?: string | null;
-  /**
-   * When set, a back button will be shown in the checkout to return to this URL.
-   */
-  return_url?: string | null;
-  /**
-   * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
-   */
-  embed_origin?: string | null;
-  /**
-   * locale
-   */
-  locale?: string | null;
-  /**
-   * currency
-   */
-  currency?: PresentmentCurrency | null;
-  /**
-   * List of product IDs available to select at that checkout. The first one will be selected by default.
-   */
-  products: string[];
-  /**
-   * Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
-   */
-  prices?: Record<
-    string,
-    (
-      | ProductPriceFixedCreate
-      | ProductPriceCustomCreate
-      | ProductPriceSeatBasedCreate
-      | ProductPriceUnitBasedCreate
-      | ProductPriceMeteredUnitCreate
-      | ProductPriceMeteredTiersCreate
-    )[]
-  > | null;
 }
 
 /**
@@ -7925,6 +7829,351 @@ export interface CheckoutProduct {
    * List of medias associated to the product.
    */
   medias: ProductMediaFileRead[];
+}
+
+/**
+ * Create a new checkout session from a list of products.
+Customers will be able to switch between those products.
+
+Metadata set on the checkout will be copied
+to the resulting order and/or subscription.
+ */
+export interface CheckoutProductsCreate {
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | boolean>;
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * ID of the discount to apply to the checkout.
+   */
+  discount_id?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+   */
+  require_billing_address?: boolean;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Predefined number of seats (works with seat-based pricing only)
+   */
+  seats?: number | null;
+  /**
+   * Minimum number of seats (works with seat-based pricing only)
+   */
+  min_seats?: number | null;
+  /**
+   * Maximum number of seats (works with seat-based pricing only)
+   */
+  max_seats?: number | null;
+  /**
+   * Predefined number of units (works with unit-based pricing only)
+   */
+  units?: number | null;
+  /**
+   * Minimum number of units (works with unit-based pricing only)
+   */
+  min_units?: number | null;
+  /**
+   * Maximum number of units (works with unit-based pricing only)
+   */
+  max_units?: number | null;
+  /**
+   * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+   */
+  allow_trial?: boolean;
+  /**
+   * ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
+   */
+  customer_id?: string | null;
+  /**
+   * Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+   */
+  is_business_customer?: boolean;
+  /**
+   * ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+   */
+  external_customer_id?: string | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_ip_address
+   */
+  customer_ip_address?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * Key-value object allowing you to store additional information that'll be copied to the created customer.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  customer_metadata?: Record<string, string | number | boolean>;
+  /**
+   * ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
+   */
+  subscription_id?: string | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+   */
+  embed_origin?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
+  /**
+   * List of product IDs available to select at that checkout. The first one will be selected by default.
+   */
+  products: string[];
+  /**
+   * Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+   */
+  prices?: Record<
+    string,
+    (
+      | ProductPriceFixedCreate
+      | ProductPriceCustomCreate
+      | ProductPriceSeatBasedCreate
+      | ProductPriceUnitBasedCreate
+      | ProductPriceMeteredUnitCreate
+      | ProductPriceMeteredTiersCreate
+    )[]
+  > | null;
+}
+
+/**
+ * Create a new checkout session from a list of products,
+referenced by their external ID.
+Customers will be able to switch between those products.
+
+Metadata set on the checkout will be copied
+to the resulting order and/or subscription.
+ */
+export interface CheckoutProductsExternalCreate {
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | boolean>;
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * ID of the discount to apply to the checkout.
+   */
+  discount_id?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+   */
+  require_billing_address?: boolean;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Predefined number of seats (works with seat-based pricing only)
+   */
+  seats?: number | null;
+  /**
+   * Minimum number of seats (works with seat-based pricing only)
+   */
+  min_seats?: number | null;
+  /**
+   * Maximum number of seats (works with seat-based pricing only)
+   */
+  max_seats?: number | null;
+  /**
+   * Predefined number of units (works with unit-based pricing only)
+   */
+  units?: number | null;
+  /**
+   * Minimum number of units (works with unit-based pricing only)
+   */
+  min_units?: number | null;
+  /**
+   * Maximum number of units (works with unit-based pricing only)
+   */
+  max_units?: number | null;
+  /**
+   * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+   */
+  allow_trial?: boolean;
+  /**
+   * ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
+   */
+  customer_id?: string | null;
+  /**
+   * Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+   */
+  is_business_customer?: boolean;
+  /**
+   * ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+   */
+  external_customer_id?: string | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_ip_address
+   */
+  customer_ip_address?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * Key-value object allowing you to store additional information that'll be copied to the created customer.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  customer_metadata?: Record<string, string | number | boolean>;
+  /**
+   * ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
+   */
+  subscription_id?: string | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+   */
+  embed_origin?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
+  /**
+   * List of product external IDs available to select at that checkout. The first one will be selected by default.
+   */
+  external_products: string[];
+  /**
+   * Optional mapping of product external IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+   */
+  prices?: Record<
+    string,
+    (
+      | ProductPriceFixedCreate
+      | ProductPriceCustomCreate
+      | ProductPriceSeatBasedCreate
+      | ProductPriceUnitBasedCreate
+      | ProductPriceMeteredUnitCreate
+      | ProductPriceMeteredTiersCreate
+    )[]
+  > | null;
 }
 
 /**
@@ -10587,6 +10836,20 @@ export interface CustomerMeterCreditExternalIDConflict {
    * error
    */
   error: "CustomerMeterCreditExternalIDConflict";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
+ * CustomerMeterCreditNotReversible
+ */
+export interface CustomerMeterCreditNotReversible {
+  /**
+   * error
+   */
+  error: "CustomerMeterCreditNotReversible";
   /**
    * detail
    */
@@ -19280,10 +19543,6 @@ export interface OrganizationFeatureSettings {
    */
   off_session_charges_enabled?: boolean;
   /**
-   * If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).
-   */
-  meter_cycling_enabled?: boolean;
-  /**
    * Enables the slack shared channel benefit
    */
   slack_benefit_enabled?: boolean;
@@ -19311,6 +19570,10 @@ export interface OrganizationFeatureSettings {
    * If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
    */
   merchant_migration_enabled?: boolean;
+  /**
+   * If this organization accepts payments from AI agents through Stripe shared payment tokens.
+   */
+  agentic_payments_enabled?: boolean;
   /**
    * If this organization can manage its configuration from a declarative config document.
    */
@@ -21746,6 +22009,20 @@ export interface SeatsList {
    * Total number of seats for the subscription
    */
   total_seats: number;
+}
+
+/**
+ * SharedPaymentTokenError
+ */
+export interface SharedPaymentTokenError {
+  /**
+   * error
+   */
+  error: "SharedPaymentTokenError";
+  /**
+   * detail
+   */
+  detail: string;
 }
 
 /**
@@ -24634,6 +24911,14 @@ export type BenefitPublic =
   | BenefitSlackSharedChannelPublic
   | BenefitMeterCreditPublic;
 /**
+ * CheckoutConfirm
+ */
+export type CheckoutConfirm = CheckoutConfirmStripe | CheckoutConfirmSharedPaymentToken;
+/**
+ * CheckoutCreate
+ */
+export type CheckoutCreate = CheckoutProductsCreate | CheckoutProductsExternalCreate;
+/**
  * CheckoutForbiddenError
  */
 export type CheckoutForbiddenError =
@@ -24650,6 +24935,10 @@ export type CheckoutLinkCreate =
   | CheckoutLinkCreateProductPrice
   | CheckoutLinkCreateProduct
   | CheckoutLinkCreateProducts;
+/**
+ * CheckoutPaymentError
+ */
+export type CheckoutPaymentError = PaymentError | SharedPaymentTokenError;
 /**
  * CustomField
  */

@@ -17,11 +17,17 @@ class SubscriptionBulkUpdate(RecordModel):
     __tablename__ = "subscription_bulk_updates"
 
     organization_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
+        Uuid,
+        ForeignKey("organizations.id", ondelete="cascade"),
+        nullable=False,
+        index=True,
     )
     source_external_id: Mapped[str] = mapped_column(String, nullable=False)
     target_product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id", ondelete="restrict"), nullable=False
+        Uuid,
+        ForeignKey("products.id", ondelete="restrict"),
+        nullable=False,
+        index=True,
     )
     proration_behavior: Mapped[SubscriptionProrationBehavior] = mapped_column(
         StringEnum(SubscriptionProrationBehavior), nullable=False

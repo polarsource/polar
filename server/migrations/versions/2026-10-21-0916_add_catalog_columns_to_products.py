@@ -19,52 +19,74 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    # Ensures we don't break app by applying a deadlock-inducing migration.
-    op.execute("SET LOCAL lock_timeout = '5s'")
-    op.add_column(
-        "products",
-        sa.Column("catalog_id", sa.Uuid(), nullable=True),
-        if_not_exists=True,
-    )
-    op.add_column(
-        "products",
-        sa.Column(
-            "is_current", sa.Boolean(), server_default=sa.text("true"), nullable=True
-        ),
-        if_not_exists=True,
-    )
-    op.drop_constraint(
-        op.f("products_catalog_id_fkey"),
-        "products",
-        type_="foreignkey",
-        if_exists=True,
-    )
-    op.create_foreign_key(
-        op.f("products_catalog_id_fkey"),
-        "products",
-        "catalogs",
-        ["catalog_id"],
-        ["id"],
-        ondelete="restrict",
-        postgresql_not_valid=True,
-    )
-    # Validate outside the transaction, so the scan doesn't hold the lock taken
-    # by adding the constraint.
+    # Run inside an autocommit block so each step commits and releases its lock
+    # immediately instead of stacking locks across statements or migrations.
     with op.get_context().autocommit_block():
-        op.execute("SET lock_timeout = '5min'")
+        op.execute("SET lock_timeout = '5s'")
         try:
-            op.execute(
-                "ALTER TABLE products VALIDATE CONSTRAINT products_catalog_id_fkey"
-            )
+            columns_exist = False
+            if not op.get_context().as_sql:
+                existing_count = op.get_bind().scalar(
+                    sa.text(
+                        "SELECT count(*) FROM pg_attribute "
+                        "WHERE attrelid = 'products'::regclass "
+                        "AND attname IN ('catalog_id', 'is_current') "
+                        "AND NOT attisdropped"
+                    )
+                )
+                columns_exist = existing_count == 2
+
+            if not columns_exist:
+                op.execute(
+                    "ALTER TABLE products "
+                    "ADD COLUMN IF NOT EXISTS catalog_id UUID, "
+                    "ADD COLUMN IF NOT EXISTS is_current BOOLEAN DEFAULT true"
+                )
+
+            validated: bool | None = None
+            if not op.get_context().as_sql:
+                validated = op.get_bind().scalar(
+                    sa.text(
+                        "SELECT convalidated FROM pg_constraint "
+                        "WHERE conname = 'products_catalog_id_fkey' "
+                        "AND conrelid = 'products'::regclass"
+                    )
+                )
+
+            if validated is None:
+                # ShareRowExclusiveLock only (does not block SELECTs on products).
+                op.create_foreign_key(
+                    op.f("products_catalog_id_fkey"),
+                    "products",
+                    "catalogs",
+                    ["catalog_id"],
+                    ["id"],
+                    ondelete="restrict",
+                    postgresql_not_valid=True,
+                )
+            if not validated:
+                # ShareUpdateExclusiveLock only (blocks neither reads nor writes).
+                op.execute(
+                    "ALTER TABLE products VALIDATE CONSTRAINT products_catalog_id_fkey"
+                )
         finally:
             op.execute("RESET lock_timeout")
 
 
 def downgrade() -> None:
-    # Ensures we don't break app by applying a deadlock-inducing migration.
-    op.execute("SET LOCAL lock_timeout = '5s'")
-    op.drop_constraint(
-        op.f("products_catalog_id_fkey"), "products", type_="foreignkey", if_exists=True
-    )
-    op.drop_column("products", "is_current", if_exists=True)
-    op.drop_column("products", "catalog_id", if_exists=True)
+    with op.get_context().autocommit_block():
+        op.execute("SET lock_timeout = '5s'")
+        try:
+            op.drop_constraint(
+                op.f("products_catalog_id_fkey"),
+                "products",
+                type_="foreignkey",
+                if_exists=True,
+            )
+            op.execute(
+                "ALTER TABLE products "
+                "DROP COLUMN IF EXISTS is_current, "
+                "DROP COLUMN IF EXISTS catalog_id"
+            )
+        finally:
+            op.execute("RESET lock_timeout")

@@ -1,9 +1,11 @@
 import uuid
+from datetime import timedelta
 
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Customer, CustomerMeter, Meter, Organization
@@ -98,3 +100,49 @@ class TestGetOrCreate:
 
         assert customer_meter == concurrent
         assert get_for_update.call_count == 2
+
+
+@pytest.mark.anyio
+class TestGetAllForLatestUpdatedCustomers:
+    async def test_returns_all_meters_of_latest_updated_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        other_meter = await create_meter(
+            save_fixture, id=uuid.uuid4(), organization=organization
+        )
+        now = utc_now()
+        latest = CustomerMeter(customer=customer, meter=meter, modified_at=now)
+        latest_never_updated = CustomerMeter(customer=customer, meter=other_meter)
+        second = CustomerMeter(
+            customer=customer_second,
+            meter=meter,
+            modified_at=now - timedelta(minutes=1),
+        )
+        oldest = CustomerMeter(
+            customer=customer_external_id,
+            meter=meter,
+            modified_at=now - timedelta(minutes=2),
+        )
+        for customer_meter in (latest, latest_never_updated, second, oldest):
+            await save_fixture(customer_meter)
+        session.expunge_all()
+
+        repository = CustomerMeterRepository.from_session(session)
+        customer_meters = await repository.get_all_for_latest_updated_customers(2)
+
+        assert {customer_meter.id for customer_meter in customer_meters} == {
+            latest.id,
+            latest_never_updated.id,
+            second.id,
+        }
+        assert {customer_meter.customer.id for customer_meter in customer_meters} == {
+            customer.id,
+            customer_second.id,
+        }

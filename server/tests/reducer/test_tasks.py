@@ -1,30 +1,34 @@
-import uuid
-
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.models import Customer
+from polar.models import CustomerMeter
+from polar.postgres import AsyncSession
 from polar.reducer.service import reducer as reducer_service
-from polar.reducer.tasks import CustomerDoesNotExist, compare_customer_state
+from polar.reducer.tasks import compare_latest_customer_meters
+from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 
 
 @pytest.mark.anyio
-class TestCompareCustomerState:
-    async def test_customer_does_not_exist(self) -> None:
-        with pytest.raises(CustomerDoesNotExist):
-            await compare_customer_state(uuid.uuid4())
-
-    async def test_compares_fresh_state(
-        self, mocker: MockerFixture, customer: Customer
+class TestCompareLatestCustomerMeters:
+    async def test_compares_each_customer_meter(
+        self, mocker: MockerFixture, session: AsyncSession
     ) -> None:
-        log_customer_state_comparison = mocker.patch.object(
-            reducer_service, "log_customer_state_comparison"
+        customer_meters = [CustomerMeter(), CustomerMeter()]
+        mocker.patch.object(
+            SQLAlchemyMiddleware, "get_async_read_session", return_value=session
+        )
+        get_all = mocker.patch(
+            "polar.reducer.tasks.CustomerMeterRepository"
+            ".get_all_for_latest_updated_customers",
+            return_value=customer_meters,
+        )
+        log_customer_meter_comparison = mocker.patch.object(
+            reducer_service, "log_customer_meter_comparison"
         )
 
-        await compare_customer_state(customer.id)
+        await compare_latest_customer_meters()
 
-        [(_, _, compared_customer, state)] = [
-            call.args for call in log_customer_state_comparison.call_args_list
-        ]
-        assert compared_customer.id == customer.id
-        assert state.id == customer.id
+        get_all.assert_called_once_with(10)
+        assert [
+            call.args[2] for call in log_customer_meter_comparison.call_args_list
+        ] == customer_meters

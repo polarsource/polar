@@ -2,9 +2,9 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, func, select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -38,6 +38,26 @@ class CustomerMeterRepository(
             .order_by(
                 CustomerMeter.created_at.asc(),
             )
+        )
+        return await self.get_all(statement)
+
+    async def get_all_for_latest_updated_customers(
+        self, limit: int
+    ) -> Sequence[CustomerMeter]:
+        latest_customer_ids = (
+            select(CustomerMeter.customer_id)
+            .where(
+                CustomerMeter.deleted_at.is_(None),
+                CustomerMeter.modified_at.is_not(None),
+            )
+            .group_by(CustomerMeter.customer_id)
+            .order_by(func.max(CustomerMeter.modified_at).desc())
+            .limit(limit)
+        )
+        statement = (
+            self.get_base_statement()
+            .where(CustomerMeter.customer_id.in_(latest_customer_ids))
+            .options(joinedload(CustomerMeter.customer))
         )
         return await self.get_all(statement)
 

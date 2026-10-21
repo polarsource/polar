@@ -3,11 +3,13 @@ from datetime import datetime
 from typing import Annotated
 
 from polar.customer.repository import CustomerRepository
-from polar.customer.service import customer as customer_service
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.exceptions import PolarTaskError
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
+    AsyncReadSessionMaker,
     AsyncSessionMaker,
+    CronTrigger,
     RedisMiddleware,
     TaskPriority,
     actor,
@@ -31,19 +33,22 @@ async def invalidate_cache(
     await cache.invalidate(RedisMiddleware.get(), organization_id)
 
 
-@actor(actor_name="reducer.compare_customer_state", priority=TaskPriority.LOW)
-async def compare_customer_state(
-    customer_id: Annotated[uuid.UUID, LoggableField],
-) -> None:
-    async with AsyncSessionMaker() as session:
-        customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
-        if customer is None:
-            raise CustomerDoesNotExist(customer_id)
+@actor(
+    actor_name="reducer.compare_latest_customer_meters",
+    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def compare_latest_customer_meters() -> None:
+    async with AsyncReadSessionMaker() as session:
+        customer_meters = await CustomerMeterRepository.from_session(
+            session
+        ).get_all_for_latest_updated_customers(10)
         redis = RedisMiddleware.get()
-        state = await customer_service.get_state(session, redis, customer, cache=False)
-        await reducer_service.log_customer_state_comparison(
-            session, redis, customer, state
-        )
+        for customer_meter in customer_meters:
+            await reducer_service.log_customer_meter_comparison(
+                session, redis, customer_meter
+            )
 
 
 @actor(actor_name="reducer.seal", priority=TaskPriority.LOW)

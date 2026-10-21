@@ -27,7 +27,6 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.redis import Redis, get_redis
-from polar.reducer.service import reducer as reducer_service
 from polar.routing import APIRouter
 
 from . import auth, sorting
@@ -336,8 +335,6 @@ async def get_state(
     if customer is None:
         raise ResourceNotFound()
 
-    reducer_service.enqueue_customer_state_comparison(customer)
-
     return await customer_service.get_state(session, redis, customer)
 
 
@@ -367,8 +364,6 @@ async def get_state_external(
 
     if customer is None:
         raise ResourceNotFound()
-
-    reducer_service.enqueue_customer_state_comparison(customer)
 
     return await customer_service.get_state(session, redis, customer)
 

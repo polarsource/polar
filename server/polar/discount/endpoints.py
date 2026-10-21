@@ -3,14 +3,12 @@ from typing import Annotated
 from fastapi import Body, Depends, Path, Query
 from pydantic import UUID4
 
-from polar.declarative_config.guard import assert_catalog_editable
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
 from polar.kit.versioning import version
 from polar.models import Discount
 from polar.openapi import APITag, cli_preview
-from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -171,10 +169,6 @@ async def create_v2027_01(
     session: AsyncSession = Depends(get_db_session),
 ) -> Discount:
     """Create a discount."""
-    organization = await get_payload_organization(
-        session, auth_subject, discount_create
-    )
-    await assert_catalog_editable(session, organization.id)
     return await discount_service.create(session, discount_create, auth_subject)
 
 
@@ -227,7 +221,6 @@ async def update_v2027_01(
     if discount is None:
         raise ResourceNotFound()
 
-    await assert_catalog_editable(session, discount.organization_id)
     return await discount_service.update(
         session, discount, discount_update, auth_subject
     )
@@ -253,5 +246,4 @@ async def delete(
     if discount is None:
         raise ResourceNotFound()
 
-    await assert_catalog_editable(session, discount.organization_id)
     await discount_service.delete(session, discount, auth_subject)

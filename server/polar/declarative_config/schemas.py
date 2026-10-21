@@ -129,7 +129,9 @@ class ConfigBenefitFeatureFlag(ConfigBenefitBase):
 
 
 class ConfigBenefitMeterCreditProperties(Schema):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     meter: MeterReference
     units: Annotated[Int32, Gt(0)] = Field(
@@ -154,7 +156,9 @@ ConfigBenefit = Annotated[
 
 
 class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     minimum_units: int = Field(
         default=1,
@@ -164,7 +168,9 @@ class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
 
 
 class ConfigProductPriceUnitBased(ProductPriceUnitBasedCreate):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     minimum_units: int = Field(
         default=1,
@@ -174,7 +180,9 @@ class ConfigProductPriceUnitBased(ProductPriceUnitBasedCreate):
 
 
 class ConfigProductPriceMeteredTiers(ProductPriceCreateBase):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     amount_type: Literal[ProductPriceAmountType.metered_tiers]
     meter: MeterReference
@@ -194,7 +202,9 @@ class ConfigProductPriceMeteredTiers(ProductPriceCreateBase):
 
 
 class ConfigProductPriceFixed(ProductPriceFixedCreate):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     price_amount: Annotated[
         PriceAmount,
@@ -209,7 +219,9 @@ class ConfigProductPriceFixed(ProductPriceFixedCreate):
 
 
 class ConfigProductPriceMeteredUnit(ProductPriceCreateBase):
-    model_config = ConfigDict(extra="forbid", json_schema_mode_override="validation")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     amount_type: Literal[ProductPriceAmountType.metered_unit]
     meter: MeterReference
@@ -382,7 +394,9 @@ class ConfigWebhookEndpoint(Schema):
 
 
 class ConfigSettingsPayments(Schema):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     currency: PresentmentCurrency | None = Field(
         default=None,
@@ -402,7 +416,9 @@ class ConfigSettingsPayments(Schema):
 
 
 class ConfigSettings(Schema):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid", json_schema_serialization_defaults_required=True
+    )
 
     payments: ConfigSettingsPayments | None = Field(
         default=None,
@@ -564,11 +580,11 @@ class ConfigPlan(Schema):
 
 # Config entries serialize `metadata` as `user_metadata` for the create schemas
 # they feed. Export entries subclass them so the shape can't drift from what
-# plan and apply accept, only serializing `metadata` under its own name. It has
-# no default so it's never left out of the export: an omitted `metadata` means
-# "leave untouched" to apply, not "clear".
+# plan and apply accept, only serializing `metadata` under its own name.
 class _ConfigExportMetadata(BaseModel):
-    metadata: MetadataOutputType
+    model_config = ConfigDict(json_schema_serialization_defaults_required=True)
+
+    metadata: MetadataOutputType = Field(default_factory=dict)
 
 
 class ConfigExportMeter(_ConfigExportMetadata, ConfigMeter):

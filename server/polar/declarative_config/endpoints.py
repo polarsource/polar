@@ -1,5 +1,4 @@
 from fastapi import Depends, Query
-from fastapi.responses import JSONResponse
 
 from polar.exceptions import NotPermitted, Unauthorized
 from polar.openapi import APITag
@@ -14,7 +13,6 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from .auth import ConfigRead, ConfigWrite
-from .export import without_defaults
 from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan
 from .service import (
     ConfigAsCodeNotEnabled,
@@ -56,26 +54,20 @@ async def export(
         ),
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> JSONResponse:
+) -> ConfigExport:
     """
     Export the organization's current config as a declarative config document.
 
     `config` has the shape plan and apply accept, without `organization_id`:
     planning it for the same organization without edits reports no changes.
-    Fields set to their default are left out, since plan and apply fill them in,
-    except `metadata`, which apply leaves untouched when omitted.
     Resources without an `external_id`, archived ones, ones config can't express
     (or that reference a skipped resource), and ones beyond the config limit are
     listed in `skipped`, up to the config limit per section.
 
     Requires the read or write scope of every section.
     """
-    return JSONResponse(
-        without_defaults(
-            await declarative_config_service.export(
-                session, auth_subject, organization_id
-            )
-        )
+    return await declarative_config_service.export(
+        session, auth_subject, organization_id
     )
 
 

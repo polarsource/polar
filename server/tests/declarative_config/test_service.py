@@ -8,7 +8,6 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
-from polar.declarative_config.export import without_defaults
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
@@ -2676,32 +2675,6 @@ class TestExportDocument:
         assert exported == sections
         assert ROUND_TRIP_CONFIG.keys() == sections
 
-    def test_without_defaults_keeps_tags_and_metadata(self) -> None:
-        export = ConfigExport.model_validate(
-            {
-                "config": {
-                    "webhooks": [],
-                    "meters": [{**TOOL_CALLS_METER, "metadata": {}}],
-                    "benefits": [{**CREDITS_BENEFIT, "metadata": {}}],
-                    "products": [],
-                    "discounts": [],
-                },
-                "settings": {},
-                "skipped": [],
-            }
-        )
-
-        document = without_defaults(export)
-
-        [meter] = document["config"]["meters"]
-        [benefit] = document["config"]["benefits"]
-        assert "custom_multiplier" not in meter
-        assert meter["aggregation"] == {"func": "count"}
-        assert meter["metadata"] == {}
-        assert benefit["properties"] == {"meter": "sdk-tool-calls", "units": 1000}
-        assert "visibility" not in benefit
-        assert document["settings"] == {}
-
     def test_round_trip_config_covers_every_variant(self) -> None:
         config = Config.model_validate(ROUND_TRIP_CONFIG)
 
@@ -2733,9 +2706,11 @@ class TestExport:
         )
 
         exported = await declarative_config_service.export(session, auth_subject, None)
-        document = without_defaults(exported)
         config = Config.model_validate(
-            {**document["config"], "settings": document["settings"]}
+            {
+                **exported.config.model_dump(mode="json"),
+                "settings": exported.settings.model_dump(mode="json"),
+            }
         )
         plan = await declarative_config_service.plan(session, auth_subject, config)
         applied = await declarative_config_service.apply(

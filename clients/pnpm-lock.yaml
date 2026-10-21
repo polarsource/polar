@@ -1519,8 +1519,8 @@ importers:
   packages/polar:
     dependencies:
       '@polar-sh/sdk':
-        specifier: 1.0.3-alpha.4
-        version: 1.0.3-alpha.4(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0)
+        specifier: 1.0.3-alpha.5
+        version: 1.0.3-alpha.5(@opentelemetry/api@1.9.1)(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0)
       '@standard-schema/spec':
         specifier: ^1.1.0
         version: 1.1.0
@@ -4918,6 +4918,33 @@ packages:
       ioredis: ^5.11.0
       ws: ^8.21.0
     peerDependenciesMeta:
+      ioredis:
+        optional: true
+      ws:
+        optional: true
+
+  '@polar-sh/sdk@1.0.3-alpha.5':
+    resolution: {integrity: sha512-ysIYPUoXkK5xLNQOYEs0JcH3ltgXU+8okdH7jUgyS9bqHZQ/RTQo1XRYaIwHftcQd+9Dd+3op1yf8B05bv2MdA==}
+    engines: {node: '>=24'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.9.1
+      '@opentelemetry/otlp-transformer': ^0.223.0
+      '@opentelemetry/resources': ^2.12.0
+      '@opentelemetry/sdk-metrics': ^2.12.0
+      '@opentelemetry/sdk-trace': ^2.12.0
+      ioredis: ^5.11.0
+      ws: ^8.21.0
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+      '@opentelemetry/otlp-transformer':
+        optional: true
+      '@opentelemetry/resources':
+        optional: true
+      '@opentelemetry/sdk-metrics':
+        optional: true
+      '@opentelemetry/sdk-trace':
+        optional: true
       ioredis:
         optional: true
       ws:
@@ -18611,6 +18638,12 @@ snapshots:
 
   '@polar-sh/sdk@1.0.3-alpha.4(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0)':
     optionalDependencies:
+      ioredis: 5.11.1(supports-color@10.2.2)
+      ws: 8.22.0
+
+  '@polar-sh/sdk@1.0.3-alpha.5(@opentelemetry/api@1.9.1)(ioredis@5.11.1(supports-color@10.2.2))(ws@8.22.0)':
+    optionalDependencies:
+      '@opentelemetry/api': 1.9.1
       ioredis: 5.11.1(supports-color@10.2.2)
       ws: 8.22.0
 

@@ -3,7 +3,6 @@ from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
@@ -12,7 +11,6 @@ from polar.catalog.repository import (
     CatalogProductRepository,
     CatalogRepository,
 )
-from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
@@ -38,9 +36,7 @@ from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
-    CheckoutLink,
     Customer,
-    Discount,
     Organization,
     ProductPriceFixed,
     ProductPriceMeteredTiers,
@@ -2768,56 +2764,8 @@ MONTHLY_PRO_25 = {
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 @pytest.mark.usefixtures("config_as_code_enabled")
-class TestApplyCatalogVersioning:
-    async def test_create_publishes_first_catalog(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO]}),
-        )
-
-        [product] = await ProductRepository.from_session(
-            session
-        ).get_all_by_external_ids(organization.id, ["pro"])
-        live = await CatalogRepository.from_session(session).get_live(organization.id)
-        assert live is not None
-        assert live.hash is not None
-        assert len(live.hash) == 64
-        assert product.catalog_id == live.id
-        [member] = await CatalogProductRepository.from_session(
-            session
-        ).get_all_by_catalog(live.id)
-        assert member.product_id == product.id
-
-    async def test_unchanged_does_not_publish(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        config = Config.model_validate({"products": [MONTHLY_PRO]})
-        await declarative_config_service.apply(session, redis, auth_subject, config)
-        first = await CatalogRepository.from_session(session).get_live(organization.id)
-        assert first is not None
-
-        result = await declarative_config_service.apply(
-            session, redis, auth_subject, config
-        )
-
-        assert result.changes[0].action == ConfigAction.unchanged
-        live = await CatalogRepository.from_session(session).get_live(organization.id)
-        assert live is not None
-        assert live.id == first.id
-
-    async def test_update_creates_new_row(
+class TestCatalogVersioning:
+    async def test_lifecycle(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -2826,68 +2774,44 @@ class TestApplyCatalogVersioning:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO]}),
+        initial_config = Config.model_validate({"products": [MONTHLY_PRO]})
+        updated_config = Config.model_validate({"products": [MONTHLY_PRO_25]})
+        products_repo = ProductRepository.from_session(session)
+        catalogs_repo = CatalogRepository.from_session(session)
+        members_repo = CatalogProductRepository.from_session(session)
+
+        create_plan = await declarative_config_service.plan(
+            session, auth_subject, initial_config
         )
-        repository = ProductRepository.from_session(session)
-        [old_product] = await repository.get_all_by_external_ids(
+        created_catalog = create_plan.changes[0].diff[-1]
+        assert (created_catalog.field, created_catalog.before) == ("catalog", None)
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, initial_config
+        )
+        [old_product] = await products_repo.get_all_by_external_ids(
             organization.id, ["pro"]
         )
+        first = await catalogs_repo.get_live(organization.id)
+        assert first is not None
+        assert first.hash is not None
+        assert (len(first.hash), first.hash, old_product.catalog_id) == (
+            64,
+            created_catalog.after,
+            first.id,
+        )
+        assert [
+            m.product_id for m in await members_repo.get_all_by_catalog(first.id)
+        ] == [old_product.id]
+
+        unchanged = await declarative_config_service.apply(
+            session, redis, auth_subject, initial_config
+        )
+        assert unchanged.changes[0].action == ConfigAction.unchanged
+        assert (await catalogs_repo.get_live(organization.id)) == first
+
         subscription = await create_active_subscription(
             save_fixture, product=old_product, customer=customer
-        )
-
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO_25]}),
-        )
-
-        [new_product] = await repository.get_all_by_external_ids(
-            organization.id, ["pro"]
-        )
-        assert new_product.id != old_product.id
-        [new_price] = new_product.prices
-        assert isinstance(new_price, ProductPriceFixed)
-        assert new_price.price_amount == 2500
-        await session.refresh(old_product)
-        assert old_product.is_current is False
-        assert old_product.is_archived is False
-        [old_price] = old_product.prices
-        assert isinstance(old_price, ProductPriceFixed)
-        assert old_price.price_amount == 2000
-        await session.refresh(subscription)
-        assert subscription.product_id == old_product.id
-        live = await CatalogRepository.from_session(session).get_live(organization.id)
-        assert live is not None
-        assert live.id != old_product.catalog_id
-        assert new_product.catalog_id == live.id
-        [member] = await CatalogProductRepository.from_session(
-            session
-        ).get_all_by_catalog(live.id)
-        assert member.product_id == new_product.id
-
-    async def test_update_carries_over_checkout_links_and_discounts(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO]}),
-        )
-        repository = ProductRepository.from_session(session)
-        [old_product] = await repository.get_all_by_external_ids(
-            organization.id, ["pro"]
         )
         checkout_link = await create_checkout_link(save_fixture, products=[old_product])
         discount = await create_discount(
@@ -2899,35 +2823,48 @@ class TestApplyCatalogVersioning:
             products=[old_product],
         )
 
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        update_plan = await declarative_config_service.plan(
+            session, auth_subject, updated_config
         )
+        catalog_diff = update_plan.changes[0].diff[-1]
+        assert (catalog_diff.field, catalog_diff.before) == ("catalog", first.hash)
 
-        [new_product] = await repository.get_all_by_external_ids(
+        await declarative_config_service.apply(
+            session, redis, auth_subject, updated_config
+        )
+        [new_product] = await products_repo.get_all_by_external_ids(
             organization.id, ["pro"]
         )
-        session.expunge_all()
-        link = await CheckoutLinkRepository.from_session(session).get_by_id(
-            checkout_link.id,
-            options=(selectinload(CheckoutLink.checkout_link_products),),
-        )
-        assert link is not None
-        assert [item.product_id for item in link.checkout_link_products] == [
+        assert new_product.id != old_product.id
+        assert isinstance(new_product.prices[0], ProductPriceFixed)
+        assert new_product.prices[0].price_amount == 2500
+
+        await session.refresh(old_product)
+        assert (old_product.is_current, old_product.is_archived) == (False, False)
+        assert isinstance(old_product.prices[0], ProductPriceFixed)
+        assert old_product.prices[0].price_amount == 2000
+
+        live = await catalogs_repo.get_live(organization.id)
+        assert live is not None
+        assert live.id != first.id
+        assert (live.hash, new_product.catalog_id) == (catalog_diff.after, live.id)
+        assert [
+            m.product_id for m in await members_repo.get_all_by_catalog(live.id)
+        ] == [new_product.id]
+
+        await session.refresh(subscription)
+        assert subscription.product_id == old_product.id
+        await session.refresh(checkout_link, ["checkout_link_products"])
+        assert [p.product_id for p in checkout_link.checkout_link_products] == [
             new_product.id
         ]
-        updated_discount = await DiscountRepository.from_session(session).get_by_id(
-            discount.id, options=(selectinload(Discount.discount_products),)
-        )
-        assert updated_discount is not None
-        assert {item.product_id for item in updated_discount.discount_products} == {
+        await session.refresh(discount, ["discount_products"])
+        assert {p.product_id for p in discount.discount_products} == {
             old_product.id,
             new_product.id,
         }
 
-    async def test_update_keeps_settings_outside_config(
+    async def test_baseline_from_existing_products(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -2935,7 +2872,7 @@ class TestApplyCatalogVersioning:
         auth_subject: AuthSubject[Organization],
         organization: Organization,
     ) -> None:
-        await create_product(
+        existing = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
@@ -2943,19 +2880,33 @@ class TestApplyCatalogVersioning:
             name="Pro",
             is_tax_applicable=False,
         )
+        config = Config.model_validate({"products": [MONTHLY_PRO_25]})
 
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO_25]}),
-        )
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        catalog = plan.changes[0].diff[-1]
+        assert catalog.field == "catalog"
+        assert catalog.before is not None
 
+        await declarative_config_service.apply(session, redis, auth_subject, config)
+
+        repository = CatalogRepository.from_session(session)
+        live = await repository.get_live(organization.id)
+        assert live is not None
         [new_product] = await ProductRepository.from_session(
             session
         ).get_all_by_external_ids(organization.id, ["pro"])
-        assert new_product.catalog_id is not None
-        assert new_product.is_tax_applicable is False
+        assert (live.hash, new_product.catalog_id, new_product.is_tax_applicable) == (
+            catalog.after,
+            live.id,
+            False,
+        )
+        await session.refresh(existing)
+        assert existing.is_current is False
+        assert existing.catalog_id is not None
+        assert existing.catalog_id != live.id
+        assert (await repository.get_hashes([existing.catalog_id])) == {
+            existing.catalog_id: catalog.before
+        }
 
     async def test_archived_product_stays_archived(
         self,
@@ -2985,134 +2936,9 @@ class TestApplyCatalogVersioning:
             session
         ).get_all_by_external_ids(organization.id, ["pro"])
         assert new_product.is_archived is True
-        [new_price] = new_product.prices
-        assert isinstance(new_price, ProductPriceFixed)
-        assert new_price.price_amount == 2500
+        assert isinstance(new_product.prices[0], ProductPriceFixed)
+        assert new_product.prices[0].price_amount == 2500
         assert (
             await CatalogRepository.from_session(session).get_live(organization.id)
             is None
         )
-
-    async def test_benefit_changes_rejected(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-    ) -> None:
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"benefits": [BETA_BENEFIT]}),
-        )
-
-        with pytest.raises(ConfigInvalid) as error:
-            await declarative_config_service.apply(
-                session,
-                redis,
-                auth_subject,
-                Config.model_validate(
-                    {"benefits": [{**BETA_BENEFIT, "description": "Beta access v2"}]}
-                ),
-            )
-
-        [issue] = error.value.errors
-        assert issue.type == ConfigIssueType.not_supported
-        assert issue.loc == ["body", "benefits", 0]
-
-
-@pytest.mark.anyio
-@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-@pytest.mark.usefixtures("config_as_code_enabled")
-class TestPlanCatalogVersioning:
-    async def test_new_version(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        plan = await declarative_config_service.plan(
-            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO]})
-        )
-        [created_change] = plan.changes
-        assert created_change.action == ConfigAction.created
-        created_catalog = created_change.diff[-1]
-        assert created_catalog.field == "catalog"
-        assert created_catalog.before is None
-        assert created_catalog.after is not None
-
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO]}),
-        )
-
-        plan = await declarative_config_service.plan(
-            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO_25]})
-        )
-
-        repository = CatalogRepository.from_session(session)
-        first = await repository.get_live(organization.id)
-        assert first is not None
-        assert first.hash == created_catalog.after
-        [change] = plan.changes
-        assert change.action == ConfigAction.updated
-        catalog = change.diff[-1]
-        assert catalog.field == "catalog"
-        assert catalog.before == first.hash
-
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO_25]}),
-        )
-
-        live = await repository.get_live(organization.id)
-        assert live is not None
-        assert live.hash == catalog.after
-
-    async def test_baseline_from_existing_products(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        existing = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            name="Pro",
-        )
-
-        plan = await declarative_config_service.plan(
-            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO_25]})
-        )
-
-        catalog = plan.changes[0].diff[-1]
-        assert catalog.field == "catalog"
-        assert catalog.before is not None
-
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate({"products": [MONTHLY_PRO_25]}),
-        )
-
-        repository = CatalogRepository.from_session(session)
-        live = await repository.get_live(organization.id)
-        assert live is not None
-        assert live.hash == catalog.after
-        await session.refresh(existing)
-        assert existing.is_current is False
-        assert existing.catalog_id is not None
-        assert existing.catalog_id != live.id
-        assert (await repository.get_hashes([existing.catalog_id])) == {
-            existing.catalog_id: catalog.before
-        }

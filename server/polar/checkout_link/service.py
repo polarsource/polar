@@ -326,6 +326,17 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 )
                 continue
 
+            if not product.is_current:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products", index),
+                        "msg": "Product is no longer sold. Use the current version.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
             if product.visibility == Visibility.draft:
                 errors.append(
                     {
@@ -399,6 +410,18 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                         "type": "value_error",
                         "loc": ("body", "product_price_id"),
                         "msg": "Product is archived.",
+                        "input": price_id,
+                    }
+                ]
+            )
+
+        if not product.is_current:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is no longer sold. Use the current version.",
                         "input": price_id,
                     }
                 ]

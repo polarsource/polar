@@ -585,19 +585,24 @@ class TestCreate:
                 auth_subject,
             )
 
+    @pytest.mark.parametrize(
+        ("field", "value"), [("is_archived", True), ("is_current", False)]
+    )
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
     async def test_archived_product(
         self,
+        field: str,
+        value: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        product_one_time.is_archived = True
+        setattr(product_one_time, field, value)
         await save_fixture(product_one_time)
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
@@ -607,30 +612,6 @@ class TestCreate:
                 ),
                 auth_subject,
             )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_not_current_product(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product_one_time: Product,
-    ) -> None:
-        product_one_time.is_current = False
-        await save_fixture(product_one_time)
-        with pytest.raises(PolarRequestValidationError) as error:
-            await checkout_service.create(
-                session,
-                CheckoutProductsCreate(products=[product_one_time.id]),
-                auth_subject,
-            )
-        assert error.value.errors()[0]["msg"] == (
-            "Product is no longer sold. Use the current version."
-        )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

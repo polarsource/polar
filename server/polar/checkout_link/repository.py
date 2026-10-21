@@ -140,7 +140,6 @@ class CheckoutLinkRepository(
             update(CheckoutLinkProduct)
             .where(CheckoutLinkProduct.product_id == product_id)
             .values(product_id=new_product_id)
-            .execution_options(synchronize_session=False)
         )
         await self.session.execute(statement)
 

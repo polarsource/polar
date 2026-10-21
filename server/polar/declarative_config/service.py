@@ -9,7 +9,6 @@ from typing_extensions import TypeForm
 
 from polar.auth.models import AuthSubject, is_organization
 from polar.auth.permission import OrganizationPermission
-from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
@@ -295,9 +294,6 @@ class DeclarativeConfigService:
         config: Config,
     ) -> ConfigPrune:
         _assert_section_scopes(auth_subject, config, write=False)
-        subscription_scopes = {Scope.subscriptions_read, Scope.subscriptions_write}
-        if not auth_subject.scopes & subscription_scopes:
-            raise InsufficientScopeError({str(scope) for scope in subscription_scopes})
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )

@@ -6226,8 +6226,7 @@ export interface paths {
      *     A deprecated resource can be removed from the config once no customer uses it
      *     and no product or benefit staying in the config references it.
      *
-     *     Each section requires the read or write scope for its resource, and the
-     *     `subscriptions:read` or `subscriptions:write` scope is always required.
+     *     Each section requires the read or write scope for its resource.
      *
      *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
@@ -63298,7 +63297,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections or the subscriptions scope, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown

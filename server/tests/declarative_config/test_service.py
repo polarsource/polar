@@ -2930,10 +2930,10 @@ class TestPrune:
         ]
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
+        AuthSubjectFixture(subject="organization", scopes={Scope.products_read})
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_requires_subscriptions_scope(
+    async def test_requires_section_scope(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization]
     ) -> None:
         with pytest.raises(InsufficientScopeError):

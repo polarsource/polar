@@ -162,8 +162,7 @@ async def plan(
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
-                "missing a scope required by one of the sections "
-                "or the subscriptions scope, "
+                "missing a scope required by one of the sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -181,7 +180,6 @@ async def prune(
     A deprecated resource can be removed from the config once no customer uses it
     and no product or benefit staying in the config references it.
 
-    Each section requires the read or write scope for its resource, and the
-    `subscriptions:read` or `subscriptions:write` scope is always required.
+    Each section requires the read or write scope for its resource.
     """
     return await declarative_config_service.prune(session, auth_subject, config)

@@ -160,19 +160,36 @@ In high throughput scenarios, Outpost can return you accurate meter reads only m
 
 To disable it, pass `outpost: false` to `polar.metering()`. You can also configure it explicitly with an object.
 
-### Serverless environments
+### Delivery
 
-In serverless environments such as AWS Lambda or Vercel, background work may stop when the
-handler returns. Explicitly await `flush()` before returning so buffered events are processed
-while the invocation is still active.
+The metering helper queues events in memory and sends them in batches of up to `batchSize`
+events, or every `batchIntervalMs`. `track()` never waits for the HTTP request.
+
+On a long-running server, let the interval deliver. Leaving the `await using` scope drains
+the queue; it waits up to `shutdownTimeoutMs`.
+
+In serverless environments such as Vercel or AWS Lambda, the process may stop when the handler
+returns. Call `flush()` once per request, after the response is handed off where the platform
+allows it (`after()` in Next.js, `waitUntil` on Vercel and Cloudflare). `flush()` resolves once
+every event queued before it is delivered or reported to `onDropped`. Events queued by other
+requests in the meantime share the same HTTP requests, so concurrent handlers don't send one
+event each.
 
 ```typescript
+import { after } from "next/server";
+
 async function handleRequest() {
   await metering.track({ name: "api_request", external_customer_id: "customer_123" });
-  await metering.flush();
+  after(() => metering.flush());
   return { ok: true };
 }
 ```
+
+Where no such hook exists, `await metering.flush()` before returning.
+
+When Polar answers `429 Too Many Requests`, the helper keeps the events, waits for the
+`Retry-After` delay, then sends them in full batches. A `flush()` in flight resolves after that
+wait. The rate limit counts requests, not events, so batching is what keeps you under it.
 
 ### Options
 

@@ -143,7 +143,7 @@ class BufferedMeteringStrategy:
     ) -> None:
         async with self._receive_queue:
             batch: list[EventInput] = []
-            request: _FlushRequest | None = None
+            requests: list[_FlushRequest] = []
             failure: BaseException | None = None
             cancel_scope = anyio.CancelScope(shield=True)
             try:
@@ -162,19 +162,24 @@ class BufferedMeteringStrategy:
                         try:
                             with anyio.move_on_after(self.batch_interval):
                                 while len(batch) < self.batch_size:
-                                    message = await self._receive_queue.receive()
+                                    if requests:
+                                        message = self._receive_queue.receive_nowait()
+                                    else:
+                                        message = await self._receive_queue.receive()
                                     if isinstance(message, _FlushRequest):
-                                        request = message
-                                        break
-                                    batch.append(message)
+                                        requests.append(message)
+                                    else:
+                                        batch.append(message)
+                        except anyio.WouldBlock:
+                            pass
                         except anyio.EndOfStream:
                             stream_closed = True
 
                         await self._process_batch(batch)
                         batch = []
-                        if request is not None:
+                        for request in requests:
                             request.completed.set()
-                            request = None
+                        requests = []
                 if cancel_scope.cancelled_caught:
                     failure = TimeoutError("Buffered metering shutdown timed out")
             except BaseException as error:
@@ -182,7 +187,6 @@ class BufferedMeteringStrategy:
                 raise
             finally:
                 self._send_queue.close()
-                requests = [request] if request is not None else []
                 while True:
                     try:
                         message = self._receive_queue.receive_nowait()

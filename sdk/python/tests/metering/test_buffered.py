@@ -109,6 +109,60 @@ async def test_overlapping_flushes_have_independent_boundaries(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    "batch_size, batches", [(100, [[1, 2, 3]]), (2, [[1, 2], [3]])]
+)
+async def test_pending_flushes_batch_queued_events(
+    client: AsyncMock,
+    events: list[EventInput],
+    batch_size: int,
+    batches: list[list[int]],
+) -> None:
+    release: list[anyio.Event] = []
+    completed = [anyio.Event() for _ in range(4)]
+
+    async def send(*, events: list[EventInput]) -> None:
+        gate = anyio.Event()
+        release.append(gate)
+        await gate.wait()
+
+    async def flush(index: int) -> None:
+        await strategy.flush()
+        completed[index].set()
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(1):
+        async with (
+            BufferedMeteringStrategy(
+                client, batch_size=batch_size, batch_interval=60
+            ) as strategy,
+            anyio.create_task_group() as callers,
+        ):
+            for index in range(4):
+                await strategy.track(events[index])
+                callers.start_soon(flush, index)
+                await anyio.wait_all_tasks_blocked()
+            assert client.events.ingest.await_count == 1
+            release[0].set()
+            await completed[0].wait()
+            delivered = 1
+            for index, batch in enumerate(batches):
+                await anyio.wait_all_tasks_blocked()
+                assert client.events.ingest.await_count == index + 2
+                call = client.events.ingest.await_args_list[index + 1]
+                assert call.kwargs["events"] == [events[i] for i in batch]
+                assert [done.is_set() for done in completed] == [
+                    i < delivered for i in range(4)
+                ]
+                release[index + 1].set()
+                delivered += len(batch)
+                for done in completed[:delivered]:
+                    await done.wait()
+            await anyio.wait_all_tasks_blocked()
+            assert client.events.ingest.await_count == len(batches) + 1
+
+
+@pytest.mark.anyio
 async def test_flush_waits_for_retries(
     client: AsyncMock, events: list[EventInput]
 ) -> None:

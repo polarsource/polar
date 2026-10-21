@@ -59,6 +59,8 @@ jobs:
       - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
+          # The default quantifier ignores the `!` patterns.
+          predicate-quantifier: some-with-excludes
           filters: |
             walltime:
               - 'sdk/typescript/**'

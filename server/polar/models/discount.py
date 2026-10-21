@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
@@ -241,8 +242,7 @@ class DiscountPercentage(Discount):
     basis_points: Mapped[int] = mapped_column(Integer, nullable=True)
 
     def get_discount_amount(self, amount: int, currency: str) -> int:
-        discount_amount_float = amount * (self.basis_points / 10_000)
-        return polar_round(discount_amount_float)
+        return polar_round(Decimal(amount) * self.basis_points / 10_000)
 
     def allocate_discount_amounts(self, amounts: list[int], currency: str) -> list[int]:
         # Each amount is discounted independently. Because each share is rounded

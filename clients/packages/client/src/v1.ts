@@ -6086,8 +6086,6 @@ export interface paths {
      *
      *     `config` has the shape plan and apply accept, without `organization_id`:
      *     planning it for the same organization without edits reports no changes.
-     *     Fields set to their default are left out, since plan and apply fill them in,
-     *     except `metadata`, which apply leaves untouched when omitted.
      *     Resources without an `external_id`, archived ones, ones config can't express
      *     (or that reference a skipped resource), and ones beyond the config limit are
      *     listed in `skipped`, up to the config limit per section.
@@ -16081,7 +16079,7 @@ export interface components {
     /** Config */
     Config: {
       /** @description Organization settings to update. Left untouched when omitted. */
-      settings?: components['schemas']['ConfigSettings'] | null
+      settings?: components['schemas']['ConfigSettings-Input'] | null
       /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
@@ -16229,10 +16227,29 @@ export interface components {
        * @enum {string}
        */
       type: 'meter_credit'
-      properties: components['schemas']['ConfigBenefitMeterCreditProperties']
+      properties: components['schemas']['ConfigBenefitMeterCreditProperties-Input']
     }
     /** ConfigBenefitMeterCreditProperties */
-    ConfigBenefitMeterCreditProperties: {
+    'ConfigBenefitMeterCreditProperties-Input': {
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      /**
+       * Units
+       * @description Number of units credited on the meter each cycle.
+       */
+      units: number
+      /**
+       * Rollover
+       * @description Whether unused units carry over to the next cycle.
+       * @default false
+       */
+      rollover: boolean
+    }
+    /** ConfigBenefitMeterCreditProperties */
+    'ConfigBenefitMeterCreditProperties-Output': {
       /**
        * Meter
        * @description The `external_id` of a meter declared in the same config.
@@ -16444,7 +16461,7 @@ export interface components {
       /** @description The current config, in the same shape plan and apply accept. */
       config: components['schemas']['ConfigExportDocument']
       /** @description The current settings, in the shape `settings` accepts in plan and apply. Kept out of `config` so older clients keep decoding it. */
-      settings: components['schemas']['ConfigSettings']
+      settings: components['schemas']['ConfigSettings-Output']
       /**
        * Skipped
        * @description Resources left out of the exported config.
@@ -16501,7 +16518,7 @@ export interface components {
        * @enum {string}
        */
       type: 'meter_credit'
-      properties: components['schemas']['ConfigBenefitMeterCreditProperties']
+      properties: components['schemas']['ConfigBenefitMeterCreditProperties-Output']
     }
     ConfigExportDiscount:
       | components['schemas']['ConfigExportDiscountPercentage']
@@ -16523,7 +16540,7 @@ export interface components {
        * Code
        * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
        */
-      code?: string | null
+      code: string | null
       /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
       duration: components['schemas']['DiscountDuration']
       /**
@@ -16535,32 +16552,32 @@ export interface components {
        *     For this to work on yearly pricing, you should multiply this by 12.
        *     For example, to apply the discount for 2 years, set this to 24.
        */
-      duration_in_months?: number | null
+      duration_in_months: number | null
       /**
        * Starts At
        * @description Optional timestamp after which the discount is redeemable.
        */
-      starts_at?: string | null
+      starts_at: string | null
       /**
        * Ends At
        * @description Optional timestamp after which the discount is no longer redeemable.
        */
-      ends_at?: string | null
+      ends_at: string | null
       /**
        * Max Redemptions
        * @description Optional maximum number of times the discount can be redeemed.
        */
-      max_redemptions?: number | null
+      max_redemptions: number | null
       /**
        * Max Redemptions Per Customer
        * @description Optional maximum number of times the discount can be redeemed by a single customer.
        */
-      max_redemptions_per_customer?: number | null
+      max_redemptions_per_customer: number | null
       /**
        * Products
        * @description The products the discount applies to. Leave it empty to apply the discount to every product.
        */
-      products?: string[]
+      products: string[]
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -16591,7 +16608,7 @@ export interface components {
        * Code
        * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
        */
-      code?: string | null
+      code: string | null
       /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
       duration: components['schemas']['DiscountDuration']
       /**
@@ -16603,32 +16620,32 @@ export interface components {
        *     For this to work on yearly pricing, you should multiply this by 12.
        *     For example, to apply the discount for 2 years, set this to 24.
        */
-      duration_in_months?: number | null
+      duration_in_months: number | null
       /**
        * Starts At
        * @description Optional timestamp after which the discount is redeemable.
        */
-      starts_at?: string | null
+      starts_at: string | null
       /**
        * Ends At
        * @description Optional timestamp after which the discount is no longer redeemable.
        */
-      ends_at?: string | null
+      ends_at: string | null
       /**
        * Max Redemptions
        * @description Optional maximum number of times the discount can be redeemed.
        */
-      max_redemptions?: number | null
+      max_redemptions: number | null
       /**
        * Max Redemptions Per Customer
        * @description Optional maximum number of times the discount can be redeemed by a single customer.
        */
-      max_redemptions_per_customer?: number | null
+      max_redemptions_per_customer: number | null
       /**
        * Products
        * @description The products the discount applies to. Leave it empty to apply the discount to every product.
        */
-      products?: string[]
+      products: string[]
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -16673,12 +16690,12 @@ export interface components {
        * Custom Label
        * @description The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.
        */
-      custom_label?: string | null
+      custom_label: string | null
       /**
        * Custom Multiplier
        * @description The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided.
        */
-      custom_multiplier?: number | null
+      custom_multiplier: number | null
       /** @description The filter to apply on events that'll be used to calculate the meter. */
       filter: components['schemas']['Filter']
       /**
@@ -16698,12 +16715,12 @@ export interface components {
     /** ConfigExportProduct */
     ConfigExportProduct: {
       /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
+      trial_interval: components['schemas']['TrialInterval'] | null
       /**
        * Trial Interval Count
        * @description The number of interval units for the trial period.
        */
-      trial_interval_count?: number | null
+      trial_interval_count: number | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * External Id
@@ -16719,29 +16736,29 @@ export interface components {
        * Description
        * @description The description of the product.
        */
-      description?: string | null
+      description: string | null
       /**
        * @description The visibility of the product.
        * @default public
        */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. Leave it empty for a one-time purchase. */
-      recurring_interval?: components['schemas']['RecurringInterval'] | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Billing cycle length in intervals. Defaults to 1.
        */
-      recurring_interval_count?: number | null
+      recurring_interval_count: number | null
       /**
        * Prices
        * @description The prices of the product.
        */
-      prices: components['schemas']['ConfigProductPrice'][]
+      prices: components['schemas']['ConfigProductPrice-Output'][]
       /**
        * Benefits
        * @description The benefits granted by the product.
        */
-      benefits?: string[]
+      benefits: string[]
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16948,7 +16965,7 @@ export interface components {
        * Prices
        * @description The prices of the product.
        */
-      prices: components['schemas']['ConfigProductPrice'][]
+      prices: components['schemas']['ConfigProductPrice-Input'][]
       /**
        * Benefits
        * @description The benefits granted by the product.
@@ -16966,14 +16983,20 @@ export interface components {
       /** Detail */
       detail: string
     }
-    ConfigProductPrice:
-      | components['schemas']['ConfigProductPriceFixed']
-      | components['schemas']['ConfigProductPriceMeteredUnit']
-      | components['schemas']['ConfigProductPriceSeatBased']
-      | components['schemas']['ConfigProductPriceMeteredTiers']
-      | components['schemas']['ConfigProductPriceUnitBased']
+    'ConfigProductPrice-Input':
+      | components['schemas']['ConfigProductPriceFixed-Input']
+      | components['schemas']['ConfigProductPriceMeteredUnit-Input']
+      | components['schemas']['ConfigProductPriceSeatBased-Input']
+      | components['schemas']['ConfigProductPriceMeteredTiers-Input']
+      | components['schemas']['ConfigProductPriceUnitBased-Input']
+    'ConfigProductPrice-Output':
+      | components['schemas']['ConfigProductPriceFixed-Output']
+      | components['schemas']['ConfigProductPriceMeteredUnit-Output']
+      | components['schemas']['ConfigProductPriceSeatBased-Output']
+      | components['schemas']['ConfigProductPriceMeteredTiers-Output']
+      | components['schemas']['ConfigProductPriceUnitBased-Output']
     /** ConfigProductPriceFixed */
-    ConfigProductPriceFixed: {
+    'ConfigProductPriceFixed-Input': {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -16992,8 +17015,28 @@ export interface components {
        */
       price_amount: number
     }
+    /** ConfigProductPriceFixed */
+    'ConfigProductPriceFixed-Output': {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'fixed'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Price Amount
+       * @description The price in cents. Set to `0` for a free price. Must be at least the currency's minimum amount.
+       */
+      price_amount: number
+    }
     /** ConfigProductPriceMeteredTiers */
-    ConfigProductPriceMeteredTiers: {
+    'ConfigProductPriceMeteredTiers-Input': {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -17011,15 +17054,41 @@ export interface components {
        * @description The `external_id` of a meter declared in the same config.
        */
       meter: string
-      tiers: components['schemas']['TiersInput']
+      tiers: components['schemas']['TiersInput-Input']
       /**
        * Cap Amount
        * @description Optional maximum charge in cents.
        */
       cap_amount?: number | null
     }
+    /** ConfigProductPriceMeteredTiers */
+    'ConfigProductPriceMeteredTiers-Output': {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      tiers: components['schemas']['TiersInput-Output']
+      /**
+       * Cap Amount
+       * @description Optional maximum charge in cents.
+       */
+      cap_amount: number | null
+    }
     /** ConfigProductPriceMeteredUnit */
-    ConfigProductPriceMeteredUnit: {
+    'ConfigProductPriceMeteredUnit-Input': {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -17048,8 +17117,38 @@ export interface components {
        */
       cap_amount?: number | null
     }
+    /** ConfigProductPriceMeteredUnit */
+    'ConfigProductPriceMeteredUnit-Output': {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_unit'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Meter
+       * @description The `external_id` of a meter declared in the same config.
+       */
+      meter: string
+      /**
+       * Unit Amount
+       * @description The price per unit in cents. Supports up to 12 decimal places.
+       */
+      unit_amount: string
+      /**
+       * Cap Amount
+       * @description Optional maximum charge in cents.
+       */
+      cap_amount: number | null
+    }
     /** ConfigProductPriceSeatBased */
-    ConfigProductPriceSeatBased: {
+    'ConfigProductPriceSeatBased-Input': {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -17063,7 +17162,30 @@ export interface components {
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on the purchased seat quantity. */
-      tiers: components['schemas']['TiersInput']
+      tiers: components['schemas']['TiersInput-Input']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable seat quantity (inclusive).
+       * @default 1
+       */
+      minimum_units: number
+    }
+    /** ConfigProductPriceSeatBased */
+    'ConfigProductPriceSeatBased-Output': {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased seat quantity. */
+      tiers: components['schemas']['TiersInput-Output']
       /**
        * Minimum Units
        * @description The minimum purchasable seat quantity (inclusive).
@@ -17072,7 +17194,7 @@ export interface components {
       minimum_units: number
     }
     /** ConfigProductPriceUnitBased */
-    ConfigProductPriceUnitBased: {
+    'ConfigProductPriceUnitBased-Input': {
       /**
        * @description discriminator enum property added by openapi-typescript
        * @enum {string}
@@ -17086,7 +17208,7 @@ export interface components {
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on the purchased unit quantity. */
-      tiers: components['schemas']['TiersInput']
+      tiers: components['schemas']['TiersInput-Input']
       /**
        * Minimum Units
        * @description The minimum purchasable unit quantity (inclusive).
@@ -17098,6 +17220,38 @@ export interface components {
        * @description Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset.
        */
       unit_label?: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+    }
+    /** ConfigProductPriceUnitBased */
+    'ConfigProductPriceUnitBased-Output': {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      /**
+       * @description The currency in which the customer will be charged.
+       * @default usd
+       */
+      price_currency: components['schemas']['PresentmentCurrency']
+      /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** @description Tiered pricing based on the purchased unit quantity. */
+      tiers: components['schemas']['TiersInput-Output']
+      /**
+       * Minimum Units
+       * @description The minimum purchasable unit quantity (inclusive).
+       * @default 1
+       */
+      minimum_units: number
+      /**
+       * Unit Label
+       * @description Per-locale unit nouns shown at checkout and on invoices. `{"en": {"=1": "device", "other": "devices"}}`. Defaults to "unit"/"units" when unset.
+       */
+      unit_label: {
         [key: string]: {
           [key: string]: string
         }
@@ -17121,9 +17275,14 @@ export interface components {
       action: components['schemas']['ConfigAction']
     }
     /** ConfigSettings */
-    ConfigSettings: {
+    'ConfigSettings-Input': {
       /** @description Payment settings. Left untouched when omitted. */
-      payments?: components['schemas']['ConfigSettingsPayments'] | null
+      payments?: components['schemas']['ConfigSettingsPayments-Input'] | null
+    }
+    /** ConfigSettings */
+    'ConfigSettings-Output': {
+      /** @description Payment settings. Left untouched when omitted. */
+      payments: components['schemas']['ConfigSettingsPayments-Output'] | null
     }
     /** ConfigSettingsChange */
     ConfigSettingsChange: {
@@ -17136,11 +17295,18 @@ export interface components {
       diff: components['schemas']['ConfigFieldChange'][]
     }
     /** ConfigSettingsPayments */
-    ConfigSettingsPayments: {
+    'ConfigSettingsPayments-Input': {
       /** @description The organization's default presentment currency. Every active product must have a price in it. Left untouched when omitted. */
       currency?: components['schemas']['PresentmentCurrency'] | null
       /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
       tax?: components['schemas']['TaxBehaviorOption'] | null
+    }
+    /** ConfigSettingsPayments */
+    'ConfigSettingsPayments-Output': {
+      /** @description The organization's default presentment currency. Every active product must have a price in it. Left untouched when omitted. */
+      currency: components['schemas']['PresentmentCurrency'] | null
+      /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
+      tax: components['schemas']['TaxBehaviorOption'] | null
     }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {
@@ -35232,7 +35398,7 @@ export interface components {
        */
       meter_id: string
       /** @description Tiered pricing based on consumed units. */
-      tiers: components['schemas']['TiersInput']
+      tiers: components['schemas']['TiersInput-Input']
       /**
        * Cap Amount
        * @description Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
@@ -35419,7 +35585,7 @@ export interface components {
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on the purchased seat quantity. */
-      tiers: components['schemas']['TiersInput']
+      tiers: components['schemas']['TiersInput-Input']
       /**
        * Minimum Units
        * @description The minimum purchasable seat quantity (inclusive). Defaults to 1 when not set.
@@ -35526,7 +35692,7 @@ export interface components {
       /** @description The tax behavior of the price. If not set, it will default to the organization's default tax behavior. */
       tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
       /** @description Tiered pricing based on the purchased unit quantity. */
-      tiers: components['schemas']['TiersInput']
+      tiers: components['schemas']['TiersInput-Input']
       /**
        * Minimum Units
        * @description The minimum purchasable quantity (inclusive). Defaults to 1 when not set.
@@ -39888,11 +40054,22 @@ export interface components {
      * @description A tier submitted through the API. Rates stop at the reach of the
      *     BigInteger amount columns, with 12 decimal places.
      */
-    TierInput: {
+    'TierInput-Input': {
       /** Bound */
       bound?: number | null
       /** Unit Amount */
       unit_amount: number | string
+    }
+    /**
+     * TierInput
+     * @description A tier submitted through the API. Rates stop at the reach of the
+     *     BigInteger amount columns, with 12 decimal places.
+     */
+    'TierInput-Output': {
+      /** Bound */
+      bound: number | null
+      /** Unit Amount */
+      unit_amount: string
     }
     /**
      * TierType
@@ -39915,10 +40092,20 @@ export interface components {
      * @description Tiers submitted through the API. Kept apart from `Tiers` so tightening
      *     a rule here never stops a stored row from loading.
      */
-    TiersInput: {
+    'TiersInput-Input': {
       type: components['schemas']['TierType']
       /** Tiers */
-      tiers: components['schemas']['TierInput'][]
+      tiers: components['schemas']['TierInput-Input'][]
+    }
+    /**
+     * TiersInput
+     * @description Tiers submitted through the API. Kept apart from `Tiers` so tightening
+     *     a rule here never stops a stored row from loading.
+     */
+    'TiersInput-Output': {
+      type: components['schemas']['TierType']
+      /** Tiers */
+      tiers: components['schemas']['TierInput-Output'][]
     }
     /**
      * TimeInterval
@@ -72169,20 +72356,35 @@ export const configIssueTypeValues: ReadonlyArray<
   'unknown_event',
   'unknown_reference',
 ]
-export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
+export const configProductPriceFixedInputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed-Input']['amount_type']
 > = ['fixed']
-export const configProductPriceMeteredTiersAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers']['amount_type']
+export const configProductPriceFixedOutputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed-Output']['amount_type']
+> = ['fixed']
+export const configProductPriceMeteredTiersInputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers-Input']['amount_type']
 > = ['metered_tiers']
-export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
+export const configProductPriceMeteredTiersOutputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers-Output']['amount_type']
+> = ['metered_tiers']
+export const configProductPriceMeteredUnitInputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit-Input']['amount_type']
 > = ['metered_unit']
-export const configProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased']['amount_type']
+export const configProductPriceMeteredUnitOutputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit-Output']['amount_type']
+> = ['metered_unit']
+export const configProductPriceSeatBasedInputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased-Input']['amount_type']
 > = ['seat_based']
-export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased']['amount_type']
+export const configProductPriceSeatBasedOutputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased-Output']['amount_type']
+> = ['seat_based']
+export const configProductPriceUnitBasedInputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased-Input']['amount_type']
+> = ['unit_based']
+export const configProductPriceUnitBasedOutputAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased-Output']['amount_type']
 > = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']

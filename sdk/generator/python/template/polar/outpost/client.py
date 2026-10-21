@@ -225,6 +225,11 @@ WRITE_BUCKET_SCRIPT = """
 
 WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
 
+CONFIRM_SCRIPT = """
+{{ outpost_scripts.confirm }}"""
+
+CONFIRM_SHA = hashlib.sha1(CONFIRM_SCRIPT.encode()).hexdigest()
+
 APPLY_SNAPSHOT_SCRIPT = """
 {{ outpost_scripts.apply_snapshot }}"""
 

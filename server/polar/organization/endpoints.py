@@ -14,12 +14,10 @@ from polar.authz.dependencies import (
     AuthorizeMembersSetRole,
     AuthorizeOrgAccess,
     AuthorizeOrgAccessUser,
-    AuthorizeOrgAccessWithAgent,
     AuthorizeOrgManage,
     AuthorizeOrgManageRead,
     AuthorizeOrgManageUser,
     AuthorizeOrgManageUserRead,
-    AuthorizeOrgManageWithAgent,
 )
 from polar.config import settings
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
@@ -187,7 +185,7 @@ async def list_organizations(
     tags=[APITag.public, APITag.mcp, APITag.cli],
 )
 async def get(
-    authz: AuthorizeOrgAccessWithAgent,
+    authz: auth.OrganizationsAccess,
 ) -> Organization:
     """Get an organization by ID."""
     return authz.organization
@@ -377,7 +375,7 @@ async def check_slug(
     tags=[APITag.public],
 )
 async def update(
-    authz: AuthorizeOrgManageWithAgent,
+    authz: auth.OrganizationsManage,
     organization_update: legacy_schemas.OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -409,7 +407,7 @@ async def update(
 )
 @version(starting_from=V2027_01)
 async def update_v2027_01(
-    authz: AuthorizeOrgManageWithAgent,
+    authz: auth.OrganizationsManage,
     organization_update: OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
@@ -418,7 +416,7 @@ async def update_v2027_01(
 
 
 async def _update(
-    authz: AuthorizeOrgManageWithAgent,
+    authz: auth.OrganizationsManage,
     organization_update: OrganizationUpdate,
     session: AsyncSession,
 ) -> Organization:

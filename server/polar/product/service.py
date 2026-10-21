@@ -7,7 +7,7 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload, undefer
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -95,7 +95,7 @@ class ProductService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
@@ -179,7 +179,7 @@ class ProductService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
@@ -196,7 +196,7 @@ class ProductService:
     async def get_by_external_ids(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         external_ids: Sequence[str],
     ) -> Sequence[Product]:
         repository = ProductRepository.from_session(session)
@@ -214,7 +214,7 @@ class ProductService:
         self,
         session: AsyncSession,
         create_schema: ProductCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         notify: bool = True,
     ) -> Product:
@@ -339,7 +339,7 @@ class ProductService:
         session: AsyncSession,
         product: Product,
         update_schema: ProductUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Product:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
@@ -585,7 +585,7 @@ class ProductService:
         session: AsyncSession,
         product: Product,
         benefits: Sequence[uuid.UUID],
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
@@ -680,7 +680,7 @@ class ProductService:
         self,
         session: AsyncSession,
         product: Product,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Product:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
@@ -702,7 +702,7 @@ class ProductService:
         prices_schema: Sequence[ExistingProductPrice | ProductPriceCreate],
         recurring_interval: SubscriptionRecurringInterval | None,
         product: Product | None,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         source: ProductPriceSource = ProductPriceSource.catalog,
         error_prefix: tuple[str, ...] = ("body", "prices"),
     ) -> tuple[
@@ -954,7 +954,7 @@ class ProductService:
     async def _after_product_created(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         product: Product,
     ) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)

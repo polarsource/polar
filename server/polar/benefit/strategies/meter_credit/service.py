@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Unpack, cast
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
@@ -161,7 +161,7 @@ class BenefitMeterCreditService(
 
     async def validate_properties(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitMeterCreditProperties:

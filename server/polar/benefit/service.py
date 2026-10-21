@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from pydantic import BaseModel
 from sqlalchemy import case, delete
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -36,7 +36,7 @@ class BenefitService:
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -109,7 +109,7 @@ class BenefitService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Benefit | None:
         repository = BenefitRepository.from_session(session)
@@ -128,7 +128,7 @@ class BenefitService:
         session: AsyncSession,
         redis: Redis,
         create_schema: BenefitCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Benefit:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
@@ -235,7 +235,7 @@ class BenefitService:
         redis: Redis,
         benefit: Benefit,
         benefit_update: BenefitUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Benefit:
         await assert_resource_permission(
             session, auth_subject, benefit, OrganizationPermission.products_manage
@@ -343,7 +343,7 @@ class BenefitService:
         self,
         session: AsyncSession,
         benefit: Benefit,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Benefit:
         await assert_resource_permission(
             session, auth_subject, benefit, OrganizationPermission.products_manage

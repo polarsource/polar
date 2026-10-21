@@ -16,6 +16,7 @@ from polar.models import (
 from polar.models.custom_field import CustomFieldType
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_custom_field,
@@ -364,7 +365,10 @@ class TestCreateProduct:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.parametrize(
         "payload",
         [
@@ -712,8 +716,11 @@ class TestUpdateProduct:
 
         assert response.status_code == 404
 
-    @pytest.mark.auth
-    async def test_user_cannot_access_other_organization_product(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_cannot_access_other_organization_product(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,

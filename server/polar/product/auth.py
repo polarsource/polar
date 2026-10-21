@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.scope import Scope
 
 _CreatorProductsRead = Authenticator(
@@ -11,18 +11,18 @@ _CreatorProductsRead = Authenticator(
         Scope.products_read,
         Scope.products_write,
     },
-    allowed_subjects={User, Organization},
+    allowed_subjects={User, Organization, Agent},
 )
 CreatorProductsRead = Annotated[
-    AuthSubject[User | Organization], Depends(_CreatorProductsRead)
+    AuthSubject[User | Organization | Agent], Depends(_CreatorProductsRead)
 ]
 
 _CreatorProductsWrite = Authenticator(
     required_scopes={
         Scope.products_write,
     },
-    allowed_subjects={User, Organization},
+    allowed_subjects={User, Organization, Agent},
 )
 CreatorProductsWrite = Annotated[
-    AuthSubject[User | Organization], Depends(_CreatorProductsWrite)
+    AuthSubject[User | Organization | Agent], Depends(_CreatorProductsWrite)
 ]

@@ -4,7 +4,7 @@ import httpx
 import structlog
 from httpx_oauth.oauth2 import RefreshTokenError
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.integrations.discord.oauth import DiscordOAuth2WithProxy
@@ -210,7 +210,7 @@ class BenefitDiscordService(
 
     async def validate_properties(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitDiscordProperties:

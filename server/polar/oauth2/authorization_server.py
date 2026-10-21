@@ -328,7 +328,7 @@ class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
             return None
 
         client = self.server.query_client(token.client_id)
-        if client is None or not client.is_agent:
+        if client is None or client.agent_id is None:
             return None
         return client
 

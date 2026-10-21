@@ -1,5 +1,5 @@
 import uuid
-from datetime import timedelta
+from decimal import Decimal
 
 import pytest
 from pytest_mock import MockerFixture
@@ -103,46 +103,43 @@ class TestGetOrCreate:
 
 
 @pytest.mark.anyio
-class TestGetAllForLatestUpdatedCustomers:
-    async def test_returns_all_meters_of_latest_updated_customers(
+class TestGetAllByHighestConsumedUnits:
+    async def test_orders_by_consumed_units(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         customer: Customer,
         customer_second: Customer,
-        customer_external_id: Customer,
         meter: Meter,
     ) -> None:
         other_meter = await create_meter(
             save_fixture, id=uuid.uuid4(), organization=organization
         )
-        now = utc_now()
-        latest = CustomerMeter(customer=customer, meter=meter, modified_at=now)
-        latest_never_updated = CustomerMeter(customer=customer, meter=other_meter)
+        highest = CustomerMeter(
+            customer=customer_second, meter=meter, consumed_units=Decimal(30)
+        )
         second = CustomerMeter(
+            customer=customer, meter=meter, consumed_units=Decimal(20)
+        )
+        lowest = CustomerMeter(
+            customer=customer, meter=other_meter, consumed_units=Decimal(10)
+        )
+        deleted = CustomerMeter(
             customer=customer_second,
-            meter=meter,
-            modified_at=now - timedelta(minutes=1),
+            meter=other_meter,
+            consumed_units=Decimal(40),
+            deleted_at=utc_now(),
         )
-        oldest = CustomerMeter(
-            customer=customer_external_id,
-            meter=meter,
-            modified_at=now - timedelta(minutes=2),
-        )
-        for customer_meter in (latest, latest_never_updated, second, oldest):
+        for customer_meter in (highest, second, lowest, deleted):
             await save_fixture(customer_meter)
         session.expunge_all()
 
         repository = CustomerMeterRepository.from_session(session)
-        customer_meters = await repository.get_all_for_latest_updated_customers(2)
+        customer_meters = await repository.get_all_by_highest_consumed_units(2)
 
-        assert {customer_meter.id for customer_meter in customer_meters} == {
-            latest.id,
-            latest_never_updated.id,
+        assert [customer_meter.id for customer_meter in customer_meters] == [
+            highest.id,
             second.id,
-        }
-        assert {customer_meter.customer.id for customer_meter in customer_meters} == {
-            customer.id,
-            customer_second.id,
-        }
+        ]
+        assert customer_meters[0].customer.id == customer_second.id

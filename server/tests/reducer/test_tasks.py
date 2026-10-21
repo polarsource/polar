@@ -4,12 +4,12 @@ from pytest_mock import MockerFixture
 from polar.models import CustomerMeter
 from polar.postgres import AsyncSession
 from polar.reducer.service import reducer as reducer_service
-from polar.reducer.tasks import compare_latest_customer_meters
+from polar.reducer.tasks import compare_busiest_customer_meters
 from polar.worker._sqlalchemy import SQLAlchemyMiddleware
 
 
 @pytest.mark.anyio
-class TestCompareLatestCustomerMeters:
+class TestCompareBusiestCustomerMeters:
     async def test_compares_each_customer_meter(
         self, mocker: MockerFixture, session: AsyncSession
     ) -> None:
@@ -19,14 +19,14 @@ class TestCompareLatestCustomerMeters:
         )
         get_all = mocker.patch(
             "polar.reducer.tasks.CustomerMeterRepository"
-            ".get_all_for_latest_updated_customers",
+            ".get_all_by_highest_consumed_units",
             return_value=customer_meters,
         )
         log_customer_meter_comparison = mocker.patch.object(
             reducer_service, "log_customer_meter_comparison"
         )
 
-        await compare_latest_customer_meters()
+        await compare_busiest_customer_meters()
 
         get_all.assert_called_once_with(10)
         assert [

@@ -308,7 +308,7 @@ class ReducerService:
 
     async def get_customer_value(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         redis: Redis,
         reducer: Reducer,
         customer_id: UUID | None,
@@ -350,7 +350,7 @@ class ReducerService:
         return _get_quantity(reducer.aggregation.func, totals)
 
     async def log_customer_meter_comparison(
-        self, session: AsyncSession, redis: Redis, customer_meter: CustomerMeter
+        self, session: AsyncReadSession, redis: Redis, customer_meter: CustomerMeter
     ) -> None:
         """Logs the customer meter's consumed units next to the reducer's value
         since the meter's latest reset."""

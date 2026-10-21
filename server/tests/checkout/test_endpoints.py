@@ -651,6 +651,40 @@ class TestCreateCheckoutExternalProducts:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write}),
+    )
+    async def test_resolves_current_version(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        old_version = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+        old_version.is_current = False
+        await save_fixture(old_version)
+        current = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={"payment_processor": "stripe", "external_products": ["product_one"]},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["product_id"] == str(current.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
     )
     async def test_ad_hoc_prices(

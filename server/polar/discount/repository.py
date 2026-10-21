@@ -17,6 +17,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    DiscountProduct,
     DiscountRedemption,
     Order,
     Payment,
@@ -30,6 +31,19 @@ from polar.models.refund import RefundReason, RefundStatus
 
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
     model = Discount
+
+    async def add_product(self, product_id: UUID, new_product_id: UUID) -> None:
+        """Extend the discounts restricted to a product to another product."""
+        discount_ids = await self.session.scalars(
+            select(DiscountProduct.discount_id).where(
+                DiscountProduct.product_id == product_id,
+                DiscountProduct.deleted_at.is_(None),
+            )
+        )
+        self.session.add_all(
+            DiscountProduct(discount_id=discount_id, product_id=new_product_id)
+            for discount_id in discount_ids
+        )
 
     async def get_by_code_and_organization_for_update(
         self,

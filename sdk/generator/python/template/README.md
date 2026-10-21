@@ -235,7 +235,7 @@ wait. The rate limit counts requests, not events, so batching is what keeps you 
 
 #### Buffered
 
-The metering helper buffers events in memory and sends them in batches to Polar. It retries network errors, rate limits, and server errors with exponential backoff and jitter. Other Polar API errors drop the batch without retrying.
+The metering helper buffers events in memory and sends them in batches to Polar. It retries network errors and server errors with exponential backoff and jitter. On a rate limit it waits out `Retry-After`, for up to five minutes per batch. Other Polar API errors drop the batch without retrying.
 
 | Option             | Default | Meaning                                                    |
 | ------------------ | ------- | ---------------------------------------------------------- |

@@ -1,3 +1,4 @@
+import time
 from unittest.mock import AsyncMock
 
 import anyio
@@ -167,13 +168,53 @@ async def test_flush_waits_for_retries(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
     client.events.ingest.side_effect = [PolarRateLimitError(429, 0), None]
-    with anyio.fail_after(1):
+    with anyio.fail_after(3):
         async with BufferedMeteringStrategy(client, batch_interval=60) as strategy:
             await strategy.track(events[0])
             await strategy.flush()
             first, second = client.events.ingest.await_args_list
             assert first.kwargs["events"] == events[:1]
             assert first == second
+
+
+@pytest.mark.anyio
+async def test_retry_after_waits_a_second_without_spending_attempts(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    on_dropped = AsyncMock()
+    calls: list[float] = []
+
+    async def send(*, events: list[EventInput]) -> None:
+        calls.append(time.monotonic())
+        if len(calls) == 1:
+            raise PolarRateLimitError(429, 0)
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(3):
+        async with BufferedMeteringStrategy(
+            client, batch_interval=60, max_attempts=1, on_dropped=on_dropped
+        ) as strategy:
+            await strategy.track(events[0])
+            await strategy.flush()
+            assert len(calls) == 2
+            assert calls[1] - calls[0] >= 0.9
+            on_dropped.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_retry_after_beyond_budget_drops_the_batch(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    on_dropped = AsyncMock()
+    client.events.ingest.side_effect = PolarRateLimitError(429, 301)
+    with anyio.fail_after(0.5):
+        async with BufferedMeteringStrategy(
+            client, batch_interval=60, shutdown_timeout=0.02, on_dropped=on_dropped
+        ) as strategy:
+            await strategy.track(events[0])
+            await strategy.flush()
+            client.events.ingest.assert_awaited_once()
+            on_dropped.assert_awaited_once_with(events[:1], "retry_exhausted")
 
 
 @pytest.mark.anyio

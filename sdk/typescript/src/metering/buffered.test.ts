@@ -240,6 +240,42 @@ it("honors Retry-After and preserves the batch through retries", async () => {
   expect(onDropped).not.toHaveBeenCalled();
 });
 
+it("waits at least a second on Retry-After without spending attempts", async () => {
+  const onDropped = vi.fn();
+  const calls: number[] = [];
+  const ingest = vi.fn(async () => {
+    calls.push(performance.now());
+    if (calls.length === 1) throw new PolarRateLimitError(429, 0);
+  });
+  await using strategy = await new BufferedMeteringStrategy(
+    { events: { ingest } },
+    { maxAttempts: 1, onDropped },
+  ).start();
+  await strategy.track(events[0]);
+  await strategy.flush();
+  expect(calls).toHaveLength(2);
+  expect(calls[1] - calls[0]).toBeGreaterThanOrEqual(900);
+  expect(onDropped).not.toHaveBeenCalled();
+});
+
+it(
+  "drops the batch when Retry-After exceeds the wait budget",
+  async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onDropped = vi.fn();
+    const ingest = vi.fn().mockRejectedValue(new PolarRateLimitError(429, 301));
+    await using strategy = await new BufferedMeteringStrategy(
+      { events: { ingest } },
+      { shutdownTimeoutMs: 10, onDropped },
+    ).start();
+    await strategy.track(events[0]);
+    await strategy.flush();
+    expect(ingest).toHaveBeenCalledOnce();
+    expect(onDropped).toHaveBeenCalledExactlyOnceWith([events[0]], "retry_exhausted");
+  },
+  500,
+);
+
 it.each([
   [new PolarNetworkError("offline"), "retry_exhausted"],
   [new PolarRateLimitError(429), "retry_exhausted"],

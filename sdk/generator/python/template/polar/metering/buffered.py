@@ -21,6 +21,8 @@ def _jittered_delay(base: float, jitter: float = 0.1) -> float:
 
 DropReason = typing.Literal["retry_exhausted", "shutdown_timeout", "permanent_error"]
 
+RETRY_AFTER_BUDGET = 300.0
+
 
 class BufferedMeteringOptions(typing.TypedDict, total=False):
     """Configure in-memory batching and delivery to Polar.
@@ -202,19 +204,27 @@ class BufferedMeteringStrategy:
                 if cancel_scope.cancelled_caught and batch:
                     await self._on_dropped(batch, "shutdown_timeout")
 
-    async def _process_batch(self, batch: list[EventInput], attempt: int = 1) -> None:
-        try:
-            await self.polar.events.ingest(events=batch)
-        except (PolarNetworkError, PolarRateLimitError, PolarServerError) as e:
-            if attempt >= self.max_attempts:
-                await self._on_dropped(batch, "retry_exhausted")
+    async def _process_batch(self, batch: list[EventInput]) -> None:
+        attempt = 1
+        waited = 0.0
+        while True:
+            try:
+                await self.polar.events.ingest(events=batch)
                 return
-            if isinstance(e, PolarRateLimitError) and e.retry_after is not None:
-                retry_after = e.retry_after
-            else:
-                retry_after = _jittered_delay(2**attempt)
-            await anyio.sleep(retry_after)
-            return await self._process_batch(batch, attempt=attempt + 1)
-        except PolarError:
-            await self._on_dropped(batch, "permanent_error")
-            return
+            except (PolarNetworkError, PolarRateLimitError, PolarServerError) as e:
+                if isinstance(e, PolarRateLimitError) and e.retry_after is not None:
+                    delay = max(float(e.retry_after), 1.0)
+                    waited += delay
+                    if waited > RETRY_AFTER_BUDGET:
+                        await self._on_dropped(batch, "retry_exhausted")
+                        return
+                else:
+                    if attempt >= self.max_attempts:
+                        await self._on_dropped(batch, "retry_exhausted")
+                        return
+                    delay = _jittered_delay(2**attempt)
+                    attempt += 1
+                await anyio.sleep(delay)
+            except PolarError:
+                await self._on_dropped(batch, "permanent_error")
+                return

@@ -20,7 +20,7 @@ import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
 import { ClientBase, PolarError } from "../base";
-import { customerKey, parseEvent } from "./event";
+import { customerKey, eventKey, parseEvent } from "./event";
 import {
   reduce,
   withMatchers,
@@ -472,6 +472,7 @@ export class Outpost {
     const started = performance.now();
     let outcome = "ok";
     try {
+      eventKey(event);
       const parsed = parseEvent(event);
       await this.waitConfigured();
       const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));

@@ -5,6 +5,15 @@ import typing
 
 import typing_extensions
 
+from polar.metering.events import EventInput
+
+
+def event_key(event: EventInput) -> str:
+    external_id = event.get("external_id")
+    if not external_id:
+        raise ValueError("Outpost needs an external_id on every event")
+    return external_id
+
 
 @dataclasses.dataclass
 class Event:

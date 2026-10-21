@@ -45,7 +45,7 @@ from polar.base import PolarError
 from polar.metering.client import PolarClient
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
-from polar.outpost.event import Event
+from polar.outpost.event import Event, event_key
 from polar.outpost.reducer import (
     BucketStatistics,
     Reducer,
@@ -552,6 +552,7 @@ class Outpost:
         started = time.perf_counter()
         outcome = "ok"
         try:
+            event_key(event)
             parsed = self._parse_event(event)
             if not self._configured.is_set():
                 with anyio.fail_after(5):

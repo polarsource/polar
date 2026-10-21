@@ -18,6 +18,11 @@ export const customerKey = (input: {
   return `${input.customer_id !== undefined ? "customer" : "external"}:${identifier}`;
 };
 
+export const eventKey = (input: EventInput): string => {
+  if (!input.external_id) throw new TypeError("Outpost needs an external_id on every event");
+  return input.external_id;
+};
+
 export const parseEvent = (input: EventInput): Event => {
   if (input.timestamp !== undefined && !/(Z|[+-]\d{2}:?\d{2})$/i.test(input.timestamp)) {
     throw new TypeError("Event timestamps must include a timezone");

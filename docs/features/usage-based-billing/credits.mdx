@@ -42,13 +42,11 @@ The customer will be credited the amount of units specified in the benefit once 
 
 ## Granting Credits Manually
 
-You can also credit a customer's Usage Meter directly, for example as a goodwill gesture or to top up a balance outside of a purchase. Manual credits are added on top of any Credits benefit and are consumed the same way.
+You can also credit a customer's Usage Meter directly, for example as a goodwill gesture or to top up a balance outside of a purchase. Manual credits are added on top of any credits granted through a Meter Credits benefit.
 
 ### From the dashboard
 
 Open a customer and choose **Add Credits** from the customer menu, use **Add credits** on a meter row in the customer's **Usage** tab, or open a customer meter and click **Add credits**. Pick the meter, enter the number of credits and choose whether unused credits roll over to the next billing cycle (on by default). The panel previews the new balance and, for billed meters, how much of the current overage the credits cover.
-
-These actions are only shown to members who can manage customers.
 
 ### From the API
 
@@ -79,15 +77,14 @@ The response is the `meter.credited` event that was recorded. The customer meter
 
 A manual credit added by mistake can be reversed, either with **Reverse** on the credit in the customer meter's history, or with the [Reverse Customer Meter Credit](/api-reference/2027-01/customer_meters/reverse-customer-meter-credit) endpoint, `POST /v1/customer-meters/credits/{id}/reverse`, where `id` is the ID of the `meter.credited` event returned when the credit was granted.
 
-Reversal removes only the units the customer hasn't used yet; units already consumed stay consumed. Usage draws from non-rollover credits before rollover credits. A reversal is rejected with a `409` when:
+Reversal removes only the units the customer hasn't used yet; units already consumed stay consumed. Usage draws from non-rollover credits before rollover credits. A reversal is rejected when:
 
 - The credit is older than 7 days.
-- The credit belongs to a previous billing period, or its period has already been invoiced.
+- The credit was granted during a period that has already been invoiced.
 - The credit has already been reversed. Each credit can be reversed once.
-- All of its units have already been used.
-- The customer meter is being updated at the same moment. Retry shortly.
+- All of the credited units have already been used.
 
-Only manual credits can be reversed. Credits from the Credits benefit are removed by revoking the benefit.
+Only manual credits can be reversed. Credits granted through the Meter Credits benefit can be removed by revoking the benefit.
 
 ## Credit history
 
@@ -96,11 +93,9 @@ Every credit, reversal and revocation is recorded as a `meter.credited` system e
 - `meter_id`: the meter that was credited.
 - `units`: the number of units. Revoked benefit credits and reversals have negative units.
 - `rollover`: whether unused units carry over to the next meter period.
-- `reason`: `benefit` for credits from the Credits benefit, including rolled-over units, or `manual` for credits granted from the dashboard or API. Available from API version `2027-01`; events recorded before it was introduced are reported as `benefit`.
+- `reason`: `benefit` for credits granted through the Meter Credits benefit, including rolled-over units, or `manual` for credits granted from the dashboard or API.
 
 A reversal has `parent_id` set to the ID of the credit it reverses.
-
-In the dashboard, the customer meter page is organised by billing period and lists the credits granted in each one, with their source, whether they carry over, and any reversal.
 
 ## Tracking customer's balance
 

@@ -183,7 +183,7 @@ class TestGetOrganization:
 @pytest.mark.anyio
 class TestCreateOrganization:
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent(
+    async def test_agent_without_organization_creates_one_and_is_linked_to_it(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -206,7 +206,7 @@ class TestCreateOrganization:
         assert str(agent.organization_id) == response.json()["id"]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_with_organization(
+    async def test_agent_that_already_has_an_organization_cannot_create_another(
         self, session: AsyncSession, client: AsyncClient
     ) -> None:
         response = await client.post(
@@ -371,7 +371,7 @@ class TestUpdateOrganization:
         assert json["name"] == "Updated"
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_valid_agent(
+    async def test_agent_can_update_its_own_organization(
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.patch(
@@ -382,7 +382,7 @@ class TestUpdateOrganization:
         assert response.json()["name"] == "Updated"
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_other_organization(
+    async def test_agent_cannot_update_another_agents_organization(
         self, client: AsyncClient, organization_second: Organization
     ) -> None:
         response = await client.patch(
@@ -1885,7 +1885,7 @@ class TestAgentClosedRoutes:
             ("POST", "/members/invite"),
         ],
     )
-    async def test_agent_rejected(
+    async def test_agent_cannot_use_organization_routes_not_opened_to_agents(
         self, client: AsyncClient, organization: Organization, method: str, path: str
     ) -> None:
         response = await client.request(

@@ -333,7 +333,7 @@ class TestCreate:
         )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_skips_owner_setup(
+    async def test_agent_organization_skips_the_human_owner_steps_until_the_claim(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -370,7 +370,7 @@ class TestCreate:
         posthog_mock.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_concurrent_creation(
+    async def test_agent_create_fails_when_a_concurrent_create_linked_an_organization_first(
         self,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[Agent],

@@ -155,8 +155,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement, events)
         inserted = result.all()
 
-        # A separate statement after the insert: if the mover is moving the same
-        # external ID, the insert waits for its commit and this then sees it.
+        # Drop the inserted rows whose external ID is already in `events`: the
+        # unique index only catches duplicates still in `staged_events`. This is
+        # its own statement after the insert because an insert racing the mover
+        # on the same external ID waits for the mover to commit, and only a
+        # snapshot taken after that wait sees the moved row in `events`.
         external_ids_by_organization: dict[UUID, list[str]] = {}
         for _, organization_id, external_id in inserted:
             if external_id is not None:

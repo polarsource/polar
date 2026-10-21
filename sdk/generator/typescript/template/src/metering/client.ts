@@ -172,6 +172,7 @@ export class Metering {
   async track(event: EventInput): Promise<void> {
     if (!this.started) throw new PolarError("Metering is not running");
     validateActor(event);
+    for (const strategy of this.strategies) strategy.validate?.(event);
     this.activeOperations++;
     try {
       for (const strategy of this.strategies) await strategy.track(event);
@@ -352,6 +353,9 @@ export const createMetering = (
         const { Outpost } = await import("../outpost/client");
         outpost = new Outpost(redisUrl, { ...outpostOptions, client });
         await outpost.start();
+      },
+      validate(event) {
+        outpost!.validate(event);
       },
       async track(event) {
         await outpost!.track(event);

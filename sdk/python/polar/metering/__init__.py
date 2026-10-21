@@ -253,6 +253,9 @@ class Metering:
         )
         actor_event = typing.cast(EventInput, event)
         for strategy in self.strategies:
+            if isinstance(strategy, ValidateProtocol):
+                strategy.validate(actor_event)
+        for strategy in self.strategies:
             await strategy.track(actor_event)
 
     @typing.overload

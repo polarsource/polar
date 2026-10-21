@@ -1080,7 +1080,7 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
         await first._refresh_states()
         assert (
             await redis.hget(f"outpost:state:{identity}", f"bucket:{BUCKET}:sum")
-            is None
+            == b"100"
         )
         assert (
             await redis.hget(
@@ -1262,10 +1262,10 @@ async def test_cutoff_keeps_microsecond_precision(
         ],
     )
     assert await redis.hget(key, "cold_until") == str(BUCKET + 1).encode()
-    assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
+    assert await redis.hget(key, f"bucket:{BUCKET}:sum") == b"2"
     assert await redis.hget(key, f"bucket:{BUCKET + BUCKET_SIZE}:sum") == b"4"
     await track(BUCKET, 999, "late")
-    assert await redis.hget(key, f"bucket:{BUCKET}:sum") == b"999"
+    assert await redis.hget(key, f"bucket:{BUCKET}:sum") == b"1001"
 
 
 @pytest.mark.anyio

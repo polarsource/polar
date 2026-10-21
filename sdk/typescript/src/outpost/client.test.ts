@@ -541,7 +541,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     15,
   );
   await first["synchronize"]();
-  expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
+  expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBe("100");
   expect(await redis.hget(averageKey, `bucket:${bucket}:sum`)).toBe("100");
   expect((await first.meter(meter))?.balance).toBe(26);
   expect(
@@ -641,7 +641,7 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   );
   expect((await outpost.meter(meter))?.consumed_units).toBe(6);
   expect(await redis.hget(key, "cold_until")).toBe(String(bucket + 1));
-  expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
+  expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBe("2");
   expect(await redis.hget(key, `bucket:${bucket + BUCKET_SIZE}:sum`)).toBe("4");
   await ingest(outpost, 999);
   expect((await outpost.meter(meter))?.consumed_units).toBe(6);

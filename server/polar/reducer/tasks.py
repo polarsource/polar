@@ -35,12 +35,12 @@ async def invalidate_cache(
 
 
 @actor(
-    actor_name="reducer.compare_busiest_customer_meters",
+    actor_name="reducer.compare_highest_consumed_units",
     cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
-async def compare_busiest_customer_meters() -> None:
+async def compare_highest_consumed_units() -> None:
     async with AsyncReadSessionMaker() as session:
         repository = CustomerMeterRepository.from_session(session)
         redis = RedisMiddleware.get()

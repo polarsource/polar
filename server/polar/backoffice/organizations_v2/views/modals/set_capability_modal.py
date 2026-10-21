@@ -45,9 +45,8 @@ class SetCapabilityModal:
                 with tag.div(classes="alert"):
                     with tag.span(classes="text-sm"):
                         text(
-                            "Overrides persist until the next status transition, "
-                            "at which point the capability resets to the status "
-                            "default."
+                            "Overrides persist across status transitions until "
+                            "they are changed manually."
                         )
 
                 def _state(v: bool) -> str:

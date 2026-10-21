@@ -1276,7 +1276,6 @@ class OrganizationService:
             organization.id,
             next_review_threshold=next_review_threshold,
             min_threshold=_MIN_REVIEW_THRESHOLD,
-            active_capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
             now=datetime.now(UTC),
         )
 
@@ -2660,8 +2659,8 @@ class OrganizationService:
     ) -> Organization:
         """Override a single capability on an organization.
 
-        The override persists until the next status transition — `set_status`
-        resets `capabilities` from `STATUS_CAPABILITIES`.
+        The override persists across status transitions: `set_status` only
+        moves capabilities that still match the previous status default.
         """
         current: OrganizationCapabilities = dict(  # type: ignore[assignment]
             organization.capabilities

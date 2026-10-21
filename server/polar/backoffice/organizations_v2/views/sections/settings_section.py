@@ -413,7 +413,7 @@ class SettingsSection:
                     with tag.h2(classes="text-lg font-bold"):
                         text("Capabilities")
                     with tag.div(classes="text-xs text-base-content/60"):
-                        text("Overrides reset on the next status change.")
+                        text("Overrides persist across status changes.")
 
                 current_caps = self.org.capabilities
                 status_defaults = STATUS_CAPABILITIES[self.org.status]

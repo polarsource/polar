@@ -10,6 +10,7 @@ from typing import (
     Self,
     TypedDict,
     cast,
+    get_args,
 )
 from urllib.parse import urlparse
 from uuid import UUID
@@ -322,6 +323,8 @@ CapabilityName = Literal[
     "dashboard_access",
 ]
 
+CAPABILITY_NAMES = cast(tuple[CapabilityName, ...], get_args(CapabilityName))
+
 
 class InvalidStatusTransitionError(PolarError):
     def __init__(
@@ -408,6 +411,31 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
 }
 
 
+def transition_capabilities(
+    current: OrganizationCapabilities,
+    previous_status: OrganizationStatus,
+    status: OrganizationStatus,
+) -> OrganizationCapabilities:
+    """Move capabilities to the defaults of `status`, keeping manual overrides.
+
+    A capability whose value differs from the `previous_status` default was
+    explicitly overridden, so it keeps its value across the transition.
+    """
+    previous_defaults = STATUS_CAPABILITIES[previous_status]
+    new_defaults = STATUS_CAPABILITIES[status]
+    return cast(
+        OrganizationCapabilities,
+        {
+            name: (
+                new_defaults[name]
+                if current.get(name, previous_defaults[name]) == previous_defaults[name]
+                else current[name]
+            )
+            for name in CAPABILITY_NAMES
+        },
+    )
+
+
 CAPABILITY_METADATA: dict[CapabilityName, tuple[str, str]] = {
     "checkout_payments": (
         "Checkout payments",
@@ -434,8 +462,6 @@ CAPABILITY_METADATA: dict[CapabilityName, tuple[str, str]] = {
         "Allow team members to sign in and access the dashboard.",
     ),
 }
-
-CAPABILITY_NAMES: frozenset[str] = frozenset(CAPABILITY_METADATA.keys())
 
 
 # DENIED → ACTIVE and BLOCKED → ACTIVE additionally require a reason,
@@ -854,9 +880,12 @@ class Organization(RateLimitGroupMixin, RecordModel):
             and status not in ALLOWED_STATUS_TRANSITIONS[self.status]
         ):
             raise InvalidStatusTransitionError(self.status, status)
+        previous_status = self.status
         self.status = status
         self.status_updated_at = datetime.now(UTC)
-        self.capabilities = {**STATUS_CAPABILITIES[status]}
+        self.capabilities = transition_capabilities(
+            self.capabilities, previous_status, status
+        )
 
     @hybrid_property
     def is_under_review(self) -> bool:

@@ -2,6 +2,7 @@ from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
 from .account_credit import AccountCredit
+from .agent import Agent
 from .authentication_session import AuthenticationSession
 from .backoffice_user import BackofficeUser
 from .backup_codes_enrollment import BackupCodesEnrollment
@@ -139,6 +140,7 @@ from .webhook_event import WebhookEvent
 __all__ = [
     "Account",
     "AccountCredit",
+    "Agent",
     "AuthenticationSession",
     "BackofficeUser",
     "BackupCodesEnrollment",

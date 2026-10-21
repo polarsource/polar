@@ -119,15 +119,12 @@ class Product(
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    # The catalog that published this row. Membership is in `catalog_products`.
     catalog_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("catalogs.id", ondelete="restrict"),
         nullable=True,
         default=None,
     )
-    # Nullable until NOT NULL is enforced in a later migration (ADR-0006). The server
-    # default fills existing rows, so no row is NULL.
     is_current: Mapped[bool] = mapped_column(
         Boolean, nullable=True, default=True, server_default=text("true")
     )

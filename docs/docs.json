@@ -1173,7 +1173,12 @@
                   },
                   {
                     "group": "Customer Meters",
-                    "pages": ["GET /v1/customer-meters/{id}", "GET /v1/customer-meters/"]
+                    "pages": [
+                      "GET /v1/customer-meters/{id}",
+                      "GET /v1/customer-meters/",
+                      "POST /v1/customer-meters/credits",
+                      "POST /v1/customer-meters/credits/{id}/reverse"
+                    ]
                   },
                   {
                     "group": "License Keys",

@@ -125,6 +125,68 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         return inserted_ids, duplicates_count
 
+    async def insert_staged_batch(
+        self, events: Sequence[dict[str, Any]]
+    ) -> tuple[Sequence[UUID], int]:
+        """Insert user events into `staged_events`, skipping those whose external ID
+        is already in `staged_events` or `events`."""
+        if not events:
+            return [], 0
+
+        for event in events:
+            if event.get("id") is None:
+                event["id"] = generate_uuid()
+        keys = set().union(*events)
+        for event in events:
+            for key in keys:
+                event.setdefault(key, None)
+
+        statement = (
+            insert(StagedEvent)
+            .on_conflict_do_nothing(
+                index_elements=["organization_id", "external_id"],
+                index_where=StagedEvent.external_id.is_not(None),
+            )
+            .returning(
+                StagedEvent.id, StagedEvent.organization_id, StagedEvent.external_id
+            )
+            .execution_options(render_nulls=True)
+        )
+        result = await self.session.execute(statement, events)
+        inserted = result.all()
+
+        # Drop the inserted rows whose external ID is already in `events`: the
+        # unique index only catches duplicates still in `staged_events`. This is
+        # its own statement after the insert because an insert racing the mover
+        # on the same external ID waits for the mover to commit, and only a
+        # snapshot taken after that wait sees the moved row in `events`.
+        external_ids_by_organization: dict[UUID, list[str]] = {}
+        for _, organization_id, external_id in inserted:
+            if external_id is not None:
+                external_ids_by_organization.setdefault(organization_id, []).append(
+                    external_id
+                )
+        duplicate_ids: list[UUID] = []
+        for organization_id, external_ids in external_ids_by_organization.items():
+            moved = await self.session.execute(
+                delete(StagedEvent)
+                .where(
+                    StagedEvent.organization_id == organization_id,
+                    StagedEvent.external_id.in_(
+                        select(Event.external_id).where(
+                            Event.organization_id == organization_id,
+                            Event.external_id.in_(external_ids),
+                        )
+                    ),
+                )
+                .returning(StagedEvent.id)
+            )
+            duplicate_ids.extend(moved.scalars())
+
+        duplicate_id_set = set(duplicate_ids)
+        inserted_ids = [id for id, _, _ in inserted if id not in duplicate_id_set]
+        return inserted_ids, len(events) - len(inserted_ids)
+
     async def move_staged_events(self, limit: int) -> tuple[int, Sequence[UUID]]:
         """Move up to `limit` rows from `staged_events` to `events`, returning how
         many were moved and the IDs inserted into `events`."""

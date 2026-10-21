@@ -1,0 +1,9 @@
+server/polar/authz/dependencies.py
+  ai_agent 208-209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e6a359ce4e45b11da14673ea8f2fc56453d0e27a",
+  "prompts": {}
+}

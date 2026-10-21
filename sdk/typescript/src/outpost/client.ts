@@ -84,7 +84,7 @@ interface OutpostRedis extends Redis {
   ): Promise<[state: string[], replaced: string[]]>;
 }
 interface OutpostPipeline extends ChainableCommander {
-  outpostWriteBucket(key: string, ...args: (string | number)[]): this;
+  outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
 }
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
@@ -361,7 +361,7 @@ export class Outpost {
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
       this.redis.defineCommand("outpostWriteBucket", {
-        numberOfKeys: 1,
+        numberOfKeys: 2,
         lua: WRITE_BUCKET_SCRIPT,
       });
       this.redis.defineCommand("outpostApplySnapshot", {
@@ -498,6 +498,7 @@ export class Outpost {
         const statistics = update.statistics;
         pipeline.outpostWriteBucket(
           `outpost:state:${identity}`,
+          `outpost:pending:${identity}:${update.bucketStart}`,
           identity,
           this.channel,
           generateEpoch(),
@@ -506,6 +507,7 @@ export class Outpost {
           statistics.sum,
           statistics.min ?? "",
           statistics.max ?? "",
+          event.external_id!,
         );
       }
       const results = await pipeline.exec().catch((error: unknown) => {

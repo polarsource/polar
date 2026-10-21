@@ -507,6 +507,7 @@ class Outpost:
                     identity = f"{customer}:{reducer_id}"
                     arguments: list[str | int | float] = [
                         f"outpost:state:{identity}",
+                        f"outpost:pending:{identity}:{bucket_start}",
                         identity,
                         self._channel,
                         _generate_epoch(),
@@ -515,9 +516,10 @@ class Outpost:
                         statistics.sum,
                         statistics.min if statistics.min is not None else "",
                         statistics.max if statistics.max is not None else "",
+                        typing.cast(str, event["external_id"]),
                     ]
                     writes.append((identity, arguments))
-                    pipeline.evalsha(WRITE_BUCKET_SHA, 1, *arguments)
+                    pipeline.evalsha(WRITE_BUCKET_SHA, 2, *arguments)
                 states = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for (identity, arguments), state in zip(writes, states, strict=True):
@@ -525,7 +527,7 @@ class Outpost:
                 if isinstance(state, NoScriptError):
                     try:
                         state = await self._redis.eval(
-                            WRITE_BUCKET_SCRIPT, 1, *arguments
+                            WRITE_BUCKET_SCRIPT, 2, *arguments
                         )
                     except RedisError as error:
                         state = error

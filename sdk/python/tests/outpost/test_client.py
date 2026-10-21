@@ -483,7 +483,7 @@ async def test_bucket_ownership_and_internal_customer(
         await redis.hget(
             "outpost:state:customer:alice:tokens", f"bucket:{BUCKET - BUCKET_SIZE}:sum"
         )
-        is None
+        == b"999"
     )
 
 
@@ -514,7 +514,7 @@ async def test_actor_is_idempotent_and_missing_snapshot_is_not_zero(
 
 
 @pytest.mark.anyio
-async def test_repeated_reduction_and_concurrent_writers(
+async def test_concurrent_writers_count_a_repeated_event_once(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
 ) -> None:
@@ -535,7 +535,7 @@ async def test_repeated_reduction_and_concurrent_writers(
             tasks.start_soon(outpost.track, event)
     assert (
         await redis.hget("outpost:state:external:alice:tokens", f"bucket:{BUCKET}:sum")
-        == b"10"
+        == b"1"
     )
 
 
@@ -1237,8 +1237,16 @@ async def test_cutoff_keeps_microsecond_precision(
     prefix = [identity, "outpost:0:updates", "epoch"]
     write = redis.register_script(WRITE_BUCKET_SCRIPT)
     snapshot = redis.register_script(APPLY_SNAPSHOT_SCRIPT)
-    await write(keys=[key], args=[*prefix, BUCKET, 1, 2, 2, 2])
-    await write(keys=[key], args=[*prefix, BUCKET + BUCKET_SIZE, 1, 4, 4, 4])
+
+    async def track(bucket_start: int, tokens: int, external_id: str) -> None:
+        pending_key = f"outpost:pending:{identity}:{bucket_start}"
+        await write(
+            keys=[key, pending_key],
+            args=[*prefix, bucket_start, 1, tokens, tokens, tokens, external_id],
+        )
+
+    await track(BUCKET, 2, "first")
+    await track(BUCKET + BUCKET_SIZE, 4, "second")
     await snapshot(
         keys=[key],
         args=[
@@ -1256,8 +1264,8 @@ async def test_cutoff_keeps_microsecond_precision(
     assert await redis.hget(key, "cold_until") == str(BUCKET + 1).encode()
     assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
     assert await redis.hget(key, f"bucket:{BUCKET + BUCKET_SIZE}:sum") == b"4"
-    await write(keys=[key], args=[*prefix, BUCKET, 1, 999, 999, 999])
-    assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
+    await track(BUCKET, 999, "late")
+    assert await redis.hget(key, f"bucket:{BUCKET}:sum") == b"999"
 
 
 @pytest.mark.anyio

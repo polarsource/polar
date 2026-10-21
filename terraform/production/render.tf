@@ -273,8 +273,8 @@ module "pgbouncer" {
 
   pool_config = {
     max_client_conn   = "5000"
-    default_pool_size = "50"
-    reserve_pool_size = "10"
+    default_pool_size = "200"
+    reserve_pool_size = "50"
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
@@ -284,13 +284,13 @@ locals {
   pgbouncer_read_pool_configs = {
     "polar-read" = {
       max_client_conn   = "5000"
-      default_pool_size = "50"
-      reserve_pool_size = "10"
+      default_pool_size = "200"
+      reserve_pool_size = "50"
     }
     "polar-replica" = {
       max_client_conn   = "1000"
-      default_pool_size = "20"
-      reserve_pool_size = "0"
+      default_pool_size = "200"
+      reserve_pool_size = "50"
     }
   }
 }

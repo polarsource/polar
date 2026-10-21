@@ -540,9 +540,6 @@ class Outpost:
                     if first_error is None:
                         first_error = state
                     continue
-                # Empty when the bucket is older than the last snapshot: nothing changed.
-                if not state:
-                    continue
                 await self._receive_state(identity, decode_state(state), bucket=True)
             if first_error is not None:
                 raise first_error
@@ -553,6 +550,65 @@ class Outpost:
             attributes = {"outpost.outcome": outcome}
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
+
+    @_raise_redis_unavailable
+    async def confirm(self, events: collections.abc.Sequence[EventInput]) -> None:
+        """Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
+
+        Args:
+            events: Tracked events, including their external_id.
+        """
+        self._require_redis()
+        if not self._configured.is_set():
+            with anyio.fail_after(5):
+                await self._configured.wait()
+        groups: dict[tuple[str, int], list[str]] = {}
+        for event in events:
+            self.validate(event)
+            parsed = self._parse_event(event)
+            updates = reduce(
+                self._matchers,
+                [parsed],
+                oldest_bucket_start=get_bucket_start(parsed.timestamp),
+            )
+            for customer, reducer_id, bucket_start in updates:
+                identity = f"{customer}:{reducer_id}"
+                groups.setdefault((identity, bucket_start), []).append(
+                    typing.cast(str, event["external_id"])
+                )
+        assert self._redis is not None
+        confirmations: list[tuple[str, list[str | int]]] = []
+        async with self._redis.pipeline(transaction=False) as pipeline:
+            for (identity, bucket_start), ids in groups.items():
+                arguments: list[str | int] = [
+                    f"outpost:state:{identity}",
+                    f"outpost:pending:{identity}:{bucket_start}",
+                    identity,
+                    self._channel,
+                    _generate_epoch(),
+                    bucket_start,
+                    *ids,
+                ]
+                confirmations.append((identity, arguments))
+                pipeline.evalsha(CONFIRM_SHA, 2, *arguments)
+            states = await pipeline.execute(raise_on_error=False)
+        first_error: Exception | None = None
+        for (identity, arguments), state in zip(confirmations, states, strict=True):
+            if isinstance(state, NoScriptError):
+                try:
+                    state = await self._redis.eval(CONFIRM_SCRIPT, 2, *arguments)
+                except RedisError as error:
+                    state = error
+            if isinstance(state, Exception):
+                if first_error is None:
+                    first_error = state
+                continue
+            # Empty when none of the events was pending: nothing changed.
+            if not state:
+                continue
+            await self._receive_state(identity, decode_state(state), bucket=True)
+        if first_error is not None:
+            raise first_error
 
     @_raise_redis_unavailable
     async def meter(

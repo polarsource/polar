@@ -33,7 +33,12 @@ import {
   addStatistics,
   quantity,
 } from "./reducer";
-import { READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT, APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import {
+  READ_STATE_SCRIPT,
+  WRITE_BUCKET_SCRIPT,
+  CONFIRM_SCRIPT,
+  APPLY_SNAPSHOT_SCRIPT,
+} from "./scripts";
 import { createMeterProvider, createTracerProvider, isTelemetryEnabled } from "./telemetry";
 
 const CACHE_SIZE = 1024;
@@ -85,6 +90,7 @@ interface OutpostRedis extends Redis {
 }
 interface OutpostPipeline extends ChainableCommander {
   outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
+  outpostConfirm(key: string, pendingKey: string, ...args: (string | number)[]): this;
 }
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
@@ -364,6 +370,7 @@ export class Outpost {
         numberOfKeys: 2,
         lua: WRITE_BUCKET_SCRIPT,
       });
+      this.redis.defineCommand("outpostConfirm", { numberOfKeys: 2, lua: CONFIRM_SCRIPT });
       this.redis.defineCommand("outpostApplySnapshot", {
         numberOfKeys: 1,
         lua: APPLY_SNAPSHOT_SCRIPT,
@@ -520,8 +527,6 @@ export class Outpost {
           firstError ??= error;
           continue;
         }
-        // Empty when the bucket is older than the last snapshot: nothing changed.
-        if (!(state as string[]).length) continue;
         const update = updates[index];
         const identity = `${update.customer}:${update.reducer}`;
         await this.receiveState(identity, decodeState(state as string[]), true);
@@ -534,6 +539,56 @@ export class Outpost {
       const attributes = { "outpost.outcome": outcome };
       this.ingestDuration?.record((performance.now() - started) / 1000, attributes);
     }
+  }
+
+  /**
+   * Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
+   *
+   * @param events Tracked events, including their external_id.
+   */
+  async confirm(events: EventInput[]): Promise<void> {
+    const redis = this.requireRedis();
+    await this.waitConfigured();
+    const groups = new Map<string, { identity: string; bucketStart: number; ids: string[] }>();
+    for (const event of events) {
+      this.validate(event);
+      const parsed = parseEvent(event);
+      for (const update of reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp))) {
+        const identity = `${update.customer}:${update.reducer}`;
+        const key = `${identity}:${update.bucketStart}`;
+        let group = groups.get(key);
+        if (!group)
+          groups.set(key, (group = { identity, bucketStart: update.bucketStart, ids: [] }));
+        group.ids.push(event.external_id!);
+      }
+    }
+    const confirmations = [...groups.values()];
+    const pipeline = redis.pipeline() as OutpostPipeline;
+    for (const { identity, bucketStart, ids } of confirmations)
+      pipeline.outpostConfirm(
+        `outpost:state:${identity}`,
+        `outpost:pending:${identity}:${bucketStart}`,
+        identity,
+        this.channel,
+        generateEpoch(),
+        bucketStart,
+        ...ids,
+      );
+    const results = await pipeline.exec().catch((error: unknown) => {
+      throw redisUnavailable(error);
+    });
+    if (results === null) throw new UnavailableRedisError();
+    let firstError: Error | undefined;
+    for (const [index, [error, state]] of results.entries()) {
+      if (error) {
+        firstError ??= error;
+        continue;
+      }
+      // Empty when none of the events was pending: nothing changed.
+      if (!(state as string[]).length) continue;
+      await this.receiveState(confirmations[index].identity, decodeState(state as string[]), true);
+    }
+    if (firstError) throw redisUnavailable(firstError);
   }
 
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {

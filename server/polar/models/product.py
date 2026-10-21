@@ -126,7 +126,7 @@ class Product(
         default=None,
     )
     is_current: Mapped[bool] = mapped_column(
-        Boolean, nullable=True, default=True, server_default=text("true")
+        Boolean, nullable=False, default=True, server_default=text("true")
     )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),

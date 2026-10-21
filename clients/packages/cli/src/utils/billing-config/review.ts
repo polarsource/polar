@@ -25,21 +25,13 @@ export const unchanged = (entries: ReadonlyArray<AppliedEntry>) =>
 export const target = (organization: ActiveOrganization) =>
   `${organization.name} (${organization.environment})`
 
-const NOUNS = [
-  ['meters', 'meter'],
-  ['benefits', 'benefit'],
-  ['products', 'product'],
-  ['discounts', 'discount'],
-] as const
-
 export const found = (config: LoadedConfig) => {
   const sections = record(config.input) ?? {}
-  const counts = NOUNS.flatMap(([section, noun]) => {
-    const items = sections[section]
-    return Array.isArray(items) && items.length > 0
-      ? [plural(items.length, noun)]
-      : []
-  })
+  const counts = Object.entries(sections).flatMap(([section, items]) =>
+    Array.isArray(items) && items.length > 0
+      ? [plural(items.length, section.replace(/s$/, ''))]
+      : [],
+  )
   const settings = record(sections['settings'])
   const all = [
     ...(settings && Object.keys(settings).length > 0 ? ['settings'] : []),

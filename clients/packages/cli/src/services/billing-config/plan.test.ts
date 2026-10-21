@@ -171,19 +171,51 @@ describe('plan', () => {
     )
   })
 
-  test('asks for the read scope on other 403s', async () => {
+  test('names the scopes the API asks for on a 403', async () => {
     api.routes[`POST ${planUrl}`] = Response.json(
-      { error: 'NotPermitted', detail: 'Not permitted' },
-      { status: 403 },
+      { error: 'insufficient_scope' },
+      {
+        status: 403,
+        headers: {
+          'www-authenticate': `Bearer realm="polar", scope="meters:read benefits:read", error="insufficient_scope"`,
+        },
+      },
     )
 
     const error = await failure(
       run(await write(JSON.stringify({ meters: [], benefits: [] }))),
     )
 
+    expect(error.message).toBe('You do not have access to Acme')
     expect(error.hint).toBe(
-      'The token needs the meters:read, benefits:read scopes.',
+      'The token needs the benefits:read, meters:read scopes.',
     )
+  })
+
+  test('keeps a generic hint when the 403 names no scopes', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json(
+      { error: 'NotPermitted', detail: 'Not permitted' },
+      { status: 403 },
+    )
+
+    const error = await failure(run(await write(source)))
+
+    expect(error.hint).toBe("Check the token's organization and permissions.")
+  })
+
+  test('maps every resource the API reports to its section', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [
+        { resource: 'webhook', external_id: 'orders', action: 'created' },
+      ],
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.entries).toEqual([
+      { section: 'webhooks', id: 'orders', action: 'created', diff: [] },
+    ])
   })
 
   test('lists settings changes first, grouped by section', async () => {
@@ -219,20 +251,5 @@ describe('plan', () => {
         ],
       },
     ])
-  })
-
-  test('asks for the organizations scope for settings', async () => {
-    api.routes[`POST ${planUrl}`] = Response.json(
-      { error: 'NotPermitted', detail: 'Not permitted' },
-      { status: 403 },
-    )
-
-    const error = await failure(
-      run(await write(JSON.stringify({ settings: {}, meters: [] }))),
-    )
-
-    expect(error.hint).toBe(
-      'The token needs the meters:read, organizations:read scopes.',
-    )
   })
 })

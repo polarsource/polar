@@ -91,7 +91,10 @@ describe('pull', () => {
     expect(result).toEqual({
       status: 'written',
       file: join(directory, 'polar.config.ts'),
-      entries: [{ section: 'meters', id: 'tool_calls' }],
+      entries: [
+        { section: 'settings', id: 'payments' },
+        { section: 'meters', id: 'tool_calls' },
+      ],
       skipped: [],
     })
     expect(api.requests[0]!.headers.get('Polar-Organization')).toBe('org-1')
@@ -121,13 +124,14 @@ describe('pull', () => {
     const result = await run('polar.json')
 
     expect(result.entries).toEqual([
+      { section: 'settings', id: 'payments' },
       { section: 'meters', id: 'tool_calls' },
       { section: 'products', id: 'pro' },
     ])
     expect(result.status === 'written' && result.skipped).toEqual(skipped)
     expect(
       JSON.parse(await readFile(join(directory, 'polar.json'), 'utf8')),
-    ).toEqual(document)
+    ).toEqual({ settings, ...document })
   })
 
   test('overwrites a file that matches the organization', async () => {
@@ -145,7 +149,7 @@ describe('pull', () => {
     expect(result.status).toBe('written')
     expect(
       JSON.parse(await readFile(join(directory, 'polar.json'), 'utf8')),
-    ).toEqual({ meters: [meter, { ...meter, external_id: 'fresh' }] })
+    ).toEqual({ settings, meters: [meter, { ...meter, external_id: 'fresh' }] })
   })
 
   test('refuses to overwrite a file that differs from the organization', async () => {
@@ -196,7 +200,7 @@ describe('pull', () => {
     expect(result.status).toBe('written')
     expect(
       JSON.parse(await readFile(join(directory, 'polar.json'), 'utf8')),
-    ).toEqual({ meters: [meter] })
+    ).toEqual({ settings, meters: [meter] })
   })
 
   test('still compares a file that carries an organization_id', async () => {
@@ -256,7 +260,7 @@ describe('pull', () => {
     expect(result.status).toBe('written')
     expect(
       JSON.parse(await readFile(join(directory, 'polar.json'), 'utf8')),
-    ).toEqual({ meters: [meter] })
+    ).toEqual({ settings, meters: [meter] })
   })
 
   test('creates the directory of the file', async () => {
@@ -269,7 +273,7 @@ describe('pull', () => {
       JSON.parse(
         await readFile(join(directory, 'billing/nested/polar.json'), 'utf8'),
       ),
-    ).toEqual({ meters: [meter] })
+    ).toEqual({ settings, meters: [meter] })
   })
 
   test('points to JSON when a resource has no TypeScript syntax yet', async () => {
@@ -305,15 +309,97 @@ describe('pull', () => {
 
   test('names the scopes when the token cannot read the config', async () => {
     api.routes[`GET ${exportUrl}`] = Response.json(
-      { error: 'NotPermitted' },
-      { status: 403 },
+      { error: 'insufficient_scope' },
+      {
+        status: 403,
+        headers: {
+          'www-authenticate': `Bearer realm="polar", scope="webhooks:read meters:read", error="insufficient_scope"`,
+        },
+      },
     )
 
     const error = await failure(run('polar.json'))
 
     expect(error.message).toBe('You do not have access to Acme')
     expect(error.hint).toBe(
-      'The token needs the organizations:read, meters:read, benefits:read, products:read, discounts:read, webhooks:read scopes.',
+      'The token needs the meters:read, webhooks:read scopes.',
+    )
+  })
+
+  test('writes settings first in TypeScript', async () => {
+    api.routes[`GET ${exportUrl}`] = exported({ meters: [meter] })
+
+    await run('polar.config.ts')
+
+    const source = await readFile(join(directory, 'polar.config.ts'), 'utf8')
+    expect(source.indexOf('settings:')).toBeLessThan(source.indexOf('meters:'))
+    expect(source).toContain(
+      'settings: { "payments": { "currency": "usd", "tax": "location" } },',
+    )
+  })
+
+  test('leaves unset settings out, at any depth', async () => {
+    api.routes[`GET ${exportUrl}`] = Response.json({
+      config: { meters: [meter] },
+      settings: {
+        payments: { currency: null, tax: null },
+        notifications: { email: { digest: 'daily', reminders: null } },
+      },
+      skipped: [],
+    })
+
+    const result = await run('polar.json')
+
+    expect(result.entries).toEqual([
+      { section: 'settings', id: 'notifications' },
+      { section: 'meters', id: 'tool_calls' },
+    ])
+    expect(
+      JSON.parse(await readFile(join(directory, 'polar.json'), 'utf8')),
+    ).toEqual({
+      settings: { notifications: { email: { digest: 'daily' } } },
+      meters: [meter],
+    })
+  })
+
+  test('refuses to overwrite a file whose settings differ from the organization', async () => {
+    const before = JSON.stringify({
+      settings: { payments: { currency: 'eur' } },
+      meters: [meter],
+    })
+    await writeFile(join(directory, 'polar.json'), before)
+    api.routes[`GET ${exportUrl}`] = exported({ meters: [meter] })
+
+    const result = await run('polar.json')
+
+    expect(result).toEqual({
+      status: 'conflict',
+      file: join(directory, 'polar.json'),
+      entries: [{ section: 'settings', id: 'payments' }],
+    })
+    expect(await readFile(join(directory, 'polar.json'), 'utf8')).toBe(before)
+  })
+
+  test('writes webhooks as TypeScript', async () => {
+    api.routes[`GET ${exportUrl}`] = exported({
+      meters: [],
+      webhooks: [
+        {
+          external_id: 'orders',
+          url: 'https://example.com/polar',
+          format: 'raw',
+          events: ['order.created'],
+          api_version: '2026-10',
+        },
+      ],
+    })
+
+    const result = await run('polar.config.ts')
+
+    expect(result.entries).toContainEqual({ section: 'webhooks', id: 'orders' })
+    const source = await readFile(join(directory, 'polar.config.ts'), 'utf8')
+    expect(source).toContain(
+      '  webhooks: {\n    "orders": { "url": "https://example.com/polar", "format": "raw", "events": ["order.created"], "api_version": "2026-10" },\n  },',
     )
   })
 })

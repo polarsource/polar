@@ -39,15 +39,8 @@ const FieldChange = Schema.Struct({
 })
 type FieldChange = typeof FieldChange.Type
 
-export const ConfigResource = Schema.Literals([
-  'meter',
-  'benefit',
-  'product',
-  'discount',
-])
-
 export const EntryResult = Schema.Struct({
-  resource: ConfigResource,
+  resource: Schema.String,
   external_id: Schema.String,
   action: EntryAction,
   diff: Schema.optional(Schema.Array(FieldChange)),
@@ -123,10 +116,7 @@ export const ApplyOutput = Schema.Union(
   ),
 )
 
-export const ConfigDocument = Schema.Record(
-  Schema.String,
-  Schema.Array(Schema.Unknown),
-)
+export const ConfigDocument = Schema.Record(Schema.String, Schema.Unknown)
 export type ConfigDocument = typeof ConfigDocument.Type
 
 export const SkippedResource = Schema.Struct({
@@ -138,7 +128,8 @@ export const SkippedResource = Schema.Struct({
 export type SkippedResource = typeof SkippedResource.Type
 
 export const ConfigExport = Schema.Struct({
-  config: ConfigDocument,
+  config: Schema.Record(Schema.String, Schema.Array(Schema.Unknown)),
+  settings: Schema.optional(Schema.Unknown),
   skipped: Schema.Array(SkippedResource),
 })
 

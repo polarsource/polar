@@ -1,5 +1,16 @@
 import { Schema } from 'effect'
 import type { ConfigDocument } from '@/schemas/BillingConfig'
+import { record } from '@/utils/billing-config/describe'
+
+export const sectionsOf = (
+  document: ConfigDocument,
+): Array<[string, ReadonlyArray<unknown>]> =>
+  Object.entries(document).flatMap(([section, items]) =>
+    Array.isArray(items) ? [[section, items]] : [],
+  )
+
+export const settingsOf = (document: ConfigDocument) =>
+  record(document['settings'])
 
 const Entry = Schema.Struct({ external_id: Schema.String })
 
@@ -52,12 +63,25 @@ interface Difference {
   readonly id: string
 }
 
+const settingsDifferences = (
+  local: ConfigDocument,
+  remote: ConfigDocument,
+): Difference[] => {
+  const theirs = settingsOf(remote) ?? {}
+  return Object.entries(settingsOf(local) ?? {})
+    .filter(([group, values]) => canonical(values) !== canonical(theirs[group]))
+    .map(([group]) => ({ section: 'settings', id: group }))
+}
+
 export const differences = (
   local: ConfigDocument,
   remote: ConfigDocument,
-): Difference[] =>
-  Object.entries(local).flatMap(([section, items]) => {
-    const theirs = keyed(remote[section] ?? []).entries
+): Difference[] => [
+  ...settingsDifferences(local, remote),
+  ...sectionsOf(local).flatMap(([section, items]) => {
+    const theirs = keyed(
+      sectionsOf(remote).find(([name]) => name === section)?.[1] ?? [],
+    ).entries
     const mine = keyed(items)
     return [...mine.entries]
       .filter(([id, item]) => {
@@ -69,4 +93,5 @@ export const differences = (
         )
       })
       .map(([id]) => ({ section, id }))
-  })
+  }),
+]

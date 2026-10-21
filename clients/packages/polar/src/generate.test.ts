@@ -31,8 +31,24 @@ const clauses = [
   { property: '', operator: 'not_like', value: '' },
 ] satisfies MeterConfig['filter']['clauses']
 
+const webhook = {
+  external_id: 'orders',
+  url: 'https://example.com/polar',
+  format: 'raw',
+  events: ['order.created', 'order.paid'],
+  api_version: '2026-10',
+} satisfies NonNullable<PolarConfig['webhooks']>[number]
+
 const cases: [string, PolarConfig][] = [
   ['tokens example', { meters: [meter] }],
+  [
+    'settings and webhooks',
+    {
+      settings: { payments: { currency: 'eur', tax: 'inclusive' } },
+      meters: [],
+      webhooks: [webhook, { ...webhook, external_id: '10', format: 'slack' }],
+    },
+  ],
   ['empty config', { meters: [] }],
   [
     'empty and filter',
@@ -463,34 +479,37 @@ test('renders the tax behavior of a price', async () => {
   expect(source).toContain('.tax("exclusive"),')
 })
 
-test('keeps prices with different tax behaviors in separate builder calls', async () => {
-  const source = await Effect.runPromise(
-    generateConfig({
-      meters: [],
-      products: [
-        {
-          external_id: 'pro',
-          name: 'Pro',
-          recurring_interval: 'month',
-          recurring_interval_count: 1,
-          prices: [
-            {
-              amount_type: 'fixed',
-              price_currency: 'usd',
-              price_amount: 1000,
-              tax_behavior: 'inclusive',
-            },
-            { amount_type: 'fixed', price_currency: 'eur', price_amount: 900 },
-          ],
-          benefits: [],
-        },
-      ],
-    }),
+test('refuses prices whose tax behaviors differ per currency, which no builder call can express', async () => {
+  const result = await Effect.runPromise(
+    Effect.result(
+      generateConfig({
+        meters: [],
+        products: [
+          {
+            external_id: 'pro',
+            name: 'Pro',
+            recurring_interval: 'month',
+            recurring_interval_count: 1,
+            prices: [
+              {
+                amount_type: 'fixed',
+                price_currency: 'usd',
+                price_amount: 1000,
+                tax_behavior: 'inclusive',
+              },
+              {
+                amount_type: 'fixed',
+                price_currency: 'eur',
+                price_amount: 900,
+              },
+            ],
+            benefits: [],
+          },
+        ],
+      }),
+    ),
   )
-  expect(source).toContain(
-    'fixed().amount(usd(10))\n          .tax("inclusive"),',
-  )
-  expect(source).toContain('fixed().amount(eur(9)),')
+  expect(result._tag).toBe('Failure')
 })
 
 test('renders free volume tiers without included()', async () => {
@@ -659,5 +678,76 @@ test('renders discounts with their builder calls', async () => {
   )
   expect(source).toContain(
     "import { defineConfig, usd, eur } from '@polar-sh/polar'",
+  )
+})
+
+test('renders settings as the plain object defineConfig takes', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      settings: { payments: { currency: 'eur', tax: 'inclusive' } },
+      meters: [],
+    }),
+  )
+  expect(source).toContain(
+    'settings: { "payments": { "currency": "eur", "tax": "inclusive" } },',
+  )
+})
+
+test('renders webhooks keyed by external id, as entries when keys would reorder', async () => {
+  const keyed = await Effect.runPromise(
+    generateConfig({ meters: [], webhooks: [webhook] }),
+  )
+  expect(keyed).toContain(
+    [
+      '  webhooks: {',
+      '    "orders": { "url": "https://example.com/polar", "format": "raw", "events": ["order.created", "order.paid"], "api_version": "2026-10" },',
+      '  },',
+    ].join('\n'),
+  )
+  const entries = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      webhooks: [webhook, { ...webhook, external_id: '10' }],
+    }),
+  )
+  expect(entries).toContain('  webhooks: [\n    ["orders", {')
+  expect(entries).toContain('    ["10", {')
+})
+
+test('refuses a product whose prices are not set in the same currencies', async () => {
+  const price = (currency: 'usd' | 'eur' | 'krw') => ({
+    amount_type: 'fixed' as const,
+    price_currency: currency,
+    price_amount: 1000,
+  })
+  const result = await Effect.runPromise(
+    Effect.result(
+      generateConfig({
+        meters: [meter],
+        products: [
+          {
+            external_id: 'mixed',
+            name: 'Mixed',
+            recurring_interval: 'month',
+            recurring_interval_count: 1,
+            prices: [
+              price('usd'),
+              price('krw'),
+              {
+                amount_type: 'metered_unit',
+                price_currency: 'usd',
+                meter: 'tokens',
+                unit_amount: '1',
+              },
+            ],
+            benefits: [],
+          },
+        ],
+      }),
+    ),
+  )
+  expect(result._tag).toBe('Failure')
+  expect(String(result._tag === 'Failure' && result.failure)).toContain(
+    'Product "mixed" prices in different currencies per price',
   )
 })

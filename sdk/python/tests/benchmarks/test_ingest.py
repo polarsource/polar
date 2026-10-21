@@ -76,7 +76,6 @@ def benchmark_ingest(
         EventInput,
         {
             **scenario.event,
-            "external_id": scenario.customer,
             "external_customer_id": scenario.customer,
             "timestamp": timestamp.isoformat(),
         },
@@ -85,7 +84,10 @@ def benchmark_ingest(
 
     def ingest() -> None:
         nonlocal ingested
-        loop.run_until_complete(outpost.track(event))
+        # A new external_id each time: the same one would be a duplicate and write nothing.
+        loop.run_until_complete(
+            outpost.track({**event, "external_id": f"event-{ingested}"})
+        )
         ingested += 1
 
     benchmark(ingest)

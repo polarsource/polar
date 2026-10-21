@@ -89,14 +89,14 @@ describe("Outpost.track", () => {
   for (const scenario of SCENARIOS) {
     const event = {
       ...scenario.event,
-      external_id: scenario.name,
       external_customer_id: scenario.customer,
       timestamp: new Date(newestBucketStart(scenario) / 1000).toISOString(),
     };
     bench(
       scenario.name,
       async () => {
-        await outpost.track(event);
+        // A new external_id each time: the same one would be a duplicate and write nothing.
+        await outpost.track({ ...event, external_id: `event-${scenario.ingested}` });
         scenario.ingested += 1;
       },
       OPTIONS,

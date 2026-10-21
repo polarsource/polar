@@ -57,6 +57,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
@@ -1702,7 +1703,10 @@ class TestCycle:
             )
 
         reset_meters_mock.assert_awaited_once_with(
-            session, updated_subscription, reset_at=utc_now()
+            session,
+            updated_subscription,
+            reset_at=utc_now(),
+            include_meter_credits=not cancel_at_period_end,
         )
 
     @freeze_time("2024-01-15 12:00:00")
@@ -1732,7 +1736,7 @@ class TestCycle:
             )
 
         reset_meters_mock.assert_awaited_once_with(
-            session, updated_subscription, reset_at=cycle_at
+            session, updated_subscription, reset_at=cycle_at, include_meter_credits=True
         )
 
     async def test_not_billable(
@@ -4767,7 +4771,7 @@ async def update_meters_fixtures(
 
 
 @pytest.mark.anyio
-class TestResetMeter:
+class TestResetMeters:
     async def test_without_rollover(
         self,
         mocker: MockerFixture,
@@ -4785,9 +4789,7 @@ class TestResetMeter:
             return_value=0,
         )
 
-        await subscription_service.reset_meter(
-            session, subscription, subscription_meter
-        )
+        await subscription_service.reset_meters(session, subscription)
 
         get_rollover_units_mock.assert_awaited_once_with(
             session, customer, subscription_meter.meter, cutoff=None
@@ -4821,8 +4823,8 @@ class TestResetMeter:
             "polar.subscription.service.reducer_service.enqueue_seal"
         )
 
-        await subscription_service.reset_meter(
-            session, subscription, subscription_meter, reset_at=reset_at
+        await subscription_service.reset_meters(
+            session, subscription, reset_at=reset_at
         )
 
         get_rollover_units_mock.assert_awaited_once_with(
@@ -4843,6 +4845,80 @@ class TestResetMeter:
             "rollover": True,
             "reason": "benefit",
         }
+
+    async def test_resets_granted_meter_credits(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        meter = await create_meter(save_fixture, organization=organization)
+        revoked_meter = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        for benefit_meter, granted in ((meter, True), (revoked_meter, False)):
+            benefit = await create_benefit(
+                save_fixture,
+                organization=organization,
+                type=BenefitType.meter_credit,
+                properties={
+                    "meter_id": str(benefit_meter.id),
+                    "units": 100,
+                    "rollover": False,
+                },
+            )
+            await create_benefit_grant(
+                save_fixture,
+                customer,
+                benefit,
+                granted=granted,
+                subscription=subscription,
+            )
+        reset_at = utc_now()
+
+        await subscription_service.reset_meters(
+            session, subscription, reset_at=reset_at
+        )
+
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
+        assert reset_events[0].timestamp == reset_at
+        assert reset_events[0].user_metadata == {"meter_id": str(meter.id)}
+
+    async def test_resets_shared_meter_once(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(subscription.meters[0].meter_id),
+                "units": 100,
+                "rollover": False,
+            },
+        )
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, subscription=subscription
+        )
+
+        await subscription_service.reset_meters(session, subscription)
+
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
 
 
 @pytest.mark.anyio

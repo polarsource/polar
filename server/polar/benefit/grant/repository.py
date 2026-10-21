@@ -3,7 +3,7 @@ from typing import Unpack
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -72,6 +72,25 @@ class BenefitGrantRepository(
             BenefitGrant.scope == scope,
             BenefitGrant.is_granted,
             ~BenefitGrant.is_deleted,
+        )
+        return await self.get_all(statement)
+
+    async def list_granted_meter_credits_by_subscription(
+        self, subscription_id: UUID
+    ) -> Sequence[BenefitGrant]:
+        statement = (
+            self.get_base_statement()
+            .join(BenefitGrant.benefit)
+            .where(
+                BenefitGrant.subscription_id == subscription_id,
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+                Benefit.type == BenefitType.meter_credit,
+            )
+            .options(
+                contains_eager(BenefitGrant.benefit),
+                joinedload(BenefitGrant.customer),
+            )
         )
         return await self.get_all(statement)
 

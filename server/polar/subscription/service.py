@@ -16,6 +16,9 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditProperties,
+)
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -73,6 +76,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
+from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -80,6 +84,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    Meter,
     Order,
     OrderItem,
     Organization,
@@ -116,6 +121,7 @@ from polar.organization.repository import (
 )
 from polar.product.guard import (
     is_custom_price,
+    is_metered_price,
     is_recurring_product,
     is_seat_price,
     is_static_price,
@@ -1349,7 +1355,9 @@ class SubscriptionService:
         subscription = await repository.release_scheduler_lock(subscription)
 
         reset_at = min(cycle_at, utc_now())
-        await self.reset_meters(session, subscription, reset_at=reset_at)
+        await self.reset_meters(
+            session, subscription, reset_at=reset_at, include_meter_credits=not revoke
+        )
 
         if revoke:
             billing_reason = OrderBillingReasonInternal.subscription_cancel
@@ -1452,53 +1460,84 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         reset_at: datetime | None = None,
+        include_meter_credits: bool = True,
     ) -> None:
         """
-        Resets all the subscription meters to start fresh, optionally reporting
-        rollover units if applicable.
+        Resets the meters the subscription bills or credits to start fresh,
+        optionally reporting rollover units if applicable.
 
         This should be called when creating a new subscription or cycling an
-        existing one.
+        existing one. Meters are taken from the metered prices and from the
+        granted meter-credit benefits, so a meter that is only credited is reset
+        too, whether or not the renewal payment succeeds: its credits were for
+        the period that just ended.
         """
-        for subscription_meter in subscription.meters:
-            await self.reset_meter(
-                session, subscription, subscription_meter, reset_at=reset_at
+        meters: dict[tuple[uuid.UUID, uuid.UUID], tuple[Customer, Meter]] = {
+            (subscription.customer_id, price.meter_id): (
+                subscription.customer,
+                price.meter,
+            )
+            for price in subscription.prices
+            if is_metered_price(price)
+        }
+        if include_meter_credits:
+            benefit_grant_repository = BenefitGrantRepository.from_session(session)
+            grants = await benefit_grant_repository.list_granted_meter_credits_by_subscription(
+                subscription.id
+            )
+            meter_repository = MeterRepository.from_session(session)
+            for grant in grants:
+                properties = cast(
+                    BenefitMeterCreditProperties, grant.benefit.properties
+                )
+                meter_id = uuid.UUID(properties["meter_id"])
+                if (grant.customer_id, meter_id) in meters:
+                    continue
+                meter = await meter_repository.get_by_id(meter_id)
+                if meter is not None:
+                    meters[(grant.customer_id, meter_id)] = (grant.customer, meter)
+
+        for customer, meter in meters.values():
+            await self.reset_customer_meter(
+                session,
+                subscription.organization,
+                customer,
+                meter,
+                reset_at=reset_at,
             )
 
-    async def reset_meter(
+    async def reset_customer_meter(
         self,
         session: AsyncSession,
-        subscription: Subscription,
-        subscription_meter: SubscriptionMeter,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
         *,
         reset_at: datetime | None = None,
     ) -> None:
-        customer = subscription.customer
         rollover_units = await customer_meter_service.get_rollover_units(
-            session, customer, subscription_meter.meter, cutoff=reset_at
+            session, customer, meter, cutoff=reset_at
         )
         reset_event = await event_service.create_event(
             session,
             build_system_event(
                 SystemEvent.meter_reset,
                 customer=customer,
-                organization=subscription.organization,
-                metadata={"meter_id": str(subscription_meter.meter_id)},
+                organization=organization,
+                metadata={"meter_id": str(meter.id)},
                 timestamp=reset_at,
             ),
         )
-        reducer_service.enqueue_seal(
-            customer.id, subscription_meter.meter_id, at=reset_event.timestamp
-        )
+        reducer_service.enqueue_seal(customer.id, meter.id, at=reset_event.timestamp)
         if rollover_units > 0:
             await event_service.create_event(
                 session,
                 build_system_event(
                     SystemEvent.meter_credited,
                     customer=customer,
-                    organization=subscription.organization,
+                    organization=organization,
                     metadata={
-                        "meter_id": str(subscription_meter.meter_id),
+                        "meter_id": str(meter.id),
                         "units": rollover_units,
                         "rollover": True,
                         "reason": "benefit",

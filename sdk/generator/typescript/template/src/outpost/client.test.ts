@@ -647,6 +647,61 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   expect((await outpost.meter(meter))?.consumed_units).toBe(6);
 });
 
+// Polar seals a bucket with what it has ingested so far; the local events it has not received
+// yet must stay counted (PLR-329).
+const sealEmpty = async (cutoff: number): Promise<void> => {
+  await redis.eval(
+    APPLY_SNAPSHOT_SCRIPT,
+    1,
+    key,
+    "external:alice:tokens",
+    "outpost:0:updates",
+    "epoch",
+    cutoff,
+    cutoff + 1,
+    "meter",
+    100,
+    0,
+    0,
+    "",
+    "",
+  );
+};
+
+it.fails("keeps local events Polar has not ingested when their bucket goes cold", async () => {
+  await seed(0);
+  const outpost = await start();
+  await outpost.actor(customer);
+  for (let i = 0; i < 10; i++)
+    await outpost.track({
+      ...customer,
+      external_id: `event-${i}`,
+      name: "api_call",
+      timestamp,
+      metadata: { tokens: 10 },
+    });
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
+  await sealEmpty(bucket + BUCKET_SIZE);
+  await outpost["synchronize"]();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
+});
+
+it.fails("counts a late write into a cold bucket", async () => {
+  await seed(0);
+  const outpost = await start();
+  await outpost.actor(customer);
+  await sealEmpty(bucket + BUCKET_SIZE);
+  await outpost["synchronize"]();
+  await outpost.track({
+    ...customer,
+    external_id: "late",
+    name: "api_call",
+    timestamp,
+    metadata: { tokens: 5 },
+  });
+  expect((await outpost.meter(meter))?.consumed_units).toBe(5);
+});
+
 it("sends telemetry spans tagged with the connection ID", async () => {
   snapshot = {
     ...customer,

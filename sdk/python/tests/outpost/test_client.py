@@ -1099,6 +1099,68 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
         assert await redis.exists("outpost:state:customer:alice:tokens") == 0
 
 
+# Polar seals a bucket with what it has ingested so far; the local events it has not received
+# yet must stay counted (PLR-329).
+async def _seal_empty(redis: Redis, cutoff: int) -> None:
+    identity = "external:alice:tokens"
+    await redis.register_script(APPLY_SNAPSHOT_SCRIPT)(
+        keys=[f"outpost:state:{identity}"],
+        args=[identity, "outpost:0:updates", "epoch", cutoff, cutoff + 1, "meter", 100]
+        + [0, 0, "", ""],
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.xfail(strict=True, reason="PLR-329")
+async def test_keeps_local_events_when_bucket_goes_cold(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal_empty(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(10):
+            await outpost.track(
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "external_id": f"event-{index}",
+                    "timestamp": TIMESTAMP,
+                    "metadata": {"tokens": 10},
+                }
+            )
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
+        assert meter is not None and meter.consumed_units == 100
+        await _seal_empty(redis, BUCKET + BUCKET_SIZE)
+        await outpost._refresh_states()
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
+        assert meter is not None and meter.consumed_units == 100
+
+
+@pytest.mark.anyio
+@pytest.mark.xfail(strict=True, reason="PLR-329")
+async def test_counts_a_late_write_into_a_cold_bucket(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal_empty(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        await _seal_empty(redis, BUCKET + BUCKET_SIZE)
+        await outpost._refresh_states()
+        await outpost.track(
+            {
+                "name": "call",
+                "external_customer_id": "alice",
+                "external_id": "late",
+                "timestamp": TIMESTAMP,
+                "metadata": {"tokens": 5},
+            }
+        )
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
+        assert meter is not None and meter.consumed_units == 5
+
+
 @pytest.mark.anyio
 async def test_cutoff_keeps_microsecond_precision(
     redis_connection: tuple[str, Redis],

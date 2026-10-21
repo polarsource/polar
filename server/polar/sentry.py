@@ -34,6 +34,7 @@ _PII_KEYS = frozenset(
         "account_email",
         "account_username",
         "api_key",
+        "assertion",
         "billing_address",
         "billing_manager_email",
         "billing_name",

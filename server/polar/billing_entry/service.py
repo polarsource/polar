@@ -33,6 +33,7 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
+from .types import BillingEntrySelector, PendingByMeter, PendingByPrice
 
 log = structlog.get_logger(__name__)
 
@@ -59,19 +60,6 @@ class MeteredLineItem:
     currency: str
     label: str
     proration: Literal[False] = False
-
-
-@dataclasses.dataclass(frozen=True)
-class PendingByPrice:
-    product_price_id: uuid.UUID
-
-
-@dataclasses.dataclass(frozen=True)
-class PendingByMeter:
-    meter_id: uuid.UUID
-
-
-type BillingEntrySelector = Sequence[uuid.UUID] | PendingByPrice | PendingByMeter
 
 
 class BillingEntryService:

@@ -144,6 +144,8 @@ def _build_numeral_tax_breakdown(
     country: str,
     state: str | None,
     customer_exempt: bool,
+    tax_behavior: TaxBehavior,
+    total_tax_amount: int,
 ) -> list[TaxBreakdownItem]:
     tax_breakdown: list[TaxBreakdownItem] = []
     amounts = [
@@ -152,6 +154,20 @@ def _build_numeral_tax_breakdown(
         else jurisdiction["tax_due_decimal"]
         for jurisdiction in jurisdictions
     ]
+
+    # Numeral computes `tax_due_decimal` on the tax-inclusive amount, so we
+    # scale percentage amounts to make the breakdown sum to the total tax.
+    if tax_behavior == TaxBehavior.inclusive:
+        fixed_total = sum(j["fee_amount"] for j in jurisdictions if j["fee_amount"] > 0)
+        percentage_total = sum(
+            j["tax_due_decimal"] for j in jurisdictions if j["fee_amount"] <= 0
+        )
+        if percentage_total > 0:
+            ratio = (total_tax_amount - fixed_total) / percentage_total
+            amounts = [
+                amount if jurisdiction["fee_amount"] > 0 else amount * ratio
+                for jurisdiction, amount in zip(jurisdictions, amounts)
+            ]
 
     for jurisdiction, amount in zip(jurisdictions, amounts):
         tax_breakdown.append(
@@ -315,6 +331,8 @@ class NumeralTaxService(TaxServiceProtocol):
             country=country,
             state=state,
             customer_exempt=customer_exempt,
+            tax_behavior=tax_behavior,
+            total_tax_amount=total_tax_amount,
         )
 
         return TaxCalculation(

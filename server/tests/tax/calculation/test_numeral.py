@@ -197,6 +197,66 @@ class TestNumeralCalculateTax:
         assert result["processor_id"] == "taxcalc_123"
         assert result["tax_behavior"] == TaxBehavior.inclusive
 
+    @pytest.mark.parametrize(
+        ("jurisdictions", "total_tax_amount", "expected_amounts"),
+        [
+            ([(0.05, 145, 0)], 138, [138]),
+            (
+                [(0.0625, 625, 0), (0.0125, 125, 0)],
+                698,
+                [581.6666666666666, 116.33333333333333],
+            ),
+            ([(0.05, 500, 0), (0, 0, 100)], 571, [471, 100]),
+        ],
+    )
+    async def test_inclusive_breakdown_sums_to_total(
+        self,
+        sample_address: Address,
+        respx_mock: respx.MockRouter,
+        jurisdictions: list[tuple[float, float, float]],
+        total_tax_amount: int,
+        expected_amounts: list[float],
+    ) -> None:
+        respx_mock.post("/tax/calculations").respond(
+            json={
+                "id": "taxcalc_123",
+                "total_tax_amount": total_tax_amount,
+                "line_items": [
+                    {
+                        "tax_jurisdictions": [
+                            {
+                                "tax_rate": tax_rate,
+                                "tax_due_decimal": tax_due_decimal,
+                                "fee_amount": fee_amount,
+                                "rate_type": "STANDARD COUNTRY LOCAL VAT TAX",
+                                "tax_authority_name": "TW",
+                                "tax_authority_type": "COUNTRY",
+                                "tax_type": "VAT",
+                                "note": "",
+                            }
+                            for tax_rate, tax_due_decimal, fee_amount in jurisdictions
+                        ]
+                    }
+                ],
+            }
+        )
+
+        result = await numeral_tax_service.calculate(
+            identifier=uuid.uuid4(),
+            currency="usd",
+            amount=29_00,
+            tax_behavior=TaxBehavior.inclusive,
+            tax_code=TaxCode.general_electronically_supplied_services,
+            address=sample_address,
+            tax_ids=[],
+            customer_exempt=False,
+        )
+
+        assert result["amount"] == total_tax_amount
+        amounts = [item["amount"] for item in result["tax_breakdown"]]
+        assert amounts == pytest.approx(expected_amounts)
+        assert sum(amounts) == pytest.approx(total_tax_amount)
+
     async def test_multiple_breakdown(
         self, sample_address: Address, respx_mock: respx.MockRouter
     ) -> None:

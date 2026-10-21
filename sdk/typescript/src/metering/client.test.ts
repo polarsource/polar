@@ -469,6 +469,31 @@ it("confirms events in Outpost once Polar accepts or drops them", async () => {
   expect(onDropped).toHaveBeenCalledExactlyOnceWith([dropped], "permanent_error");
 });
 
+it("drains the buffer into Outpost before closing it", async () => {
+  const calls: string[] = [];
+  const { Outpost } = await import("../outpost/client");
+  vi.spyOn(Outpost.prototype, "start").mockImplementation(
+    async function (this: InstanceType<typeof Outpost>) {
+      return this;
+    },
+  );
+  vi.spyOn(Outpost.prototype, "close").mockImplementation(async () => {
+    calls.push("close");
+  });
+  vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
+  vi.spyOn(Outpost.prototype, "confirm").mockImplementation(async () => {
+    calls.push("confirm");
+  });
+  const polar = createPolar({ accessToken: "token" });
+  vi.spyOn(polar.events, "ingest").mockResolvedValue({} as never);
+  const metering = await polar
+    .metering({ outpost: { redisUrl: "redis://localhost:6379", telemetry: false } })
+    .start();
+  await metering.track({ ...event, external_id: "last" });
+  await metering.close();
+  expect(calls).toEqual(["confirm", "close"]);
+});
+
 it("propagates Outpost startup failures and closes the buffer", async () => {
   vi.stubEnv("REDIS_URL", "redis://environment:6379");
   const { Outpost } = await import("../outpost/client");

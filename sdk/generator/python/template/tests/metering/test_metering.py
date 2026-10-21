@@ -213,6 +213,38 @@ async def test_factory_confirms_accepted_and_dropped_events_in_outpost(
 
 
 @pytest.mark.anyio
+async def test_factory_drains_the_buffer_into_outpost_before_closing_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    async def enter(outpost: Outpost) -> Outpost:
+        return outpost
+
+    async def exit(outpost: Outpost, *exc_info: object) -> None:
+        calls.append("close")
+
+    async def confirm(outpost: Outpost, events: list[EventInput]) -> None:
+        calls.append("confirm")
+
+    monkeypatch.setattr(Outpost, "__aenter__", enter)
+    monkeypatch.setattr(Outpost, "__aexit__", exit)
+    monkeypatch.setattr(Outpost, "track", AsyncMock(return_value=None))
+    monkeypatch.setattr(Outpost, "confirm", confirm)
+    async with PolarAsync("token") as polar:
+        monkeypatch.setattr(polar.events, "ingest", AsyncMock())
+        async with polar.metering(
+            outpost=MeteringOutpostOptions(
+                redis_url="redis://localhost:6379", telemetry=False
+            )
+        ) as metering:
+            await metering.track(
+                name="usage", external_customer_id="customer", external_id="last"
+            )
+    assert calls == ["confirm", "close"]
+
+
+@pytest.mark.anyio
 async def test_factory_outpost_options_and_startup_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

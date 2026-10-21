@@ -48,7 +48,11 @@ class CustomerMeterRepository(
         statement = (
             self.get_base_statement()
             .join(CustomerMeter.meter)
-            .where(Meter.aggregation["func"].astext == aggregation_function)
+            .where(
+                Meter.aggregation["func"].astext == aggregation_function,
+                Meter.archived_at.is_(None),
+                Meter.deleted_at.is_(None),
+            )
             .order_by(CustomerMeter.consumed_units.desc())
             .limit(limit)
             .options(joinedload(CustomerMeter.customer))

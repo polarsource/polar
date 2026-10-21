@@ -3181,7 +3181,7 @@ class TestSendConfirmationEmail:
             new_callable=AsyncMock,
             return_value=("https://mock-s3/invoices/mock-invoice.pdf", utc_now()),
         )
-        customer.billing_emails = "finance@example.com, ap@example.com"
+        customer.billing_emails = ["finance@example.com", "ap@example.com"]
         await save_fixture(customer)
         order = await create_order(
             save_fixture,
@@ -3215,7 +3215,7 @@ class TestSendConfirmationEmail:
             "polar.order.service.invoice_service.create_order_invoice",
             new_callable=AsyncMock,
         )
-        customer.billing_emails = "finance@example.com"
+        customer.billing_emails = ["finance@example.com"]
         await save_fixture(customer)
         order = await create_order(
             save_fixture,

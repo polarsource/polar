@@ -814,17 +814,11 @@ class CustomerService:
         *,
         exclude: Sequence[str],
     ) -> Sequence[str]:
-        """Return the customer's billing emails that aren't already in `exclude`.
-
-        `customer.billing_emails` is a comma-separated list of addresses.
-        """
-        if not customer.billing_emails:
-            return []
-
+        """Return the customer's billing emails that aren't already in `exclude`."""
         seen = {email.lower() for email in exclude}
         emails: list[str] = []
-        for email in (e.strip() for e in customer.billing_emails.split(",")):
-            if email and email.lower() not in seen:
+        for email in customer.billing_emails:
+            if email.lower() not in seen:
                 seen.add(email.lower())
                 emails.append(email)
 

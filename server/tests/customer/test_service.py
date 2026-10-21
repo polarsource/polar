@@ -1976,16 +1976,18 @@ class TestGetBillingEmailRecipients:
         )
         assert recipients == []
 
-    async def test_parses_and_deduplicates(
+    async def test_deduplicates(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         customer: Customer,
     ) -> None:
-        customer.billing_emails = (
-            " finance@example.com,, ap@example.com,FINANCE@example.com,"
-            "Owner@Example.com"
-        )
+        customer.billing_emails = [
+            "finance@example.com",
+            "ap@example.com",
+            "FINANCE@example.com",
+            "Owner@Example.com",
+        ]
         await save_fixture(customer)
 
         recipients = await customer_service.get_billing_email_recipients(
@@ -2003,7 +2005,7 @@ class TestGetBillingEmailRecipients:
         user_organization: UserOrganization,
     ) -> None:
         mocker.patch("polar.customer.service.settings.is_sandbox", return_value=True)
-        customer.billing_emails = f"finance@example.com,{user.email}"
+        customer.billing_emails = ["finance@example.com", user.email]
         await save_fixture(customer)
 
         recipients = await customer_service.get_billing_email_recipients(

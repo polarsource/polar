@@ -1,7 +1,7 @@
 """scope product external_id index to current rows
 
 Revision ID: 4f8a2c6e1b90
-Revises: 6124ede244c2
+Revises: 8a4d3f1c7e52
 Create Date: 2026-10-21 09:20:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "4f8a2c6e1b90"
-down_revision = "6124ede244c2"
+down_revision = "8a4d3f1c7e52"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

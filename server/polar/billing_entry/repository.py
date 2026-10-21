@@ -132,7 +132,10 @@ class BillingEntryRepository(
             )
             .group_by(BillingEntry.product_price_id, ProductPrice.__table__.c.meter_id)
             .order_by(None)  # Clear existing ORDER BY from base statement
-            .order_by(ProductPrice.__table__.c.meter_id.asc())
+            .order_by(
+                ProductPrice.__table__.c.meter_id.asc(),
+                func.min(BillingEntry.start_timestamp).asc(),
+            )
         )
         results = await self.session.stream(
             statement,

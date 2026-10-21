@@ -19,7 +19,14 @@ from polar.kit.math import non_negative_running_sum
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
 from polar.meter.service import meter as meter_service
-from polar.models import BillingEntry, Event, OrderItem, Product, Subscription
+from polar.models import (
+    BillingEntry,
+    Event,
+    Meter,
+    OrderItem,
+    Product,
+    Subscription,
+)
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -292,6 +299,7 @@ class BillingEntryService:
         # (even if there are billing entries with multiple prices) because these aggregations
         # must be computed across ALL events, not per-price
         processed_meters: set[uuid.UUID] = set()
+        remaining_credits: dict[uuid.UUID, int] = {}
 
         async for (
             product_price_id,
@@ -340,27 +348,25 @@ class BillingEntryService:
                 )
                 selector: BillingEntrySelector = PendingByMeter(meter_id)
             else:
-                # For summable aggregations (sum, count), we also need to verify
-                # the price is still active on the subscription. This prevents
-                # billing entries from discontinued prices being re-billed
-                # every cycle after a product/price change.
-                is_active_price = any(
-                    price.id == product_price_id for price in active_prices
-                )
-                if not is_active_price:
-                    log.info(
-                        f"Skipping billing entry for inactive price {product_price_id} "
-                        f"in subscription {subscription.id}"
+                # Credits belong to the meter, not the price: a customer who
+                # switched prices mid-period keeps the credits granted under the
+                # old one. Each price group draws from the meter's pool in turn.
+                if meter_id not in remaining_credits:
+                    remaining_credits[meter_id] = await self._get_credited_units(
+                        session, metered_price.meter, subscription, cutoff=cutoff
                     )
-                    continue
-
                 metered_line_item = await self._get_metered_line_item(
                     session,
                     metered_price,
                     subscription,
                     start_timestamp,
                     end_timestamp,
+                    credited_units=remaining_credits[meter_id],
                     cutoff=cutoff,
+                )
+                remaining_credits[meter_id] -= min(
+                    remaining_credits[meter_id],
+                    math.ceil(metered_line_item.consumed_units),
                 )
                 selector = PendingByPrice(product_price_id)
 
@@ -462,6 +468,7 @@ class BillingEntryService:
         start_timestamp: datetime,
         end_timestamp: datetime,
         *,
+        credited_units: int,
         cutoff: datetime,
     ) -> MeteredLineItem:
         """
@@ -500,18 +507,6 @@ class BillingEntryService:
                     Event.source == EventSource.user,
                 ),
             )
-        credit_events_statement = events_statement.where(
-            # Filter on organization_id + customer_id and unpack `is_meter_credit`
-            # so we hit the ix_events_org_source_name_customer_id_ingested_at index.
-            Event.organization_id == meter.organization_id,
-            Event.customer_id == subscription.customer_id,
-            Event.source == EventSource.system,
-            Event.name == SystemEvent.meter_credited,
-        )
-        credit_events = await event_repository.get_all(credit_events_statement)
-        credited_units = non_negative_running_sum(
-            event.user_metadata["units"] for event in credit_events
-        )
         amount, amount_label = price.get_amount_and_label(units, credited_units)
         label = f"{meter.name} — {amount_label}"
 
@@ -558,17 +553,8 @@ class BillingEntryService:
                 Event.source == EventSource.user,
             ),
         )
-        credit_events_statement = events_statement.where(
-            # Filter on organization_id + customer_id and unpack `is_meter_credit`
-            # so we hit the ix_events_org_source_name_customer_id_ingested_at index.
-            Event.organization_id == meter.organization_id,
-            Event.customer_id == subscription.customer_id,
-            Event.source == EventSource.system,
-            Event.name == SystemEvent.meter_credited,
-        )
-        credit_events = await event_repository.get_all(credit_events_statement)
-        credited_units = non_negative_running_sum(
-            event.user_metadata["units"] for event in credit_events
+        credited_units = await self._get_credited_units(
+            session, meter, subscription, cutoff=cutoff
         )
         amount, amount_label = price.get_amount_and_label(units, credited_units)
         label = f"{meter.name} — {amount_label}"
@@ -582,6 +568,32 @@ class BillingEntryService:
             amount=amount,
             currency=price.price_currency,
             label=label,
+        )
+
+    async def _get_credited_units(
+        self,
+        session: AsyncSession,
+        meter: Meter,
+        subscription: Subscription,
+        *,
+        cutoff: datetime,
+    ) -> int:
+        event_repository = EventRepository.from_session(session)
+        credit_events_statement = (
+            event_repository.get_by_pending_entries_for_meter_statement(
+                subscription.id, meter.id, cutoff=cutoff
+            ).where(
+                # Filter on organization_id + customer_id and unpack `is_meter_credit`
+                # so we hit the ix_events_org_source_name_customer_id_ingested_at index.
+                Event.organization_id == meter.organization_id,
+                Event.customer_id == subscription.customer_id,
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.meter_credited,
+            )
+        )
+        credit_events = await event_repository.get_all(credit_events_statement)
+        return non_negative_running_sum(
+            event.user_metadata["units"] for event in credit_events
         )
 
 

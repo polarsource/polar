@@ -8,6 +8,7 @@ Create Date: 2026-10-20 12:00:00.000000
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # Polar Custom Imports
 
@@ -19,7 +20,15 @@ depends_on: tuple[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column("customers", sa.Column("billing_emails", sa.String(), nullable=True))
+    op.add_column(
+        "customers",
+        sa.Column(
+            "billing_emails",
+            postgresql.ARRAY(sa.String()),
+            server_default="{}",
+            nullable=False,
+        ),
+    )
 
 
 def downgrade() -> None:

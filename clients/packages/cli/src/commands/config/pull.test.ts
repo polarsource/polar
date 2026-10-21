@@ -45,6 +45,7 @@ const run = async (args: string[], result: PullResult = written) => {
           load: () => Effect.die('unused'),
           plan: () => Effect.die('unused'),
           apply: () => Effect.die('unused'),
+          prune: () => Effect.die('unused'),
           pull: (organization, file, force) => {
             calls.push([organization.id, file, force])
             return Effect.succeed({ ...result, file: file ?? result.file })

@@ -52,6 +52,7 @@ class RefundReason(StrEnum):
     satisfaction_guarantee = "satisfaction_guarantee"
     dispute_prevention = "dispute_prevention"
     tax_refund = "tax_refund"
+    vat_reverse_charge_correction = "vat_reverse_charge_correction"
     other = "other"
 
     @classmethod

@@ -11,7 +11,7 @@ export const useAgentClaim = (linkToken: string) =>
           params: { path: { link_token: linkToken } },
         }),
       ),
-    // Every error is final: unknown, used, expired, locked or for another account.
+    // Every error is final: unknown, used, expired or for another account.
     retry: false,
   })
 

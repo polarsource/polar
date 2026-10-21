@@ -13,6 +13,7 @@ import {
 import {
   type AgentClaimError,
   getAgentClaimError,
+  RATE_LIMITED_MESSAGE,
   UNKNOWN_ERROR_MESSAGE,
 } from './claimErrors'
 
@@ -41,14 +42,18 @@ export const useClaimAgent = (
         return { status: 'invalid', message: UNKNOWN_ERROR_MESSAGE }
       }
 
-      const { error } = result
-      if (!error) {
+      const { error, response } = result
+      if (response.ok) {
         window.location.assign(
           claim?.organization
             ? `/dashboard/${claim.organization.slug}`
             : '/dashboard',
         )
         return { status: 'claimed' }
+      }
+
+      if (response.status === 429) {
+        return { status: 'invalid', message: RATE_LIMITED_MESSAGE }
       }
 
       if (isSessionNotFreshError(error)) {

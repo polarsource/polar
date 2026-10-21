@@ -123,20 +123,21 @@ describe('ClaimAgentPage', () => {
     expect(screen.getByLabelText('Claim code')).toBeInTheDocument()
   })
 
-  it('replaces the form once the claim is locked', async () => {
-    serveClaim(undefined, () => apiError(403, 'AgentClaimLocked'))
+  it('keeps the form when rate limited', async () => {
+    serveClaim(undefined, () => new HttpResponse(null, { status: 429 }))
+    const assign = stubLocationAssign()
     renderPage()
 
     await enterCode('000000')
 
-    expect(await screen.findByText('Too many wrong codes')).toBeInTheDocument()
-    expect(screen.queryByLabelText('Claim code')).not.toBeInTheDocument()
+    expect(await screen.findByText(/Too many attempts/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Claim code')).toBeInTheDocument()
+    expect(assign).not.toHaveBeenCalled()
   })
 
   it.each([
     [404, 'ResourceNotFound', 'This claim link doesn’t work'],
     [410, 'AgentClaimExpired', 'This claim has expired'],
-    [403, 'AgentClaimLocked', 'Too many wrong codes'],
   ])('explains a %i %s', async (status, error, title) => {
     serveClaim(() => apiError(status, error))
     renderPage()

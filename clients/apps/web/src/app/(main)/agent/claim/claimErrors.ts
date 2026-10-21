@@ -17,6 +17,9 @@ export const UNKNOWN_PROBLEM: AgentClaimProblem = {
 
 export const UNKNOWN_ERROR_MESSAGE = 'Something went wrong. Please try again.'
 
+export const RATE_LIMITED_MESSAGE =
+  'Too many attempts. Wait a few minutes and try again.'
+
 const getErrorType = (body: unknown): string | undefined =>
   typeof body === 'object' &&
   body !== null &&
@@ -46,12 +49,6 @@ export const getAgentClaimError = (body: unknown): AgentClaimError => {
           'This claim was started for another email.',
         )} Once you’re signed in with it, open the claim link from your agent again.`,
         canSwitchAccount: true,
-      })
-    case 'AgentClaimLocked':
-      return failed({
-        title: 'Too many wrong codes',
-        description:
-          'This claim is locked. Ask your agent to start a new claim to get a new link and code.',
       })
     case 'AgentClaimExpired':
       return failed({

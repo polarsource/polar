@@ -49,7 +49,7 @@ def _swap(where: str, *, scoped_to_current: bool) -> None:
                     {"name": NEW_INDEX_NAME},
                 )
             # Preserve completed replacements and recover interrupted builds.
-            if valid is False:
+            if valid is False or op.get_context().as_sql:
                 op.drop_index(
                     NEW_INDEX_NAME,
                     table_name="products",

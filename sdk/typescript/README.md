@@ -158,6 +158,8 @@ Outpost is our local reduction engine. It can reduce events locally and share a 
 
 In high throughput scenarios, Outpost can return you accurate meter reads only milliseconds after the event is ingested.
 
+Outpost needs an `external_id` on every event; `track()` rejects an event without one.
+
 To disable it, pass `outpost: false` to `polar.metering()`. You can also configure it explicitly with an object.
 
 ### Delivery

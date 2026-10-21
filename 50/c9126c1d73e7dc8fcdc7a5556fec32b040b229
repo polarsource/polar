@@ -1,0 +1,34 @@
+clients/packages/client/src/v1.ts
+  ai_agent 64767
+server/tests/agent/test_endpoints.py
+  s_5baa939665e021::t_69765e835d67cc 2,8,17-18,24-26,28-42,51-58,60-66,84-85,103,119-152,171-198,200-208,210-218,221-224,226-230,251-292,294,297-301,304-340,343-353,357-384,387,412-413,415,418-441,444
+  s_5baa939665e021::t_f72f5935cddd4c 16
+  s_5baa939665e021::t_886fa0a314bf00 27
+server/tests/test_rate_limit.py
+  s_5baa939665e021::t_886fa0a314bf00 406-431
+server/polar/agent/service.py
+  s_5baa939665e021::t_02b7404b5f3f31 3,8-9,12-20,23-31,39-47,51-56,58,67-78,81-88,92-94,105-106,108-113,128,159-165,167-169,175-191,197-240,242-298
+  s_5baa939665e021::t_f72f5935cddd4c 241
+server/polar/agent/endpoints.py
+  s_5baa939665e021::t_9f3f3166fd74e4 1-2,4-16,19,21-35,39,43-48,51,62,65-81,83,85-86,88-101,103-124,126-136,138-151
+  s_5baa939665e021::t_f72f5935cddd4c 102,137
+  s_5baa939665e021::t_886fa0a314bf00 125
+server/polar/rate_limit.py
+  s_5baa939665e021::t_f72f5935cddd4c 325-343
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "50c9126c1d73e7dc8fcdc7a5556fec32b040b229",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

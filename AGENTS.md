@@ -305,8 +305,8 @@ On or after **2026-10-23**, recheck the [upstream disclosure](https://emudhra.we
 and the certificate stores shipped by our actual base images, runtimes and Stripe SDK.
 If upstream fixes cover every affected path, remove the manual mitigations consistently:
 the `sed` root exclusions and `trust extract` blocklists in Dockerfiles under `server/`,
-`dev/docker/` and `infra/`, the EC2 host blocklists and bootstrap calls in
-`terraform/modules/ec2_tailscale/` (see its rollout README), plus the Stripe workaround that sets
+`dev/docker/` and `infra/`, the EC2 host blocklists in
+`terraform/modules/ec2_tailscale/tailscale-init.sh`, plus the Stripe workaround that sets
 `stripe_lib.ca_bundle_path = certifi.where()` in `polar.integrations.stripe` before platform
 and merchant migration HTTP clients are constructed. Remove that override only after
 Stripe's own bundle is verified safe for both client paths. Keep patched dependency

@@ -17,7 +17,7 @@ down_revision = "9d3b7e1f4a62"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
-SUB_TYPE_TABLES = ("oauth2_tokens", "oauth2_authorization_codes")
+AGENT_ID_TABLES = ("oauth2_clients", "oauth2_tokens", "oauth2_authorization_codes")
 
 
 def upgrade() -> None:
@@ -28,7 +28,6 @@ def upgrade() -> None:
         "agents",
         sa.Column("name", sa.String(), nullable=True),
         sa.Column("status", sa.String(), nullable=False),
-        sa.Column("oauth2_client_id", sa.Uuid(), nullable=False),
         sa.Column("organization_id", sa.Uuid(), nullable=True),
         sa.Column("claim_email", sa.String(length=320), nullable=True),
         sa.Column("claim_token_hash", sa.String(length=80), nullable=True),
@@ -50,12 +49,6 @@ def upgrade() -> None:
             ondelete="set null",
         ),
         sa.ForeignKeyConstraint(
-            ["oauth2_client_id"],
-            ["oauth2_clients.id"],
-            name=op.f("agents_oauth2_client_id_fkey"),
-            ondelete="cascade",
-        ),
-        sa.ForeignKeyConstraint(
             ["organization_id"],
             ["organizations.id"],
             name=op.f("agents_organization_id_fkey"),
@@ -67,9 +60,6 @@ def upgrade() -> None:
         ),
         sa.UniqueConstraint(
             "claim_token_hash", name=op.f("agents_claim_token_hash_key")
-        ),
-        sa.UniqueConstraint(
-            "oauth2_client_id", name=op.f("agents_oauth2_client_id_key")
         ),
         sa.UniqueConstraint("organization_id", name=op.f("agents_organization_id_key")),
         if_not_exists=True,
@@ -95,12 +85,7 @@ def upgrade() -> None:
         unique=False,
         if_not_exists=True,
     )
-    op.add_column(
-        "oauth2_clients",
-        sa.Column("is_agent", sa.Boolean(), server_default="false", nullable=False),
-        if_not_exists=True,
-    )
-    for table in SUB_TYPE_TABLES:
+    for table in AGENT_ID_TABLES:
         op.add_column(
             table,
             sa.Column("agent_id", sa.Uuid(), nullable=True),
@@ -125,7 +110,7 @@ def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute("SET lock_timeout = '5s'")
         try:
-            for table in SUB_TYPE_TABLES:
+            for table in AGENT_ID_TABLES:
                 op.execute(
                     f"ALTER TABLE {table} VALIDATE CONSTRAINT {table}_agent_id_fkey"
                 )
@@ -135,7 +120,7 @@ def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute("SET lock_timeout = '5min'")
         try:
-            for table in SUB_TYPE_TABLES:
+            for table in AGENT_ID_TABLES:
                 index_name = f"ix_{table}_agent_id"
                 op.drop_index(
                     index_name,
@@ -147,7 +132,8 @@ def upgrade() -> None:
                     index_name,
                     table,
                     ["agent_id"],
-                    unique=False,
+                    # One OAuth2 client per agent.
+                    unique=table == "oauth2_clients",
                     postgresql_concurrently=True,
                 )
         finally:
@@ -158,9 +144,8 @@ def downgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration.
     # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
     op.execute("SET LOCAL lock_timeout = '5s'")
-    for table in SUB_TYPE_TABLES:
+    for table in AGENT_ID_TABLES:
         op.drop_column(table, "agent_id")
-    op.drop_column("oauth2_clients", "is_agent")
     op.drop_index(op.f("ix_agents_deleted_at"), table_name="agents")
     op.drop_index(op.f("ix_agents_created_at"), table_name="agents")
     op.drop_index(op.f("ix_agents_claimed_by_user_id"), table_name="agents")

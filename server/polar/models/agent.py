@@ -26,16 +26,9 @@ class Agent(RecordModel):
         String, nullable=False, default=AgentStatus.unclaimed
     )
 
-    oauth2_client_id: Mapped[UUID] = mapped_column(
-        Uuid,
-        ForeignKey("oauth2_clients.id", ondelete="cascade"),
-        nullable=False,
-        unique=True,
-    )
-
     @declared_attr
     def oauth2_client(cls) -> Mapped["OAuth2Client"]:
-        return relationship("OAuth2Client", lazy="raise")
+        return relationship("OAuth2Client", lazy="raise", uselist=False)
 
     organization_id: Mapped[UUID | None] = mapped_column(
         Uuid,

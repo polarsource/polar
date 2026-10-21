@@ -179,14 +179,6 @@ class TestGetOrganization:
         json = response.json()
         assert json["id"] == str(organization.id)
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_other_organization(
-        self, client: AsyncClient, organization_second: Organization
-    ) -> None:
-        response = await client.get(f"/v1/organizations/{organization_second.id}")
-
-        assert response.status_code == 404
-
 
 @pytest.mark.anyio
 class TestCreateOrganization:

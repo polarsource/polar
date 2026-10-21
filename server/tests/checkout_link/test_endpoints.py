@@ -246,7 +246,7 @@ class TestUpdateCheckoutLink:
         assert response.status_code == 404
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_other_organization(
+    async def test_agent_cannot_update_another_organizations_checkout_link(
         self,
         client: AsyncClient,
         checkout_link_organization_second: CheckoutLink,

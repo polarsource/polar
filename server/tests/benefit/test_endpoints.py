@@ -524,7 +524,9 @@ class TestCreateBenefit:
         assert "properties" in json
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_github_repository(self, client: AsyncClient) -> None:
+    async def test_agent_cannot_create_github_repository_benefit(
+        self, client: AsyncClient
+    ) -> None:
         response = await client.post(
             "/v1/benefits/",
             json={
@@ -812,6 +814,14 @@ class TestViewGrants:
         response = await client.get(
             f"/v1/benefits/{benefit_organization.id}/grants",
         )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_cannot_view_grants_of_its_own_benefit(
+        self, client: AsyncClient, benefit_organization: Benefit
+    ) -> None:
+        response = await client.get(f"/v1/benefits/{benefit_organization.id}/grants")
 
         assert response.status_code == 401
 

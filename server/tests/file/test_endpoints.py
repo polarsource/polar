@@ -42,7 +42,7 @@ class TestEndpoints:
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_create(
+    async def test_agent_can_upload_file_without_organization_id(
         self, client: AsyncClient, organization: Organization, logo_png: TestFile
     ) -> None:
         response = await client.post(
@@ -388,7 +388,7 @@ class TestDownload:
         assert "download" not in response.json()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_other_organization(
+    async def test_agent_cannot_download_another_organizations_file(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,

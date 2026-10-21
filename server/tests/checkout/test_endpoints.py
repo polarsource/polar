@@ -379,7 +379,7 @@ class TestCreateCheckout:
         )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_other_organization_product(
+    async def test_agent_cannot_create_checkout_for_another_organizations_product(
         self,
         api_prefix: str,
         client: AsyncClient,

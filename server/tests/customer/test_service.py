@@ -1962,3 +1962,53 @@ class TestGetEmailRecipients:
             session, member_customer
         )
         assert recipients == [aliased_email]
+
+
+@pytest.mark.anyio
+class TestGetBillingEmailRecipients:
+    async def test_not_set(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        recipients = await customer_service.get_billing_email_recipients(
+            session, customer, exclude=[]
+        )
+        assert recipients == []
+
+    async def test_deduplicates(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        customer.billing_emails = [
+            "finance@example.com",
+            "ap@example.com",
+            "FINANCE@example.com",
+            "Owner@Example.com",
+        ]
+        await save_fixture(customer)
+
+        recipients = await customer_service.get_billing_email_recipients(
+            session, customer, exclude=["owner@example.com"]
+        )
+        assert recipients == ["finance@example.com", "ap@example.com"]
+
+    async def test_sandbox_filters_non_members(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.customer.service.settings.is_sandbox", return_value=True)
+        customer.billing_emails = ["finance@example.com", user.email]
+        await save_fixture(customer)
+
+        recipients = await customer_service.get_billing_email_recipients(
+            session, customer, exclude=[]
+        )
+        assert recipients == [user.email]

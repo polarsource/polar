@@ -118,7 +118,7 @@ export type MeteringOptions =
  */
 export class Metering {
   readonly strategies: readonly MeteringStrategy[];
-  private stack?: AsyncDisposableStack;
+  private running?: MeteringStrategy[];
   private started = false;
   private closing?: Promise<void>;
   private activeOperations = 0;
@@ -143,12 +143,12 @@ export class Metering {
   }
 
   async start(): Promise<this> {
-    if (this.stack || this.closing) throw new PolarError("Metering has already started");
-    this.stack = new AsyncDisposableStack();
+    if (this.running || this.closing) throw new PolarError("Metering has already started");
+    this.running = [];
     try {
       for (const strategy of this.strategies) {
         await strategy.start();
-        this.stack.defer(() => strategy.close());
+        this.running.push(strategy);
       }
       this.started = true;
       return this;
@@ -298,7 +298,17 @@ export class Metering {
         this.onDrained = resolve;
       });
     }
-    await this.stack?.disposeAsync();
+    // In start order: a strategy drains into the ones after it, the buffer into Outpost.
+    const errors: unknown[] = [];
+    for (const strategy of this.running ?? []) {
+      try {
+        await strategy.close();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length) throw new AggregateError(errors, "Metering close failed");
   }
 }
 

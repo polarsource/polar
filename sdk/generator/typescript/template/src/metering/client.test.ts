@@ -111,7 +111,7 @@ it("waits for an active flush before closing", async () => {
   await expect(metering.flush()).rejects.toThrow("not running");
 });
 
-it("starts and ingests in order, then closes in reverse order", async () => {
+it("starts, ingests and closes in order", async () => {
   const calls: string[] = [];
   const strategies: MeteringStrategy[] = ["buffered", "local"].map((name) => ({
     async start() {
@@ -134,8 +134,8 @@ it("starts and ingests in order, then closes in reverse order", async () => {
     "start:local",
     "track:buffered",
     "track:local",
-    "close:local",
     "close:buffered",
+    "close:local",
   ]);
 });
 

@@ -193,14 +193,15 @@ class Metering:
         """
         self.strategies = strategies
         self._client = client
-        self._stack = contextlib.AsyncExitStack()
+        self._running: list[MeteringStrategyProtocol] = []
 
     async def __aenter__(self) -> typing.Self:
         try:
             for strategy in self.strategies:
-                await self._stack.enter_async_context(strategy)
+                await strategy.__aenter__()
+                self._running.append(strategy)
         except BaseException:
-            await self._stack.aclose()
+            await self._close()
             raise
         return self
 
@@ -210,7 +211,21 @@ class Metering:
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> bool | None:
-        await self._stack.aclose()
+        await self._close()
+
+    async def _close(self) -> None:
+        # In start order: a strategy drains into the ones after it, the buffer into Outpost.
+        errors: list[Exception] = []
+        for strategy in self._running:
+            try:
+                await strategy.__aexit__(None, None, None)
+            except Exception as error:  # noqa: BLE001
+                errors.append(error)
+        self._running = []
+        if len(errors) == 1:
+            raise errors[0]
+        if errors:
+            raise ExceptionGroup("Metering close failed", errors)
 
     async def flush(self) -> None:
         """Flush every capable strategy without closing the helper.
@@ -430,8 +445,7 @@ class Metering:
 def _confirming(
     buffered: BufferedMeteringOptions, outpost: "Outpost"
 ) -> BufferedMeteringOptions:
-    """Confirm in Outpost the events the buffer delivered or dropped, before the user's callbacks.
-    """
+    """Confirm in Outpost the events the buffer delivered or dropped, before the user's callbacks."""
     user_delivered = buffered.get("on_delivered")
     user_dropped = buffered.get("on_dropped")
 

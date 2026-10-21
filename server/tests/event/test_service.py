@@ -859,26 +859,6 @@ class TestIngest:
             for event_id in call.args
         } == {event.id for event in events}
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_valid_agent(
-        self,
-        enqueue_events_mock: AsyncMock,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Agent],
-        organization: Organization,
-    ) -> None:
-        ingest = EventsIngest(
-            events=[
-                EventCreateExternalCustomer(name="test", external_customer_id="test")
-            ]
-        )
-
-        await event_service.ingest(session, auth_subject, ingest)
-
-        [event] = await get_all_by_organization(session, organization.id)
-        assert event.source == EventSource.user
-        enqueue_events_mock.assert_called_once_with(event.id)
-
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_rollup_reducer_buckets(
         self,

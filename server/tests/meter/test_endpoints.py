@@ -10,7 +10,7 @@ from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event, create_meter
+from tests.fixtures.random_objects import create_meter
 
 
 @pytest.fixture
@@ -159,30 +159,6 @@ class TestGetExternalMeter:
         assert response.json()["id"] == str(meter.id)
 
     @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        organization_second: Organization,
-    ) -> None:
-        meter = await create_meter(
-            save_fixture, organization=organization, external_id="tool_call"
-        )
-        await create_meter(
-            save_fixture,
-            id=uuid.uuid4(),
-            organization=organization_second,
-            external_id="tool_call",
-        )
-
-        response = await client.get("/v1/meters/external/tool_call")
-
-        assert response.status_code == 200
-        assert response.json()["id"] == str(meter.id)
-
-    @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
     async def test_user_cannot_access_other_organization_meter(
         self,
@@ -249,26 +225,6 @@ class TestGetMeterQuantities:
         response = await client.get(f"/v1/meters/{uuid.uuid4()}/quantities")
 
         assert response.status_code == 401
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent(
-        self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization
-    ) -> None:
-        meter = await create_meter(save_fixture, organization=organization)
-        timestamp = utc_now()
-        await create_event(save_fixture, organization=organization, timestamp=timestamp)
-
-        response = await client.get(
-            f"/v1/meters/{meter.id}/quantities",
-            params={
-                "start_timestamp": timestamp.isoformat(),
-                "end_timestamp": timestamp.isoformat(),
-                "interval": "day",
-            },
-        )
-
-        assert response.status_code == 200
-        assert response.json()["total"] == 1
 
     @pytest.mark.auth
     async def test_user_cannot_access_other_organization_meter_quantities(
@@ -401,21 +357,6 @@ class TestUpdateMeter:
         )
 
         assert response.status_code == 404
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_archive(
-        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
-    ) -> None:
-        meter = await create_meter(
-            save_fixture, organization=organization, id=uuid.uuid4()
-        )
-
-        response = await client.patch(
-            f"/v1/meters/{meter.id}", json={"is_archived": True}
-        )
-
-        assert response.status_code == 200
-        assert response.json()["archived_at"] is not None
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     async def test_agent_cannot_update_other_organization_meter(

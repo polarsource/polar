@@ -23,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
+      - name: Test EC2 Tailscale bootstrap
+        run: python3 -m unittest discover -s terraform/modules/ec2_tailscale/tests -v
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
 

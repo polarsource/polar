@@ -86,6 +86,11 @@ resource "aws_instance" "this" {
       owner       = "root:root"
       permissions = "0700"
       content     = file("${path.module}/tailscale-init.sh")
+      }, {
+      path        = "/usr/local/sbin/mitigate-ca-trust"
+      owner       = "root:root"
+      permissions = "0700"
+      content     = file("${path.module}/mitigate-ca-trust.sh")
       }], length(var.advertise_routes) == 0 ? [] : [{
       path        = "/etc/sysctl.d/99-tailscale.conf"
       owner       = "root:root"

@@ -48,6 +48,9 @@ const RECONNECT_DELAY = 500;
 const MAX_RECONNECT_DELAY = 30_000;
 const REDIS_RECONNECT_DELAY = 100;
 const MAX_REDIS_RECONNECT_DELAY = 2_000;
+const BUCKET_PREFIX = "bucket:";
+const PENDING_PREFIX = "pending:";
+const COLD_PREFIX = "cold:";
 export interface State {
   epoch: string;
   revision: bigint;
@@ -196,19 +199,20 @@ export const decodeState = (value: string[]): State => {
   for (let i = 0; i < value.length; i += 2) {
     const field = value[i];
     const raw = value[i + 1];
-    const buckets = field.startsWith("bucket:")
+    const buckets = field.startsWith(BUCKET_PREFIX)
       ? state.buckets
-      : field.startsWith("pending:")
+      : field.startsWith(PENDING_PREFIX)
         ? state.pending
         : undefined;
     if (buckets) {
+      const prefix = buckets === state.buckets ? BUCKET_PREFIX : PENDING_PREFIX;
       const separator = field.lastIndexOf(":");
-      const start = Number(field.slice(field.indexOf(":") + 1, separator));
+      const start = Number(field.slice(prefix.length, separator));
       let bucket = buckets.get(start);
       if (!bucket) buckets.set(start, (bucket = emptyStatistics()));
       bucket[field.slice(separator + 1) as keyof BucketStatistics] = number(raw);
-    } else if (field.startsWith("cold:"))
-      state.cold[field.slice(5) as keyof BucketStatistics] = number(raw);
+    } else if (field.startsWith(COLD_PREFIX))
+      state.cold[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(raw);
     else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(raw);
     else if (field === "epoch") state.epoch = raw;
     else if (field === "revision") state.revision = BigInt(raw);
@@ -238,8 +242,8 @@ const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): v
   const local = emptyStatistics();
   const buckets = new Map<string, BucketStatistics>();
   for (const [field, value] of Object.entries(fields)) {
-    if (field.startsWith("cold:")) {
-      local[field.slice(5) as keyof BucketStatistics] = number(value);
+    if (field.startsWith(COLD_PREFIX)) {
+      local[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(value);
     } else if (field.startsWith("bucket:")) {
       const [, start, statistic] = field.split(":");
       const bucket = buckets.get(start) ?? emptyStatistics();

@@ -449,7 +449,7 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
                 bucket = statistics[start] = BucketStatistics()
             setattr(bucket, statistic, _number(value))
         elif field.startswith("cold:"):
-            setattr(cold, field[5:], _number(value))
+            setattr(cold, field.removeprefix("cold:"), _number(value))
         elif field.startswith("credited:"):
             credited[field[9:]] = _number(value)
         elif field == "epoch":

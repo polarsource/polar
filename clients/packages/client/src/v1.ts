@@ -16701,6 +16701,7 @@ export interface components {
      */
     ConfigIssueType:
       | 'currency_changed'
+      | 'deprecated_reference'
       | 'discount_locked'
       | 'duplicate_code'
       | 'duplicate_external_id'
@@ -16761,6 +16762,12 @@ export interface components {
         | components['schemas']['CountAggregation']
         | components['schemas']['PropertyAggregation']
         | components['schemas']['UniqueAggregation']
+      /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @default false
+       */
+      deprecated: boolean
       /**
        * External Id
        * @description Your identifier for the meter. Used to match the config entry with an existing meter.
@@ -72240,6 +72247,7 @@ export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
   'currency_changed',
+  'deprecated_reference',
   'discount_locked',
   'duplicate_code',
   'duplicate_external_id',

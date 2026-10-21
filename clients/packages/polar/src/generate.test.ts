@@ -290,6 +290,16 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'deprecated meters',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({
+          apples: meter('Apples').unit('token').deprecated().count(),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'discounts of every kind',
     api
       .defineConfig({

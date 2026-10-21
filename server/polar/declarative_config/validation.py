@@ -215,34 +215,63 @@ def _unknown_reference(
     )
 
 
-def unknown_references(config: Config) -> list[ConfigIssue]:
+def _deprecated_reference(
+    resource: ConfigResource, external_id: str, loc: Loc
+) -> ConfigIssue:
+    return ConfigIssue(
+        severity=ConfigIssueSeverity.error,
+        type=ConfigIssueType.deprecated_reference,
+        loc=loc,
+        msg=(
+            f"This {resource} is deprecated. "
+            f"Undeprecate the {resource} or create a new one."
+        ),
+        input=external_id,
+    )
+
+
+def _reference_issues(
+    resource: ConfigResource,
+    known: set[str],
+    deprecated: set[str],
+    external_id: str,
+    loc: Loc,
+) -> list[ConfigIssue]:
+    if external_id not in known:
+        return [_unknown_reference(resource, external_id, loc)]
+    if external_id in deprecated:
+        return [_deprecated_reference(resource, external_id, loc)]
+    return []
+
+
+def invalid_references(config: Config) -> list[ConfigIssue]:
     meters = {meter.external_id for meter in config.meters}
+    deprecated_meters = {
+        meter.external_id for meter in config.meters if meter.deprecated
+    }
     benefits = {benefit.external_id for benefit in config.benefits}
     issues: list[ConfigIssue] = []
     for index, benefit in enumerate(config.benefits):
-        if (
-            isinstance(benefit, ConfigBenefitMeterCredit)
-            and benefit.properties.meter not in meters
-        ):
-            issues.append(
-                _unknown_reference(
+        if isinstance(benefit, ConfigBenefitMeterCredit):
+            issues.extend(
+                _reference_issues(
                     ConfigResource.meter,
+                    meters,
+                    deprecated_meters,
                     benefit.properties.meter,
                     _loc(ConfigResource.benefit, index, "properties", "meter"),
                 )
             )
     for index, product in enumerate(config.products):
         for price_index, price in enumerate(product.prices):
-            if (
-                isinstance(
-                    price,
-                    (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers),
-                )
-                and price.meter not in meters
+            if isinstance(
+                price, (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
             ):
-                issues.append(
-                    _unknown_reference(
+                issues.extend(
+                    _reference_issues(
                         ConfigResource.meter,
+                        meters,
+                        deprecated_meters,
                         price.meter,
                         _loc(
                             ConfigResource.product,
@@ -1050,7 +1079,7 @@ async def check(
         *unique_external_ids(ConfigResource.benefit, benefits),
         *unique_external_ids(ConfigResource.product, products),
         *unique_external_ids(ConfigResource.discount, discounts),
-        *unknown_references(config),
+        *invalid_references(config),
         *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),

@@ -103,6 +103,20 @@ const assertKnown = (
   }
 }
 
+const assertNotDeprecated = (
+  owner: string,
+  kind: 'meter' | 'benefit' | 'product',
+  deprecated: ReadonlySet<string>,
+  references: ReadonlyArray<string>,
+) => {
+  const reference = references.find((reference) => deprecated.has(reference))
+  if (reference !== undefined) {
+    throw new Error(
+      `${owner} uses ${kind} "${reference}", which is deprecated. Undeprecate the ${kind} or create a new one.`,
+    )
+  }
+}
+
 const toEntries = <Definition>(
   definitions:
     | Readonly<Record<string, Definition>>
@@ -252,6 +266,11 @@ export const defineConfig = <
     }),
   )
   const meterIds = new Set(entries.map(([external_id]) => external_id))
+  const deprecatedMeterIds = new Set(
+    entries.flatMap(([external_id, definition]) =>
+      definition.deprecated ? [external_id] : [],
+    ),
+  )
   const benefits = input.benefits?.({ flag, credits })
   const benefitEntries =
     benefits === undefined ? [] : toEntries<BenefitDefinition>(benefits)
@@ -307,9 +326,10 @@ export const defineConfig = <
         ]) => {
           validateBenefitNaming({ external_id, name })
           if (definition.type === 'meter_credit') {
-            assertKnown(`Benefit "${external_id}"`, 'meter', meterIds, [
-              definition.properties.meter,
-            ])
+            const owner = `Benefit "${external_id}"`
+            const references = [definition.properties.meter]
+            assertKnown(owner, 'meter', meterIds, references)
+            assertNotDeprecated(owner, 'meter', deprecatedMeterIds, references)
           }
           return {
             ...definition,
@@ -328,14 +348,11 @@ export const defineConfig = <
           name: definition.name,
         })
         const owner = `Product "${external_id}"`
-        assertKnown(
-          owner,
-          'meter',
-          meterIds,
-          definition.priceList.flatMap((price) =>
-            price.kind === 'metered' ? [price.meter] : [],
-          ),
+        const meterReferences = definition.priceList.flatMap((price) =>
+          price.kind === 'metered' ? [price.meter] : [],
         )
+        assertKnown(owner, 'meter', meterIds, meterReferences)
+        assertNotDeprecated(owner, 'meter', deprecatedMeterIds, meterReferences)
         assertKnown(owner, 'benefit', benefitIds, definition.benefits)
         return {
           external_id,

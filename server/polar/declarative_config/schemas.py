@@ -6,6 +6,7 @@ from annotated_types import Gt
 from pydantic import (
     UUID4,
     AwareDatetime,
+    BaseModel,
     ConfigDict,
     Discriminator,
     Field,
@@ -65,7 +66,18 @@ MAXIMUM_DISCOUNTS = 100
 MAXIMUM_WEBHOOK_ENDPOINTS = 25
 
 
-class ConfigMeter(MeterCreateBase):
+class ConfigDeprecationMixin(BaseModel):
+    deprecated: bool = Field(
+        default=False,
+        exclude=True,
+        description=(
+            "Keeps the resource for customers who still use it, "
+            "but active products and benefits can't reference it."
+        ),
+    )
+
+
+class ConfigMeter(ConfigDeprecationMixin, MeterCreateBase):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
@@ -479,6 +491,7 @@ class ConfigIssueSeverity(StrEnum):
 
 class ConfigIssueType(StrEnum):
     currency_changed = "currency_changed"
+    deprecated_reference = "deprecated_reference"
     discount_locked = "discount_locked"
     duplicate_code = "duplicate_code"
     duplicate_external_id = "duplicate_external_id"

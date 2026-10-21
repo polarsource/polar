@@ -262,6 +262,32 @@ class TestApply:
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_create_deprecated(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [{**TOOL_CALLS_METER, "deprecated": True}]}
+            ),
+        )
+
+        assert result.changes[0].action == ConfigAction.created
+        [meter] = await MeterRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["sdk-tool-calls"]
+        )
+        assert meter.archived_at is None
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unchanged(
         self,
         mocker: MockerFixture,
@@ -2395,6 +2421,37 @@ class TestPlan:
             (["body", "products", 0, "prices", 2, "meter"], "sdk-tool-calls"),
             (["body", "products", 0, "benefits", 1], "beta"),
             (["body", "discounts", 0, "products", 0], "pack"),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_deprecated_references(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [{**TOOL_CALLS_METER, "deprecated": True}],
+                    "benefits": [CREDITS_BENEFIT],
+                    "products": [
+                        {
+                            **PRO_PRODUCT,
+                            "prices": [*PRO_PRODUCT["prices"], METERED_TIERS_PRICE],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            (issue.loc, issue.input)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.deprecated_reference
+        ] == [
+            (["body", "benefits", 0, "properties", "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "prices", 2, "meter"], "sdk-tool-calls"),
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")

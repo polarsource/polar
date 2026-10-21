@@ -10,6 +10,7 @@ import {
   type SharedEventOutput,
 } from './event'
 import { Builder } from './builder'
+import { deprecatedKey, withDeprecation } from './deprecation'
 import {
   Metadata as MeterMetadata,
   metadataKey,
@@ -71,6 +72,7 @@ const meterFields = {
   filter: MeterFilter,
   aggregation: MeterAggregation,
   metadata: Schema.optionalKey(MeterMetadata),
+  deprecated: Schema.optionalKey(Schema.Literal(true)),
 }
 
 export const MeterConfig = Schema.Union([
@@ -189,7 +191,7 @@ type Property<Metadata, Type> = unknown extends Metadata
 export class MeterBuilder<
   Names extends string = string,
   Metadata = unknown,
-> extends withMetadata(Builder) {
+> extends withDeprecation(withMetadata(Builder)) {
   protected readonly meterFilter: MeterFilter = {
     conjunction: 'and',
     clauses: [],
@@ -269,6 +271,7 @@ export class MeterBuilder<
       ...(this[metadataKey] !== undefined && {
         metadata: { ...this[metadataKey] },
       }),
+      ...(this[deprecatedKey] && { deprecated: true as const }),
     }
   }
 }

@@ -536,6 +536,52 @@ test('products only reference declared meters and benefits', () => {
   ).toThrow('Product "pro" references unknown benefit "unknown"')
 })
 
+test('deprecated meters stay in the config and the client', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({
+      apples: meter('Apples').deprecated().count(),
+      pears: meter('Pears').count(),
+    }),
+    products: ({ product, meter }) => ({
+      pro: product()
+        .prices(meter('pears').flat().amount(usd(0.01)))
+        .recurring('monthly'),
+    }),
+  })
+  const [apples, pears] = config.toJSON().meters
+  expect(apples).toMatchObject({ external_id: 'apples', deprecated: true })
+  expect(pears).not.toHaveProperty('deprecated')
+  expectTypeOf(
+    RuntimeSDK(config, { accessToken: 'test' }).actor({ customerId: 'c' })
+      .balance,
+  )
+    .parameter(0)
+    .toEqualTypeOf<'apples' | 'pears'>()
+})
+
+test('active products and benefits cannot use a deprecated meter', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
+      products: ({ product, meter }) => ({
+        pro: product()
+          .prices(meter('apples').flat().amount(usd(0.01)))
+          .recurring('monthly'),
+      }),
+    }),
+  ).toThrow(
+    'Product "pro" uses meter "apples", which is deprecated. Undeprecate the meter or create a new one.',
+  )
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
+      benefits: ({ credits }) => ({
+        included: credits('Included apples').meter('apples').units(10),
+      }),
+    }),
+  ).toThrow('Benefit "included" uses meter "apples", which is deprecated.')
+})
+
 test('product names must be between 3 and 64 characters', () => {
   expect(() =>
     defineConfig({

@@ -54,6 +54,8 @@ export interface State {
   coldUntil?: number;
   cold: BucketStatistics;
   buckets: Map<number, BucketStatistics>;
+  // The part of each bucket Polar has not confirmed yet.
+  pending: Map<number, BucketStatistics>;
   credited: Record<string, number>;
 }
 type Customer = Parameters<typeof customerKey>[0];
@@ -188,16 +190,22 @@ export const decodeState = (value: string[]): State => {
     coldUntil: undefined,
     cold: emptyStatistics(),
     buckets: new Map(),
+    pending: new Map(),
     credited: {},
   };
   for (let i = 0; i < value.length; i += 2) {
     const field = value[i];
     const raw = value[i + 1];
-    if (field.startsWith("bucket:")) {
+    const buckets = field.startsWith("bucket:")
+      ? state.buckets
+      : field.startsWith("pending:")
+        ? state.pending
+        : undefined;
+    if (buckets) {
       const separator = field.lastIndexOf(":");
-      const start = Number(field.slice(7, separator));
-      let bucket = state.buckets.get(start);
-      if (!bucket) state.buckets.set(start, (bucket = emptyStatistics()));
+      const start = Number(field.slice(field.indexOf(":") + 1, separator));
+      let bucket = buckets.get(start);
+      if (!bucket) buckets.set(start, (bucket = emptyStatistics()));
       bucket[field.slice(separator + 1) as keyof BucketStatistics] = number(raw);
     } else if (field.startsWith("cold:"))
       state.cold[field.slice(5) as keyof BucketStatistics] = number(raw);
@@ -208,8 +216,12 @@ export const decodeState = (value: string[]): State => {
   }
   return state;
 };
+// Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
+// them, and every local event in the buckets Polar has not sealed yet.
 export const consumedUnits = (state: State, func: Aggregation["func"]): number => {
   const combined = { ...state.cold };
+  for (const [start, statistics] of state.pending)
+    if (start < state.coldUntil!) addStatistics(combined, statistics);
   for (const [start, statistics] of state.buckets)
     if (start >= state.coldUntil!) addStatistics(combined, statistics);
   return quantity(combined, func);
@@ -584,9 +596,7 @@ export class Outpost {
         firstError ??= error;
         continue;
       }
-      // Empty when none of the events was pending: nothing changed.
-      if (!(state as string[]).length) continue;
-      await this.receiveState(confirmations[index].identity, decodeState(state as string[]), true);
+      await this.receiveState(confirmations[index].identity, decodeState(state as string[]));
     }
     if (firstError) throw redisUnavailable(firstError);
   }
@@ -833,6 +843,7 @@ export class Outpost {
         state = await this.loadState(customer);
       else if (bucket) {
         for (const [start, statistics] of state.buckets) current.buckets.set(start, statistics);
+        for (const [start, statistics] of state.pending) current.pending.set(start, statistics);
         current.revision = state.revision;
         state = current;
       }

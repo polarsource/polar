@@ -478,7 +478,8 @@ async def test_bucket_ownership_and_internal_customer(
         meter = await outpost.meter(customer_id="alice", meter_id="meter")
     assert meter is not None
     assert meter.customer_id == "alice"
-    assert meter.consumed_units == 12
+    # The late event counts as pending until Polar confirms it.
+    assert meter.consumed_units == 12 + 999
     assert (
         await redis.hget(
             "outpost:state:customer:alice:tokens", f"bucket:{BUCKET - BUCKET_SIZE}:sum"
@@ -1012,17 +1013,13 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
         await first.actor(external_customer_id="alice")
         await second.actor(external_customer_id="alice")
 
+        events: list[EventInput] = []
+
         async def emit(writer: Outpost, value: int) -> None:
             for _ in range(10):
-                await writer.track(
-                    {
-                        "name": "call",
-                        "external_id": f"event-{next(_ids)}",
-                        "external_customer_id": "alice",
-                        "timestamp": TIMESTAMP,
-                        "metadata": {"tokens": value},
-                    }
-                )
+                event = _usage(f"event-{next(_ids)}", value)
+                events.append(event)
+                await writer.track(event)
 
         async with anyio.create_task_group() as tasks:
             tasks.start_soon(emit, first, 2)
@@ -1061,6 +1058,7 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
                 "metadata": {"tokens": 4},
             }
         )
+        await first.confirm(events)
         await apply_snapshot(
             keys=[f"outpost:state:{identity}"],
             args=[
@@ -1078,9 +1076,10 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
             ],
         )
         await first._refresh_states()
+        # Every event in the bucket is confirmed: Polar counts it, the local copy is gone.
         assert (
             await redis.hget(f"outpost:state:{identity}", f"bucket:{BUCKET}:sum")
-            == b"100"
+            is None
         )
         assert (
             await redis.hget(

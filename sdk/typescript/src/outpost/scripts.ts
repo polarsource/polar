@@ -118,22 +118,10 @@ if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
-local fields = {'epoch', 'revision'}
-for _, prefix in ipairs({bucket, pending}) do
-    for _, statistic in ipairs({'count', 'sum', 'min', 'max'}) do
-        table.insert(fields, prefix .. statistic)
-    end
-end
-local values = redis.call('HMGET', KEYS[1], unpack(fields))
-local update = {}
-for i, field in ipairs(fields) do
-    if values[i] then
-        table.insert(update, field)
-        table.insert(update, values[i])
-    end
-end
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], bucket = update}))
-return update
+-- A confirmation can drop a bucket, which a bucket update cannot express: send the whole state.
+local state = redis.call('HGETALL', KEYS[1])
+redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
+return state
 `;
 
 export const APPLY_SNAPSHOT_SCRIPT = `

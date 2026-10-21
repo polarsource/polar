@@ -339,22 +339,10 @@ if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
-local fields = {'epoch', 'revision'}
-for _, prefix in ipairs({bucket, pending}) do
-    for _, statistic in ipairs({'count', 'sum', 'min', 'max'}) do
-        table.insert(fields, prefix .. statistic)
-    end
-end
-local values = redis.call('HMGET', KEYS[1], unpack(fields))
-local update = {}
-for i, field in ipairs(fields) do
-    if values[i] then
-        table.insert(update, field)
-        table.insert(update, values[i])
-    end
-end
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], bucket = update}))
-return update
+-- A confirmation can drop a bucket, which a bucket update cannot express: send the whole state.
+local state = redis.call('HGETALL', KEYS[1])
+redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
+return state
 """
 
 CONFIRM_SHA = hashlib.sha1(CONFIRM_SCRIPT.encode()).hexdigest()
@@ -434,6 +422,8 @@ class ReducerState:
     cold_until: int | None
     cold: BucketStatistics
     buckets: dict[int, BucketStatistics]
+    # The part of each bucket Polar has not confirmed yet.
+    pending: dict[int, BucketStatistics]
     credited: dict[str, int | float]
 
 
@@ -446,14 +436,17 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
     cold_until: int | None = None
     cold = BucketStatistics()
     buckets: dict[int, BucketStatistics] = {}
+    pending: dict[int, BucketStatistics] = {}
     credited: dict[str, int | float] = {}
     for field, value in zip(decoded[::2], decoded[1::2], strict=True):
-        if field.startswith("bucket:"):
-            timestamp, _, statistic = field[7:].partition(":")
+        if field.startswith(("bucket:", "pending:")):
+            prefix, _, rest = field.partition(":")
+            timestamp, _, statistic = rest.partition(":")
+            statistics = buckets if prefix == "bucket" else pending
             start = int(timestamp)
-            bucket = buckets.get(start)
+            bucket = statistics.get(start)
             if bucket is None:
-                bucket = buckets[start] = BucketStatistics()
+                bucket = statistics[start] = BucketStatistics()
             setattr(bucket, statistic, _number(value))
         elif field.startswith("cold:"):
             setattr(cold, field[5:], _number(value))
@@ -471,13 +464,19 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
         cold_until=cold_until,
         cold=cold,
         buckets=buckets,
+        pending=pending,
         credited=credited,
     )
 
 
+# Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
+# them, and every local event in the buckets Polar has not sealed yet.
 def consumed_units(state: ReducerState, func: str) -> int | float:
     assert state.cold_until is not None
     combined = dataclasses.replace(state.cold)
+    for bucket_start, statistics in state.pending.items():
+        if bucket_start < state.cold_until:
+            combined.add(statistics)
     for bucket_start, statistics in state.buckets.items():
         if bucket_start >= state.cold_until:
             combined.add(statistics)
@@ -790,10 +789,7 @@ class Outpost:
                 if first_error is None:
                     first_error = state
                 continue
-            # Empty when none of the events was pending: nothing changed.
-            if not state:
-                continue
-            await self._receive_state(identity, decode_state(state), bucket=True)
+            await self._receive_state(identity, decode_state(state))
         if first_error is not None:
             raise first_error
 
@@ -1068,6 +1064,7 @@ class Outpost:
                 state = await self._load_state(customer)
             elif bucket:
                 current.buckets.update(state.buckets)
+                current.pending.update(state.pending)
                 current.revision = state.revision
                 state = current
             local.state = state

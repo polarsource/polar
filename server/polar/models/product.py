@@ -104,7 +104,7 @@ class Product(
             postgresql_using="gin",
         ),
         Index(
-            "ix_products_organization_id_external_id",
+            "ix_products_organization_id_external_id_current",
             "organization_id",
             "external_id",
             unique=True,
@@ -125,6 +125,7 @@ class Product(
         nullable=True,
         default=None,
     )
+    # Nullable during the expand phase (ADR-0006); NOT NULL is enforced in #15750.
     is_current: Mapped[bool] = mapped_column(
         Boolean, nullable=True, default=True, server_default=text("true")
     )

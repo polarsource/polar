@@ -5,7 +5,6 @@ from pydantic import AwareDatetime
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
-from polar.declarative_config.guard import assert_catalog_editable
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -15,7 +14,6 @@ from polar.kit.versioning import version
 from polar.meter.aggregation import AggregationFunction
 from polar.models import Meter
 from polar.openapi import APITag, cli_preview
-from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -260,8 +258,6 @@ async def create(
     session: AsyncSession = Depends(get_db_session),
 ) -> Meter:
     """Create a meter."""
-    organization = await get_payload_organization(session, auth_subject, meter_create)
-    await assert_catalog_editable(session, organization.id)
     return await meter_service.create(session, meter_create, auth_subject)
 
 
@@ -286,5 +282,4 @@ async def update(
     if meter is None:
         raise ResourceNotFound()
 
-    await assert_catalog_editable(session, meter.organization_id)
     return await meter_service.update(session, meter, meter_update, auth_subject)

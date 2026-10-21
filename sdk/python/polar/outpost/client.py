@@ -551,14 +551,22 @@ class Outpost:
             and self._configured.is_set()
         )
 
+    def validate(self, event: EventInput) -> None:
+        """Reject an event Outpost cannot reconcile with Polar.
+
+        Raises:
+            MissingExternalIdError: The event has no external_id.
+        """
+        if not event.get("external_id"):
+            raise MissingExternalIdError()
+
     @_raise_redis_unavailable
     async def track(self, event: EventInput) -> None:
         self._require_redis()
         started = time.perf_counter()
         outcome = "ok"
         try:
-            if not event.get("external_id"):
-                raise MissingExternalIdError()
+            self.validate(event)
             parsed = self._parse_event(event)
             if not self._configured.is_set():
                 with anyio.fail_after(5):

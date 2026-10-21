@@ -472,12 +472,21 @@ export class Outpost {
     await this.close();
   }
 
+  /**
+   * Reject an event Outpost cannot reconcile with Polar.
+   *
+   * @throws MissingExternalIdError when the event has no external_id.
+   */
+  validate(event: EventInput): void {
+    if (!event.external_id) throw new MissingExternalIdError();
+  }
+
   async track(event: EventInput): Promise<void> {
     const redis = this.requireRedis();
     const started = performance.now();
     let outcome = "ok";
     try {
-      if (!event.external_id) throw new MissingExternalIdError();
+      this.validate(event);
       const parsed = parseEvent(event);
       await this.waitConfigured();
       const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));

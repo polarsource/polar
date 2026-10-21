@@ -2,7 +2,7 @@ import functools
 import json
 import os
 import tempfile
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -17,6 +17,7 @@ from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
+from polar.kit.utils import utc_now
 
 # A token hash reads `<secret_id>$<digest>`. The digest is 64 characters
 HASH_SEPARATOR = "$"
@@ -653,6 +654,19 @@ class Settings(BaseSettings):
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
     TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
+
+    # shortcut: remove after November 1, 2026, once production Terraform uses Numeral.
+    @property
+    def tax_processors(self) -> list[TaxProcessor]:
+        if self.is_production() and utc_now() >= datetime(2026, 11, 1, tzinfo=UTC):
+            return [TaxProcessor.numeral, TaxProcessor.stripe]
+        return self.TAX_PROCESSORS
+
+    @property
+    def tax_record_processor(self) -> TaxProcessor:
+        if self.is_production() and utc_now() >= datetime(2026, 11, 1, tzinfo=UTC):
+            return TaxProcessor.numeral
+        return self.TAX_RECORD_PROCESSOR
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

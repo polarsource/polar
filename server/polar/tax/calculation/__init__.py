@@ -98,7 +98,7 @@ class TaxCalculationService:
         Raises:
             TaxCalculationTechnicalError: If all tax processors fail to calculate tax.
         """
-        for processor in settings.TAX_PROCESSORS:
+        for processor in settings.tax_processors:
             log.debug("Attempting tax calculation with processor", processor=processor)
             tax_processor_service = _get_tax_service(processor)
             try:
@@ -142,12 +142,13 @@ class TaxCalculationService:
         reference: str,
         transaction_date: datetime,
     ) -> tuple[str, TaxProcessor]:
-        tax_processor_service = _get_tax_service(settings.TAX_RECORD_PROCESSOR)
-        if calculation_processor != settings.TAX_RECORD_PROCESSOR:
+        record_processor = settings.tax_record_processor
+        tax_processor_service = _get_tax_service(record_processor)
+        if calculation_processor != record_processor:
             log.info(
                 "Recording tax calculation with a different processor than the one used for calculation",
                 calculation_processor=calculation_processor,
-                record_processor=settings.TAX_RECORD_PROCESSOR,
+                record_processor=record_processor,
                 calculation_id=processor_id,
             )
             return await self.record_amounts(
@@ -163,7 +164,7 @@ class TaxCalculationService:
         assert processor_id is not None
         return await tax_processor_service.record(
             processor_id, reference
-        ), settings.TAX_RECORD_PROCESSOR
+        ), record_processor
 
     async def record_amounts(
         self,
@@ -177,7 +178,8 @@ class TaxCalculationService:
         transaction_date: datetime,
     ) -> tuple[str, TaxProcessor]:
         """Record a tax transaction from explicit amounts, without a calculation."""
-        tax_processor_service = _get_tax_service(settings.TAX_RECORD_PROCESSOR)
+        record_processor = settings.tax_record_processor
+        tax_processor_service = _get_tax_service(record_processor)
         backfill_reference = await tax_processor_service.backfill(
             amount,
             tax_amount,
@@ -189,7 +191,7 @@ class TaxCalculationService:
         )
         return (
             f"{_BACKFILL_REFERENCE_PREFIX}{backfill_reference}",
-            settings.TAX_RECORD_PROCESSOR,
+            record_processor,
         )
 
     async def revert(

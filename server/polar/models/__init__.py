@@ -9,6 +9,8 @@ from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
 from .campaign import Campaign
+from .catalog import Catalog
+from .catalog_product import CatalogProduct
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
@@ -110,6 +112,7 @@ from .refund import Refund
 from .slack_app import SlackApp
 from .staged_event import StagedEvent
 from .subscription import Subscription
+from .subscription_bulk_update import SubscriptionBulkUpdate
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
@@ -146,6 +149,8 @@ __all__ = [
     "BenefitGrant",
     "BillingEntry",
     "Campaign",
+    "Catalog",
+    "CatalogProduct",
     "Checkout",
     "CheckoutLink",
     "CheckoutLinkProduct",
@@ -249,6 +254,7 @@ __all__ = [
     "SlackApp",
     "StagedEvent",
     "Subscription",
+    "SubscriptionBulkUpdate",
     "SubscriptionMeter",
     "SubscriptionProductPrice",
     "SubscriptionUpdate",

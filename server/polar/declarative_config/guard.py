@@ -5,7 +5,7 @@ from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 
 
-class ConfigAsCodeManaged(PolarError):
+class DeclarativeConfigManaged(PolarError):
     def __init__(self) -> None:
         super().__init__(
             "This organization manages its catalog as code. "
@@ -20,4 +20,4 @@ async def assert_catalog_editable(
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(organization_id)
     if organization is not None and organization.is_config_as_code_enabled:
-        raise ConfigAsCodeManaged()
+        raise DeclarativeConfigManaged()

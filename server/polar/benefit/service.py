@@ -11,6 +11,10 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
+)
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
@@ -129,6 +133,8 @@ class BenefitService:
         redis: Redis,
         create_schema: BenefitCreate,
         auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Benefit:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
@@ -139,6 +145,8 @@ class BenefitService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        if not declarative_config and organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
 
         if (
             create_schema.type == BenefitType.slack_shared_channel
@@ -236,10 +244,14 @@ class BenefitService:
         benefit: Benefit,
         benefit_update: BenefitUpdate,
         auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Benefit:
         await assert_resource_permission(
             session, auth_subject, benefit, OrganizationPermission.products_manage
         )
+        if not declarative_config:
+            await assert_catalog_editable(session, benefit.organization_id)
 
         if benefit_update.type != benefit.type:
             raise PolarRequestValidationError(
@@ -348,6 +360,7 @@ class BenefitService:
         await assert_resource_permission(
             session, auth_subject, benefit, OrganizationPermission.products_manage
         )
+        await assert_catalog_editable(session, benefit.organization_id)
 
         if not benefit.deletable:
             raise NotPermitted()

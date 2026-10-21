@@ -18,6 +18,10 @@ from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
+)
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
     PolarError,
@@ -217,6 +221,7 @@ class ProductService:
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
         notify: bool = True,
+        declarative_config: bool = False,
     ) -> Product:
         """``notify=False`` skips the webhook and the organization re-review, for
         bulk internal writes such as a catalog import."""
@@ -230,6 +235,8 @@ class ProductService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        if not declarative_config and organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
 
         if (
             create_schema.external_id is not None
@@ -340,10 +347,14 @@ class ProductService:
         product: Product,
         update_schema: ProductUpdate,
         auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Product:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
         )
+        if not declarative_config:
+            await assert_catalog_editable(session, product.organization_id)
 
         errors: list[ValidationError] = []
 
@@ -586,10 +597,14 @@ class ProductService:
         product: Product,
         benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
         )
+        if not declarative_config:
+            await assert_catalog_editable(session, product.organization_id)
 
         previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()
@@ -685,6 +700,7 @@ class ProductService:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
         )
+        await assert_catalog_editable(session, product.organization_id)
 
         if not product.is_deletable:
             raise ProductNotDeletable(product.id)

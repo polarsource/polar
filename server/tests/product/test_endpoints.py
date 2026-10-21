@@ -334,7 +334,7 @@ class TestCreateProduct:
         )
 
         assert response.status_code == 403
-        assert response.json()["error"] == "ConfigAsCodeManaged"
+        assert response.json()["error"] == "DeclarativeConfigManaged"
 
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -741,7 +741,7 @@ class TestUpdateProduct:
         )
 
         assert response.status_code == 403
-        assert response.json()["error"] == "ConfigAsCodeManaged"
+        assert response.json()["error"] == "DeclarativeConfigManaged"
 
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.patch(
@@ -965,7 +965,7 @@ class TestDeleteProduct:
         response = await client.delete(f"/v1/products/{product.id}")
 
         assert response.status_code == 403
-        assert response.json()["error"] == "ConfigAsCodeManaged"
+        assert response.json()["error"] == "DeclarativeConfigManaged"
 
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.delete(f"/v1/products/{product.id}")

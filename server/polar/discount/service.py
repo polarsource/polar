@@ -14,6 +14,10 @@ from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
 )
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
+)
 from polar.discount.repository import (
     DiscountRedemptionRepository,
     DiscountRepository,
@@ -131,6 +135,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
         notify: bool = True,
+        declarative_config: bool = False,
     ) -> Discount:
         """``notify=False`` skips the webhook, for bulk internal writes such as a
         catalog import."""
@@ -143,6 +148,8 @@ class DiscountService(ResourceServiceReader[Discount]):
             organization.id,
             OrganizationPermission.products_manage,
         )
+        if not declarative_config and organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
 
         repository = DiscountRepository.from_session(session)
 
@@ -260,10 +267,14 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount: Discount,
         discount_update: DiscountUpdate,
         auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Discount:
         await assert_resource_permission(
             session, auth_subject, discount, OrganizationPermission.products_manage
         )
+        if not declarative_config:
+            await assert_catalog_editable(session, discount.organization_id)
 
         if (
             "duration" in discount_update.model_fields_set
@@ -407,6 +418,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         await assert_resource_permission(
             session, auth_subject, discount, OrganizationPermission.products_manage
         )
+        await assert_catalog_editable(session, discount.organization_id)
         discount.set_deleted_at()
         session.add(discount)
 

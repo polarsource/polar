@@ -2,7 +2,6 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.customer.schemas.customer import CustomerID
-from polar.declarative_config.guard import assert_catalog_editable
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -11,7 +10,6 @@ from polar.kit.versioning import version
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.openapi import APITag, cli_preview, destructive
-from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -269,8 +267,6 @@ async def create(
     """
     Create a benefit, for example license keys, file downloads or Discord access.
     """
-    organization = await get_payload_organization(session, auth_subject, benefit_create)
-    await assert_catalog_editable(session, organization.id)
     benefit = await benefit_service.user_create(
         session, redis, benefit_create, auth_subject
     )
@@ -303,7 +299,6 @@ async def update(
     if benefit is None:
         raise ResourceNotFound()
 
-    await assert_catalog_editable(session, benefit.organization_id)
     return await benefit_service.update(
         session, redis, benefit, benefit_update, auth_subject
     )
@@ -339,5 +334,4 @@ async def delete(
     if benefit is None:
         raise ResourceNotFound()
 
-    await assert_catalog_editable(session, benefit.organization_id)
     await benefit_service.delete(session, benefit, auth_subject)

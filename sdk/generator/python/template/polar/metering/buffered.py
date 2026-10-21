@@ -209,7 +209,7 @@ class BufferedMeteringStrategy:
                 return
             except (PolarNetworkError, PolarRateLimitError, PolarServerError) as e:
                 if isinstance(e, PolarRateLimitError) and e.retry_after is not None:
-                    delay = float(e.retry_after)
+                    delay = max(float(e.retry_after), 1.0)
                     waited += delay
                     if waited > RETRY_AFTER_BUDGET:
                         await self._on_dropped(batch, "retry_exhausted")

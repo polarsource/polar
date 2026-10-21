@@ -114,7 +114,7 @@ async def test_flush_waits_for_retries(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
     client.events.ingest.side_effect = [PolarRateLimitError(429, 0), None]
-    with anyio.fail_after(1):
+    with anyio.fail_after(3):
         async with BufferedMeteringStrategy(client, batch_interval=60) as strategy:
             await strategy.track(events[0])
             await strategy.flush()

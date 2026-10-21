@@ -234,7 +234,7 @@ export class BufferedMeteringStrategy {
           const retryAfter = error instanceof PolarRateLimitError ? error.retryAfter : null;
           let delay: number;
           if (retryAfter !== null && Number.isFinite(retryAfter) && retryAfter >= 0) {
-            delay = retryAfter * 1000;
+            delay = Math.max(retryAfter, 1) * 1000;
             waited += delay;
             if (waited > RETRY_AFTER_BUDGET_MS) {
               await this.onDropped(batch, "retry_exhausted");

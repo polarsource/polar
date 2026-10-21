@@ -45,7 +45,7 @@ from polar.base import PolarError
 from polar.metering.client import PolarClient
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
-from polar.outpost.event import Event, event_key
+from polar.outpost.event import Event
 from polar.outpost.reducer import (
     BucketStatistics,
     Reducer,
@@ -71,6 +71,11 @@ class _NotReadyError(PolarOutpostError): ...
 class UnavailableRedisError(PolarOutpostError):
     def __init__(self) -> None:
         super().__init__("Redis is unavailable")
+
+
+class MissingExternalIdError(PolarOutpostError):
+    def __init__(self) -> None:
+        super().__init__("Outpost needs an external_id on every event")
 
 
 def _number(value: str) -> int | float:
@@ -552,7 +557,8 @@ class Outpost:
         started = time.perf_counter()
         outcome = "ok"
         try:
-            event_key(event)
+            if not event.get("external_id"):
+                raise MissingExternalIdError()
             parsed = self._parse_event(event)
             if not self._configured.is_set():
                 with anyio.fail_after(5):

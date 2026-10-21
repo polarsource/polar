@@ -38,6 +38,7 @@ from polar.metering import EventInput
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     WRITE_BUCKET_SCRIPT,
+    MissingExternalIdError,
     Outpost,
     PolarOutpostError,
     RedisReconnectBackoff,
@@ -276,9 +277,7 @@ async def test_ingest_requires_external_id(
 ) -> None:
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
-        with pytest.raises(
-            ValueError, match="Outpost needs an external_id on every event"
-        ):
+        with pytest.raises(MissingExternalIdError):
             await outpost.track({"name": "call", "external_customer_id": "alice"})
 
 

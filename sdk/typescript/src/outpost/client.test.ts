@@ -11,6 +11,7 @@ import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
 import {
   decodeState,
+  MissingExternalIdError,
   Outpost,
   type OutpostOptions,
   PolarOutpostError,
@@ -190,7 +191,13 @@ const readOutcomes = async (outpost: Outpost) => {
   ]);
 };
 const ingest = (outpost: Outpost, tokens: number) =>
-  outpost.track({ ...customer, name: "api_call", external_id: eventId(), timestamp, metadata: { tokens } });
+  outpost.track({
+    ...customer,
+    name: "api_call",
+    external_id: eventId(),
+    timestamp,
+    metadata: { tokens },
+  });
 
 it.each([
   ["count", 12],
@@ -221,7 +228,7 @@ it.each([
 it("rejects an event without an external_id", async () => {
   const outpost = await start();
   await expect(outpost.track({ ...customer, name: "api_call", timestamp })).rejects.toThrow(
-    "Outpost needs an external_id on every event",
+    MissingExternalIdError,
   );
 });
 
@@ -953,7 +960,13 @@ it("reports sync counts when telemetry is flushed", async () => {
   await reader.actor(customer);
   for (const event of [
     { ...customer, name: "api_call", external_id: eventId(), timestamp, metadata: { tokens: 1 } },
-    { external_customer_id: "bob", name: "api_call", external_id: eventId(), timestamp, metadata: { tokens: 1 } },
+    {
+      external_customer_id: "bob",
+      name: "api_call",
+      external_id: eventId(),
+      timestamp,
+      metadata: { tokens: 1 },
+    },
   ])
     await writer.track(event);
   await vi.waitFor(() => expect(reader["syncReceived"]).toBe(2));
@@ -1056,7 +1069,13 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
     await using metering = await polar
       .metering({ outpost: { redisUrl: redisServer.socket } })
       .start();
-    await metering.track({ ...customer, name: "api", external_id: eventId(), timestamp, metadata: { tokens: 2 } });
+    await metering.track({
+      ...customer,
+      name: "api",
+      external_id: eventId(),
+      timestamp,
+      metadata: { tokens: 2 },
+    });
     expect((await reader.meter(meter))?.consumed_units).toBe(12);
     expect(fetch).not.toHaveBeenCalled();
   }

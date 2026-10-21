@@ -45,7 +45,13 @@ def _is_mover_healthy() -> bool:
 
 async def _report_backlog(session: AsyncSession) -> None:
     repository = EventRepository.from_session(session)
-    count, oldest_ingested_at = await repository.get_staged_events_backlog()
+    try:
+        # A savepoint so a failed query leaves the transaction usable for the move.
+        async with session.begin_nested():
+            count, oldest_ingested_at = await repository.get_staged_events_backlog()
+    except Exception:
+        log.exception("Failed to report staged events backlog")
+        return
     STAGED_EVENTS_BACKLOG.set(count)
     STAGED_EVENTS_OLDEST_AGE.set(
         (utc_now() - oldest_ingested_at).total_seconds()
@@ -70,8 +76,8 @@ async def run() -> None:
                         began - last_backlog_report
                         >= settings.GRAFANA_CLOUD_PROMETHEUS_WRITE_INTERVAL
                     ):
-                        await _report_backlog(session)
                         last_backlog_report = began
+                        await _report_backlog(session)
                     moved = await event_service.move_staged_events(session, BATCH_SIZE)
                     await session.commit()
             _last_heartbeat = time.monotonic()

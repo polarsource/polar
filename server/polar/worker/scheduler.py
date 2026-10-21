@@ -5,10 +5,14 @@ import logfire
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.base import STATE_STOPPED
 from apscheduler.schedulers.blocking import BlockingScheduler
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
+from starlette.exceptions import HTTPException
 
 from polar import tasks
 from polar.logfire import configure_logfire
 from polar.logging import configure as configure_logging
+from polar.postgres import create_sync_engine
 from polar.sentry import configure_sentry
 from polar.subscription.scheduler import (
     SubscriptionJobStore,
@@ -54,7 +58,19 @@ def _is_scheduler_healthy() -> bool:
 
 
 def start() -> None:
-    set_heartbeat_checker(_is_scheduler_healthy)
+    health_engine = create_sync_engine("scheduler")
+
+    def check_health() -> bool:
+        try:
+            with health_engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+        except SQLAlchemyError as e:
+            raise HTTPException(
+                status_code=503, detail="Database is not available"
+            ) from e
+        return _is_scheduler_healthy()
+
+    set_heartbeat_checker(check_health)
     health_thread = threading.Thread(target=_run_exposition_server, daemon=True)
     health_thread.start()
 
@@ -71,6 +87,8 @@ def start() -> None:
         scheduler.start()
     except KeyboardInterrupt:
         scheduler.shutdown()
+    finally:
+        health_engine.dispose()
 
 
 __all__ = ["start", "tasks"]

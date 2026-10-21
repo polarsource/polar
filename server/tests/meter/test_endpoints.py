@@ -32,8 +32,11 @@ class TestListMeters:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
-    async def test_user_does_not_see_other_organization_meters(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_does_not_see_other_organization_meters(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -44,24 +47,6 @@ class TestListMeters:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 0
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_lists_only_its_own_organizations_meters(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        meter_organization_second: Meter,
-    ) -> None:
-        meter = await create_meter(
-            save_fixture, organization=organization, id=uuid.uuid4()
-        )
-
-        response = await client.get("/v1/meters/")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert [item["id"] for item in json["items"]] == [str(meter.id)]
 
     @pytest.mark.auth
     @pytest.mark.api_version(V2027_01)
@@ -120,8 +105,11 @@ class TestGetMeter:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
-    async def test_user_cannot_access_other_organization_meter(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_cannot_access_other_organization_meter(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -159,8 +147,11 @@ class TestGetExternalMeter:
         assert response.json()["id"] == str(meter.id)
 
     @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
-    async def test_user_cannot_access_other_organization_meter(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_cannot_access_other_organization_meter(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -226,8 +217,11 @@ class TestGetMeterQuantities:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
-    async def test_user_cannot_access_other_organization_meter_quantities(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_cannot_access_other_organization_meter_quantities(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -346,23 +340,15 @@ class TestUpdateMeter:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
-    async def test_user_cannot_update_other_organization_meter(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_cannot_update_other_organization_meter(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
         meter_organization_second: Meter,
-    ) -> None:
-        response = await client.patch(
-            f"/v1/meters/{meter_organization_second.id}",
-            json={"name": "Updated"},
-        )
-
-        assert response.status_code == 404
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_cannot_update_another_organizations_meter(
-        self, client: AsyncClient, meter_organization_second: Meter
     ) -> None:
         response = await client.patch(
             f"/v1/meters/{meter_organization_second.id}",

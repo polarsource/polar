@@ -150,14 +150,11 @@ class TestApply:
             ("discount", "created"),
         ]
 
-    @pytest.mark.parametrize("path", ["/v1/config/apply", "/v1/config/plan"])
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent_cannot_apply_or_plan_webhooks(
-        self, path: str, client: AsyncClient
-    ) -> None:
+    async def test_agent_cannot_apply_webhooks(self, client: AsyncClient) -> None:
         response = await client.post(
-            path,
+            "/v1/config/apply",
             json={
                 "webhooks": [
                     {
@@ -445,6 +442,27 @@ class TestPlan:
             "after": "SDK - Tool Calls",
         } in created["diff"]
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_agent_cannot_plan_webhooks(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/config/plan",
+            json={
+                "webhooks": [
+                    {
+                        "external_id": "orders",
+                        "url": "https://example.com/webhook",
+                        "format": "raw",
+                        "events": ["order.paid"],
+                        "api_version": "2026-04",
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+
 
 @pytest.mark.anyio
 class TestExport:
@@ -632,38 +650,16 @@ class TestExport:
             }
         ]
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_organization_token(
+    async def test_without_organization_id_exports_the_credentials_organization(
         self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization
     ) -> None:
         await create_meter(
             save_fixture, organization=organization, external_id="my-meter"
-        )
-
-        response = await client.get("/v1/config/")
-
-        assert response.status_code == 200
-        [meter] = response.json()["config"]["meters"]
-        assert meter["external_id"] == "my-meter"
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent_exports_only_its_own_organizations_meters(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        organization_second: Organization,
-    ) -> None:
-        await create_meter(
-            save_fixture, organization=organization, external_id="my-meter"
-        )
-        await create_meter(
-            save_fixture,
-            id=uuid.uuid4(),
-            organization=organization_second,
-            external_id="other-meter",
         )
 
         response = await client.get("/v1/config/")

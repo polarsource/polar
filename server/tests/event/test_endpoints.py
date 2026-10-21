@@ -419,18 +419,6 @@ class TestIngest:
 
         assert response.status_code == 403
 
-    @pytest.mark.api_version(V2026_10, V2027_01)
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_can_ingest_events_without_organization_id(
-        self, client: AsyncClient
-    ) -> None:
-        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
-
-        response = await client.post("/v1/events/ingest", json={"events": events})
-
-        assert response.status_code == 200
-        assert response.json() == {"inserted": 1, "duplicates": 0}
-
     @pytest.mark.api_version(V2026_10)
     @pytest.mark.auth
     async def test_2026_10_user_session(
@@ -447,6 +435,18 @@ class TestIngest:
         response = await client.post("/v1/events/ingest", json={"events": events})
 
         assert response.status_code == 200
+
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_can_ingest_events_without_organization_id(
+        self, client: AsyncClient
+    ) -> None:
+        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
+        assert response.json() == {"inserted": 1, "duplicates": 0}
 
 
 SQLI_PAYLOADS = [
@@ -499,7 +499,7 @@ class TestAggregateFieldsValidation:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.get(
-            f"/v1/events/{uuid4()}",
+            "/v1/events/00000000-0000-0000-0000-000000000000",
             params={"aggregate_fields": payload},
         )
 
@@ -630,3 +630,25 @@ class TestGetEvent:
         response = await client.get(f"/v1/events/{event_organization_second.id}")
 
         assert response.status_code == 404
+
+
+@pytest.mark.anyio
+class TestAgentClosedRoutes:
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/v1/events/",
+            "/v1/events/statistics/by-property",
+            "/v1/events/statistics/by-customer",
+            "/v1/events/statistics/by-variance",
+            "/v1/events/statistics/timeseries",
+            "/v1/events/00000000-0000-0000-0000-000000000000",
+        ],
+    )
+    async def test_agent_cannot_read_events(
+        self, client: AsyncClient, path: str
+    ) -> None:
+        response = await client.get(path)
+
+        assert response.status_code == 401

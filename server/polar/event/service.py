@@ -1265,7 +1265,7 @@ class EventService:
     async def _get_org_ids_with_staged_events_enabled(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization_ids: set[uuid.UUID],
     ) -> set[uuid.UUID]:
         if is_organization(auth_subject):

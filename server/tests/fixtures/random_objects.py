@@ -247,7 +247,7 @@ async def create_agent(
     status: AgentStatus = AgentStatus.unclaimed,
     **kwargs: Any,
 ) -> Agent:
-    oauth2_client = OAuth2Client(client_id=rstr("polar_ci_"), is_agent=True)
+    oauth2_client = OAuth2Client(client_id=rstr("polar_ci_"))
     oauth2_client.set_client_metadata(
         {
             "client_name": "Test Agent",
@@ -256,7 +256,6 @@ async def create_agent(
             "scope": " ".join(sorted(UNCLAIMED_AGENT_SCOPES)),
         }
     )
-    await save_fixture(oauth2_client)
     agent = Agent(
         name="Test Agent",
         status=status,

@@ -9,7 +9,9 @@ from typing_extensions import TypeForm
 
 from polar.auth.models import AuthSubject, is_organization
 from polar.auth.permission import OrganizationPermission
+from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.discount.service import discount as discount_service
@@ -25,6 +27,7 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.redis import Redis
+from polar.subscription.repository import SubscriptionRepository
 from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
@@ -36,6 +39,7 @@ from .schemas import (
     Config,
     ConfigAction,
     ConfigApplyResult,
+    ConfigBenefitMeterCredit,
     ConfigChange,
     ConfigExport,
     ConfigExportDocument,
@@ -45,6 +49,11 @@ from .schemas import (
     ConfigIssueType,
     ConfigMeter,
     ConfigPlan,
+    ConfigProduct,
+    ConfigProductPriceMeteredTiers,
+    ConfigProductPriceMeteredUnit,
+    ConfigPrune,
+    ConfigPruneEntry,
     ConfigResource,
     ConfigResult,
     ConfigSettingsChange,
@@ -94,6 +103,16 @@ async def _assert_webhooks_permission(
             organization.id,
             OrganizationPermission.organization_manage,
         )
+
+
+def _billed_meters(product: ConfigProduct) -> set[str]:
+    return {
+        price.meter
+        for price in product.prices
+        if isinstance(
+            price, (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
+        )
+    }
 
 
 def _constraint_name(error: IntegrityError) -> str | None:
@@ -268,6 +287,127 @@ class DeclarativeConfigService:
             ),
             issues=issues,
         )
+
+    async def prune(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        config: Config,
+    ) -> ConfigPrune:
+        _assert_section_scopes(auth_subject, config, write=False)
+        subscription_scopes = {Scope.subscriptions_read, Scope.subscriptions_write}
+        if not auth_subject.scopes & subscription_scopes:
+            raise InsufficientScopeError({str(scope) for scope in subscription_scopes})
+        organization = await self._get_organization(
+            session, auth_subject, config, OrganizationPermission.products_read
+        )
+        subscription_repository = SubscriptionRepository.from_session(session)
+        grant_repository = BenefitGrantRepository.from_session(session)
+        deprecated_meters = [meter for meter in config.meters if meter.deprecated]
+        deprecated_benefits = [b for b in config.benefits if b.deprecated]
+        deprecated_products = [p for p in config.products if p.deprecated]
+        meter_ids = {
+            meter.external_id: meter.id
+            for meter in await MeterRepository.from_session(
+                session
+            ).get_all_by_external_ids(
+                organization.id, [meter.external_id for meter in deprecated_meters]
+            )
+        }
+        benefit_ids = {
+            benefit.external_id: benefit.id
+            for benefit in await BenefitRepository.from_session(
+                session
+            ).get_all_by_external_ids(
+                organization.id, [b.external_id for b in deprecated_benefits]
+            )
+        }
+        product_ids = {
+            product.external_id: product.id
+            for product in await ProductRepository.from_session(
+                session
+            ).get_all_by_external_ids(
+                organization.id, [p.external_id for p in deprecated_products]
+            )
+        }
+
+        # Products first: a deprecated benefit or meter stays while a kept product uses it
+        product_entries: list[ConfigPruneEntry] = []
+        kept_products = [p for p in config.products if not p.deprecated]
+        for product in deprecated_products:
+            product_id = product_ids.get(product.external_id)
+            in_use = (
+                product_id is not None
+                and await subscription_repository.exists_billable_by_product(product_id)
+            )
+            referenced_by = [
+                discount.external_id
+                for discount in config.discounts
+                if product.external_id in discount.products
+            ]
+            if in_use or referenced_by:
+                kept_products.append(product)
+            product_entries.append(
+                ConfigPruneEntry(
+                    resource=ConfigResource.product,
+                    external_id=product.external_id,
+                    in_use=in_use,
+                    referenced_by=referenced_by,
+                )
+            )
+
+        benefit_entries: list[ConfigPruneEntry] = []
+        kept_benefits = [b for b in config.benefits if not b.deprecated]
+        for benefit in deprecated_benefits:
+            benefit_id = benefit_ids.get(benefit.external_id)
+            in_use = benefit_id is not None and (
+                await grant_repository.exists_granted_by_benefit(benefit_id)
+            )
+            referenced_by = [
+                product.external_id
+                for product in kept_products
+                if benefit.external_id in product.benefits
+            ]
+            if in_use or referenced_by:
+                kept_benefits.append(benefit)
+            benefit_entries.append(
+                ConfigPruneEntry(
+                    resource=ConfigResource.benefit,
+                    external_id=benefit.external_id,
+                    in_use=in_use,
+                    referenced_by=referenced_by,
+                )
+            )
+
+        meter_entries: list[ConfigPruneEntry] = []
+        for meter in deprecated_meters:
+            meter_id = meter_ids.get(meter.external_id)
+            in_use = meter_id is not None and (
+                await subscription_repository.exists_billable_by_meter(meter_id)
+                or await grant_repository.exists_granted_by_meter(meter_id)
+            )
+            products_on_meter = [
+                product.external_id
+                for product in kept_products
+                if meter.external_id in _billed_meters(product)
+            ]
+            benefits_on_meter = [
+                benefit.external_id
+                for benefit in kept_benefits
+                if isinstance(benefit, ConfigBenefitMeterCredit)
+                and benefit.properties.meter == meter.external_id
+            ]
+            referenced_by = [*products_on_meter, *benefits_on_meter]
+            meter_entries.append(
+                ConfigPruneEntry(
+                    resource=ConfigResource.meter,
+                    external_id=meter.external_id,
+                    in_use=in_use,
+                    referenced_by=referenced_by,
+                )
+            )
+
+        return ConfigPrune(entries=[*meter_entries, *benefit_entries, *product_entries])
 
     async def export(
         self,

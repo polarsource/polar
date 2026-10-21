@@ -6210,6 +6210,34 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/prune': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Prune Config
+     * @description Report which deprecated resources in a declarative config document are still in use.
+     *
+     *     A deprecated resource can be removed from the config once no customer uses it
+     *     and no product or benefit staying in the config references it.
+     *
+     *     Each section requires the read or write scope for its resource, and the
+     *     `subscriptions:read` or `subscriptions:write` scope is always required.
+     *
+     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     */
+    post: operations['config:prune']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organization-access-tokens/': {
     parameters: {
       query?: never
@@ -16845,6 +16873,34 @@ export interface components {
           [key: string]: string
         }
       } | null
+    }
+    /** ConfigPrune */
+    ConfigPrune: {
+      /**
+       * Entries
+       * @description Every deprecated resource in the config. Ones not in use and not referenced can be removed from the config.
+       */
+      entries: components['schemas']['ConfigPruneEntry'][]
+    }
+    /** ConfigPruneEntry */
+    ConfigPruneEntry: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /**
+       * In Use
+       * @description Whether a customer still uses the resource.
+       */
+      in_use: boolean
+      /**
+       * Referenced By
+       * @description External IDs of the products, benefits and discounts staying in the config that reference the resource.
+       */
+      referenced_by: string[]
     }
     /**
      * ConfigResource
@@ -63190,6 +63246,59 @@ export interface operations {
         }
       }
       /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:prune': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Config']
+      }
+    }
+    responses: {
+      /** @description Deprecated resources checked. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigPrune']
+        }
+      }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections or the subscriptions scope, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown

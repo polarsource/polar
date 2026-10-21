@@ -2,7 +2,7 @@ import datetime
 import subprocess
 import sys
 import typing
-from unittest.mock import ANY, AsyncMock, Mock
+from unittest.mock import ANY, AsyncMock, Mock, call
 
 import anyio
 import anyio.lowlevel
@@ -162,6 +162,54 @@ async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
             [{"name": "usage", "external_customer_id": "customer", "timestamp": ANY}],
             "retry_exhausted",
         )
+
+
+@pytest.mark.anyio
+async def test_factory_confirms_accepted_and_dropped_events_in_outpost(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in ("__aexit__", "track"):
+        monkeypatch.setattr(Outpost, name, AsyncMock(return_value=None))
+
+    async def enter(outpost: Outpost) -> Outpost:
+        return outpost
+
+    monkeypatch.setattr(Outpost, "__aenter__", enter)
+    confirm = AsyncMock()
+    monkeypatch.setattr(Outpost, "confirm", confirm)
+    accepted: EventInput = {
+        "name": "usage",
+        "external_customer_id": "customer",
+        "external_id": "accepted",
+        "timestamp": "2026-10-22T08:00:00Z",
+    }
+    dropped: EventInput = {**accepted, "external_id": "dropped"}
+    on_delivered = AsyncMock()
+    on_dropped = AsyncMock()
+
+    async def ingest(*, events: list[EventInput]) -> None:
+        if events[0]["external_id"] == "dropped":
+            raise PolarError("rejected")
+
+    async with PolarAsync("token") as polar:
+        monkeypatch.setattr(polar.events, "ingest", ingest)
+        async with polar.metering(
+            buffered=BufferedMeteringOptions(
+                batch_size=1,
+                max_attempts=1,
+                on_delivered=on_delivered,
+                on_dropped=on_dropped,
+            ),
+            outpost=MeteringOutpostOptions(
+                redis_url="redis://localhost:6379", telemetry=False
+            ),
+        ) as metering:
+            await metering.track(**accepted)
+            await metering.track(**dropped)
+            await metering.flush()
+    assert confirm.await_args_list == [call([accepted]), call([dropped])]
+    on_delivered.assert_awaited_once_with([accepted])
+    on_dropped.assert_awaited_once_with([dropped], "permanent_error")
 
 
 @pytest.mark.anyio

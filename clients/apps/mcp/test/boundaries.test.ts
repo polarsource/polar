@@ -2,10 +2,10 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { Effect } from 'effect'
 import { FetchHttpClient } from 'effect/http'
 import { Docs } from '../src/docs'
-import { RequestLog } from '../src/log'
+import { RequestLog, type RequestLogEntry } from '../src/log'
 import { PolarApiOutbound, type PolarApiOutboundProps } from '../src/outbound'
 import { makeToolRunner } from '../src/results'
-import { isAllowedOperation, spec } from '../src/spec'
+import { isAllowedOperation, redactPath, spec } from '../src/spec'
 import { request, rpc } from './client'
 import { evaluate, exports, get } from './workers'
 
@@ -26,26 +26,32 @@ test('outbound rejects other origins, writes in read-only mode, and unexposed op
     { props } as ExecutionContext<PolarApiOutboundProps>,
     {} as Env,
   )
-  for (const [url, method, detail] of [
+  for (const [url, method, status, error, detail] of [
     [
       'https://attacker.test/v1/products/',
       'GET',
+      403,
+      'Forbidden',
       'Requests to https://attacker.test are not allowed',
     ],
     [
       'https://api.polar.test/v1/products/',
       'POST',
+      403,
+      'Forbidden',
       'This connection is read-only: only GET is allowed',
     ],
     [
       'https://api.polar.test/v1/oauth2/userinfo',
       'GET',
+      404,
+      'NotFound',
       'GET /v1/oauth2/userinfo is not an operation exposed by this server. Use the search tool to find it.',
     ],
-  ]) {
+  ] as const) {
     const response = await outbound.fetch(new Request(url, { method }))
-    expect(response.status).toBe(403)
-    expect(await response.json()).toEqual({ error: 'Forbidden', detail })
+    expect(response.status).toBe(status)
+    expect(await response.json()).toEqual({ error, detail })
   }
   expect(fetchMock).not.toHaveBeenCalled()
   props.readOnly = false
@@ -77,6 +83,16 @@ test('only methods and paths of exposed operations are allowed', () => {
   expect(isAllowedOperation('PATCH', `/v1/orders/${id}`)).toBe(true)
   expect(isAllowedOperation('GET', '/v1/oauth2/userinfo')).toBe(false)
   expect(isAllowedOperation('DELETE', `/v1/orders/${id}`)).toBe(false)
+})
+
+test('unexposed paths keep only the words an API path has at the same position', () => {
+  expect(redactPath('/v1/customers/external/customers/unknown')).toBe(
+    '/v1/customers/external/{}/{}',
+  )
+  expect(redactPath('/v1/customers/jane@example.com/bogus')).toBe(
+    '/v1/customers/{}/{}',
+  )
+  expect(redactPath('/v1/products/')).toBe('/v1/products/')
 })
 
 test('operation writes preserve path parameters and JSON body, and read-only tools reject writes', async () => {
@@ -166,7 +182,7 @@ test('sandbox evaluation and binding errors preserve their original messages', a
   ).toBe('Error: binding failed')
 })
 
-test('cancelling an MCP tool interrupts its effect and runs finalizers', async () => {
+test('cancelling an MCP tool interrupts its effect and runs finalizers, and cancellations and crashes are logged apart', async () => {
   const controller = new AbortController()
   let finalized = false
   const effect = Effect.acquireUseRelease(
@@ -177,21 +193,27 @@ test('cancelling an MCP tool interrupts its effect and runs finalizers', async (
         finalized = true
       }),
   )
+  const log: RequestLogEntry = {
+    event: 'mcp.request',
+    server: 'polar-mcp',
+    mode: 'codemode',
+    readOnly: false,
+    telemetry: true,
+    userAgent: null,
+  }
   const runTool = await Effect.runPromise(
-    makeToolRunner.pipe(
-      Effect.provideService(RequestLog, {
-        event: 'mcp.request',
-        server: 'polar-mcp',
-        mode: 'codemode',
-        readOnly: false,
-        userAgent: null,
-      }),
-    ),
+    makeToolRunner.pipe(Effect.provideService(RequestLog, log)),
   )
   const pending = runTool(effect, controller.signal)
   controller.abort()
   await expect(pending).rejects.toThrow()
   expect(finalized).toBe(true)
+  expect(log).toMatchObject({ isError: true, errorKind: 'cancelled' })
+
+  await expect(
+    runTool(Effect.die(new Error('boom')), new AbortController().signal),
+  ).rejects.toThrow('boom')
+  expect(log).toMatchObject({ isError: true, errorKind: 'internal' })
 })
 
 test('docs search fails with a configuration error without a search key', async () => {

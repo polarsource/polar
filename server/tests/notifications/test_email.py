@@ -159,6 +159,7 @@ async def test_MaintainerFileFlaggedMaliciousNotification() -> None:
         file_name="whitepaper.pdf",
         organization_name="Test Org",
         organization_slug="test-org",
+        threat_names=["EICAR-Test-File (not a virus)"],
     )
 
     await check_diff(n)
@@ -217,6 +218,7 @@ async def test_MaintainerFileFlaggedMaliciousNotification() -> None:
             file_name="{{ 123456 * 9 }}",
             organization_name="{{ 123456 * 9 }}",
             organization_slug="{{ 123456 * 9 }}",
+            threat_names=["{{ 123456 * 9 }}"],
         ),
     ],
 )

@@ -8,7 +8,7 @@ import ImageOutlined from '@mui/icons-material/ImageOutlined'
 import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import VideoFileOutlined from '@mui/icons-material/VideoFileOutlined'
-import { Status, Switch } from '@polar-sh/orbit'
+import { Switch } from '@polar-sh/orbit'
 import {
   FocusEvent,
   FormEventHandler,
@@ -33,6 +33,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo } from 'react'
+import { FlaggedMaliciousStatus } from '../FlaggedMaliciousStatus'
 
 export const FilePreview = ({ mimeType }: { mimeType: string }) => {
   const icon = useMemo(() => {
@@ -321,9 +322,7 @@ export const FileListItem = ({
               onUpdate={(updated) => update({ name: updated })}
               enabled={file.is_uploaded ?? false}
             />
-            {isFlaggedMalicious && (
-              <Status status="Flagged as malicious" color="red" size="small" />
-            )}
+            {isFlaggedMalicious && <FlaggedMaliciousStatus />}
           </div>
           {!isUploading && <FileUploadDetails file={file} />}
           {isUploading && <FileUploadProgress file={file} />}

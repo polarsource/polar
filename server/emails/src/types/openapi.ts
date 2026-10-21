@@ -1186,6 +1186,13 @@ export interface components {
        * @default null
        */
       organization_slug: string | null
+      /**
+       * Threat Names
+       * @default []
+       */
+      threat_names: string[]
+      /** Benefits Url */
+      readonly benefits_url: string | null
     }
     /** MaintainerNewPaidSubscriptionNotificationPayload */
     MaintainerNewPaidSubscriptionNotificationPayload: {

@@ -16,6 +16,7 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useState } from 'react'
+import { FlaggedMaliciousStatus } from './FlaggedMaliciousStatus'
 
 const DownloadFileButton = ({
   file,
@@ -52,6 +53,7 @@ const DownloadFileButton = ({
       className="h-8 w-8"
       onClick={onDownload}
       loading={downloadFile.isPending}
+      disabled={file.flagged_malicious_at !== null}
       aria-label={`Download ${file.name}`}
     >
       <ArrowDownward fontSize="inherit" />
@@ -63,7 +65,12 @@ const columns: DataTableColumnDef<schemas['BenefitDownloadableFile']>[] = [
   {
     accessorKey: 'name',
     header: 'File',
-    cell: ({ row: { original } }) => <Text truncate>{original.name}</Text>,
+    cell: ({ row: { original } }) => (
+      <Box flexDirection="row" alignItems="center" columnGap="s" minWidth={0}>
+        <Text truncate>{original.name}</Text>
+        {original.flagged_malicious_at !== null && <FlaggedMaliciousStatus />}
+      </Box>
+    ),
   },
   {
     accessorKey: 'downloaders',

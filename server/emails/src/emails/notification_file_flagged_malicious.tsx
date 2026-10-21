@@ -45,12 +45,7 @@ export function NotificationFileFlaggedMalicious({
           new version and delete the flagged file.
         </List.Item>
         <List.Item>
-          If you believe it is a false positive, report it to the antivirus
-          vendors that flag it and consider code signing your software.
-        </List.Item>
-        <List.Item>
-          Then contact our support team so we can request a review of the scan
-          result.
+          If you believe it is a false positive, contact our support team.
         </List.Item>
       </List>
       <Text>

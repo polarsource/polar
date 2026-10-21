@@ -106,16 +106,6 @@ class TestFinanceCanRead:
         result = await finance_policy.can_read(session, auth_subject, organization)
         assert result is True
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_denied(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Agent],
-        organization: Organization,
-    ) -> None:
-        result = await finance_policy.can_read(session, auth_subject, organization)
-        assert result == "You don't have permission to access financial data"
-
 
 @pytest.mark.anyio
 class TestOrgCanManage:

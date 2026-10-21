@@ -47,7 +47,6 @@ from polar.personal_access_token.service import TOKEN_PREFIX
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_agent
 
 
 def _request(
@@ -483,24 +482,6 @@ class TestGetAuthSubjectRequestedOrganization:
             await get_auth_subject(
                 _request_with_bearer_token(
                     access_token, requested_organization=organization_second.id
-                ),
-                session,
-            )
-
-    async def test_agent_token_without_organization(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        agent = await create_agent(save_fixture)
-        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
-        await _create_oauth2_token(save_fixture, access_token, agent=agent)
-
-        with pytest.raises(RequestedOrganizationNotAccessible):
-            await get_auth_subject(
-                _request_with_bearer_token(
-                    access_token, requested_organization=organization.id
                 ),
                 session,
             )

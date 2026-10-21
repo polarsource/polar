@@ -167,9 +167,8 @@ class TestApply:
             },
         )
 
-        assert response.status_code == 422
-        [error] = response.json()["detail"]
-        assert error["loc"] == ["body", "webhooks"]
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

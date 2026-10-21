@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, ValidationError, create_model
 from sqlalchemy.exc import IntegrityError
 from typing_extensions import TypeForm
 
-from polar.auth.models import AuthSubject, is_agent, is_organization, is_user
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.benefit.grant.repository import BenefitGrantRepository
@@ -73,27 +73,6 @@ _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
 _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
 _WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
-
-
-# A webhook endpoint created before the claim would keep receiving the
-# organization's data after it.
-def _assert_no_agent_webhooks(
-    auth_subject: AuthSubject[User | Organization | Agent], config: Config
-) -> None:
-    if is_agent(auth_subject) and "webhooks" in config.model_fields_set:
-        raise PolarRequestValidationError(
-            [
-                {
-                    "type": "forbidden",
-                    "loc": ("body", "webhooks"),
-                    "msg": (
-                        "Webhook endpoints can't be configured "
-                        "until a human claims this organization."
-                    ),
-                    "input": config.webhooks,
-                }
-            ]
-        )
 
 
 def _assert_section_scopes(
@@ -203,7 +182,6 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
     ) -> ConfigApplyResult:
-        _assert_no_agent_webhooks(auth_subject, config)
         _assert_section_scopes(auth_subject, config, write=True)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_manage
@@ -281,7 +259,6 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
     ) -> ConfigPlan:
-        _assert_no_agent_webhooks(auth_subject, config)
         _assert_section_scopes(auth_subject, config, write=False)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read

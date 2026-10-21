@@ -32,6 +32,7 @@ class BufferedMeteringOptions(typing.TypedDict, total=False):
         batch_interval: Seconds to collect a batch after its first event. Defaults to 1.
         shutdown_timeout: Seconds allowed to drain on exit. Defaults to 5.
         max_attempts: Total delivery attempts per batch, including the first. Defaults to 3.
+        on_delivered: Async callback for events Polar accepted.
         on_dropped: Async callback for undelivered events and their DropReason.
             Defaults to None; drops are always logged.
     """
@@ -40,6 +41,7 @@ class BufferedMeteringOptions(typing.TypedDict, total=False):
     batch_interval: float
     shutdown_timeout: float
     max_attempts: int
+    on_delivered: typing.Callable[[list[EventInput]], typing.Awaitable[None]] | None
     on_dropped: (
         typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]] | None
     )
@@ -61,6 +63,8 @@ class BufferedMeteringStrategy:
         batch_interval: float = 1.0,
         shutdown_timeout: float = 5.0,
         max_attempts: int = 3,
+        on_delivered: typing.Callable[[list[EventInput]], typing.Awaitable[None]]
+        | None = None,
         on_dropped: typing.Callable[
             [list[EventInput], DropReason], typing.Awaitable[None]
         ]
@@ -74,6 +78,7 @@ class BufferedMeteringStrategy:
             batch_interval: Batch collection interval in seconds. Defaults to 1.
             shutdown_timeout: Drain deadline in seconds. Defaults to 5.
             max_attempts: Total attempts per batch. Defaults to 3.
+            on_delivered: Awaited callback for events Polar accepted.
             on_dropped: Awaited callback for dropped events and the drop reason.
 
         Raises:
@@ -86,6 +91,7 @@ class BufferedMeteringStrategy:
         self.batch_interval = batch_interval
         self.shutdown_timeout = shutdown_timeout
         self.max_attempts = max_attempts
+        self.on_delivered = on_delivered
         self.on_dropped = on_dropped
         self._send_queue, self._receive_queue = anyio.create_memory_object_stream[
             EventInput | _FlushRequest
@@ -210,6 +216,8 @@ class BufferedMeteringStrategy:
         while True:
             try:
                 await self.polar.events.ingest(events=batch)
+                if self.on_delivered is not None:
+                    await self.on_delivered(batch)
                 return
             except (PolarNetworkError, PolarRateLimitError, PolarServerError) as e:
                 if isinstance(e, PolarRateLimitError) and e.retry_after is not None:

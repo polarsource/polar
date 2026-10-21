@@ -51,6 +51,7 @@ class RefundReason(StrEnum):
     service_disruption = "service_disruption"
     satisfaction_guarantee = "satisfaction_guarantee"
     dispute_prevention = "dispute_prevention"
+    tax_refund = "tax_refund"
     other = "other"
 
     @classmethod

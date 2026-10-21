@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -6,10 +7,22 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.tax.tax_id import TaxID, TaxIDType
 
 if TYPE_CHECKING:
     from polar.models import CreditNoteItem, Order, Refund
+
+
+class CreditNoteReason(StrEnum):
+    duplicate = "duplicate"
+    fraudulent = "fraudulent"
+    customer_request = "customer_request"
+    service_disruption = "service_disruption"
+    satisfaction_guarantee = "satisfaction_guarantee"
+    dispute_prevention = "dispute_prevention"
+    tax_refund = "tax_refund"
+    other = "other"
 
 
 class CreditNote(RecordModel):
@@ -17,7 +30,9 @@ class CreditNote(RecordModel):
 
     number: Mapped[str] = mapped_column(String, nullable=False, unique=True)
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
-    reason: Mapped[str] = mapped_column(String, nullable=False)
+    reason: Mapped[CreditNoteReason] = mapped_column(
+        StringEnum(CreditNoteReason), nullable=False
+    )
     amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
     tax_amount: Mapped[int] = mapped_column(BigInteger, nullable=False)
 

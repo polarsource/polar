@@ -9,6 +9,7 @@ from .backup_codes_enrollment import BackupCodesEnrollment
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
+from .billing_interval import BillingInterval
 from .campaign import Campaign
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
@@ -147,6 +148,7 @@ __all__ = [
     "Benefit",
     "BenefitGrant",
     "BillingEntry",
+    "BillingInterval",
     "Campaign",
     "Checkout",
     "CheckoutLink",

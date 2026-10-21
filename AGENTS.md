@@ -127,6 +127,10 @@ xdist worker clones that database instead of replaying the whole migration histo
 re-run `POLAR_ENV=testing uv run task db_migrate` to refresh the template**, or workers will
 clone a stale schema.
 
+**Avoid `server_default` on new NOT NULL columns.** Add the column nullable, backfill existing
+rows, then set NOT NULL, following ADR-0006's steps. A Python-side `default=` on the model for new
+rows is fine.
+
 **Visual regression testing** — use `dev snap` to capture before/after screenshots across branches:
 ```bash
 dev snap --branch my-feature        # test a specific branch

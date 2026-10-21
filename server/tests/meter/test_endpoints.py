@@ -46,7 +46,7 @@ class TestListMeters:
         assert json["pagination"]["total_count"] == 0
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent(
+    async def test_agent_lists_only_its_own_organizations_meters(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -323,7 +323,9 @@ class TestCreateMeter:
         assert response.json()["external_id"] == "ext_1337"
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent(self, client: AsyncClient, organization: Organization) -> None:
+    async def test_agent_can_create_meter_without_organization_id(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
         response = await client.post(
             "/v1/meters/",
             json={
@@ -359,7 +361,7 @@ class TestUpdateMeter:
         assert response.status_code == 404
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent_cannot_update_other_organization_meter(
+    async def test_agent_cannot_update_another_organizations_meter(
         self, client: AsyncClient, meter_organization_second: Meter
     ) -> None:
         response = await client.patch(

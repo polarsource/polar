@@ -715,7 +715,7 @@ class TestIngest:
         assert len(errors) == 1
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_invalid_agent_organization(
+    async def test_agent_cannot_ingest_events_for_another_organization(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Agent],

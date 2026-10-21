@@ -421,7 +421,9 @@ class TestIngest:
 
     @pytest.mark.api_version(V2026_10, V2027_01)
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent(self, client: AsyncClient) -> None:
+    async def test_agent_can_ingest_events_without_organization_id(
+        self, client: AsyncClient
+    ) -> None:
         events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
 
         response = await client.post("/v1/events/ingest", json={"events": events})
@@ -587,7 +589,7 @@ class TestListEventNames:
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    async def test_agent(
+    async def test_agent_lists_only_its_own_organizations_event_names(
         self,
         buffered_save_fixture: SaveFixture,
         flush_tinybird_events: Callable[[], Awaitable[None]],

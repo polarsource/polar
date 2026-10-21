@@ -94,7 +94,9 @@ class TestApply:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent(self, mocker: MockerFixture, client: AsyncClient) -> None:
+    async def test_agent_can_apply_meters_benefits_products_and_discounts(
+        self, mocker: MockerFixture, client: AsyncClient
+    ) -> None:
         mocker.patch("polar.meter.service.enqueue_job")
 
         response = await client.post(
@@ -151,7 +153,9 @@ class TestApply:
     @pytest.mark.parametrize("path", ["/v1/config/apply", "/v1/config/plan"])
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent_webhooks(self, path: str, client: AsyncClient) -> None:
+    async def test_agent_cannot_apply_or_plan_webhooks(
+        self, path: str, client: AsyncClient
+    ) -> None:
         response = await client.post(
             path,
             json={
@@ -645,7 +649,7 @@ class TestExport:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent(
+    async def test_agent_exports_only_its_own_organizations_meters(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,

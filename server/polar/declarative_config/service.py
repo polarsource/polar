@@ -297,6 +297,9 @@ class DeclarativeConfigService:
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
+        meter_repository = MeterRepository.from_session(session)
+        benefit_repository = BenefitRepository.from_session(session)
+        product_repository = ProductRepository.from_session(session)
         subscription_repository = SubscriptionRepository.from_session(session)
         grant_repository = BenefitGrantRepository.from_session(session)
         deprecated_meters = [meter for meter in config.meters if meter.deprecated]
@@ -304,25 +307,19 @@ class DeclarativeConfigService:
         deprecated_products = [p for p in config.products if p.deprecated]
         meter_ids = {
             meter.external_id: meter.id
-            for meter in await MeterRepository.from_session(
-                session
-            ).get_all_by_external_ids(
+            for meter in await meter_repository.get_all_by_external_ids(
                 organization.id, [meter.external_id for meter in deprecated_meters]
             )
         }
         benefit_ids = {
             benefit.external_id: benefit.id
-            for benefit in await BenefitRepository.from_session(
-                session
-            ).get_all_by_external_ids(
+            for benefit in await benefit_repository.get_all_by_external_ids(
                 organization.id, [b.external_id for b in deprecated_benefits]
             )
         }
         product_ids = {
             product.external_id: product.id
-            for product in await ProductRepository.from_session(
-                session
-            ).get_all_by_external_ids(
+            for product in await product_repository.get_all_by_external_ids(
                 organization.id, [p.external_id for p in deprecated_products]
             )
         }

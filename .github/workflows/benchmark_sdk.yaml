@@ -8,11 +8,17 @@ on:
       - "sdk/typescript/**"
       - ".github/workflows/benchmark_sdk.yaml"
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "sdk/python/**"
       - "sdk/typescript/**"
       - ".github/workflows/benchmark_sdk.yaml"
   workflow_dispatch:
+
+# A newer push on the same branch supersedes a run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -22,6 +28,8 @@ permissions:
 jobs:
   typescript-sdk:
     name: TypeScript SDK (${{ matrix.mode }})
+    # Draft pull requests run once, when marked ready for review.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:
@@ -76,6 +84,7 @@ jobs:
 
   python-sdk:
     name: Python SDK (${{ matrix.mode }})
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     strategy:

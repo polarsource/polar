@@ -21,6 +21,7 @@ on:
       - "server/polar/models/reducer_bucket.py"
       - ".github/workflows/benchmark_server.yaml"
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - "server/benchmarks/**"
       - "server/polar/reducer/**"
@@ -40,6 +41,11 @@ on:
       - ".github/workflows/benchmark_server.yaml"
   workflow_dispatch:
 
+# A newer push on the same branch supersedes a run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   # CodSpeed authenticates the run with OIDC.
@@ -48,6 +54,8 @@ permissions:
 jobs:
   server:
     name: Server (walltime)
+    # Draft pull requests run once, when marked ready for review.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: codspeed-macro
     timeout-minutes: 30
     defaults:

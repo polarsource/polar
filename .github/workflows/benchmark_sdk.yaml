@@ -14,6 +14,9 @@ on:
       - "sdk/typescript/**"
       - ".github/workflows/benchmark_sdk.yaml"
   workflow_dispatch:
+  # A weekly reference on main, whatever changed.
+  schedule:
+    - cron: "0 6 * * 1"
 
 # A newer push on the same branch supersedes a run in progress.
 concurrency:
@@ -38,10 +41,42 @@ env:
 # Redis benchmarks, whose cost is in another process, and the warm reads, which a few simulated
 # calls would measure cold.
 jobs:
-  typescript-simulation:
-    name: TypeScript SDK (simulation)
+  changes:
+    name: Detect changes
     # Draft pull requests run once, when marked ready for review.
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      walltime: ${{ steps.filter.outputs.walltime }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # The macro runner minutes are metered: real time runs on every SDK change except the
+      # ones that cannot reach a benchmark, that is the generated API clients, the tests and
+      # the docs. The weekly run on main catches anything this misses.
+      - uses: dorny/paths-filter@v4.0.3
+        id: filter
+        with:
+          filters: |
+            walltime:
+              - 'sdk/typescript/**'
+              - '!sdk/typescript/src/20*/**'
+              - '!sdk/typescript/**/*.test.ts'
+              - '!sdk/typescript/README.md'
+              - 'sdk/python/**'
+              - '!sdk/python/polar/v20*/**'
+              - '!sdk/python/tests/ingestion/**'
+              - '!sdk/python/tests/metering/**'
+              - '!sdk/python/tests/outpost/**'
+              - '!sdk/python/tests/test_*.py'
+              - '!sdk/python/README.md'
+              - '.github/workflows/benchmark_sdk.yaml'
+
+  typescript-simulation:
+    name: TypeScript SDK (simulation)
+    needs: changes
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     defaults:
@@ -74,7 +109,7 @@ jobs:
 
   python-simulation:
     name: Python SDK (simulation)
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    needs: changes
     runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     defaults:
@@ -106,7 +141,8 @@ jobs:
   # Both SDKs in one job: the macro runner minutes are metered, and the setup is most of them.
   walltime:
     name: SDKs (walltime)
-    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    needs: changes
+    if: needs.changes.outputs.walltime == 'true' || contains('workflow_dispatch schedule', github.event_name)
     runs-on: codspeed-macro
     timeout-minutes: 20
     steps:

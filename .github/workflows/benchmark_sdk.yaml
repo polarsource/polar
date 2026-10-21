@@ -108,7 +108,7 @@ jobs:
         with:
           mode: simulation
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run --exclude src/outpost/scripts.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts
+          run: pnpm vitest bench --run --exclude src/outpost/scripts.bench.ts --exclude src/outpost/seal.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts --exclude src/outpost/read-buckets.bench.ts
 
   python-simulation:
     name: Python SDK (simulation)
@@ -139,7 +139,7 @@ jobs:
         with:
           mode: simulation
           working-directory: sdk/python
-          run: uv run --no-sync pytest tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_ingest.py --ignore=tests/benchmarks/test_read.py -m benchmark --codspeed
+          run: uv run --no-sync pytest tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_seal.py --ignore=tests/benchmarks/test_ingest.py --ignore=tests/benchmarks/test_read.py --ignore=tests/benchmarks/test_read_buckets.py -m benchmark --codspeed
 
   # Both SDKs in one job: the macro runner minutes are metered, and the setup is most of them.
   walltime:
@@ -192,11 +192,11 @@ jobs:
         with:
           mode: walltime
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run src/outpost/scripts.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts
+          run: pnpm vitest bench --run src/outpost/scripts.bench.ts src/outpost/seal.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts src/outpost/read-buckets.bench.ts
 
       - name: Run Python benchmarks
         uses: CodSpeedHQ/action@v5
         with:
           mode: walltime
           working-directory: sdk/python
-          run: uv run --no-sync pytest tests/benchmarks/test_scripts.py tests/benchmarks/test_ingest.py tests/benchmarks/test_read.py -m benchmark --codspeed
+          run: uv run --no-sync pytest tests/benchmarks/test_scripts.py tests/benchmarks/test_seal.py tests/benchmarks/test_ingest.py tests/benchmarks/test_read.py tests/benchmarks/test_read_buckets.py -m benchmark --codspeed

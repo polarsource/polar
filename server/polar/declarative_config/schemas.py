@@ -115,7 +115,7 @@ BenefitReference = Annotated[
 ]
 
 
-class ConfigBenefitBase(MetadataInputMixin, Schema):
+class ConfigBenefitBase(ConfigDeprecationMixin, MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
@@ -249,7 +249,9 @@ ConfigProductPrice = Annotated[
 ]
 
 
-class ConfigProduct(MetadataInputMixin, TrialConfigurationInputMixin, Schema):
+class ConfigProduct(
+    ConfigDeprecationMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
+):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(

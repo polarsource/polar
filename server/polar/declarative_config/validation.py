@@ -250,6 +250,9 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
         meter.external_id for meter in config.meters if meter.deprecated
     }
     benefits = {benefit.external_id for benefit in config.benefits}
+    deprecated_benefits = {
+        benefit.external_id for benefit in config.benefits if benefit.deprecated
+    }
     issues: list[ConfigIssue] = []
     for index, benefit in enumerate(config.benefits):
         if isinstance(benefit, ConfigBenefitMeterCredit):
@@ -257,12 +260,16 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                 _reference_issues(
                     ConfigResource.meter,
                     meters,
-                    deprecated_meters,
+                    set() if benefit.deprecated else deprecated_meters,
                     benefit.properties.meter,
                     _loc(ConfigResource.benefit, index, "properties", "meter"),
                 )
             )
     for index, product in enumerate(config.products):
+        product_deprecated_meters = set() if product.deprecated else deprecated_meters
+        product_deprecated_benefits = (
+            set() if product.deprecated else deprecated_benefits
+        )
         for price_index, price in enumerate(product.prices):
             if isinstance(
                 price, (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
@@ -271,7 +278,7 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                     _reference_issues(
                         ConfigResource.meter,
                         meters,
-                        deprecated_meters,
+                        product_deprecated_meters,
                         price.meter,
                         _loc(
                             ConfigResource.product,
@@ -295,9 +302,15 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                         input=benefit_external_id,
                     )
                 )
-            elif benefit_external_id not in benefits:
-                issues.append(
-                    _unknown_reference(ConfigResource.benefit, benefit_external_id, loc)
+            else:
+                issues.extend(
+                    _reference_issues(
+                        ConfigResource.benefit,
+                        benefits,
+                        product_deprecated_benefits,
+                        benefit_external_id,
+                        loc,
+                    )
                 )
             listed.add(benefit_external_id)
     products = {product.external_id for product in config.products}
@@ -558,7 +571,7 @@ def _create_update_dict(
     update_dict: dict[str, Any] = {}
     for field in type(config).model_fields:
         value = getattr(config, field)
-        if field == "external_id" or value in (None, [], {}):
+        if field in ("external_id", "deprecated") or value in (None, [], {}):
             continue
         update_dict["user_metadata" if field == "metadata" else field] = value
     return update_dict

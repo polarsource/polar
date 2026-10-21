@@ -54,7 +54,7 @@ class TestCreateIdentity:
         assert agent.organization_id is None
 
         oauth2_client = agent.oauth2_client
-        assert oauth2_client.is_agent is True
+        assert oauth2_client.agent_id == agent.id
         assert oauth2_client.user_id is None
         assert oauth2_client.client_secret_hash is None
         assert oauth2_client.client_id_issued_at > 0

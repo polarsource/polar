@@ -35,7 +35,6 @@ class AgentService:
         oauth2_client = OAuth2Client(
             client_id=generate_token(prefix=CLIENT_ID_PREFIX),
             client_id_issued_at=int(time.time()),
-            is_agent=True,
         )
         oauth2_client.set_client_metadata(
             {

@@ -1,0 +1,23 @@
+server/tests/event/test_mover.py
+  s_4d4636e2b49a37::t_340332ea79ae25 1-25
+server/polar/event/mover.py
+  s_4d4636e2b49a37::t_b78b580d6b3062 48,52-54
+  s_4d4636e2b49a37::t_4682e128d0152f 49-51
+  s_4d4636e2b49a37::t_6ba77049f25313 80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3da0ebbd119137a8f9c72834276a238852b0e8e4",
+  "prompts": {},
+  "sessions": {
+    "s_4d4636e2b49a37": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99338676-9c78-4183-8604-0955d5e7b0eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -77,7 +77,7 @@ export const polar = RuntimeSDK(config, {
     label: 'Balance',
     title: 'Read the credit balance',
     description:
-      'An actor scopes every call to one customer. Pristine means every event tracked through this SDK has been metered into the balance.',
+      'An actor scopes every call to one customer. With Outpost, the balance already counts every event tracked a moment ago.',
     files: [
       {
         name: 'actions.ts',
@@ -87,7 +87,7 @@ export const polar = RuntimeSDK(config, {
   const customer = polar.actor({ externalCustomerId: userId }) // !
 
   return customer.balance('tool_call') // !
-  // → { balance: number, pristine: boolean }
+  // → { balance: number }
 }`,
       },
     ],

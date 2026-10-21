@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import {
   callTool,
   createProCheckout,
@@ -42,7 +43,9 @@ export async function call(server: 'builtin' | 'custom', count: number) {
   if (!externalId) redirect('/')
   if (!CALL_COUNTS.includes(count)) throw new Error(`Invalid count ${count}`)
 
-  return callTool(externalId, server, count)
+  const result = await callTool(externalId, server, count)
+  after(() => polar.flush())
+  return result
 }
 
 export async function getBalance() {

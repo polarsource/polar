@@ -48,6 +48,7 @@ from polar.models import (
     User,
 )
 from polar.models.event import EventSource
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.reducer.service import reducer as reducer_service
@@ -962,20 +963,56 @@ class EventService:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        event_ids, duplicates_count = await repository.insert_batch(
-            events, render_nulls=True
+        org_ids_with_staged_events_enabled = (
+            await self._get_org_ids_with_staged_events_enabled(
+                session, auth_subject, {event["organization_id"] for event in events}
+            )
         )
+        staged_events = [
+            e
+            for e in events
+            if e["organization_id"] in org_ids_with_staged_events_enabled
+        ]
+        direct_events = [
+            e
+            for e in events
+            if e["organization_id"] not in org_ids_with_staged_events_enabled
+        ]
+
+        event_ids: list[uuid.UUID] = []
+        duplicates_count = 0
+        if staged_events:
+            (
+                staged_event_ids,
+                staged_duplicates_count,
+            ) = await repository.insert_staged_batch(staged_events)
+            event_ids.extend(staged_event_ids)
+            duplicates_count += staged_duplicates_count
+        if direct_events:
+            direct_event_ids, direct_duplicates_count = await repository.insert_batch(
+                direct_events, render_nulls=True
+            )
+            event_ids.extend(direct_event_ids)
+            duplicates_count += direct_duplicates_count
+
+            # Temporarily: fetch inserted events and create meter_events
+            with logfire.span("create_meter_events", event_count=len(direct_event_ids)):
+                if direct_event_ids:
+                    inserted_events = await repository.get_all(
+                        repository.get_base_statement().where(
+                            Event.id.in_(direct_event_ids)
+                        )
+                    )
+                    await self._create_meter_events(session, inserted_events)
+
+            # Parent resolution and root_id propagation run out-of-band in the
+            # `event.ingested` task — they're not needed on the request path and
+            # can be slow under contention.
+            enqueue_events(*direct_event_ids)
+
         trace.get_current_span().set_attributes(
             {"inserted_events": len(event_ids), "skipped_duplicates": duplicates_count}
         )
-
-        # Temporarily: fetch inserted events and create meter_events
-        with logfire.span("create_meter_events", event_count=len(event_ids)):
-            if event_ids:
-                inserted_events = await repository.get_all(
-                    repository.get_base_statement().where(Event.id.in_(event_ids))
-                )
-                await self._create_meter_events(session, inserted_events)
 
         # Rollup reducer buckets in redis
         if redis is not None and event_ids:
@@ -1000,11 +1037,6 @@ class EventService:
                         session, redis, organization_id, organization_events
                     )
                 span.set_attribute("rolled_up_buckets", bucket_count)
-
-        # Parent resolution and root_id propagation run out-of-band in the
-        # `event.ingested` task — they're not needed on the request path and
-        # can be slow under contention.
-        enqueue_events(*event_ids)
 
         return EventsIngestResponse(
             inserted=len(event_ids), duplicates=duplicates_count
@@ -1228,6 +1260,26 @@ class EventService:
                 cm.activated_at = utc_now()
                 session.add(cm)
         await session.flush()
+
+    async def _get_org_ids_with_staged_events_enabled(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        organization_ids: set[uuid.UUID],
+    ) -> set[uuid.UUID]:
+        if is_organization(auth_subject):
+            organization = auth_subject.subject
+            return (
+                {organization.id}
+                if organization.is_staged_events_ingest_enabled
+                else set()
+            )
+        if not organization_ids:
+            return set()
+        repository = OrganizationRepository.from_session(session)
+        return await repository.get_ids_with_feature(
+            organization_ids, "staged_events_ingest_enabled"
+        )
 
     async def _get_organization_validation_function(
         self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]

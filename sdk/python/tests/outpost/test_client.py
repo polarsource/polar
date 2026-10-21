@@ -268,6 +268,18 @@ async def test_ingest_accepts_single_events(
 
 
 @pytest.mark.anyio
+async def test_ingest_requires_external_id(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+        with pytest.raises(
+            ValueError, match="Outpost needs an external_id on every event"
+        ):
+            await outpost.track({"name": "call", "external_customer_id": "alice"})
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize(("bucket_count", "fail"), [(0, False), (3, False), (3, True)])
 async def test_ingest_pipelines_buckets(
     redis_connection: tuple[str, Redis],

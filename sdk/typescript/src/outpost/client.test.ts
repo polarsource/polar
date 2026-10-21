@@ -216,6 +216,13 @@ it.each([
   },
 );
 
+it("rejects an event without an external_id", async () => {
+  const outpost = await start();
+  await expect(outpost.track({ ...customer, name: "api_call", timestamp })).rejects.toThrow(
+    "Outpost needs an external_id on every event",
+  );
+});
+
 it("retains the connection ID while connected", async () => {
   const outpost = await start();
   await ingest(outpost, 3);

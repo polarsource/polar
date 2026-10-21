@@ -28,10 +28,10 @@
     "@types/react-dom": "^19.3.0",
     "@yao-pkg/pkg": "^6.23.0",
     "openapi-typescript": "^7.13.0",
-    "oxfmt": "^0.72.0",
+    "oxfmt": "^0.73.0",
     "tsdown": "0.23.1",
     "typescript": "npm:@typescript/typescript6@6.0.2",
-    "oxlint": "^1.87.0",
+    "oxlint": "^1.88.0",
     "@typescript/native": "npm:typescript@7.0.2"
   },
   "pkg": {

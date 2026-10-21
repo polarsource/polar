@@ -123,6 +123,38 @@ async def test_flush_waits_for_retries(
 
 
 @pytest.mark.anyio
+async def test_retry_after_does_not_spend_attempts(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    on_dropped = AsyncMock()
+    client.events.ingest.side_effect = [PolarRateLimitError(429, 0)] * 4 + [None]
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(
+            client, batch_interval=60, max_attempts=3, on_dropped=on_dropped
+        ) as strategy:
+            await strategy.track(events[0])
+            await strategy.flush()
+            assert client.events.ingest.await_count == 5
+            on_dropped.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_retry_after_beyond_budget_drops_the_batch(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    on_dropped = AsyncMock()
+    client.events.ingest.side_effect = PolarRateLimitError(429, 301)
+    with anyio.fail_after(0.5):
+        async with BufferedMeteringStrategy(
+            client, batch_interval=60, shutdown_timeout=0.02, on_dropped=on_dropped
+        ) as strategy:
+            await strategy.track(events[0])
+            await strategy.flush()
+            client.events.ingest.assert_awaited_once()
+            on_dropped.assert_awaited_once_with(events[:1], "retry_exhausted")
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     "error, reason",
     [

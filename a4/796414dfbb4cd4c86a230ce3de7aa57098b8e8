@@ -1,0 +1,52 @@
+server/polar/oauth2/repository.py
+  s_5baa939665e021::t_b838458aebcb68 68-77
+server/polar/oauth2/constants.py
+  s_5baa939665e021::t_3b1db193b682c8 20-22
+server/polar/oauth2/grants/claim.py
+  s_5baa939665e021::t_cf6e392338090c 1-101,103-107
+server/polar/oauth2/grants/jwt_bearer.py
+  s_5baa939665e021::t_a6c84c80fc3d1f 2,6,11,13-14,17,20,23-24,46,50-55,58,65,69-71,73-74,76-78,80
+server/tests/oauth2/grants/test_claim.py
+  s_5baa939665e021::t_2094ad03d39660 2-123,172-176
+server/polar/agent/schemas.py
+  s_5baa939665e021::t_c9afe2d9318881 4,36,41-92
+server/polar/agent/auth.md
+  s_5baa939665e021::t_db160a85b4168d 1-38,40-50,54-89,92-103,105-110,118-124
+server/polar/auth/scope.py
+  s_5baa939665e021::t_6ce8fce69ebab5 181-185
+server/tests/fixtures/random_objects.py
+  s_5baa939665e021::t_5b5944e3af007e 251-252
+server/polar/oauth2/grants/agent.py
+  s_5baa939665e021::t_4717f721def510 1-53
+server/polar/agent/endpoints.py
+  s_5baa939665e021::t_9f3f3166fd74e4 1-2,4-7,9-17,20,22-35,37,41,45-50,53,64,67-84,86-87,89-102,104-125,129-135,137-140,146-159
+server/polar/agent/repository.py
+  s_5baa939665e021::t_0bc76753aaece4 4-6,11,17,23,42-61,63-66
+server/polar/agent/service.py
+  s_5baa939665e021::t_02b7404b5f3f31 3,7-8,11-19,21-29,33-41,45-46,48-51,53,56-67,70-77,88-90,101-108,122,153-159,168-183,186-189,191-234,240-249,254-299,302
+server/tests/oauth2/grants/test_jwt_bearer.py
+  s_5baa939665e021::t_c6d61cde85a080 1-13,15,17-21,23-73,75-196,266-274,287-289
+server/polar/agent/auth_md.py
+  s_5baa939665e021::t_05281ea92921a5 1-19
+server/tests/agent/test_endpoints.py
+  s_5baa939665e021::t_69765e835d67cc 2,8,17-18,24-26,28-42,51-58,60-66,84-85,103,119-127,132-156,158-180,182-186,189-206,209-211,213,215-219,240-259,274-293,295,298-302,305-308,310-317,321-341,344-352,354-355,357,376-384,386-387,412-429
+  s_5baa939665e021::t_886fa0a314bf00 27
+  s_5baa939665e021::t_d4421f02abd6c7 97
+  s_5baa939665e021::t_1e343eceb096cd 342-343,353,375,385
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a4796414dfbb4cd4c86a230ce3de7aa57098b8e8",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

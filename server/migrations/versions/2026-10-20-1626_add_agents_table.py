@@ -36,7 +36,6 @@ def upgrade() -> None:
         sa.Column("claim_link_token_hash", sa.String(length=80), nullable=True),
         sa.Column("claim_code_hash", sa.String(length=80), nullable=True),
         sa.Column("claim_expires_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column("claim_failed_attempts", sa.Integer(), nullable=False),
         sa.Column("claimed_by_user_id", sa.Uuid(), nullable=True),
         sa.Column("claimed_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("revoked_at", sa.TIMESTAMP(timezone=True), nullable=True),

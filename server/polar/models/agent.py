@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Integer, String, Uuid
+from sqlalchemy import TIMESTAMP, ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -66,9 +66,6 @@ class Agent(RecordModel):
     )
     claim_expires_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
-    )
-    claim_failed_attempts: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0
     )
 
     claimed_by_user_id: Mapped[UUID | None] = mapped_column(

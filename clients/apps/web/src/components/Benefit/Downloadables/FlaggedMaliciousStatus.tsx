@@ -13,11 +13,11 @@ const FLAGGED_FILES_DOCS_URL =
 export const FlaggedMaliciousStatus = () => (
   <Tooltip>
     <TooltipTrigger asChild>
-      <span>
+      <Box as="span" flexShrink={0}>
         <Status status="Malicious file detected" color="red" size="small" />
-      </span>
+      </Box>
     </TooltipTrigger>
-    <TooltipContent side="top" align="start">
+    <TooltipContent side="bottom" align="start">
       <Box flexDirection="column" rowGap="xs" maxWidth={280}>
         <Text variant="caption">
           Our malware scanning flagged this file. Customers can no longer

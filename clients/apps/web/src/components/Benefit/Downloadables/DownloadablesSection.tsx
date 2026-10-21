@@ -66,7 +66,7 @@ const columns: DataTableColumnDef<schemas['BenefitDownloadableFile']>[] = [
     accessorKey: 'name',
     header: 'File',
     cell: ({ row: { original } }) => (
-      <Box flexDirection="row" alignItems="center" columnGap="s" minWidth={0}>
+      <Box flexDirection="column" alignItems="start" rowGap="xs" minWidth={0}>
         <Text truncate>{original.name}</Text>
         {original.flagged_malicious_at !== null && <FlaggedMaliciousStatus />}
       </Box>

@@ -48,7 +48,7 @@ const AgentClaimCodeForm = ({
           <InputOTPSlot
             key={index}
             index={index}
-            className="dark:border-polar-600 h-12 w-12 border-gray-300 text-xl"
+            className="h-12 w-12 text-xl"
           />
         ))}
       </InputOTPGroup>

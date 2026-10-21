@@ -95,7 +95,8 @@
               "engineering/design-documents/secrets-encryption",
               "engineering/design-documents/merchant-migrations",
               "engineering/design-documents/tasks-on-lambda",
-              "engineering/design-documents/resend-forge"
+              "engineering/design-documents/resend-forge",
+              "engineering/design-documents/versioning"
             ]
           },
           {

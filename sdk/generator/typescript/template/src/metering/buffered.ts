@@ -12,6 +12,8 @@ import {
 
 export type DropReason = "retry_exhausted" | "shutdown_timeout" | "permanent_error";
 
+const RETRY_AFTER_BUDGET_MS = 300_000;
+
 export interface MeteringClient {
   events: {
     ingest(body: { events: EventInput[] }, options?: RequestOptions): Promise<unknown>;
@@ -216,7 +218,9 @@ export class BufferedMeteringStrategy {
   }
 
   private async processBatch(batch: EventInput[]): Promise<void> {
-    for (let attempt = 1; ; attempt++) {
+    let attempt = 1;
+    let waited = 0;
+    for (;;) {
       try {
         await this.polar.events.ingest({ events: batch }, { signal: this.abort.signal });
         return;
@@ -227,15 +231,23 @@ export class BufferedMeteringStrategy {
           error instanceof PolarRateLimitError ||
           error instanceof PolarServerError
         ) {
-          if (attempt >= this.options.maxAttempts) {
-            await this.onDropped(batch, "retry_exhausted");
-            return;
-          }
           const retryAfter = error instanceof PolarRateLimitError ? error.retryAfter : null;
-          const delay =
-            retryAfter !== null && Number.isFinite(retryAfter) && retryAfter >= 0
-              ? retryAfter * 1000
-              : 2 ** attempt * 1000 * (1 + (Math.random() * 2 - 1) * 0.1);
+          let delay: number;
+          if (retryAfter !== null && Number.isFinite(retryAfter) && retryAfter >= 0) {
+            delay = retryAfter * 1000;
+            waited += delay;
+            if (waited > RETRY_AFTER_BUDGET_MS) {
+              await this.onDropped(batch, "retry_exhausted");
+              return;
+            }
+          } else {
+            if (attempt >= this.options.maxAttempts) {
+              await this.onDropped(batch, "retry_exhausted");
+              return;
+            }
+            delay = 2 ** attempt * 1000 * (1 + (Math.random() * 2 - 1) * 0.1);
+            attempt++;
+          }
           await sleep(Math.min(delay, 2_147_483_647), undefined, { signal: this.abort.signal });
         } else if (error instanceof PolarError) {
           await this.onDropped(batch, "permanent_error");

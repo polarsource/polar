@@ -26105,8 +26105,11 @@ export interface components {
       organization_name: string
       /** Organization Slug */
       organization_slug?: string | null
-      /** Threat Names */
-      threat_names?: string[]
+      /**
+       * Threat Names
+       * @default []
+       */
+      threat_names: string[]
       /** Benefits Url */
       readonly benefits_url: string | null
     }

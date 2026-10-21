@@ -55,4 +55,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Only reversible before non-current product versions share an external_id.
     _swap("deleted_at IS NULL AND external_id IS NOT NULL")

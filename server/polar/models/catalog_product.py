@@ -21,7 +21,10 @@ class CatalogProduct(RecordModel):
         Uuid, ForeignKey("catalogs.id", ondelete="cascade"), nullable=False
     )
     product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id", ondelete="restrict"), nullable=False
+        Uuid,
+        ForeignKey("products.id", ondelete="restrict"),
+        nullable=False,
+        index=True,
     )
     external_id: Mapped[str] = mapped_column(String, nullable=False)
 

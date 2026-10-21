@@ -21,39 +21,72 @@ INDEX_NAME = "ix_products_organization_id_external_id"
 NEW_INDEX_NAME = "ix_products_organization_id_external_id_current"
 
 
-def _swap(where: str) -> None:
+def _swap(where: str, *, scoped_to_current: bool) -> None:
     with op.get_context().autocommit_block():
+        if not op.get_context().as_sql:
+            current_def = op.get_bind().scalar(
+                sa.text(
+                    "SELECT pg_get_indexdef(i.indexrelid) "
+                    "FROM pg_index i "
+                    "WHERE i.indexrelid = to_regclass(:name) AND i.indisvalid"
+                ),
+                {"name": INDEX_NAME},
+            )
+            if current_def is not None and (
+                ("is_current" in current_def) == scoped_to_current
+            ):
+                return
+
         op.execute("SET lock_timeout = '5min'")
         try:
-            op.drop_index(
-                NEW_INDEX_NAME,
-                table_name="products",
-                if_exists=True,
-                postgresql_concurrently=True,
-            )
-            op.create_index(
-                NEW_INDEX_NAME,
-                "products",
-                ["organization_id", "external_id"],
-                unique=True,
-                postgresql_where=sa.text(where),
-                postgresql_concurrently=True,
-            )
+            valid: bool | None = None
+            if not op.get_context().as_sql:
+                valid = op.get_bind().scalar(
+                    sa.text(
+                        "SELECT indisvalid FROM pg_index "
+                        "WHERE indexrelid = to_regclass(:name)"
+                    ),
+                    {"name": NEW_INDEX_NAME},
+                )
+            # Preserve completed replacements and recover interrupted builds.
+            if valid is False:
+                op.drop_index(
+                    NEW_INDEX_NAME,
+                    table_name="products",
+                    if_exists=True,
+                    postgresql_concurrently=True,
+                )
+            if not valid:
+                op.create_index(
+                    NEW_INDEX_NAME,
+                    "products",
+                    ["organization_id", "external_id"],
+                    unique=True,
+                    postgresql_where=sa.text(where),
+                    postgresql_concurrently=True,
+                )
             op.drop_index(
                 INDEX_NAME,
                 table_name="products",
                 if_exists=True,
                 postgresql_concurrently=True,
             )
-            op.execute(f"ALTER INDEX {NEW_INDEX_NAME} RENAME TO {INDEX_NAME}")
+            op.execute("SET lock_timeout = '5s'")
+            op.execute(f"ALTER INDEX IF EXISTS {NEW_INDEX_NAME} RENAME TO {INDEX_NAME}")
         finally:
             op.execute("RESET lock_timeout")
 
 
 def upgrade() -> None:
-    _swap("deleted_at IS NULL AND external_id IS NOT NULL AND is_current")
+    _swap(
+        "deleted_at IS NULL AND external_id IS NOT NULL AND is_current",
+        scoped_to_current=True,
+    )
 
 
 def downgrade() -> None:
     # Only reversible before non-current product versions share an external_id.
-    _swap("deleted_at IS NULL AND external_id IS NOT NULL")
+    _swap(
+        "deleted_at IS NULL AND external_id IS NOT NULL",
+        scoped_to_current=False,
+    )

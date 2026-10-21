@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 class UsagePolicy(StrEnum):
     charge = "charge"
     trial = "trial"
+    paused = "paused"
 
 
 class BillingInterval(IDModel):

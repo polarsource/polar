@@ -26,8 +26,8 @@ class BillingIntervalRepository(Protocol):
     ) -> Sequence[BillingInterval]:
         """Load competing history with retained prices and original subscription starts.
 
-        Include ended/deleted subscriptions and trial rows, without current-price or
-        currency filtering. Include starts at the cutoff for recipient selection.
+        Include ended/deleted subscriptions and trial/paused rows, without current-price
+        or currency filtering. Include starts at the cutoff for recipient selection.
         """
         ...
 

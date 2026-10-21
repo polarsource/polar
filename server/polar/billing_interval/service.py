@@ -71,7 +71,7 @@ def resolve_ownership(
     *,
     cutoff: datetime,
 ) -> tuple[UsageWindow, ...]:
-    """Resolve start/UUID precedence, including trial winners, before bill filtering."""
+    """Select owners before excluding usage won by trial or paused intervals."""
     raise NotImplementedError
 
 

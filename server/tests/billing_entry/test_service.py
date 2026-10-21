@@ -1473,6 +1473,71 @@ class TestCreateOrderItemsFromPending:
         await session.refresh(credit_entry)
         assert credit_entry.order_item_id is not None
 
+    async def test_shared_credits_cover_both_prices_after_switch(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        old_price = product_old.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+        credit_entry = await create_credit_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=old_price,
+            subscription=subscription,
+            units=1000,
+            meter=meter,
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=old_price,
+            subscription=subscription,
+            tokens=100,
+        )
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],
+        )
+        new_price = product_new.prices[0]
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(new_price)
+        ]
+        await save_fixture(subscription)
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=new_price,
+            subscription=subscription,
+            tokens=200,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            amounts = {item.product_price: item.amount for item in order_items}
+            assert amounts == {old_price: 0, new_price: 0}
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        await session.refresh(credit_entry)
+        assert credit_entry.order_item_id is not None
+
     async def test_price_snapshot_bills_switched_away_price(
         self,
         save_fixture: SaveFixture,

@@ -6173,9 +6173,9 @@ class TestUpdateProduct:
         assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
         subscription_service.check_meter_cycle_lag(updated)
 
-    async def test_settles_old_metered_usage_without_meter_clock(
+    async def test_leaves_metered_usage_pending_without_meter_clock(
         self,
-        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         customer: Customer,
@@ -6193,48 +6193,6 @@ class TestUpdateProduct:
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
             prices=[(2000, "usd"), (meter, Decimal(50), None, "usd")],
-        )
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        assert subscription.current_meter_period_end is None
-        old_price_ids = [
-            spp.product_price_id for spp in subscription.subscription_product_prices
-        ]
-
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            await subscription_service.update_product(
-                session,
-                ctx,
-                subscription,
-                product_id=new_product.id,
-                proration_behavior=SubscriptionProrationBehavior.prorate,
-            )
-
-        [settle_call] = [
-            call
-            for call in enqueue_job_mock.call_args_list
-            if call.args[0] == "order.create_meter_cycle_order"
-        ]
-        assert settle_call.args[1] == subscription.id
-        assert settle_call.args[3] == old_price_ids
-        assert settle_call.args[4] == product.id
-
-    async def test_does_not_settle_without_old_metered_prices(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer: Customer,
-        organization: Organization,
-        product: Product,
-    ) -> None:
-        new_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
         )
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer

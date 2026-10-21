@@ -11,7 +11,9 @@ from polar.reducer.types import UsageWindow
 
 
 @dataclass(frozen=True)
-class IntervalTerms:
+class SubscriptionMeterBillingState:
+    """Links a meter with a price and an usage policy."""
+
     meter_id: UUID
     product_price_id: UUID
     usage_policy: UsagePolicy
@@ -19,12 +21,15 @@ class IntervalTerms:
 
 @dataclass(frozen=True)
 class IntervalChangePlan:
-    """Discard IDs refer only to uncommitted intervals replaced at their start."""
+    """Discard intervals that would start and end at the same time.
+
+    Only intervals created in this transaction may be discarded.
+    """
 
     effective_at: datetime
-    close_interval_ids: tuple[UUID, ...]
-    discard_interval_ids: tuple[UUID, ...]
-    open_terms: tuple[IntervalTerms, ...]
+    close_interval_ids: tuple[UUID, ...] = ()
+    discard_interval_ids: tuple[UUID, ...] = ()
+    new_interval_states: tuple[SubscriptionMeterBillingState, ...] = ()
 
 
 @dataclass(frozen=True)

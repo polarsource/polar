@@ -12,9 +12,9 @@ from polar.reducer.types import UsageWindow
 from .comparison import BillingComparison
 from .types import (
     IntervalChangePlan,
-    IntervalTerms,
     MeteredSettlement,
     SettlementWindowSelection,
+    SubscriptionMeterBillingState,
     UsageDiagnostic,
 )
 
@@ -49,15 +49,15 @@ class BillingIntervalService(Protocol):
         ...
 
 
-def project_terms(
+def derive_meter_billing_states(
     subscription: Subscription, meters: Mapping[UUID, Meter]
-) -> tuple[IntervalTerms, ...]:
+) -> tuple[SubscriptionMeterBillingState, ...]:
     raise NotImplementedError
 
 
 def plan_interval_changes(
     intervals: Sequence[BillingInterval],
-    terms: Sequence[IntervalTerms],
+    desired_states: Sequence[SubscriptionMeterBillingState],
     *,
     effective_at: datetime,
 ) -> IntervalChangePlan:

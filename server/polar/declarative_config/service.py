@@ -48,7 +48,6 @@ from .schemas import (
     ConfigIssueType,
     ConfigMeter,
     ConfigPlan,
-    ConfigProduct,
     ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
     ConfigPrune,
@@ -102,16 +101,6 @@ async def _assert_webhooks_permission(
             organization.id,
             OrganizationPermission.organization_manage,
         )
-
-
-def _billed_meters(product: ConfigProduct) -> set[str]:
-    return {
-        price.meter
-        for price in product.prices
-        if isinstance(
-            price, (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
-        )
-    }
 
 
 def _constraint_name(error: IntegrityError) -> str | None:
@@ -302,9 +291,11 @@ class DeclarativeConfigService:
         product_repository = ProductRepository.from_session(session)
         subscription_repository = SubscriptionRepository.from_session(session)
         grant_repository = BenefitGrantRepository.from_session(session)
+
         deprecated_meters = [meter for meter in config.meters if meter.deprecated]
         deprecated_benefits = [b for b in config.benefits if b.deprecated]
         deprecated_products = [p for p in config.products if p.deprecated]
+
         meter_ids = {
             meter.external_id: meter.id
             for meter in await meter_repository.get_all_by_external_ids(
@@ -382,7 +373,14 @@ class DeclarativeConfigService:
             products_on_meter = [
                 product.external_id
                 for product in kept_products
-                if meter.external_id in _billed_meters(product)
+                if any(
+                    isinstance(
+                        price,
+                        (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers),
+                    )
+                    and price.meter == meter.external_id
+                    for price in product.prices
+                )
             ]
             benefits_on_meter = [
                 benefit.external_id

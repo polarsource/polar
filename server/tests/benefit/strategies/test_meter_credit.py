@@ -1,3 +1,4 @@
+from datetime import timedelta
 from uuid import uuid4
 
 import pytest
@@ -9,6 +10,7 @@ from polar.benefit.strategies.meter_credit.service import BenefitMeterCreditServ
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.system import SystemEvent
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
@@ -398,6 +400,47 @@ class TestRevokeMeterCredit:
         assert customer_meter.credited_units == 120
         assert customer_meter.consumed_units == 10
         assert customer_meter.balance == 110
+
+    async def test_skips_after_backdated_reset(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 100, "rollover": False},
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+        service = BenefitMeterCreditService(session, redis)
+        grant_properties = await service.grant(benefit, customer, {})
+
+        # Ingested after the credit, but timestamped before the earlier reset
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=utc_now() - timedelta(days=1),
+            metadata={"meter_id": str(meter.id)},
+        )
+
+        result = await service.revoke(benefit, customer, grant_properties)
+
+        assert result == grant_properties
 
 
 @pytest.mark.anyio

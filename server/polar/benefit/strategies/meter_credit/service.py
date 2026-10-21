@@ -133,16 +133,15 @@ class BenefitMeterCreditService(
 
         # Credits are forward-looking: once the meter was reset after the last
         # credit, that period is closed and its credits aren't clawed back.
-        event_repository = EventRepository.from_session(self.session)
-        latest_meter_reset = await event_repository.get_latest_meter_reset(
-            customer, uuid.UUID(meter_id)
-        )
         last_credited_at = grant_properties.get("last_credited_at")
+        event_repository = EventRepository.from_session(self.session)
         if (
-            latest_meter_reset is not None
-            and last_credited_at is not None
-            and latest_meter_reset.ingested_at
-            > datetime.fromisoformat(last_credited_at)
+            last_credited_at is not None
+            and await event_repository.has_meter_reset_ingested_after(
+                customer,
+                uuid.UUID(meter_id),
+                datetime.fromisoformat(last_credited_at),
+            )
         ):
             return grant_properties
 

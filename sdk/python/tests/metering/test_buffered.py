@@ -1,3 +1,4 @@
+import time
 from unittest.mock import AsyncMock
 
 import anyio
@@ -123,18 +124,26 @@ async def test_flush_waits_for_retries(
 
 
 @pytest.mark.anyio
-async def test_retry_after_does_not_spend_attempts(
+async def test_retry_after_waits_a_second_without_spending_attempts(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
     on_dropped = AsyncMock()
-    client.events.ingest.side_effect = [PolarRateLimitError(429, 0)] * 4 + [None]
-    with anyio.fail_after(1):
+    calls: list[float] = []
+
+    async def send(*, events: list[EventInput]) -> None:
+        calls.append(time.monotonic())
+        if len(calls) == 1:
+            raise PolarRateLimitError(429, 0)
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(3):
         async with BufferedMeteringStrategy(
-            client, batch_interval=60, max_attempts=3, on_dropped=on_dropped
+            client, batch_interval=60, max_attempts=1, on_dropped=on_dropped
         ) as strategy:
             await strategy.track(events[0])
             await strategy.flush()
-            assert client.events.ingest.await_count == 5
+            assert len(calls) == 2
+            assert calls[1] - calls[0] >= 0.9
             on_dropped.assert_not_awaited()
 
 

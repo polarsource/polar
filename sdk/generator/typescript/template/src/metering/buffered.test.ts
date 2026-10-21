@@ -194,17 +194,21 @@ it("honors Retry-After and preserves the batch through retries", async () => {
   expect(onDropped).not.toHaveBeenCalled();
 });
 
-it("waits out Retry-After without spending attempts", async () => {
+it("waits at least a second on Retry-After without spending attempts", async () => {
   const onDropped = vi.fn();
-  const ingest = vi.fn().mockResolvedValue(undefined);
-  for (let i = 0; i < 4; i++) ingest.mockRejectedValueOnce(new PolarRateLimitError(429, 0.001));
+  const calls: number[] = [];
+  const ingest = vi.fn(async () => {
+    calls.push(performance.now());
+    if (calls.length === 1) throw new PolarRateLimitError(429, 0);
+  });
   await using strategy = await new BufferedMeteringStrategy(
     { events: { ingest } },
-    { maxAttempts: 3, onDropped },
+    { maxAttempts: 1, onDropped },
   ).start();
   await strategy.track(events[0]);
   await strategy.flush();
-  expect(ingest).toHaveBeenCalledTimes(5);
+  expect(calls).toHaveLength(2);
+  expect(calls[1] - calls[0]).toBeGreaterThanOrEqual(900);
   expect(onDropped).not.toHaveBeenCalled();
 });
 

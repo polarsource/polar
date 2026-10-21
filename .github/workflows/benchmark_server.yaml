@@ -41,9 +41,10 @@ on:
       - ".github/workflows/benchmark_server.yaml"
   workflow_dispatch:
 
-# A newer push on a pull request supersedes a run in progress. Every push on main runs
+# A newer push on a pull request supersedes a run in progress. Every push on main gets its own
+# run
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:

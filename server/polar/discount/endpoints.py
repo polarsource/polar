@@ -14,7 +14,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
-from . import auth, sorting
+from . import auth, legacy_schemas, sorting
 from .schemas import Discount as DiscountSchema
 from .schemas import (
     DiscountAdapter,
@@ -139,6 +139,29 @@ async def create(
     auth_subject: auth.DiscountWrite,
     # This is a workaround for FastAPI bug: https://github.com/fastapi/fastapi/discussions/12941
     discount_create: Annotated[
+        legacy_schemas.DiscountCreate,
+        Body(...),
+        SetSchemaReference("DiscountCreate"),
+    ],
+    session: AsyncSession = Depends(get_db_session),
+) -> Discount:
+    """Create a discount."""
+    return await discount_service.create(session, discount_create, auth_subject)
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=DiscountSchema,
+    status_code=201,
+    summary="Create Discount",
+    responses={201: {"description": "Discount created."}},
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
+    auth_subject: auth.DiscountWrite,
+    # This is a workaround for FastAPI bug: https://github.com/fastapi/fastapi/discussions/12941
+    discount_create: Annotated[
         DiscountCreate,
         Body(...),
         SetSchemaReference("DiscountCreate"),
@@ -159,6 +182,34 @@ async def create(
     },
 )
 async def update(
+    id: DiscountID,
+    discount_update: legacy_schemas.DiscountUpdate,
+    auth_subject: auth.DiscountWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Discount:
+    """Update a discount."""
+    discount = await discount_service.get_by_id(session, auth_subject, id)
+
+    if discount is None:
+        raise ResourceNotFound()
+
+    return await discount_service.update(
+        session, discount, discount_update, auth_subject
+    )
+
+
+@router.patch(
+    "/{id}",
+    name="update",
+    response_model=DiscountSchema,
+    summary="Update Discount",
+    responses={
+        200: {"description": "Discount updated."},
+        404: DiscountNotFound,
+    },
+)
+@version(starting_from=V2027_01)
+async def update_v2027_01(
     id: DiscountID,
     discount_update: DiscountUpdate,
     auth_subject: auth.DiscountWrite,

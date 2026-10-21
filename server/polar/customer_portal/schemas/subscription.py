@@ -18,6 +18,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import Version
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
 from polar.product.schemas import (
@@ -32,6 +33,7 @@ from polar.subscription.schemas import (
     SubscriptionBase,
     SubscriptionMeterBase,
 )
+from polar.version import V2026_10
 
 from .organization import CustomerOrganization
 
@@ -52,7 +54,7 @@ class CustomerSubscriptionMeter(SubscriptionMeterBase):
 
 
 class CustomerSubscription(SubscriptionBase):
-    user_id: SkipJsonSchema[UUID4] = Field(
+    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -63,7 +65,7 @@ class CustomerSubscription(SubscriptionBase):
     )
     product: CustomerSubscriptionProduct
 
-    price: SkipJsonSchema[ProductPrice] = Field(
+    price: Annotated[SkipJsonSchema[ProductPrice], Version(up_to=V2026_10)] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

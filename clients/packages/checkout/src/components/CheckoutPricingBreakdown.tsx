@@ -208,7 +208,7 @@ const CheckoutPricingBreakdown = ({
                 subtitle={
                   [
                     checkout.discount.type === 'percentage'
-                      ? `(${getDiscountDisplay(checkout.discount, locale)})`
+                      ? `(${getDiscountDisplay(checkout.discount, checkout.currency, locale)})`
                       : null,
                     discountEndLabel,
                   ]

@@ -133,11 +133,11 @@ class FileService:
         await session.flush()
         assert instance.id is not None
 
-        return FileUpload(
+        return FileUpload.model_validate_overlay(
+            upload,
             is_uploaded=instance.is_uploaded,
             version=instance.version,
             service=create_schema.service,
-            **upload.model_dump(),
         )
 
     async def complete_upload(

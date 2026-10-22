@@ -345,6 +345,31 @@ const byExternalId = <Resource extends { readonly external_id: string }>(
   return byId
 }
 
+type BenefitsInput<
+  Meters extends MeterEntries,
+  Benefits extends BenefitEntries,
+> = (
+  helpers: BenefitHelpers<MeterKey<Meters>>,
+) => Benefits & ValidBenefits<Benefits, DeprecatedMeterKey<Meters>>
+
+type ProductsInput<
+  Meters extends MeterEntries,
+  Benefits extends BenefitEntries,
+  Products extends ProductEntries,
+> = (
+  helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
+) => Products &
+  ValidProducts<
+    Products,
+    DeprecatedBenefitKey<Benefits>,
+    DeprecatedMeterKey<Meters>
+  >
+
+// TypeScript only points an error at the offending entry, rather than at the
+// whole section, when the section's key is required. So once a section is
+// given, this repeats its key as required.
+type Present<Entries, Section> = [Entries] extends [never] ? unknown : Section
+
 export const defineConfig = <
   const Meters extends MeterEntries,
   const Benefits extends BenefitEntries<MeterKey<Meters>> = never,
@@ -355,30 +380,30 @@ export const defineConfig = <
   const Discounts extends DiscountEntries<ProductKey<Products>> = never,
   Events extends EventDefinitions | undefined = undefined,
   const Webhooks extends WebhookEntries = Record<never, never>,
->(input: {
-  readonly settings?: SettingsConfig
-  readonly events?: Events &
-    (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
-  readonly meters: (helpers: {
-    readonly meter: typeof meter<DeclaredEvents<Events>>
-    readonly events: EventReferences<DeclaredEvents<Events>>
-  }) => Meters
-  readonly benefits?: (
-    helpers: BenefitHelpers<MeterKey<Meters>>,
-  ) => Benefits & ValidBenefits<Benefits, DeprecatedMeterKey<Meters>>
-  readonly products?: (
-    helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
-  ) => Products &
-    ValidProducts<
+>(
+  input: {
+    readonly settings?: SettingsConfig
+    readonly events?: Events &
+      (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
+    readonly meters: (helpers: {
+      readonly meter: typeof meter<DeclaredEvents<Events>>
+      readonly events: EventReferences<DeclaredEvents<Events>>
+    }) => Meters
+    readonly benefits?: BenefitsInput<Meters, Benefits>
+    readonly products?: ProductsInput<Meters, Benefits, Products>
+    readonly discounts?: (
+      helpers: DiscountHelpers<ProductKey<Products>>,
+    ) => Discounts
+    readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
+  } & Present<
+    Benefits,
+    { readonly benefits: BenefitsInput<Meters, Benefits> }
+  > &
+    Present<
       Products,
-      DeprecatedBenefitKey<Benefits>,
-      DeprecatedMeterKey<Meters>
-    >
-  readonly discounts?: (
-    helpers: DiscountHelpers<ProductKey<Products>>,
-  ) => Discounts
-  readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
-}): Config<Meters, Benefits, Events, Webhooks> => {
+      { readonly products: ProductsInput<Meters, Benefits, Products> }
+    >,
+): Config<Meters, Benefits, Events, Webhooks> => {
   const events = input.events as Events
   const entries = toEntries(
     input.meters({

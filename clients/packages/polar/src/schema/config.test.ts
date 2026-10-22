@@ -563,8 +563,8 @@ test('active products and benefits cannot use a deprecated meter', () => {
   expect(() =>
     defineConfig({
       meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
-      // @ts-expect-error pro is active, so it cannot price by apples
       products: ({ product, meter }) => ({
+        // @ts-expect-error pro is active, so it cannot price by apples
         pro: product()
           .prices(meter('apples').flat().amount(usd(0.01)))
           .recurring('monthly'),
@@ -576,8 +576,8 @@ test('active products and benefits cannot use a deprecated meter', () => {
   expect(() =>
     defineConfig({
       meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
-      // @ts-expect-error included is active, so it cannot use apples
       benefits: ({ credits }) => ({
+        // @ts-expect-error included is active, so it cannot use apples
         included: credits('Included apples').meter('apples').units(10),
       }),
     }),
@@ -592,8 +592,8 @@ test('deprecating a meter anywhere in its chain marks it deprecated', () => {
       meters: ({ meter, events }) => ({
         apples: meter().deprecated().on(events.call).unit('token').count(),
       }),
-      // @ts-expect-error included is active, so it cannot use apples
       benefits: ({ credits }) => [
+        // @ts-expect-error included is active, so it cannot use apples
         ['included', credits('Apples').meter('apples').units(10)],
       ],
     }),
@@ -608,8 +608,8 @@ test('deprecating a meter anywhere in its chain marks it deprecated', () => {
           .deprecated()
           .count(),
       }),
-      // @ts-expect-error included is active, so it cannot use pears
       benefits: ({ credits }) => ({
+        // @ts-expect-error included is active, so it cannot use pears
         included: credits('Pears').meter('pears').units(10),
       }),
     }),
@@ -620,8 +620,8 @@ test('deprecating a meter anywhere in its chain marks it deprecated', () => {
       meters: ({ meter, events }) => ({
         plums: meter().on(events.call).count().deprecated(),
       }),
-      // @ts-expect-error included is active, so it cannot use plums
       benefits: ({ credits }) => ({
+        // @ts-expect-error included is active, so it cannot use plums
         included: credits('Plums').meter('plums').units(10),
       }),
     }),
@@ -707,10 +707,10 @@ test('a product deprecated anywhere in its chain can price by a deprecated meter
         apples: meter().deprecated().count(),
         pears: meter().count(),
       }),
-      // @ts-expect-error pro is active, so it cannot price by apples
       products: ({ product, fixed, meter }) => [
         [
           'pro',
+          // @ts-expect-error pro is active, so it cannot price by apples
           product()
             .prices(
               fixed().amount(usd(10)),
@@ -729,8 +729,8 @@ test('active products cannot grant a deprecated benefit', () => {
     defineConfig({
       meters: ({ meter }) => ({ calls: meter().count() }),
       benefits: ({ flag }) => ({ beta: flag('Beta').deprecated() }),
-      // @ts-expect-error pro is active, so it cannot grant beta
       products: ({ product, free }) => ({
+        // @ts-expect-error pro is active, so it cannot grant beta
         pro: product().prices(free()).recurring('monthly').grants(['beta']),
       }),
     }),
@@ -764,8 +764,8 @@ test('deprecating a product after or before grants() allows deprecated benefits'
     defineConfig({
       meters: () => ({}),
       benefits: ({ flag }) => [['beta', flag('Beta').deprecated()]],
-      // @ts-expect-error pro is active, so it cannot grant beta
       products: ({ product, free }) => [
+        // @ts-expect-error pro is active, so it cannot grant beta
         ['pro', product().prices(free()).recurring('monthly').grants(['beta'])],
       ],
     }),

@@ -1,12 +1,16 @@
 import typing
 
-from authlib.oauth2.rfc6749.errors import InvalidClientError, UnauthorizedClientError
+from authlib.oauth2.rfc6749.errors import (
+    InvalidClientError,
+    InvalidGrantError,
+    UnauthorizedClientError,
+)
 from authlib.oauth2.rfc6749.grants import BaseGrant, TokenEndpointMixin
 from authlib.oauth2.rfc6749.util import extract_basic_authorization
 from sqlalchemy import Select, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
-from polar.models import Agent, OAuth2Client
+from polar.models import Agent, OAuth2Client, User
 
 if typing.TYPE_CHECKING:
     from ..authorization_server import AuthorizationServer
@@ -28,7 +32,9 @@ class AgentGrant(BaseGrant, TokenEndpointMixin):
             select(Agent)
             .join(Agent.oauth2_client)
             .where(~OAuth2Client.is_deleted)
-            .options(contains_eager(Agent.oauth2_client))
+            .options(
+                contains_eager(Agent.oauth2_client), joinedload(Agent.claimed_by_user)
+            )
         )
 
     def _validate_request_client(self, client: OAuth2Client) -> None:
@@ -41,3 +47,9 @@ class AgentGrant(BaseGrant, TokenEndpointMixin):
             raise UnauthorizedClientError(
                 f"The client is not authorized to use 'grant_type={self.GRANT_TYPE}'"
             )
+
+    def _get_claiming_user(self, agent: Agent) -> User:
+        user = agent.claimed_by_user
+        if user is None or not user.can_authenticate:
+            raise InvalidGrantError()
+        return user

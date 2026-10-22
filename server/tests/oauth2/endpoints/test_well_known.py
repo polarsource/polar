@@ -4,7 +4,7 @@ from httpx import AsyncClient
 
 from polar.auth.scope import SCOPES_SUPPORTED
 from polar.config import settings
-from polar.oauth2.constants import ISSUER
+from polar.oauth2.constants import CLAIM_GRANT_TYPE, ISSUER
 
 
 @pytest.fixture
@@ -44,6 +44,7 @@ async def test_authorization_server_metadata(client: AsyncClient, path: str) -> 
     assert len(json["code_challenge_methods_supported"]) > 0
     assert json["authorization_response_iss_parameter_supported"] is True
     assert JWT_BEARER_GRANT_TYPE not in json["grant_types_supported"]
+    assert CLAIM_GRANT_TYPE not in json["grant_types_supported"]
 
 
 @pytest.mark.anyio
@@ -54,7 +55,9 @@ async def test_authorization_server_metadata_agent_sign_up(
     response = await client.get("/.well-known/oauth-authorization-server")
 
     assert response.status_code == 200
-    assert JWT_BEARER_GRANT_TYPE in response.json()["grant_types_supported"]
+    json = response.json()
+    assert JWT_BEARER_GRANT_TYPE in json["grant_types_supported"]
+    assert CLAIM_GRANT_TYPE in json["grant_types_supported"]
 
 
 @pytest.mark.anyio

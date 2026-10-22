@@ -38,6 +38,9 @@ class AgentIdentity(Schema):
         description="The secret to start a claim with. Returned only once."
     )
     claim_token_expires: datetime
+    post_claim_scopes: list[Scope] = Field(
+        description="The scopes of the access tokens once a human claimed the agent."
+    )
 
 
 class AgentClaimStart(Schema):

@@ -276,6 +276,64 @@ class TestOutpost:
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_event_reducer_bucket_split_half_synced(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        customer_meter: CustomerMeter,
+    ) -> None:
+        external_id = customer_meter.customer.external_id
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[customer_meter.meter]
+        )
+        start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
+        split_at = start + timedelta(minutes=7)
+        # A seal split the second slot and only its first part is synced: the cold usage
+        # stops at the slot's start, since clients count whole slots.
+        for bucket_start, bucket_end, synced, value in (
+            (start, start + timedelta(minutes=5), True, 3),
+            (start + timedelta(minutes=5), split_at, True, 4),
+            (split_at, start + timedelta(minutes=10), False, 5),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    external_customer_id=external_id,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    count=1,
+                    sum=Decimal(value),
+                    min=Decimal(value),
+                    max=Decimal(value),
+                    synced_at=bucket_end if synced else None,
+                )
+            )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await publish(
+                redis,
+                organization.id,
+                {
+                    "type": "reducer_bucket",
+                    "reducer_id": reducer.id,
+                    "customer_id": None,
+                    "external_customer_id": external_id,
+                },
+            )
+            response = await websocket.receive_json()
+
+        payload = response["payload"]
+        assert payload["cold_until"] == to_epoch_microseconds(
+            start + timedelta(minutes=5)
+        )
+        assert payload["count"] == 1
+        assert payload["sum"] == 3.0
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_event_reducer_bucket_synced_across_lookback(
         self,
         save_fixture: SaveFixture,
@@ -477,7 +535,7 @@ class TestOutpost:
 
         assert response["payload"]["ids"] == ["early"]
         assert response["payload"]["snapshot"]["cold_until"] == to_epoch_microseconds(
-            split_at
+            bucket_start
         )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))

@@ -1,3 +1,4 @@
+import datetime
 import subprocess
 import sys
 import typing
@@ -223,6 +224,40 @@ async def test_metering_enters_and_calls_both_strategies(
 
         for _, exit, _ in mocks:
             exit.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_dates_an_event_that_carries_no_timestamp() -> None:
+    seen: list[EventInput] = []
+
+    class Recording:
+        async def __aenter__(self) -> typing.Self:
+            return self
+
+        async def __aexit__(self, *exc_info: object) -> None:
+            return None
+
+        async def track(self, event: EventInput) -> None:
+            seen.append(event)
+
+    async with (
+        PolarAsync("token") as polar,
+        Metering(
+            strategies=[Recording(), Recording()], client=polar._client
+        ) as metering,
+    ):
+        before = datetime.datetime.now(datetime.UTC)
+        await metering.track(name="usage", external_customer_id="customer")
+        await metering.track(
+            name="usage",
+            external_customer_id="customer",
+            timestamp="2026-10-22T08:00:00Z",
+        )
+    first, second, explicit, _ = seen
+    stamped = datetime.datetime.fromisoformat(first["timestamp"])
+    assert stamped.tzinfo is not None and stamped >= before
+    assert second["timestamp"] == first["timestamp"]
+    assert explicit["timestamp"] == "2026-10-22T08:00:00Z"
 
 
 @pytest.mark.anyio

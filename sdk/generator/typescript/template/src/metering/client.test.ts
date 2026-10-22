@@ -61,6 +61,30 @@ it.each([false, true])("flushes supporting strategies and collects failures: %s"
   expect(ordinary.track).toHaveBeenCalledTimes(3);
 });
 
+it("dates an event that carries no timestamp, once for every strategy", async () => {
+  const seen: EventInput[] = [];
+  const recording = (): MeteringStrategy => ({
+    start: async () => {},
+    track: async (tracked) => {
+      seen.push(tracked);
+    },
+    close: async () => {},
+  });
+  await using metering = await new Metering({
+    client,
+    strategies: [recording(), recording()],
+  }).start();
+  const before = Date.now();
+  await metering.track(event);
+  await metering.track({ ...event, timestamp: "2026-10-22T08:00:00Z" });
+  const [first, second, explicit] = seen;
+  expect(Date.parse(first.timestamp!)).toBeGreaterThanOrEqual(before);
+  expect(first.timestamp).toMatch(/Z$/);
+  expect(second.timestamp).toBe(first.timestamp);
+  expect(explicit.timestamp).toBe("2026-10-22T08:00:00Z");
+  expect(event).not.toHaveProperty("timestamp");
+});
+
 it("waits for an active flush before closing", async () => {
   let finishFlush!: () => void;
   const strategy = {

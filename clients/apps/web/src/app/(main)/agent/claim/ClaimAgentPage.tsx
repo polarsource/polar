@@ -95,7 +95,7 @@ export default function ClaimAgentPage({
       }
       subtitle={
         isReady
-          ? 'Review what the agent built, then enter the code it gave you to become the owner.'
+          ? 'Enter the code your agent gave you to become the owner.'
           : undefined
       }
       actions={

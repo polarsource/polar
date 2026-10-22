@@ -2,11 +2,12 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/cli'
 import { ApiRuntime } from '../../runtime'
-import { fields } from '../../inputs'
+import { fields, org } from '../../inputs'
 
 export const command = Command.make(
   'get',
   {
+    org,
     fields,
     path: {
       id: Argument.String('id'),
@@ -21,6 +22,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) =>
           client.customers.members.get(config.path.id, config.path.member_id),

@@ -6,6 +6,7 @@ import { ApiRuntime } from '../runtime'
 import {
   confirm,
   fields,
+  org,
   data,
   mergeInput,
   jsonFlag,
@@ -18,6 +19,7 @@ export const command = Command.make(
   'update_external',
   {
     confirm,
+    org,
     fields,
     path: {
       external_id: Argument.String('external_id'),
@@ -72,6 +74,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
-import { confirm, data, mergeInput } from '../inputs'
+import { confirm, org, data, mergeInput } from '../inputs'
 
 type Query = NonNullable<Parameters<Polar['customers']['delete']>[1]>
 
@@ -11,6 +11,7 @@ export const command = Command.make(
   'delete',
   {
     confirm,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -35,6 +36,7 @@ export const command = Command.make(
         method: 'DELETE',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         preview: {
           fields: [
             { key: 'id', label: 'ID' },

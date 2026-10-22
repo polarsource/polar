@@ -277,7 +277,13 @@ const whoami = Command.make('whoami', {}).pipe(
         return {
           source: 'session',
           environments,
-          organization: selection ? yield* organizations.resolve() : null,
+          organization: selection
+            ? yield* organizations.resolve()
+            : environments.length > 0
+              ? yield* organizations
+                  .resolve()
+                  .pipe(Effect.orElseSucceed(() => null))
+              : null,
         } satisfies Identity
       }),
     render: ({ source, environments, organization }) => {

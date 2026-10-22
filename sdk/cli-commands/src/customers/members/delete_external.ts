@@ -2,12 +2,13 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/cli'
 import { ApiRuntime } from '../../runtime'
-import { confirm } from '../../inputs'
+import { confirm, org } from '../../inputs'
 
 export const command = Command.make(
   'delete_external',
   {
     confirm,
+    org,
     path: {
       external_id: Argument.String('external_id'),
       member_external_id: Argument.String('member_external_id'),
@@ -21,6 +22,7 @@ export const command = Command.make(
         method: 'DELETE',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         preview: {
           fields: [
             { key: 'id', label: 'ID' },

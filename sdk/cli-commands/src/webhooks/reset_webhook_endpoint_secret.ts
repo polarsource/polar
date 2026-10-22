@@ -2,12 +2,13 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
-import { confirm, fields } from '../inputs'
+import { confirm, fields, org } from '../inputs'
 
 export const command = Command.make(
   'reset_webhook_endpoint_secret',
   {
     confirm,
+    org,
     fields,
     path: {
       id: Argument.String('id'),
@@ -21,6 +22,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) =>
           client.webhooks.resetWebhookEndpointSecret(config.path.id),

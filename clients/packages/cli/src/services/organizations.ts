@@ -73,45 +73,60 @@ export const layer = Layer.effect(
           environment,
         }),
       )
-    const getBySlug = (slug: string, environment: PolarEnvironment) =>
-      Effect.gen(function* () {
-        const response = yield* polar.use(
+    const findBySlug = (slug: string, environment: PolarEnvironment) =>
+      Effect.map(
+        polar.use(
           (client) => client.organizations.list({ slug, limit: 1 }),
           environment,
-        )
-        const organization = response.items[0]
-        if (organization === undefined) {
-          return yield* new AuthError({
-            message: `No organization with the slug ${slug} in ${environment}.`,
-          })
-        }
-        return {
-          id: organization.id,
-          name: organization.name,
-          slug: organization.slug,
-          environment,
-        }
+        ),
+        ({ items: [organization] }) =>
+          organization && {
+            id: organization.id,
+            name: organization.name,
+            slug: organization.slug,
+            environment,
+          },
+      )
+    const inaccessible = (reference: string, available: PolarEnvironment[]) =>
+      new AuthError({
+        message: `Organization ${reference} is missing or inaccessible in ${available.join(' and ')}. Check --org or run polar auth list.`,
       })
     const find = (reference: string) =>
       Effect.gen(function* () {
-        const lookup = isUuid(reference) ? get : getBySlug
         const available = yield* auth.environments
         if (available.length === 0) {
           return yield* new AuthError({
             message: 'Not logged in. Run polar auth login.',
           })
         }
-        if (available.length === 1)
-          return yield* lookup(reference, available[0]!)
-        for (const environment of available) {
-          const found = yield* lookup(reference, environment).pipe(
-            Effect.orElseSucceed(() => undefined),
-          )
-          if (found) return found
+        if (isUuid(reference)) {
+          if (available.length === 1)
+            return yield* get(reference, available[0]!)
+          for (const environment of available) {
+            const found = yield* get(reference, environment).pipe(
+              Effect.orElseSucceed(() => undefined),
+            )
+            if (found) return found
+          }
+          return yield* inaccessible(reference, available)
         }
-        return yield* new AuthError({
-          message: `Organization ${reference} is missing or inaccessible in ${available.join(' and ')}. Check --org or run polar auth list.`,
-        })
+        const matches: ActiveOrganization[] = []
+        for (const environment of available) {
+          const found = yield* findBySlug(reference, environment)
+          if (found) matches.push(found)
+        }
+        if (matches.length === 1) return matches[0]!
+        if (matches.length > 1) {
+          return yield* new AuthError({
+            message: `The slug ${reference} matches an organization in ${matches.map(({ environment }) => environment).join(' and ')}. Use its ID with --org instead.`,
+          })
+        }
+        if (available.length === 1) {
+          return yield* new AuthError({
+            message: `No organization with the slug ${reference} in ${available[0]}.`,
+          })
+        }
+        return yield* inaccessible(reference, available)
       })
     return Organizations.of({
       list,
@@ -142,6 +157,10 @@ export const layer = Layer.effect(
           }
           const selection = yield* config.getActiveOrganization
           if (!selection) {
+            const organizations = yield* listAll.pipe(
+              Effect.orElseSucceed(() => []),
+            )
+            if (organizations.length === 1) return organizations[0]!
             return yield* new AuthError({
               message: `No active organization. Run ${orgCommand} or supply --org <id>.`,
             })

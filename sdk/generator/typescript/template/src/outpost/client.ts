@@ -33,7 +33,12 @@ import {
   addStatistics,
   quantity,
 } from "./reducer";
-import { READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT, APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import {
+  READ_STATE_SCRIPT,
+  WRITE_BUCKET_SCRIPT,
+  CONFIRM_SCRIPT,
+  APPLY_SNAPSHOT_SCRIPT,
+} from "./scripts";
 import { createMeterProvider, createTracerProvider, isTelemetryEnabled } from "./telemetry";
 
 const CACHE_SIZE = 1024;
@@ -43,12 +48,17 @@ const RECONNECT_DELAY = 500;
 const MAX_RECONNECT_DELAY = 30_000;
 const REDIS_RECONNECT_DELAY = 100;
 const MAX_REDIS_RECONNECT_DELAY = 2_000;
+const BUCKET_PREFIX = "bucket:";
+const PENDING_PREFIX = "pending:";
+const COLD_PREFIX = "cold:";
 export interface State {
   epoch: string;
   revision: bigint;
   coldUntil?: number;
   cold: BucketStatistics;
   buckets: Map<number, BucketStatistics>;
+  // The part of each bucket Polar has not confirmed yet.
+  pending: Map<number, BucketStatistics>;
   credited: Record<string, number>;
 }
 type Customer = Parameters<typeof customerKey>[0];
@@ -84,7 +94,8 @@ interface OutpostRedis extends Redis {
   ): Promise<[state: string[], replaced: string[]]>;
 }
 interface OutpostPipeline extends ChainableCommander {
-  outpostWriteBucket(key: string, ...args: (string | number)[]): this;
+  outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
+  outpostConfirm(key: string, pendingKey: string, ...args: (string | number)[]): this;
 }
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
@@ -182,19 +193,26 @@ export const decodeState = (value: string[]): State => {
     coldUntil: undefined,
     cold: emptyStatistics(),
     buckets: new Map(),
+    pending: new Map(),
     credited: {},
   };
   for (let i = 0; i < value.length; i += 2) {
     const field = value[i];
     const raw = value[i + 1];
-    if (field.startsWith("bucket:")) {
+    const buckets = field.startsWith(BUCKET_PREFIX)
+      ? state.buckets
+      : field.startsWith(PENDING_PREFIX)
+        ? state.pending
+        : undefined;
+    if (buckets) {
+      const prefix = buckets === state.buckets ? BUCKET_PREFIX : PENDING_PREFIX;
       const separator = field.lastIndexOf(":");
-      const start = Number(field.slice(7, separator));
-      let bucket = state.buckets.get(start);
-      if (!bucket) state.buckets.set(start, (bucket = emptyStatistics()));
+      const start = Number(field.slice(prefix.length, separator));
+      let bucket = buckets.get(start);
+      if (!bucket) buckets.set(start, (bucket = emptyStatistics()));
       bucket[field.slice(separator + 1) as keyof BucketStatistics] = number(raw);
-    } else if (field.startsWith("cold:"))
-      state.cold[field.slice(5) as keyof BucketStatistics] = number(raw);
+    } else if (field.startsWith(COLD_PREFIX))
+      state.cold[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(raw);
     else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(raw);
     else if (field === "epoch") state.epoch = raw;
     else if (field === "revision") state.revision = BigInt(raw);
@@ -202,8 +220,12 @@ export const decodeState = (value: string[]): State => {
   }
   return state;
 };
+// Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
+// them, and every local event in the buckets Polar has not sealed yet.
 export const consumedUnits = (state: State, func: Aggregation["func"]): number => {
   const combined = { ...state.cold };
+  for (const [start, statistics] of state.pending)
+    if (start < state.coldUntil!) addStatistics(combined, statistics);
   for (const [start, statistics] of state.buckets)
     if (start >= state.coldUntil!) addStatistics(combined, statistics);
   return quantity(combined, func);
@@ -220,8 +242,8 @@ const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): v
   const local = emptyStatistics();
   const buckets = new Map<string, BucketStatistics>();
   for (const [field, value] of Object.entries(fields)) {
-    if (field.startsWith("cold:")) {
-      local[field.slice(5) as keyof BucketStatistics] = number(value);
+    if (field.startsWith(COLD_PREFIX)) {
+      local[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(value);
     } else if (field.startsWith("bucket:")) {
       const [, start, statistic] = field.split(":");
       const bucket = buckets.get(start) ?? emptyStatistics();
@@ -361,9 +383,10 @@ export class Outpost {
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
       this.redis.defineCommand("outpostWriteBucket", {
-        numberOfKeys: 1,
+        numberOfKeys: 2,
         lua: WRITE_BUCKET_SCRIPT,
       });
+      this.redis.defineCommand("outpostConfirm", { numberOfKeys: 2, lua: CONFIRM_SCRIPT });
       this.redis.defineCommand("outpostApplySnapshot", {
         numberOfKeys: 1,
         lua: APPLY_SNAPSHOT_SCRIPT,
@@ -498,6 +521,7 @@ export class Outpost {
         const statistics = update.statistics;
         pipeline.outpostWriteBucket(
           `outpost:state:${identity}`,
+          `outpost:pending:${identity}:${update.bucketStart}`,
           identity,
           this.channel,
           generateEpoch(),
@@ -506,6 +530,7 @@ export class Outpost {
           statistics.sum,
           statistics.min ?? "",
           statistics.max ?? "",
+          event.external_id!,
         );
       }
       const results = await pipeline.exec().catch((error: unknown) => {
@@ -518,8 +543,6 @@ export class Outpost {
           firstError ??= error;
           continue;
         }
-        // Empty when the bucket is older than the last snapshot: nothing changed.
-        if (!(state as string[]).length) continue;
         const update = updates[index];
         const identity = `${update.customer}:${update.reducer}`;
         await this.receiveState(identity, decodeState(state as string[]), true);
@@ -532,6 +555,54 @@ export class Outpost {
       const attributes = { "outpost.outcome": outcome };
       this.ingestDuration?.record((performance.now() - started) / 1000, attributes);
     }
+  }
+
+  /**
+   * Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
+   *
+   * @param events Tracked events, including their external_id.
+   */
+  async confirm(events: EventInput[]): Promise<void> {
+    const redis = this.requireRedis();
+    await this.waitConfigured();
+    const groups = new Map<string, { identity: string; bucketStart: number; ids: string[] }>();
+    for (const event of events) {
+      this.validate(event);
+      const parsed = parseEvent(event);
+      for (const update of reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp))) {
+        const identity = `${update.customer}:${update.reducer}`;
+        const key = `${identity}:${update.bucketStart}`;
+        let group = groups.get(key);
+        if (!group)
+          groups.set(key, (group = { identity, bucketStart: update.bucketStart, ids: [] }));
+        group.ids.push(event.external_id!);
+      }
+    }
+    const confirmations = [...groups.values()];
+    const pipeline = redis.pipeline() as OutpostPipeline;
+    for (const { identity, bucketStart, ids } of confirmations)
+      pipeline.outpostConfirm(
+        `outpost:state:${identity}`,
+        `outpost:pending:${identity}:${bucketStart}`,
+        identity,
+        this.channel,
+        generateEpoch(),
+        bucketStart,
+        ...ids,
+      );
+    const results = await pipeline.exec().catch((error: unknown) => {
+      throw redisUnavailable(error);
+    });
+    if (results === null) throw new UnavailableRedisError();
+    let firstError: Error | undefined;
+    for (const [index, [error, state]] of results.entries()) {
+      if (error) {
+        firstError ??= error;
+        continue;
+      }
+      await this.receiveState(confirmations[index].identity, decodeState(state as string[]));
+    }
+    if (firstError) throw redisUnavailable(firstError);
   }
 
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
@@ -776,6 +847,7 @@ export class Outpost {
         state = await this.loadState(customer);
       else if (bucket) {
         for (const [start, statistics] of state.buckets) current.buckets.set(start, statistics);
+        for (const [start, statistics] of state.pending) current.pending.set(start, statistics);
         current.revision = state.revision;
         state = current;
       }

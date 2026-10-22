@@ -4,6 +4,7 @@ from polar.outpost.client import Configuration, Snapshot
 from polar.outpost.reducer import BUCKET_SIZE
 
 from harness import (
+    ConfirmStep,
     DisconnectStep,
     ExternalCustomerID,
     ExternalCustomerMeterRequest,
@@ -65,6 +66,12 @@ def emit(
             ]
         },
     )
+
+
+# Polar ingested the events of these steps, as the snapshot that follows accounts for.
+def confirm(at: float, client: str, *steps: IngestStep) -> ConfirmStep:
+    events = [event for step in steps for event in step.arguments["events"]]
+    return ConfirmStep(at, client, {"events": events})
 
 
 def expect(at: float, client: str, consumed: int, *, within: float = 2) -> ReadStep:
@@ -134,9 +141,10 @@ SCENARIOS = [
         [
             expect(0, "writer", 0),
             expect(0, "reader", 0),
-            emit(0.2, "writer", 7),
+            seven := emit(0.2, "writer", 7),
             expect(0.3, "reader", 7),
             emit(0.4, "reader", 4, timestamp="2026-10-12T12:05:00Z"),
+            confirm(0.45, "writer", seven),
             SnapshotStep(
                 0.5,
                 {
@@ -151,9 +159,10 @@ SCENARIOS = [
             ),
             expect(0.7, "writer", 11),
             expect(0.7, "reader", 11),
+            # A late event in a cold bucket counts until Polar confirms it.
             emit(0.9, "writer", 7),
-            expect(1, "writer", 11, within=0),
-            expect(1, "reader", 11),
+            expect(1, "writer", 18, within=0),
+            expect(1, "reader", 18),
         ],
     ),
     Scenario(
@@ -205,8 +214,8 @@ SCENARIOS = [
                 {**CUSTOMER, "meter_id": "average-meter"},
                 {"consumed_units": 10, "credited_units": 150, "balance": 140},
             ),
-            emit(0.2, "writer", 2),
-            emit(0.2, "reader", 8),
+            two := emit(0.2, "writer", 2),
+            eight := emit(0.2, "reader", 8),
             expect(0.3, "reader", 30),
             ReadStep(
                 0.3,
@@ -215,6 +224,7 @@ SCENARIOS = [
                 {"consumed_units": 7.5},
             ),
             emit(0.4, "writer", 4, timestamp="2026-10-12T12:05:00Z"),
+            confirm(0.45, "writer", two, eight),
             SnapshotStep(
                 0.5,
                 {
@@ -300,10 +310,11 @@ SCENARIOS = [
         [
             expect(0, "writer", 0),
             expect(0, "reader", 0),
-            emit(0.2, "writer", 7),
+            seven := emit(0.2, "writer", 7),
             DisconnectStep(0.4),
-            emit(0.5, "reader", 3),
+            three := emit(0.5, "reader", 3),
             expect(0.6, "writer", 10),
+            confirm(1.4, "writer", seven, three),
             SnapshotStep(
                 1.5,
                 {

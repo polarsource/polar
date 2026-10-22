@@ -298,7 +298,7 @@ it("handles configuration asynchronously and reports a missing customer snapshot
   expect(await outpost.meter({ ...customer, meter_id: "unknown" })).toBeNull();
 });
 
-it("propagates snapshots, removes cold buckets, and rejects older cutoffs", async () => {
+it("propagates snapshots, rejects older cutoffs, and counts a late write until Polar confirms it", async () => {
   await seed();
   await redis.hset(key, {
     [`bucket:${bucket - BUCKET_SIZE}:sum`]: 99,
@@ -339,13 +339,16 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
     1,
   );
   expect(await redis.hget(key, "cold:sum")).toBe("8");
-  await writer.track({
+  const late = {
     ...customer,
     name: "api",
     external_id: eventId(),
     timestamp: "2026-10-12T11:55:00Z",
     metadata: { tokens: 999 },
-  });
+  };
+  await writer.track(late);
+  expect((await writer.meter(meter))?.balance).toBe(89 - 999);
+  await writer.confirm([late]);
   expect((await writer.meter(meter))?.balance).toBe(89);
 });
 
@@ -500,9 +503,10 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
   const second = await start();
   await first.actor(customer);
   await second.actor(customer);
+  const events = [2, 8].map((tokens) => Array.from({ length: 10 }, () => usage(eventId(), tokens)));
   await Promise.all(
     [first, second].map(async (writer, index) => {
-      for (let i = 0; i < 10; i++) await ingest(writer, index ? 8 : 2);
+      for (const event of events[index]) await writer.track(event);
     }),
   );
   await first["synchronize"]();
@@ -524,6 +528,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     timestamp: "2026-10-12T12:05:00Z",
     metadata: { tokens: 4 },
   });
+  await first.confirm(events.flat());
   await redis.eval(
     APPLY_SNAPSHOT_SCRIPT,
     1,
@@ -541,6 +546,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     15,
   );
   await first["synchronize"]();
+  // Every event in the bucket is confirmed: Polar counts it, the local copy is gone.
   expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
   expect(await redis.hget(averageKey, `bucket:${bucket}:sum`)).toBe("100");
   expect((await first.meter(meter))?.balance).toBe(26);
@@ -600,7 +606,7 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
   expect(await redis.hget(key, "cold:max")).toBeNull();
 });
 
-it("preserves microsecond cutoffs when removing and rejecting local buckets", async () => {
+it("preserves microsecond cutoffs and counts a late write as pending", async () => {
   snapshot = {
     ...customer,
     customer_id: null,
@@ -616,7 +622,8 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   const outpost = await start();
   await outpost.actor(customer);
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(0));
-  await ingest(outpost, 2);
+  const settled = usage(eventId(), 2);
+  await outpost.track(settled);
   await outpost.track({
     ...customer,
     name: "api",
@@ -624,6 +631,7 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
     timestamp: "2026-10-12T12:05:00Z",
     metadata: { tokens: 4 },
   });
+  await outpost.confirm([settled]);
   await outpost["receiveWebsocket"](
     JSON.stringify({
       type: "meter_usage",
@@ -644,12 +652,12 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
   expect(await redis.hget(key, `bucket:${bucket + BUCKET_SIZE}:sum`)).toBe("4");
   await ingest(outpost, 999);
-  expect((await outpost.meter(meter))?.consumed_units).toBe(6);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(6 + 999);
 });
 
 // Polar seals a bucket with what it has ingested so far; the local events it has not received
-// yet must stay counted (PLR-329).
-const sealEmpty = async (cutoff: number): Promise<void> => {
+// yet stay counted as pending until Polar confirms them (PLR-329).
+const seal = async (cutoff: number, count = 0, sum = 0): Promise<void> => {
   await redis.eval(
     APPLY_SNAPSHOT_SCRIPT,
     1,
@@ -661,45 +669,82 @@ const sealEmpty = async (cutoff: number): Promise<void> => {
     cutoff + 1,
     "meter",
     100,
-    0,
-    0,
+    count,
+    sum,
     "",
     "",
   );
 };
-
-it.fails("keeps local events Polar has not ingested when their bucket goes cold", async () => {
+const usage = (id: string, tokens: number) => ({
+  ...customer,
+  external_id: id,
+  name: "api_call",
+  timestamp,
+  metadata: { tokens },
+});
+const warm = async (): Promise<Outpost> => {
   await seed(0);
   const outpost = await start();
   await outpost.actor(customer);
-  for (let i = 0; i < 10; i++)
-    await outpost.track({
-      ...customer,
-      external_id: `event-${i}`,
-      name: "api_call",
-      timestamp,
-      metadata: { tokens: 10 },
-    });
+  return outpost;
+};
+
+it("keeps local events Polar has not ingested when their bucket goes cold", async () => {
+  const outpost = await warm();
+  for (let i = 0; i < 10; i++) await outpost.track(usage(`event-${i}`, 10));
   expect((await outpost.meter(meter))?.consumed_units).toBe(100);
-  await sealEmpty(bucket + BUCKET_SIZE);
+  await seal(bucket + BUCKET_SIZE);
   await outpost["synchronize"]();
   expect((await outpost.meter(meter))?.consumed_units).toBe(100);
 });
 
-it.fails("counts a late write into a cold bucket", async () => {
-  await seed(0);
-  const outpost = await start();
-  await outpost.actor(customer);
-  await sealEmpty(bucket + BUCKET_SIZE);
+it("counts a late write into a cold bucket", async () => {
+  const outpost = await warm();
+  await seal(bucket + BUCKET_SIZE);
   await outpost["synchronize"]();
-  await outpost.track({
-    ...customer,
-    external_id: "late",
-    name: "api_call",
-    timestamp,
-    metadata: { tokens: 5 },
-  });
+  await outpost.track(usage("late", 5));
   expect((await outpost.meter(meter))?.consumed_units).toBe(5);
+});
+
+it("confirms the events Polar ingested and keeps the rest pending", async () => {
+  const outpost = await warm();
+  const events = Array.from({ length: 10 }, (_, i) => usage(`event-${i}`, 10));
+  for (const event of events) await outpost.track(event);
+  await outpost.confirm(events.slice(0, 4));
+  await seal(bucket + BUCKET_SIZE, 4, 40);
+  await outpost["synchronize"]();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
+  expect(await redis.hget(key, `bucket:${bucket}:count`)).toBe("10");
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("6");
+});
+
+it("ignores a duplicate external_id", async () => {
+  const outpost = await warm();
+  await outpost.track(usage("same", 10));
+  await outpost.track(usage("same", 10));
+  expect((await outpost.meter(meter))?.consumed_units).toBe(10);
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("1");
+});
+
+it("drops a cold bucket once every event is confirmed", async () => {
+  const outpost = await warm();
+  const events = [usage("event-1", 10), usage("event-2", 10)];
+  for (const event of events) await outpost.track(event);
+  await outpost.confirm(events);
+  await seal(bucket + BUCKET_SIZE, 2, 20);
+  await outpost["synchronize"]();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(20);
+  expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
+  expect(await redis.hget(key, `pending:${bucket}:sum`)).toBeNull();
+});
+
+it("forgets pending events an hour after Polar sealed their bucket", async () => {
+  const outpost = await warm();
+  await outpost.track(usage("lost", 10));
+  await seal(bucket + BUCKET_SIZE + 3_600_000_000);
+  await outpost["synchronize"]();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(0);
+  expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
 });
 
 it("sends telemetry spans tagged with the connection ID", async () => {

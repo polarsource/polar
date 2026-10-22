@@ -65,8 +65,7 @@ export const CatalogVersionSelector = ({
     return null
   }
 
-  const current =
-    catalogs.find((catalog) => catalog.status === 'live') ?? catalogs[0]
+  const hasLive = catalogs.some((catalog) => catalog.status === 'live')
 
   return (
     <SidebarMenu>
@@ -85,15 +84,13 @@ export const CatalogVersionSelector = ({
                 <Box as="span" color="text-secondary">
                   <GraphicEqOutlined fontSize="inherit" />
                 </Box>
-                {current ? (
-                  <Text as="span" monospace truncate>
-                    {shortHash(current)}
-                  </Text>
-                ) : (
-                  <Text as="span" truncate>
-                    {isLoading ? 'Loading…' : 'No catalog published'}
-                  </Text>
-                )}
+                <Text as="span" truncate>
+                  {hasLive
+                    ? 'Live'
+                    : isLoading
+                      ? 'Loading…'
+                      : 'No catalog published'}
+                </Text>
                 <Box as="span" marginLeft="auto">
                   <KeyboardArrowDown fontSize="inherit" />
                 </Box>

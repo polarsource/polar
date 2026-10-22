@@ -13,10 +13,12 @@ if typing.TYPE_CHECKING:
 
 
 class AgentGrant(BaseGrant, TokenEndpointMixin):
-    """A grant for an agent's own credentials.
+    """Base for the grants that authenticate an agent by its own credential, not
+    by OAuth client credentials.
 
-    The client is the agent's own, never one the caller names, so no other OAuth
-    app can use it.
+    Each agent gets its own OAuth client at sign-up, and these grants find it
+    through the agent. A `client_id` sent with the request must be that client's,
+    so no other OAuth app can get an agent's tokens.
     """
 
     server: "AuthorizationServer"

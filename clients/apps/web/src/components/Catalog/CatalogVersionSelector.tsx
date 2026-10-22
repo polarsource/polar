@@ -1,11 +1,10 @@
 'use client'
 
 import { useCatalogs } from '@/hooks/queries/catalogs'
-import GraphicEqOutlined from '@mui/icons-material/GraphicEqOutlined'
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import { schemas } from '@polar-sh/client'
 import { Status, StatusColor, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { GraphicEqOutlined, KeyboardArrowDown } from '@polar-sh/orbit/icons'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import {
   SidebarMenu,

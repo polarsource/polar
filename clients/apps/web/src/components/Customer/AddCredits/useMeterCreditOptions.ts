@@ -35,7 +35,7 @@ export const useMeterCreditOptions = (
       const subscription = subscriptions?.items.find((sub) =>
         sub.meters.some((m) => m.meter_id === meter.id),
       )
-      const unitPrice = subscription?.product.prices.find(
+      const unitPrice = subscription?.prices.find(
         (price): price is MeteredPrice =>
           isMeteredPrice(price) && price.meter_id === meter.id,
       )

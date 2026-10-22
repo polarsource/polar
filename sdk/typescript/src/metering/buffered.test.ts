@@ -371,3 +371,19 @@ it("flushes before propagating the scope error", async () => {
   }).rejects.toThrow("body failed");
   expect(ingest).toHaveBeenCalledOnce();
 });
+
+it("keeps a failing onDelivered out of the delivery retries", async () => {
+  const ingest = vi.fn().mockResolvedValue(undefined);
+  const error = new PolarNetworkError("callback failed");
+  const onDelivered = vi.fn().mockRejectedValue(error);
+  const onDropped = vi.fn();
+  const strategy = await new BufferedMeteringStrategy(
+    { events: { ingest } },
+    { maxAttempts: 1, onDelivered, onDropped },
+  ).start();
+  await strategy.track(events[0]);
+  await expect(strategy.flush()).rejects.toBe(error);
+  await expect(strategy.close()).rejects.toBe(error);
+  expect(ingest).toHaveBeenCalledOnce();
+  expect(onDropped).not.toHaveBeenCalled();
+});

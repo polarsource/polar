@@ -1,0 +1,30 @@
+clients/packages/client/src/v1.ts
+  ai_agent 64501
+server/tests/agent/test_endpoints.py
+  s_5baa939665e021::t_69765e835d67cc 2,8,17-18,24-26,28-32,34-37,46-53,55-61,79-80,98,114-147,166-193,195-203,205-213,216-219,221-225,238-249,252-271,273,276-280,283-286,290-297,299-319,322-330,332-334,358-363,365-366,391-408,355-357,287-289,298
+  s_5baa939665e021::t_d4421f02abd6c7 92
+  s_5baa939665e021::t_1e343eceb096cd 320-321,331,364,354,353,22
+  s_5baa939665e021::t_f72f5935cddd4c 16
+  s_5baa939665e021::t_886fa0a314bf00 27
+server/polar/agent/schemas.py
+  s_5baa939665e021::t_c9afe2d9318881 4,36,41-63,65-90
+server/polar/agent/service.py
+  s_5baa939665e021::t_02b7404b5f3f31 3,8-9,12-19,22-28,35-39,41-44,48-53,55,64-75,78-85,94-95,97-102,120,156-162,164-166,172-188,194-225,227-283
+  s_5baa939665e021::t_f72f5935cddd4c 226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "baef27364202063107bb3a8524c9f6a9b113b357",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

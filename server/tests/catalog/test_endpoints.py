@@ -80,6 +80,7 @@ class TestList:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_valid(

@@ -2494,3 +2494,124 @@ class TestSubscriptionUpdateResume:
         )
 
         assert response.status_code == 409
+
+
+@pytest.fixture
+async def current_product(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    organization.feature_settings = {"config_as_code_enabled": True}
+    await save_fixture(organization)
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        external_id="pro",
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestBulkUpdate:
+    async def test_anonymous(
+        self, client: AsyncClient, current_product: Product
+    ) -> None:
+        response = await client.post(
+            "/v1/subscriptions/bulk-update",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(current_product.id),
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_current_target(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        current_product: Product,
+    ) -> None:
+        current_product.is_current = False
+        await save_fixture(current_product)
+
+        response = await client.post(
+            "/v1/subscriptions/bulk-update",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(current_product.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_without_catalog_versioning(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        current_product: Product,
+    ) -> None:
+        organization.feature_settings = {}
+        await save_fixture(organization)
+
+        response = await client.post(
+            "/v1/subscriptions/bulk-update",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(current_product.id),
+            },
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        current_product: Product,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.subscription.bulk_update.enqueue_job")
+
+        response = await client.post(
+            "/v1/subscriptions/bulk-update",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(current_product.id),
+            },
+        )
+
+        assert response.status_code == 202
+        json = response.json()
+        assert json["organization_id"] == str(organization.id)
+        assert json["product_external_id"] == "pro"
+        assert json["target_product_id"] == str(current_product.id)
+        assert json["proration_behavior"] == SubscriptionProrationBehavior.next_period
+        assert json["completed_at"] is None
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.bulk_update", bulk_update_id=uuid.UUID(json["id"])
+        )
+
+        response = await client.get(f"/v1/subscriptions/bulk-update/{json['id']}")
+
+        assert response.status_code == 200
+        assert response.json()["id"] == json["id"]
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestGetBulkUpdate:
+    @pytest.mark.auth
+    async def test_not_found(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get(f"/v1/subscriptions/bulk-update/{uuid.uuid4()}")
+
+        assert response.status_code == 404

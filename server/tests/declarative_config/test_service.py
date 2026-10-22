@@ -14,6 +14,7 @@ from polar.catalog.repository import (
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
+    ConfigCatalogChange,
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigResource,
@@ -3022,7 +3023,7 @@ class TestCatalogVersioning:
         created_catalog = create_plan.changes[0].diff[-1]
         assert (created_catalog.field, created_catalog.before) == ("catalog", None)
 
-        await declarative_config_service.apply(
+        created = await declarative_config_service.apply(
             session, redis, auth_subject, initial_config
         )
         [old_product] = await products_repo.get_all_by_external_ids(
@@ -3040,6 +3041,9 @@ class TestCatalogVersioning:
             created_catalog.after,
             first.id,
         )
+        assert created.catalog == ConfigCatalogChange(
+            before=None, after=first.version_hash
+        )
         assert [
             m.product_id for m in await members_repo.get_all_by_catalog(first.id)
         ] == [old_product.id]
@@ -3048,6 +3052,7 @@ class TestCatalogVersioning:
             session, redis, auth_subject, initial_config
         )
         assert unchanged.changes[0].action == ConfigAction.unchanged
+        assert unchanged.catalog is None
         assert (await catalogs_repo.get_live(organization.id)) == first
 
         subscription = await create_active_subscription(
@@ -3071,10 +3076,16 @@ class TestCatalogVersioning:
             "catalog",
             first.version_hash,
         )
+        assert update_plan.catalog is not None
+        assert (update_plan.catalog.before, update_plan.catalog.after) == (
+            first.version_hash,
+            catalog_diff.after,
+        )
 
-        await declarative_config_service.apply(
+        updated = await declarative_config_service.apply(
             session, redis, auth_subject, updated_config
         )
+        assert updated.catalog == update_plan.catalog
         [new_product] = await products_repo.get_all_by_external_ids(
             organization.id, ["pro"]
         )

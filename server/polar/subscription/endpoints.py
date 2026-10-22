@@ -10,12 +10,13 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountID
-from polar.exceptions import PaymentNotReady, ResourceNotFound
+from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
-from polar.models import Subscription
+from polar.kit.versioning import version
+from polar.models import Subscription, SubscriptionBulkUpdate
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import APITag, cli_preview
 from polar.order.service import PaymentActionRequired, PaymentFailed
@@ -28,8 +29,10 @@ from polar.postgres import (
 )
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth, sorting
+from .bulk_update import subscription_bulk_update as subscription_bulk_update_service
 from .export import (
     SubscriptionExportColumn,
     SubscriptionExportTimezone,
@@ -37,7 +40,10 @@ from .export import (
     get_filename,
 )
 from .schemas import Subscription as SubscriptionSchema
+from .schemas import SubscriptionBulkUpdate as SubscriptionBulkUpdateSchema
 from .schemas import (
+    SubscriptionBulkUpdateCreate,
+    SubscriptionBulkUpdateID,
     SubscriptionCancelPreview,
     SubscriptionChangePreview,
     SubscriptionChangePreviewSeats,
@@ -63,6 +69,11 @@ router = APIRouter(prefix="/subscriptions", tags=["subscriptions", APITag.public
 
 SubscriptionNotFound = {
     "description": "Subscription not found.",
+    "model": ResourceNotFound.schema(),
+}
+
+SubscriptionBulkUpdateNotFound = {
+    "description": "Subscription bulk update not found.",
     "model": ResourceNotFound.schema(),
 }
 
@@ -435,6 +446,62 @@ async def create(
     No initial order will be created and no confirmation email will be sent.
     """
     return await subscription_service.create(session, subscription_create, auth_subject)
+
+
+@router.post(
+    "/bulk-update",
+    response_model=SubscriptionBulkUpdateSchema,
+    status_code=202,
+    summary="Bulk Update Subscriptions",
+    tags=[APITag.private],
+    responses={
+        202: {"description": "Bulk update started."},
+        403: {
+            "description": (
+                "You don't have the permission to update subscriptions, "
+                "or the organization doesn't use catalog versioning."
+            ),
+            "model": NotPermitted.schema(),
+        },
+    },
+)
+@version(starting_from=V2027_01)
+async def bulk_update(
+    bulk_update_create: SubscriptionBulkUpdateCreate,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionBulkUpdate:
+    """
+    Move the active subscriptions of a product, in any version, to another product.
+
+    Subscriptions move in the background, each one at its own renewal. Subscriptions
+    that are canceling or already have a pending change are left alone.
+    """
+    return await subscription_bulk_update_service.create(
+        session, auth_subject, bulk_update_create
+    )
+
+
+@router.get(
+    "/bulk-update/{id}",
+    response_model=SubscriptionBulkUpdateSchema,
+    summary="Get Subscription Bulk Update",
+    tags=[APITag.private],
+    responses={404: SubscriptionBulkUpdateNotFound},
+)
+@version(starting_from=V2027_01)
+async def get_bulk_update(
+    id: SubscriptionBulkUpdateID,
+    auth_subject: auth.SubscriptionsRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> SubscriptionBulkUpdate:
+    """Get the progress of a subscription bulk update."""
+    bulk_update = await subscription_bulk_update_service.get(session, auth_subject, id)
+
+    if bulk_update is None:
+        raise ResourceNotFound()
+
+    return bulk_update
 
 
 @router.patch(

@@ -954,3 +954,21 @@ class SubscriptionBulkUpdateRepository(
     RepositoryBase[SubscriptionBulkUpdate],
 ):
     model = SubscriptionBulkUpdate
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[SubscriptionBulkUpdate]]:
+        statement = self.get_base_statement()
+        if is_user(auth_subject):
+            statement = statement.where(
+                SubscriptionBulkUpdate.organization_id.in_(
+                    select_accessible_org_ids(
+                        auth_subject, permission=OrganizationPermission.sales_read
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                SubscriptionBulkUpdate.organization_id == auth_subject.subject.id
+            )
+        return statement

@@ -72,6 +72,15 @@ class ProductRepository(
             statement = statement.with_for_update(of=Product, key_share=True)
         return await self.get_all(statement)
 
+    def get_organization_statement(
+        self, organization_id: UUID
+    ) -> Select[tuple[Product]]:
+        return (
+            self.get_base_statement()
+            .where(Product.organization_id == organization_id)
+            .order_by(Product.created_at, Product.id)
+        )
+
     async def lock_metadata_reference(self, key: str, value: str) -> None:
         """Serialize writers finding or creating a product by this metadata."""
         await pg_advisory_xact_lock(self.session, f"product.metadata.{key}", value)

@@ -1,6 +1,5 @@
 from fastapi import Depends
 
-from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -22,13 +21,4 @@ async def create_identity(
     session: AsyncSession = Depends(get_db_session),
 ) -> AgentIdentity:
     """Sign up an agent, without a human (auth.md anonymous registration)."""
-    sign_up = await agent_service.create_anonymous(session, identity_create)
-    return AgentIdentity(
-        registration_id=sign_up.agent.id,
-        registration_type="anonymous",
-        identity_assertion=sign_up.identity_assertion.token,
-        assertion_expires=sign_up.identity_assertion.expires_at,
-        pre_claim_scopes=sorted(UNCLAIMED_AGENT_SCOPES),
-        claim_token=sign_up.claim_token,
-        claim_token_expires=sign_up.claim_token_expires_at,
-    )
+    return await agent_service.create_anonymous(session, identity_create)

@@ -1,7 +1,6 @@
 import asyncio
-import dataclasses
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
 
@@ -12,26 +11,18 @@ from polar.models import Agent, OAuth2Client
 from polar.oauth2.constants import CLIENT_ID_PREFIX
 from polar.postgres import AsyncSession
 
-from .identity_assertion import IdentityAssertion, create_identity_assertion
+from .identity_assertion import create_identity_assertion
 from .repository import AgentRepository
-from .schemas import AgentIdentityCreate
+from .schemas import AgentIdentity, AgentIdentityCreate
 
 CLAIM_TOKEN_PREFIX = "polar_act_"
 CLAIM_TOKEN_TTL = timedelta(days=7)
 
 
-@dataclasses.dataclass(frozen=True)
-class AgentSignUp:
-    agent: Agent
-    identity_assertion: IdentityAssertion
-    claim_token: str
-    claim_token_expires_at: datetime
-
-
 class AgentService:
     async def create_anonymous(
         self, session: AsyncSession, identity_create: AgentIdentityCreate
-    ) -> AgentSignUp:
+    ) -> AgentIdentity:
         oauth2_client = OAuth2Client(
             client_id=generate_token(prefix=CLIENT_ID_PREFIX),
             client_id_issued_at=int(time.time()),
@@ -65,11 +56,14 @@ class AgentService:
         identity_assertion = await asyncio.to_thread(
             create_identity_assertion, agent.id
         )
-        return AgentSignUp(
-            agent=agent,
-            identity_assertion=identity_assertion,
+        return AgentIdentity(
+            registration_id=agent.id,
+            registration_type="anonymous",
+            identity_assertion=identity_assertion.token,
+            assertion_expires=identity_assertion.expires_at,
+            pre_claim_scopes=sorted(UNCLAIMED_AGENT_SCOPES),
             claim_token=claim_token,
-            claim_token_expires_at=claim_token_expires_at,
+            claim_token_expires=claim_token_expires_at,
         )
 
 

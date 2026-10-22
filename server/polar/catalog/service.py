@@ -17,8 +17,8 @@ from polar.product.repository import ProductRepository
 from .repository import CatalogProductRepository, CatalogRepository
 
 
-def compute_hash(parent_hash: str | None, entries: Mapping[str, str]) -> str:
-    """Hash a catalog like a git commit: its parent's hash, plus what it contains."""
+def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) -> str:
+    """Hash a catalog like a git commit: its parent's version hash, plus what it contains."""
     lines = [
         parent_hash or "",
         *(f"{key}={value}" for key, value in sorted(entries.items())),
@@ -30,7 +30,7 @@ class CatalogService:
     async def get_live_entries(
         self, session: AsyncReadSession, organization: Organization
     ) -> tuple[str | None, dict[str, str]]:
-        """Return the live catalog's hash and contents.
+        """Return the live catalog's version hash and contents.
 
         Before the first publish, that's the catalog apply creates from the
         existing products.
@@ -40,7 +40,7 @@ class CatalogService:
             members = await CatalogProductRepository.from_session(
                 session
             ).get_all_by_catalog(live.id)
-            return live.hash, {
+            return live.version_hash, {
                 member.external_id: str(member.product_id) for member in members
             }
         entries = {
@@ -52,20 +52,20 @@ class CatalogService:
         }
         if not entries:
             return None, {}
-        return compute_hash(None, entries), entries
+        return compute_version_hash(None, entries), entries
 
-    async def get_next_hash(
+    async def get_next_version_hash(
         self,
         session: AsyncReadSession,
         organization: Organization,
         definitions: Mapping[str, str],
     ) -> tuple[str | None, str | None]:
-        """Return the live hash, and the hash of the catalog these new product
-        definitions would publish."""
+        """Return the live version hash, and the version hash of the catalog these
+        new product definitions would publish."""
         before, entries = await self.get_live_entries(session, organization)
         if not definitions:
             return before, before
-        return before, compute_hash(before, {**entries, **definitions})
+        return before, compute_version_hash(before, {**entries, **definitions})
 
     async def get_or_create_live(
         self, session: AsyncSession, organization: Organization
@@ -84,7 +84,7 @@ class CatalogService:
         catalog = await repository.create(
             Catalog(
                 organization=organization,
-                hash=compute_hash(
+                version_hash=compute_version_hash(
                     None,
                     {
                         product.external_id: str(product.id)
@@ -114,7 +114,7 @@ class CatalogService:
         organization: Organization,
         live: Catalog | None,
         new_products: Mapping[str, Product],
-        hash: str,
+        version_hash: str,
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
         catalog_product_repository = CatalogProductRepository.from_session(session)
@@ -136,7 +136,7 @@ class CatalogService:
         catalog = await repository.create(
             Catalog(
                 organization=organization,
-                hash=hash,
+                version_hash=version_hash,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
             ),

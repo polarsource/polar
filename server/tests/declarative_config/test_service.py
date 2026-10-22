@@ -2794,8 +2794,12 @@ class TestCatalogVersioning:
         )
         first = await catalogs_repo.get_live(organization.id)
         assert first is not None
-        assert first.hash is not None
-        assert (len(first.hash), first.hash, old_product.catalog_id) == (
+        assert first.version_hash is not None
+        assert (
+            len(first.version_hash),
+            first.version_hash,
+            old_product.catalog_id,
+        ) == (
             64,
             created_catalog.after,
             first.id,
@@ -2827,7 +2831,10 @@ class TestCatalogVersioning:
             session, auth_subject, updated_config
         )
         catalog_diff = update_plan.changes[0].diff[-1]
-        assert (catalog_diff.field, catalog_diff.before) == ("catalog", first.hash)
+        assert (catalog_diff.field, catalog_diff.before) == (
+            "catalog",
+            first.version_hash,
+        )
 
         await declarative_config_service.apply(
             session, redis, auth_subject, updated_config
@@ -2847,7 +2854,10 @@ class TestCatalogVersioning:
         live = await catalogs_repo.get_live(organization.id)
         assert live is not None
         assert live.id != first.id
-        assert (live.hash, new_product.catalog_id) == (catalog_diff.after, live.id)
+        assert (live.version_hash, new_product.catalog_id) == (
+            catalog_diff.after,
+            live.id,
+        )
         assert [
             m.product_id for m in await members_repo.get_all_by_catalog(live.id)
         ] == [new_product.id]
@@ -2895,7 +2905,11 @@ class TestCatalogVersioning:
         [new_product] = await ProductRepository.from_session(
             session
         ).get_all_by_external_ids(organization.id, ["pro"])
-        assert (live.hash, new_product.catalog_id, new_product.is_tax_applicable) == (
+        assert (
+            live.version_hash,
+            new_product.catalog_id,
+            new_product.is_tax_applicable,
+        ) == (
             catalog.after,
             live.id,
             False,
@@ -2904,7 +2918,7 @@ class TestCatalogVersioning:
         assert existing.is_current is False
         assert existing.catalog_id is not None
         assert existing.catalog_id != live.id
-        assert (await repository.get_hashes([existing.catalog_id])) == {
+        assert (await repository.get_version_hashes([existing.catalog_id])) == {
             existing.catalog_id: catalog.before
         }
 

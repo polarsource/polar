@@ -198,7 +198,7 @@ class DeclarativeConfigService:
             raise ConfigInvalid(errors)
 
         live = await catalog_service.get_or_create_live(session, organization)
-        _, catalog_hash = await catalog_service.get_next_hash(
+        _, version_hash = await catalog_service.get_next_version_hash(
             session, organization, catalogs.product_definitions(changes)
         )
         settings_result = await self._apply_settings(
@@ -222,9 +222,9 @@ class DeclarativeConfigService:
             benefit_ids,
         )
         if new_products:
-            assert catalog_hash is not None
+            assert version_hash is not None
             await catalog_service.publish(
-                session, organization, live, new_products, catalog_hash
+                session, organization, live, new_products, version_hash
             )
         discount_results = await self._apply_discounts(
             session, auth_subject, organization, changes.discounts, product_ids
@@ -268,7 +268,7 @@ class DeclarativeConfigService:
             session, organization, config, for_update=False
         )
         issues.extend(catalogs.benefit_issues(changes))
-        catalog_before, catalog_after = await catalog_service.get_next_hash(
+        catalog_before, catalog_after = await catalog_service.get_next_version_hash(
             session, organization, catalogs.product_definitions(changes)
         )
         product_changes = self._plan_changes(ConfigResource.product, changes.products)

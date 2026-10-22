@@ -90,8 +90,8 @@ const message = (exit: Exit.Exit<unknown, unknown>) =>
     : undefined
 
 describe('polar config prune', () => {
-  test('removes only the unused entries with --yes', async () => {
-    const { output, removed, exit } = await run([apples, beta], ['--yes'])
+  test('removes only the unused entries with --confirm', async () => {
+    const { output, removed, exit } = await run([apples, beta], ['--confirm'])
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(removed).toBe(1)
     expect(output).toContain('╭─ Deprecated')
@@ -114,7 +114,7 @@ describe('polar config prune', () => {
     expect(message(exit)).toBe('Prune cancelled, polar.json unchanged')
   })
 
-  test('needs --yes when there is no terminal to ask', async () => {
+  test('needs --confirm when there is no terminal to ask', async () => {
     const { removed, exit } = await run([apples])
     expect(removed).toBe(0)
     expect(message(exit)).toBe(

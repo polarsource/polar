@@ -537,7 +537,13 @@ class OrganizationService:
             return organization
 
         assert is_user(auth_subject)
-        owner = auth_subject.subject
+        await self.set_up_for_owner(session, organization, auth_subject.subject)
+        return organization
+
+    async def set_up_for_owner(
+        self, session: AsyncSession, organization: Organization, owner: User
+    ) -> None:
+        """Make `owner` the owner of a new organization and run its setup."""
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
             name=organization.name,
@@ -549,15 +555,15 @@ class OrganizationService:
         await self.add_user(
             session,
             organization,
-            auth_subject.subject,
+            owner,
             role=OrganizationRole.owner,
             enqueue_polar_self_member=False,
         )
 
         enqueue_job("organization.created", organization_id=organization.id)
 
-        posthog.auth_subject_event(
-            auth_subject,
+        posthog.user_event(
+            owner,
             "organizations",
             "create",
             "done",
@@ -567,7 +573,6 @@ class OrganizationService:
                 "slug": organization.slug,
             },
         )
-        return organization
 
     async def _validate_currency_change(
         self,

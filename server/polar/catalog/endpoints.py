@@ -1,5 +1,6 @@
 from fastapi import Depends, Query
 
+from polar.exceptions import Unauthorized
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.openapi import APITag
@@ -14,7 +15,14 @@ from .service import catalog as catalog_service
 router = APIRouter(prefix="/catalogs", tags=["catalogs", APITag.private])
 
 
-@router.get("/", summary="List Catalogs", response_model=ListResource[CatalogSchema])
+@router.get(
+    "/",
+    summary="List Catalogs",
+    response_model=ListResource[CatalogSchema],
+    responses={
+        401: {"description": "Not authenticated.", "model": Unauthorized.schema()}
+    },
+)
 async def list(
     auth_subject: CreatorProductsRead,
     pagination: PaginationParamsQuery,

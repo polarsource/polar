@@ -47,7 +47,11 @@ class CatalogRepository(
                 Catalog.organization_id.in_(org_ids),
                 Catalog.status != CatalogStatus.draft,
             )
-            .order_by(Catalog.published_at.desc(), Catalog.created_at.desc())
+            .order_by(
+                Catalog.published_at.desc(),
+                Catalog.created_at.desc(),
+                Catalog.id.desc(),
+            )
         )
 
 

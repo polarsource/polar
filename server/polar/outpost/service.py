@@ -16,11 +16,13 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
 from opentelemetry.proto.common.v1.common_pb2 import AnyValue, KeyValue
 from opentelemetry.proto.resource.v1.resource_pb2 import Resource
 from pydantic import ValidationError
+from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import selectinload
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.event.repository import EventRepository
 from polar.exceptions import BadRequest
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
@@ -28,12 +30,17 @@ from polar.meter.aggregation import UniqueAggregation
 from polar.models import Customer, Organization, Reducer
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
+    REDUCER_BUCKET_SIZE,
     get_customer_identities,
     get_reducer_bucket_start,
 )
 from polar.reducer.service import reducer as reducer_service
 
 from .schemas import (
+    ConfirmedOutgoingMessage,
+    ConfirmedOutgoingMessagePayload,
+    ConfirmIncomingMessageCustomerPayload,
+    ConfirmIncomingMessagePayload,
     IncomingMessageAdapter,
     IncomingMessageType,
     MeterUsageIncomingMessageCustomerPayload,
@@ -77,6 +84,10 @@ class OutpostService:
                 )
             case IncomingMessageType.meter_usage:
                 return await self._send_requested_meter_usage(
+                    session, organization, incoming.payload, send_stream
+                )
+            case IncomingMessageType.confirm:
+                return await self._send_confirmed(
                     session, organization, incoming.payload, send_stream
                 )
 
@@ -193,6 +204,70 @@ class OutpostService:
             send_stream,
         )
 
+    async def _send_confirmed(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        payload: ConfirmIncomingMessagePayload,
+        send_stream: MemoryObjectSendStream[OutgoingMessage],
+    ) -> None:
+        """The requested ids stored so far, with the meter's snapshot read from the same
+        database snapshot: it counts exactly those."""
+        if isinstance(session.bind, AsyncEngine):
+            await session.connection(
+                execution_options={"isolation_level": "REPEATABLE READ"}
+            )
+        reducer = await ReducerRepository.from_session(session).get_active_by_id(
+            payload.reducer_id, options=(selectinload(Reducer.meter_reducers),)
+        )
+        if (
+            reducer is None
+            or reducer.organization_id != organization.id
+            or payload.meter_id not in reducer.meter_ids
+        ):
+            log.warning(
+                "Meter not found",
+                organization_id=organization.id,
+                meter_id=payload.meter_id,
+            )
+            return
+        if isinstance(payload, ConfirmIncomingMessageCustomerPayload):
+            identity: Identity = (payload.customer_id, None)
+        else:
+            identity = (None, payload.external_customer_id)
+        stored = await EventRepository.from_session(session).get_stored_external_ids(
+            organization.id,
+            payload.ids,
+            timestamp_from=payload.bucket_start,
+            timestamp_to=payload.bucket_start + REDUCER_BUCKET_SIZE,
+        )
+        snapshots = await self._get_meter_usage(
+            session,
+            reducer,
+            [payload.meter_id],
+            [identity],
+            await self._get_customer(session, organization, identity),
+        )
+        if not snapshots:
+            return
+        await send_stream.send(
+            ConfirmedOutgoingMessage(
+                type=OutgoingMessageType.confirmed,
+                payload=ConfirmedOutgoingMessagePayload(
+                    reducer_id=payload.reducer_id,
+                    customer_id=identity[0],
+                    external_customer_id=identity[1],
+                    bucket_start=payload.bucket_start,
+                    ids=[
+                        external_id
+                        for external_id in payload.ids
+                        if external_id in stored
+                    ],
+                    snapshot=snapshots[0],
+                ),
+            )
+        )
+
     async def _send_reducer_bucket(
         self,
         session: AsyncReadSession,
@@ -240,8 +315,25 @@ class OutpostService:
         customer: Customer | None,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
+        for payload in await self._get_meter_usage(
+            session, reducer, meter_ids, identities, customer
+        ):
+            await send_stream.send(
+                MeterUsageOutgoingMessage(
+                    type=OutgoingMessageType.meter_usage, payload=payload
+                )
+            )
+
+    async def _get_meter_usage(
+        self,
+        session: AsyncReadSession,
+        reducer: Reducer,
+        meter_ids: Sequence[uuid.UUID],
+        identities: Sequence[Identity],
+        customer: Customer | None,
+    ) -> list[MeterUsageOutgoingMessagePayload]:
         if isinstance(reducer.aggregation, UniqueAggregation):
-            return
+            return []
 
         version = await reducer_service.get_database_now(session)
         since = get_reducer_bucket_start(version - SYNCED_LOOKBACK)
@@ -259,6 +351,7 @@ class OutpostService:
             customer_meter.meter_id: customer_meter.credited_units
             for customer_meter in customer_meters
         }
+        payloads = []
         for customer_id, external_customer_id in identities:
             (
                 cold_until,
@@ -267,24 +360,22 @@ class OutpostService:
                 session, reducer, customer_id, external_customer_id, since=since
             )
             for meter_id in meter_ids:
-                await send_stream.send(
-                    MeterUsageOutgoingMessage(
-                        type=OutgoingMessageType.meter_usage,
-                        payload=MeterUsageOutgoingMessagePayload(
-                            meter_id=meter_id,
-                            customer_id=customer_id,
-                            external_customer_id=external_customer_id,
-                            customer_exists=customer is not None,
-                            version=version,
-                            cold_until=cold_until,
-                            count=count,
-                            sum=total,
-                            min=minimum,
-                            max=maximum,
-                            credited_units=credited_units.get(meter_id, 0),
-                        ),
+                payloads.append(
+                    MeterUsageOutgoingMessagePayload(
+                        meter_id=meter_id,
+                        customer_id=customer_id,
+                        external_customer_id=external_customer_id,
+                        customer_exists=customer is not None,
+                        version=version,
+                        cold_until=cold_until,
+                        count=count,
+                        sum=total,
+                        min=minimum,
+                        max=maximum,
+                        credited_units=credited_units.get(meter_id, 0),
                     )
                 )
+        return payloads
 
 
 outpost = OutpostService()

@@ -12,6 +12,7 @@ import noProcessEnv from './rules/no-process-env.js'
 import noYesFlag from './rules/no-yes-flag.js'
 import schemasArePure from './rules/schemas-are-pure.js'
 import serviceFacade from './rules/service-facade.js'
+import sharedFlags from './rules/shared-flags.js'
 import serviceBoundaries from './rules/service-boundaries.js'
 import testColocation from './rules/test-colocation.js'
 import utilsBoundaries from './rules/utils-boundaries.js'
@@ -34,6 +35,7 @@ export default {
     'schemas-are-pure': schemasArePure,
     'service-facade': serviceFacade,
     'service-boundaries': serviceBoundaries,
+    'shared-flags': sharedFlags,
     'test-colocation': testColocation,
     'utils-boundaries': utilsBoundaries,
   },

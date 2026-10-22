@@ -10,7 +10,7 @@ import {
   unchanged,
 } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
-import { configFile as file, org } from '@/utils/flags'
+import { confirm, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
@@ -25,12 +25,7 @@ import { Organizations } from '@/services/organizations'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
-const confirmed = Flag.Boolean('confirm').pipe(
-  Flag.withAlias('c'),
-  Flag.withAlias('aladåb'),
-  Flag.withDefault(false),
-  Flag.withDescription('Apply without asking for confirmation'),
-)
+const confirmed = confirm.pipe(Flag.withAlias('aladåb'))
 
 const applied = (
   config: LoadedConfig,
@@ -62,7 +57,7 @@ const interactive = Effect.gen(function* () {
   return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
 })
 
-const confirm = (
+const approve = (
   organization: ActiveOrganization,
   json: boolean,
   confirmed: boolean,
@@ -156,7 +151,7 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
                 }
               }
               yield* say(changes(config, organization, plan))
-              if (!(yield* confirm(organization, json, confirmed, say))) {
+              if (!(yield* approve(organization, json, confirmed, say))) {
                 return yield* new BillingConfigError({
                   message: 'Apply cancelled, nothing changed',
                 })

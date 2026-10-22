@@ -15,6 +15,7 @@ from sqlalchemy import (
     or_,
     select,
     true,
+    union_all,
     update,
 )
 from sqlalchemy.dialects.postgresql import insert
@@ -263,6 +264,52 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         result = await self.session.execute(statement)
         return result.scalar_one()
+
+    async def get_synced_end_within(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        bucket_start: datetime,
+        bucket_end: datetime,
+    ) -> datetime | None:
+        """End of the customer identity's latest bucket recomputed by sync, among
+        those starting within the slot."""
+        statement = select(func.max(ReducerBucket.bucket_end)).where(
+            ReducerBucket.organization_id == organization_id,
+            ReducerBucket.reducer_id == reducer_id,
+            _is_customer(ReducerBucket, customer_id, external_customer_id),
+            ReducerBucket.bucket_start >= bucket_start,
+            ReducerBucket.bucket_start < bucket_end,
+            ReducerBucket.synced_at.is_not(None),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
+    async def get_stored_external_ids(
+        self,
+        organization_id: UUID,
+        external_ids: Sequence[str],
+        *,
+        timestamp_from: datetime,
+        timestamp_to: datetime,
+    ) -> set[str]:
+        """The given external ids of events with a timestamp in the range, stored
+        or still staged."""
+        statement = union_all(
+            *(
+                select(model.external_id).where(
+                    model.organization_id == organization_id,
+                    model.external_id.in_(external_ids),
+                    model.timestamp >= timestamp_from,
+                    model.timestamp < timestamp_to,
+                )
+                for model in (Event, StagedEvent)
+            )
+        )
+        result = await self.session.execute(statement)
+        return {external_id for (external_id,) in result}
 
     async def get_database_now(self) -> datetime:
         """The start of the current transaction, on the database clock."""

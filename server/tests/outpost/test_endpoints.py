@@ -516,10 +516,10 @@ class TestOutpost:
             )
             response = await websocket.receive_json(timeout=2)
 
-        # Stored, so confirmed; the snapshot leaves the bucket hot, where the local copy
-        # still counts the event.
+        # Nothing synced, so nothing confirmed: the snapshot leaves the bucket hot, where
+        # the local copy counts the event, pending or not.
         assert response["type"] == "confirmed"
-        assert response["payload"]["ids"] == ["ingested"]
+        assert response["payload"]["ids"] == []
         assert response["payload"]["snapshot"]["cold_until"] <= to_epoch_microseconds(
             bucket_start
         )

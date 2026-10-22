@@ -20,7 +20,6 @@ from sqlalchemy import (
     or_,
     select,
     tuple_,
-    union_all,
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
@@ -358,30 +357,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             frontier = set(newly)
 
         return newly_rooted
-
-    async def get_stored_external_ids(
-        self,
-        organization_id: UUID,
-        external_ids: Sequence[str],
-        *,
-        timestamp_from: datetime,
-        timestamp_to: datetime,
-    ) -> set[str]:
-        """The given external ids of events with a timestamp in the range, stored
-        or still staged."""
-        statement = union_all(
-            *(
-                select(model.external_id).where(
-                    model.organization_id == organization_id,
-                    model.external_id.in_(external_ids),
-                    model.timestamp >= timestamp_from,
-                    model.timestamp < timestamp_to,
-                )
-                for model in (Event, StagedEvent)
-            )
-        )
-        result = await self.session.execute(statement)
-        return {external_id for (external_id,) in result}
 
     async def get_latest_polar_self_ingestion_timestamp(
         self, organization_id: UUID

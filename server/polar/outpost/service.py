@@ -22,7 +22,6 @@ from sqlalchemy.orm import selectinload
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
-from polar.event.repository import EventRepository
 from polar.exceptions import BadRequest
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
@@ -30,7 +29,6 @@ from polar.meter.aggregation import UniqueAggregation
 from polar.models import Customer, Organization, Reducer
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
-    REDUCER_BUCKET_SIZE,
     get_customer_identities,
     get_reducer_bucket_start,
 )
@@ -235,11 +233,12 @@ class OutpostService:
             identity: Identity = (payload.customer_id, None)
         else:
             identity = (None, payload.external_customer_id)
-        stored = await EventRepository.from_session(session).get_stored_external_ids(
-            organization.id,
-            payload.ids,
-            timestamp_from=payload.bucket_start,
-            timestamp_to=payload.bucket_start + REDUCER_BUCKET_SIZE,
+        stored = await reducer_service.get_stored_external_ids(
+            session,
+            reducer,
+            *identity,
+            bucket_start=payload.bucket_start,
+            external_ids=payload.ids,
         )
         snapshots = await self._get_meter_usage(
             session,

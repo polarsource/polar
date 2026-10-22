@@ -15,7 +15,11 @@ import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 const config: LoadedConfig = {
   file: 'polar.json',
   source: '{}',
-  input: { meters: [{ external_id: 'apples' }] },
+  input: {
+    meters: [{ external_id: 'apples' }],
+    benefits: [{ external_id: 'beta' }],
+    products: [{ external_id: 'legacy' }],
+  },
   generated: false,
 }
 
@@ -105,11 +109,12 @@ describe('polar config prune', () => {
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(removed).toBe(1)
     expect(output).toContain('╭─ Deprecated')
-    expect(output).toContain('│ meters\n  │ - apples')
+    expect(output).toContain('│ Remove\n  │ - meter    apples\n')
     expect(output).toContain(
-      '│ benefits\n  │ = beta    3 customers, used by legacy',
+      '│ Keep, still in use\n' +
+        '  │ = benefit  beta    3 customers, used by product legacy\n' +
+        '  │ = product  legacy  1 customer',
     )
-    expect(output).toContain('│ products\n  │ = legacy  1 subscriber')
     expect(output).toContain(
       'polar.json: 1 entry removed, nothing changed on Polar',
     )

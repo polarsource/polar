@@ -1,19 +1,22 @@
 import collections.abc
-import json
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
 from redis import Redis
 
 from polar.outpost.client import CONFIRM_SCRIPT
-from tests.benchmarks import CHANNEL, COLD_UNTIL, EPOCH, encode_state
+from tests.benchmarks import (
+    CHANNEL,
+    COLD_UNTIL,
+    EPOCH,
+    PENDING_COUNTS,
+    encode_pending,
+    encode_state,
+    pending_entries,
+    pending_ids,
+)
 
 pytestmark = pytest.mark.benchmark
-
-# Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
-PENDING_COUNTS = [1, 100, 1000]
-# What WRITE_BUCKET stores per event: count, sum, min and max, as strings.
-ENTRY = json.dumps(["1", "7", "7", "7"])
 
 
 def identity_of(pending: int) -> str:
@@ -37,18 +40,9 @@ def test_confirm_pending_events(
     identity = identity_of(pending)
     state_key = f"outpost:state:{identity}"
     pending_key = f"outpost:pending:{identity}:{COLD_UNTIL}"
-    ids = [f"event-{index}" for index in range(pending)]
-    fields = encode_state(1) + [
-        f"pending:{COLD_UNTIL}:count",
-        str(pending),
-        f"pending:{COLD_UNTIL}:sum",
-        str(7 * pending),
-        f"pending:{COLD_UNTIL}:min",
-        "7",
-        f"pending:{COLD_UNTIL}:max",
-        "7",
-    ]
-    entries = [field for external_id in ids for field in (external_id, ENTRY)]
+    ids = pending_ids(pending)
+    fields = encode_state(1) + encode_pending(COLD_UNTIL, pending)
+    entries = pending_entries(ids)
 
     # Each call confirms every pending event. The transaction seeds the state and the pending
     # events first, at a cost the script's changes don't move.

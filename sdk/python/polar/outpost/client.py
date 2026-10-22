@@ -530,9 +530,10 @@ class IngestResult:
     duplicates: int = 0
 
 
-# A snapshot waiting for Polar to say which of the pending events it counts.
+# A snapshot waiting for Polar to say which of the pending events it counts, one per meter.
 @dataclasses.dataclass
 class _Confirmation:
+    key: str
     snapshot: "Snapshot"
     customer: str
     identity: str
@@ -1284,7 +1285,7 @@ class Outpost:
                     payload["customer_id"], payload["external_customer_id"]
                 )
                 confirmation = self._confirmations.get(
-                    f"{customer}:{payload['reducer_id']}"
+                    f"{customer}:{payload['reducer_id']}:{payload['snapshot']['meter_id']}"
                 )
                 if confirmation is None:
                     continue
@@ -1307,7 +1308,8 @@ class Outpost:
         """Asks Polar which of the pending events in the buckets the snapshot seals it
         counts. The snapshot Polar answers with applies once it did, or the asking one
         after confirm_timeout with the events still pending."""
-        superseded = self._confirmations.pop(identity, None)
+        key = f"{identity}:{snapshot['meter_id']}"
+        superseded = self._confirmations.pop(key, None)
         if superseded is not None and superseded.timer is not None:
             superseded.timer.cancel()
         local = self._cache.get(identity)
@@ -1323,7 +1325,7 @@ class Outpost:
         ]
         if not sealed:
             return False
-        confirmation = _Confirmation(snapshot, customer, identity)
+        confirmation = _Confirmation(key, snapshot, customer, identity)
         reducer_id = identity[len(customer) + 1 :]
         assert self._redis is not None
         for bucket_start in sealed:
@@ -1355,7 +1357,7 @@ class Outpost:
                 confirmation.asked += len(batch)
         if not confirmation.awaited:
             return False
-        self._confirmations[identity] = confirmation
+        self._confirmations[key] = confirmation
         assert self._tasks is not None
         self._tasks.start_soon(self._expire_confirmation, confirmation)
         return True
@@ -1370,9 +1372,9 @@ class Outpost:
     async def _settle_confirmation(
         self, confirmation: _Confirmation, *, answered: bool
     ) -> None:
-        if self._confirmations.get(confirmation.identity) is not confirmation:
+        if self._confirmations.get(confirmation.key) is not confirmation:
             return
-        del self._confirmations[confirmation.identity]
+        del self._confirmations[confirmation.key]
         if confirmation.timer is not None:
             confirmation.timer.cancel()
         await self._apply_snapshot_now(

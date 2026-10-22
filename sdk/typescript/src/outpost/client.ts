@@ -92,8 +92,9 @@ type Message =
   | { type: "configuration"; payload: { reducers: Reducer[] } }
   | { type: "meter_usage"; payload: Snapshot }
   | { type: "confirmed"; payload: Confirmed };
-// A snapshot waiting for Polar to say which of the pending events it counts.
+// A snapshot waiting for Polar to say which of the pending events it counts, one per meter.
 interface Confirmation {
+  key: string;
   snapshot: Snapshot;
   customer: string;
   identity: string;
@@ -1074,7 +1075,7 @@ export class Outpost {
         customer_id: customer_id ?? undefined,
         external_customer_id: external_customer_id ?? undefined,
       });
-      const confirmation = this.confirmations.get(`${customer}:${reducer_id}`);
+      const confirmation = this.confirmations.get(`${customer}:${reducer_id}:${snapshot.meter_id}`);
       if (!confirmation) return;
       const confirmed = confirmation.confirmed.get(bucket_start) ?? [];
       confirmed.push(...ids);
@@ -1092,10 +1093,11 @@ export class Outpost {
     customer: string,
     snapshot: Snapshot,
   ): Promise<boolean> {
-    const superseded = this.confirmations.get(identity);
+    const key = `${identity}:${snapshot.meter_id}`;
+    const superseded = this.confirmations.get(key);
     if (superseded) {
       clearTimeout(superseded.timer);
-      this.confirmations.delete(identity);
+      this.confirmations.delete(key);
     }
     const state = this.cache.get(identity)?.state ?? (await this.loadState(identity));
     const sealed = [...state.pending]
@@ -1103,6 +1105,7 @@ export class Outpost {
       .map(([start]) => start);
     if (!sealed.length) return false;
     const confirmation: Confirmation = {
+      key,
       snapshot,
       customer,
       identity,
@@ -1140,14 +1143,14 @@ export class Outpost {
       () => this.queue(() => this.settleConfirmation(confirmation, false)),
       this.options.confirmTimeout ?? CONFIRM_TIMEOUT,
     );
-    this.confirmations.set(identity, confirmation);
+    this.confirmations.set(key, confirmation);
     return true;
   }
 
   private async settleConfirmation(confirmation: Confirmation, answered: boolean): Promise<void> {
-    if (this.confirmations.get(confirmation.identity) !== confirmation) return;
+    if (this.confirmations.get(confirmation.key) !== confirmation) return;
     clearTimeout(confirmation.timer);
-    this.confirmations.delete(confirmation.identity);
+    this.confirmations.delete(confirmation.key);
     await this.applySnapshot(
       confirmation.identity,
       confirmation.customer,

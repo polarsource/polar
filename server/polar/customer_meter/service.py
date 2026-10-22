@@ -125,13 +125,7 @@ class CustomerMeterService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def update_customer(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        *,
-        lookback: timedelta = settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD,
-    ) -> None:
+    async def update_customer(self, session: AsyncSession, customer: Customer) -> None:
         repository = MeterRepository.from_session(session)
         statement = (
             repository.get_base_statement()
@@ -145,7 +139,7 @@ class CustomerMeterService:
         updated = False
         async for meter in repository.stream(statement):
             _, meter_updated = await self.update_customer_meter(
-                session, customer, meter, lookback=lookback
+                session, customer, meter
             )
             updated = updated or meter_updated
 
@@ -158,8 +152,6 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
-        *,
-        lookback: timedelta = settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD,
     ) -> tuple[CustomerMeter | None, bool]:
         repository = CustomerMeterRepository.from_session(session)
         # Use FOR UPDATE NOWAIT to serialize access and ensure visibility of
@@ -185,7 +177,9 @@ class CustomerMeterService:
         # Optimization: only look for events ingested after the maximum debounce window
         # This avoids scanning all historical events
         # when checking if there are new events to process.
-        ingested_at_lower_bound = utc_now() - lookback
+        ingested_at_lower_bound = (
+            utc_now() - settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD
+        )
 
         with logfire.span("get_latest_event"):
             last_event = await self._get_latest_current_window_event(

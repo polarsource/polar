@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 from typing import Any, get_args
 
@@ -2520,19 +2521,19 @@ class TestPrune:
             {
                 "resource": ConfigResource.meter,
                 "external_id": "apples",
-                "in_use": False,
+                "customers": 0,
                 "referenced_by": [],
             },
             {
                 "resource": ConfigResource.benefit,
                 "external_id": "beta",
-                "in_use": False,
+                "customers": 0,
                 "referenced_by": [],
             },
             {
                 "resource": ConfigResource.product,
                 "external_id": "legacy",
-                "in_use": False,
+                "customers": 0,
                 "referenced_by": [],
             },
         ]
@@ -2576,6 +2577,11 @@ class TestPrune:
         await create_subscription(
             save_fixture,
             product=legacy,
+            customer=customer,
+        )
+        await create_subscription(
+            save_fixture,
+            product=legacy,
             customer=customer_second,
             revoke=True,
         )
@@ -2587,12 +2593,12 @@ class TestPrune:
         )
 
         assert [
-            (entry.external_id, entry.in_use, entry.referenced_by)
+            (entry.external_id, entry.customers, entry.referenced_by)
             for entry in result.entries
         ] == [
-            ("apples", False, ["legacy"]),
-            ("beta", True, ["legacy"]),
-            ("legacy", True, []),
+            ("apples", 0, ["legacy"]),
+            ("beta", 1, ["legacy"]),
+            ("legacy", 1, []),
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -2630,8 +2636,8 @@ class TestPrune:
             Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
         )
 
-        assert [(entry.external_id, entry.in_use) for entry in result.entries] == [
-            ("apples", True)
+        assert [(entry.external_id, entry.customers) for entry in result.entries] == [
+            ("apples", 1)
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -2660,8 +2666,75 @@ class TestPrune:
             Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
         )
 
-        assert [(entry.external_id, entry.in_use) for entry in result.entries] == [
-            ("apples", True)
+        assert [(entry.external_id, entry.customers) for entry in result.entries] == [
+            ("apples", 1)
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_meters_count_each_customer_once(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="apples"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        await save_fixture(SubscriptionMeter(subscription=subscription, meter=meter))
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+        await create_benefit_grant(save_fixture, customer, credits, granted=True)
+        await create_benefit_grant(save_fixture, customer_second, credits, granted=True)
+        pears = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="pears",
+        )
+        other_subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_second,
+            status=SubscriptionStatus.active,
+        )
+        await save_fixture(
+            SubscriptionMeter(subscription=other_subscription, meter=pears)
+        )
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [
+                        *DEPRECATED_CONFIG["meters"],
+                        {**FIXTURE_METER, "external_id": "pears", "deprecated": True},
+                    ]
+                }
+            ),
+        )
+
+        assert [(entry.external_id, entry.customers) for entry in result.entries] == [
+            ("apples", 2),
+            ("pears", 1),
         ]
 
     @pytest.mark.auth(

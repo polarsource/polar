@@ -26,7 +26,7 @@ module "vercel" {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
         type    = "A"
         content = "216.150.1.1"
-        ttl     = 600
+        proxied = true
       }
     },
     {
@@ -36,7 +36,7 @@ module "vercel" {
       dns = {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
         content = "582a8a8790ca4ebf.vercel-dns-016.com"
-        ttl     = 600
+        proxied = true
       }
     },
     {
@@ -44,7 +44,7 @@ module "vercel" {
       dns = {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
         content = "582a8a8790ca4ebf.vercel-dns-016.com"
-        ttl     = 600
+        proxied = true
       }
     },
     {

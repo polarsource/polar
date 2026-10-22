@@ -215,6 +215,9 @@ MAX_REDIS_RECONNECT_DELAY = 2.0
 SYNC_INTERVAL = 30.0
 RECONNECT_DELAY = 0.5
 SNAPSHOT_TIMEOUT = 5.0
+CONFIRM_TIMEOUT = 2.0
+# Pending ids per confirm request: Polar refuses a bigger one.
+CONFIRM_BATCH = 1000
 MAX_RECONNECT_DELAY = 30.0
 
 READ_STATE_SCRIPT = """
@@ -527,9 +530,26 @@ class IngestResult:
     duplicates: int = 0
 
 
+# A snapshot waiting for Polar to say which of the pending events it counts.
+@dataclasses.dataclass
+class _Confirmation:
+    snapshot: "Snapshot"
+    customer: str
+    identity: str
+    awaited: int = 0
+    asked: int = 0
+    confirmed: dict[int, list[str]] = dataclasses.field(default_factory=dict)
+    timer: anyio.CancelScope | None = None
+
+
 class Outpost:
     def __init__(
-        self, redis_url: str, *, client: httpx.AsyncClient, telemetry: bool = True
+        self,
+        redis_url: str,
+        *,
+        client: httpx.AsyncClient,
+        telemetry: bool = True,
+        confirm_timeout: float = CONFIRM_TIMEOUT,
     ) -> None:
         self.redis_url = redis_url
         self._client = client
@@ -552,6 +572,9 @@ class Outpost:
         self._actors: set[str] = set()
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
+        self._confirm_script: AsyncScript | None = None
+        self._confirm_timeout = confirm_timeout
+        self._confirmations: dict[str, _Confirmation] = {}
         self._read_state: AsyncScript | None = None
         self._cache: collections.OrderedDict[str, LocalState] = (
             collections.OrderedDict()
@@ -597,6 +620,7 @@ class Outpost:
             self._channel = f"outpost:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
             self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
+            self._confirm_script = self._redis.register_script(CONFIRM_SCRIPT)
             self._tasks = await self._stack.enter_async_context(
                 anyio.create_task_group()
             )
@@ -616,6 +640,8 @@ class Outpost:
                 self._reducers = []
                 self._matchers = []
                 self._apply_snapshot = None
+                self._confirm_script = None
+                self._confirmations.clear()
                 self._read_state = None
                 self._cache.clear()
                 await self._shutdown_telemetry()
@@ -646,6 +672,8 @@ class Outpost:
             self._matchers = []
             self._actors.clear()
             self._apply_snapshot = None
+            self._confirm_script = None
+            self._confirmations.clear()
             self._read_state = None
             self._cache.clear()
             await self._shutdown_telemetry()
@@ -1246,33 +1274,194 @@ class Outpost:
                     for value in statistics
                 ):
                     raise ValueError("Snapshot values must be finite")
-                assert self._apply_snapshot is not None
-                with self._span(
-                    "outpost.snapshot.received",
-                    **{
-                        "outpost.customer": customer,
-                        "outpost.meter_id": snapshot["meter_id"],
-                        "outpost.snapshot_version": snapshot["version"],
-                    },
-                ) as span:
-                    state, replaced = await self._apply_snapshot(
-                        keys=[f"outpost:state:{identity}"],
-                        args=[
-                            identity,
-                            self._channel,
-                            _generate_epoch(),
-                            snapshot["cold_until"],
-                            snapshot["version"],
-                            snapshot["meter_id"],
-                            snapshot["credited_units"],
-                            snapshot["count"],
-                            snapshot["sum"],
-                            snapshot["min"] if snapshot["min"] is not None else "",
-                            snapshot["max"] if snapshot["max"] is not None else "",
-                        ],
+                if not await self._ask_confirmation(
+                    websocket, identity, customer, snapshot
+                ):
+                    await self._apply_snapshot_now(identity, customer, snapshot)
+            elif message["type"] == "confirmed":
+                payload = message["payload"]
+                customer = self._customer_key(
+                    payload["customer_id"], payload["external_customer_id"]
+                )
+                confirmation = self._confirmations.get(
+                    f"{customer}:{payload['reducer_id']}"
+                )
+                if confirmation is None:
+                    continue
+                confirmation.confirmed.setdefault(payload["bucket_start"], []).extend(
+                    payload["ids"]
+                )
+                if payload["snapshot"]["version"] >= confirmation.snapshot["version"]:
+                    confirmation.snapshot = payload["snapshot"]
+                confirmation.awaited -= 1
+                if confirmation.awaited == 0:
+                    await self._settle_confirmation(confirmation, answered=True)
+
+    async def _ask_confirmation(
+        self,
+        websocket: AsyncWebSocketSession,
+        identity: str,
+        customer: str,
+        snapshot: Snapshot,
+    ) -> bool:
+        """Asks Polar which of the pending events in the buckets the snapshot seals it
+        counts. The snapshot Polar answers with applies once it did, or the asking one
+        after confirm_timeout with the events still pending."""
+        superseded = self._confirmations.pop(identity, None)
+        if superseded is not None and superseded.timer is not None:
+            superseded.timer.cancel()
+        local = self._cache.get(identity)
+        state = (
+            local.state
+            if local is not None and local.state is not None
+            else await self._load_state(identity)
+        )
+        sealed = [
+            start
+            for start, statistics in state.pending.items()
+            if start < snapshot["cold_until"] and statistics.count > 0
+        ]
+        if not sealed:
+            return False
+        confirmation = _Confirmation(snapshot, customer, identity)
+        reducer_id = identity[len(customer) + 1 :]
+        assert self._redis is not None
+        for bucket_start in sealed:
+            ids = await self._redis.hkeys(f"outpost:pending:{identity}:{bucket_start}")
+            for offset in range(0, len(ids), CONFIRM_BATCH):
+                batch = [
+                    external_id.decode()
+                    if isinstance(external_id, bytes)
+                    else external_id
+                    for external_id in ids[offset : offset + CONFIRM_BATCH]
+                ]
+                try:
+                    await websocket.send_json(
+                        {
+                            "type": "confirm",
+                            "payload": {
+                                "reducer_id": reducer_id,
+                                **self._customer_arguments(customer),
+                                "bucket_start": bucket_start,
+                                "meter_id": snapshot["meter_id"],
+                                "ids": batch,
+                            },
+                        }
                     )
-                    _report_local_value(span, snapshot, replaced)
-                    await self._receive_state(identity, decode_state(state))
+                except HTTPXWSException:
+                    # Not connected: the events stay pending until the next snapshot.
+                    return False
+                confirmation.awaited += 1
+                confirmation.asked += len(batch)
+        if not confirmation.awaited:
+            return False
+        self._confirmations[identity] = confirmation
+        assert self._tasks is not None
+        self._tasks.start_soon(self._expire_confirmation, confirmation)
+        return True
+
+    async def _expire_confirmation(self, confirmation: _Confirmation) -> None:
+        with anyio.CancelScope() as timer:
+            confirmation.timer = timer
+            await anyio.sleep(self._confirm_timeout)
+        if not timer.cancel_called:
+            await self._settle_confirmation(confirmation, answered=False)
+
+    async def _settle_confirmation(
+        self, confirmation: _Confirmation, *, answered: bool
+    ) -> None:
+        if self._confirmations.get(confirmation.identity) is not confirmation:
+            return
+        del self._confirmations[confirmation.identity]
+        if confirmation.timer is not None:
+            confirmation.timer.cancel()
+        await self._apply_snapshot_now(
+            confirmation.identity,
+            confirmation.customer,
+            confirmation.snapshot,
+            confirmation,
+            answered=answered,
+        )
+
+    async def _apply_snapshot_now(
+        self,
+        identity: str,
+        customer: str,
+        snapshot: Snapshot,
+        confirmation: _Confirmation | None = None,
+        *,
+        answered: bool = False,
+    ) -> None:
+        """Settles the confirmed events and applies the snapshot in one transaction: a
+        read sees the bucket either fully local or as Polar's total plus what is still
+        pending."""
+        assert self._redis is not None
+        assert self._apply_snapshot is not None
+        assert self._confirm_script is not None
+        key = f"outpost:state:{identity}"
+        snapshot_arguments: list[str | int | float] = [
+            identity,
+            self._channel,
+            _generate_epoch(),
+            snapshot["cold_until"],
+            snapshot["version"],
+            snapshot["meter_id"],
+            snapshot["credited_units"],
+            snapshot["count"],
+            snapshot["sum"],
+            snapshot["min"] if snapshot["min"] is not None else "",
+            snapshot["max"] if snapshot["max"] is not None else "",
+        ]
+        confirmed = {
+            bucket_start: ids
+            for bucket_start, ids in (
+                confirmation.confirmed.items() if confirmation is not None else ()
+            )
+            if ids
+        }
+        with self._span(
+            "outpost.snapshot.received",
+            **{
+                "outpost.customer": customer,
+                "outpost.meter_id": snapshot["meter_id"],
+                "outpost.snapshot_version": snapshot["version"],
+            },
+        ) as span:
+            if confirmed:
+                async with self._redis.pipeline(transaction=True) as pipeline:
+                    for bucket_start, ids in confirmed.items():
+                        await self._confirm_script(
+                            keys=[key, f"outpost:pending:{identity}:{bucket_start}"],
+                            args=[
+                                identity,
+                                self._channel,
+                                _generate_epoch(),
+                                bucket_start,
+                                *ids,
+                            ],
+                            client=pipeline,
+                        )
+                    await self._apply_snapshot(
+                        keys=[key], args=snapshot_arguments, client=pipeline
+                    )
+                    results = await pipeline.execute()
+                state, replaced = results[-1]
+            else:
+                state, replaced = await self._apply_snapshot(
+                    keys=[key], args=snapshot_arguments
+                )
+            _report_local_value(span, snapshot, replaced)
+            if confirmation is not None:
+                span.set_attributes(
+                    {
+                        "outpost.pending.asked": confirmation.asked,
+                        "outpost.pending.confirmed": sum(
+                            len(ids) for ids in confirmed.values()
+                        ),
+                        "outpost.pending.answered": answered,
+                    }
+                )
+            await self._receive_state(identity, decode_state(state))
 
     def _parse_event(self, event: EventInput) -> Event:
         customer = self._customer_key(

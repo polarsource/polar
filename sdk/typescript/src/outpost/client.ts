@@ -44,6 +44,9 @@ import { createMeterProvider, createTracerProvider, isTelemetryEnabled } from ".
 const CACHE_SIZE = 1024;
 const SYNC_INTERVAL = 30_000;
 const TIMEOUT = 5_000;
+const CONFIRM_TIMEOUT = 2_000;
+// Pending ids per confirm request: Polar refuses a bigger one.
+const CONFIRM_BATCH = 1_000;
 const RECONNECT_DELAY = 500;
 const MAX_RECONNECT_DELAY = 30_000;
 const REDIS_RECONNECT_DELAY = 100;
@@ -75,10 +78,30 @@ interface Snapshot {
   max: number | null;
   credited_units: number;
 }
+interface Confirmed {
+  reducer_id: string;
+  customer_id: string | null;
+  external_customer_id: string | null;
+  bucket_start: number;
+  ids: string[];
+  // Read with the ids: it counts exactly those.
+  snapshot: Snapshot;
+}
 type Message =
   | { type: "connection"; payload: { id: string } }
   | { type: "configuration"; payload: { reducers: Reducer[] } }
-  | { type: "meter_usage"; payload: Snapshot };
+  | { type: "meter_usage"; payload: Snapshot }
+  | { type: "confirmed"; payload: Confirmed };
+// A snapshot waiting for Polar to say which of the pending events it counts.
+interface Confirmation {
+  snapshot: Snapshot;
+  customer: string;
+  identity: string;
+  awaited: number;
+  asked: number;
+  confirmed: Map<number, string[]>;
+  timer?: ReturnType<typeof setTimeout>;
+}
 type StateUpdate = { customer: string } & ({ state: string[] } | { bucket: string[] });
 interface LocalState {
   state?: State;
@@ -96,6 +119,7 @@ interface OutpostRedis extends Redis {
 interface OutpostPipeline extends ChainableCommander {
   outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
   outpostConfirm(key: string, pendingKey: string, ...args: (string | number)[]): this;
+  outpostApplySnapshot(key: string, ...args: (string | number)[]): this;
 }
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
@@ -298,6 +322,11 @@ export interface OutpostOptions {
   telemetry?: boolean;
   /** How long a read of a cold customer waits for its first snapshot, in milliseconds. */
   snapshotTimeout?: number;
+  /**
+   * How long a snapshot waits for Polar to confirm the pending events it counts, in
+   * milliseconds. Defaults to 2000; the snapshot then applies with the events still pending.
+   */
+  confirmTimeout?: number;
 }
 export class Outpost {
   private redis?: OutpostRedis;
@@ -314,6 +343,7 @@ export class Outpost {
   private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
   private readonly actors = new Set<string>();
+  private readonly confirmations = new Map<string, Confirmation>();
   private configured = signal();
   private isConfigured = false;
   private synced = signal();
@@ -449,6 +479,8 @@ export class Outpost {
   async close(): Promise<void> {
     clearInterval(this.refreshTimer);
     clearTimeout(this.reconnectTimer);
+    for (const confirmation of this.confirmations.values()) clearTimeout(confirmation.timer);
+    this.confirmations.clear();
     this.reportSync();
     const websocket = this.websocket;
     const connections = [this.subscriber, this.redis].filter(
@@ -714,12 +746,7 @@ export class Outpost {
     });
     websocket.on("error", () => {});
     websocket.on("message", (data) => {
-      this.messages = this.messages
-        .then(() => this.receiveWebsocket(data.toString()))
-        .catch((error: unknown) => {
-          if (isRedisConnectionError(error)) websocket.terminate();
-          else this.fail(error);
-        });
+      this.queue(() => this.receiveWebsocket(data.toString()), websocket);
     });
     websocket.on("close", () => {
       if (this.websocket !== websocket) return;
@@ -930,6 +957,14 @@ export class Outpost {
     for (const local of this.cache.values()) local.state = undefined;
   }
 
+  // Messages and what they trigger run one at a time, in order.
+  private queue(work: () => Promise<void>, websocket = this.websocket): void {
+    this.messages = this.messages.then(work).catch((error: unknown) => {
+      if (isRedisConnectionError(error)) websocket?.terminate();
+      else this.fail(error);
+    });
+  }
+
   private fail(error: unknown): void {
     this.failure = error instanceof Error ? error : new PolarError(String(error));
     this.configured.resolve();
@@ -1030,32 +1065,164 @@ export class Outpost {
       ])
         if (value !== null && !Number.isFinite(value))
           throw new TypeError("Snapshot values must be finite");
-      await this.trace(
-        "outpost.snapshot.received",
-        async (span) => {
-          const [state, replaced] = await this.requireRedis().outpostApplySnapshot(
-            `outpost:state:${identity}`,
-            identity,
-            this.channel,
-            generateEpoch(),
-            snapshot.cold_until,
-            snapshot.version,
-            snapshot.meter_id,
-            snapshot.credited_units,
-            snapshot.count,
-            snapshot.sum,
-            snapshot.min ?? "",
-            snapshot.max ?? "",
-          );
-          reportLocalValue(span, snapshot, replaced);
-          await this.receiveState(identity, decodeState(state));
-        },
-        {
-          "outpost.customer": customer,
-          "outpost.meter_id": snapshot.meter_id,
-          "outpost.snapshot_version": snapshot.version,
-        },
-      );
+      if (!(await this.askConfirmation(identity, customer, snapshot)))
+        await this.applySnapshot(identity, customer, snapshot);
+    } else if (message.type === "confirmed") {
+      const { reducer_id, customer_id, external_customer_id, bucket_start, ids, snapshot } =
+        message.payload;
+      const customer = customerKey({
+        customer_id: customer_id ?? undefined,
+        external_customer_id: external_customer_id ?? undefined,
+      });
+      const confirmation = this.confirmations.get(`${customer}:${reducer_id}`);
+      if (!confirmation) return;
+      const confirmed = confirmation.confirmed.get(bucket_start) ?? [];
+      confirmed.push(...ids);
+      confirmation.confirmed.set(bucket_start, confirmed);
+      if (snapshot.version >= confirmation.snapshot.version) confirmation.snapshot = snapshot;
+      if (--confirmation.awaited === 0) await this.settleConfirmation(confirmation, true);
     }
+  }
+
+  // Asks Polar which of the pending events in the buckets the snapshot seals it counts. The
+  // snapshot Polar answers with applies once it did, or the asking one after confirmTimeout
+  // with the events still pending.
+  private async askConfirmation(
+    identity: string,
+    customer: string,
+    snapshot: Snapshot,
+  ): Promise<boolean> {
+    const superseded = this.confirmations.get(identity);
+    if (superseded) {
+      clearTimeout(superseded.timer);
+      this.confirmations.delete(identity);
+    }
+    const state = this.cache.get(identity)?.state ?? (await this.loadState(identity));
+    const sealed = [...state.pending]
+      .filter(([start, statistics]) => start < snapshot.cold_until && statistics.count > 0)
+      .map(([start]) => start);
+    if (!sealed.length) return false;
+    const confirmation: Confirmation = {
+      snapshot,
+      customer,
+      identity,
+      awaited: 0,
+      asked: 0,
+      confirmed: new Map(),
+    };
+    const redis = this.requireRedis();
+    const reducerId = identity.slice(customer.length + 1);
+    for (const bucketStart of sealed) {
+      const ids = await redis.hkeys(`outpost:pending:${identity}:${bucketStart}`);
+      for (let offset = 0; offset < ids.length; offset += CONFIRM_BATCH) {
+        const batch = ids.slice(offset, offset + CONFIRM_BATCH);
+        try {
+          await this.send({
+            type: "confirm",
+            payload: {
+              reducer_id: reducerId,
+              ...customerArguments(customer),
+              bucket_start: bucketStart,
+              meter_id: snapshot.meter_id,
+              ids: batch,
+            },
+          });
+        } catch {
+          // Not connected: the events stay pending until the next snapshot.
+          return false;
+        }
+        confirmation.awaited += 1;
+        confirmation.asked += batch.length;
+      }
+    }
+    if (!confirmation.awaited) return false;
+    confirmation.timer = setTimeout(
+      () => this.queue(() => this.settleConfirmation(confirmation, false)),
+      this.options.confirmTimeout ?? CONFIRM_TIMEOUT,
+    );
+    this.confirmations.set(identity, confirmation);
+    return true;
+  }
+
+  private async settleConfirmation(confirmation: Confirmation, answered: boolean): Promise<void> {
+    if (this.confirmations.get(confirmation.identity) !== confirmation) return;
+    clearTimeout(confirmation.timer);
+    this.confirmations.delete(confirmation.identity);
+    await this.applySnapshot(
+      confirmation.identity,
+      confirmation.customer,
+      confirmation.snapshot,
+      confirmation,
+      answered,
+    );
+  }
+
+  // Settles the confirmed events and applies the snapshot in one transaction: a read sees the
+  // bucket either fully local or as Polar's total plus what is still pending.
+  private async applySnapshot(
+    identity: string,
+    customer: string,
+    snapshot: Snapshot,
+    confirmation?: Confirmation,
+    answered = false,
+  ): Promise<void> {
+    const key = `outpost:state:${identity}`;
+    const snapshotArguments: (string | number)[] = [
+      identity,
+      this.channel,
+      generateEpoch(),
+      snapshot.cold_until,
+      snapshot.version,
+      snapshot.meter_id,
+      snapshot.credited_units,
+      snapshot.count,
+      snapshot.sum,
+      snapshot.min ?? "",
+      snapshot.max ?? "",
+    ];
+    await this.trace(
+      "outpost.snapshot.received",
+      async (span) => {
+        const redis = this.requireRedis();
+        let applied: [state: string[], replaced: string[]];
+        const confirmed = [...(confirmation?.confirmed ?? [])].filter(([, ids]) => ids.length);
+        if (confirmed.length) {
+          const transaction = redis.multi() as OutpostPipeline;
+          for (const [bucketStart, ids] of confirmed)
+            transaction.outpostConfirm(
+              key,
+              `outpost:pending:${identity}:${bucketStart}`,
+              identity,
+              this.channel,
+              generateEpoch(),
+              bucketStart,
+              ...ids,
+            );
+          transaction.outpostApplySnapshot(key, ...snapshotArguments);
+          const results = await transaction.exec();
+          if (results === null) throw new UnavailableRedisError();
+          const [error, result] = results[results.length - 1];
+          if (error) throw error;
+          applied = result as [string[], string[]];
+        } else {
+          applied = await redis.outpostApplySnapshot(key, ...snapshotArguments);
+        }
+        const [state, replaced] = applied;
+        reportLocalValue(span, snapshot, replaced);
+        if (confirmation) {
+          span.setAttributes({
+            "outpost.pending.asked": confirmation.asked,
+            "outpost.pending.confirmed": confirmed.reduce((sum, [, ids]) => sum + ids.length, 0),
+            "outpost.pending.answered": answered,
+          });
+        }
+        await this.receiveState(identity, decodeState(state));
+      },
+      {
+        "outpost.customer": customer,
+        "outpost.meter_id": snapshot.meter_id,
+        "outpost.snapshot_version": snapshot.version,
+      },
+    );
   }
 }

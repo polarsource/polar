@@ -287,6 +287,10 @@ function CreateDashboardContent({
   organization: schemas['Organization']
   onClose: () => void
 }) {
+  const canManageAnalytics = useHasPermission(
+    organization.id,
+    'analytics:manage',
+  )
   const createMutation = useCreateMetricDashboard(organization.id)
 
   const handleSave = useCallback(
@@ -296,12 +300,27 @@ function CreateDashboardContent({
         metrics,
         organization_id: organization.id,
       })
-      if (!result.error && result.data) {
-        onClose()
+      if (result.error) {
+        toast({
+          title: 'Could not create dashboard',
+          description: 'Please try again.',
+        })
+        return
       }
+      onClose()
     },
     [createMutation, organization.id, onClose],
   )
+
+  if (!canManageAnalytics) {
+    return (
+      <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+        <AccessRestricted
+          message={permissionDeniedMessage('analytics:manage')}
+        />
+      </Box>
+    )
+  }
 
   return (
     <MetricDashboardEditorContent

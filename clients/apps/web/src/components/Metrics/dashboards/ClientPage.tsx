@@ -5,7 +5,8 @@ import { METRIC_GROUPS, metricGroupSlug } from '@/utils/metrics'
 import { type schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ReactNode, useMemo } from 'react'
+import { parseAsString, useQueryState } from 'nuqs'
+import { ReactNode, useEffect, useMemo } from 'react'
 import { CancellationsContent } from './CancellationsContent'
 import { CustomDashboardActions } from './DashboardViewHeader'
 import { MetricGroup } from './MetricGroup'
@@ -42,15 +43,86 @@ const DashboardSection = ({
   </Box>
 )
 
+const useFilteredMetrics = (
+  organizationId: string,
+  earliestDateISOString: string,
+  metrics: MetricKey[],
+) => {
+  const { interval, startDate, endDate, productId } = useMetricsFilters(
+    earliestDateISOString,
+  )
+  const { data } = useMetrics(
+    {
+      startDate,
+      endDate,
+      interval,
+      organization_id: organizationId,
+      ...(productId && productId.length > 0 ? { product_id: productId } : {}),
+      metrics,
+    },
+    metrics.length > 0,
+  )
+  return { data, interval, startDate, endDate, productId }
+}
+
+// Each custom dashboard queries its own metrics, so a dashboard holding a slug
+// the metrics endpoint rejects only breaks its own section.
+const CustomDashboardSection = ({
+  organization,
+  dashboard,
+  earliestDateISOString,
+}: {
+  organization: schemas['Organization']
+  dashboard: schemas['MetricDashboardSchema']
+  earliestDateISOString: string
+}) => {
+  const metricKeys = dashboard.metrics as MetricKey[]
+  const { data, interval } = useFilteredMetrics(
+    organization.id,
+    earliestDateISOString,
+    metricKeys,
+  )
+
+  return (
+    <DashboardSection
+      id={dashboard.id}
+      title={dashboard.name}
+      actions={
+        <CustomDashboardActions
+          organization={organization}
+          dashboard={dashboard}
+          earliestDateISOString={earliestDateISOString}
+        />
+      }
+    >
+      {metricKeys.length === 0 ? (
+        <Box
+          flexDirection="column"
+          alignItems="center"
+          paddingVertical="4xl"
+          rowGap="s"
+          borderRadius="l"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+        >
+          <Text variant="title">No metrics in this dashboard</Text>
+          <Text color="muted">Edit this dashboard to add metrics.</Text>
+        </Box>
+      ) : (
+        <MetricGroup metricKeys={metricKeys} data={data} interval={interval} />
+      )}
+    </DashboardSection>
+  )
+}
+
 export default function ClientPage({
   organization,
   groupSlugs,
   earliestDateISOString,
 }: ClientPageProps) {
   const organizationId = organization.id
-  const { interval, startDate, endDate, productId } = useMetricsFilters(
-    earliestDateISOString,
-  )
+  const [section, setSection] = useQueryState('section', parseAsString)
   const { data: customDashboards } = useMetricDashboards(organizationId)
 
   const groups = useMemo(
@@ -72,24 +144,21 @@ export default function ClientPage({
     [customDashboards],
   )
 
-  const metrics = useMemo(
-    () => [
-      ...new Set<MetricKey>([
-        ...groups.flatMap((g) => g.metrics),
-        ...dashboards.flatMap((d) => d.metrics as MetricKey[]),
-      ]),
-    ],
-    [groups, dashboards],
+  const metrics = useMemo(() => groups.flatMap((g) => g.metrics), [groups])
+
+  const { data, interval, startDate, endDate, productId } = useFilteredMetrics(
+    organizationId,
+    earliestDateISOString,
+    metrics,
   )
 
-  const { data } = useMetrics({
-    startDate,
-    endDate,
-    interval,
-    organization_id: organizationId,
-    ...(productId && productId.length > 0 ? { product_id: productId } : {}),
-    metrics,
-  })
+  useEffect(() => {
+    if (!section || !data) return
+    const target = document.getElementById(section)
+    if (!target) return
+    target.scrollIntoView({ block: 'start' })
+    setSection(null)
+  }, [section, data, dashboards, setSection])
 
   if (!data) {
     return null
@@ -120,40 +189,12 @@ export default function ClientPage({
         </DashboardSection>
       ))}
       {dashboards.map((dashboard) => (
-        <DashboardSection
+        <CustomDashboardSection
           key={dashboard.id}
-          id={dashboard.id}
-          title={dashboard.name}
-          actions={
-            <CustomDashboardActions
-              organization={organization}
-              dashboard={dashboard}
-              earliestDateISOString={earliestDateISOString}
-            />
-          }
-        >
-          {dashboard.metrics.length === 0 ? (
-            <Box
-              flexDirection="column"
-              alignItems="center"
-              paddingVertical="4xl"
-              rowGap="s"
-              borderRadius="l"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-            >
-              <Text variant="title">No metrics in this dashboard</Text>
-              <Text color="muted">Edit this dashboard to add metrics.</Text>
-            </Box>
-          ) : (
-            <MetricGroup
-              metricKeys={dashboard.metrics as MetricKey[]}
-              data={data}
-              interval={interval}
-            />
-          )}
-        </DashboardSection>
+          organization={organization}
+          dashboard={dashboard}
+          earliestDateISOString={earliestDateISOString}
+        />
       ))}
     </Box>
   )

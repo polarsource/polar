@@ -66,14 +66,15 @@ export default async function Page(props: {
     ? endOfDay(fromISODate(endDateISOString))
     : defaultEndDate
 
-  const [limits, products] = await Promise.all([
+  const [limits, recurringProducts] = await Promise.all([
     unwrap(api.GET('/v1/metrics/limits')),
     unwrap(
       api.GET('/v1/products/', {
         params: {
           query: {
             organization_id: organization.id,
-            limit: 100,
+            is_recurring: true,
+            limit: 1,
             is_archived: null,
           },
         },
@@ -131,7 +132,7 @@ export default async function Page(props: {
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 
-  const hasRecurringProducts = products.items.some((p) => p.is_recurring)
+  const hasRecurringProducts = recurringProducts.pagination.total_count > 0
   const groupSlugs = METRIC_GROUPS.map((g) =>
     metricGroupSlug(g.category),
   ).filter((slug) => hasRecurringProducts || !RECURRING_ONLY_GROUPS.has(slug))

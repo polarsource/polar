@@ -28,9 +28,9 @@ export default async function Page(props: {
     }
   })
 
-  const queryString = urlSearchParams.toString()
+  urlSearchParams.set('section', metric)
   redirect(
-    `/dashboard/${organization}/analytics/metrics${queryString ? `?${queryString}` : ''}#${metric}`,
+    `/dashboard/${organization}/analytics/metrics?${urlSearchParams}`,
     RedirectType.replace,
   )
 }

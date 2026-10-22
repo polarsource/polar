@@ -379,6 +379,7 @@ class DeclarativeConfigService:
                                 if is_organization(auth_subject)
                                 else organization.id,
                             ),
+                            declarative_config=True,
                         )
                         await repository.update(
                             endpoint, update_dict={"external_id": config.external_id}
@@ -393,6 +394,7 @@ class DeclarativeConfigService:
                     auth_subject,
                     endpoint=endpoint,
                     update_schema=WebhookEndpointUpdate(**change.update_dict),
+                    declarative_config=True,
                 )
             results.append(
                 ConfigResult(
@@ -507,6 +509,7 @@ class DeclarativeConfigService:
                                 meter_ids,
                             ),
                             auth_subject,
+                            declarative_config=True,
                         )
                         await repository.update(
                             benefit,
@@ -523,6 +526,7 @@ class DeclarativeConfigService:
                     benefit,
                     benefits.benefit_update(change, meter_ids),
                     auth_subject,
+                    declarative_config=True,
                 )
             benefit_ids[change.config.external_id] = benefit.id
             results.append(
@@ -568,6 +572,7 @@ class DeclarativeConfigService:
                                     meter_ids,
                                 ),
                                 auth_subject,
+                                declarative_config=True,
                             )
                             await repository.update(
                                 product, update_dict={"external_id": config.external_id}
@@ -584,6 +589,7 @@ class DeclarativeConfigService:
                             change, product, meter_ids, external_ids
                         ),
                         auth_subject,
+                        declarative_config=True,
                     )
                 if (change.existing is None and config.benefits) or (
                     "benefits" in change.update_dict
@@ -593,6 +599,7 @@ class DeclarativeConfigService:
                         product,
                         [benefit_ids[benefit] for benefit in config.benefits],
                         auth_subject,
+                        declarative_config=True,
                     )
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
@@ -627,6 +634,7 @@ class DeclarativeConfigService:
                             product_ids,
                         ),
                         auth_subject,
+                        declarative_config=True,
                     )
                 elif change.update_dict:
                     await discount_service.update(
@@ -634,6 +642,7 @@ class DeclarativeConfigService:
                         change.existing,
                         discounts.discount_update(change, product_ids),
                         auth_subject,
+                        declarative_config=True,
                     )
             except PolarRequestValidationError as e:
                 raise discounts.discount_error(e, change.index, external_ids) from e

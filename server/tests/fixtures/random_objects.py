@@ -272,6 +272,17 @@ async def agent(save_fixture: SaveFixture, organization: Organization) -> Agent:
     return await create_agent(save_fixture, organization=organization)
 
 
+@pytest.fixture
+async def config_as_code_enabled(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "config_as_code_enabled": True,
+    }
+    await save_fixture(organization)
+
+
 async def create_oauth_account(
     save_fixture: SaveFixture,
     user: User,

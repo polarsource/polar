@@ -378,6 +378,7 @@ class ReducerService:
                         else None
                     )
                     span.set_attribute("reducer_id", str(reducer.id))
+                    span.set_attribute("aggregation", str(reducer.aggregation.func))
                     span.set_attribute("since", since)
                     value = await self.get_customer_value(
                         session,

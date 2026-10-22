@@ -1542,6 +1542,7 @@ class TestLogCustomerMeterComparison:
         assert span.attributes["legacy"] == "5"
         assert span.attributes["reducer"] == "4"
         assert span.attributes["match"] is False
+        assert span.attributes["aggregation"] == "count"
 
     async def test_swallows_failure(
         self,

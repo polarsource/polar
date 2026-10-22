@@ -1,4 +1,4 @@
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { CheckOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'

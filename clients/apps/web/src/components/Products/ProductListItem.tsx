@@ -10,7 +10,7 @@ import {
   isSeatBasedPrice,
   isUnitBasedPrice,
 } from '@/utils/product'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { ListItem } from '@polar-sh/orbit'

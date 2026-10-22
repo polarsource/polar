@@ -19,7 +19,7 @@ import { useToast } from '@/components/Toast/use-toast'
 import { useDeleteBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePushRouteWithoutCache } from '@/utils/router'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
   DropdownMenu,

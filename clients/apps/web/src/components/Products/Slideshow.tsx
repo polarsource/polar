@@ -1,7 +1,6 @@
 'use client'
 
-import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
-import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
+import { ChevronLeftRounded, ChevronRightRounded } from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useState } from 'react'

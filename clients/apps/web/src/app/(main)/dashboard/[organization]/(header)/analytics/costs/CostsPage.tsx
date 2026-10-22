@@ -20,15 +20,15 @@ import { TrendBadge } from './TrendBadge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { endOfDay, subDays } from 'date-fns'
 import {
-  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
-  BarChart2,
   Bot,
+  ChartNoAxesColumn as BarChart2,
   Minus,
   TrendingUp,
+  TriangleAlert as AlertTriangle,
   Users,
-} from 'lucide-react'
+} from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'

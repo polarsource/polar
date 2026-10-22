@@ -1,7 +1,6 @@
 'use client'
 
-import ArrowForward from '@mui/icons-material/ArrowForward'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { ArrowForward, CheckOutlined } from '@polar-sh/orbit/icons'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'

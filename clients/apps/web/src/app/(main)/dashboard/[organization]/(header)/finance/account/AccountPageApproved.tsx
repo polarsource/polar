@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import { CheckIcon } from 'lucide-react'
+import { Check as CheckIcon } from '@polar-sh/orbit/icons'
 import { useCallback, useEffect, useRef } from 'react'
 import { loadPolarStripe } from '@/utils/stripe'
 

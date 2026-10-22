@@ -13,9 +13,11 @@ import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useSelection } from '@/hooks/useSelection'
 import { useDebouncedCallback } from '@/hooks/utils'
 import { getAPIParams } from '@/utils/datatable'
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import HiveOutlined from '@mui/icons-material/HiveOutlined'
-import Search from '@mui/icons-material/Search'
+import {
+  AddOutlined,
+  HiveOutlined,
+  SearchFilled as Search,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'

@@ -8,7 +8,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Alert, Spinner, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { PanTransferPanel } from '../cards/PanTransferPanel'
 import { ImportedStep } from '../ImportedStep'

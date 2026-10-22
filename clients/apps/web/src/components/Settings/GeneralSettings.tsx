@@ -1,6 +1,6 @@
 'use client'
 
-import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
+import { ExpandMoreOutlined } from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
 import { ListGroup } from '@polar-sh/orbit'
 import {

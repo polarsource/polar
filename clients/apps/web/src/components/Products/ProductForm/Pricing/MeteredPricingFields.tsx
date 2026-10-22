@@ -24,7 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/orbit'
-import { InfoIcon } from 'lucide-react'
+import { Info as InfoIcon } from '@polar-sh/orbit/icons'
 import React, { useCallback, useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'

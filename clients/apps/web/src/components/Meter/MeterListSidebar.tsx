@@ -3,12 +3,14 @@
 import { Spinner } from '@polar-sh/orbit'
 import { useMetersInfinite } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
-import ArrowUpward from '@mui/icons-material/ArrowUpward'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import FilterList from '@mui/icons-material/FilterList'
-import Search from '@mui/icons-material/Search'
+import {
+  AddOutlined,
+  ArrowDownward,
+  ArrowUpward,
+  CheckOutlined,
+  FilterList,
+  SearchFilled as Search,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'

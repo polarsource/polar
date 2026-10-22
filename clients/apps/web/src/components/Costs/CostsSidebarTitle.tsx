@@ -3,7 +3,7 @@
 import { EventCostCreationGuideModal } from '@/components/Events/EventCostCreationGuideModal'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
-import { CircleQuestionMarkIcon } from 'lucide-react'
+import { CircleQuestionMark as CircleQuestionMarkIcon } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 
 export function CostsSidebarTitle({

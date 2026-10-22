@@ -19,7 +19,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
+import {
+  Check,
+  ChevronsUpDown,
+  LoaderCircle as Loader2,
+} from '@polar-sh/orbit/icons'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from './ProductPriceLabel'

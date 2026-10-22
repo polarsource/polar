@@ -3,10 +3,10 @@ import {
   CircleCheck,
   Info,
   LoaderCircle,
+  type LucideIcon,
   TriangleAlert,
   X,
-  type LucideIcon,
-} from 'lucide-react'
+} from '../icons'
 import type { CSSProperties, ReactNode } from 'react'
 import { Box } from './Box'
 import { ButtonGroup, type ButtonGroupActions } from './ButtonGroup'

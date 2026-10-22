@@ -18,11 +18,13 @@ import SubscriptionStatusSelect, {
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import { useProducts, useSelectedProducts } from '@/hooks/queries'
-import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
-import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
-import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import {
+  AutorenewOutlined,
+  CalendarMonthOutlined,
+  DonutLargeOutlined,
+  FileDownloadOutlined,
+  HiveOutlined,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

@@ -1,5 +1,5 @@
 import { enums, schemas } from '@polar-sh/client'
-import { Download, Flag, Gauge, Key, Loader } from 'lucide-react'
+import { Download, Flag, Gauge, Key, Loader } from '@polar-sh/orbit/icons'
 import { twMerge } from 'tailwind-merge'
 import GitHubIcon from '../Icons/GitHubIcon'
 import SlackIcon from '../Icons/SlackIcon'

@@ -15,7 +15,7 @@ import {
 } from '@/hooks/queries/billing'
 import { useBillingPlanTelemetry } from '@/hooks/useBillingPlanTelemetry'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
+import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

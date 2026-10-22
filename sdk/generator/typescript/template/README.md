@@ -118,6 +118,8 @@ async function recordUsage() {
 }
 ```
 
+An event without a `timestamp` is dated when you call `track()`, not when its batch reaches Polar.
+
 ### Actor context
 
 It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event:

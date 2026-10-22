@@ -1,4 +1,5 @@
 import contextlib
+import datetime
 import os
 import types
 import typing
@@ -241,6 +242,8 @@ class Metering:
         Args:
             **event: Event fields with exactly one customer_id or
                 external_customer_id. Member IDs must match the identifier kind.
+                An event without a timestamp is dated now, once, before any
+                strategy sees it.
 
         Raises:
             InvalidActorError: Customer or member identifiers are inconsistent.
@@ -251,6 +254,7 @@ class Metering:
             event.get("external_customer_id"),
             event.get("external_member_id"),
         )
+        event.setdefault("timestamp", datetime.datetime.now(datetime.UTC).isoformat())
         actor_event = typing.cast(EventInput, event)
         for strategy in self.strategies:
             if isinstance(strategy, ValidateProtocol):

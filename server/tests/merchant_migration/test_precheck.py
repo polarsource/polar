@@ -1288,6 +1288,11 @@ class TestClassifyRecords:
                 "subscription_managed_payments",
                 id="sold-through-managed-payments",
             ),
+            pytest.param(
+                {"has_pending_invoice_items": True},
+                "subscription_pending_invoice_items",
+                id="pending-invoice-items",
+            ),
         ],
     )
     def test_scheduled_end_drops_subscription(

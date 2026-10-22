@@ -1025,3 +1025,31 @@ class TestDeleteProduct:
 
         response = await client.get(f"/v1/products/{product.id}")
         assert response.status_code == 404
+
+
+@pytest.mark.anyio
+class TestNameCheck:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Casino Night"}
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_flagged_by_word_list(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Casino Night"}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"category": "gambling", "phrase": "Casino"}
+
+    @pytest.mark.auth
+    async def test_clean_name(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Pro Plan"}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"category": None, "phrase": None}

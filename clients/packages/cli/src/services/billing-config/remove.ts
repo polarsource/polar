@@ -36,7 +36,6 @@ const decode = (text: string) => {
 const OPENING = '{(['
 const CLOSING = '})]'
 
-// Splits the object literal opening at `open` into its entries, each with its trailing comma
 const entryRanges = (code: string, open: number) => {
   const ranges: Range[] = []
   let depth = 0
@@ -83,7 +82,6 @@ const sectionEntries = (source: string, section: string) => {
   )
 }
 
-// Widens a range to whole lines when nothing else shares them
 const wholeLines = (source: string, { start, end }: Range): Range => {
   const lineStart = source.lastIndexOf('\n', start - 1) + 1
   const newline = source.indexOf('\n', end)

@@ -1324,10 +1324,10 @@ async def test_keeps_a_cold_buckets_events_pending_on_polars_receipt(
         for event in events:
             await outpost.track(event)
         await _seal(redis, BUCKET + BUCKET_SIZE)
-        await outpost._refresh_states()
         # Received is not counted: the snapshot that sealed the bucket did not have them.
         await outpost.acknowledge(events)
         assert await redis.hget(key, f"pending:{BUCKET}:count") == b"2"
+        await outpost._refresh_states()
         assert await _consumed(outpost) == 20
         await outpost.confirm(events)
         assert await redis.hget(key, f"pending:{BUCKET}:count") is None

@@ -800,10 +800,10 @@ it("keeps a cold bucket's events pending on Polar's receipt until a snapshot cou
   const events = [usage("event-0", 10), usage("event-1", 10)];
   for (const event of events) await outpost.track(event);
   await seal(bucket + BUCKET_SIZE);
-  await outpost["synchronize"]();
   // Received is not counted: the snapshot that sealed the bucket did not have them.
   await outpost.acknowledge(events);
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("2");
+  await outpost["synchronize"]();
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
   await outpost.confirm(events);
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();

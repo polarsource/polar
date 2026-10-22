@@ -751,6 +751,19 @@ it("confirms the events Polar ingested and keeps the rest pending", async () => 
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("6");
 });
 
+it("keeps the pending extrema of the events still pending", async () => {
+  reducers[0].aggregation = { func: "max", property: "tokens" };
+  const outpost = await warm();
+  const events = [usage("low", 3), usage("high", 9), usage("mid", 5)];
+  for (const event of events) await outpost.track(event);
+  expect(await redis.hget(key, `pending:${bucket}:min`)).toBe("3");
+  expect(await redis.hget(key, `pending:${bucket}:max`)).toBe("9");
+  await outpost.confirm([events[1], events[0]]);
+  expect(await redis.hget(key, `pending:${bucket}:min`)).toBe("5");
+  expect(await redis.hget(key, `pending:${bucket}:max`)).toBe("5");
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("1");
+});
+
 it("ignores a duplicate external_id", async () => {
   const outpost = await warm();
   await outpost.track(usage("same", 10));

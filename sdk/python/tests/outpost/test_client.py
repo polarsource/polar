@@ -1231,6 +1231,29 @@ async def test_confirms_ingested_events_and_keeps_the_rest_pending(
 
 
 @pytest.mark.anyio
+async def test_keeps_the_pending_extrema_of_the_events_still_pending(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    configuration["reducers"][0]["aggregation"] = {"func": "max", "property": "tokens"}
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        events = [_usage("low", 3), _usage("high", 9), _usage("mid", 5)]
+        for event in events:
+            await outpost.track(event)
+        assert await redis.hget(key, f"pending:{BUCKET}:min") == b"3"
+        assert await redis.hget(key, f"pending:{BUCKET}:max") == b"9"
+        await outpost.confirm([events[1], events[0]])
+    assert await redis.hget(key, f"pending:{BUCKET}:min") == b"5"
+    assert await redis.hget(key, f"pending:{BUCKET}:max") == b"5"
+    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
+
+
+@pytest.mark.anyio
 async def test_ignores_a_duplicate_external_id(
     redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
 ) -> None:

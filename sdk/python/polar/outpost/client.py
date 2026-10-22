@@ -300,21 +300,31 @@ local pending = 'pending:' .. ARGV[4] .. ':'
 local BATCH = 1000
 local ids = {}
 for i = 5, #ARGV do table.insert(ids, ARGV[i]) end
-local gone = {}
+local gone, seen = {}, {}
 local removed, sum = 0, 0
 local current = redis.call('HMGET', KEYS[1], pending .. 'min', pending .. 'max')
 local min, max = tonumber(current[1]), tonumber(current[2])
 local extremum = false
+-- An entry is the event's value, or nothing when it only counts. Earlier SDK versions stored
+-- the event's count, sum, min and max as a JSON array; their entries expire within the hour.
+local function value_of(entry)
+    if entry:sub(1, 1) == '[' then
+        local legacy = cjson.decode(entry)
+        entry = legacy[3] ~= '' and legacy[2] or ''
+    end
+    return entry ~= '' and tonumber(entry) or nil
+end
 for offset = 1, #ids, BATCH do
     local last = math.min(offset + BATCH - 1, #ids)
     local entries = redis.call('HMGET', KEYS[2], unpack(ids, offset, last))
     for i, entry in ipairs(entries) do
-        if entry then
-            table.insert(gone, ids[offset + i - 1])
+        local id = ids[offset + i - 1]
+        if entry and not seen[id] then
+            seen[id] = true
+            table.insert(gone, id)
             removed = removed + 1
-            -- An entry is the event's value, or nothing when it only counts.
-            if entry ~= '' then
-                local value = tonumber(entry)
+            local value = value_of(entry)
+            if value then
                 sum = sum + value
                 if value == min or value == max then extremum = true end
             end
@@ -340,8 +350,8 @@ elseif extremum then
     -- Extrema cannot be decremented: read them off the events still pending.
     min, max = nil, nil
     for _, entry in ipairs(redis.call('HVALS', KEYS[2])) do
-        if entry ~= '' then
-            local value = tonumber(entry)
+        local value = value_of(entry)
+        if value then
             if not min or value < min then min = value end
             if not max or value > max then max = value end
         end

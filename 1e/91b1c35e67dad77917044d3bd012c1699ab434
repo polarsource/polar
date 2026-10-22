@@ -1,0 +1,21 @@
+clients/apps/web/src/app/(main)/agent/claim/ClaimAgentPage.test.tsx
+  s_5baa939665e021::t_d3944177b5c1f0 69
+clients/apps/web/src/app/(main)/agent/claim/AgentClaimSummary.tsx
+  s_5baa939665e021::t_3949f4b3a233ef 4,15-16,23-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1e91b1c35e67dad77917044d3bd012c1699ab434",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

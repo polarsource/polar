@@ -1254,6 +1254,46 @@ async def test_keeps_the_pending_extrema_of_the_events_still_pending(
 
 
 @pytest.mark.anyio
+async def test_settles_an_event_once_however_many_times_a_confirmation_names_it(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        events = [_usage("event-0", 10), _usage("event-1", 10)]
+        for event in events:
+            await outpost.track(event)
+        await outpost.confirm([events[0], events[0]])
+    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
+    assert await redis.hget(key, f"pending:{BUCKET}:sum") == b"10"
+
+
+@pytest.mark.anyio
+async def test_settles_an_event_the_previous_sdk_version_left_pending(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        await outpost.track(_usage("new", 10))
+        # What WRITE_BUCKET used to store per event: count, sum, min and max, as strings.
+        await redis.hset(
+            f"outpost:pending:external:alice:tokens:{BUCKET}",
+            "old",
+            '["1","7","7","7"]',
+        )
+        await redis.hincrby(key, f"pending:{BUCKET}:count", 1)
+        await redis.hincrbyfloat(key, f"pending:{BUCKET}:sum", 7)
+        await outpost.confirm([_usage("old", 7)])
+    assert await redis.hget(key, f"pending:{BUCKET}:count") == b"1"
+    assert await redis.hget(key, f"pending:{BUCKET}:sum") == b"10"
+
+
+@pytest.mark.anyio
 async def test_ignores_a_duplicate_external_id(
     redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
 ) -> None:

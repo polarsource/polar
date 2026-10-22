@@ -764,6 +764,27 @@ it("keeps the pending extrema of the events still pending", async () => {
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("1");
 });
 
+it("settles an event once however many times a confirmation names it", async () => {
+  const outpost = await warm();
+  const events = [usage("event-0", 10), usage("event-1", 10)];
+  for (const event of events) await outpost.track(event);
+  await outpost.confirm([events[0], events[0]]);
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("1");
+  expect(await redis.hget(key, `pending:${bucket}:sum`)).toBe("10");
+});
+
+it("settles an event the previous SDK version left pending", async () => {
+  const outpost = await warm();
+  await outpost.track(usage("new", 10));
+  // What WRITE_BUCKET used to store per event: count, sum, min and max, as strings.
+  await redis.hset(`outpost:pending:external:alice:tokens:${bucket}`, "old", '["1","7","7","7"]');
+  await redis.hincrby(key, `pending:${bucket}:count`, 1);
+  await redis.hincrbyfloat(key, `pending:${bucket}:sum`, 7);
+  await outpost.confirm([usage("old", 7)]);
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("1");
+  expect(await redis.hget(key, `pending:${bucket}:sum`)).toBe("10");
+});
+
 it("ignores a duplicate external_id", async () => {
   const outpost = await warm();
   await outpost.track(usage("same", 10));

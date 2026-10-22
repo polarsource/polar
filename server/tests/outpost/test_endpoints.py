@@ -459,6 +459,38 @@ class TestOutpost:
         )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_pending_bucket_start_out_of_range(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "confirm",
+                    "payload": {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": "alice",
+                        "bucket_start": 10**24,
+                        "meter_id": str(meter.id),
+                        "ids": ["event"],
+                    },
+                }
+            )
+            # The message is invalid and dropped: the next answer is to the next request.
+            await websocket.send_json({"type": "configuration"})
+            response = await websocket.receive_json(timeout=2)
+
+        assert response["type"] == "configuration"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_confirm_pending_too_many_ids(
         self,
         save_fixture: SaveFixture,

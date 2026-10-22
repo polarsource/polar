@@ -57,7 +57,7 @@ def upgrade() -> None:
             op.create_table(
                 "catalogs",
                 sa.Column("organization_id", sa.Uuid(), nullable=False),
-                sa.Column("hash", sa.String(length=64), nullable=True),
+                sa.Column("version_hash", sa.String(length=64), nullable=True),
                 sa.Column("status", sa.String(), nullable=False),
                 sa.Column("published_at", sa.TIMESTAMP(timezone=True), nullable=True),
                 sa.Column("id", sa.Uuid(), nullable=False),
@@ -73,8 +73,8 @@ def upgrade() -> None:
                 sa.PrimaryKeyConstraint("id", name=op.f("catalogs_pkey")),
                 sa.UniqueConstraint(
                     "organization_id",
-                    "hash",
-                    name=op.f("catalogs_organization_id_hash_key"),
+                    "version_hash",
+                    name=op.f("catalogs_organization_id_version_hash_key"),
                 ),
                 if_not_exists=True,
             )

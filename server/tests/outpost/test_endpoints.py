@@ -415,6 +415,72 @@ class TestOutpost:
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_pending_split_bucket(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
+        # A seal split the bucket: only its first half is synced, so the snapshot's
+        # cold usage stops there and only the events before the split count.
+        split_at = bucket_start + timedelta(minutes=2)
+        for interval_start, interval_end, synced_at in (
+            (bucket_start, split_at, split_at),
+            (split_at, bucket_start + timedelta(minutes=5), None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    external_customer_id="alice",
+                    bucket_start=interval_start,
+                    bucket_end=interval_end,
+                    count=1,
+                    sum=Decimal(1),
+                    min=Decimal(1),
+                    max=Decimal(1),
+                    synced_at=synced_at,
+                )
+            )
+        for external_id, timestamp in (
+            ("early", bucket_start + timedelta(minutes=1)),
+            ("late", bucket_start + timedelta(minutes=3)),
+        ):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                timestamp=timestamp,
+                external_customer_id="alice",
+                external_id=external_id,
+            )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "confirm",
+                    "payload": {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": "alice",
+                        "bucket_start": to_epoch_microseconds(bucket_start),
+                        "meter_id": str(meter.id),
+                        "ids": ["early", "late"],
+                    },
+                }
+            )
+            response = await websocket.receive_json(timeout=2)
+
+        assert response["payload"]["ids"] == ["early"]
+        assert response["payload"]["snapshot"]["cold_until"] == to_epoch_microseconds(
+            split_at
+        )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_confirm_pending_bucket_not_synced(
         self,
         save_fixture: SaveFixture,

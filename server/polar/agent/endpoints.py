@@ -1,4 +1,5 @@
 from fastapi import Depends, Request, Response
+from fastapi.responses import PlainTextResponse
 
 from polar.auth.exceptions import SessionNotFreshError
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWriteFresh
@@ -14,6 +15,7 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 
+from .auth_md import render_auth_md
 from .dependencies import agent_sign_up_enabled
 from .schemas import (
     AgentClaim,
@@ -37,7 +39,12 @@ router = APIRouter(
 )
 
 
-@router.post("/identity", response_model=AgentIdentity, include_in_schema=False)
+@router.post(
+    "/identity",
+    response_model=AgentIdentity,
+    name="agent:create_identity",
+    include_in_schema=False,
+)
 async def create_identity(
     identity_create: AgentIdentityCreate,
     request: Request,
@@ -119,3 +126,17 @@ async def confirm_claim(
     """Claim an agent and its organization with the code the agent gave."""
     await agent_service.confirm_claim(session, auth_subject.subject, claim_confirm)
     return Response(status_code=204)
+
+
+auth_md_router = APIRouter(
+    include_in_schema=False, dependencies=[Depends(agent_sign_up_enabled)]
+)
+
+
+@auth_md_router.get("/auth.md", name="agent:auth_md")
+async def auth_md(request: Request) -> PlainTextResponse:
+    """How an agent signs up and gets claimed, in plain language (auth.md)."""
+    return PlainTextResponse(
+        render_auth_md(lambda name: str(request.url_for(name))),
+        media_type="text/markdown; charset=utf-8",
+    )

@@ -6,6 +6,7 @@ import structlog
 from fastapi import FastAPI
 
 from polar import worker  # noqa
+from polar.agent.endpoints import auth_md_router
 from polar.api import router
 from polar.auth.exception_handlers import (
     PolarAuthRedirectionError,
@@ -241,6 +242,9 @@ def create_app() -> FastAPI:
 
     # /.well-known
     app.include_router(well_known_router)
+
+    # /auth.md
+    app.include_router(auth_md_router)
 
     # /healthz
     app.include_router(health_router)

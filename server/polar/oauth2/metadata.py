@@ -12,6 +12,20 @@ if TYPE_CHECKING:
     from .authorization_server import AuthorizationServer
 
 
+class AgentAuthMetadata(BaseModel):
+    """
+    Agent registration and claim endpoints.
+
+    The `agent_auth` block of the auth.md spec.
+    https://workos.com/auth-md/docs/apps
+    """
+
+    skill: str
+    identity_endpoint: str
+    claim_endpoint: str
+    identity_types_supported: list[str]
+
+
 class OAuth2AuthorizationServerMetadata(BaseModel):
     """
     OAuth 2.0 Authorization Server Metadata
@@ -43,6 +57,7 @@ class OAuth2AuthorizationServerMetadata(BaseModel):
     introspection_endpoint_auth_signing_alg_values_supported: list[str] | None = None
     code_challenge_methods_supported: list[str] | None = None
     authorization_response_iss_parameter_supported: bool | None = None
+    agent_auth: AgentAuthMetadata | None = None
 
 
 class OpenIDProviderMetadata(OAuth2AuthorizationServerMetadata):
@@ -105,7 +120,7 @@ def get_protected_resource_metadata() -> OAuth2ProtectedResourceMetadata:
 def get_server_metadata(
     authorization_server: "AuthorizationServer", url_for: Callable[[str], str]
 ) -> OpenIDProviderMetadata:
-    return OpenIDProviderMetadata(
+    metadata = OpenIDProviderMetadata(
         issuer=constants.ISSUER,
         authorization_endpoint=f"{settings.FRONTEND_BASE_URL}/oauth2/authorize",
         token_endpoint=url_for("oauth2:request_token"),
@@ -128,3 +143,11 @@ def get_server_metadata(
         id_token_signing_alg_values_supported=constants.ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED,
         claims_supported=constants.CLAIMS_SUPPORTED,
     )
+    if settings.AGENT_SIGN_UP_ENABLED:
+        metadata.agent_auth = AgentAuthMetadata(
+            skill=url_for("agent:auth_md"),
+            identity_endpoint=url_for("agent:create_identity"),
+            claim_endpoint=url_for("agent:start_claim"),
+            identity_types_supported=["anonymous"],
+        )
+    return metadata

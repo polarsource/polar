@@ -19,11 +19,7 @@ from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-<<<<<<< HEAD
-from polar.models import Organization, Product, User
-=======
-from polar.models import Agent, Organization, User
->>>>>>> cursor/catalog-v2-1-schema-f42a
+from polar.models import Agent, Organization, Product, User
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository

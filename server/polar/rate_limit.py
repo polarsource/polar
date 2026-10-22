@@ -1,4 +1,3 @@
-import re
 from collections.abc import Sequence
 
 from fastapi.requests import Request
@@ -12,11 +11,6 @@ from polar.enums import RateLimitGroup
 from polar.kit.http import get_ip_address
 from polar.redis import Redis
 
-_AGENT_SIGN_UP_PATH = "^/v1/agent/identity/?$"
-# Keyed by IP whatever credentials the request carries: a token minted by one
-# sign-up would otherwise get a fresh bucket for the next.
-_IP_KEYED_PATHS = [re.compile(_AGENT_SIGN_UP_PATH)]
-
 
 async def _authenticate_ip(scope: Scope) -> tuple[str, RateLimitGroup]:
     ip = get_ip_address(Request(scope))
@@ -25,8 +19,7 @@ async def _authenticate_ip(scope: Scope) -> tuple[str, RateLimitGroup]:
 
 async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
     auth_subject: AuthSubject[Subject] = scope["state"]["auth_subject"]
-    ip_keyed = any(pattern.match(scope.get("path", "")) for pattern in _IP_KEYED_PATHS)
-    if ip_keyed or is_anonymous(auth_subject):
+    if is_anonymous(auth_subject):
         ip = get_ip_address(Request(scope))
         if ip is not None:
             return ip, RateLimitGroup.default
@@ -119,9 +112,8 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="compass-assistant",
         ),
     ],
-    # Each agent sign-up creates an OAuth client and an agent, so it's capped per
-    # IP (see `_IP_KEYED_PATHS`).
-    _AGENT_SIGN_UP_PATH: [
+    # Each sign-up creates an OAuth client and an agent.
+    "^/v1/agent/identity/?$": [
         Rule(minute=5, hour=20, block_time=3600, zone="agent-sign-up"),
     ],
     # SDK telemetry exports share the token with event ingestion; their own zone

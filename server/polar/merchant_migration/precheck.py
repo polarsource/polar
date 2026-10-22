@@ -104,6 +104,7 @@ SUBSCRIPTION_DROP_CODES = {
     "subscription_scheduled_end",
     "subscription_scheduled_change",
     "subscription_customer_balance",
+    "subscription_pending_invoice_items",
     "subscription_stacked_discounts",
     "subscription_customer_discount",
     "subscription_item_discount",
@@ -764,6 +765,18 @@ class PrecheckEngine:
                     _CUSTOMER_CREDIT_REASON
                     if subscription.customer_balance < 0
                     else _CUSTOMER_DEBT_REASON
+                ),
+                source_id=source_id,
+            )
+        if subscription.has_pending_invoice_items:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_pending_invoice_items",
+                message=(
+                    "This subscription has pending charges or credits on Stripe "
+                    "that would be lost. It stays on Stripe until they're "
+                    "invoiced at the next renewal; run the pre-check again after "
+                    "that."
                 ),
                 source_id=source_id,
             )

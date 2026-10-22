@@ -15,13 +15,14 @@ from polar.agent.identity_assertion import (
 from polar.agent.repository import AgentRepository
 from polar.agent.service import CLAIM_TOKEN_TTL, CLAIM_TTL
 from polar.auth.models import AuthSubject
-from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
+from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.utils import utc_now
 from polar.models import Agent, OAuth2Token, Organization, User
 from polar.models.agent import AgentStatus
 from polar.models.user_organization import OrganizationRole
+from polar.oauth2.constants import CLAIM_GRANT_TYPE
 from polar.oauth2.sub_type import SubType
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -75,6 +76,7 @@ class TestCreateIdentity:
         json = response.json()
         assert json["registration_type"] == "anonymous"
         assert json["pre_claim_scopes"] == sorted(UNCLAIMED_AGENT_SCOPES)
+        assert json["post_claim_scopes"] == sorted(CLAIMED_AGENT_SCOPES)
         assert json["claim_url"] == "http://test/v1/agent/identity/claim"
 
         repository = AgentRepository.from_session(session)
@@ -93,7 +95,7 @@ class TestCreateIdentity:
         assert oauth2_client.client_id_issued_at > 0
         assert oauth2_client.token_endpoint_auth_method == "none"
         assert oauth2_client.redirect_uris == []
-        assert oauth2_client.grant_types == [JWT_BEARER_GRANT_TYPE]
+        assert oauth2_client.grant_types == [JWT_BEARER_GRANT_TYPE, CLAIM_GRANT_TYPE]
         assert set(oauth2_client.scope.split()) == UNCLAIMED_AGENT_SCOPES
 
         assert agent.claim_token_hash == get_token_hash(json["claim_token"])
@@ -282,7 +284,9 @@ class TestConfirmClaim:
         assert response.status_code == 204
 
         user = auth_subject.subject
-        agent = await AgentRepository.from_session(session).get_by_id(claim_agent.id)
+        agent = await AgentRepository.from_session(session).get_by_id(
+            claim_agent.id, options=(joinedload(Agent.oauth2_client),)
+        )
         assert agent is not None
         assert agent.status == AgentStatus.claimed
         assert agent.claimed_by_user_id == user.id
@@ -291,6 +295,7 @@ class TestConfirmClaim:
         assert agent.claim_code_hash is None
         assert agent.claim_token_hash == get_token_hash(CLAIM_TOKEN)
         assert agent.organization_id == organization.id
+        assert set(agent.oauth2_client.scope.split()) == CLAIMED_AGENT_SCOPES
 
         token = await session.get(OAuth2Token, pre_claim_token.id)
         assert token is not None

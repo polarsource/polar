@@ -59,7 +59,7 @@ class AgentRepository(
                     attribute="claim_link_token_hash",
                 )
             )
-            .options(joinedload(Agent.organization))
+            .options(joinedload(Agent.oauth2_client), joinedload(Agent.organization))
         )
         if for_update:
             statement = statement.with_for_update(of=Agent)

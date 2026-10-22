@@ -17,6 +17,7 @@ REFRESH_TOKEN_PREFIX: dict[SubType, str] = {
     SubType.organization: "polar_rt_o_",
 }
 
+CLAIM_GRANT_TYPE = "urn:workos:agent-auth:grant-type:claim"
 CLAIM_POLL_INTERVAL = 5
 
 ISSUER = settings.BASE_URL

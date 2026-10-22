@@ -18,8 +18,8 @@ import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
-const yes = Flag.Boolean('yes').pipe(
-  Flag.withAlias('y'),
+const confirmed = Flag.Boolean('confirm').pipe(
+  Flag.withAlias('c'),
   Flag.withDefault(false),
   Flag.withDescription('Remove without asking for confirmation'),
 )
@@ -87,26 +87,26 @@ const confirm =
     config: LoadedConfig,
     organization: ActiveOrganization,
     json: boolean,
-    yes: boolean,
+    confirmed: boolean,
     say: Say['say'],
   ) =>
   (entries: ReadonlyArray<PruneEntry>) =>
     Effect.gen(function* () {
       yield* say(report(organization, entries))
-      if (yes) return
+      if (confirmed) return
       if (json || !(yield* interactive)) {
         return yield* new BillingConfigError({
           message: `Confirmation needed to remove entries from ${config.file}`,
-          hint: 'Pass --yes to remove without asking.',
+          hint: 'Pass --confirm to remove without asking.',
         })
       }
       yield* say([ui.blank])
-      const confirmed = yield* Prompt.run(
+      const accepted = yield* Prompt.run(
         Prompt.Confirm({
           message: `Remove ${plural(entries.filter(removable).length, 'entry', 'entries')} from ${config.file}? Nothing on Polar changes.`,
         }),
       ).pipe(Effect.orElseSucceed(() => false))
-      if (!confirmed) {
+      if (!accepted) {
         return yield* new BillingConfigError({
           message: `Prune cancelled, ${config.file} unchanged`,
         })
@@ -137,7 +137,7 @@ const render = (
         ),
       ]
 
-export const prune = Command.make('prune', { file, org, yes }).pipe(
+export const prune = Command.make('prune', { file, org, confirmed }).pipe(
   Command.withDescription(
     'Remove unused deprecated entries from a billing config file, without changing anything on Polar',
   ),
@@ -156,13 +156,13 @@ export const prune = Command.make('prune', { file, org, yes }).pipe(
       description: 'Check usage in another organization, by slug or ID',
     },
     {
-      command: 'polar config prune --yes --json',
+      command: 'polar config prune --confirm --json',
       description: 'Remove without asking and print the result as JSON',
     },
   ]),
   output({
     result: PruneOutput,
-    run: ({ file, org, yes }, { say }) =>
+    run: ({ file, org, confirmed }, { say }) =>
       Effect.gen(function* () {
         const billing = yield* BillingConfig
         const { json } = yield* Output
@@ -190,7 +190,13 @@ export const prune = Command.make('prune', { file, org, yes }).pipe(
                 (entries) =>
                   checked.pipe(
                     Effect.andThen(
-                      confirm(config, organization, json, yes, say)(entries),
+                      confirm(
+                        config,
+                        organization,
+                        json,
+                        confirmed,
+                        say,
+                      )(entries),
                     ),
                   ),
               )

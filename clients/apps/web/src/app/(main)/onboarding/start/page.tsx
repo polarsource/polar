@@ -77,7 +77,7 @@ export default function Page() {
         alignItems="center"
         rowGap="2xl"
       >
-        <LogoIcon size={48} />
+        <LogoIcon size={40} />
 
         <Box
           flexDirection="column"

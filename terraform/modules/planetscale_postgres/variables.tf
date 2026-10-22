@@ -14,6 +14,11 @@ variable "branch" {
   default     = "main"
 }
 
+variable "app_role_name" {
+  description = "Base name of the application role. PlanetScale appends a suffix."
+  type        = string
+}
+
 variable "region" {
   description = "PlanetScale region slug."
   type        = string

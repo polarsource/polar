@@ -110,6 +110,18 @@ describe('prune', () => {
     expect(await readFile(file, 'utf8')).toBe(source)
   })
 
+  test('leaves the file alone when it changed while confirming', async () => {
+    api.routes[`POST ${pruneUrl}`] = Response.json({ entries: [apples] })
+    const edited = source.replace('pears', 'plums')
+
+    await expect(
+      run(() => Effect.promise(() => writeFile(file, edited))),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('changed while pruning'),
+    })
+    expect(await readFile(file, 'utf8')).toBe(edited)
+  })
+
   test('does not ask when nothing can be removed', async () => {
     api.routes[`POST ${pruneUrl}`] = Response.json({ entries: [beta] })
 

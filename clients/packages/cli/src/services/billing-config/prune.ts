@@ -138,6 +138,15 @@ const remove = (
     if (!isDeepStrictEqual(edited, withoutRemovals(config.input, removals))) {
       return yield* unsafe
     }
+    const current = yield* fs
+      .readFileString(config.file)
+      .pipe(Effect.orElseSucceed(() => undefined))
+    if (current !== config.source) {
+      return yield* new BillingConfigError({
+        message: `${config.file} changed while pruning, nothing removed`,
+        hint: 'Run prune again.',
+      })
+    }
     yield* writeConfig(fs, config.file, source)
   })
 

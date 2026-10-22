@@ -1,0 +1,27 @@
+server/polar/agent/schemas.py
+  s_5baa939665e021::t_af42801c150fbf 4,36,44-90
+server/polar/agent/repository.py
+  s_5baa939665e021::t_af42801c150fbf 4,6,11,17,23,42-61,63-66
+server/polar/agent/service.py
+  s_5baa939665e021::t_af42801c150fbf 2-3,5-6,8-9,13-20,22-24,26-28,30-33,35-44,47-100,105-109,150,156-249,257-283
+server/polar/oauth2/constants.py
+  s_5baa939665e021::t_4571145a5ce578 21-22
+server/tests/agent/test_endpoints.py
+  s_5baa939665e021::t_af42801c150fbf 2,8,16-17,22,24,26,28-37,45-61,80,114-286,290-297,299-390
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "671c914ef9431dc781ff69cfae2c5c655ecf2478",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

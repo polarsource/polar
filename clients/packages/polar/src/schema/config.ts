@@ -135,6 +135,65 @@ type MeterKey<Meters extends MeterEntries> =
     ? Key & string
     : keyof Meters & string
 
+type EntryAt<Entries, Key extends string> =
+  Entries extends ReadonlyArray<infer Entry>
+    ? Extract<Entry, readonly [Key, unknown]>[1]
+    : Entries[Key & keyof Entries]
+
+// Intersected with a config section's entries: `Checks` holds what each
+// entry must also satisfy, by external ID.
+type ValidEntries<Entries, Checks> =
+  Entries extends ReadonlyArray<unknown>
+    ? {
+        readonly [Index in keyof Entries]: Entries[Index] extends readonly [
+          infer Key,
+          unknown,
+        ]
+          ? readonly [Key, Checks[Key & keyof Checks]]
+          : Entries[Index]
+      }
+    : { readonly [Key in keyof Entries]: Checks[Key & keyof Checks] }
+
+type DeprecatedMeterKey<Meters extends MeterEntries> = {
+  [Key in MeterKey<Meters>]: EntryAt<Meters, Key> extends {
+    readonly deprecated: true
+  }
+    ? Key
+    : never
+}[MeterKey<Meters>]
+
+// Only deprecated benefits can use a deprecated meter. The literal names the
+// problem in the type error.
+type ActiveMeter<
+  Benefit,
+  DeprecatedMeter extends string,
+> = Benefit extends Deprecated
+  ? unknown
+  : Benefit extends {
+        readonly properties: { readonly meter: infer Meter extends string }
+      }
+    ? Meter extends DeprecatedMeter
+      ? {
+          readonly properties: {
+            readonly meter: DeprecatedMeterIssue<Meter, 'benefit'>
+          }
+        }
+      : unknown
+    : unknown
+
+type ValidBenefits<
+  Benefits extends BenefitEntries,
+  DeprecatedMeter extends string,
+> = ValidEntries<
+  Benefits,
+  {
+    [Key in BenefitKey<Benefits>]: ActiveMeter<
+      EntryAt<Benefits, Key>,
+      DeprecatedMeter
+    >
+  }
+>
+
 type BenefitEntries<Meter extends string = string> =
   | Readonly<Record<string, BenefitDefinition<Meter>>>
   | ReadonlyArray<
@@ -146,17 +205,12 @@ type BenefitKey<Benefits extends BenefitEntries> =
     ? Key & string
     : keyof Benefits & string
 
-type BenefitAt<Benefits extends BenefitEntries, Key extends string> =
-  Benefits extends ReadonlyArray<infer Entry>
-    ? Extract<Entry, readonly [Key, BenefitDefinition]>[1]
-    : Benefits[Key & keyof Benefits]
-
 type WithMetadata<Benefit, Values> = Benefit extends unknown
   ? Omit<Benefit, 'metadata'> & { readonly metadata: Values }
   : never
 
 type DeprecatedBenefitKey<Benefits extends BenefitEntries> = {
-  [Key in BenefitKey<Benefits>]: BenefitAt<Benefits, Key> extends Deprecated
+  [Key in BenefitKey<Benefits>]: EntryAt<Benefits, Key> extends Deprecated
     ? Key
     : never
 }[BenefitKey<Benefits>]
@@ -183,11 +237,26 @@ type ProductGrant<Product> =
     ? Granted
     : never
 
-// Only deprecated products can grant deprecated benefits. The literal names
-// the problem in the type error.
-type ActiveGrants<
+type DeprecatedMeterIssue<
+  Meter extends string,
+  Owner extends string,
+> = `Meter "${Meter}" is deprecated, so only a deprecated ${Owner} can use it.`
+
+type ActivePrices<Prices, DeprecatedMeter extends string> = {
+  readonly [Index in keyof Prices]: Prices[Index] extends {
+    readonly kind: 'metered'
+    readonly meter: infer Meter extends DeprecatedMeter
+  }
+    ? { readonly meter: DeprecatedMeterIssue<Meter, 'product'> }
+    : unknown
+}
+
+// Only deprecated products can grant deprecated benefits or price by a
+// deprecated meter. The literals name the problem in the type error.
+type ActiveProduct<
   Product,
   DeprecatedBenefit extends string,
+  DeprecatedMeter extends string,
 > = Product extends Deprecated
   ? unknown
   : {
@@ -198,27 +267,24 @@ type ActiveGrants<
             : Grant
           : never
       >
-    }
+    } & (Product extends { readonly priceList: infer Prices }
+      ? { readonly priceList: ActivePrices<Prices, DeprecatedMeter> }
+      : unknown)
 
 type ValidProducts<
   Products extends ProductEntries,
   DeprecatedBenefit extends string,
-> =
-  Products extends ReadonlyArray<unknown>
-    ? {
-        readonly [Index in keyof Products]: Products[Index] extends readonly [
-          infer Key,
-          infer Product,
-        ]
-          ? readonly [Key, ActiveGrants<Product, DeprecatedBenefit>]
-          : Products[Index]
-      }
-    : {
-        readonly [Key in keyof Products]: ActiveGrants<
-          Products[Key],
-          DeprecatedBenefit
-        >
-      }
+  DeprecatedMeter extends string,
+> = ValidEntries<
+  Products,
+  {
+    [Key in ProductKey<Products>]: ActiveProduct<
+      EntryAt<Products, Key>,
+      DeprecatedBenefit,
+      DeprecatedMeter
+    >
+  }
+>
 
 type ProductKey<Products extends ProductEntries> =
   Products extends ReadonlyArray<readonly [infer Key, ProductDefinition]>
@@ -240,7 +306,7 @@ type ConnectedConfig<
   readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
   readonly benefits: {
     readonly [Key in BenefitKey<Benefits>]: ConnectedBenefit<
-      BenefitAt<Benefits, Key>
+      EntryAt<Benefits, Key>
     >
   }
   readonly webhooks: Webhooks
@@ -299,10 +365,17 @@ export const defineConfig = <
     readonly meter: typeof meter<DeclaredEvents<Events>>
     readonly events: EventReferences<DeclaredEvents<Events>>
   }) => Meters
-  readonly benefits?: (helpers: BenefitHelpers<MeterKey<Meters>>) => Benefits
+  readonly benefits?: (
+    helpers: BenefitHelpers<MeterKey<Meters>>,
+  ) => Benefits & ValidBenefits<Benefits, DeprecatedMeterKey<Meters>>
   readonly products?: (
     helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
-  ) => Products & ValidProducts<Products, DeprecatedBenefitKey<Benefits>>
+  ) => Products &
+    ValidProducts<
+      Products,
+      DeprecatedBenefitKey<Benefits>,
+      DeprecatedMeterKey<Meters>
+    >
   readonly discounts?: (
     helpers: DiscountHelpers<ProductKey<Products>>,
   ) => Discounts

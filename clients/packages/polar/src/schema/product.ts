@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
 import { withDeprecation } from './deprecation'
-import type { deprecatedKey, DeprecationBuilder } from './deprecation'
+import type { KeepDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
 import type { Currency } from './money'
 import {
@@ -127,11 +127,6 @@ type Prices<Meter extends string> = readonly [
   ...PriceDefinition<Meter>[],
 ]
 
-// Methods that change a type parameter return a new builder type, so they
-// carry over the `.deprecated()` marker from the current one.
-type Next<Self extends DeprecationBuilder, Builder> = Builder &
-  Pick<Self, typeof deprecatedKey>
-
 class ProductBuilder<
   Meter extends string,
   Benefit extends string,
@@ -151,27 +146,36 @@ class ProductBuilder<
     super()
   }
 
-  prices(
-    ...prices: Prices<Meter>
-  ): Next<
+  prices<const Priced extends Prices<Meter>>(
+    ...prices: Priced
+  ): KeepDeprecation<
     this,
-    ProductBuilder<Meter, Benefit, Prices<Meter>, Billing, Granted>
+    ProductBuilder<Meter, Benefit, Priced, Billing, Granted>
   > {
     return this.with({ priceList: prices })
   }
 
   recurring(
     cadence: keyof typeof cadences,
-  ): Next<this, ProductBuilder<Meter, Benefit, P, Recurring, Granted>>
+  ): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  >
   recurring(
     count: number,
     interval: Interval,
-  ): Next<this, ProductBuilder<Meter, Benefit, P, Recurring, Granted>>
+  ): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  >
   recurring(
     ...args:
       | [cadence: keyof typeof cadences]
       | [count: number, interval: Interval]
-  ): Next<this, ProductBuilder<Meter, Benefit, P, Recurring, Granted>> {
+  ): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  > {
     const billing: Recurring =
       args.length === 1
         ? { recurring_interval: cadences[args[0]], recurring_interval_count: 1 }
@@ -182,7 +186,10 @@ class ProductBuilder<
     return this.with({ billing })
   }
 
-  once(): Next<this, ProductBuilder<Meter, Benefit, P, OneTime, Granted>> {
+  once(): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, OneTime, Granted>
+  > {
     const billing: OneTime = {
       recurring_interval: null,
       recurring_interval_count: null,
@@ -205,7 +212,7 @@ class ProductBuilder<
 
   grants<const Grant extends Benefit>(
     benefits: ReadonlyArray<Grant>,
-  ): Next<this, ProductBuilder<Meter, Benefit, P, Billing, Grant>> {
+  ): KeepDeprecation<this, ProductBuilder<Meter, Benefit, P, Billing, Grant>> {
     return this.with({ benefits })
   }
 
@@ -274,5 +281,7 @@ export type ProductHelpers<Meter extends string, Benefit extends string> = {
   readonly seats: typeof seats
   readonly units: typeof units
   readonly tier: typeof tier
-  readonly meter: (meter: Meter) => ReturnType<typeof metered<Meter>>
+  readonly meter: <const Priced extends Meter>(
+    meter: Priced,
+  ) => ReturnType<typeof metered<Priced>>
 }

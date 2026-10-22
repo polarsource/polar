@@ -13,6 +13,13 @@ export type Deprecated = {
   readonly [deprecatedKey]: true
 }
 
+/**
+ * For builder methods that return a new builder type: carries over the
+ * `.deprecated()` marker from the current one.
+ */
+export type KeepDeprecation<Self extends DeprecationBuilder, Next> = Next &
+  Pick<Self, typeof deprecatedKey>
+
 export interface DeprecationBuilder {
   readonly [deprecatedKey]: boolean
   deprecated(): this & Deprecated

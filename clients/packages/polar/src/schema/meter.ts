@@ -11,6 +11,7 @@ import {
 } from './event'
 import { Builder } from './builder'
 import { deprecatedKey, withDeprecation } from './deprecation'
+import type { Deprecated, KeepDeprecation } from './deprecation'
 import {
   Metadata as MeterMetadata,
   metadataKey,
@@ -184,6 +185,11 @@ type Unit =
   | { readonly unit: 'scalar' | 'token' }
   | { readonly unit: 'custom'; readonly custom_label: string }
 
+// Type-only: lets a config tell a deprecated meter from its definition.
+type DeprecatedMeter<Builder> = Builder extends Deprecated
+  ? { readonly deprecated: true }
+  : unknown
+
 type Property<Metadata, Type> = unknown extends Metadata
   ? string
   : PropertyOf<Metadata, Type>
@@ -203,7 +209,9 @@ export class MeterBuilder<
     super()
   }
 
-  where(input: ConditionInput<Names>): MeterBuilder<Names, Metadata> {
+  where(
+    input: ConditionInput<Names>,
+  ): KeepDeprecation<this, MeterBuilder<Names, Metadata>> {
     const condition = expand(toCondition(input), this.events)
     const filter = 'conjunction' in condition ? condition : and(condition)
     const combined: MeterFilter =
@@ -223,7 +231,7 @@ export class MeterBuilder<
 
   unit(
     ...args: [unit: 'scalar' | 'token'] | [unit: 'custom', label: string]
-  ): MeterBuilder<Names, Metadata> {
+  ): KeepDeprecation<this, MeterBuilder<Names, Metadata>> {
     const meterUnit: Unit =
       args[0] === 'custom'
         ? { unit: 'custom', custom_label: args[1] }
@@ -234,7 +242,7 @@ export class MeterBuilder<
   /** Returns a plain `MeterBuilder`, which has no `on()`. */
   protected refine<Refined extends string = Names, Output = Metadata>(
     patch: object,
-  ): MeterBuilder<Refined, Output> {
+  ): KeepDeprecation<this, MeterBuilder<Refined, Output>> {
     return Object.assign(new MeterBuilder<Refined, Output>(), this, patch)
   }
 
@@ -263,7 +271,7 @@ export class MeterBuilder<
   }
 
   private aggregate(aggregation: MeterAggregation) {
-    return {
+    const definition = {
       name: this.name,
       filter: structuredClone(this.meterFilter),
       aggregation,
@@ -273,6 +281,7 @@ export class MeterBuilder<
       }),
       ...(this[deprecatedKey] && { deprecated: true as const }),
     }
+    return definition as typeof definition & DeprecatedMeter<this>
   }
 }
 
@@ -283,7 +292,10 @@ export class UnboundMeter<
 > extends MeterBuilder {
   on<const Name extends keyof Events & string>(
     ...events: [EventReference<Name>, ...EventReference<Name>[]]
-  ): MeterBuilder<Name, SharedEventOutput<Events, Name>> {
+  ): KeepDeprecation<
+    this,
+    MeterBuilder<Name, SharedEventOutput<Events, Name>>
+  > {
     const references: readonly unknown[] = events
     if (references.length === 0 || !references.every(isEventReference)) {
       throw new Error('on() takes one or more events from the `events` helper.')

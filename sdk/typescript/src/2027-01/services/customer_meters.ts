@@ -9,6 +9,7 @@ import type {
 } from "../models";
 
 import {
+  CustomerMeterCreditNotReversible,
   CustomerMetersCredits409Error,
   HTTPValidationError,
   NotPermitted,
@@ -149,7 +150,8 @@ export const creditsCustomerMeters = (client: ClientBase) => {
    * Manually grant credits on a customer meter.
    *
    * Returns the `meter.credited` event. The customer meter balance is updated
-   * asynchronously, shortly after the request.
+   * before the response is returned, unless the meter is being updated
+   * concurrently, in which case it catches up shortly after.
    *
    * **Scopes**: `customers:write`
    *
@@ -184,12 +186,55 @@ export const creditsCustomerMeters = (client: ClientBase) => {
     });
   };
 };
+export const reverseCreditCustomerMeters = (client: ClientBase) => {
+  /**
+   * Reverse a manual credit, removing the units the customer hasn't used yet.
+   *
+   * Works once per credit, within 7 days and in the current billing period.
+   * Returns a `meter.credited` event with negative units and
+   * `parent_id` set to the reversed credit.
+   *
+   * **Scopes**: `customers:write`
+   *
+   * @param id - The ID of the `meter.credited` event returned when the credit was granted.
+   * @param requestOptions - Request options
+   * @returns {MeterCreditEvent}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {NotPermitted} You don't have permission to manage customers.
+   * @throws {ResourceNotFound} Manual credit not found.
+   * @throws {CustomerMeterCreditNotReversible} The credit can't be reversed, or the customer meter is being updated: retry shortly.
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (id: string, requestOptions?: RequestOptions): Promise<MeterCreditEvent> => {
+    const pathParams = {
+      id: id,
+    };
+    const queryParams = {};
+    const request = client.buildRequest(
+      "POST",
+      "/v1/customer-meters/credits/{id}/reverse",
+      pathParams,
+      queryParams,
+      undefined,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<MeterCreditEvent>(response, "json", {
+      403: NotPermitted,
+      404: ResourceNotFound,
+      409: CustomerMeterCreditNotReversible,
+      422: HTTPValidationError,
+    });
+  };
+};
 
 export function createCustomerMetersService(client: ClientBase) {
   return {
     list: listCustomerMeters(client),
     get: getCustomerMeters(client),
     credits: creditsCustomerMeters(client),
+    reverseCredit: reverseCreditCustomerMeters(client),
     iterList: iterListCustomerMeters(client),
   };
 }

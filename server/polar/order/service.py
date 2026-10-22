@@ -2,7 +2,7 @@ import itertools
 import uuid
 from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any, Literal
 from urllib.parse import urlencode
@@ -1471,6 +1471,16 @@ class OrderService:
         customer = subscription.customer
         product = product or subscription.product
 
+        # Fixed discounts are per-order, so applying one per meter-cycle settlement
+        # multiplies the giveaway by cadence; percentage discounts are
+        # cadence-invariant and still apply. See #154.
+        if (
+            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and discount is not None
+            and discount.type != DiscountType.percentage
+        ):
+            discount = None
+
         amounts = await compute_order_amounts(
             subscription,
             items,
@@ -1527,24 +1537,13 @@ class OrderService:
         number, balance impact, optional meter reset, then payment."""
         customer = subscription.customer
 
-        # Fixed discounts are per-order, so applying one per meter-cycle settlement
-        # multiplies the giveaway by cadence; percentage discounts are
-        # cadence-invariant and still apply. See #154.
-        discount = subscription.discount
-        if (
-            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
-            and discount is not None
-            and discount.type != DiscountType.percentage
-        ):
-            discount = None
-
         order = await self.build_subscription_order(
             session,
             subscription,
             items,
             billing_reason,
             lock_balance=True,
-            discount=discount,
+            discount=subscription.discount,
             product=product,
         )
         balance_change = (
@@ -2522,6 +2521,7 @@ class OrderService:
             "subscription_cycled_after_trial",
             "subscription_final_invoice",
             "subscription_updated",
+            "subscription_usage_invoice",
         ]
         subject_template: str
         url_path_template: str
@@ -2582,7 +2582,7 @@ class OrderService:
                     "email": "{email}",
                 }
             case OrderBillingReasonInternal.subscription_meter_cycle:
-                template_name = "subscription_cycled"
+                template_name = "subscription_usage_invoice"
                 subject_template = "Your {description} usage invoice"
                 url_path_template = "/{organization}/portal"
                 url_params = {
@@ -2591,12 +2591,19 @@ class OrderService:
                     "email": "{email}",
                 }
 
-        # Final invoice uses the same email setting as subscription_cycled
-        email_setting_name = (
-            "subscription_cycled"
-            if template_name == "subscription_final_invoice"
-            else template_name
-        )
+        # Final and usage invoices use the same email setting as subscription_cycled
+        email_setting_name: Literal[
+            "order_confirmation",
+            "subscription_confirmation",
+            "subscription_cycled",
+            "subscription_cycled_after_trial",
+            "subscription_updated",
+        ]
+        match template_name:
+            case "subscription_final_invoice" | "subscription_usage_invoice":
+                email_setting_name = "subscription_cycled"
+            case _:
+                email_setting_name = template_name
         if not organization.customer_email_settings[email_setting_name]:
             return
 
@@ -2614,6 +2621,14 @@ class OrderService:
                 )
                 if is_free_product_price:
                     return
+
+        # Skip usage invoices fully covered by meter credits. The subtotal is
+        # net of credits but not of discounts, which still warrant an invoice.
+        if (
+            order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and order.subtotal_amount == 0
+        ):
+            return
 
         product = order.product
         customer = order.customer
@@ -3170,7 +3185,7 @@ class OrderService:
             failed_attempts = max(
                 failed_attempts,
                 self._scheduled_dunning_attempts(
-                    subscription, order.next_payment_attempt_at
+                    subscription.past_due_at, order.next_payment_attempt_at
                 )
                 - 1,
             )
@@ -3312,7 +3327,8 @@ class OrderService:
         # Payment row, so the schedule is the floor for the attempt count.
         if subscription is not None:
             failed_attempts = max(
-                failed_attempts, self._scheduled_dunning_attempts(subscription, now)
+                failed_attempts,
+                self._scheduled_dunning_attempts(subscription.past_due_at, now),
             )
 
         # failed_attempts includes the current failure (upserted by the Stripe
@@ -3356,12 +3372,12 @@ class OrderService:
         return order
 
     def _scheduled_dunning_attempts(
-        self, subscription: Subscription, now: datetime
+        self, dunning_started_at: datetime | None, now: datetime
     ) -> int:
         """Counts the initial failure, like `count_failed_payments_for_order`."""
-        if subscription.past_due_at is None:
+        if dunning_started_at is None:
             return 1
-        elapsed = now - subscription.past_due_at
+        elapsed = now - dunning_started_at
         return 1 + sum(
             1
             for retry_offset in itertools.accumulate(settings.DUNNING_RETRY_INTERVALS)
@@ -3381,20 +3397,49 @@ class OrderService:
             )
 
         payment_repository = PaymentRepository.from_session(session)
-        failed_attempts = await payment_repository.count_failed_payments_for_order(
-            order.id
+        now = utc_now()
+        # A failure without a payment method leaves no Payment row, so the
+        # schedule is the floor for the attempt count, as for subscriptions.
+        failed_attempts = max(
+            await payment_repository.count_failed_payments_for_order(order.id),
+            self._scheduled_dunning_attempts(order.created_at, now),
+        )
+        # Mirrors subscription.past_due_deadline, anchored on the order since a
+        # meter-cycle failure doesn't mark the subscription past_due.
+        dunning_deadline = (
+            order.created_at
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=1)
         )
 
         # failed_attempts includes this failure, so > len(intervals) means retries
         # are exhausted. Void via the canonical path to notify the merchant
         # (order_voided event + order.updated webhook).
-        if failed_attempts > len(settings.DUNNING_RETRY_INTERVALS):
+        if (
+            failed_attempts > len(settings.DUNNING_RETRY_INTERVALS)
+            or dunning_deadline < now
+        ):
             return await self.void(session, order)
+
+        if order.next_payment_attempt_at is None:
+            latest_payment = await payment_repository.get_latest_for_order(order.id)
+            if latest_payment is not None and latest_payment.is_non_recoverable:
+                log.info(
+                    "Non-recoverable decline code detected, "
+                    "scheduling meter-cycle retry at dunning deadline",
+                    order_id=order.id,
+                    decline_reason=latest_payment.decline_reason,
+                )
+                # Same as _handle_first_dunning_attempt: skip the intermediate
+                # retries and let the attempt at the deadline void the order.
+                return await repository.update(
+                    order, update_dict={"next_payment_attempt_at": dunning_deadline}
+                )
 
         next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
         return await repository.update(
             order,
-            update_dict={"next_payment_attempt_at": utc_now() + next_interval},
+            update_dict={"next_payment_attempt_at": now + next_interval},
         )
 
     async def schedule_retry_for_past_due_orders(

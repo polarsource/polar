@@ -1,23 +1,5 @@
-import type {
-  EventCreateCustomer as EventCreateCustomer2026_04,
-  EventCreateExternalCustomer as EventCreateExternalCustomer2026_04,
-} from "../2026-04/models";
-import type {
-  EventCreateCustomer as EventCreateCustomer2026_10,
-  EventCreateExternalCustomer as EventCreateExternalCustomer2026_10,
-} from "../2026-10/models";
-import type {
-  EventCreateCustomer as EventCreateCustomer2027_01,
-  EventCreateExternalCustomer as EventCreateExternalCustomer2027_01,
-} from "../2027-01/models";
+import type { EventInput } from "../metering/event";
 
-export type EventInput =
-  | EventCreateCustomer2026_04
-  | EventCreateExternalCustomer2026_04
-  | EventCreateCustomer2026_10
-  | EventCreateExternalCustomer2026_10
-  | EventCreateCustomer2027_01
-  | EventCreateExternalCustomer2027_01;
 export interface Event {
   name: string;
   customer: string;
@@ -52,20 +34,25 @@ export const parseEvent = (input: EventInput): Event => {
   };
 };
 
-export const getProperty = (event: Event, property: string): unknown => {
-  if (property === "name") return event.name;
-  if (property === "source") return "user";
-  if (property === "timestamp") return Math.trunc(event.timestamp / 1_000_000);
-  let value: unknown = event.metadata;
-  for (const part of property.replace(/^metadata\./, "").split(".")) {
-    if (
-      value === null ||
-      typeof value !== "object" ||
-      Array.isArray(value) ||
-      !Object.hasOwn(value, part)
-    )
-      return undefined;
-    value = (value as Record<string, unknown>)[part];
-  }
-  return value;
+export type PropertyReader = (event: Event) => unknown;
+
+export const getPropertyReader = (property: string): PropertyReader => {
+  if (property === "name") return (event) => event.name;
+  if (property === "source") return () => "user";
+  if (property === "timestamp") return (event) => Math.trunc(event.timestamp / 1_000_000);
+  const path = property.replace(/^metadata\./, "").split(".");
+  return (event) => {
+    let value: unknown = event.metadata;
+    for (const part of path) {
+      if (
+        value === null ||
+        typeof value !== "object" ||
+        Array.isArray(value) ||
+        !Object.hasOwn(value, part)
+      )
+        return undefined;
+      value = (value as Record<string, unknown>)[part];
+    }
+    return value;
+  };
 };

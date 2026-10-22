@@ -79,12 +79,22 @@ IncomingMessageAdapter: TypeAdapter[IncomingMessage] = TypeAdapter(IncomingMessa
 
 
 class OutgoingMessageType(StrEnum):
+    connection = "connection"
     configuration = "configuration"
     meter_usage = "meter_usage"
 
 
 class OutgoingMessageBase(MessageBase):
     type: OutgoingMessageType
+
+
+class ConnectionOutgoingMessagePayload(MessageBase):
+    id: UUID4
+
+
+class ConnectionOutgoingMessage(OutgoingMessageBase):
+    type: typing.Literal[OutgoingMessageType.connection]
+    payload: ConnectionOutgoingMessagePayload
 
 
 class ConfigurationReducer(MessageBase):
@@ -108,6 +118,7 @@ class MeterUsageOutgoingMessagePayload(MessageBase):
     # The bucket identity as events carry it: a customer can have several.
     customer_id: UUID4 | None
     external_customer_id: str | None
+    customer_exists: bool
     # Database time of the read: keep the payload with the highest version.
     version: EpochMicroseconds
     # Temporary: the customer's credits, the same for each of its identities,
@@ -127,7 +138,9 @@ class MeterUsageOutgoingMessage(OutgoingMessageBase):
 
 
 type OutgoingMessage = typing.Annotated[
-    ConfigurationOutgoingMessage | MeterUsageOutgoingMessage,
+    ConnectionOutgoingMessage
+    | ConfigurationOutgoingMessage
+    | MeterUsageOutgoingMessage,
     Discriminator("type"),
 ]
 

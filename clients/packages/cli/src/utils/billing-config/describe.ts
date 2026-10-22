@@ -154,7 +154,7 @@ const range = (bound: unknown, previous: number, usage: boolean) => {
     : `${count(previous + 1)}+`
 }
 
-const tiered = (item: Record<string, unknown>) => {
+export const tiered = (item: Record<string, unknown>) => {
   const tiers = record(item['tiers'])
   const list = (Array.isArray(tiers?.['tiers']) ? tiers['tiers'] : []).map(
     record,
@@ -191,6 +191,9 @@ const UNITS: Record<string, (item: Record<string, unknown>) => string> = {
   unit_based: (item) => singular(item['unit_label']) ?? 'unit',
   metered_tiers: (item) => name(item['meter']),
 }
+
+export const tierUnit = (item: Record<string, unknown>) =>
+  UNITS[String(item['amount_type'])]?.(item)
 
 const price = (item: Record<string, unknown>): PriceGroup | undefined => {
   const currency = String(item['price_currency']).toUpperCase()

@@ -704,6 +704,39 @@ class TestProductCreateMeterInterval:
             )
         assert "evenly divide" in str(exc_info.value)
 
+    @pytest.mark.parametrize(
+        ("billing_interval", "billing_count", "meter_interval", "meter_count"),
+        [
+            (
+                SubscriptionRecurringInterval.month,
+                1,
+                SubscriptionRecurringInterval.month,
+                1,
+            ),
+            (
+                SubscriptionRecurringInterval.month,
+                3,
+                SubscriptionRecurringInterval.month,
+                3,
+            ),
+        ],
+    )
+    def test_equal_to_billing_normalized_to_none(
+        self,
+        billing_interval: SubscriptionRecurringInterval,
+        billing_count: int,
+        meter_interval: SubscriptionRecurringInterval,
+        meter_count: int,
+    ) -> None:
+        product = _recurring_product(
+            recurring_interval=billing_interval,
+            recurring_interval_count=billing_count,
+            meter_interval=meter_interval,
+            meter_interval_count=meter_count,
+        )
+        assert product.meter_interval is None
+        assert product.meter_interval_count is None
+
     def test_invalid_coarser_than_billing(self) -> None:
         with pytest.raises(ValidationError):
             _recurring_product(

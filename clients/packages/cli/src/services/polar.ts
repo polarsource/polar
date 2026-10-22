@@ -1,9 +1,10 @@
 import {
-  createPolar,
-  createPolarCore,
-  type Polar as PolarSDK,
-  type PolarCore,
-} from '@polar-sh/sdk/2026-10'
+  type ApiClients,
+  type ApiVersion,
+  CURRENT_API_VERSION,
+} from '@polar-sh/cli-commands'
+import * as V2026_10 from '@polar-sh/sdk/2026-10'
+import * as V2027_01 from '@polar-sh/sdk/2027-01'
 import { Context, Effect, Layer, Option, Redacted, Schema } from 'effect'
 import {
   AuthError,
@@ -16,10 +17,24 @@ import { Auth } from '@/services/auth'
 
 export class Polar extends Context.Service<Polar, PolarImpl>()('Polar') {}
 
-interface UseOptions {
+type CurrentApiVersion = typeof CURRENT_API_VERSION
+type PolarSDK = ApiClients[CurrentApiVersion]['client']
+
+interface Sdk<V extends ApiVersion> {
+  createPolar: (options: V2026_10.PolarOptions) => ApiClients[V]['client']
+  createPolarCore: (options: V2026_10.PolarOptions) => ApiClients[V]['core']
+}
+
+const SDKS: { [V in ApiVersion]: Sdk<V> } = {
+  '2026-10': V2026_10,
+  '2027-01': V2027_01,
+}
+
+interface UseOptions<V extends ApiVersion> {
   timeout?: number
   authenticated?: boolean
   organizationId?: string | undefined
+  apiVersion?: V | undefined
 }
 
 const OrganizationNotAccessible = Schema.Struct({
@@ -65,9 +80,13 @@ const detailOf = (body: unknown) => {
     : describeIssues(detail)
 }
 
-const describeFailure = (statusCode: number | undefined, detail?: string) => {
+const describeFailure = (
+  statusCode: number | undefined,
+  detail: string | undefined,
+  errorName: string,
+) => {
   if (statusCode === undefined) {
-    return 'Polar API request failed. Check your connection and try again.'
+    return `Polar API request failed (${errorName}). Check your connection and try again.`
   }
   if (detail) return detail
   return statusCode >= 500
@@ -79,10 +98,13 @@ interface PolarImpl {
   getClient: (
     environment?: PolarEnvironment,
   ) => Effect.Effect<PolarSDK, AuthError>
-  use: <A>(
-    fn: (client: PolarSDK, core: PolarCore) => Promise<A>,
+  use: <A, V extends ApiVersion = CurrentApiVersion>(
+    fn: (
+      client: ApiClients[V]['client'],
+      core: ApiClients[V]['core'],
+    ) => Promise<A>,
     environment?: PolarEnvironment,
-    options?: UseOptions,
+    options?: UseOptions<V>,
   ) => Effect.Effect<A, AuthError>
 }
 
@@ -93,19 +115,27 @@ export const make = Effect.gen(function* () {
     Effect.gen(function* () {
       const baseUrl = yield* apiOrigin(environment)
       const { accessToken } = yield* auth.resolve(environment)
-      return createPolar({
+      return SDKS[CURRENT_API_VERSION].createPolar({
         baseUrl,
         accessToken: Redacted.value(accessToken),
       })
     })
 
-  const use = <A>(
-    fn: (client: PolarSDK, core: PolarCore) => Promise<A>,
+  const use = <A, V extends ApiVersion = CurrentApiVersion>(
+    fn: (
+      client: ApiClients[V]['client'],
+      core: ApiClients[V]['core'],
+    ) => Promise<A>,
     environment: PolarEnvironment = 'sandbox',
-    options?: UseOptions,
+    options?: UseOptions<V>,
   ) =>
     Effect.gen(function* () {
-      const { authenticated = true, ...requestOptions } = options ?? {}
+      const {
+        authenticated = true,
+        apiVersion,
+        ...requestOptions
+      } = options ?? {}
+      const sdk = SDKS[apiVersion ?? (CURRENT_API_VERSION as V)]
       const baseUrl = yield* apiOrigin(environment)
       const credential = authenticated
         ? yield* auth.resolve(environment)
@@ -119,8 +149,8 @@ export const make = Effect.gen(function* () {
               ...requestOptions,
             }
             return fn(
-              createPolar(clientOptions),
-              createPolarCore(clientOptions),
+              sdk.createPolar(clientOptions),
+              sdk.createPolarCore(clientOptions),
             )
           },
           catch: (error) => {
@@ -138,6 +168,7 @@ export const make = Effect.gen(function* () {
                   : undefined,
               organizationNotAccessible: isOrganizationNotAccessible(body),
               detail: detailOf(body),
+              errorName: error instanceof Error ? error.name : typeof error,
             }
           },
         })
@@ -178,7 +209,11 @@ export const make = Effect.gen(function* () {
             default:
               return new AuthError({
                 statusCode: error.statusCode,
-                message: describeFailure(error.statusCode, error.detail),
+                message: describeFailure(
+                  error.statusCode,
+                  error.detail,
+                  error.errorName,
+                ),
               })
           }
         }),

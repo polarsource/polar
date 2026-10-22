@@ -10,8 +10,10 @@ from polar.integrations.resend.client import ResendAPIError
 from polar.integrations.resend.service import UserDoesNotExist
 from polar.integrations.resend.service import resend as resend_service
 from polar.kit.utils import utc_now
-from polar.models import User
+from polar.models import Organization, User, UserOrganization
+from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.anyio
@@ -29,6 +31,7 @@ class TestSyncUser:
         assert not respx_mock.calls
         assert user.resend_id is None
 
+    @pytest.mark.usefixtures("user_organization")
     @pytest.mark.parametrize("existing", [False, True])
     async def test_create_or_retrieve(
         self,
@@ -62,6 +65,7 @@ class TestSyncUser:
                 "unsubscribed": False,
             }
 
+    @pytest.mark.usefixtures("user_organization")
     @pytest.mark.parametrize("email", ["user@example.com", "USER@example.com"])
     async def test_reuses_linked_contact(
         self,
@@ -87,6 +91,7 @@ class TestSyncUser:
         assert segment.called
         assert len(respx_mock.calls) == 2
 
+    @pytest.mark.usefixtures("user_organization")
     @pytest.mark.parametrize("linked", [False, True])
     async def test_email_change(
         self,
@@ -122,6 +127,7 @@ class TestSyncUser:
         }
         assert delete.called
 
+    @pytest.mark.usefixtures("user_organization")
     @pytest.mark.parametrize("failure_stage", ["create", "segment"])
     async def test_email_change_preserves_old_contact_on_failure(
         self,
@@ -219,6 +225,126 @@ class TestSyncUser:
         if old_contact_exists:
             assert delete_old.call_count == 1
 
+    @pytest.mark.parametrize(
+        ("status", "in_segment"),
+        [
+            (OrganizationStatus.CREATED, False),
+            (OrganizationStatus.REVIEW, True),
+            (OrganizationStatus.SNOOZED, True),
+            (OrganizationStatus.OFFBOARDING, True),
+            (OrganizationStatus.DENIED, False),
+            (OrganizationStatus.BLOCKED, False),
+        ],
+    )
+    async def test_organization_status(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+        status: OrganizationStatus,
+        in_segment: bool,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        organization.status = status
+        await save_fixture(organization)
+        user.resend_id = "contact-id"
+        respx_mock.get(path="/contacts/contact-id").respond(
+            200, json={"id": "contact-id", "email": user.email, "unsubscribed": False}
+        )
+        add = respx_mock.post(
+            path="/contacts/contact-id/segments/active-users"
+        ).respond(200)
+        remove = respx_mock.delete(
+            path="/contacts/contact-id/segments/active-users"
+        ).respond(200)
+
+        user = await resend_service.sync_user(session, user.id)
+
+        assert user.resend_id == "contact-id"
+        assert add.called is in_segment
+        assert remove.called is not in_segment
+
+    @pytest.mark.parametrize("linked", [False, True])
+    async def test_no_organization(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+        linked: bool,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        user.resend_id = "contact-id" if linked else None
+        remove = respx_mock.delete(
+            path="/contacts/contact-id/segments/active-users"
+        ).respond(404)
+
+        user = await resend_service.sync_user(session, user.id)
+
+        assert user.resend_id == ("contact-id" if linked else None)
+        assert remove.call_count == (1 if linked else 0)
+        assert len(respx_mock.calls) == remove.call_count
+
+    async def test_no_organization_email_change(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        previous_email = user.email
+        user.email = "new@example.com"
+        user.resend_id = "old-contact"
+        respx_mock.get(path=f"/contacts/{previous_email}").respond(
+            200,
+            json={"id": "old-contact", "email": previous_email, "unsubscribed": True},
+        )
+        respx_mock.get(path="/contacts/new@example.com").respond(404)
+        create = respx_mock.post(path="/contacts").respond(
+            200, json={"id": "new-contact"}
+        )
+        remove = respx_mock.delete(
+            path="/contacts/new-contact/segments/active-users"
+        ).respond(404)
+        delete = respx_mock.delete(path="/contacts/old-contact").respond(200)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email=previous_email
+        )
+
+        assert user.resend_id == "new-contact"
+        assert json.loads(create.calls.last.request.content) == {
+            "email": "new@example.com",
+            "unsubscribed": True,
+        }
+        assert remove.called
+        assert delete.called
+
+    async def test_no_organization_email_change_without_contact(
+        self,
+        session: AsyncSession,
+        user: User,
+        mocker: MockerFixture,
+        respx_mock: respx.MockRouter,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        previous_email = user.email
+        user.email = "new@example.com"
+        lookup = respx_mock.get(path=f"/contacts/{previous_email}").respond(404)
+
+        user = await resend_service.sync_user(
+            session, user.id, previous_email=previous_email
+        )
+
+        assert user.resend_id is None
+        assert lookup.called
+        assert len(respx_mock.calls) == 1
+
     async def test_user_does_not_exist(
         self,
         session: AsyncSession,
@@ -234,6 +360,7 @@ class TestSyncUser:
         assert exc.value.status_code == 404
         assert not respx_mock.calls
 
+    @pytest.mark.usefixtures("user_organization")
     async def test_reuses_new_email_contact(
         self,
         session: AsyncSession,
@@ -267,3 +394,60 @@ class TestSyncUser:
             "unsubscribed": True
         }
         assert delete.called
+
+
+@pytest.mark.anyio
+class TestSyncOrganizationMembers:
+    async def test_enqueues_members(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        enqueue_job_mock = mocker.patch("polar.integrations.resend.service.enqueue_job")
+
+        await resend_service.sync_organization_members(session, organization.id)
+
+        assert {call.kwargs["user_id"] for call in enqueue_job_mock.call_args_list} == {
+            user_organization.user_id,
+            user_organization_second.user_id,
+        }
+
+
+class TestOnOrganizationStatusChanged:
+    @pytest.mark.parametrize(
+        ("previous_status", "status", "enqueued"),
+        [
+            (OrganizationStatus.CREATED, OrganizationStatus.REVIEW, True),
+            (OrganizationStatus.ACTIVE, OrganizationStatus.DENIED, True),
+            (OrganizationStatus.OFFBOARDING, OrganizationStatus.OFFBOARDED, True),
+            (OrganizationStatus.REVIEW, OrganizationStatus.OFFBOARDING, False),
+            (OrganizationStatus.ACTIVE, OrganizationStatus.REVIEW, False),
+            (OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED, False),
+            (OrganizationStatus.DENIED, OrganizationStatus.CREATED, False),
+        ],
+    )
+    def test_enqueues_on_crossing(
+        self,
+        mocker: MockerFixture,
+        previous_status: OrganizationStatus,
+        status: OrganizationStatus,
+        enqueued: bool,
+    ) -> None:
+        mocker.patch.object(settings, "RESEND_ACTIVE_USERS_SEGMENT_ID", "active-users")
+        enqueue_job_mock = mocker.patch("polar.integrations.resend.service.enqueue_job")
+        organization_id = uuid4()
+
+        resend_service.on_organization_status_changed(
+            organization_id, previous_status, status
+        )
+
+        if enqueued:
+            enqueue_job_mock.assert_called_once_with(
+                "resend.sync_organization_members", organization_id=organization_id
+            )
+        else:
+            enqueue_job_mock.assert_not_called()

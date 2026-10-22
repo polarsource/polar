@@ -16,7 +16,8 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
-from polar.auth.models import AuthSubject, is_user
+from polar.agent.repository import AgentRepository
+from polar.auth.models import AuthSubject, is_agent, is_user
 from polar.authz.service import get_accessible_org_ids
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import settings
@@ -29,6 +30,7 @@ from polar.exceptions import (
 )
 from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.integrations.resend.service import resend as resend_service
 from polar.integrations.stripe.account_risk import (
     ACTIONABLE_RISK_LEVELS,
     AccountRiskSignal,
@@ -47,6 +49,7 @@ from polar.kit.sorting import Sorting
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
+    Agent,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -341,13 +344,18 @@ class CannotChangeOwnerError(OrganizationError):
         super().__init__(f"Cannot change organization owner: {reason}")
 
 
+_AGENT_ONE_ORGANIZATION_MESSAGE = "An agent can only create one organization."
+
+
 class CannotCreateOrganizationError(OrganizationError):
-    def __init__(self) -> None:
-        super().__init__(
+    def __init__(
+        self,
+        message: str = (
             "You cannot create an organization from a session restricted to a "
-            "specific organization.",
-            403,
-        )
+            "specific organization."
+        ),
+    ) -> None:
+        super().__init__(message, 403)
 
 
 class DisputeAutoAcceptNotEnabled(OrganizationError):
@@ -380,7 +388,7 @@ class OrganizationService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         slug: str | None = None,
         pagination: PaginationParams,
@@ -460,10 +468,12 @@ class OrganizationService:
         self,
         session: AsyncSession,
         create_schema: OrganizationCreate,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Agent],
     ) -> Organization:
         if auth_subject.organization_ids is not None:
             raise CannotCreateOrganizationError()
+        if is_agent(auth_subject) and auth_subject.subject.organization_id is not None:
+            raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
 
         repository = OrganizationRepository.from_session(session)
         if await repository.slug_exists(create_schema.slug):
@@ -479,7 +489,14 @@ class OrganizationService:
             )
 
         create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
-        create_data["feature_settings"] = create_data.get("feature_settings", {})
+        create_data["feature_settings"] = {
+            **create_data.get("feature_settings", {}),
+            # Meter cycling is GA, but API versions up to 2026-10 still expose the
+            # flag. Drop this once those versions no longer read it.
+            "meter_cycling_enabled": True,
+        }
+        if is_agent(auth_subject):
+            create_data["feature_settings"]["config_as_code_enabled"] = True
 
         if settings.is_sandbox():
             create_data["status"] = OrganizationStatus.ACTIVE
@@ -509,6 +526,17 @@ class OrganizationService:
                     }
                 ]
             ) from e
+
+        if is_agent(auth_subject):
+            agent_repository = AgentRepository.from_session(session)
+            agent = await agent_repository.set_organization(
+                auth_subject.subject, organization
+            )
+            if agent is None:
+                raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
+            return organization
+
+        assert is_user(auth_subject)
         owner = auth_subject.subject
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
@@ -706,6 +734,15 @@ class OrganizationService:
         await self._after_update(session, organization)
         return organization
 
+    def set_status(
+        self, organization: Organization, status: OrganizationStatus
+    ) -> None:
+        previous_status = organization.status
+        organization.set_status(status)
+        resend_service.on_organization_status_changed(
+            organization.id, previous_status, status
+        )
+
     async def reset_onboarding_for_review(
         self,
         session: AsyncSession,
@@ -727,7 +764,7 @@ class OrganizationService:
             )
 
         previous_status = organization.status
-        organization.set_status(OrganizationStatus.CREATED)
+        self.set_status(organization, OrganizationStatus.CREATED)
         organization.details_submitted_at = None
         organization.snoozed_until = None
         organization.snooze_type = None
@@ -932,6 +969,7 @@ class OrganizationService:
             await appeal_case_service.close_for_organization_deletion(session, review)
 
         polar_self_service.enqueue_delete_customer(organization_id=organization.id)
+        resend_service.enqueue_sync_organization_members(organization.id)
 
         log.info(
             "organization.deleted",
@@ -1050,6 +1088,7 @@ class OrganizationService:
                     role=billing_member_role(role),
                     delay=polar_self_member_delay,
                 )
+            resend_service.enqueue_sync_user(user.id)
 
     async def change_owner(
         self,
@@ -1179,7 +1218,7 @@ class OrganizationService:
             organization.next_review_threshold >= 0
             and transfers_sum >= organization.next_review_threshold
         ):
-            organization.set_status(OrganizationStatus.REVIEW)
+            self.set_status(organization, OrganizationStatus.REVIEW)
             session.add(organization)
 
             enqueue_job("organization.under_review", organization_id=organization.id)
@@ -1215,7 +1254,7 @@ class OrganizationService:
         stripe_reject_reason: StripeAccountRejectReason | None = None,
     ) -> Organization:
         """Block an organization by setting status to BLOCKED."""
-        organization.set_status(OrganizationStatus.BLOCKED)
+        self.set_status(organization, OrganizationStatus.BLOCKED)
         session.add(organization)
         self._enqueue_cancel_pending_payouts(organization)
         if stripe_reject_reason is not None:
@@ -1339,7 +1378,7 @@ class OrganizationService:
         if not readiness.is_ready:
             return False
 
-        organization.set_status(OrganizationStatus.ACTIVE)
+        self.set_status(organization, OrganizationStatus.ACTIVE)
         if organization.initially_reviewed_at is None:
             # First activation: keep the small default threshold so the next
             # review fires quickly once the merchant starts taking payments.
@@ -1415,7 +1454,7 @@ class OrganizationService:
                 "Stripe Connect Express completion before activation."
             )
 
-        organization.set_status(target_status)
+        self.set_status(organization, target_status)
         organization.next_review_threshold = next_review_threshold
         _append_internal_note(organization, full_note, reason=reason)
 
@@ -1536,7 +1575,7 @@ class OrganizationService:
         *,
         stripe_reject_reason: StripeAccountRejectReason | None = None,
     ) -> Organization:
-        organization.set_status(OrganizationStatus.DENIED)
+        self.set_status(organization, OrganizationStatus.DENIED)
         session.add(organization)
 
         self._enqueue_cancel_pending_payouts(organization)
@@ -1585,7 +1624,7 @@ class OrganizationService:
                 400,
             )
 
-        organization.set_status(OrganizationStatus.SNOOZED)
+        self.set_status(organization, OrganizationStatus.SNOOZED)
         organization.snooze_count += 1
         organization.snoozed_until = datetime.now(UTC) + timedelta(days=days)
         organization.snooze_type = snooze_type
@@ -1752,7 +1791,7 @@ class OrganizationService:
     def _transition_to_offboarded(
         self, session: AsyncSession, organization: Organization, note: str
     ) -> None:
-        organization.set_status(OrganizationStatus.OFFBOARDED)
+        self.set_status(organization, OrganizationStatus.OFFBOARDED)
         _append_internal_note(organization, note)
         session.add(organization)
         enqueue_job("organization.offboarded", organization_id=organization.id)
@@ -1760,7 +1799,7 @@ class OrganizationService:
     async def _exit_snooze_to_review(
         self, session: AsyncSession, organization: Organization
     ) -> None:
-        organization.set_status(OrganizationStatus.REVIEW)
+        self.set_status(organization, OrganizationStatus.REVIEW)
         organization.snoozed_until = None
         organization.snooze_type = None
         session.add(organization)
@@ -1773,7 +1812,7 @@ class OrganizationService:
         *,
         enqueue_review: bool = True,
     ) -> Organization:
-        organization.set_status(OrganizationStatus.REVIEW)
+        self.set_status(organization, OrganizationStatus.REVIEW)
         # Drop stale snooze metadata when coming from SNOOZED.
         organization.snoozed_until = None
         organization.snooze_type = None
@@ -2010,7 +2049,7 @@ class OrganizationService:
                 "Only organizations under review or denied can be set to offboarding.",
                 403,
             )
-        organization.set_status(OrganizationStatus.OFFBOARDING)
+        self.set_status(organization, OrganizationStatus.OFFBOARDING)
         _append_internal_note(
             organization, "Organization set to offboarding.", reason=reason
         )

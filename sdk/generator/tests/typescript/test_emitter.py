@@ -7,7 +7,7 @@ from generator.ir import generate_ir
 from typescript.emitter import TypeScriptEmitter
 
 
-def test_emits_outpost_submodule(
+def test_emits_metering_and_outpost_submodules(
     code_samples_spec: op.OpenAPI, tmp_path: pathlib.Path
 ) -> None:
     TypeScriptEmitter(generate_ir(code_samples_spec), "1.2.3").emit(tmp_path)
@@ -21,5 +21,24 @@ def test_emits_outpost_submodule(
     for module in ("client", "event", "reducer", "scripts", "index"):
         assert (tmp_path / "src" / "outpost" / f"{module}.ts").is_file()
     tests = (tmp_path / "src" / "outpost" / "client.test.ts").read_text()
-    assert 'from "../2026-04/models"' in tests
+    assert 'from "../2026-04/client"' in tests
     assert '"src/outpost/index.ts"' in (tmp_path / "tsdown.config.ts").read_text()
+    assert (
+        manifest["exports"]["./metering"]["import"]["default"]
+        == "./dist/metering/index.mjs"
+    )
+    assert (
+        manifest["exports"]["./metering"]["require"]["default"]
+        == "./dist/metering/index.cjs"
+    )
+    for module in (
+        "client",
+        "buffered",
+        "event",
+        "meter",
+        "index",
+        "client.test",
+        "buffered.test",
+    ):
+        assert (tmp_path / "src" / "metering" / f"{module}.ts").is_file()
+    assert '"src/metering/index.ts"' in (tmp_path / "tsdown.config.ts").read_text()

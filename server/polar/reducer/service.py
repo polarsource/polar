@@ -34,13 +34,16 @@ from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.worker import enqueue_job
 
-from . import redis_store
+from . import cache, redis_store
 from .bucket_repository import ReducerBucketRepository
 from .repository import ReducerRepository
 
 log: Logger = structlog.get_logger()
 
 REDUCER_BUCKET_SIZE = timedelta(minutes=5)
+# Buckets are in Postgres after 10 minutes, and billing waits 15: sealing
+# normally runs in between.
+SEAL_DELAY = timedelta(minutes=11)
 
 type Contributions = dict[redis_store.BucketId, list[tuple[datetime, Decimal]]]
 
@@ -72,47 +75,89 @@ def _get_identities(
 
 
 class ReducerService:
+    def enqueue_seal(self, customer_id: UUID, meter_id: UUID, *, at: datetime) -> None:
+        """Seals the customer's usage before `at` once it has all reached Postgres,
+        before billing gets to it."""
+        delay = at + SEAL_DELAY - utc_now()
+        enqueue_job(
+            "reducer.seal",
+            customer_id,
+            meter_id,
+            at.isoformat(),
+            delay=max(int(delay.total_seconds() * 1000), 0),
+        )
+
     async def seal(
         self,
         session: AsyncSession,
         customer: Customer,
-        meter_ids: Iterable[UUID],
+        meter_id: UUID,
         *,
-        billable_from: datetime,
-        cutoff: datetime,
-    ) -> dict[UUID, Decimal]:
-        meter_ids = sorted(meter_ids)
+        at: datetime,
+    ) -> None:
+        """Makes `at` a bucket boundary and seals the customer's usage before it."""
         try:
             async with session.begin_nested():
-                repository = ReducerRepository.from_session(session)
-                reducers: dict[UUID, Reducer] = {}
-                meter_reducers: dict[UUID, UUID] = {}
-                for meter_id in meter_ids:
-                    reducer = await repository.get_by_meter_id(meter_id)
-                    if reducer is not None and not isinstance(
-                        reducer.aggregation, UniqueAggregation
-                    ):
-                        reducers[reducer.id] = reducer
-                        meter_reducers[meter_id] = reducer.id
-                quantities = await self._seal_buckets(
-                    session,
-                    list(reducers.values()),
-                    customer,
-                    billable_from=billable_from,
-                    cutoff=cutoff,
+                reducers = await self._get_reducers(session, [meter_id])
+                await self._seal_buckets(
+                    session, list(reducers.values()), customer, until=at
                 )
         except Exception:
             log.exception(
                 "Failed to seal reducer buckets",
                 customer_id=customer.id,
+                meter_id=meter_id,
+                at=at.isoformat(),
+            )
+
+    async def bill(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_ids: Iterable[UUID],
+        *,
+        order_id: UUID,
+        billable_from: datetime,
+        cutoff: datetime,
+    ) -> dict[UUID, Decimal]:
+        """Marks the customer's usage within [billable_from, cutoff] as billed by
+        the order, and returns its quantity per meter."""
+        meter_ids = sorted(meter_ids)
+        try:
+            async with session.begin_nested():
+                reducers = await self._get_reducers(session, meter_ids)
+                # The meter.reset at `cutoff` should have sealed this usage already.
+                # That task and this run at roughly the same time, so if it
+                # hasn't run already we seal it here. The one that runs
+                # afterward becomes a no-op.
+                await self._seal_buckets(
+                    session,
+                    list(reducers.values()),
+                    customer,
+                    since=billable_from,
+                    until=cutoff,
+                )
+                quantities = await self._bill_buckets(
+                    session,
+                    list(reducers.values()),
+                    customer,
+                    order_id=order_id,
+                    since=billable_from,
+                    until=cutoff,
+                )
+        except Exception:
+            log.exception(
+                "Failed to bill reducer buckets",
+                customer_id=customer.id,
                 meter_ids=meter_ids,
+                order_id=order_id,
                 cutoff=cutoff.isoformat(),
             )
             return {}
         return {
-            meter_id: quantities[reducer_id]
-            for meter_id, reducer_id in meter_reducers.items()
-            if reducer_id in quantities
+            meter_id: quantities[reducer.id]
+            for meter_id, reducer in reducers.items()
+            if reducer.id in quantities
         }
 
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:
@@ -141,16 +186,17 @@ class ReducerService:
         redis: Redis,
         organization_id: UUID,
         events: Sequence[Event],
-    ) -> None:
+    ) -> int:
+        """Returns the number of reducer buckets the events contributed to."""
         reducers = [
             reducer
-            for reducer in await ReducerRepository.from_session(
-                session
-            ).get_all_active_by_organization(organization_id)
+            for reducer in await cache.get_active_reducers(
+                session, redis, organization_id
+            )
             if not isinstance(reducer.aggregation, UniqueAggregation)
         ]
         if not reducers:
-            return
+            return 0
 
         now = utc_now()
         current_bucket_start = get_reducer_bucket_start(now)
@@ -201,6 +247,8 @@ class ReducerService:
                 external_customer_id,
                 delay=int(delay.total_seconds() * 1000),
             )
+
+        return len(contributions)
 
     async def sync_bucket(
         self,
@@ -260,7 +308,7 @@ class ReducerService:
 
     async def get_customer_value(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         redis: Redis,
         reducer: Reducer,
         customer_id: UUID | None,
@@ -302,7 +350,7 @@ class ReducerService:
         return _get_quantity(reducer.aggregation.func, totals)
 
     async def log_customer_meter_comparison(
-        self, session: AsyncSession, redis: Redis, customer_meter: CustomerMeter
+        self, session: AsyncReadSession, redis: Redis, customer_meter: CustomerMeter
     ) -> None:
         """Logs the customer meter's consumed units next to the reducer's value
         since the meter's latest reset."""
@@ -330,6 +378,7 @@ class ReducerService:
                         else None
                     )
                     span.set_attribute("reducer_id", str(reducer.id))
+                    span.set_attribute("aggregation", str(reducer.aggregation.func))
                     span.set_attribute("since", since)
                     value = await self.get_customer_value(
                         session,
@@ -390,109 +439,141 @@ class ReducerService:
                 )
             _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
+    async def _get_reducers(
+        self, session: AsyncSession, meter_ids: Iterable[UUID]
+    ) -> dict[UUID, Reducer]:
+        """The meters' reducers with buckets, by meter id."""
+        repository = ReducerRepository.from_session(session)
+        reducers: dict[UUID, Reducer] = {}
+        for meter_id in meter_ids:
+            reducer = await repository.get_by_meter_id(meter_id)
+            if reducer is not None and not isinstance(
+                reducer.aggregation, UniqueAggregation
+            ):
+                reducers[meter_id] = reducer
+        return reducers
+
     async def _seal_buckets(
         self,
         session: AsyncSession,
         reducers: Sequence[Reducer],
         customer: Customer,
         *,
-        billable_from: datetime,
-        cutoff: datetime,
-    ) -> dict[UUID, Decimal]:
-        """Seals the customer's unsealed usage ending in (billable_from, cutoff] and
-        returns its quantity per reducer."""
-        quantities: dict[UUID, Decimal] = {}
-        if billable_from >= cutoff:
-            return quantities
+        until: datetime,
+        since: datetime | None = None,
+    ) -> None:
+        """Seals the customer's unsealed usage until `until`, from `since` if
+        given, making both bucket boundaries."""
         repository = ReducerBucketRepository.from_session(session)
         identities = get_customer_identities(customer)
-
+        boundaries = [until] if since is None else sorted({since, until})
         await self._lock_buckets(
             repository,
             [
-                (reducer, bucket_start, customer_id, external_customer_id)
+                (
+                    reducer,
+                    get_reducer_bucket_start(at),
+                    customer_id,
+                    external_customer_id,
+                )
+                for at in boundaries
                 for reducer in reducers
-                for bucket_start in {
-                    get_reducer_bucket_start(billable_from),
-                    get_reducer_bucket_start(cutoff),
-                }
                 for customer_id, external_customer_id in identities
             ],
         )
 
         for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
             for customer_id, external_customer_id in identities:
-                with logfire.span(
-                    "Split reducer buckets",
-                    organization_id=str(customer.organization_id),
-                    reducer_id=str(reducer.id),
-                    customer_id=str(customer.id),
-                    bucket_customer_id=customer_id is not None,
-                    bucket_external_customer_id=external_customer_id is not None,
-                    billable_from=billable_from,
-                    cutoff=cutoff,
-                ) as span:
-                    first_start, first_end = await self._get_interval_containing(
-                        repository,
-                        reducer,
-                        customer_id,
-                        external_customer_id,
-                        billable_from,
-                    )
-                    # The earliest bucket has a start which is different from
-                    # billable_from, so we need to split it.
-                    split_billable_from = False
-                    if first_start != billable_from:
-                        split_billable_from = await self._split(
-                            repository,
-                            reducer,
-                            customer_id,
-                            external_customer_id,
-                            (first_start, first_end),
-                            split_at=billable_from,
-                        )
-                    last_start, last_end = await self._get_interval_containing(
-                        repository, reducer, customer_id, external_customer_id, cutoff
-                    )
-                    # The last bucket in the series has an ending which is
-                    # different from cutoff, so we need to split it.
-                    split_cutoff = False
-                    if last_start != cutoff:
-                        split_cutoff = await self._split(
-                            repository,
-                            reducer,
-                            customer_id,
-                            external_customer_id,
-                            (last_start, last_end),
-                            split_at=cutoff,
-                        )
-                    span.set_attribute(
-                        "first_interval",
-                        [first_start.isoformat(), first_end.isoformat()],
-                    )
-                    span.set_attribute(
-                        "last_interval", [last_start.isoformat(), last_end.isoformat()]
-                    )
-                    span.set_attribute("split_billable_from", split_billable_from)
-                    span.set_attribute("split_cutoff", split_cutoff)
+                await self._split_at(
+                    repository,
+                    reducer,
+                    customer,
+                    (customer_id, external_customer_id),
+                    boundaries,
+                )
             with logfire.span(
                 "Seal reducer buckets",
                 organization_id=str(customer.organization_id),
                 reducer_id=str(reducer.id),
                 customer_id=str(customer.id),
-                billable_from=billable_from,
-                cutoff=cutoff,
+                until=until,
             ) as span:
-                # Seal all buckets in [billable_from, cutoff) interval.
-                sealed = await repository.seal(
+                sealed = await repository.mark_as_sealed(
+                    reducer, identities, since=since, until=until, sealed_at=utc_now()
+                )
+                span.set_attribute("sealed_buckets", sealed)
+
+    async def _split_at(
+        self,
+        repository: ReducerBucketRepository,
+        reducer: Reducer,
+        customer: Customer,
+        identity: tuple[UUID | None, str | None],
+        boundaries: Sequence[datetime],
+    ) -> None:
+        """Makes each boundary a bucket boundary of the customer identity."""
+        customer_id, external_customer_id = identity
+        for at in boundaries:
+            with logfire.span(
+                "Split reducer buckets",
+                organization_id=str(customer.organization_id),
+                reducer_id=str(reducer.id),
+                customer_id=str(customer.id),
+                bucket_customer_id=customer_id is not None,
+                bucket_external_customer_id=external_customer_id is not None,
+                at=at,
+            ) as span:
+                start, end = await self._get_interval_containing(
+                    repository, reducer, customer_id, external_customer_id, at
+                )
+                split = False
+                if start != at:
+                    split = await self._split(
+                        repository,
+                        reducer,
+                        customer_id,
+                        external_customer_id,
+                        (start, end),
+                        split_at=at,
+                    )
+                span.set_attribute("interval", [start.isoformat(), end.isoformat()])
+                span.set_attribute("split", split)
+
+    async def _bill_buckets(
+        self,
+        session: AsyncSession,
+        reducers: Sequence[Reducer],
+        customer: Customer,
+        *,
+        order_id: UUID,
+        since: datetime,
+        until: datetime,
+    ) -> dict[UUID, Decimal]:
+        """Marks the customer's sealed, unbilled usage within [since, until] as
+        billed by the order and returns its quantity per reducer."""
+        repository = ReducerBucketRepository.from_session(session)
+        identities = get_customer_identities(customer)
+        quantities: dict[UUID, Decimal] = {}
+        for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
+            with logfire.span(
+                "Bill reducer buckets",
+                organization_id=str(customer.organization_id),
+                reducer_id=str(reducer.id),
+                customer_id=str(customer.id),
+                order_id=str(order_id),
+                since=since,
+                until=until,
+            ) as span:
+                billed = await repository.mark_as_billed(
                     reducer,
                     identities,
-                    start=billable_from,
-                    end=cutoff,
-                    sealed_at=utc_now(),
+                    order_id,
+                    since=since,
+                    until=until,
+                    billed_at=utc_now(),
                 )
-                quantity = _get_quantity(reducer.aggregation.func, sealed)
-                span.set_attribute("sealed_buckets", len(sealed))
+                quantity = _get_quantity(reducer.aggregation.func, billed)
+                span.set_attribute("billed_buckets", len(billed))
                 span.set_attribute("quantity", str(quantity))
             quantities[reducer.id] = quantity
         return quantities
@@ -598,15 +679,14 @@ class ReducerService:
     ) -> bool:
         """Makes `split_at` a bucket boundary, so a seal can include the usage on
         one side of it only: `interval`, which contains it, becomes
-        [interval_start, split_at) and [split_at, interval_end)."""
+        [interval_start, split_at) and [split_at, interval_end), created empty
+        if the bucket doesn't exist yet."""
         interval_start, interval_end = interval
         bucket = await repository.get_latest_for_update(
             reducer, interval_start, customer_id, external_customer_id
         )
-        if bucket is None:
-            return False  # No usage in the interval.
-        # An earlier seal billed past `split_at`. Billed rows can't change.
-        if bucket.sealed_at is not None:
+        # An earlier seal went past `split_at`. Sealed rows can't change.
+        if bucket is not None and bucket.sealed_at is not None:
             log.warning(
                 "Skipping split of a sealed reducer bucket",
                 reducer_id=reducer.id,
@@ -616,7 +696,7 @@ class ReducerService:
             return False
         # Same, but late events arrived after that seal and opened a new generation.
         # Splitting it would leave its generations covering different intervals.
-        if bucket.generation > 1:
+        if bucket is not None and bucket.generation > 1:
             log.warning(
                 "Skipping split of a reducer bucket with a sealed generation",
                 reducer_id=reducer.id,
@@ -636,7 +716,23 @@ class ReducerService:
                 reducer, split_at, interval_end, customer_id, external_customer_id
             )
         )._asdict()
-        await repository.update(bucket, update_dict={"bucket_end": split_at, **before})
+        if bucket is None:
+            await repository.create(
+                ReducerBucket(
+                    organization_id=reducer.organization_id,
+                    reducer=reducer,
+                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
+                    bucket_start=interval_start,
+                    bucket_end=split_at,
+                    **before,
+                ),
+                flush=True,
+            )
+        else:
+            await repository.update(
+                bucket, update_dict={"bucket_end": split_at, **before}
+            )
         await repository.create(
             ReducerBucket(
                 organization_id=reducer.organization_id,
@@ -646,7 +742,7 @@ class ReducerService:
                 bucket_start=split_at,
                 bucket_end=interval_end,
                 **after,
-                synced_at=bucket.synced_at,
+                synced_at=None if bucket is None else bucket.synced_at,
             ),
             flush=True,
         )

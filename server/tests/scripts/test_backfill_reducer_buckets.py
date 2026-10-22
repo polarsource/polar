@@ -143,6 +143,8 @@ class TestBackfillBuckets:
                 b.customer_id == customer.id
                 and b.external_customer_id is None
                 and b.synced_at == END
+                and b.billed_at == b.sealed_at
+                and b.order_id == (order.id if b.sealed_at else None)
                 for b in buckets
             )
             assert [
@@ -234,24 +236,32 @@ class TestBackfillBuckets:
             assert sum(b.count for b in count_buckets) == 6
             assert all(b.sealed_at is None for b in count_buckets)
 
-        # The next billing seals everything still open since the subscription
-        # started: the late event, the pending one and the unbilled one.
-        quantities = await reducer_service.seal(
+        # The next billing bills everything still open since the subscription
+        # started: the late event, the pending one and the unbilled one. Usage
+        # before the subscription stays open.
+        next_order = await create_order(save_fixture, customer=customer)
+        quantities = await reducer_service.bill(
             session,
             customer,
             [meter.id],
+            order_id=next_order.id,
             billable_from=SUBSCRIPTION_START,
             cutoff=END,
         )
         assert quantities == {meter.id: Decimal(13)}
-        still_open = (
+        buckets = (
             await session.scalars(
-                select(ReducerBucket).where(
-                    ReducerBucket.reducer_id == reducer.id,
-                    ReducerBucket.sealed_at.is_(None),
-                )
+                select(ReducerBucket)
+                .where(ReducerBucket.reducer_id == reducer.id)
+                .order_by(ReducerBucket.bucket_start, ReducerBucket.generation)
             )
         ).all()
-        assert [(b.bucket_start, b.bucket_end) for b in still_open] == [
-            (START, SUBSCRIPTION_START)
+        assert [b.sealed_at is None for b in buckets] == [True] + [False] * 5
+        assert [b.order_id for b in buckets] == [
+            None,
+            order.id,
+            next_order.id,
+            order.id,
+            next_order.id,
+            next_order.id,
         ]

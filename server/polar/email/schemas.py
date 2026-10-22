@@ -60,6 +60,7 @@ class EmailTemplate(StrEnum):
     subscription_renewal_reminder = "subscription_renewal_reminder"
     subscription_trial_conversion_reminder = "subscription_trial_conversion_reminder"
     subscription_updated = "subscription_updated"
+    subscription_usage_invoice = "subscription_usage_invoice"
     webhook_endpoint_disabled = "webhook_endpoint_disabled"
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
@@ -350,6 +351,17 @@ class SubscriptionFinalInvoiceEmail(BaseModel):
     props: SubscriptionFinalInvoiceProps
 
 
+class SubscriptionUsageInvoiceProps(SubscriptionPropsBase):
+    order: OrderEmail
+
+
+class SubscriptionUsageInvoiceEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_usage_invoice] = (
+        EmailTemplate.subscription_usage_invoice
+    )
+    props: SubscriptionUsageInvoiceProps
+
+
 class SubscriptionPastDueProps(SubscriptionPropsBase):
     access_ends_at: str | None = None
     deadline: str | None = None
@@ -618,6 +630,7 @@ Email = Annotated[
     | SubscriptionCycledEmail
     | SubscriptionCycledAfterTrialEmail
     | SubscriptionFinalInvoiceEmail
+    | SubscriptionUsageInvoiceEmail
     | SubscriptionPastDueEmail
     | SubscriptionPausedEmail
     | SubscriptionResumedEmail

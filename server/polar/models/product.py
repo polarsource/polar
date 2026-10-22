@@ -52,6 +52,7 @@ from .product_price import ProductPrice
 if TYPE_CHECKING:
     from polar.models import (
         Benefit,
+        Catalog,
         Organization,
         ProductBenefit,
         ProductCustomField,
@@ -107,7 +108,9 @@ class Product(
             "organization_id",
             "external_id",
             unique=True,
-            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
+            postgresql_where=text(
+                "deleted_at IS NULL AND external_id IS NOT NULL AND is_current"
+            ),
         ),
     )
 
@@ -116,6 +119,16 @@ class Product(
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    catalog_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("catalogs.id", ondelete="restrict"),
+        nullable=True,
+        default=None,
+    )
+    # Nullable during the expand phase (ADR-0006); NOT NULL is enforced in #15750.
+    is_current: Mapped[bool] = mapped_column(
+        Boolean, nullable=True, default=True, server_default=text("true")
+    )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),
         nullable=True,
@@ -161,6 +174,10 @@ class Product(
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise", back_populates="products")
+
+    @declared_attr
+    def catalog(cls) -> Mapped["Catalog | None"]:
+        return relationship("Catalog", lazy="raise")
 
     @declared_attr
     def all_prices(cls) -> Mapped[list["ProductPrice"]]:

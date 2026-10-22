@@ -2,15 +2,72 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
+from polar.customer.repository import CustomerRepository
+from polar.customer_meter.repository import CustomerMeterRepository
+from polar.exceptions import PolarTaskError
+from polar.meter.aggregation import AggregationFunction
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
+    AsyncReadSessionMaker,
     AsyncSessionMaker,
+    CronTrigger,
+    RedisMiddleware,
     TaskPriority,
     actor,
 )
 
+from . import cache
 from .redis_store import get_reducer_bucket_key
 from .service import reducer as reducer_service
+
+
+class CustomerDoesNotExist(PolarTaskError):
+    def __init__(self, customer_id: uuid.UUID) -> None:
+        self.customer_id = customer_id
+        super().__init__(f"The customer with id {customer_id} does not exist.")
+
+
+@actor(actor_name="reducer.invalidate_cache", priority=TaskPriority.HIGH)
+async def invalidate_cache(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    await cache.invalidate(RedisMiddleware.get(), organization_id)
+
+
+@actor(
+    actor_name="reducer.compare_highest_consumed_units",
+    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def compare_highest_consumed_units() -> None:
+    async with AsyncReadSessionMaker() as session:
+        repository = CustomerMeterRepository.from_session(session)
+        redis = RedisMiddleware.get()
+        for aggregation_function in AggregationFunction:
+            if aggregation_function == AggregationFunction.unique:
+                continue
+            for customer_meter in await repository.get_all_by_highest_consumed_units(
+                aggregation_function, 10
+            ):
+                await reducer_service.log_customer_meter_comparison(
+                    session, redis, customer_meter
+                )
+
+
+@actor(actor_name="reducer.seal", priority=TaskPriority.LOW)
+async def seal(
+    customer_id: Annotated[uuid.UUID, LoggableField],
+    meter_id: Annotated[uuid.UUID, LoggableField],
+    at: Annotated[str, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
+        await reducer_service.seal(
+            session, customer, meter_id, at=datetime.fromisoformat(at)
+        )
 
 
 def _sync_debounce_key(

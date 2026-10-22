@@ -13,7 +13,7 @@ export type { BenefitAccess, MeterBalance } from './client/actor'
 export type { EventMetadata } from './schema/event'
 
 export { RuntimeSDK } from './runtime'
-export type { RuntimeConnection } from './runtime'
+export type { RuntimeConnection, WebhookRoutes } from './runtime'
 
 export {
   and,
@@ -61,6 +61,20 @@ export { product } from './schema/product'
 export type { ProductConfig, ProductDefinition } from './schema/product'
 export { discount } from './schema/discount'
 export type { DiscountConfig, DiscountDefinition } from './schema/discount'
+export {
+  defineWebhookHandler,
+  discord,
+  endpoint,
+  slack,
+} from './schema/webhook'
+export type {
+  WebhookEndpointConfig,
+  WebhookEvent,
+  WebhookEventOf,
+  WebhookEventType,
+  WebhookHandler,
+} from './schema/webhook'
+export type { WebhookRoute } from './client/webhooks'
 export { defineConfig } from './schema/config'
 export type { Config, PolarConfig } from './schema/config'
 export { generateConfig } from './generate'

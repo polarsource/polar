@@ -1345,7 +1345,7 @@ class TestCreateOrderItemsFromPending:
         await session.refresh(deleted_entry)
         assert deleted_entry.order_item_id is None
 
-    async def test_inactive_price_skipped_after_product_switch(
+    async def test_inactive_price_kept_after_product_switch(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1353,13 +1353,6 @@ class TestCreateOrderItemsFromPending:
         meter: Meter,
         organization: Organization,
     ) -> None:
-        """
-        Test that billing entries from an inactive price (after product/price switch)
-        are skipped and not re-billed.
-
-        This tests the fix for a bug where billing entries from discontinued prices
-        would be re-billed every cycle after a customer switched products.
-        """
         # Create initial product with metered price
         product_old = await create_product(
             save_fixture,
@@ -1421,35 +1414,53 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
-        # When computing order items, old price entries should be SKIPPED
-        # because old_price is no longer in subscription_product_prices
+        # When computing order items, old price entries should be KEPT and billed
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription
         ) as order_items:
-            # Should create only ONE line item for the new price
-            assert len(order_items) == 1
+            # Should create two line items: one for the old price, one for the new price
+            assert len(order_items) == 2
 
-            order_item = order_items[0]
-            assert order_item.product_price == new_price
-            # Only 50 tokens at new rate ($0.50/token) = $25
-            assert order_item.amount == 25_00
+            # Sort by price creation date to ensure consistent order for assertions
+            order_items = sorted(
+                order_items,
+                key=lambda item: (
+                    0 if not item.product_price else item.product_price.created_at
+                ),
+            )
 
-            order = await create_order(
+            old_price_order_item = order_items[0]
+            assert old_price_order_item.product_price == old_price
+            # 100 + 200 tokens at $1.00 each
+            assert old_price_order_item.amount == 300_00
+
+            new_price_order_item = order_items[1]
+            assert new_price_order_item.product_price == new_price
+            # 50 tokens at $0.50 each
+            assert new_price_order_item.amount == 25_00
+
+            await create_order(
                 save_fixture,
                 customer=customer,
                 order_items=list(order_items),
             )
 
+        # Old entries should be linked to the old price order item
+        for entry in old_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == old_price_order_item.id
+
         # New entries should be linked to the order item
         for entry in new_entries:
             await session.refresh(entry)
-            assert entry.order_item_id == order_item.id
+            assert entry.order_item_id == new_price_order_item.id
 
-        # Old entries should remain PENDING (not linked to any order item)
-        # This is the key assertion: they were skipped, not re-billed
-        for entry in old_entries:
-            await session.refresh(entry)
-            assert entry.order_item_id is None
+        # Trying to create order items again should not include already linked entries
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # No new order items should be created since all entries are linked
+            assert len(order_items) == 0
 
     async def test_price_snapshot_bills_switched_away_price(
         self,
@@ -1507,12 +1518,12 @@ class TestCreateOrderItemsFromPending:
             assert entry.order_item_id == order_item.id
 
     @pytest.mark.parametrize(
-        ("include_metered", "sealed"), [(True, True), (False, False)]
+        ("include_metered", "billed"), [(True, True), (False, False)]
     )
-    async def test_seals_reducer_buckets_with_metered_usage(
+    async def test_bills_reducer_buckets_with_metered_usage(
         self,
         include_metered: bool,
-        sealed: bool,
+        billed: bool,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -1521,8 +1532,8 @@ class TestCreateOrderItemsFromPending:
         product_metered_unit: Product,
         metered_subscription: Subscription,
     ) -> None:
-        seal = mocker.patch(
-            "polar.billing_entry.service.reducer_service.seal",
+        bill = mocker.patch(
+            "polar.billing_entry.service.reducer_service.bill",
             return_value={meter.id: Decimal(10)},
         )
         await create_metered_event_billing_entry(
@@ -1540,17 +1551,18 @@ class TestCreateOrderItemsFromPending:
             include_metered=include_metered,
             cutoff=cutoff,
         ) as order_items:
-            await create_order(
+            order = await create_order(
                 save_fixture, customer=customer, order_items=list(order_items)
             )
 
-        if sealed:
-            seal.assert_called_once_with(
+        if billed:
+            bill.assert_called_once_with(
                 session,
                 customer,
                 {meter.id},
+                order_id=order.id,
                 billable_from=metered_subscription.started_at,
                 cutoff=cutoff,
             )
         else:
-            seal.assert_not_called()
+            bill.assert_not_called()

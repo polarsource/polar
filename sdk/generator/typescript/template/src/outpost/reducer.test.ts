@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { customerKey, parseEvent, getProperty } from "./event";
+import { customerKey, parseEvent, getPropertyReader } from "./event";
 import {
   BUCKET_SIZE,
   getBucketStart,
   getMatcher,
   reduce,
+  withMatchers,
   type Reducer,
   quantity,
   emptyStatistics,
@@ -33,7 +34,7 @@ describe("reduction", () => {
       timestamp: "2026-10-12T12:00:00.123456Z",
     });
     expect(precise.timestamp).toBe(1791806400123456);
-    expect(getProperty(precise, "timestamp")).toBe(1791806400);
+    expect(getPropertyReader("timestamp")(precise)).toBe(1791806400);
     expect(getBucketStart(BUCKET_SIZE - 1)).toBe(0);
     expect(getBucketStart(BUCKET_SIZE)).toBe(BUCKET_SIZE);
     expect(getBucketStart(-1)).toBe(-BUCKET_SIZE);
@@ -55,7 +56,7 @@ describe("reduction", () => {
       { ...event, customer: "external:bob" },
       { ...event, timestamp: event.timestamp - BUCKET_SIZE },
     ];
-    expect(reduce([reducer(func)], events, bucket)).toEqual([
+    expect(reduce(withMatchers([reducer(func)]), events, bucket)).toEqual([
       {
         customer: "external:alice",
         reducer: "tokens",
@@ -75,7 +76,9 @@ describe("reduction", () => {
             : { count: 1, sum: 3, min: 3, max: 3 },
       },
     ]);
-    expect(quantity(reduce([reducer(func)], events, bucket)[0].statistics, func)).toBe(value);
+    expect(
+      quantity(reduce(withMatchers([reducer(func)]), events, bucket)[0].statistics, func),
+    ).toBe(value);
     expect(getBucketStart(-1)).toBe(-BUCKET_SIZE);
     const fractional = parseEvent({
       name: "api",
@@ -83,7 +86,7 @@ describe("reduction", () => {
       timestamp: "1969-12-31T23:59:59.500Z",
     });
     expect(getBucketStart(fractional.timestamp)).toBe(-BUCKET_SIZE);
-    expect(getProperty(fractional, "timestamp")).toBe(-0);
+    expect(getPropertyReader("timestamp")(fractional)).toBe(-0);
   });
 
   it("matches nested filters and ignores missing properties", () => {
@@ -107,8 +110,8 @@ describe("reduction", () => {
     expect(getMatcher({ property: "nested.flag", operator: "gt", value: false })(event)).toBe(
       false,
     );
-    expect(getProperty(event, "metadata.__proto__.toString")).toBeUndefined();
-    expect(getProperty(event, "timestamp")).toBe(event.timestamp / 1_000_000);
+    expect(getPropertyReader("metadata.__proto__.toString")(event)).toBeUndefined();
+    expect(getPropertyReader("timestamp")(event)).toBe(event.timestamp / 1_000_000);
   });
 
   it.each([
@@ -131,13 +134,15 @@ describe("reduction", () => {
       parseEvent({ name: "api", external_customer_id: "a", timestamp: "2026-10-12T12:00:00" }),
     ).toThrow();
     expect(() => customerKey({ customer_id: "a", external_customer_id: "a" })).toThrow();
-    expect(reduce([reducer("sum")], [{ ...event, metadata: { tokens: true } }], 0)).toEqual([]);
+    expect(
+      reduce(withMatchers([reducer("sum")]), [{ ...event, metadata: { tokens: true } }], 0),
+    ).toEqual([]);
     expect(() =>
-      reduce([reducer("sum")], [{ ...event, metadata: { tokens: Infinity } }], 0),
+      reduce(withMatchers([reducer("sum")]), [{ ...event, metadata: { tokens: Infinity } }], 0),
     ).toThrow();
     expect(() =>
       reduce(
-        [reducer("sum")],
+        withMatchers([reducer("sum")]),
         Array(2).fill({ ...event, metadata: { tokens: Number.MAX_VALUE } }),
         0,
       ),

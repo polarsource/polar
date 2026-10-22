@@ -7,6 +7,7 @@ import {
   type MetadataShape,
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
+import { deprecatedKey } from './deprecation'
 import {
   createEventReferences,
   type EventDefinitions,
@@ -23,6 +24,15 @@ import { fixed, free, metered, seats, TaxBehavior, tier, units } from './price'
 import { product, ProductConfig, productPrices } from './product'
 import type { ProductDefinition, ProductHelpers } from './product'
 import { visibilityKey } from './visibility'
+import {
+  discord,
+  endpoint,
+  HandledWebhookEndpoint,
+  slack,
+  WEBHOOK_API_VERSION,
+  WebhookEndpointConfig,
+} from './webhook'
+import type { WebhookEntries, WebhookHelpers } from './webhook'
 
 export const SettingsConfig = Schema.Struct({
   payments: Schema.optionalKey(
@@ -41,6 +51,7 @@ export const PolarConfig = Schema.Struct({
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
   discounts: Schema.optionalKey(Schema.Array(DiscountConfig)),
+  webhooks: Schema.optionalKey(Schema.Array(WebhookEndpointConfig)),
 })
 
 export type PolarConfig = typeof PolarConfig.Type
@@ -90,6 +101,20 @@ const assertKnown = (
   const unknown = references.find((reference) => !ids.has(reference))
   if (unknown !== undefined) {
     throw new Error(`${owner} references unknown ${kind} "${unknown}".`)
+  }
+}
+
+const assertNotDeprecated = (
+  owner: string,
+  kind: 'meter' | 'benefit' | 'product',
+  deprecated: ReadonlySet<string>,
+  references: ReadonlyArray<string>,
+) => {
+  const reference = references.find((reference) => deprecated.has(reference))
+  if (reference !== undefined) {
+    throw new Error(
+      `${owner} uses ${kind} "${reference}", which is deprecated. Undeprecate the ${kind} or create a new one.`,
+    )
   }
 }
 
@@ -161,6 +186,7 @@ type ConnectedConfig<
   Meters extends MeterEntries,
   Benefits extends BenefitEntries,
   Events extends EventDefinitions | undefined,
+  Webhooks extends WebhookEntries,
 > = {
   readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
   readonly benefits: {
@@ -168,6 +194,7 @@ type ConnectedConfig<
       BenefitAt<Benefits, Key>
     >
   }
+  readonly webhooks: Webhooks
 } & (Events extends EventDefinitions
   ? { readonly events: Extract<Events, EventSchemas> }
   : unknown)
@@ -176,9 +203,15 @@ export interface Config<
   Meters extends MeterEntries = MeterEntries,
   Benefits extends BenefitEntries = BenefitEntries,
   Events extends EventDefinitions | undefined = undefined,
+  Webhooks extends WebhookEntries = Record<never, never>,
 > {
   readonly toJSON: () => PolarConfig
-  readonly [runtimeConfig]: () => ConnectedConfig<Meters, Benefits, Events>
+  readonly [runtimeConfig]: () => ConnectedConfig<
+    Meters,
+    Benefits,
+    Events,
+    Webhooks
+  >
 }
 
 const byExternalId = <Resource extends { readonly external_id: string }>(
@@ -208,6 +241,7 @@ export const defineConfig = <
   > = never,
   const Discounts extends DiscountEntries<ProductKey<Products>> = never,
   Events extends EventDefinitions | undefined = undefined,
+  const Webhooks extends WebhookEntries = Record<never, never>,
 >(input: {
   readonly settings?: SettingsConfig
   readonly events?: Events &
@@ -223,7 +257,8 @@ export const defineConfig = <
   readonly discounts?: (
     helpers: DiscountHelpers<ProductKey<Products>>,
   ) => Discounts
-}): Config<Meters, Benefits, Events> => {
+  readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
+}): Config<Meters, Benefits, Events, Webhooks> => {
   const events = input.events as Events
   const entries = toEntries(
     input.meters({
@@ -232,10 +267,20 @@ export const defineConfig = <
     }),
   )
   const meterIds = new Set(entries.map(([external_id]) => external_id))
+  const deprecatedMeterIds = new Set(
+    entries.flatMap(([external_id, definition]) =>
+      definition.deprecated ? [external_id] : [],
+    ),
+  )
   const benefits = input.benefits?.({ flag, credits })
   const benefitEntries =
     benefits === undefined ? [] : toEntries<BenefitDefinition>(benefits)
   const benefitIds = new Set(benefitEntries.map(([external_id]) => external_id))
+  const deprecatedBenefitIds = new Set(
+    benefitEntries.flatMap(([external_id, definition]) =>
+      definition[deprecatedKey] ? [external_id] : [],
+    ),
+  )
   const products = input.products?.({
     product,
     free,
@@ -249,6 +294,19 @@ export const defineConfig = <
     products === undefined ? [] : toEntries<ProductDefinition>(products)
   const productIds = new Set(productEntries.map(([external_id]) => external_id))
   const discounts = input.discounts?.({ discount })
+  const webhooks = input.webhooks?.({ endpoint, slack, discord })
+  const webhookEntries = Object.entries(webhooks ?? {})
+  const secretEnvs = webhookEntries.flatMap(([, webhook]) =>
+    webhook instanceof HandledWebhookEndpoint ? [webhook.secretEnv] : [],
+  )
+  const sharedSecret = secretEnvs.find(
+    (env, index) => secretEnvs.indexOf(env) !== index,
+  )
+  if (sharedSecret !== undefined) {
+    throw new Error(
+      `Webhooks with handlers each get their own signing secret, but more than one reads ${sharedSecret}. Give each a different .secret().`,
+    )
+  }
   const config = Schema.decodeUnknownSync(PolarConfig, {
     errors: 'all',
     onExcessProperty: 'error',
@@ -269,14 +327,23 @@ export const defineConfig = <
             name,
             [metadataKey]: metadata,
             [visibilityKey]: visibility,
+            [deprecatedKey]: deprecated,
             ...definition
           },
         ]) => {
           validateBenefitNaming({ external_id, name })
           if (definition.type === 'meter_credit') {
-            assertKnown(`Benefit "${external_id}"`, 'meter', meterIds, [
-              definition.properties.meter,
-            ])
+            const owner = `Benefit "${external_id}"`
+            const references = [definition.properties.meter]
+            assertKnown(owner, 'meter', meterIds, references)
+            if (!deprecated) {
+              assertNotDeprecated(
+                owner,
+                'meter',
+                deprecatedMeterIds,
+                references,
+              )
+            }
           }
           return {
             ...definition,
@@ -284,6 +351,7 @@ export const defineConfig = <
             description: name ?? external_id,
             ...(metadata !== undefined && { metadata }),
             ...(visibility === 'private' && { visibility }),
+            ...(deprecated && { deprecated: true as const }),
           }
         },
       ),
@@ -295,15 +363,26 @@ export const defineConfig = <
           name: definition.name,
         })
         const owner = `Product "${external_id}"`
-        assertKnown(
-          owner,
-          'meter',
-          meterIds,
-          definition.priceList.flatMap((price) =>
-            price.kind === 'metered' ? [price.meter] : [],
-          ),
+        const meterReferences = definition.priceList.flatMap((price) =>
+          price.kind === 'metered' ? [price.meter] : [],
         )
+        const deprecated = definition[deprecatedKey]
+        assertKnown(owner, 'meter', meterIds, meterReferences)
         assertKnown(owner, 'benefit', benefitIds, definition.benefits)
+        if (!deprecated) {
+          assertNotDeprecated(
+            owner,
+            'meter',
+            deprecatedMeterIds,
+            meterReferences,
+          )
+          assertNotDeprecated(
+            owner,
+            'benefit',
+            deprecatedBenefitIds,
+            definition.benefits,
+          )
+        }
         return {
           external_id,
           name: name ?? external_id,
@@ -325,6 +404,7 @@ export const defineConfig = <
           ...(definition[visibilityKey] === 'private' && {
             visibility: definition[visibilityKey],
           }),
+          ...(deprecated && { deprecated: true as const }),
         }
       }),
     }),
@@ -341,9 +421,20 @@ export const defineConfig = <
         },
       ),
     }),
+    ...(webhooks !== undefined && {
+      webhooks: webhookEntries.map(
+        ([external_id, { url, format, events }]) => ({
+          external_id,
+          url,
+          format,
+          events,
+          api_version: WEBHOOK_API_VERSION,
+        }),
+      ),
+    }),
   })
 
-  type Connected = ConnectedConfig<Meters, Benefits, Events>
+  type Connected = ConnectedConfig<Meters, Benefits, Events, Webhooks>
   return {
     toJSON: () => structuredClone(config),
     [runtimeConfig]: () =>
@@ -351,6 +442,7 @@ export const defineConfig = <
         ...(events !== undefined && { events }),
         meters: byExternalId('meter', config.meters),
         benefits: byExternalId('benefit', config.benefits ?? []),
+        webhooks: Object.fromEntries(webhookEntries),
       }) as Connected,
   }
 }

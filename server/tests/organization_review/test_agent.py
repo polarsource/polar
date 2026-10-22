@@ -3,14 +3,21 @@ from uuid import uuid4
 
 import pytest
 
+from polar.kit.http import SSRFBlockedError
 from polar.organization_review.agent import (
+    _MAX_CHECKOUT_URL_HOST_CANDIDATES,
+    MAX_CHECKOUT_URL_HOSTS,
+    _collect_checkout_url_hosts,
     _collect_webhook_host,
+    _pick_checkout_url_hosts,
     _pick_unknown_webhook_host,
-    _same_registrable_domain,
 )
 from polar.organization_review.schemas import (
+    CheckoutReturnUrlData,
+    CheckoutSuccessUrlData,
     IntegrationData,
     SetupData,
+    UrlRedirectInfo,
     WebsiteData,
 )
 
@@ -24,52 +31,23 @@ def _make_org(website: str | None) -> MagicMock:
 
 
 def _make_setup(
-    webhook_domains: list[str], known_service_domains: list[str] | None = None
+    webhook_domains: list[str] | None = None,
+    known_service_domains: list[str] | None = None,
+    *,
+    success_urls: list[str] | None = None,
+    redirects: list[UrlRedirectInfo] | None = None,
+    return_urls: list[str] | None = None,
 ) -> SetupData:
     return SetupData(
+        checkout_success_urls=CheckoutSuccessUrlData(
+            unique_urls=success_urls or [], redirect_results=redirects or []
+        ),
+        checkout_return_urls=CheckoutReturnUrlData(unique_urls=return_urls or []),
         integration=IntegrationData(
-            webhook_domains=webhook_domains,
+            webhook_domains=webhook_domains or [],
             webhook_known_service_domains=known_service_domains or [],
-        )
+        ),
     )
-
-
-class TestSameRegistrableDomain:
-    def test_exact_match(self) -> None:
-        assert _same_registrable_domain("example.com", "example.com") is True
-
-    def test_strips_www_on_both_sides(self) -> None:
-        assert _same_registrable_domain("www.example.com", "example.com") is True
-        assert _same_registrable_domain("example.com", "www.example.com") is True
-
-    def test_subdomain_is_same(self) -> None:
-        assert _same_registrable_domain("api.example.com", "example.com") is True
-        assert _same_registrable_domain("example.com", "api.example.com") is True
-
-    def test_deep_subdomain_is_same(self) -> None:
-        assert _same_registrable_domain("a.b.c.example.com", "example.com") is True
-
-    def test_different_domains(self) -> None:
-        assert _same_registrable_domain("example.com", "other.com") is False
-
-    def test_suffix_lookalike_rejected(self) -> None:
-        """notexample.com must not match example.com — dot anchoring required."""
-        assert _same_registrable_domain("notexample.com", "example.com") is False
-        assert _same_registrable_domain("example.com", "notexample.com") is False
-
-    def test_cctld_safe(self) -> None:
-        """Suffix matching must not collapse multi-part TLDs."""
-        # foo.co.uk and bar.co.uk are different orgs even though both end in .co.uk
-        assert _same_registrable_domain("foo.co.uk", "bar.co.uk") is False
-        # but app.foo.co.uk and foo.co.uk are the same org
-        assert _same_registrable_domain("app.foo.co.uk", "foo.co.uk") is True
-
-    def test_case_insensitive(self) -> None:
-        assert _same_registrable_domain("Example.COM", "example.com") is True
-
-    def test_empty_inputs(self) -> None:
-        assert _same_registrable_domain("", "example.com") is False
-        assert _same_registrable_domain("example.com", "") is False
 
 
 class TestPickUnknownWebhookHost:
@@ -169,3 +147,144 @@ class TestCollectWebhookHost:
         ):
             result = await _collect_webhook_host(org, setup)
         assert result is None
+
+
+class TestPickCheckoutUrlHosts:
+    def test_skips_declared_website_domain(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(success_urls=["https://api.example.com/success"])
+        assert _pick_checkout_url_hosts(org, setup) == []
+
+    def test_picks_success_return_and_final_hosts_but_not_hops(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(
+            success_urls=["https://api.example.com/success"],
+            redirects=[
+                UrlRedirectInfo(
+                    original_url="https://api.example.com/success",
+                    hops=["https://hop.com/"],
+                    final_url="https://landing.com/",
+                    redirected=True,
+                )
+            ],
+            return_urls=["https://shop.other.com/back"],
+        )
+        assert _pick_checkout_url_hosts(org, setup) == [
+            "landing.com",
+            "shop.other.com",
+        ]
+
+    def test_skips_integration_services_but_keeps_hosting_platforms(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(
+            success_urls=[
+                "https://hooks.zapier.com/x",
+                "https://store.lovable.app/thanks",
+            ]
+        )
+        assert _pick_checkout_url_hosts(org, setup) == ["store.lovable.app"]
+
+    def test_skips_fetched_webhook_host_and_duplicates(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(
+            success_urls=[
+                "https://hooks.store.com/success",
+                "https://shop.com/a",
+                "https://www.shop.com/b",
+            ],
+            webhook_domains=["store.com"],
+        )
+        assert _pick_checkout_url_hosts(org, setup) == ["shop.com"]
+
+    def test_puts_redirect_destinations_first(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(
+            success_urls=["https://site0.com/", "https://site1.com/"],
+            redirects=[
+                UrlRedirectInfo(
+                    original_url="https://site1.com/",
+                    final_url="https://landing.com/",
+                    redirected=True,
+                )
+            ],
+        )
+        assert _pick_checkout_url_hosts(org, setup) == [
+            "landing.com",
+            "site0.com",
+            "site1.com",
+        ]
+
+
+class TestCollectCheckoutUrlHosts:
+    @pytest.mark.anyio
+    async def test_fetches_each_host_and_drops_failures(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(success_urls=["https://good.com/", "https://broken.com/"])
+        good = WebsiteData(base_url="https://good.com/")
+
+        async def fake_collect(url: str, **kwargs: str) -> WebsiteData:
+            if url == "https://broken.com/":
+                raise RuntimeError("network down")
+            return good
+
+        with (
+            patch("polar.organization_review.agent.resolve_and_validate_ip"),
+            patch(
+                "polar.organization_review.agent.collect_website_data",
+                new=AsyncMock(side_effect=fake_collect),
+            ),
+        ):
+            result = await _collect_checkout_url_hosts(org, setup)
+        assert result == [good]
+
+    @pytest.mark.anyio
+    async def test_skips_private_hosts_before_applying_cap(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(
+            success_urls=["https://internal.com/"]
+            + [f"https://site{i}.com/" for i in range(MAX_CHECKOUT_URL_HOSTS + 1)]
+        )
+
+        async def fake_validate(host: str) -> None:
+            if host == "internal.com":
+                raise SSRFBlockedError("private")
+
+        async def fake_collect(url: str, **kwargs: str) -> WebsiteData:
+            return WebsiteData(base_url=url)
+
+        with (
+            patch(
+                "polar.organization_review.agent.resolve_and_validate_ip",
+                new=AsyncMock(side_effect=fake_validate),
+            ),
+            patch(
+                "polar.organization_review.agent.collect_website_data",
+                new=AsyncMock(side_effect=fake_collect),
+            ),
+        ):
+            result = await _collect_checkout_url_hosts(org, setup)
+
+        assert [r.base_url for r in result] == [
+            f"https://site{i}.com/" for i in range(MAX_CHECKOUT_URL_HOSTS)
+        ]
+
+    @pytest.mark.anyio
+    async def test_bounds_dns_lookups(self) -> None:
+        org = _make_org("https://example.com")
+        setup = _make_setup(success_urls=[f"https://site{i}.com/" for i in range(50)])
+
+        with (
+            patch(
+                "polar.organization_review.agent.resolve_and_validate_ip",
+                new=AsyncMock(side_effect=SSRFBlockedError("private")),
+            ) as validate,
+            patch(
+                "polar.organization_review.agent.collect_website_data",
+                new_callable=AsyncMock,
+            ) as fetch,
+        ):
+            result = await _collect_checkout_url_hosts(org, setup)
+
+        assert result == []
+        assert validate.await_count == _MAX_CHECKOUT_URL_HOST_CANDIDATES
+        fetch.assert_not_awaited()

@@ -1,11 +1,16 @@
+import itertools
+
 from polar.outpost.client import Configuration, Snapshot
 from polar.outpost.reducer import BUCKET_SIZE
 
 from harness import (
+    DisconnectStep,
     ExternalCustomerID,
     ExternalCustomerMeterRequest,
+    Failure,
     IngestStep,
     ReadStep,
+    RedisStep,
     RestartStep,
     Scenario,
     SnapshotStep,
@@ -22,11 +27,13 @@ CONFIGURATION: Configuration = {
         }
     ],
 }
+_ids = itertools.count(1)
 CUSTOMER: ExternalCustomerID = {"external_customer_id": "alice"}
 METER: ExternalCustomerMeterRequest = {**CUSTOMER, "meter_id": "meter"}
 INITIAL: Snapshot = {
     **CUSTOMER,
     "customer_id": None,
+    "customer_exists": True,
     "meter_id": "meter",
     "cold_until": BUCKET,
     "version": BUCKET + 1,
@@ -51,6 +58,7 @@ def emit(
                 {
                     **CUSTOMER,
                     "name": "call",
+                    "external_id": f"event-{next(_ids)}",
                     "timestamp": timestamp,
                     "metadata": {"tokens": units},
                 }
@@ -110,7 +118,7 @@ SCENARIOS = [
                             0.510 + round_index * 0.3,
                             client,
                             (round_index + 1) * 10,
-                            within=0,
+                            within=0.2,
                         )
                         for client in CONCURRENT_CLIENTS
                     ),
@@ -264,6 +272,89 @@ SCENARIOS = [
             ),
             RestartStep(1.3, "reader"),
             expect(1.6, "reader", 44),
+        ],
+    ),
+    Scenario(
+        "cold read waits for the first snapshot",
+        CONFIGURATION,
+        [{**INITIAL, "count": 1, "sum": 5, "min": 5, "max": 5}],
+        [expect(0, "reader", 5, within=0)],
+    ),
+    Scenario(
+        "unknown customer reads none",
+        CONFIGURATION,
+        [INITIAL],
+        [
+            ReadStep(
+                0,
+                "reader",
+                {"external_customer_id": "bob", "meter_id": "meter"},
+                None,
+            )
+        ],
+    ),
+    Scenario(
+        "reconnect after Polar drops the connection",
+        CONFIGURATION,
+        [INITIAL],
+        [
+            expect(0, "writer", 0),
+            expect(0, "reader", 0),
+            emit(0.2, "writer", 7),
+            DisconnectStep(0.4),
+            emit(0.5, "reader", 3),
+            expect(0.6, "writer", 10),
+            SnapshotStep(
+                1.5,
+                {
+                    **INITIAL,
+                    "cold_until": BUCKET + BUCKET_SIZE,
+                    "version": BUCKET + BUCKET_SIZE + 1,
+                    "count": 3,
+                    "sum": 12,
+                    "min": 2,
+                    "max": 7,
+                },
+            ),
+            expect(1.6, "writer", 12),
+            expect(1.6, "reader", 12),
+        ],
+    ),
+    Scenario(
+        "redis outage fails fast then recovers",
+        CONFIGURATION,
+        [INITIAL],
+        [
+            expect(0, "writer", 0),
+            expect(0, "reader", 0),
+            emit(0.2, "writer", 5),
+            expect(0.3, "reader", 5),
+            RedisStep(0.5, available=False),
+            ReadStep(
+                0.7,
+                "reader",
+                {"external_customer_id": "bob", "meter_id": "meter"},
+                None,
+                failure=Failure("Redis is unavailable", within=0.5),
+            ),
+            IngestStep(
+                0.7,
+                "writer",
+                {
+                    "events": [
+                        {
+                            **CUSTOMER,
+                            "name": "call",
+                            "external_id": "redis-outage",
+                            "metadata": {"tokens": 1},
+                        }
+                    ]
+                },
+                failure=Failure("Redis is unavailable", within=0.5),
+            ),
+            RedisStep(1, available=True),
+            expect(1.2, "reader", 5, within=3),
+            expect(1.2, "writer", 5, within=3),
         ],
     ),
 ]

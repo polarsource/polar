@@ -1,7 +1,7 @@
 import dataclasses
 from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime
-from typing import Annotated, Any, Literal, cast, get_args, overload
+from typing import Annotated, Any, Literal, Self, cast, get_args, overload
 
 from annotated_types import Ge, Le
 from pydantic import (
@@ -23,8 +23,23 @@ from pydantic_core import CoreSchema, core_schema
 from slugify import slugify
 
 
+@dataclasses.dataclass
+class _AttributeOverlay:
+    _obj: Any
+    _extras: dict[str, Any]
+
+    def __getattr__(self, name: str) -> Any:
+        if name in self._extras:
+            return self._extras[name]
+        return getattr(self._obj, name)
+
+
 class Schema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def model_validate_overlay(cls, obj: Any, **extras: Any) -> Self:
+        return cls.model_validate(_AttributeOverlay(obj, extras))
 
     @classmethod
     def __get_pydantic_json_schema__(

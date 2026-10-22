@@ -9,7 +9,7 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.versioning import version
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
-from polar.openapi import APITag, cli_preview
+from polar.openapi import APITag, cli_preview, destructive
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -201,12 +201,13 @@ async def files(
 @router.get(
     "/{id}/grants",
     summary="List Benefit Grants",
+    openapi_extra={"x-tool-title": "List Grants for a Benefit"},
     response_model=ListResource[BenefitGrant],
     responses={404: BenefitNotFound},
 )
 async def grants(
     id: BenefitID,
-    auth_subject: auth.BenefitsRead,
+    auth_subject: auth.BenefitGrantsRead,
     pagination: PaginationParamsQuery,
     is_granted: bool | None = Query(
         None,
@@ -276,6 +277,7 @@ async def create(
 @router.patch(
     "/{id}",
     summary="Update Benefit",
+    openapi_extra=destructive(),
     response_model=BenefitSchema,
     responses={
         200: {"description": "Benefit updated."},

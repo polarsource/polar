@@ -83,6 +83,7 @@ def cli_preview(*fields: tuple[str, str]) -> dict[str, Any]:
 TOOL_ANNOTATIONS = "x-tool-annotations"
 TOOL_DESTRUCTIVE = "x-tool-destructive"
 TOOL_DESTRUCTIVE_WHEN = "x-tool-destructive-when"
+TOOL_OPEN_WORLD = "x-tool-open-world"
 
 type DestructiveValue = str | bool | int | float | None
 
@@ -94,6 +95,14 @@ def destructive() -> dict[str, Any]:
     `DELETE` operations already are, so this is only needed for other methods.
     """
     return {TOOL_DESTRUCTIVE: True}
+
+
+def open_world() -> dict[str, Any]:
+    """
+    Mark an operation as reaching systems outside the organization, such as
+    sending a request to a webhook URL or an email to a customer.
+    """
+    return {TOOL_OPEN_WORLD: True}
 
 
 def destructive_when_equals(value: DestructiveValue) -> dict[str, Any]:

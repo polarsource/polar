@@ -291,6 +291,37 @@ class TestSensitiveEndpointZoneIsolation:
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
 @pytest.mark.parametrize(
+    "path", ["/v1/outpost/telemetry", "/v1/outpost/telemetry/metrics"]
+)
+@pytest.mark.parametrize(
+    ("group", "expected_zone"),
+    [
+        (RateLimitGroup.default, "outpost-telemetry"),
+        (RateLimitGroup.web, "outpost-telemetry"),
+        (RateLimitGroup.elevated, "outpost-telemetry"),
+        (RateLimitGroup.restricted, "api"),
+        (RateLimitGroup.pending_auth, "api"),
+    ],
+)
+class TestOutpostTelemetryZone:
+    """SDK telemetry never spends the `api` budget of the token that ingests
+    events, except for restricted and unvalidated tokens, which keep their
+    tighter `api` limits."""
+
+    def test_resolves_to_zone(
+        self,
+        rules: dict[str, Sequence[Rule]],
+        path: str,
+        group: RateLimitGroup,
+        expected_zone: str,
+    ) -> None:
+        rule = _select_rule(rules, path, group, method="POST")
+        assert rule is not None
+        assert rule.zone == expected_zone
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize(
     "path", ["/v1/email-update/request", "/v1/email-update/verify"]
 )
 @pytest.mark.parametrize("group", [RateLimitGroup.default, RateLimitGroup.web])

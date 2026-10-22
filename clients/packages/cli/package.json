@@ -1,7 +1,7 @@
 {
   "name": "@polar-sh/cli",
   "private": true,
-  "version": "2.0.2",
+  "version": "3.0.0",
   "description": "",
   "bin": "bin/cli.js",
   "type": "module",
@@ -41,7 +41,7 @@
     "@napi-rs/keyring": "2.1.0",
     "@polar-sh/cli-commands": "file:../../../sdk/cli-commands",
     "@polar-sh/polar": "workspace:*",
-    "@polar-sh/sdk": "1.0.2",
+    "@polar-sh/sdk": "1.0.3-alpha.4",
     "effect": "catalog:",
     "jsonc-parser": "^3.3.1",
     "open": "^10.2.0",

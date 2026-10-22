@@ -18,6 +18,7 @@ from polar.openapi import (
     destructive,
     destructive_when_equals,
     destructive_when_one_of,
+    open_world,
 )
 from polar.routing import APIRouter
 from polar.version import V2027_01, VERSIONS
@@ -71,10 +72,16 @@ async def test_current_openapi_frozen(version: APIVersion, client: AsyncClient) 
 
 
 DESTRUCTIVE_TOOL_OPERATIONS = {
+    "benefits:update",
+    "customers:members:update",
+    "customers:members:update_external",
+    "customers:update",
+    "customers:update_external",
     "license_keys:rotate",
     "license_keys:update",
     "meters:update",
     "products:update",
+    "products:update_benefits",
     "refunds:create",
     "subscriptions:update",
     "webhooks:reset_webhook_endpoint_secret",
@@ -83,7 +90,6 @@ DESTRUCTIVE_TOOL_OPERATIONS = {
 
 NON_DESTRUCTIVE_TOOL_OPERATIONS = {
     "benefits:create",
-    "benefits:update",
     "checkout-links:create",
     "checkout-links:update",
     "custom-fields:create",
@@ -94,10 +100,6 @@ NON_DESTRUCTIVE_TOOL_OPERATIONS = {
     "customers:create",
     "customers:members:create",
     "customers:members:create_external",
-    "customers:members:update",
-    "customers:members:update_external",
-    "customers:update",
-    "customers:update_external",
     "discounts:create",
     "discounts:update",
     "event-types:update",
@@ -105,13 +107,13 @@ NON_DESTRUCTIVE_TOOL_OPERATIONS = {
     "orders:generate_invoice",
     "orders:update",
     "products:create",
-    "products:update_benefits",
     "webhooks:create_webhook_endpoint",
     "webhooks:redeliver_webhook_event",
 }
 
 DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
     "customer_meters:credits": V2027_01,
+    "customer_meters:reverse_credit": V2027_01,
 }
 
 
@@ -214,6 +216,19 @@ class TestDestructiveToolAnnotations:
         operation = schema["paths"]["/widgets/{id}/rotate"]["post"]
         assert operation["x-tool-annotations"] == ["destructive"]
         assert "x-tool-destructive" not in operation
+
+    def test_operation_marked_open_world(self) -> None:
+        router = APIRouter(
+            prefix="/widgets", tags=["widgets", APITag.public, APITag.mcp]
+        )
+
+        @router.post("/{id}/notify", openapi_extra=open_world())
+        async def notify(id: str) -> None: ...
+
+        schema = get_openapi(title="Widgets", version="1", routes=router.routes)
+        operation = schema["paths"]["/widgets/{id}/notify"]["post"]
+        assert operation["x-tool-annotations"] == ["open_world"]
+        assert "x-tool-open-world" not in operation
 
     def test_field_equals(self) -> None:
         router = APIRouter(

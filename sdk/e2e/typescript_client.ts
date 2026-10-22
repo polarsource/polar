@@ -12,6 +12,7 @@ type Command =
 const [redisUrl, baseUrl] = process.argv.slice(2);
 const outpost = new Outpost(redisUrl, {
   client: createPolarCore({ accessToken: "harness-token", baseUrl }),
+  telemetry: false,
 });
 const respond = (response: { result: unknown } | { error: string }) =>
   console.log(JSON.stringify(response));
@@ -28,10 +29,11 @@ try {
       }
       switch (command.operation) {
         case "ingest":
-          respond({ result: await outpost.ingest(command.arguments) });
+          for (const event of command.arguments.events) await outpost.track(event);
+          respond({ result: null });
           break;
         case "read":
-          respond({ result: await outpost.customerMeter(command.arguments) });
+          respond({ result: await outpost.meter(command.arguments) });
           break;
         case "actor":
           await outpost.actor(command.arguments);

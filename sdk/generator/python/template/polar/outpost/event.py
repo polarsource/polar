@@ -5,16 +5,6 @@ import typing
 
 import typing_extensions
 
-{% for api in ir.versions %}
-from polar.{{ api | format_version }}.inputs import EventCreateCustomer as EventCreateCustomer{{ api | format_version }}, EventCreateExternalCustomer as EventCreateExternalCustomer{{ api | format_version }}
-{% endfor %}
-
-EventInput: typing.TypeAlias = typing.Union[
-    {% for api in ir.versions %}
-    EventCreateCustomer{{ api | format_version }},
-    EventCreateExternalCustomer{{ api | format_version }},
-    {% endfor %}
-]
 
 @dataclasses.dataclass
 class Event:
@@ -27,18 +17,27 @@ class Event:
         if self.timestamp.utcoffset() is None:
             raise ValueError("Event timestamps must include a timezone")
 
-    def get_property(self, property: str) -> typing.Any:
-        match property:
-            case "name":
-                return self.name
-            case "source":
-                return "user"
-            case "timestamp":
-                return int(self.timestamp.timestamp())
-            case _:
-                value: typing.Any = self.metadata
-                for part in property.removeprefix("metadata.").split("."):
-                    if not isinstance(value, collections.abc.Mapping):
-                        return None
-                    value = value.get(part)
-                return value
+
+
+PropertyReader: typing.TypeAlias = collections.abc.Callable[[Event], typing.Any]
+
+
+def get_property_reader(property: str) -> PropertyReader:
+    match property:
+        case "name":
+            return lambda event: event.name
+        case "source":
+            return lambda event: "user"
+        case "timestamp":
+            return lambda event: int(event.timestamp.timestamp())
+    path = property.removeprefix("metadata.").split(".")
+
+    def read(event: Event) -> typing.Any:
+        value: typing.Any = event.metadata
+        for part in path:
+            if not isinstance(value, collections.abc.Mapping):
+                return None
+            value = value.get(part)
+        return value
+
+    return read

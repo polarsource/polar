@@ -6,6 +6,7 @@ from annotated_types import Gt
 from pydantic import (
     UUID4,
     AwareDatetime,
+    BaseModel,
     ConfigDict,
     Discriminator,
     Field,
@@ -66,7 +67,18 @@ MAXIMUM_DISCOUNTS = 100
 MAXIMUM_WEBHOOK_ENDPOINTS = 25
 
 
-class ConfigMeter(MeterCreateBase):
+class ConfigDeprecationMixin(BaseModel):
+    deprecated: bool = Field(
+        default=False,
+        exclude=True,
+        description=(
+            "Keeps the resource for customers who still use it, "
+            "but active products and benefits can't reference it."
+        ),
+    )
+
+
+class ConfigMeter(ConfigDeprecationMixin, MeterCreateBase):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
@@ -104,7 +116,7 @@ BenefitReference = Annotated[
 ]
 
 
-class ConfigBenefitBase(MetadataInputMixin, Schema):
+class ConfigBenefitBase(ConfigDeprecationMixin, MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
@@ -238,7 +250,9 @@ ConfigProductPrice = Annotated[
 ]
 
 
-class ConfigProduct(MetadataInputMixin, TrialConfigurationInputMixin, Schema):
+class ConfigProduct(
+    ConfigDeprecationMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
+):
     model_config = ConfigDict(extra="forbid")
 
     external_id: str = Field(
@@ -527,6 +541,7 @@ class ConfigIssueSeverity(StrEnum):
 
 class ConfigIssueType(StrEnum):
     currency_changed = "currency_changed"
+    deprecated_reference = "deprecated_reference"
     discount_locked = "discount_locked"
     duplicate_code = "duplicate_code"
     duplicate_external_id = "duplicate_external_id"
@@ -611,6 +626,27 @@ class ConfigPlan(Schema):
         description="Change for `settings`, if in the config."
     )
     issues: list[ConfigIssue]
+
+
+class ConfigPruneEntry(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
+    external_id: str = Field(description="The resource's `external_id`.")
+    in_use: bool = Field(description="Whether a customer still uses the resource.")
+    referenced_by: list[str] = Field(
+        description=(
+            "External IDs of the products, benefits and discounts staying in the config "
+            "that reference the resource."
+        )
+    )
+
+
+class ConfigPrune(Schema):
+    entries: list[ConfigPruneEntry] = Field(
+        description=(
+            "Every deprecated resource in the config. Ones not in use "
+            "and not referenced can be removed from the config."
+        )
+    )
 
 
 class ConfigExportMeter(Schema, MetadataOutputMixin):

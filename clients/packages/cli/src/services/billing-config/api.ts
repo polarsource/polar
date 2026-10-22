@@ -58,6 +58,7 @@ const SECTIONS = {
   benefit: 'benefits',
   product: 'products',
   discount: 'discounts',
+  webhook: 'webhooks',
 } as const satisfies Record<typeof ConfigResource.Type, string>
 
 // The server reports settings changes by dotted path, like `payments.currency`
@@ -106,7 +107,7 @@ export const entries = (
   ),
 ]
 
-// Settings, benefits, products and discounts sections need their own scope on top of the meters one
+// Settings, benefits, products, discounts and webhooks sections need their own scope on top of the meters one
 export const requiredScopes = (
   config: LoadedConfig,
   access: 'read' | 'write',
@@ -115,7 +116,7 @@ export const requiredScopes = (
     typeof config.input === 'object' && config.input !== null
       ? config.input
       : {}
-  return ['meters', 'benefits', 'products', 'discounts', 'settings']
+  return ['meters', 'benefits', 'products', 'discounts', 'settings', 'webhooks']
     .filter((section) => section === 'meters' || section in input)
     .map(
       (section) =>

@@ -8,6 +8,32 @@ Polar uses date-based API versions to evolve the API without unexpectedly changi
 the contract your integration depends on. Versions use the `YYYY-MM` format, such
 as `2026-10`, and apply to API requests, responses, webhook payloads, and SDK types. [Read more](/api-reference/current/versioning)
 
+<Update label="2027-01">
+
+**This will become the Current version on January 1, 2027.**
+
+Removed the following obsolete fields, including fields that were already hidden from the API documentation and SDKs. Response field removals also apply to webhook payloads. Earlier API versions retain these fields.
+
+- Fixed discounts: removed `amount` and `currency` from create and update requests, responses, and webhook payloads. Use `amounts` instead; it is required when creating a fixed discount. Removed input fields are ignored.
+- Organization onboarding details: removed `about`, `intended_use`, `customer_acquisition`, `future_annual_revenue`, and `previous_annual_revenue` from create/update requests and KYC responses. Removed input fields are ignored. Updating details replaces stored values with the remaining supported fields.
+- Orders: `user_id`, `user`, `product_price_id`, `product_price`, `amount` (use `net_amount`), and `from_balance_amount` (use `applied_balance_amount`). Embedded subscriptions also lose `user_id`.
+- Subscriptions: `user_id`, `user`, `price_id`, and `price`. Use `customer_id`, `customer`, and `prices` instead.
+- Customer state active subscriptions: `price_id`. Use `prices` instead.
+- Customer portal orders and subscriptions: `user_id`, order `product_price_id` and `product_price`, and subscription `price_id` and `price`.
+- License keys: `user_id` and `user`. Use `customer_id` and `customer` instead.
+- Benefit grants: `user_id`. Use `customer_id` instead.
+- Checkout links: `product_id`, `product_price_id`, `product`, and `product_price`. Use `products` instead.
+- Checkouts: `customer_external_id` (use `external_customer_id`), `customer_billing_address_fields` (use `billing_address_fields`), and `subtotal_amount` (use `net_amount`).
+- Organizations: `bio`, `company`, `blog`, `location`, `twitter_username`, `pledge_minimum_amount`, `pledge_badge_show_amount`, `default_upfront_split_to_contributors`, and `notification_settings`.
+- Organizations embedded in other resources: `email`, `website`, `socials`, `status`, `details_submitted_at`, `feature_settings`, `subscription_settings`, and `customer_email_settings`.
+- Custom and Slack shared channel benefits: `is_tax_applicable`.
+- Discord benefit properties: `guild_token`. Use `guild_id` instead.
+- GitHub repository benefit properties: `repository_id`. Use `repository_owner` and `repository_name` instead.
+
+Legacy recurring-price fields are unchanged.
+
+</Update>
+
 <Update label="2026-10">
 
 **This will become the Current version on October 1st.**

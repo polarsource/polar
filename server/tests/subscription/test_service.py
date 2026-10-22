@@ -57,6 +57,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
@@ -117,6 +118,8 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_benefit,
+    create_benefit_grant,
     create_canceled_subscription,
     create_checkout,
     create_customer,
@@ -1700,7 +1703,10 @@ class TestCycle:
             )
 
         reset_meters_mock.assert_awaited_once_with(
-            session, updated_subscription, reset_at=utc_now()
+            session,
+            updated_subscription,
+            reset_at=utc_now(),
+            include_meter_credits=not cancel_at_period_end,
         )
 
     @freeze_time("2024-01-15 12:00:00")
@@ -1730,7 +1736,7 @@ class TestCycle:
             )
 
         reset_meters_mock.assert_awaited_once_with(
-            session, updated_subscription, reset_at=cycle_at
+            session, updated_subscription, reset_at=cycle_at, include_meter_credits=True
         )
 
     async def test_not_billable(
@@ -2983,9 +2989,11 @@ class TestCycleMeters:
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -3013,6 +3021,14 @@ class TestCycleMeters:
         assert updated.current_period_end == previous_billing_end
         assert updated.scheduler_locked_at is None
 
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
+        enqueue_job_mock.assert_any_call("customer.state_changed", customer.id)
+
         # Meter credits re-granted; no overage means no meter-cycle order enqueued.
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
@@ -3023,6 +3039,36 @@ class TestCycleMeters:
             if call.args and call.args[0] == "order.create_subscription_order"
         ]
         assert order_calls == []
+
+    async def test_resets_meters_at_the_boundary(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        meter_period_end = utc_now() - timedelta(seconds=1)
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = meter_period_end - timedelta(days=31)
+        subscription.current_meter_period_end = meter_period_end
+        await save_fixture(subscription)
+        reset_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        await subscription_service.cycle_meters(session, subscription)
+
+        reset_mock.assert_awaited_once_with(
+            session, subscription, reset_at=meter_period_end
+        )
 
     async def test_clears_expired_discount_before_settling(
         self,
@@ -3275,9 +3321,11 @@ class TestCycleMeters:
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
         mocker: MockerFixture,
     ) -> None:
         subscription = await create_active_subscription(
@@ -3305,6 +3353,12 @@ class TestCycleMeters:
         assert updated.current_meter_period_end is not None
         assert updated.current_meter_period_end > now
         assert updated.scheduler_locked_at is None
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
         # ...but while frozen nothing is settled, reset, or re-granted.
         settle_mock.assert_not_called()
         reset_mock.assert_not_called()
@@ -4717,7 +4771,7 @@ async def update_meters_fixtures(
 
 
 @pytest.mark.anyio
-class TestResetMeter:
+class TestResetMeters:
     async def test_without_rollover(
         self,
         mocker: MockerFixture,
@@ -4735,9 +4789,7 @@ class TestResetMeter:
             return_value=0,
         )
 
-        await subscription_service.reset_meter(
-            session, subscription, subscription_meter
-        )
+        await subscription_service.reset_meters(session, subscription)
 
         get_rollover_units_mock.assert_awaited_once_with(
             session, customer, subscription_meter.meter, cutoff=None
@@ -4767,13 +4819,19 @@ class TestResetMeter:
             "polar.subscription.service.customer_meter_service.get_rollover_units",
             return_value=25,
         )
+        enqueue_seal_mock = mocker.patch(
+            "polar.subscription.service.reducer_service.enqueue_seal"
+        )
 
-        await subscription_service.reset_meter(
-            session, subscription, subscription_meter, reset_at=reset_at
+        await subscription_service.reset_meters(
+            session, subscription, reset_at=reset_at
         )
 
         get_rollover_units_mock.assert_awaited_once_with(
             session, customer, subscription_meter.meter, cutoff=reset_at
+        )
+        enqueue_seal_mock.assert_called_once_with(
+            customer.id, subscription_meter.meter_id, at=reset_at
         )
         reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
         assert len(reset_events) == 1
@@ -4787,6 +4845,80 @@ class TestResetMeter:
             "rollover": True,
             "reason": "benefit",
         }
+
+    async def test_resets_granted_meter_credits(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        meter = await create_meter(save_fixture, organization=organization)
+        revoked_meter = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        for benefit_meter, granted in ((meter, True), (revoked_meter, False)):
+            benefit = await create_benefit(
+                save_fixture,
+                organization=organization,
+                type=BenefitType.meter_credit,
+                properties={
+                    "meter_id": str(benefit_meter.id),
+                    "units": 100,
+                    "rollover": False,
+                },
+            )
+            await create_benefit_grant(
+                save_fixture,
+                customer,
+                benefit,
+                granted=granted,
+                subscription=subscription,
+            )
+        reset_at = utc_now()
+
+        await subscription_service.reset_meters(
+            session, subscription, reset_at=reset_at
+        )
+
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
+        assert reset_events[0].timestamp == reset_at
+        assert reset_events[0].user_metadata == {"meter_id": str(meter.id)}
+
+    async def test_resets_shared_meter_once(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(subscription.meters[0].meter_id),
+                "units": 100,
+                "rollover": False,
+            },
+        )
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, subscription=subscription
+        )
+
+        await subscription_service.reset_meters(session, subscription)
+
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
 
 
 @pytest.mark.anyio
@@ -8364,7 +8496,70 @@ class TestMarkActive:
 
         assert updated.status == SubscriptionStatus.active
         settle_mock.assert_called_once()
-        reset_mock.assert_called_once()
+        _, settled_at = settle_mock.call_args.args
+        reset_mock.assert_awaited_once_with(session, updated, reset_at=settled_at)
+
+    async def test_recovery_cycles_grants_kept_through_grace_period(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        benefit = await create_benefit(save_fixture, organization=organization)
+        grant = await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, subscription=subscription
+        )
+
+        await subscription_service.mark_active(session, subscription)
+
+        enqueue_job_mock.assert_any_call("benefit.cycle", benefit_grant_id=grant.id)
+
+    async def test_recovery_does_not_cycle_revoked_grants(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        benefit = await create_benefit(save_fixture, organization=organization)
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=False, subscription=subscription
+        )
+
+        await subscription_service.mark_active(session, subscription)
+
+        assert "benefit.cycle" not in [
+            call.args[0] for call in enqueue_job_mock.call_args_list
+        ]
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
 
     async def test_recovery_skips_meter_settlement_for_non_meter_product(
         self,

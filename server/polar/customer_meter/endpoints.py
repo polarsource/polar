@@ -1,4 +1,7 @@
-from fastapi import Depends, Query
+from typing import Annotated
+
+from fastapi import Depends, Path, Query
+from pydantic import UUID4
 
 from polar.customer.schemas.customer import CustomerID
 from polar.customer_session.service import AmbiguousExternalCustomerID
@@ -20,7 +23,10 @@ from polar.version import V2027_01
 from . import auth, sorting
 from .schemas import CustomerMeter as CustomerMeterSchema
 from .schemas import CustomerMeterCreditsCreate, CustomerMeterID
-from .service import CustomerMeterCreditExternalIDConflict
+from .service import (
+    CustomerMeterCreditExternalIDConflict,
+    CustomerMeterCreditNotReversible,
+)
 from .service import customer_meter as customer_meter_service
 
 router = APIRouter(
@@ -197,3 +203,52 @@ async def credits(
     concurrently, in which case it catches up shortly after.
     """
     return await customer_meter_service.credit(session, auth_subject, credit_create)
+
+
+@router.post(
+    "/credits/{id}/reverse",
+    summary="Reverse Customer Meter Credit",
+    response_model=MeterCreditEvent,
+    status_code=201,
+    openapi_extra=destructive(),
+    responses={
+        201: {"description": "Credit reversed."},
+        403: {
+            "description": "You don't have permission to manage customers.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Manual credit not found.",
+            "model": ResourceNotFound.schema(),
+        },
+        409: {
+            "description": (
+                "The credit can't be reversed, "
+                "or the customer meter is being updated: retry shortly."
+            ),
+            "model": CustomerMeterCreditNotReversible.schema(),
+        },
+    },
+)
+@version(starting_from=V2027_01)
+async def reverse_credit(
+    id: Annotated[
+        UUID4,
+        Path(
+            description=(
+                "The ID of the `meter.credited` event returned "
+                "when the credit was granted."
+            )
+        ),
+    ],
+    auth_subject: auth.CustomerMeterWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Event:
+    """
+    Reverse a manual credit, removing the units the customer hasn't used yet.
+
+    Works once per credit, within 7 days and in the current billing period.
+    Returns a `meter.credited` event with negative units and
+    `parent_id` set to the reversed credit.
+    """
+    return await customer_meter_service.reverse_credit(session, auth_subject, id)

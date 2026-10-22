@@ -1618,6 +1618,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/subscriptions/{id}/meter-charge-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Usage Charge For Subscription
+     * @description Get a preview of the usage charge settled at the end of the current meter cycle.
+     *
+     *     Only available when the meter cycle ends before the next subscription invoice;
+     *     otherwise usage is part of the charge preview.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_meter_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/{id}/cancel-preview': {
     parameters: {
       query?: never
@@ -5209,6 +5234,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/subscriptions/{id}/meter-charge-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Usage Charge For Active Subscription
+     * @description Get a preview of the usage charge settled at the end of the current meter cycle.
+     *
+     *     Only available when the meter cycle ends before the next subscription invoice;
+     *     otherwise usage is part of the charge preview.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:subscriptions:get_meter_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/subscriptions/{id}/cancel-preview': {
     parameters: {
       query?: never
@@ -6160,6 +6210,33 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/prune': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Prune Config
+     * @description Report which deprecated resources in a declarative config document are still in use.
+     *
+     *     A deprecated resource can be removed from the config once no customer uses it
+     *     and no product or benefit staying in the config references it.
+     *
+     *     Each section requires the read or write scope for its resource.
+     *
+     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     */
+    post: operations['config:prune']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organization-access-tokens/': {
     parameters: {
       query?: never
@@ -6263,6 +6340,32 @@ export interface paths {
      *     **Scopes**: `customers:write`
      */
     post: operations['customer_meters:credits']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-meters/credits/{id}/reverse': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reverse Customer Meter Credit
+     * @description Reverse a manual credit, removing the units the customer hasn't used yet.
+     *
+     *     Works once per credit, within 7 days and in the current billing period.
+     *     Returns a `meter.credited` event with negative units and
+     *     `parent_id` set to the reversed credit.
+     *
+     *     **Scopes**: `customers:write`
+     */
+    post: operations['customer_meters:reverse_credit']
     delete?: never
     options?: never
     head?: never
@@ -13697,6 +13800,80 @@ export interface components {
       line1: components['schemas']['BillingAddressFieldMode']
       line2: components['schemas']['BillingAddressFieldMode']
     }
+    CheckoutConfirm:
+      | components['schemas']['CheckoutConfirmStripe']
+      | components['schemas']['CheckoutConfirmSharedPaymentToken']
+    /**
+     * CheckoutConfirmSharedPaymentToken
+     * @description Confirm a checkout session using a Stripe shared payment token granted by an agent.
+     *
+     *     Only supported for one-time payments.
+     */
+    CheckoutConfirmSharedPaymentToken: {
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Product Id
+       * @description ID of the product to checkout. Must be present in the checkout's product list.
+       */
+      product_id?: string | null
+      /**
+       * Product Price Id
+       * @deprecated
+       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+       */
+      product_price_id?: string | null
+      /** Amount */
+      amount?: number | null
+      /**
+       * Seats
+       * @description Number of seats for seat-based pricing.
+       */
+      seats?: number | null
+      /**
+       * Units
+       * @description Number of units for unit-based pricing.
+       */
+      units?: number | null
+      /** Is Business Customer */
+      is_business_customer?: boolean | null
+      /** Customer Name */
+      customer_name?: string | null
+      /** Customer Email */
+      customer_email?: string | null
+      /** Customer Billing Name */
+      customer_billing_name?: string | null
+      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** Customer Tax Id */
+      customer_tax_id?: string | null
+      /** Locale */
+      locale?: string | null
+      /**
+       * Payment Method Type
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+       */
+      payment_method_type?: string | null
+      /**
+       * Discount Code
+       * @description Discount code to apply to the checkout.
+       */
+      discount_code?: string | null
+      /**
+       * Allow Trial
+       * @description Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+       */
+      allow_trial?: false | null
+      /**
+       * Shared Payment Token Id
+       * @description ID of the Stripe shared payment token (`spt_...`).
+       */
+      shared_payment_token_id: string
+    }
     /**
      * CheckoutConfirmStripe
      * @description Confirm a checkout session using a Stripe confirmation token.
@@ -13766,7 +13943,9 @@ export interface components {
        */
       confirmation_token_id?: string | null
     }
-    CheckoutCreate: components['schemas']['CheckoutProductsCreate']
+    CheckoutCreate:
+      | components['schemas']['CheckoutProductsCreate']
+      | components['schemas']['CheckoutProductsExternalCreate']
     /**
      * CheckoutCreatedEvent
      * @description An event created by Polar when a checkout is created.
@@ -13860,18 +14039,6 @@ export interface components {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
       /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
-      /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
        * @example {
@@ -13903,18 +14070,6 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -14582,175 +14737,9 @@ export interface components {
        */
       allow_customer_updates: boolean
     }
-    /**
-     * CheckoutPriceCreate
-     * @description Create a new checkout session from a product price.
-     *
-     *     **Deprecated**: Use `CheckoutProductsCreate` instead.
-     *
-     *     Metadata set on the checkout will be copied
-     *     to the resulting order and/or subscription.
-     */
-    CheckoutPriceCreate: {
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Custom Field Data
-       * @description Key-value object storing custom field values.
-       */
-      custom_field_data?: {
-        [key: string]: string | number | boolean | null
-      }
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout.
-       */
-      discount_id?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
-       * @default false
-       */
-      require_billing_address: boolean
-      /** Amount */
-      amount?: number | null
-      /**
-       * Seats
-       * @description Predefined number of seats (works with seat-based pricing only)
-       */
-      seats?: number | null
-      /**
-       * Min Seats
-       * @description Minimum number of seats (works with seat-based pricing only)
-       */
-      min_seats?: number | null
-      /**
-       * Max Seats
-       * @description Maximum number of seats (works with seat-based pricing only)
-       */
-      max_seats?: number | null
-      /**
-       * Units
-       * @description Predefined number of units (works with unit-based pricing only)
-       */
-      units?: number | null
-      /**
-       * Min Units
-       * @description Minimum number of units (works with unit-based pricing only)
-       */
-      min_units?: number | null
-      /**
-       * Max Units
-       * @description Maximum number of units (works with unit-based pricing only)
-       */
-      max_units?: number | null
-      /**
-       * Allow Trial
-       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
-       * @default true
-       */
-      allow_trial: boolean
-      /**
-       * Customer Id
-       * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
-       */
-      customer_id?: string | null
-      /**
-       * Is Business Customer
-       * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
-       * @default false
-       */
-      is_business_customer: boolean
-      /**
-       * External Customer Id
-       * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
-       */
-      external_customer_id?: string | null
-      /** Customer Name */
-      customer_name?: string | null
-      /** Customer Email */
-      customer_email?: string | null
-      /** Customer Ip Address */
-      customer_ip_address?: string | null
-      /** Customer Billing Name */
-      customer_billing_name?: string | null
-      customer_billing_address?: components['schemas']['AddressInput'] | null
-      /** Customer Tax Id */
-      customer_tax_id?: string | null
-      /**
-       * Customer Metadata
-       * @description Key-value object allowing you to store additional information that'll be copied to the created customer.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      customer_metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Subscription Id
-       * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
-       */
-      subscription_id?: string | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Embed Origin
-       * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
-       */
-      embed_origin?: string | null
-      /** Locale */
-      locale?: string | null
-      /**
-       * Product Price Id
-       * Format: uuid4
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string
-    }
+    CheckoutPaymentError:
+      | components['schemas']['PaymentError']
+      | components['schemas']['SharedPaymentTokenError']
     /**
      * CheckoutProduct
      * @description Product data for a checkout session.
@@ -14841,176 +14830,6 @@ export interface components {
        * @description List of medias associated to the product.
        */
       medias: components['schemas']['ProductMediaFileRead'][]
-    }
-    /**
-     * CheckoutProductCreate
-     * @description Create a new checkout session from a product.
-     *
-     *     **Deprecated**: Use `CheckoutProductsCreate` instead.
-     *
-     *     Metadata set on the checkout will be copied
-     *     to the resulting order and/or subscription.
-     */
-    CheckoutProductCreate: {
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Custom Field Data
-       * @description Key-value object storing custom field values.
-       */
-      custom_field_data?: {
-        [key: string]: string | number | boolean | null
-      }
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout.
-       */
-      discount_id?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
-       * @default false
-       */
-      require_billing_address: boolean
-      /** Amount */
-      amount?: number | null
-      /**
-       * Seats
-       * @description Predefined number of seats (works with seat-based pricing only)
-       */
-      seats?: number | null
-      /**
-       * Min Seats
-       * @description Minimum number of seats (works with seat-based pricing only)
-       */
-      min_seats?: number | null
-      /**
-       * Max Seats
-       * @description Maximum number of seats (works with seat-based pricing only)
-       */
-      max_seats?: number | null
-      /**
-       * Units
-       * @description Predefined number of units (works with unit-based pricing only)
-       */
-      units?: number | null
-      /**
-       * Min Units
-       * @description Minimum number of units (works with unit-based pricing only)
-       */
-      min_units?: number | null
-      /**
-       * Max Units
-       * @description Maximum number of units (works with unit-based pricing only)
-       */
-      max_units?: number | null
-      /**
-       * Allow Trial
-       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
-       * @default true
-       */
-      allow_trial: boolean
-      /**
-       * Customer Id
-       * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
-       */
-      customer_id?: string | null
-      /**
-       * Is Business Customer
-       * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
-       * @default false
-       */
-      is_business_customer: boolean
-      /**
-       * External Customer Id
-       * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
-       */
-      external_customer_id?: string | null
-      /** Customer Name */
-      customer_name?: string | null
-      /** Customer Email */
-      customer_email?: string | null
-      /** Customer Ip Address */
-      customer_ip_address?: string | null
-      /** Customer Billing Name */
-      customer_billing_name?: string | null
-      customer_billing_address?: components['schemas']['AddressInput'] | null
-      /** Customer Tax Id */
-      customer_tax_id?: string | null
-      /**
-       * Customer Metadata
-       * @description Key-value object allowing you to store additional information that'll be copied to the created customer.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      customer_metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Subscription Id
-       * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
-       */
-      subscription_id?: string | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Embed Origin
-       * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
-       */
-      embed_origin?: string | null
-      /** Locale */
-      locale?: string | null
-      currency?: components['schemas']['PresentmentCurrency'] | null
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description ID of the product to checkout. First available price will be selected.
-       */
-      product_id: string
     }
     /**
      * CheckoutProductsCreate
@@ -15182,6 +15001,189 @@ export interface components {
       /**
        * Prices
        * @description Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+       */
+      prices?: {
+        [key: string]: (
+          | components['schemas']['ProductPriceFixedCreate']
+          | components['schemas']['ProductPriceCustomCreate']
+          | components['schemas']['ProductPriceSeatBasedCreate']
+          | components['schemas']['ProductPriceUnitBasedCreate']
+          | components['schemas']['ProductPriceMeteredUnitCreate']
+          | components['schemas']['ProductPriceMeteredTiersCreate']
+        )[]
+      } | null
+    }
+    /**
+     * CheckoutProductsExternalCreate
+     * @description Create a new checkout session from a list of products,
+     *     referenced by their external ID.
+     *     Customers will be able to switch between those products.
+     *
+     *     Metadata set on the checkout will be copied
+     *     to the resulting order and/or subscription.
+     */
+    CheckoutProductsExternalCreate: {
+      /** @description The interval unit for the trial period. */
+      trial_interval?: components['schemas']['TrialInterval'] | null
+      /**
+       * Trial Interval Count
+       * @description The number of interval units for the trial period.
+       */
+      trial_interval_count?: number | null
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Discount Id
+       * @description ID of the discount to apply to the checkout.
+       */
+      discount_id?: string | null
+      /**
+       * Allow Discount Codes
+       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+       * @default true
+       */
+      allow_discount_codes: boolean
+      /**
+       * Require Billing Address
+       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+       * @default false
+       */
+      require_billing_address: boolean
+      /** Amount */
+      amount?: number | null
+      /**
+       * Seats
+       * @description Predefined number of seats (works with seat-based pricing only)
+       */
+      seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
+      /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units?: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units?: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units?: number | null
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       * @default true
+       */
+      allow_trial: boolean
+      /**
+       * Customer Id
+       * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
+       */
+      customer_id?: string | null
+      /**
+       * Is Business Customer
+       * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+       * @default false
+       */
+      is_business_customer: boolean
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+       */
+      external_customer_id?: string | null
+      /** Customer Name */
+      customer_name?: string | null
+      /** Customer Email */
+      customer_email?: string | null
+      /** Customer Ip Address */
+      customer_ip_address?: string | null
+      /** Customer Billing Name */
+      customer_billing_name?: string | null
+      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** Customer Tax Id */
+      customer_tax_id?: string | null
+      /**
+       * Customer Metadata
+       * @description Key-value object allowing you to store additional information that'll be copied to the created customer.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      customer_metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Subscription Id
+       * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
+       */
+      subscription_id?: string | null
+      /**
+       * Success Url
+       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+       */
+      success_url?: string | null
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
+      /**
+       * Embed Origin
+       * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+       */
+      embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
+      currency?: components['schemas']['PresentmentCurrency'] | null
+      /**
+       * External Products
+       * @description List of product external IDs available to select at that checkout. The first one will be selected by default.
+       */
+      external_products: string[]
+      /**
+       * Prices
+       * @description Optional mapping of product external IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
        */
       prices?: {
         [key: string]: (
@@ -16166,6 +16168,12 @@ export interface components {
         [key: string]: string | number | boolean
       }
       /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @default false
+       */
+      deprecated: boolean
+      /**
        * External Id
        * @description Your identifier for the benefit, used to match it.
        */
@@ -16205,6 +16213,12 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
+      /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @default false
+       */
+      deprecated: boolean
       /**
        * External Id
        * @description Your identifier for the benefit, used to match it.
@@ -16548,6 +16562,7 @@ export interface components {
      */
     ConfigIssueType:
       | 'currency_changed'
+      | 'deprecated_reference'
       | 'discount_locked'
       | 'duplicate_code'
       | 'duplicate_external_id'
@@ -16610,6 +16625,12 @@ export interface components {
         | components['schemas']['PropertyAggregation']
         | components['schemas']['UniqueAggregation']
       /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @default false
+       */
+      deprecated: boolean
+      /**
        * External Id
        * @description Your identifier for the meter. Used to match the config entry with an existing meter.
        */
@@ -16661,6 +16682,12 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
+      /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @default false
+       */
+      deprecated: boolean
       /**
        * External Id
        * @description Your identifier for the product, used to match it.
@@ -16853,6 +16880,34 @@ export interface components {
           [key: string]: string
         }
       } | null
+    }
+    /** ConfigPrune */
+    ConfigPrune: {
+      /**
+       * Entries
+       * @description Every deprecated resource in the config. Ones not in use and not referenced can be removed from the config.
+       */
+      entries: components['schemas']['ConfigPruneEntry'][]
+    }
+    /** ConfigPruneEntry */
+    ConfigPruneEntry: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /**
+       * In Use
+       * @description Whether a customer still uses the resource.
+       */
+      in_use: boolean
+      /**
+       * Referenced By
+       * @description External IDs of the products, benefits and discounts staying in the config that reference the resource.
+       */
+      referenced_by: string[]
     }
     /**
      * ConfigResource
@@ -19336,6 +19391,17 @@ export interface components {
        * @constant
        */
       error: 'CustomerMeterCreditExternalIDConflict'
+      /** Detail */
+      detail: string
+    }
+    /** CustomerMeterCreditNotReversible */
+    CustomerMeterCreditNotReversible: {
+      /**
+       * Error
+       * @example CustomerMeterCreditNotReversible
+       * @constant
+       */
+      error: 'CustomerMeterCreditNotReversible'
       /** Detail */
       detail: string
     }
@@ -22379,19 +22445,12 @@ export interface components {
        */
       duration_in_months?: number | null
       /**
-       * Amount
-       * @deprecated
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
        */
-      amount?: number | null
-      /**
-       * @deprecated
-       * @default usd
-       */
-      currency: components['schemas']['PresentmentCurrency'] | null
-      /** Amounts */
-      amounts?: {
+      amounts: {
         [key: string]: number
-      } | null
+      }
     }
     /**
      * DiscountFixedOnceForeverDuration
@@ -22400,18 +22459,6 @@ export interface components {
     DiscountFixedOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -22497,18 +22544,6 @@ export interface components {
     DiscountFixedOnceForeverDurationBase: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -22599,18 +22634,6 @@ export interface components {
       duration_in_months: number
       type: components['schemas']['DiscountType']
       /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
-      /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
        * @example {
@@ -22697,18 +22720,6 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -23370,13 +23381,6 @@ export interface components {
       /** Duration In Months */
       duration_in_months?: number | null
       type?: components['schemas']['DiscountType'] | null
-      /**
-       * Amount
-       * @deprecated
-       */
-      amount?: number | null
-      /** @deprecated */
-      currency?: components['schemas']['PresentmentCurrency'] | null
       /** Amounts */
       amounts?: {
         [key: string]: number
@@ -25073,13 +25077,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /**
-     * LegacyOrganizationStatus
-     * @description Legacy organization status values kept for backward compatibility in schemas
-     *     using OrganizationPublicBase.
-     * @enum {string}
-     */
-    LegacyOrganizationStatus: 'created' | 'under_review' | 'denied' | 'active'
     LegacyRecurringProductPrice:
       | components['schemas']['LegacyRecurringProductPriceFixed']
       | components['schemas']['LegacyRecurringProductPriceCustom']
@@ -25628,20 +25625,6 @@ export interface components {
       /** Expires At */
       expires_at?: string | null
     }
-    /** LicenseKeyUser */
-    LicenseKeyUser: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /** Email */
-      email?: string | null
-      /** Public Name */
-      public_name: string
-      /** Avatar Url */
-      avatar_url?: string | null
-    }
     /** LicenseKeyValidate */
     LicenseKeyValidate: {
       /** Key */
@@ -26185,6 +26168,13 @@ export interface components {
       organization_name: string
       /** Organization Slug */
       organization_slug?: string | null
+      /**
+       * Threat Names
+       * @default []
+       */
+      threat_names: string[]
+      /** Benefits Url */
+      readonly benefits_url: string | null
     }
     /** MaintainerNewPaidSubscriptionNotification */
     MaintainerNewPaidSubscriptionNotification: {
@@ -29548,22 +29538,6 @@ export interface components {
       /** @description The address of the customer that should appear on the invoice. Country and state fields cannot be updated. */
       billing_address?: components['schemas']['AddressInput'] | null
     }
-    /** OrderUser */
-    OrderUser: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /** Email */
-      email?: string | null
-      /** Public Name */
-      public_name: string
-      /** Avatar Url */
-      avatar_url?: string | null
-      /** Github Username */
-      github_username?: string | null
-    }
     /**
      * OrderVoidedEvent
      * @description An event created by Polar when an order is voided.
@@ -30365,7 +30339,7 @@ export interface components {
        */
       socials?: components['schemas']['OrganizationSocialLink'][] | null
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
-      details?: components['schemas']['OrganizationDetails'] | null
+      details?: components['schemas']['OrganizationDetailsInput'] | null
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -30716,11 +30690,36 @@ export interface components {
     /** OrganizationDetails */
     OrganizationDetails: {
       /**
-       * About
-       * @deprecated
-       * @description Brief information about you and your business.
+       * Product Description
+       * @description Description of digital products being sold.
        */
-      about?: string | null
+      product_description?: string | null
+      /**
+       * Selling Categories
+       * @description Categories of products being sold.
+       */
+      selling_categories?: string[]
+      /**
+       * Pricing Models
+       * @description Pricing models used by the organization.
+       */
+      pricing_models?: string[]
+      /**
+       * Switching
+       * @description Switching from another platform?
+       * @default false
+       */
+      switching: boolean
+      /**
+       * Switching From
+       * @description Which platform the organization is migrating from.
+       */
+      switching_from?:
+        | ('paddle' | 'lemon_squeezy' | 'gumroad' | 'stripe' | 'other')
+        | null
+    }
+    /** OrganizationDetailsInput */
+    OrganizationDetailsInput: {
       /**
        * Product Description
        * @description Description of digital products being sold.
@@ -30737,24 +30736,6 @@ export interface components {
        */
       pricing_models?: string[]
       /**
-       * Intended Use
-       * @deprecated
-       * @description How the organization will integrate and use Polar.
-       */
-      intended_use?: string | null
-      /**
-       * Customer Acquisition
-       * @deprecated
-       * @description Main customer acquisition channels.
-       */
-      customer_acquisition?: string[]
-      /**
-       * Future Annual Revenue
-       * @deprecated
-       * @description Estimated revenue in the next 12 months
-       */
-      future_annual_revenue?: number | null
-      /**
        * Switching
        * @description Switching from another platform?
        * @default false
@@ -30767,12 +30748,6 @@ export interface components {
       switching_from?:
         | ('paddle' | 'lemon_squeezy' | 'gumroad' | 'stripe' | 'other')
         | null
-      /**
-       * Previous Annual Revenue
-       * @deprecated
-       * @description Revenue from last year if applicable.
-       */
-      previous_annual_revenue?: number | null
     }
     /**
      * OrganizationDisputeSettings
@@ -30841,12 +30816,6 @@ export interface components {
        */
       off_session_charges_enabled: boolean
       /**
-       * Meter Cycling Enabled
-       * @description If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).
-       * @default false
-       */
-      meter_cycling_enabled: boolean
-      /**
        * Slack Benefit Enabled
        * @description Enables the slack shared channel benefit
        * @default false
@@ -30888,6 +30857,18 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
+      /**
+       * Agentic Payments Enabled
+       * @description If this organization accepts payments from AI agents through Stripe shared payment tokens.
+       * @default false
+       */
+      agentic_payments_enabled: boolean
+      /**
+       * Staged Events Ingest Enabled
+       * @description If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
+       * @default false
+       */
+      staged_events_ingest_enabled: boolean
       /**
        * Config As Code Enabled
        * @description If this organization can manage its configuration from a declarative config document.
@@ -32096,7 +32077,7 @@ export interface components {
        */
       socials?: components['schemas']['OrganizationSocialLink'][] | null
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
-      details?: components['schemas']['OrganizationDetails'] | null
+      details?: components['schemas']['OrganizationDetailsInput'] | null
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -36247,6 +36228,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** SharedPaymentTokenError */
+    SharedPaymentTokenError: {
+      /**
+       * Error
+       * @example SharedPaymentTokenError
+       * @constant
+       */
+      error: 'SharedPaymentTokenError'
+      /** Detail */
+      detail: string
+    }
     /** SlackIntegration */
     SlackIntegration: {
       /**
@@ -37228,7 +37220,7 @@ export interface components {
       base_amount: number
       /**
        * Metered Amount
-       * @description Total metered usage charges in cents (sum of all meter charges)
+       * @description Metered usage in cents billed on this invoice. Zero when usage is billed on its own meter cycle, ending before this invoice.
        */
       metered_amount: number
       /**
@@ -37731,6 +37723,42 @@ export interface components {
       meter_id: string
       /** @description The meter associated with this subscription. */
       meter: components['schemas']['Meter']
+    }
+    /**
+     * SubscriptionMeterChargePreview
+     * @description Preview of the metered usage billed at the end of the current meter cycle.
+     */
+    SubscriptionMeterChargePreview: {
+      /**
+       * Metered Amount
+       * @description Metered usage amount in cents.
+       */
+      metered_amount: number
+      /**
+       * Subtotal Amount
+       * @description Subtotal amount in cents, before discount and tax.
+       */
+      subtotal_amount: number
+      /**
+       * Discount Amount
+       * @description Discount amount in cents.
+       */
+      discount_amount: number
+      /**
+       * Net Amount
+       * @description Net amount in cents, before taxes.
+       */
+      net_amount: number
+      /**
+       * Tax Amount
+       * @description Tax amount in cents.
+       */
+      tax_amount: number
+      /**
+       * Total Amount
+       * @description Total amount in cents, before applying the wallet balance.
+       */
+      total_amount: number
     }
     /**
      * SubscriptionMigratedEvent
@@ -39119,22 +39147,6 @@ export interface components {
       billing_period_end?: string
       /** Subscription Id */
       subscription_id: string
-    }
-    /** SubscriptionUser */
-    SubscriptionUser: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /** Email */
-      email?: string | null
-      /** Public Name */
-      public_name: string
-      /** Avatar Url */
-      avatar_url?: string | null
-      /** Github Username */
-      github_username?: string | null
     }
     /** SupportCase */
     SupportCase: {
@@ -46054,6 +46066,47 @@ export interface operations {
       }
     }
   }
+  'subscriptions:get_meter_charge_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionMeterChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'subscriptions:get_cancel_preview': {
     parameters: {
       query?: never
@@ -49986,7 +50039,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CheckoutConfirmStripe']
+        'application/json': components['schemas']['CheckoutConfirm']
       }
     }
     responses: {
@@ -49999,13 +50052,13 @@ export interface operations {
           'application/json': components['schemas']['CheckoutPublicConfirmed']
         }
       }
-      /** @description The payment failed. */
+      /** @description The payment failed or the shared payment token was rejected. */
       400: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PaymentError']
+          'application/json': components['schemas']['CheckoutPaymentError']
         }
       }
       /** @description The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments. */
@@ -57642,6 +57695,47 @@ export interface operations {
       }
     }
   }
+  'customer_portal:subscriptions:get_meter_charge_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionMeterChargePreview']
+        }
+      }
+      /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer_portal:subscriptions:get_cancel_preview': {
     parameters: {
       query?: never
@@ -63186,6 +63280,59 @@ export interface operations {
       }
     }
   }
+  'config:prune': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Config']
+      }
+    }
+    responses: {
+      /** @description Deprecated resources checked. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigPrune']
+        }
+      }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'organization_access_tokens:list': {
     parameters: {
       query?: {
@@ -63470,6 +63617,65 @@ export interface operations {
           'application/json':
             | components['schemas']['CustomerMeterCreditExternalIDConflict']
             | components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_meters:reverse_credit': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The ID of the `meter.credited` event returned when the credit was granted. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Credit reversed. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeterCreditEvent']
+        }
+      }
+      /** @description You don't have permission to manage customers. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Manual credit not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The credit can't be reversed, or the customer meter is being updated: retry shortly. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerMeterCreditNotReversible']
         }
       }
       /** @description Validation Error */
@@ -71896,6 +72102,7 @@ export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
   'currency_changed',
+  'deprecated_reference',
   'discount_locked',
   'duplicate_code',
   'duplicate_external_id',
@@ -72806,9 +73013,6 @@ export const insightSeverityValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
-export const legacyOrganizationStatusValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyOrganizationStatus']
-> = ['created', 'under_review', 'denied', 'active']
 export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
 > = ['custom']
@@ -73535,6 +73739,9 @@ export const organizationDeletionBlockedReasonValues: ReadonlyArray<
 > = ['has_orders', 'has_active_subscriptions', 'stripe_account_deletion_failed']
 export const organizationDetailsSwitching_fromAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationDetails']['switching_from']
+> = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
+export const organizationDetailsInputSwitching_fromAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationDetailsInput']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
 export const organizationIndividualLegalEntitySchemaTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationIndividualLegalEntitySchema']['type']

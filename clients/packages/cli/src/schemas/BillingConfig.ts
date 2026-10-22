@@ -44,6 +44,7 @@ export const ConfigResource = Schema.Literals([
   'benefit',
   'product',
   'discount',
+  'webhook',
 ])
 
 export const EntryResult = Schema.Struct({
@@ -125,7 +126,10 @@ export const ApplyOutput = Schema.Union(
 
 export const ConfigDocument = Schema.Record(
   Schema.String,
-  Schema.Array(Schema.Unknown),
+  Schema.Union([
+    Schema.Array(Schema.Unknown),
+    Schema.Record(Schema.String, Schema.Unknown),
+  ]),
 )
 export type ConfigDocument = typeof ConfigDocument.Type
 

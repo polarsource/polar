@@ -30,6 +30,7 @@ const NOUNS = [
   ['benefits', 'benefit'],
   ['products', 'product'],
   ['discounts', 'discount'],
+  ['webhooks', 'webhook'],
 ] as const
 
 export const found = (config: LoadedConfig) => {

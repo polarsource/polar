@@ -5,9 +5,9 @@ from collections.abc import Sequence
 from typing import Literal
 
 from sqlalchemy import select
-from sqlalchemy.orm import contains_eager, selectinload
+from sqlalchemy.orm import contains_eager, selectinload, undefer
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -18,6 +18,10 @@ from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
+)
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
     PolarError,
@@ -95,7 +99,7 @@ class ProductService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
@@ -136,6 +140,8 @@ class ProductService:
 
         if id is not None:
             statement = statement.where(Product.id.in_(id))
+        else:
+            statement = statement.where(Product.is_current)
 
         if external_id is not None:
             statement = statement.where(Product.external_id.in_(external_id))
@@ -179,7 +185,7 @@ class ProductService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
@@ -193,13 +199,31 @@ class ProductService:
         )
         return await repository.get_one_or_none(statement)
 
+    async def get_by_external_ids(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        external_ids: Sequence[str],
+    ) -> Sequence[Product]:
+        repository = ProductRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Product.external_id.in_(external_ids), Product.is_current)
+            .options(undefer(Product.external_id), *repository.get_eager_options())
+        )
+        return await repository.get_all(statement)
+
     async def create(
         self,
         session: AsyncSession,
         create_schema: ProductCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         notify: bool = True,
+        declarative_config: bool = False,
     ) -> Product:
         """``notify=False`` skips the webhook and the organization re-review, for
         bulk internal writes such as a catalog import."""
@@ -213,6 +237,8 @@ class ProductService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        if not declarative_config and organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
 
         if (
             create_schema.external_id is not None
@@ -241,19 +267,6 @@ class ProductService:
             auth_subject,
         )
         errors.extend(prices_errors)
-
-        meter_interval = getattr(create_schema, "meter_interval", None)
-        if meter_interval is not None and not organization.feature_settings.get(
-            "meter_cycling_enabled", False
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "meter_interval"),
-                    "msg": "Separate meter cycling is not enabled for this organization.",
-                    "input": meter_interval,
-                }
-            )
 
         product = await repository.create(
             Product(
@@ -335,11 +348,15 @@ class ProductService:
         session: AsyncSession,
         product: Product,
         update_schema: ProductUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Product:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
         )
+        if not declarative_config:
+            await assert_catalog_editable(session, product.organization_id)
 
         errors: list[ValidationError] = []
 
@@ -392,12 +409,11 @@ class ProductService:
             errors.extend(prices_errors)
 
         # Prevent non-legacy products from changing their recurring interval
-        if (
-            (
+        if not all(is_legacy_price(price) for price in product.prices):
+            if (
                 update_schema.recurring_interval is not None
                 or update_schema.recurring_interval_count is not None
-            )
-            and (
+            ) and (
                 (
                     update_schema.recurring_interval is not None
                     and update_schema.recurring_interval != product.recurring_interval
@@ -407,17 +423,42 @@ class ProductService:
                     and update_schema.recurring_interval_count
                     != product.recurring_interval_count
                 )
-            )
-            and not all(is_legacy_price(price) for price in product.prices)
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "recurring_interval"),
-                    "msg": "Recurring interval cannot be changed.",
-                    "input": update_schema.recurring_interval,
-                }
-            )
+            ):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "recurring_interval"),
+                        "msg": "Recurring interval cannot be changed.",
+                        "input": update_schema.recurring_interval,
+                    }
+                )
+
+            if (
+                "recurring_interval" in update_schema.model_fields_set
+                and update_schema.recurring_interval is None
+                and product.recurring_interval is not None
+            ):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "recurring_interval"),
+                        "msg": "Recurring interval cannot be changed.",
+                        "input": update_schema.recurring_interval,
+                    }
+                )
+            if (
+                "recurring_interval_count" in update_schema.model_fields_set
+                and update_schema.recurring_interval_count is None
+                and product.recurring_interval_count is not None
+            ):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "recurring_interval_count"),
+                        "msg": "Recurring interval cannot be changed.",
+                        "input": update_schema.recurring_interval_count,
+                    }
+                )
 
         # Prevent trying to add trial configuration to non-recurring products
         if (
@@ -557,11 +598,15 @@ class ProductService:
         session: AsyncSession,
         product: Product,
         benefits: Sequence[uuid.UUID],
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
         )
+        if not declarative_config:
+            await assert_catalog_editable(session, product.organization_id)
 
         previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()
@@ -652,11 +697,12 @@ class ProductService:
         self,
         session: AsyncSession,
         product: Product,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Product:
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
         )
+        await assert_catalog_editable(session, product.organization_id)
 
         if not product.is_deletable:
             raise ProductNotDeletable(product.id)
@@ -674,7 +720,7 @@ class ProductService:
         prices_schema: Sequence[ExistingProductPrice | ProductPriceCreate],
         recurring_interval: SubscriptionRecurringInterval | None,
         product: Product | None,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         source: ProductPriceSource = ProductPriceSource.catalog,
         error_prefix: tuple[str, ...] = ("body", "prices"),
     ) -> tuple[
@@ -926,7 +972,7 @@ class ProductService:
     async def _after_product_created(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         product: Product,
     ) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)

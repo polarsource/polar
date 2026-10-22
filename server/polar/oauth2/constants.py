@@ -9,7 +9,9 @@ AUTHORIZATION_CODE_PREFIX = "polar_ac_"
 ACCESS_TOKEN_PREFIX: dict[SubType, str] = {
     SubType.user: "polar_at_u_",
     SubType.organization: "polar_at_o_",
+    SubType.agent: "polar_at_a_",
 }
+# Agents get no refresh tokens: they trade their identity assertion instead.
 REFRESH_TOKEN_PREFIX: dict[SubType, str] = {
     SubType.user: "polar_rt_u_",
     SubType.organization: "polar_rt_o_",

@@ -7,6 +7,7 @@ on:
       - "server/**"
       - "clients/**"
       - "!clients/apps/app/**"
+      - "docs/openapi/**"
       - ".github/workflows/deploy.yml"
       - ".github/workflows/deploy-environment.yml"
       - ".github/workflows/deploy_server.sh"
@@ -55,6 +56,7 @@ jobs:
       backend-production: ${{ steps.filter-backend-production.outputs.backend }}
       migrations-production: ${{ steps.filter-backend-production.outputs.migrations }}
       frontend-production: ${{ steps.filter-frontend-production.outputs.frontend }}
+      mcp-production: ${{ steps.filter-mcp-production.outputs.mcp }}
       # Whether the test environment is enabled in Terraform. The deploy-test
       # job is skipped entirely when this is false.
       test-enabled: ${{ steps.test-enabled.outputs.enabled }}
@@ -116,6 +118,7 @@ jobs:
             echo "frontend-sandbox=$(resolve deployed/frontend-sandbox)"
             echo "backend-production=$(resolve deployed/backend-production)"
             echo "frontend-production=$(resolve deployed/frontend-production)"
+            echo "mcp-production=$(resolve deployed/mcp-production)"
           } >> "$GITHUB_OUTPUT"
 
       # Parse local.test_enabled from the Terraform test config so the
@@ -184,6 +187,21 @@ jobs:
               - 'clients/**'
               - '.github/workflows/deploy.yml'
               - '.github/workflows/deploy-environment.yml'
+
+      # The MCP server's tools are generated from the committed OpenAPI spec,
+      # so an API change that touches it redeploys the MCP server too.
+      - name: Detect MCP changes since last MCP deploy
+        uses: dorny/paths-filter@v4.0.3
+        id: filter-mcp-production
+        with:
+          base: ${{ steps.bases.outputs.mcp-production }}
+          filters: |
+            mcp:
+              - 'clients/apps/mcp/**'
+              - 'clients/pnpm-lock.yaml'
+              - 'clients/pnpm-workspace.yaml'
+              - 'docs/openapi/**'
+              - '.github/workflows/deploy.yml'
 
   build:
     name: "Build Docker Image 🐳"
@@ -395,6 +413,29 @@ jobs:
               --publish
           done
 
+  build-production-frontend:
+    name: "Frontend: Build for Production 🚀"
+    needs: changes
+    # Runs alongside the sandbox deploy. The deployment stays staged (not on
+    # the domain) until deploy-production promotes it after sandbox succeeds.
+    if: needs.changes.outputs.frontend-production == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    outputs:
+      deployment-url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Deploy to Vercel (Staged Production)
+        id: deploy
+        uses: ./.github/actions/vercel-build
+        with:
+          token: ${{ secrets.VERCEL_TOKEN }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+
   deploy-sandbox:
     name: "Deploy to Sandbox 🧪"
     needs: [changes, build]
@@ -445,7 +486,7 @@ jobs:
 
   deploy-production:
     name: "Deploy to Production 🚀"
-    needs: [changes, build, deploy-sandbox]
+    needs: [changes, build, build-production-frontend, deploy-sandbox]
     if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-production == 'true' || needs.changes.outputs.frontend-production == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
     with:
@@ -455,6 +496,7 @@ jobs:
       has-migrations: ${{ needs.changes.outputs.migrations-production == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-production != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-production != 'true' && github.event_name != 'workflow_dispatch' }}
+      frontend-deployment-url: ${{ needs.build-production-frontend.outputs.deployment-url }}
     secrets:
       RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -463,10 +505,74 @@ jobs:
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
 
+  # One Worker serves both the production and sandbox MCP servers. It deploys
+  # after the production backend so it never exposes an operation the API
+  # doesn't have yet.
+  deploy-mcp:
+    name: "Deploy MCP Server 🤖"
+    needs: [changes, deploy-production]
+    if: always() && !failure() && !cancelled() && (needs.changes.outputs.mcp-production == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: ./clients
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: clients/package.json
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
+
+      - run: pnpm install --filter mcp... --frozen-lockfile --ignore-scripts
+      - run: pnpm --filter mcp build
+
+      - name: Deploy to Cloudflare
+        working-directory: ./clients/apps/mcp
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.MCP_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.MCP_CLOUDFLARE_ACCOUNT_ID }}
+          MINTLIFY_SEARCH_KEY: ${{ secrets.MCP_MINTLIFY_SEARCH_KEY }}
+          MCP_ANALYTICS_SECRET: ${{ secrets.MCP_ANALYTICS_SECRET }}
+        run: |
+          set -euo pipefail
+          : "${MCP_ANALYTICS_SECRET:?MCP_ANALYTICS_SECRET is not set in the production environment}"
+          secrets="$RUNNER_TEMP/mcp-secrets.json"
+          jq -n '{MINTLIFY_SEARCH_KEY: env.MINTLIFY_SEARCH_KEY, MCP_ANALYTICS_SECRET: env.MCP_ANALYTICS_SECRET}' > "$secrets"
+          pnpm exec cf deploy --prebuilt --tag "$GITHUB_SHA" --secrets-file "$secrets"
+
+      # See update-backend-tag in deploy-environment.yml: tag advance is
+      # bookkeeping, and a failure only means the next push redeploys.
+      - name: Push deploy tag
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          TAG: deployed/mcp-production
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f "$TAG" "$GITHUB_SHA"
+          for _ in 1 2 3; do
+            if git push -f origin "refs/tags/$TAG"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
   notify-failure:
     name: "Notify Failure 🚨"
-    needs: [build, deploy-sandbox, deploy-production]
-    if: always() && (needs.build.result == 'failure' || needs.deploy-sandbox.result == 'failure' || needs.deploy-production.result == 'failure')
+    needs: [build, build-production-frontend, deploy-sandbox, deploy-production, deploy-mcp]
+    if: always() && (needs.build.result == 'failure' || needs.build-production-frontend.result == 'failure' || needs.deploy-sandbox.result == 'failure' || needs.deploy-production.result == 'failure' || needs.deploy-mcp.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Announce in Slack
@@ -484,7 +590,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":rotating_light: *Deploy failed* — triggered by *${{ github.actor }}*\n*Failed jobs:*${{ needs.build.result == 'failure' && ' `build`' || '' }}${{ needs.deploy-sandbox.result == 'failure' && ' `deploy-sandbox`' || '' }}${{ needs.deploy-production.result == 'failure' && ' `deploy-production`' || '' }}\n*Commit:* `${{ github.sha }}`\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                    "text": ":rotating_light: *Deploy failed* — triggered by *${{ github.actor }}*\n*Failed jobs:*${{ needs.build.result == 'failure' && ' `build`' || '' }}${{ needs.build-production-frontend.result == 'failure' && ' `build-production-frontend`' || '' }}${{ needs.deploy-sandbox.result == 'failure' && ' `deploy-sandbox`' || '' }}${{ needs.deploy-production.result == 'failure' && ' `deploy-production`' || '' }}${{ needs.deploy-mcp.result == 'failure' && ' `deploy-mcp`' || '' }}\n*Commit:* `${{ github.sha }}`\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
                   }
                 }
               ]

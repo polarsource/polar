@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 from polar.kit.versioning import (
     APIVersion,
@@ -123,6 +123,36 @@ def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
         == "Only available in the next API version."
     )
     assert set(next_product["required"]) == {"name", "shared_field", "next_field"}
+
+
+@pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])
+def test_versioned_computed_fields_are_required(api_version: APIVersion) -> None:
+    next_version = Version(starting_from=NEXT_VERSION)
+
+    class Model(BaseModel):
+        @computed_field(exclude_if=next_version.exclude_if)
+        def versioned(self) -> Annotated[int, next_version]:
+            return 1
+
+        @computed_field(exclude_if=lambda value: value is None)
+        def conditional(self) -> int | None:
+            return None
+
+    with api_version_context(api_version):
+        schema = Model.model_json_schema(mode="serialization")
+        data = Model().model_dump()
+
+    assert "conditional" in schema["properties"]
+    assert "conditional" not in schema.get("required", [])
+    assert "conditional" not in data
+    if api_version == NEXT_VERSION:
+        assert "versioned" in schema["properties"]
+        assert schema["required"] == ["versioned"]
+        assert data == {"versioned": 1}
+    else:
+        assert "versioned" not in schema["properties"]
+        assert "versioned" not in schema.get("required", [])
+        assert data == {}
 
 
 @pytest.mark.parametrize(

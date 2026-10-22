@@ -67,8 +67,7 @@ const RESOURCES: Resource[] = [
 export const Api = () => (
   <Chapter
     id="api"
-    index="04"
-    name="API"
+    name="04 API"
     title="One REST API"
     subtitle="Everything the dashboard can do"
     description="Every resource the dashboard touches, behind versioned endpoints and organization tokens."
@@ -89,6 +88,7 @@ export const Api = () => (
             flexDirection="column"
             rowGap="xl"
             padding="xl"
+            borderRadius="m"
             backgroundColor={{
               base: 'background-secondary',
               hover: 'background-card',

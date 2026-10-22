@@ -8,7 +8,7 @@ import * as ui from '@/utils/ui'
 
 const scope = Flag.String('scope').pipe(
   Flag.withDescription(
-    'Scope to preselect on the token page, e.g. products:read. Repeatable.',
+    'Scope to preselect on the token page, e.g. products:read. Repeatable',
   ),
   Flag.atLeast(0),
 )

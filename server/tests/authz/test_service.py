@@ -4,8 +4,11 @@ from uuid import UUID
 import pytest
 
 from polar.auth.models import AuthSubject
+from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids, get_accessible_organization
-from polar.models import OAuth2Token, Organization, PersonalAccessToken, User
+from polar.kit.utils import utc_now
+from polar.models import Agent, OAuth2Token, Organization, PersonalAccessToken, User
+from polar.models.agent import AgentStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.user_organization import UserOrganization
 from polar.postgres import AsyncSession
@@ -68,6 +71,30 @@ class TestGetAccessibleOrganization:
         )
         assert result is None
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_subject(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        result = await get_accessible_organization(
+            session, auth_subject, organization.id
+        )
+        assert result == organization
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_other_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization_second: Organization,
+    ) -> None:
+        result = await get_accessible_organization(
+            session, auth_subject, organization_second.id
+        )
+        assert result is None
+
 
 @pytest.mark.anyio
 class TestGetAccessibleOrgIds:
@@ -125,6 +152,77 @@ class TestGetAccessibleOrgIds:
         user_organization: UserOrganization,
     ) -> None:
         organization.set_status(OrganizationStatus.BLOCKED)
+        await session.flush()
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_subject(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == {organization.id}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.parametrize(
+        ("permission", "allowed"),
+        [
+            (OrganizationPermission.products_manage, True),
+            (OrganizationPermission.members_manage, False),
+            (OrganizationPermission.finance_read, False),
+        ],
+    )
+    async def test_agent_permission(
+        self,
+        permission: OrganizationPermission,
+        allowed: bool,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        result = await get_accessible_org_ids(
+            session, auth_subject, permission=permission
+        )
+        assert result == ({organization.id} if allowed else set())
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_excludes_soft_deleted_org(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        organization.set_deleted_at()
+        await session.flush()
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_without_org(
+        self, session: AsyncSession, auth_subject: AuthSubject[Agent]
+    ) -> None:
+        auth_subject.subject.organization = None
+        await session.flush()
+
+        result = await get_accessible_org_ids(session, auth_subject)
+        assert result == set()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_claimed_agent(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        user: User,
+    ) -> None:
+        agent = auth_subject.subject
+        agent.status = AgentStatus.claimed
+        agent.claimed_at = utc_now()
+        agent.claimed_by_user = user
         await session.flush()
 
         result = await get_accessible_org_ids(session, auth_subject)

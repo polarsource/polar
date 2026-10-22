@@ -90,6 +90,8 @@ interface FormState {
   role: string
   email: string
   linkedin: string
+  /** The compact form asks for one name, split into first and last on submit. */
+  contactName: string
 }
 
 const INITIAL: FormState = {
@@ -112,11 +114,24 @@ const INITIAL: FormState = {
   role: '',
   email: '',
   linkedin: '',
+  contactName: '',
 }
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
 
-export const DesignPartnerForm = () => {
+const splitName = (name: string) => {
+  const [firstName = '', ...rest] = name.trim().split(/\s+/)
+  return { firstName, lastName: rest.join(' ') }
+}
+
+export const DesignPartnerForm = ({
+  compact = false,
+  submitLabel = 'Become a design partner',
+}: {
+  /** Asks only for the company, website and contact, for early access rather than a design partner application. */
+  compact?: boolean
+  submitLabel?: string
+}) => {
   const [form, setForm] = useState<FormState>(INITIAL)
   const [status, setStatus] = useState<SubmitStatus>('idle')
 
@@ -142,7 +157,16 @@ export const DesignPartnerForm = () => {
           const res = await fetch('/api/design-partner', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(form),
+            body: JSON.stringify(
+              compact
+                ? {
+                    startupName: form.startupName,
+                    website: form.website,
+                    email: form.email,
+                    ...splitName(form.contactName),
+                  }
+                : form,
+            ),
           })
           if (!res.ok) throw new Error(`Request failed: ${res.status}`)
           setStatus('success')
@@ -153,7 +177,10 @@ export const DesignPartnerForm = () => {
         }
       }}
     >
-      <Field label="Startup Name" htmlFor="startupName">
+      <Field
+        label={compact ? 'Company Name' : 'Startup Name'}
+        htmlFor="startupName"
+      >
         <Input
           id="startupName"
           value={form.startupName}
@@ -163,187 +190,199 @@ export const DesignPartnerForm = () => {
         />
       </Field>
 
-      <Field label="Industry" htmlFor="industry">
-        <Input
-          id="industry"
-          value={form.industry}
-          onChange={(e) => set('industry')(e.target.value)}
-          placeholder="e.g. SaaS, Fintech"
-        />
-      </Field>
+      {compact ? null : (
+        <Field label="Industry" htmlFor="industry">
+          <Input
+            id="industry"
+            value={form.industry}
+            onChange={(e) => set('industry')(e.target.value)}
+            placeholder="e.g. SaaS, Fintech"
+          />
+        </Field>
+      )}
 
-      <Field label="Website" htmlFor="website">
+      <Field label={compact ? 'Website URL' : 'Website'} htmlFor="website">
         <Input
           id="website"
           type="url"
           value={form.website}
           onChange={(e) => set('website')(e.target.value)}
           placeholder="https://yourcompany.com"
+          required={compact}
         />
       </Field>
 
-      <Field label="When were you founded?" htmlFor="foundedAt">
-        <Input
-          id="foundedAt"
-          value={form.foundedAt}
-          onChange={(e) => set('foundedAt')(e.target.value)}
-        />
-      </Field>
+      {compact ? null : (
+        <>
+          <Field label="When were you founded?" htmlFor="foundedAt">
+            <Input
+              id="foundedAt"
+              value={form.foundedAt}
+              onChange={(e) => set('foundedAt')(e.target.value)}
+            />
+          </Field>
 
-      <Field label="Total Funding Raised" htmlFor="funding">
-        <Select value={form.funding} onValueChange={set('funding')}>
-          <SelectTrigger id="funding">
-            <SelectValue placeholder="Select..." />
-          </SelectTrigger>
-          <SelectContent>
-            {FUNDING_OPTIONS.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
+          <Field label="Total Funding Raised" htmlFor="funding">
+            <Select value={form.funding} onValueChange={set('funding')}>
+              <SelectTrigger id="funding">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                {FUNDING_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
 
-      <Field label="Partner / Investor" htmlFor="partner">
-        <Select value={form.partner} onValueChange={set('partner')}>
-          <SelectTrigger id="partner">
-            <SelectValue placeholder="Select..." />
-          </SelectTrigger>
-          <SelectContent>
-            {PARTNER_OPTIONS.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {form.partner === 'Other' && (
-          <Input
-            value={form.partnerOther}
-            onChange={(e) => set('partnerOther')(e.target.value)}
-            placeholder="Which partner?"
-          />
-        )}
-      </Field>
+          <Field label="Partner / Investor" htmlFor="partner">
+            <Select value={form.partner} onValueChange={set('partner')}>
+              <SelectTrigger id="partner">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                {PARTNER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {form.partner === 'Other' && (
+              <Input
+                value={form.partnerOther}
+                onChange={(e) => set('partnerOther')(e.target.value)}
+                placeholder="Which partner?"
+              />
+            )}
+          </Field>
 
-      <Field label="Payment Volume (even if zero)" htmlFor="paymentVolume">
-        <Input
-          id="paymentVolume"
-          value={form.paymentVolume}
-          onChange={(e) => set('paymentVolume')(e.target.value)}
-          placeholder="e.g. $0, $10K/mo, $100K/mo"
-        />
-      </Field>
+          <Field label="Payment Volume (even if zero)" htmlFor="paymentVolume">
+            <Input
+              id="paymentVolume"
+              value={form.paymentVolume}
+              onChange={(e) => set('paymentVolume')(e.target.value)}
+              placeholder="e.g. $0, $10K/mo, $100K/mo"
+            />
+          </Field>
 
-      <Field label="Current Billing Platform" htmlFor="currentBillingPlatform">
-        <Select
-          value={form.currentBillingPlatform}
-          onValueChange={set('currentBillingPlatform')}
-        >
-          <SelectTrigger id="currentBillingPlatform">
-            <SelectValue placeholder="Select..." />
-          </SelectTrigger>
-          <SelectContent>
-            {BILLING_PLATFORM_OPTIONS.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {form.currentBillingPlatform === 'Other' && (
-          <Input
-            value={form.currentBillingPlatformOther}
-            onChange={(e) => set('currentBillingPlatformOther')(e.target.value)}
-            placeholder="Which platform?"
-          />
-        )}
-      </Field>
+          <Field
+            label="Current Billing Platform"
+            htmlFor="currentBillingPlatform"
+          >
+            <Select
+              value={form.currentBillingPlatform}
+              onValueChange={set('currentBillingPlatform')}
+            >
+              <SelectTrigger id="currentBillingPlatform">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                {BILLING_PLATFORM_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {form.currentBillingPlatform === 'Other' && (
+              <Input
+                value={form.currentBillingPlatformOther}
+                onChange={(e) =>
+                  set('currentBillingPlatformOther')(e.target.value)
+                }
+                placeholder="Which platform?"
+              />
+            )}
+          </Field>
 
-      {form.currentBillingPlatform === 'Polar' && (
-        <Field label="Polar Organization Slug" htmlFor="polarOrgSlug">
-          <Input
-            id="polarOrgSlug"
-            value={form.polarOrgSlug}
-            onChange={(e) => set('polarOrgSlug')(e.target.value)}
-            placeholder="acme-inc"
-          />
-        </Field>
+          {form.currentBillingPlatform === 'Polar' && (
+            <Field label="Polar Organization Slug" htmlFor="polarOrgSlug">
+              <Input
+                id="polarOrgSlug"
+                value={form.polarOrgSlug}
+                onChange={(e) => set('polarOrgSlug')(e.target.value)}
+                placeholder="acme-inc"
+              />
+            </Field>
+          )}
+
+          <Field label="Team Size" htmlFor="teamSize">
+            <Select value={form.teamSize} onValueChange={set('teamSize')}>
+              <SelectTrigger id="teamSize">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                {TEAM_SIZE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt} value={opt}>
+                    {opt}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+
+          <Field label="Main Location" htmlFor="location">
+            <Input
+              id="location"
+              value={form.location}
+              onChange={(e) => set('location')(e.target.value)}
+              placeholder="e.g. San Francisco, CA"
+            />
+          </Field>
+
+          <Field
+            label="Your Pitch: what are you building? (100 words max)"
+            htmlFor="pitch"
+          >
+            <TextArea
+              id="pitch"
+              rows={4}
+              maxLength={800}
+              value={form.pitch}
+              onChange={(e) => set('pitch')(e.target.value)}
+              placeholder="Tell us about your startup in a few sentences..."
+            />
+          </Field>
+
+          <Box
+            display="grid"
+            gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+            gap="l"
+          >
+            <Field label="First Name" htmlFor="firstName">
+              <Input
+                id="firstName"
+                value={form.firstName}
+                onChange={(e) => set('firstName')(e.target.value)}
+                placeholder="Jane"
+                required
+              />
+            </Field>
+            <Field label="Last Name" htmlFor="lastName">
+              <Input
+                id="lastName"
+                value={form.lastName}
+                onChange={(e) => set('lastName')(e.target.value)}
+                placeholder="Doe"
+                required
+              />
+            </Field>
+            <Field label="Role" htmlFor="role">
+              <Input
+                id="role"
+                value={form.role}
+                onChange={(e) => set('role')(e.target.value)}
+                placeholder="e.g. CEO"
+              />
+            </Field>
+          </Box>
+        </>
       )}
 
-      <Field label="Team Size" htmlFor="teamSize">
-        <Select value={form.teamSize} onValueChange={set('teamSize')}>
-          <SelectTrigger id="teamSize">
-            <SelectValue placeholder="Select..." />
-          </SelectTrigger>
-          <SelectContent>
-            {TEAM_SIZE_OPTIONS.map((opt) => (
-              <SelectItem key={opt} value={opt}>
-                {opt}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Field>
-
-      <Field label="Main Location" htmlFor="location">
-        <Input
-          id="location"
-          value={form.location}
-          onChange={(e) => set('location')(e.target.value)}
-          placeholder="e.g. San Francisco, CA"
-        />
-      </Field>
-
-      <Field
-        label="Your Pitch: what are you building? (100 words max)"
-        htmlFor="pitch"
-      >
-        <TextArea
-          id="pitch"
-          rows={4}
-          maxLength={800}
-          value={form.pitch}
-          onChange={(e) => set('pitch')(e.target.value)}
-          placeholder="Tell us about your startup in a few sentences..."
-        />
-      </Field>
-
-      <Box
-        display="grid"
-        gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
-        gap="l"
-      >
-        <Field label="First Name" htmlFor="firstName">
-          <Input
-            id="firstName"
-            value={form.firstName}
-            onChange={(e) => set('firstName')(e.target.value)}
-            placeholder="Jane"
-            required
-          />
-        </Field>
-        <Field label="Last Name" htmlFor="lastName">
-          <Input
-            id="lastName"
-            value={form.lastName}
-            onChange={(e) => set('lastName')(e.target.value)}
-            placeholder="Doe"
-            required
-          />
-        </Field>
-        <Field label="Role" htmlFor="role">
-          <Input
-            id="role"
-            value={form.role}
-            onChange={(e) => set('role')(e.target.value)}
-            placeholder="e.g. CEO"
-          />
-        </Field>
-      </Box>
-
-      <Field label="Email" htmlFor="email">
+      <Field label={compact ? 'Contact Email' : 'Email'} htmlFor="email">
         <Input
           id="email"
           type="email"
@@ -354,15 +393,27 @@ export const DesignPartnerForm = () => {
         />
       </Field>
 
-      <Field label="LinkedIn Profile" htmlFor="linkedin">
-        <Input
-          id="linkedin"
-          type="url"
-          value={form.linkedin}
-          onChange={(e) => set('linkedin')(e.target.value)}
-          placeholder="https://linkedin.com/in/janedoe"
-        />
-      </Field>
+      {compact ? (
+        <Field label="Contact Name" htmlFor="contactName">
+          <Input
+            id="contactName"
+            value={form.contactName}
+            onChange={(e) => set('contactName')(e.target.value)}
+            placeholder="Jane Doe"
+            required
+          />
+        </Field>
+      ) : (
+        <Field label="LinkedIn Profile" htmlFor="linkedin">
+          <Input
+            id="linkedin"
+            type="url"
+            value={form.linkedin}
+            onChange={(e) => set('linkedin')(e.target.value)}
+            placeholder="https://linkedin.com/in/janedoe"
+          />
+        </Field>
+      )}
 
       <Button
         type="submit"
@@ -372,7 +423,7 @@ export const DesignPartnerForm = () => {
         disabled={status === 'submitting' || status === 'success'}
         className="my-8"
       >
-        {status === 'success' ? 'Application Sent' : 'Become a design partner'}
+        {status === 'success' ? 'Application Sent' : submitLabel}
       </Button>
       {status === 'error' && (
         <Text variant="caption" color="danger">

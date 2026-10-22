@@ -1,5 +1,6 @@
 'use client'
 
+import LogoType from '@/components/Brand/logos/LogoType'
 import { StaticImage } from '@/components/Image/StaticImage'
 import { useInView } from '@/hooks/useInView'
 import { Text } from '@polar-sh/orbit'
@@ -22,28 +23,28 @@ const SCENARIOS: Scenario[] = [
     environment: 'production',
     event: "events.ingest({ name: 'ai.tokens', value: 1204 })",
     usage: '1,204 tokens',
-    charge: "$0.0024 added to Lumen's invoice",
+    charge: '$0.0024',
   },
   {
     customer: 'Northwind',
     environment: 'production',
     event: "events.ingest({ name: 'gpu.seconds', value: 38 })",
     usage: '38 GPU seconds',
-    charge: "$0.0456 added to Northwind's invoice",
+    charge: '$0.0456',
   },
   {
     customer: 'Atlas',
     environment: 'production',
     event: "events.ingest({ name: 'agent.runs', value: 3 })",
     usage: '3 agent runs',
-    charge: "$0.30 added to Atlas's invoice",
+    charge: '$0.30',
   },
 ]
 
 type Phase = 'enter' | 'typing' | 'metering' | 'metered' | 'exit'
 
 const DURATIONS: Record<Exclude<Phase, 'typing'>, number> = {
-  enter: 700,
+  enter: 1000,
   metering: 1600,
   metered: 2200,
   exit: 500,
@@ -76,7 +77,7 @@ export const MeterStream = () => {
             : [() => setPhase('typing'), DURATIONS.enter]
         case 'typing':
           return typed < scenario.event.length
-            ? [() => setTyped((count) => count + 1), 28]
+            ? [() => setTyped((count) => count + 1), 22]
             : [() => setPhase('metering'), 300]
         case 'metering':
           return [() => setPhase('metered'), DURATIONS.metering]
@@ -122,30 +123,16 @@ export const MeterStream = () => {
           paddingHorizontal="xl"
           paddingVertical="m"
         >
-          <Box alignItems="center" columnGap="s">
-            <Box
-              width={20}
-              height={20}
-              alignItems="center"
-              justifyContent="center"
-              backgroundColor="background-card"
-              borderRadius="s"
-            >
-              <Text variant="caption">{scenario.customer[0]}</Text>
-            </Box>
-            <Text variant="caption" color="muted">
-              {scenario.customer} · {scenario.environment}
-            </Text>
-          </Box>
+          <LogoType height={14} />
           <Text variant="caption" color="muted">
-            Ingestion
+            {scenario.customer} in {scenario.environment}
           </Text>
         </Box>
         <div className="dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-xl bg-white">
           <Box
             width="100%"
             flexDirection="column"
-            rowGap="m"
+            rowGap="l"
             padding="xl"
             opacity={phase === 'exit' ? 0 : 1}
             transitionProperty="opacity"
@@ -154,41 +141,53 @@ export const MeterStream = () => {
             <Box minHeight={18}>
               <Text variant="caption" monospace>
                 {scenario.event.slice(0, typed)}
-                {phase === 'typing' ? '▍' : ''}
+                {phase === 'enter' ? (
+                  <span className="[animation:blink_1s_steps(1)_infinite]">
+                    ▍
+                  </span>
+                ) : phase === 'typing' ? (
+                  '▍'
+                ) : null}
               </Text>
             </Box>
             <Box
+              justifyContent="between"
               alignItems="center"
-              columnGap="s"
-              color="text-secondary"
+              columnGap="l"
+              paddingTop="l"
+              borderTopWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
               opacity={settled ? 1 : 0}
               transitionProperty="opacity"
               transitionDuration="slow"
             >
-              {phase === 'metered' ? (
-                <Check size={12} />
-              ) : (
-                <LoaderCircle size={12} className="animate-spin" />
-              )}
-              <Text variant="caption" color="inherit" wrap="nowrap">
-                <Shimmer active={phase === 'metering'}>
-                  {phase === 'metered' ? 'Metered' : 'Metering'}
-                </Shimmer>
-              </Text>
-              <Text variant="caption" color="muted" wrap="nowrap">
-                {scenario.usage}
-              </Text>
+              <Box alignItems="center" columnGap="s" color="text-secondary">
+                {phase === 'metered' ? (
+                  <Check size={12} />
+                ) : (
+                  <LoaderCircle size={12} className="animate-spin" />
+                )}
+                <Text variant="caption" color="inherit" wrap="nowrap">
+                  <Shimmer active={phase === 'metering'}>
+                    {phase === 'metered' ? 'Metered' : 'Metering'}
+                  </Shimmer>
+                </Text>
+                <Text variant="caption" color="muted" wrap="nowrap">
+                  {scenario.usage}
+                </Text>
+              </Box>
               <Box
-                minWidth={0}
+                alignItems="baseline"
                 columnGap="s"
                 opacity={phase === 'metered' ? 1 : 0}
                 transitionProperty="opacity"
                 transitionDuration="slow"
               >
-                <Text variant="caption" color="muted">
-                  ·
+                <Text variant="caption" color="muted" wrap="nowrap">
+                  Added to invoice
                 </Text>
-                <Text variant="caption" color="muted" truncate>
+                <Text variant="caption" tabularNums>
                   {scenario.charge}
                 </Text>
               </Box>

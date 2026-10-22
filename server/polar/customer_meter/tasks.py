@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 from typing import Annotated
 
 from opentelemetry import trace
@@ -22,7 +23,17 @@ class CustomerDoesNotExist(CustomerMeterTaskError):
         super().__init__(message)
 
 
-def _update_customer_debounce_key(customer_id: uuid.UUID) -> str:
+DEFAULT_LOOKBACK_HOURS = int(
+    settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD / timedelta(hours=1)
+)
+
+
+def _update_customer_debounce_key(
+    customer_id: uuid.UUID, lookback_hours: int = DEFAULT_LOOKBACK_HOURS
+) -> str | None:
+    # A later regular update would take over the debounce key and skip this run.
+    if lookback_hours != DEFAULT_LOOKBACK_HOURS:
+        return None
     return f"customer_meter.update_customer:{customer_id}"
 
 
@@ -39,7 +50,10 @@ def _update_customer_debounce_key(customer_id: uuid.UUID) -> str:
         settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD.total_seconds()
     ),
 )
-async def update_customer(customer_id: Annotated[uuid.UUID, LoggableField]) -> None:
+async def update_customer(
+    customer_id: Annotated[uuid.UUID, LoggableField],
+    lookback_hours: Annotated[int, LoggableField] = DEFAULT_LOOKBACK_HOURS,
+) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
         customer = await repository.get_by_id(customer_id, include_deleted=True)
@@ -58,4 +72,6 @@ async def update_customer(customer_id: Annotated[uuid.UUID, LoggableField]) -> N
         span = trace.get_current_span()
         span.set_attribute("organization_id", str(customer.organization_id))
 
-        await customer_meter_service.update_customer(session, customer)
+        await customer_meter_service.update_customer(
+            session, customer, lookback=timedelta(hours=lookback_hours)
+        )

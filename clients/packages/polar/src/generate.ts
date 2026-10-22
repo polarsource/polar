@@ -28,6 +28,9 @@ const renderMetadata = (metadata: Metadata | undefined): string[] =>
 const renderVisibility = (visibility: Visibility | undefined): string[] =>
   visibility === 'private' ? ['.private()'] : []
 
+const renderDeprecated = (deprecated: true | undefined): string[] =>
+  deprecated ? ['.deprecated()'] : []
+
 const renderCondition = (
   condition: MeterFilter['clauses'][number],
   imports: Set<string>,
@@ -64,6 +67,9 @@ const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
   }
 
   lines.push(...renderMetadata(meter.metadata))
+  if (meter.deprecated) {
+    lines.push('.deprecated()')
+  }
 
   const aggregation = meter.aggregation
   lines.push(
@@ -85,6 +91,7 @@ const renderBenefit = (
       `flag(${name})`,
       ...renderMetadata(benefit.metadata),
       ...renderVisibility(benefit.visibility),
+      ...renderDeprecated(benefit.deprecated),
     ].join('\n')
   }
   helpers.add('credits')
@@ -96,6 +103,7 @@ const renderBenefit = (
     ...(rollover ? ['.rollover()'] : []),
     ...renderMetadata(benefit.metadata),
     ...renderVisibility(benefit.visibility),
+    ...renderDeprecated(benefit.deprecated),
   ].join('\n')
 }
 
@@ -394,6 +402,7 @@ const renderProduct =
         ? []
         : [`.description(${literal(product.description)})`]),
       ...renderVisibility(product.visibility),
+      ...renderDeprecated(product.deprecated),
     ].join('\n')
   }
 
@@ -483,10 +492,16 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
       ? []
       : renderEntries('discounts', config.discounts, renderDiscount(imports))
 
+  const settings =
+    config.settings === undefined
+      ? []
+      : [`  settings: ${JSON.stringify(config.settings)},`]
+
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
     '',
     'export default defineConfig({',
+    ...settings,
     ...meters,
     ...benefits,
     ...products,

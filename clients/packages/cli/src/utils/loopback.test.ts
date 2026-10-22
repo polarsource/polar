@@ -67,3 +67,44 @@ test('ignores callbacks with the wrong state and keeps waiting', async () => {
   expect(result).toBe('code')
   expect(statuses).toEqual([400, 200])
 })
+
+test('keeps waiting when the browser launcher exits non-zero', async () => {
+  const server = new http.Server()
+  const nativeListen = server.listen.bind(server)
+  vi.spyOn(server, 'listen').mockImplementation((...args: unknown[]) =>
+    nativeListen(0, '127.0.0.1', args[2] as () => void),
+  )
+  vi.spyOn(http, 'createServer').mockReturnValue(server)
+  vi.spyOn(browser, 'default').mockImplementation(async () => {
+    const child = new ChildProcess()
+    setTimeout(() => {
+      child.emit('exit', 3)
+      const address = server.address()
+      if (!address || typeof address === 'string')
+        throw new Error('Expected a TCP listener')
+      void get(
+        new URL(
+          `http://127.0.0.1:${address.port}/callback?state=expected&code=code`,
+        ),
+      )
+    })
+    return child
+  })
+
+  const result = await Effect.runPromise(
+    awaitCallback({
+      path: '/callback',
+      state: 'expected',
+      target: new URL('https://polar.sh/authorize'),
+      parse: (url) => ({
+        outcome: 'success',
+        value: url.searchParams.get('code')!,
+      }),
+      copy: loginCopy,
+      browserError: 'browser',
+      timeoutError: 'timeout',
+    }),
+  )
+
+  expect(result).toBe('code')
+})

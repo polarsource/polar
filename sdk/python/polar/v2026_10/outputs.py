@@ -1210,7 +1210,6 @@ class BenefitFeatureFlagProperties:
     """Properties for a benefit of type `feature_flag`."""
 
 
-
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitFeatureFlagPublic:
     id: str
@@ -1276,7 +1275,6 @@ class BenefitFeatureFlagSubscriber:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitFeatureFlagSubscriberProperties:
     """Properties available to subscribers for a benefit of type `feature_flag`."""
-
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -5174,7 +5172,7 @@ class CustomerStateSubscription:
 
     metadata: MetadataOutputType
 
-    status: Status
+    status: typing.Literal["active", "trialing"]
 
     amount: int
     """The amount of the subscription."""
@@ -6567,10 +6565,10 @@ class GrantedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6947,10 +6945,10 @@ class LicenseKeyRead:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -6992,10 +6990,10 @@ class LicenseKeyWithActivations:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -8819,9 +8817,6 @@ class OrganizationFeatureSettings:
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
 
-    frame_ancestors_enforced: bool = False
-    """If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts."""
-
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrganizationNotReadyForPayments:
@@ -9589,10 +9584,10 @@ class RotatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str
@@ -11138,10 +11133,10 @@ class ValidatedLicenseKey:
 
     customer: LicenseKeyCustomer
 
-    member_id: str | None = None
+    member_id: str | None
     """The ID of the seat member holding this key, if any."""
 
-    member: LicenseKeyMember | None = None
+    member: LicenseKeyMember | None
     """The seat member holding this key. Set for keys granted through a seat-based product; `null` for keys granted to the customer directly."""
 
     benefit_id: str

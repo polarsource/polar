@@ -1210,7 +1210,6 @@ class BenefitFeatureFlagProperties:
     """Properties for a benefit of type `feature_flag`."""
 
 
-
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitFeatureFlagPublic:
     id: str
@@ -1276,7 +1275,6 @@ class BenefitFeatureFlagSubscriber:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitFeatureFlagSubscriberProperties:
     """Properties available to subscribers for a benefit of type `feature_flag`."""
-
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -5174,7 +5172,7 @@ class CustomerStateSubscription:
 
     metadata: MetadataOutputType
 
-    status: Status
+    status: typing.Literal["active", "trialing"]
 
     amount: int
     """The amount of the subscription."""
@@ -8788,9 +8786,6 @@ class OrganizationFeatureSettings:
 
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
-
-    frame_ancestors_enforced: bool = False
-    """If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)

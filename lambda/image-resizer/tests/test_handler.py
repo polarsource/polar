@@ -1,10 +1,12 @@
 import io
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, cast
 
 import boto3
+import certifi
 import pytest
 from botocore.exceptions import ClientError
+from botocore.httpsession import get_cert_path
 from moto import mock_aws
 from mypy_boto3_s3 import S3Client
 from PIL import Image
@@ -56,6 +58,14 @@ def _make_image(width: int = 200, height: int = 200, fmt: str = "JPEG") -> bytes
 
 def _upload(client: S3Client, key: str, body: bytes) -> None:
     client.put_object(Bucket=BUCKET, Key=key, Body=body)
+
+
+class TestS3TLS:
+    def test_uses_certifi_bundle(self) -> None:
+        verify = cast(Any, handler_module.s3)._endpoint.http_session._verify
+
+        assert verify is True
+        assert get_cert_path(verify) == certifi.where()
 
 
 class TestSnapToSize:

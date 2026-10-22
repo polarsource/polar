@@ -76,7 +76,7 @@ class InvoiceHeadingItem(BaseModel):
 
 class InvoiceTotalsItem(BaseModel):
     label: str
-    amount: int
+    amount: int | float
     currency: str
     emphasized: bool = False
 

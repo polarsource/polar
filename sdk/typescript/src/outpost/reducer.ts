@@ -1,4 +1,4 @@
-import { getProperty, type Event } from "./event";
+import { getPropertyReader, type Event, type PropertyReader } from "./event";
 
 export interface FilterClause {
   property: string;
@@ -62,59 +62,82 @@ export const getBucketStart = (timestamp: number): number => {
   return Math.floor(timestamp / BUCKET_SIZE) * BUCKET_SIZE;
 };
 
-export const getMatcher = (filter: Filter | FilterClause): ((event: Event) => boolean) => {
+export type EventMatcher = (event: Event) => boolean;
+export type ReducerMatchers = readonly (readonly [Reducer, EventMatcher, PropertyReader])[];
+
+export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   if (!("property" in filter)) {
     const children = filter.clauses.map(getMatcher);
     return filter.conjunction === "and"
       ? (event) => children.every((match) => match(event))
       : (event) => children.some((match) => match(event));
   }
-  return (event) => {
-    const actual = getProperty(event, filter.property);
-    if (actual === undefined || actual === null) return false;
-    if (filter.operator === "eq" || filter.operator === "ne") {
-      const actualValue = typeof actual === "boolean" ? Number(actual) : actual;
-      const expectedValue = typeof filter.value === "boolean" ? Number(filter.value) : filter.value;
-      return filter.operator === "eq"
-        ? actualValue === expectedValue
-        : actualValue !== expectedValue;
-    }
-    if (typeof actual !== typeof filter.value) return false;
-    if (
-      (typeof actual !== "number" && typeof actual !== "string") ||
-      (typeof filter.value !== "number" && typeof filter.value !== "string")
-    )
-      return false;
-    switch (filter.operator) {
-      case "gt":
-        return actual > filter.value;
-      case "gte":
-        return actual >= filter.value;
-      case "lt":
-        return actual < filter.value;
-      case "lte":
-        return actual <= filter.value;
-    }
-  };
+  const read = getPropertyReader(filter.property);
+  if (filter.operator === "eq" || filter.operator === "ne") {
+    const expected = typeof filter.value === "boolean" ? Number(filter.value) : filter.value;
+    const equal = filter.operator === "eq";
+    return (event) => {
+      const actual = read(event);
+      if (actual === undefined || actual === null) return false;
+      return ((typeof actual === "boolean" ? Number(actual) : actual) === expected) === equal;
+    };
+  }
+  const expected = filter.value;
+  if (typeof expected !== "number" && typeof expected !== "string") return () => false;
+  const type = typeof expected;
+  switch (filter.operator) {
+    case "gt":
+      return (event) => {
+        const actual = read(event);
+        return typeof actual === type && (actual as number | string) > expected;
+      };
+    case "gte":
+      return (event) => {
+        const actual = read(event);
+        return typeof actual === type && (actual as number | string) >= expected;
+      };
+    case "lt":
+      return (event) => {
+        const actual = read(event);
+        return typeof actual === type && (actual as number | string) < expected;
+      };
+    case "lte":
+      return (event) => {
+        const actual = read(event);
+        return typeof actual === type && (actual as number | string) <= expected;
+      };
+  }
 };
 
+export const withMatchers = (reducers: readonly Reducer[]): ReducerMatchers =>
+  reducers.map(
+    (reducer) =>
+      [
+        reducer,
+        getMatcher(reducer.filter),
+        reducer.aggregation.func === "count"
+          ? () => 1
+          : getPropertyReader(reducer.aggregation.property),
+      ] as const,
+  );
+
 export const reduce = (
-  reducers: readonly Reducer[],
+  matchers: ReducerMatchers,
   events: readonly Event[],
   oldestBucketStart: number,
 ): BucketUpdate[] => {
   const updates = new Map<string, BucketUpdate>();
-  const matchers = reducers.map((reducer) => [reducer, getMatcher(reducer.filter)] as const);
   for (const event of events) {
     const bucketStart = getBucketStart(event.timestamp);
     if (bucketStart < oldestBucketStart) continue;
-    for (const [reducer, match] of matchers) {
+    for (let index = 0; index < matchers.length; index++) {
+      const [reducer, match, read] = matchers[index];
       if (!match(event)) continue;
-      const { aggregation } = reducer;
-      const value = aggregation.func === "count" ? 1 : getProperty(event, aggregation.property);
+      const value = read(event);
       if (typeof value !== "number") continue;
       if (!Number.isFinite(value)) throw new TypeError("Aggregation values must be finite");
-      const key = JSON.stringify([event.customer, reducer.id, bucketStart]);
+      // The customer comes last: the index and the bucket hold no ":".
+      const key = `${index}:${bucketStart}:${event.customer}`;
       let update = updates.get(key);
       if (!update) {
         update = {
@@ -125,12 +148,17 @@ export const reduce = (
         };
         updates.set(key, update);
       }
-      addStatistics(
-        update.statistics,
-        aggregation.func === "count"
-          ? { count: 1, sum: 0, min: null, max: null }
-          : { count: 1, sum: value, min: value, max: value },
-      );
+      const { statistics } = update;
+      if (reducer.aggregation.func === "count") {
+        statistics.count += 1;
+        continue;
+      }
+      const total = statistics.sum + value;
+      if (!Number.isFinite(total)) throw new TypeError("Aggregation values must be finite");
+      statistics.count += 1;
+      statistics.sum = total;
+      statistics.min = statistics.min === null ? value : Math.min(statistics.min, value);
+      statistics.max = statistics.max === null ? value : Math.max(statistics.max, value);
     }
   }
   return [...updates.values()];

@@ -1,55 +1,108 @@
-import { Redis } from "ioredis";
-import { spawn, type ChildProcess } from "node:child_process";
+import type { ReadableSpan } from "@opentelemetry/sdk-trace";
+
+import { DataPointType, type DataPoint, type ResourceMetrics } from "@opentelemetry/sdk-metrics";
+import { Pipeline, Redis } from "ioredis";
 import { once } from "node:events";
-import { mkdtemp, access, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 
-import type { EventsIngest } from "../2026-04/models";
-
+import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
-import { Outpost } from "./client";
+import {
+  decodeState,
+  MissingExternalIdError,
+  Outpost,
+  type OutpostOptions,
+  PolarOutpostError,
+  UnavailableRedisError,
+} from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import { TELEMETRY_ENV } from "./telemetry";
+import { startRedisServer, type RedisServer } from "./testing";
+
+const { exported, metrics } = vi.hoisted(() => ({
+  exported: [] as ReadableSpan[],
+  metrics: [] as ResourceMetrics[],
+}));
+vi.mock("./telemetry", async (importOriginal) => {
+  const { SimpleSpanProcessor, TracerProvider } = await import("@opentelemetry/sdk-trace");
+  const { MeterProvider, PeriodicExportingMetricReader } =
+    await import("@opentelemetry/sdk-metrics");
+  const actual = await importOriginal<typeof import("./telemetry")>();
+  return {
+    ...actual,
+    createTracerProvider: () =>
+      new TracerProvider({
+        spanProcessors: [
+          new SimpleSpanProcessor({
+            exporter: {
+              export: (spans, resultCallback) => {
+                exported.push(...spans);
+                resultCallback({ code: 0 });
+              },
+              shutdown: async () => {},
+            },
+          }),
+        ],
+      }),
+    createMeterProvider: () =>
+      new MeterProvider({
+        views: actual.METRIC_VIEWS,
+        readers: [
+          new PeriodicExportingMetricReader({
+            exporter: {
+              export: (resourceMetrics, resultCallback) => {
+                metrics.push(resourceMetrics);
+                resultCallback({ code: 0 });
+              },
+              forceFlush: async () => {},
+              shutdown: async () => {},
+            },
+            exportIntervalMillis: 60_000,
+          }),
+        ],
+      }),
+  };
+});
+const dataPoints = (name: string) =>
+  metrics
+    .flatMap((resourceMetrics) => resourceMetrics.scopeMetrics)
+    .flatMap((scopeMetrics) => scopeMetrics.metrics)
+    .filter((metric) => metric.descriptor.name === name)
+    .flatMap((metric): DataPoint<unknown>[] => metric.dataPoints);
 
 const timestamp = "2026-10-12T12:00:00Z";
 const bucket = getBucketStart(Date.parse(timestamp) * 1000);
 const customer = { external_customer_id: "alice" };
+let sequence = 0;
+const eventId = () => `event-${++sequence}`;
 const meter = { ...customer, meter_id: "meter" };
 const key = "outpost:state:external:alice:tokens";
-let directory: string;
-let redisProcess: ChildProcess;
+const connectionId = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60";
+let redisServer: RedisServer;
 let redis: Redis;
 let server: WebSocketServer;
 let core: ClientBase;
 let reducers: Reducer[];
 let snapshot: Record<string, unknown> | undefined;
 let delayConfiguration = false;
+let refuseConnections = false;
+let meterSnapshots: Record<string, { credited_units: number; delay: number }> = {};
 const connections: WebSocket[] = [];
 const outposts: Outpost[] = [];
 
 beforeAll(async () => {
-  directory = await mkdtemp(join(tmpdir(), "polar-outpost-"));
-  const socket = join(directory, "redis.sock");
-  redisProcess = spawn(
-    "redis-server",
-    ["--port", "0", "--unixsocket", socket, "--save", "", "--appendonly", "no"],
-    { stdio: "ignore" },
-  );
-  let startupError: Error | undefined;
-  redisProcess.on("error", (error) => {
-    startupError = error;
-  });
-  await vi.waitFor(async () => {
-    if (startupError) throw startupError;
-    await access(socket);
-  });
-  redis = new Redis(socket);
+  redisServer = await startRedisServer();
+  redis = new Redis(redisServer.socket);
   await once(redis, "ready");
-  server = new WebSocketServer({ port: 0, host: "127.0.0.1", path: "/v1/outpost/" });
+  server = new WebSocketServer({
+    port: 0,
+    host: "127.0.0.1",
+    path: "/v1/outpost/",
+    verifyClient: (_info, callback) => callback(!refuseConnections, 401),
+  });
   await once(server, "listening");
   const address = server.address();
   if (typeof address === "string" || !address) throw new Error("Missing WebSocket address");
@@ -63,12 +116,17 @@ beforeAll(async () => {
     expect(request.headers.authorization).toBe("Bearer test-token");
     expect(request.headers["polar-organization"]).toBe("org");
     connections.push(ws);
+    ws.send(JSON.stringify({ type: "connection", payload: { id: connectionId } }));
     ws.on("message", (data) => {
       const message = JSON.parse(data.toString());
       if (message.type === "configuration" && !delayConfiguration)
         ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
-      if (message.type === "meter_usage" && snapshot)
-        ws.send(JSON.stringify({ type: "meter_usage", payload: snapshot }));
+      if (message.type === "meter_usage" && snapshot) {
+        const meterId: string = message.payload.meter_id;
+        const { delay = 0, ...override } = meterSnapshots[meterId] ?? {};
+        const payload = { customer_exists: true, ...snapshot, meter_id: meterId, ...override };
+        setTimeout(() => ws.send(JSON.stringify({ type: "meter_usage", payload })), delay);
+      }
     });
   });
 });
@@ -85,10 +143,15 @@ beforeEach(async () => {
   ];
   snapshot = undefined;
   delayConfiguration = false;
+  refuseConnections = false;
+  meterSnapshots = {};
+  exported.length = 0;
+  metrics.length = 0;
 });
 
 afterEach(async () => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   vi.useRealTimers();
   await Promise.all(outposts.splice(0).map((outpost) => outpost.close()));
   connections.length = 0;
@@ -98,16 +161,15 @@ afterAll(async () => {
   redis?.disconnect();
   for (const ws of server?.clients ?? []) ws.terminate();
   if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
-  if (redisProcess?.pid) {
-    const exited = once(redisProcess, "exit");
-    redisProcess.kill();
-    await exited;
-  }
-  if (directory) await rm(directory, { recursive: true, force: true });
+  if (redisServer) await redisServer.stop();
 });
 
-const start = async (): Promise<Outpost> => {
-  const outpost = new Outpost(join(directory, "redis.sock"), { client: core });
+const start = async (options: Partial<OutpostOptions> = {}): Promise<Outpost> => {
+  const outpost = new Outpost(redisServer.socket, {
+    client: core,
+    snapshotTimeout: 100,
+    ...options,
+  });
   outposts.push(outpost);
   return outpost.start();
 };
@@ -121,12 +183,21 @@ const seed = async (cold = 10): Promise<void> => {
     "credited:meter": 100,
   });
 };
-const ingest = (outpost: Outpost, tokens: number) => {
-  const payload: EventsIngest = {
-    events: [{ ...customer, name: "api_call", timestamp, metadata: { tokens } }],
-  };
-  return outpost.ingest(payload);
+const readOutcomes = async (outpost: Outpost) => {
+  await outpost.flushTelemetry();
+  return dataPoints("outpost.read.duration").map(({ attributes }) => [
+    attributes["outpost.read.operation"],
+    attributes["outpost.read.outcome"],
+  ]);
 };
+const ingest = (outpost: Outpost, tokens: number) =>
+  outpost.track({
+    ...customer,
+    name: "api_call",
+    external_id: eventId(),
+    timestamp,
+    metadata: { tokens },
+  });
 
 it.each([
   ["count", 12],
@@ -144,15 +215,77 @@ it.each([
     const writer = await start();
     await ingest(writer, -2);
     await ingest(writer, 4);
-    expect((await writer.customerMeter(meter))?.consumed_units).toBe(expected);
+    expect((await writer.meter(meter))?.consumed_units).toBe(expected);
     await vi.waitFor(async () =>
-      expect((await reader.customerMeter(meter))?.consumed_units).toBe(expected),
+      expect((await reader.meter(meter))?.consumed_units).toBe(expected),
     );
     const commands = vi.spyOn(Redis.prototype, "sendCommand");
-    expect((await reader.customerMeter(meter))?.balance).toBe(100 - expected);
+    expect((await reader.meter(meter))?.balance).toBe(100 - expected);
     expect(commands).not.toHaveBeenCalled();
   },
 );
+
+it("rejects an event without an external_id", async () => {
+  const outpost = await start();
+  await expect(outpost.track({ ...customer, name: "api_call", timestamp })).rejects.toThrow(
+    MissingExternalIdError,
+  );
+});
+
+it("retains the connection ID while connected", async () => {
+  const outpost = await start();
+  await ingest(outpost, 3);
+  expect(outpost.connectionId).toBe(connectionId);
+  await outpost.close();
+  expect(outpost.connectionId).toBeUndefined();
+});
+
+it.each([
+  [0, false],
+  [3, false],
+  [3, true],
+] as const)("pipelines %i bucket writes (failure: %s)", async (bucketCount, fail) => {
+  const reducer = reducers[0];
+  reducers = Array.from({ length: bucketCount }, (_, i) => ({
+    ...reducer,
+    id: `tokens-${i}`,
+    meter_ids: [`meter-${i}`],
+  }));
+  for (let i = 0; i < bucketCount; i++) {
+    await redis.hset(`outpost:state:external:alice:tokens-${i}`, {
+      cold_until: bucket,
+      [`credited:meter-${i}`]: 100,
+    });
+  }
+  const outpost = await start();
+  const execute = vi.spyOn(Pipeline.prototype, "exec");
+  await ingest(outpost, 3);
+  expect(execute).toHaveBeenCalledOnce();
+  for (let i = 0; i < bucketCount; i++) {
+    expect(await outpost.meter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
+      consumed_units: 3,
+      balance: 97,
+    });
+    expect(
+      await redis.hget(`outpost:state:external:alice:tokens-${i}`, `bucket:${bucket}:count`),
+    ).toBe("1");
+  }
+  if (fail) {
+    outpost["channel"] = "outpost:test:unsubscribed";
+    await redis.hset("outpost:state:external:alice:tokens-1", `bucket:${bucket}:sum`, "invalid");
+    await expect(ingest(outpost, 2)).rejects.toBeInstanceOf(UnavailableRedisError);
+    expect(execute).toHaveBeenCalledTimes(2);
+    for (const i of [0, 2]) {
+      expect(await outpost.meter({ ...customer, meter_id: `meter-${i}` })).toMatchObject({
+        consumed_units: 5,
+        balance: 95,
+      });
+      expect(
+        await redis.hget(`outpost:state:external:alice:tokens-${i}`, `bucket:${bucket}:sum`),
+      ).toBe("5");
+    }
+  }
+});
 
 it("handles configuration asynchronously and reports a missing customer snapshot", async () => {
   delayConfiguration = true;
@@ -160,9 +293,9 @@ it("handles configuration asynchronously and reports a missing customer snapshot
   const result = ingest(outpost, 3);
   for (const ws of connections)
     ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
-  expect(await result).toEqual({ inserted: 1, duplicates: 0 });
-  await expect(outpost.customerMeter(meter)).rejects.toThrow("snapshot is not ready");
-  expect(await outpost.customerMeter({ ...customer, meter_id: "unknown" })).toBeNull();
+  expect(await result).toBeUndefined();
+  await expect(outpost.meter(meter)).rejects.toThrow("snapshot is not ready");
+  expect(await outpost.meter({ ...customer, meter_id: "unknown" })).toBeNull();
 });
 
 it("propagates snapshots, removes cold buckets, and rejects older cutoffs", async () => {
@@ -187,7 +320,7 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
   };
   const writer = await start();
   await writer.actor(customer);
-  await vi.waitFor(async () => expect((await reader.customerMeter(meter))?.balance).toBe(89));
+  await vi.waitFor(async () => expect((await reader.meter(meter))?.balance).toBe(89));
   expect(await redis.hexists(key, `bucket:${bucket - BUCKET_SIZE}:sum`)).toBe(0);
   await redis.eval(
     APPLY_SNAPSHOT_SCRIPT,
@@ -206,12 +339,14 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
     1,
   );
   expect(await redis.hget(key, "cold:sum")).toBe("8");
-  await writer.ingest({
-    events: [
-      { ...customer, name: "api", timestamp: "2026-10-12T11:55:00Z", metadata: { tokens: 999 } },
-    ],
+  await writer.track({
+    ...customer,
+    name: "api",
+    external_id: eventId(),
+    timestamp: "2026-10-12T11:55:00Z",
+    metadata: { tokens: 999 },
   });
-  expect((await writer.customerMeter(meter))?.balance).toBe(89);
+  expect((await writer.meter(meter))?.balance).toBe(89);
 });
 
 it("ignores old revisions above JS integer precision and reloads on an epoch change", async () => {
@@ -231,14 +366,27 @@ it("ignores old revisions above JS integer precision and reloads on an epoch cha
       }).flat(),
     }),
   );
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(13);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(13);
   await redis.del(key);
   await seed(20);
   await ingest(outpost, 2);
   await receive(
     JSON.stringify({ customer: "external:alice:tokens", state: Object.entries(oldState).flat() }),
   );
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(22);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(22);
+});
+
+it("applies another instance's bucket updates and reloads after a missed revision", async () => {
+  await seed();
+  const reader = await start();
+  const writer = await start();
+  await reader.actor(customer);
+  await ingest(writer, 3);
+  await vi.waitFor(async () => expect((await reader.meter(meter))?.consumed_units).toBe(13));
+  await redis.hset(key, "cold:sum", 20);
+  await redis.hincrby(key, "revision", 1);
+  await ingest(writer, 2);
+  await vi.waitFor(async () => expect((await reader.meter(meter))?.consumed_units).toBe(25));
 });
 
 it("repairs a missed notification on periodic refresh", async () => {
@@ -249,9 +397,7 @@ it("repairs a missed notification on periodic refresh", async () => {
   await redis.hset(key, "cold:sum", 20);
   await redis.hincrby(key, "revision", 1);
   await vi.advanceTimersByTimeAsync(30_000);
-  await vi.waitFor(async () =>
-    expect((await outpost.customerMeter(meter))?.consumed_units).toBe(20),
-  );
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(20));
 });
 
 it("invalidates cached state on subscriber loss and reloads after reconnect", async () => {
@@ -269,17 +415,17 @@ it("invalidates cached state on subscriber loss and reloads after reconnect", as
   expect(outpost["cache"].get("external:alice:tokens")?.state).toBeUndefined();
   await redis.hset(key, "cold:sum", 20);
   await Promise.all([reconnect, primaryReconnect]);
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(20);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(20);
 });
 
 it("reloads evicted customers and closes owned connections", async () => {
   await seed();
-  const outpost = await start();
+  const outpost = await start({ snapshotTimeout: 0 });
   await outpost.actor(customer);
   for (let i = 0; i < 1024; i++) await outpost.actor({ external_customer_id: `customer-${i}` });
   expect(outpost["cache"].size).toBe(1024);
   await redis.hset(key, "cold:sum", 20);
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(20);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(20);
   const ownedRedis = outpost["redis"]!;
   await outpost.close();
   expect(ownedRedis.status).toBe("end");
@@ -360,12 +506,10 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     }),
   );
   await first["synchronize"]();
-  expect((await first.customerMeter(meter))?.consumed_units).toBe(120);
-  expect((await first.customerMeter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(
-    200,
-  );
+  expect((await first.meter(meter))?.consumed_units).toBe(120);
+  expect((await first.meter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(200);
   expect(
-    (await first.customerMeter({ ...customer, meter_id: "average-meter" }))?.consumed_units,
+    (await first.meter({ ...customer, meter_id: "average-meter" }))?.consumed_units,
   ).toBeCloseTo(120 / 22);
   expect(first["cache"].get("external:alice:tokens")?.state?.buckets.get(bucket)).toEqual({
     count: 20,
@@ -373,10 +517,12 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     min: 2,
     max: 8,
   });
-  await first.ingest({
-    events: [
-      { ...customer, name: "api", timestamp: "2026-10-12T12:05:00Z", metadata: { tokens: 4 } },
-    ],
+  await first.track({
+    ...customer,
+    name: "api",
+    external_id: eventId(),
+    timestamp: "2026-10-12T12:05:00Z",
+    metadata: { tokens: 4 },
   });
   await redis.eval(
     APPLY_SNAPSHOT_SCRIPT,
@@ -397,13 +543,11 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
   await first["synchronize"]();
   expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
   expect(await redis.hget(averageKey, `bucket:${bucket}:sum`)).toBe("100");
-  expect((await first.customerMeter(meter))?.balance).toBe(26);
+  expect((await first.meter(meter))?.balance).toBe(26);
   expect(
-    (await first.customerMeter({ ...customer, meter_id: "average-meter" }))?.consumed_units,
+    (await first.meter({ ...customer, meter_id: "average-meter" }))?.consumed_units,
   ).toBeCloseTo(124 / 23);
-  expect((await first.customerMeter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(
-    200,
-  );
+  expect((await first.meter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(200);
   expect(await redis.exists("outpost:state:customer:alice:tokens")).toBe(0);
 });
 
@@ -422,28 +566,27 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
   };
   const outpost = await start();
   await outpost.actor(customer);
-  await vi.waitFor(async () =>
-    expect((await outpost.customerMeter(meter))?.consumed_units).toBe(10),
-  );
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(10));
   await outpost["receiveWebsocket"](
     JSON.stringify({
       type: "meter_usage",
-      payload: { ...snapshot, customer_id: "alice", sum: 999 },
+      payload: { ...snapshot, customer_exists: true, customer_id: "alice", sum: 999 },
     }),
   );
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(10);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(10);
   await outpost["receiveWebsocket"](
     JSON.stringify({
       type: "meter_usage",
-      payload: { ...snapshot, version: 1791807000000001, sum: 999 },
+      payload: { ...snapshot, customer_exists: true, version: 1791807000000001, sum: 999 },
     }),
   );
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(10);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(10);
   await outpost["receiveWebsocket"](
     JSON.stringify({
       type: "meter_usage",
       payload: {
         ...snapshot,
+        customer_exists: true,
         version: 1791807000000003,
         count: 0,
         sum: 0,
@@ -452,7 +595,7 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
       },
     }),
   );
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(0);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(0);
   expect(await redis.hget(key, "cold:min")).toBeNull();
   expect(await redis.hget(key, "cold:max")).toBeNull();
 });
@@ -472,20 +615,21 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   };
   const outpost = await start();
   await outpost.actor(customer);
-  await vi.waitFor(async () =>
-    expect((await outpost.customerMeter(meter))?.consumed_units).toBe(0),
-  );
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(0));
   await ingest(outpost, 2);
-  await outpost.ingest({
-    events: [
-      { ...customer, name: "api", timestamp: "2026-10-12T12:05:00Z", metadata: { tokens: 4 } },
-    ],
+  await outpost.track({
+    ...customer,
+    name: "api",
+    external_id: eventId(),
+    timestamp: "2026-10-12T12:05:00Z",
+    metadata: { tokens: 4 },
   });
   await outpost["receiveWebsocket"](
     JSON.stringify({
       type: "meter_usage",
       payload: {
         ...snapshot,
+        customer_exists: true,
         cold_until: bucket + 1,
         version: 1791807000000002,
         count: 1,
@@ -495,10 +639,529 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
       },
     }),
   );
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(6);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(6);
   expect(await redis.hget(key, "cold_until")).toBe(String(bucket + 1));
   expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
   expect(await redis.hget(key, `bucket:${bucket + BUCKET_SIZE}:sum`)).toBe("4");
   await ingest(outpost, 999);
-  expect((await outpost.customerMeter(meter))?.consumed_units).toBe(6);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(6);
+});
+
+// Polar seals a bucket with what it has ingested so far; the local events it has not received
+// yet must stay counted (PLR-329).
+const sealEmpty = async (cutoff: number): Promise<void> => {
+  await redis.eval(
+    APPLY_SNAPSHOT_SCRIPT,
+    1,
+    key,
+    "external:alice:tokens",
+    "outpost:0:updates",
+    "epoch",
+    cutoff,
+    cutoff + 1,
+    "meter",
+    100,
+    0,
+    0,
+    "",
+    "",
+  );
+};
+
+it.fails("keeps local events Polar has not ingested when their bucket goes cold", async () => {
+  await seed(0);
+  const outpost = await start();
+  await outpost.actor(customer);
+  for (let i = 0; i < 10; i++)
+    await outpost.track({
+      ...customer,
+      external_id: `event-${i}`,
+      name: "api_call",
+      timestamp,
+      metadata: { tokens: 10 },
+    });
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
+  await sealEmpty(bucket + BUCKET_SIZE);
+  await outpost["synchronize"]();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
+});
+
+it.fails("counts a late write into a cold bucket", async () => {
+  await seed(0);
+  const outpost = await start();
+  await outpost.actor(customer);
+  await sealEmpty(bucket + BUCKET_SIZE);
+  await outpost["synchronize"]();
+  await outpost.track({
+    ...customer,
+    external_id: "late",
+    name: "api_call",
+    timestamp,
+    metadata: { tokens: 5 },
+  });
+  expect((await outpost.meter(meter))?.consumed_units).toBe(5);
+});
+
+it("sends telemetry spans tagged with the connection ID", async () => {
+  snapshot = {
+    ...customer,
+    customer_id: null,
+    meter_id: "meter",
+    cold_until: bucket,
+    version: 1791807000000003,
+    count: 0,
+    sum: 0,
+    min: null,
+    max: null,
+    credited_units: 10,
+  };
+  const outpost = await start();
+  await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
+  await ingest(outpost, 3);
+  await vi.waitFor(() => {
+    expect(exported.map((span) => span.name)).toContain("outpost.snapshot.received");
+    expect(outpost["syncReceived"]).toBeGreaterThan(0);
+  });
+  await outpost.meter(meter);
+  await outpost.close();
+
+  expect(dataPoints("outpost.ingest.buckets")).toMatchObject([{ value: 1 }]);
+  expect(dataPoints("outpost.ingest.duration")).toMatchObject([
+    { attributes: { "outpost.outcome": "ok" }, value: { count: 1 } },
+  ]);
+  for (const name of ["outpost.ingest.duration", "outpost.read.duration"])
+    expect(
+      metrics
+        .flatMap((resourceMetrics) => resourceMetrics.scopeMetrics)
+        .flatMap((scopeMetrics) => scopeMetrics.metrics)
+        .find((metric) => metric.descriptor.name === name)?.dataPointType,
+    ).toBe(DataPointType.EXPONENTIAL_HISTOGRAM);
+  expect(new Set(exported.map((span) => span.name))).toEqual(
+    new Set([
+      "outpost.redis.connect",
+      "outpost.redis.subscribe",
+      "outpost.websocket.connect",
+      "outpost.snapshot.received",
+      "outpost.sync",
+      "outpost.websocket.disconnect",
+      "outpost.redis.disconnect",
+    ]),
+  );
+  expect(
+    exported
+      .filter((span) => span.name === "outpost.redis.connect")
+      .map((span) => span.attributes["outpost.redis.connection"]),
+  ).toEqual(["primary", "subscriber"]);
+  const beforeConnection = [
+    "outpost.redis.connect",
+    "outpost.redis.subscribe",
+    "outpost.websocket.connect",
+  ];
+  for (const span of exported.filter((span) => !beforeConnection.includes(span.name)))
+    expect(span.attributes["outpost.connection_id"]).toBe(connectionId);
+});
+
+it.each([
+  ["option", false, undefined],
+  ["environment", true, "0"],
+] as const)("turns telemetry off through the %s", async (_, telemetry, environment) => {
+  if (environment !== undefined) vi.stubEnv(TELEMETRY_ENV, environment);
+  const outpost = new Outpost(redisServer.socket, {
+    client: core,
+    telemetry,
+    snapshotTimeout: 100,
+  });
+  outposts.push(outpost);
+  await outpost.start();
+  await ingest(outpost, 3);
+  await outpost.flushTelemetry();
+  await outpost.close();
+  expect(exported).toEqual([]);
+  expect(metrics).toEqual([]);
+});
+
+it.each([
+  [8, 5, false],
+  [9, 6, true],
+] as const)(
+  "reports the local value a snapshot replaces (sum %d, max %d, delta %s)",
+  async (snapshotSum, snapshotMax, delta) => {
+    await redis.hset(key, {
+      cold_until: bucket - BUCKET_SIZE,
+      "cold:count": 1,
+      "cold:sum": 5,
+      "cold:min": 5,
+      "cold:max": 5,
+      [`bucket:${bucket - BUCKET_SIZE}:count`]: 1,
+      [`bucket:${bucket - BUCKET_SIZE}:sum`]: 3,
+      [`bucket:${bucket - BUCKET_SIZE}:min`]: 3,
+      [`bucket:${bucket - BUCKET_SIZE}:max`]: 3,
+    });
+    snapshot = {
+      ...customer,
+      customer_id: null,
+      meter_id: "meter",
+      cold_until: bucket,
+      version: 1791807000000004,
+      count: 2,
+      sum: snapshotSum,
+      min: 3,
+      max: snapshotMax,
+      credited_units: 10,
+    };
+    const outpost = await start();
+    await outpost.actor(customer);
+    await vi.waitFor(() =>
+      expect(exported.map((span) => span.name)).toContain("outpost.snapshot.received"),
+    );
+
+    const span = exported.find((span) => span.name === "outpost.snapshot.received")!;
+    expect(span.attributes).toMatchObject({
+      "outpost.customer": "external:alice",
+      "outpost.local.cold_until": bucket - BUCKET_SIZE,
+      "outpost.local.count": 2,
+      "outpost.local.sum": 8,
+      "outpost.local.min": 3,
+      "outpost.local.max": 5,
+      "outpost.snapshot.sum": snapshotSum,
+      "outpost.snapshot.delta": delta,
+    });
+  },
+);
+
+it("reconnects the WebSocket and keeps serving from Redis", async () => {
+  const outpost = await start();
+  connections[0].terminate();
+  expect(await ingest(outpost, 3)).toBeUndefined();
+  await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
+  await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
+  expect(outpost.connected).toBe(true);
+  expect(await ingest(outpost, 3)).toBeUndefined();
+});
+
+it("fails when Polar refuses the reconnection", async () => {
+  const outpost = await start();
+  refuseConnections = true;
+  connections[0].terminate();
+  await vi.waitFor(() => expect(outpost.actor(customer)).rejects.toThrow("refused"), {
+    timeout: 3_000,
+  });
+  expect(outpost.connected).toBe(false);
+});
+
+it("fails to start without Redis instead of hanging", async () => {
+  const outpost = new Outpost(`${redisServer.socket}.missing`, { client: core });
+  await expect(outpost.start()).rejects.toThrow();
+}, 10_000);
+
+const aliceSnapshot = {
+  ...customer,
+  customer_id: null,
+  meter_id: "meter",
+  cold_until: bucket,
+  version: 1791807000000005,
+  count: 1,
+  sum: 3,
+  min: 3,
+  max: 3,
+  credited_units: 10,
+};
+
+it.each([
+  Object.assign(new Error("getaddrinfo EAI_AGAIN redis.test"), { code: "EAI_AGAIN" }),
+  Object.assign(new Error("connect ETIMEDOUT"), { code: "ETIMEDOUT" }),
+  Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" }),
+  new Error("Command timed out"),
+  new Error("Connection is closed."),
+  new Error("Stream isn't writeable and enableOfflineQueue options is false"),
+  Object.assign(new Error("Reached the max retries per request limit"), {
+    name: "MaxRetriesPerRequestError",
+  }),
+])("recovers from a snapshot Redis failure: %s", async (error) => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  const applySnapshot = vi
+    .spyOn(outpost["redis"]!, "outpostApplySnapshot")
+    .mockRejectedValueOnce(error);
+  await outpost.actor(customer);
+  await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
+  await outpost.actor(customer);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  await ingest(outpost, 5);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(8);
+  expect((await outpost.meter(meter))?.balance).toBe(2);
+  expect(outpost.connected).toBe(true);
+  expect(applySnapshot).toHaveBeenCalledTimes(2);
+});
+
+it.each([
+  new Error("WRONGPASS invalid username-password pair"),
+  new Error("NOAUTH Authentication required"),
+  new Error("NOPERM this user has no permissions"),
+  new TypeError("Invalid snapshot"),
+  new Error("Unexpected failure"),
+])("keeps snapshot authentication and unrelated errors fatal: %s", async (error) => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  vi.spyOn(outpost["redis"]!, "outpostApplySnapshot").mockRejectedValueOnce(error);
+  await outpost.actor(customer);
+  await vi.waitFor(() => expect(outpost.meter(meter)).rejects.toBe(error));
+  await expect(ingest(outpost, 5)).rejects.toBe(error);
+  expect(outpost.connected).toBe(false);
+  expect(connections).toHaveLength(1);
+});
+
+it("waits for the first snapshot on a cold read", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  await outpost.actor(customer);
+  expect((await outpost.meter(meter))?.balance).toBe(7);
+  expect(await readOutcomes(outpost)).toEqual([
+    ["actor", "ready"],
+    ["meter", "ready"],
+  ]);
+});
+
+it("arms no timer on a warm read", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  await outpost.actor(customer);
+  await outpost.meter(meter);
+  const setTimeout = vi.spyOn(globalThis, "setTimeout");
+  expect((await outpost.meter(meter))?.balance).toBe(7);
+  expect(setTimeout).not.toHaveBeenCalled();
+});
+
+it("reads null for a meter Outpost does not know", async () => {
+  const outpost = await start();
+  expect(await outpost.meter({ ...customer, meter_id: "other" })).toBeNull();
+  expect(await readOutcomes(outpost)).toEqual([["meter", "unknown_meter"]]);
+});
+
+it("reports reads without configuration as not ready", async () => {
+  delayConfiguration = true;
+  const outpost = await start();
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  const reads = [outpost.actor(customer), outpost.meter(meter)].map((read) =>
+    expect(read).rejects.toThrow("timed out"),
+  );
+  await vi.advanceTimersByTimeAsync(5_000);
+  await Promise.all(reads);
+  expect(await readOutcomes(outpost)).toEqual([
+    ["actor", "not_ready"],
+    ["meter", "not_ready"],
+  ]);
+});
+
+it("reports a failed read as an error", async () => {
+  const outpost = await start();
+  outpost["failure"] = new PolarOutpostError("Outpost stopped");
+  await expect(outpost.meter(meter)).rejects.toThrow("Outpost stopped");
+  expect(await readOutcomes(outpost)).toEqual([["meter", "error"]]);
+});
+
+it("reads null for a customer Polar does not know", async () => {
+  snapshot = { ...aliceSnapshot, customer_exists: false };
+  const outpost = await start();
+  await outpost.actor(customer);
+  expect(await outpost.meter(meter)).toBeNull();
+  expect(await readOutcomes(outpost)).toEqual([
+    ["actor", "unknown_customer"],
+    ["meter", "unknown_customer"],
+  ]);
+});
+
+it("reports a read whose snapshot never arrives as not ready", async () => {
+  const outpost = await start();
+  await outpost.actor(customer);
+  await expect(outpost.meter(meter)).rejects.toThrow("snapshot is not ready");
+  expect(await readOutcomes(outpost)).toEqual([
+    ["actor", "not_ready"],
+    ["meter", "not_ready"],
+  ]);
+});
+
+it.each([
+  [50, 200, "ready"],
+  [500, 0, "not_ready"],
+])(
+  "waits for the snapshot of the meter it reads (delay %i ms)",
+  async (delay, credited, outcome) => {
+    reducers[0].meter_ids = ["meter", "shared"];
+    snapshot = aliceSnapshot;
+    meterSnapshots = {
+      meter: { credited_units: 100, delay: 0 },
+      shared: { credited_units: 200, delay },
+    };
+    const outpost = await start();
+    expect((await outpost.meter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(
+      credited,
+    );
+    expect(await readOutcomes(outpost)).toEqual([["meter", outcome]]);
+  },
+);
+
+it("reads the value of a customer created after a miss", async () => {
+  snapshot = { ...aliceSnapshot, customer_exists: false };
+  const outpost = await start();
+  expect(await outpost.meter(meter)).toBeNull();
+  snapshot = aliceSnapshot;
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.balance).toBe(7));
+});
+
+it("reports sync counts when telemetry is flushed", async () => {
+  const writer = await start();
+  const reader = await start();
+  await reader.actor(customer);
+  for (const event of [
+    { ...customer, name: "api_call", external_id: eventId(), timestamp, metadata: { tokens: 1 } },
+    {
+      external_customer_id: "bob",
+      name: "api_call",
+      external_id: eventId(),
+      timestamp,
+      metadata: { tokens: 1 },
+    },
+  ])
+    await writer.track(event);
+  await vi.waitFor(() => expect(reader["syncReceived"]).toBe(2));
+  exported.length = 0;
+  await reader.flushTelemetry();
+  await reader.flushTelemetry();
+  expect(
+    exported.filter((span) => span.name === "outpost.sync").map((span) => span.attributes),
+  ).toEqual([
+    {
+      "outpost.connection_id": connectionId,
+      "outpost.sync.received": 2,
+      "outpost.sync.applied": 1,
+    },
+  ]);
+});
+
+it("does not split a message in flight across sync reports", async () => {
+  const writer = await start();
+  const reader = await start();
+  let receiving = false;
+  let release!: () => void;
+  const released = new Promise<void>((resolve) => (release = resolve));
+  reader["receiveState"] = async () => {
+    receiving = true;
+    await released;
+    return true;
+  };
+  await ingest(writer, 1);
+  await vi.waitFor(() => expect(receiving).toBe(true));
+  await reader.flushTelemetry();
+  release();
+  await vi.waitFor(() => expect(reader["syncApplied"]).toBe(1));
+  exported.length = 0;
+  await reader.flushTelemetry();
+  expect(
+    exported.filter((span) => span.name === "outpost.sync").map((span) => span.attributes),
+  ).toEqual([
+    {
+      "outpost.connection_id": connectionId,
+      "outpost.sync.received": 1,
+      "outpost.sync.applied": 1,
+    },
+  ]);
+});
+
+it("flushes buffered telemetry on demand", async () => {
+  const outpost = await start();
+  const forceFlush = vi.spyOn(outpost["tracerProvider"]!, "forceFlush");
+  await outpost.flushTelemetry();
+  expect(forceFlush).toHaveBeenCalledOnce();
+});
+
+it("raises Outpost errors when Redis fails", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  const redisError = new Error("Connection is closed.");
+  const read = vi.spyOn(outpost["redis"]!, "outpostReadState").mockRejectedValue(redisError);
+  const readError = outpost.meter(meter);
+  await expect(readError).rejects.toBeInstanceOf(UnavailableRedisError);
+  await expect(readError).rejects.toMatchObject({ cause: redisError });
+  expect(await readOutcomes(outpost)).toEqual([["meter", "redis_unavailable"]]);
+  read.mockRestore();
+  const pipeline = outpost["redis"]!.pipeline();
+  vi.spyOn(outpost["redis"]!, "pipeline").mockReturnValue(pipeline);
+  const write = vi.spyOn(pipeline, "exec").mockRejectedValue(redisError);
+  const writeError = ingest(outpost, 3);
+  await expect(writeError).rejects.toBeInstanceOf(UnavailableRedisError);
+  await expect(writeError).rejects.toMatchObject({ cause: redisError });
+  expect(write).toHaveBeenCalled();
+});
+
+it("raises an Outpost error when Redis is unavailable at startup", async () => {
+  const outpost = new Outpost(`${redisServer.socket}.missing`, { client: core });
+  await expect(outpost.start()).rejects.toBeInstanceOf(UnavailableRedisError);
+}, 10_000);
+
+it("fails fast while Redis is unavailable", async () => {
+  const outpost = await start();
+  outpost["subscriber"]!.disconnect();
+  await vi.waitFor(() => expect(outpost["isSynced"]).toBe(false));
+  expect(outpost.connected).toBe(false);
+  const started = performance.now();
+  await expect(
+    outpost.meter({ external_customer_id: "bob", meter_id: "meter" }),
+  ).rejects.toBeInstanceOf(UnavailableRedisError);
+  expect(performance.now() - started).toBeLessThan(500);
+  expect(await readOutcomes(outpost)).toEqual([["meter", "redis_unavailable"]]);
+});
+
+it("composes buffered Polar delivery with Outpost through the client factory", async () => {
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(new Response('{"inserted":1,"duplicates":0}'));
+  await seed();
+  const [baseUrl] = core.buildRequest("GET", "");
+  const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
+  const reader = await start();
+  {
+    await using metering = await polar
+      .metering({ outpost: { redisUrl: redisServer.socket } })
+      .start();
+    await metering.track({
+      ...customer,
+      name: "api",
+      external_id: eventId(),
+      timestamp,
+      metadata: { tokens: 2 },
+    });
+    expect((await reader.meter(meter))?.consumed_units).toBe(12);
+    expect(fetch).not.toHaveBeenCalled();
+  }
+  expect(fetch).toHaveBeenCalledOnce();
+});
+
+it.each(["abc", "Infinity", "NaN", "1e999"])("rejects the stored value %j", (value) => {
+  expect(() => decodeState(["epoch", "epoch", "revision", "1", "cold:sum", value])).toThrow();
+});
+
+// Fails the day a write stores a value that JSON and Number don't read the same way.
+it("stores values that parse the same with and without JSON", async () => {
+  snapshot = {
+    ...customer,
+    customer_id: null,
+    meter_id: "meter",
+    cold_until: bucket,
+    version: 1791807000000001,
+    count: 3,
+    sum: 0.30000000000000004,
+    min: -1e-7,
+    max: 1e21,
+    credited_units: 2 ** 53 + 2,
+  };
+  const outpost = await start();
+  await outpost.actor(customer);
+  await vi.waitFor(async () => expect(await redis.hexists(key, "cold:sum")).toBe(1));
+  for (const tokens of [0, -0, 1, -2, 0.1, 0.2, 1e-7, 1e21, 2 ** 53, -1.5e300])
+    await ingest(outpost, tokens);
+  const stored = await redis.hgetall(key);
+  delete stored.epoch;
+  for (const [field, value] of Object.entries(stored))
+    expect([field, Number(value)]).toEqual([field, JSON.parse(value)]);
 });

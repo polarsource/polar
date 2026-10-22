@@ -23,19 +23,11 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: curl -fsSL https://polar.sh/install.sh | bash
-      - name: Plan
+      - name: Plan and comment on the pull request
         env:
           POLAR_ACCESS_TOKEN: ${{ secrets.POLAR_READ_TOKEN }}
-          NO_COLOR: '1'
-        run: |
-          set -o pipefail
-          polar config plan | tee plan.txt
-      - name: Comment the plan on the pull request
-        if: always()
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          header: polar-plan
-          path: plan.txt
+          GITHUB_TOKEN: ${{ github.token }}
+        run: polar config plan --pr-comment
 
   apply:
     if: github.event_name == 'push'
@@ -52,4 +44,4 @@ jobs:
       - name: Apply
         env:
           POLAR_ACCESS_TOKEN: ${{ secrets.POLAR_WRITE_TOKEN }}
-        run: polar config apply --yes
+        run: polar config apply --confirm

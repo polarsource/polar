@@ -1,9 +1,19 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import httpx
 import httpx_ws
 import pytest
+from logfire.experimental.forwarding import ForwardExportRequestResponse
+from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
+    ExportMetricsServiceRequest,
+)
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
+    ExportTraceServiceRequest,
+)
+from opentelemetry.proto.common.v1.common_pb2 import AnyValue
+from pytest_mock import MockerFixture
 
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -48,6 +58,14 @@ class TestOutpost:
         assert exc.value.response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_connection(self, client: httpx.AsyncClient) -> None:
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            message = await websocket.receive_json()
+
+            assert message["type"] == "connection"
+            assert uuid.UUID(message["payload"]["id"])
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_configuration(
         self,
         save_fixture: SaveFixture,
@@ -60,6 +78,7 @@ class TestOutpost:
         )
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
             await websocket.send_json({"type": "configuration"})
             response = await websocket.receive_json()
 
@@ -108,6 +127,7 @@ class TestOutpost:
         }[customer_key]
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
             await websocket.send_json(
                 {
                     "type": "meter_usage",
@@ -129,6 +149,7 @@ class TestOutpost:
             (str(customer.id), customer.external_id),
         }
         assert all(p["credited_units"] == 100 for p in payloads.values())
+        assert all(p["customer_exists"] for p in payloads.values())
         external = payloads[(None, customer.external_id)]
         assert external["cold_until"] == to_epoch_microseconds(bucket_end)
         assert (external["count"], external["sum"]) == (1, 4.0)
@@ -138,6 +159,32 @@ class TestOutpost:
             get_reducer_bucket_start(version - SYNCED_LOOKBACK)
         )
         assert (internal["count"], internal["sum"]) == (0, 0.0)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_request_meter_usage_unknown_customer(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "meter_usage",
+                    "payload": {
+                        "external_customer_id": "unknown",
+                        "meter_id": str(meter.id),
+                    },
+                }
+            )
+            response = await websocket.receive_json()
+
+        assert response["payload"]["external_customer_id"] == "unknown"
+        assert response["payload"]["customer_exists"] is False
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_event_reducer_bucket(
@@ -190,6 +237,7 @@ class TestOutpost:
             )
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
             await publish(
                 redis,
                 organization.id,
@@ -211,6 +259,7 @@ class TestOutpost:
                 "meter_id": str(customer_meter.meter_id),
                 "customer_id": None,
                 "external_customer_id": external_id,
+                "customer_exists": True,
                 "credited_units": 100,
                 "cold_until": to_epoch_microseconds(cold_until),
                 "count": 2,
@@ -252,6 +301,7 @@ class TestOutpost:
         )
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
             await publish(
                 redis,
                 organization.id,
@@ -268,3 +318,143 @@ class TestOutpost:
         payload = response["payload"]
         assert payload["cold_until"] == to_epoch_microseconds(bucket_end)
         assert payload["count"] == 1
+
+
+def _export_request(**attributes: str) -> ExportTraceServiceRequest:
+    request = ExportTraceServiceRequest()
+    resource_spans = request.resource_spans.add()
+    for key, value in attributes.items():
+        resource_spans.resource.attributes.add(
+            key=key, value=AnyValue(string_value=value)
+        )
+    return request
+
+
+@pytest.mark.anyio
+class TestTelemetry:
+    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry",
+            content=_export_request().SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_invalid_body(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry",
+            content=b"not protobuf",
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_forwards_with_organization(
+        self,
+        mocker: MockerFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        forward_mock = mocker.patch(
+            "polar.outpost.service.logfire.forward_export_request",
+            return_value=ForwardExportRequestResponse(
+                status_code=200,
+                headers={"Content-Type": "application/x-protobuf"},
+                content=b"",
+            ),
+        )
+
+        response = await client.post(
+            "/v1/outpost/telemetry",
+            content=_export_request(
+                **{"polar.organization_id": "spoofed", "service.name": "other"}
+            ).SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 200
+        forwarded = ExportTraceServiceRequest()
+        forwarded.ParseFromString(forward_mock.call_args.kwargs["body"])
+        attributes = {
+            attribute.key: attribute.value.string_value
+            for attribute in forwarded.resource_spans[0].resource.attributes
+        }
+        assert attributes == {
+            "polar.organization_id": str(organization.id),
+            "service.name": "outpost",
+            "deployment.environment.name": "testing",
+        }
+        assert forward_mock.call_args.kwargs["path"] == "/v1/traces"
+
+
+def _metrics_request(**attributes: str) -> ExportMetricsServiceRequest:
+    request = ExportMetricsServiceRequest()
+    resource_metrics = request.resource_metrics.add()
+    for key, value in attributes.items():
+        resource_metrics.resource.attributes.add(
+            key=key, value=AnyValue(string_value=value)
+        )
+    return request
+
+
+@pytest.mark.anyio
+class TestTelemetryMetrics:
+    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry/metrics",
+            content=_metrics_request().SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_invalid_body(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry/metrics",
+            content=b"not protobuf",
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 400
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_forwards_with_organization(
+        self,
+        mocker: MockerFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        forward_mock = mocker.patch(
+            "polar.outpost.service.logfire.forward_export_request",
+            return_value=ForwardExportRequestResponse(
+                status_code=200,
+                headers={"Content-Type": "application/x-protobuf"},
+                content=b"",
+            ),
+        )
+
+        response = await client.post(
+            "/v1/outpost/telemetry/metrics",
+            content=_metrics_request(
+                **{"polar.organization_id": "spoofed", "service.name": "other"}
+            ).SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 200
+        forwarded = ExportMetricsServiceRequest()
+        forwarded.ParseFromString(forward_mock.call_args.kwargs["body"])
+        attributes = {
+            attribute.key: attribute.value.string_value
+            for attribute in forwarded.resource_metrics[0].resource.attributes
+        }
+        assert attributes == {
+            "polar.organization_id": str(organization.id),
+            "service.name": "outpost",
+            "deployment.environment.name": "testing",
+        }
+        assert forward_mock.call_args.kwargs["path"] == "/v1/metrics"

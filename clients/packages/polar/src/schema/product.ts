@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
+import { withDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
 import type { Currency } from './money'
 import {
@@ -147,6 +148,7 @@ export const ProductConfig = Schema.Struct({
   metadata: Schema.optionalKey(Metadata),
   description: Schema.optionalKey(Schema.String),
   visibility: Schema.optionalKey(Visibility),
+  deprecated: Schema.optionalKey(Schema.Literal(true)),
 }).check(
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
@@ -210,7 +212,7 @@ class ProductBuilder<
   Benefit extends string,
   P extends Prices<Meter> | undefined,
   Billing extends Recurring | OneTime | undefined,
-> extends withMetadata(withVisibility(Builder)) {
+> extends withDeprecation(withMetadata(withVisibility(Builder))) {
   readonly trialPeriod: Trial | undefined = undefined
   readonly meterPeriod: MeterCycle | undefined = undefined
   readonly benefits: ReadonlyArray<Benefit> = []

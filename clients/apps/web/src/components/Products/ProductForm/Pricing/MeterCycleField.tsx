@@ -174,9 +174,8 @@ export const MeterCycleField = ({ disabled }: MeterCycleFieldProps) => {
       </div>
       <div className="mt-4">
         <FormDescription>
-          Reset meters, grant meter credits and bill usage at a different pace
-          than normal subscription renewal, like for instance yearly
-          subscription renewals with monthly meter cycling
+          Bill metered usage and grant credits on their own schedule, such as
+          monthly on an annual subscription.
         </FormDescription>
       </div>
     </div>

@@ -35,7 +35,7 @@ from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
 from polar.product.schemas import Product, ProductPrice
-from polar.version import V2027_01
+from polar.version import V2026_10, V2027_01
 
 SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
 
@@ -167,7 +167,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     customer_cancellation_reason: CustomerCancellationReason | None
     customer_cancellation_comment: str | None
 
-    price_id: SkipJsonSchema[UUID4] = Field(
+    price_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -252,7 +252,7 @@ class PendingSubscriptionUpdate(IDSchema, TimestampedSchema):
 
 class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, SubscriptionBase):
     customer: SubscriptionCustomer
-    user_id: SkipJsonSchema[UUID4] = Field(
+    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -261,7 +261,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
         ),
         deprecated="Use `customer_id`.",
     )
-    user: SkipJsonSchema[SubscriptionUser] = Field(
+    user: Annotated[SkipJsonSchema[SubscriptionUser], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -273,7 +273,7 @@ class Subscription(CustomFieldDataOutputMixin, MetadataOutputMixin, Subscription
     product: Product
     discount: SubscriptionDiscount | None
 
-    price: SkipJsonSchema[ProductPrice] = Field(
+    price: Annotated[SkipJsonSchema[ProductPrice], Version(up_to=V2026_10)] = Field(
         deprecated="Use `prices` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -589,7 +589,10 @@ class SubscriptionChargePreview(Schema):
         description="Base subscription amount in cents (sum of product prices)"
     )
     metered_amount: int = Field(
-        description="Total metered usage charges in cents (sum of all meter charges)"
+        description=(
+            "Metered usage in cents billed on this invoice. Zero when usage is "
+            "billed on its own meter cycle, ending before this invoice."
+        )
     )
     proration_amount: int = Field(
         description=(
@@ -621,6 +624,21 @@ class SubscriptionChargePreview(Schema):
             "Amount actually due in cents: total_amount plus the applied wallet "
             "balance, floored at zero. This is the figure charged today."
         )
+    )
+
+
+class SubscriptionMeterChargePreview(Schema):
+    """Preview of the metered usage billed at the end of the current meter cycle."""
+
+    metered_amount: int = Field(description="Metered usage amount in cents.")
+    subtotal_amount: int = Field(
+        description="Subtotal amount in cents, before discount and tax."
+    )
+    discount_amount: int = Field(description="Discount amount in cents.")
+    net_amount: int = Field(description="Net amount in cents, before taxes.")
+    tax_amount: int = Field(description="Tax amount in cents.")
+    total_amount: int = Field(
+        description="Total amount in cents, before applying the wallet balance."
     )
 
 

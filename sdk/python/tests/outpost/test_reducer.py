@@ -12,6 +12,7 @@ from polar.outpost.reducer import (
     get_bucket_start,
     get_matcher,
     reduce,
+    with_matchers,
 )
 
 TIMESTAMP = datetime.datetime(2026, 10, 12, 12, 4, 59, tzinfo=datetime.UTC)
@@ -51,7 +52,7 @@ def test_reduce_buckets(
     bucket_start = get_bucket_start(TIMESTAMP)
 
     updates = reduce(
-        [(reducer, get_matcher(reducer["filter"]))],
+        with_matchers([reducer]),
         events,
         oldest_bucket_start=bucket_start,
     )
@@ -144,7 +145,7 @@ def test_non_numeric_aggregation_is_skipped(value: object) -> None:
     }
     assert (
         reduce(
-            [(reducer, get_matcher(reducer["filter"]))],
+            with_matchers([reducer]),
             [Event("call", "customer", TIMESTAMP, {"tokens": value})],
             oldest_bucket_start=0,
         )
@@ -161,7 +162,7 @@ def test_non_finite_aggregation_is_rejected(values: list[float]) -> None:
     }
     with pytest.raises(ValueError, match="finite"):
         reduce(
-            [(reducer, get_matcher(reducer["filter"]))],
+            with_matchers([reducer]),
             [
                 Event("call", "customer", TIMESTAMP, {"tokens": value})
                 for value in values

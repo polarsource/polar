@@ -37,7 +37,7 @@ jobs:
             --python-platform x86_64-manylinux2014 \
             --only-binary=:all: \
             --python-version 3.13 \
-            pillow
+            pillow 'certifi>=2026.10.19'
           cp handler.py package/
           cd package
           zip -r ../package.zip .

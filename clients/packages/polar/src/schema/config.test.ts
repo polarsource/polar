@@ -539,6 +539,116 @@ test('products only reference declared meters and benefits', () => {
   ).toThrow('Product "pro" references unknown benefit "unknown"')
 })
 
+test('deprecated meters stay in the config and the client', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({
+      apples: meter('Apples').deprecated().count(),
+      pears: meter('Pears').count(),
+    }),
+    products: ({ product, meter }) => ({
+      pro: product()
+        .prices(meter('pears').flat().amount(usd(0.01)))
+        .recurring('monthly'),
+    }),
+  })
+  const [apples, pears] = config.toJSON().meters
+  expect(apples).toMatchObject({ external_id: 'apples', deprecated: true })
+  expect(pears).not.toHaveProperty('deprecated')
+  expectTypeOf(
+    RuntimeSDK(config, { accessToken: 'test' }).actor({ customerId: 'c' })
+      .balance,
+  )
+    .parameter(0)
+    .toEqualTypeOf<'apples' | 'pears'>()
+})
+
+test('active products and benefits cannot use a deprecated meter', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
+      products: ({ product, meter }) => ({
+        pro: product()
+          .prices(meter('apples').flat().amount(usd(0.01)))
+          .recurring('monthly'),
+      }),
+    }),
+  ).toThrow(
+    'Product "pro" uses meter "apples", which is deprecated. Undeprecate the meter or create a new one.',
+  )
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
+      benefits: ({ credits }) => ({
+        included: credits('Included apples').meter('apples').units(10),
+      }),
+    }),
+  ).toThrow('Benefit "included" uses meter "apples", which is deprecated.')
+})
+
+test('deprecated benefits stay in the config', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+    benefits: ({ flag, credits }) => ({
+      beta: flag('Beta').deprecated(),
+      calls: credits('Calls').meter('calls').units(10).deprecated(),
+      support: flag('Support'),
+    }),
+    products: ({ product, free }) => ({
+      pro: product().prices(free()).recurring('monthly').grants(['support']),
+    }),
+  })
+  const [beta, calls, support] = config.toJSON().benefits ?? []
+  expect(beta).toMatchObject({ external_id: 'beta', deprecated: true })
+  expect(calls).toMatchObject({ external_id: 'calls', deprecated: true })
+  expect(support).not.toHaveProperty('deprecated')
+})
+
+test('deprecated benefits can use a deprecated meter', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
+      benefits: ({ credits }) => ({
+        included: credits('Included apples')
+          .meter('apples')
+          .units(10)
+          .deprecated(),
+      }),
+    }),
+  ).not.toThrow()
+})
+
+test('deprecated products can use deprecated meters and benefits', () => {
+  const config = defineConfig({
+    meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
+    benefits: ({ flag }) => ({ beta: flag('Beta').deprecated() }),
+    products: ({ product, meter, free }) => ({
+      legacy: product()
+        .prices(meter('apples').flat().amount(usd(0.01)))
+        .recurring('monthly')
+        .grants(['beta'])
+        .deprecated(),
+      pro: product().prices(free()).recurring('monthly'),
+    }),
+  })
+  const [legacy, pro] = config.toJSON().products ?? []
+  expect(legacy).toMatchObject({ external_id: 'legacy', deprecated: true })
+  expect(pro).not.toHaveProperty('deprecated')
+})
+
+test('active products cannot grant a deprecated benefit', () => {
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({ calls: meter().count() }),
+      benefits: ({ flag }) => ({ beta: flag('Beta').deprecated() }),
+      products: ({ product, free }) => ({
+        pro: product().prices(free()).recurring('monthly').grants(['beta']),
+      }),
+    }),
+  ).toThrow(
+    'Product "pro" uses benefit "beta", which is deprecated. Undeprecate the benefit or create a new one.',
+  )
+})
+
 test('product names must be between 3 and 64 characters', () => {
   expect(() =>
     defineConfig({
@@ -562,6 +672,74 @@ test('defineConfig rejects amounts with more decimals than the currency', () => 
       }),
     }),
   ).toThrow()
+})
+
+test('webhooks serialize with their format, events and pinned API version', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    webhooks: ({ endpoint, slack, discord }) => ({
+      app: endpoint('https://app.test/api/polar/webhooks')
+        .on('order.paid', 'subscription.canceled')
+        .handle(async () => () => {}),
+      sales: slack('https://hooks.slack.com/services/T0/B0/token').on(
+        'order.paid',
+      ),
+      ops: discord('https://discord.com/api/webhooks/1/token').on(
+        'subscription.revoked',
+      ),
+    }),
+  })
+  expect(config.toJSON().webhooks).toEqual([
+    {
+      external_id: 'app',
+      url: 'https://app.test/api/polar/webhooks',
+      format: 'raw',
+      events: ['order.paid', 'subscription.canceled'],
+      api_version: '2027-01',
+    },
+    {
+      external_id: 'sales',
+      url: 'https://hooks.slack.com/services/T0/B0/token',
+      format: 'slack',
+      events: ['order.paid'],
+      api_version: '2027-01',
+    },
+    {
+      external_id: 'ops',
+      url: 'https://discord.com/api/webhooks/1/token',
+      format: 'discord',
+      events: ['subscription.revoked'],
+      api_version: '2027-01',
+    },
+  ])
+})
+
+test('webhooks with handlers must each read a different secret', () => {
+  const handler = async () => () => {}
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      webhooks: ({ endpoint }) => ({
+        app: endpoint('https://app.test/a').on('order.paid').handle(handler),
+        billing: endpoint('https://app.test/b')
+          .on('order.paid')
+          .handle(handler),
+      }),
+    }),
+  ).toThrow('more than one reads POLAR_WEBHOOK_SECRET')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      webhooks: ({ endpoint }) => ({
+        app: endpoint('https://app.test/a').on('order.paid').handle(handler),
+        billing: endpoint('https://app.test/b')
+          .on('order.paid')
+          .secret('BILLING_WEBHOOK_SECRET')
+          .handle(handler),
+        unhandled: endpoint('https://app.test/c').on('order.paid'),
+      }),
+    }),
+  ).not.toThrow()
 })
 
 test('meters, benefits and products serialize their metadata', () => {

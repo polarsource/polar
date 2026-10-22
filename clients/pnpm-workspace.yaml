@@ -11,6 +11,7 @@ allowBuilds:
   '@tailwindcss/oxide': true
   core-js-pure: true
   esbuild: true
+  workerd: true
   sharp: true
   unrs-resolver: true
   openapi-typescript: true
@@ -74,7 +75,6 @@ catalog:
   '@typescript/native': 'npm:typescript@7.0.2'
   '@vitejs/plugin-react': '^5.2.0'
   '@vitest/coverage-v8': '^5.0.1'
-  '@vitest/ui': '^5.0.1'
   'ai': '^7.0.0'
   'class-variance-authority': '^0.7.1'
   'date-fns': '^4.4.0'
@@ -101,10 +101,10 @@ catalog:
 overrides:
   '@types/react-dom': 19.3.0
   '@types/react': 19.3.0
-  '@xmldom/xmldom@<0.8.12': '>=0.8.12'
-  '@xmldom/xmldom@<0.8.13': '>=0.8.13'
-  '@xmldom/xmldom@>=0.7.0 <=0.8.13': '>=0.8.14'
-  '@xmldom/xmldom@>=0.7.0 <=0.8.14': '>=0.8.15'
+  '@xmldom/xmldom@<0.8.12': '^0.8.15'
+  '@xmldom/xmldom@<0.8.13': '^0.8.15'
+  '@xmldom/xmldom@>=0.7.0 <=0.8.13': '^0.8.15'
+  '@xmldom/xmldom@>=0.7.0 <=0.8.14': '^0.8.15'
   'decode-uri-component@<=0.4.2': '>=0.5.0'
   'esbuild@>=0.27.3 <0.28.1': '>=0.28.1'
   nuxi: 3.28.0

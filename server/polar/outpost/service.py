@@ -2,13 +2,26 @@ import uuid
 from collections.abc import Sequence
 from datetime import timedelta
 
+import logfire
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
+from google.protobuf.message import DecodeError
+from logfire.experimental.forwarding import ForwardExportRequestResponse
+from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
+    ExportMetricsServiceRequest,
+)
+from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
+    ExportTraceServiceRequest,
+)
+from opentelemetry.proto.common.v1.common_pb2 import AnyValue, KeyValue
+from opentelemetry.proto.resource.v1.resource_pb2 import Resource
 from pydantic import ValidationError
 from sqlalchemy.orm import selectinload
 
+from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
+from polar.exceptions import BadRequest
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
@@ -80,6 +93,55 @@ class OutpostService:
                 return await self._send_reducer_bucket(
                     session, organization, event, send_stream
                 )
+
+    def relay_telemetry(
+        self, organization: Organization, body: bytes
+    ) -> ForwardExportRequestResponse:
+        request = ExportTraceServiceRequest()
+        try:
+            request.ParseFromString(body)
+        except DecodeError as e:
+            raise BadRequest("Invalid OTLP trace export request.") from e
+        for resource_spans in request.resource_spans:
+            self._override_resource(resource_spans.resource, organization)
+        return logfire.forward_export_request(
+            path="/v1/traces",
+            headers={"Content-Type": "application/x-protobuf"},
+            body=request.SerializeToString(),
+        )
+
+    def relay_metrics(
+        self, organization: Organization, body: bytes
+    ) -> ForwardExportRequestResponse:
+        request = ExportMetricsServiceRequest()
+        try:
+            request.ParseFromString(body)
+        except DecodeError as e:
+            raise BadRequest("Invalid OTLP metrics export request.") from e
+        for resource_metrics in request.resource_metrics:
+            self._override_resource(resource_metrics.resource, organization)
+        return logfire.forward_export_request(
+            path="/v1/metrics",
+            headers={"Content-Type": "application/x-protobuf"},
+            body=request.SerializeToString(),
+        )
+
+    def _override_resource(
+        self, resource: Resource, organization: Organization
+    ) -> None:
+        overrides = {
+            "polar.organization_id": str(organization.id),
+            "service.name": "outpost",
+            "deployment.environment.name": settings.ENV,
+        }
+        attributes = resource.attributes
+        kept = [attribute for attribute in attributes if attribute.key not in overrides]
+        del attributes[:]
+        attributes.extend(kept)
+        attributes.extend(
+            KeyValue(key=key, value=AnyValue(string_value=value))
+            for key, value in overrides.items()
+        )
 
     async def _send_configuration(
         self,
@@ -212,6 +274,7 @@ class OutpostService:
                             meter_id=meter_id,
                             customer_id=customer_id,
                             external_customer_id=external_customer_id,
+                            customer_exists=customer is not None,
                             version=version,
                             cold_until=cold_until,
                             count=count,

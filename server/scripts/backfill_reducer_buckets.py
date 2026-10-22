@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import typer
 from sqlalchemy import (
@@ -13,8 +13,8 @@ from sqlalchemy import (
     and_,
     case,
     delete,
+    event,
     func,
-    insert,
     literal,
     null,
     or_,
@@ -47,7 +47,6 @@ from .helper import configure_script_logging, typer_async
 cli = typer.Typer()
 
 PAGE_SIZE = 5000
-INSERT_BATCH_SIZE = 2000
 
 type BucketValues = dict[str, Any]
 type BucketKey = tuple[UUID, datetime, datetime, UUID | None, str | None]
@@ -73,13 +72,20 @@ class Summary:
         self.max = value if self.max is None else max(self.max, value)
 
 
-type Totals = dict[BucketKey, dict[datetime | None, Summary]]
-"""Per bucket, the summary of its usage per created_at of the order that billed it,
-with the unbilled usage under None."""
+type Billing = tuple[datetime, UUID]
+"""created_at and id of the order that billed some usage"""
+type Totals = dict[BucketKey, dict[Billing | None, Summary]]
+"""Per bucket, the summary of its usage per order that billed it, with the
+unbilled usage under None."""
 
 
 async def backfill_organization(
-    session: AsyncSession, organization_id: UUID, start: datetime, end: datetime
+    session: AsyncSession,
+    organization_id: UUID,
+    start: datetime,
+    end: datetime,
+    *,
+    page_size: int = PAGE_SIZE,
 ) -> int:
     """Rebuilds the buckets of all the organization's reducers starting in
     [start, end) from one pass over its events, and returns how many were written."""
@@ -89,7 +95,9 @@ async def backfill_organization(
     flushed_until = start
     written = 0
     seen = 0
-    async for rows in _iter_events(session, organization_id, reducers, start, end):
+    async for rows in _iter_events(
+        session, organization_id, reducers, start, end, page_size
+    ):
         billed_at = await _get_billed_at(session, _matched_event_ids(rows))
         _add_to_totals(totals, reducers, rows, billed_at, boundaries)
         # The page may end inside a bucket: only the buckets before it are complete.
@@ -101,8 +109,8 @@ async def backfill_organization(
         await session.commit()
         seen += len(rows)
         typer.echo(
-            f"  {seen:,} events, {written:,} buckets, flushed until "
-            f"{flushed_until.isoformat()}"
+            f"{utc_now():%H:%M:%S}  {seen:,} events, {written:,} buckets, "
+            f"flushed until {flushed_until.isoformat()}"
         )
     written += await _flush(session, organization_id, totals, flushed_until, end, end)
     await session.commit()
@@ -115,13 +123,14 @@ async def _iter_events(
     reducers: Sequence[Reducer],
     start: datetime,
     end: datetime,
+    page_size: int,
 ) -> AsyncIterator[Sequence[Row[Any]]]:
     """Pages of the organization's user events with a timestamp in [start, end),
     in (timestamp, id) order."""
     after: tuple[datetime, UUID] | None = None
     while True:
         rows = await _get_events_page(
-            session, organization_id, reducers, start, end, after
+            session, organization_id, reducers, start, end, after, page_size
         )
         if not rows:
             return
@@ -147,7 +156,7 @@ async def _flush(
 
 
 async def _get_organization_ids(
-    session: AsyncSession, organization_id: UUID | None
+    session: AsyncSession, organization_id: UUID | None, after: UUID | None
 ) -> Sequence[UUID]:
     """The organizations with active reducers, or the given one."""
     if organization_id is not None:
@@ -159,6 +168,8 @@ async def _get_organization_ids(
         .distinct()
         .order_by(Reducer.organization_id)
     )
+    if after is not None:
+        statement = statement.where(Reducer.organization_id > after)
     return (await session.scalars(statement)).all()
 
 
@@ -224,8 +235,9 @@ async def _get_events_page(
     start: datetime,
     end: datetime,
     after: tuple[datetime, UUID] | None,
+    page_size: int,
 ) -> Sequence[Row[Any]]:
-    """Up to PAGE_SIZE of the organization's user events with a timestamp in
+    """Up to `page_size` of the organization's user events with a timestamp in
     [start, end) and (timestamp, id) after `after`, in that order: the event's
     id, timestamp and customer identity, then its value for each reducer."""
     statement = (
@@ -244,7 +256,7 @@ async def _get_events_page(
         )
         # Walks ix_events_org_timestamp_id backwards: timestamp DESC, id ASC reversed.
         .order_by(Event.timestamp.asc(), Event.id.desc())
-        .limit(PAGE_SIZE)
+        .limit(page_size)
     )
     if after is not None:
         after_timestamp, after_id = after
@@ -272,14 +284,15 @@ def _value_column(reducer: Reducer) -> ColumnElement[Any]:
 
 async def _get_billed_at(
     session: AsyncSession, event_ids: Sequence[UUID]
-) -> dict[tuple[UUID, UUID], datetime]:
-    """Per event and reducer, the created_at of the order that billed the event
-    for one of the reducer's meters, from its metered billing entries linked to
-    an order item."""
+) -> dict[tuple[UUID, UUID], Billing]:
+    """Per event and reducer, the order that billed the event for one of the
+    reducer's meters, from its metered billing entries linked to an order item."""
     if not event_ids:
         return {}
     statement = (
-        select(BillingEntry.event_id, MeterReducer.reducer_id, Order.created_at)
+        select(
+            BillingEntry.event_id, MeterReducer.reducer_id, Order.created_at, Order.id
+        )
         .join(BillingEntry.order_item)
         .join(OrderItem.order)
         .join(ProductPrice, ProductPrice.id == BillingEntry.product_price_id)
@@ -292,8 +305,8 @@ async def _get_billed_at(
     )
     result = await session.execute(statement)
     return {
-        (event_id, reducer_id): created_at
-        for event_id, reducer_id, created_at in result.tuples()
+        (event_id, reducer_id): (created_at, order_id)
+        for event_id, reducer_id, created_at, order_id in result.tuples()
     }
 
 
@@ -310,11 +323,11 @@ def _add_to_totals(
     totals: Totals,
     reducers: Sequence[Reducer],
     rows: Sequence[Row[Any]],
-    billed_at: dict[tuple[UUID, UUID], datetime],
+    billed_at: dict[tuple[UUID, UUID], Billing],
     boundaries: Boundaries,
 ) -> None:
     """Adds each event's value to the bucket of every reducer it matches, under
-    the created_at of the order that billed it for that reducer, or None."""
+    the order that billed it for that reducer, or None."""
     for row in rows:
         id, timestamp, customer_id, external_customer_id, *values = row
         bucket_start = get_reducer_bucket_start(timestamp)
@@ -326,8 +339,8 @@ def _add_to_totals(
                 boundaries.get((customer_key, reducer.id), []), bucket_start, timestamp
             )
             key = (reducer.id, start, end, customer_id, external_customer_id)
-            sealed_at = billed_at.get((id, reducer.id))
-            totals.setdefault(key, {}).setdefault(sealed_at, Summary()).add(
+            billing = billed_at.get((id, reducer.id))
+            totals.setdefault(key, {}).setdefault(billing, Summary()).add(
                 Decimal(str(value))
             )
 
@@ -342,8 +355,8 @@ def _to_buckets(
     organization_id: UUID, totals: Totals, synced_at: datetime
 ) -> list[BucketValues]:
     """Bucket rows to insert: each bucket gets one generation per billing order
-    in order of billing, sealed at the order's created_at, then the unbilled
-    usage last, unsealed."""
+    in order of billing, sealed and billed at the order's created_at, then the
+    unbilled usage last, unsealed."""
     buckets: list[BucketValues] = []
     for (
         reducer_id,
@@ -352,8 +365,9 @@ def _to_buckets(
         customer_id,
         external_customer_id,
     ), summaries in totals.items():
-        for generation, sealed_at in enumerate(_generation_order(summaries), 1):
-            summary = summaries[sealed_at]
+        for generation, billing in enumerate(_generation_order(summaries), 1):
+            summary = summaries[billing]
+            sealed_at, order_id = billing if billing is not None else (None, None)
             buckets.append(
                 {
                     "organization_id": organization_id,
@@ -364,6 +378,8 @@ def _to_buckets(
                     "bucket_end": bucket_end,
                     "generation": generation,
                     "sealed_at": sealed_at,
+                    "billed_at": sealed_at,
+                    "order_id": order_id,
                     "synced_at": synced_at,
                     "count": summary.count,
                     "sum": summary.sum,
@@ -374,9 +390,9 @@ def _to_buckets(
     return buckets
 
 
-def _generation_order(sealed_ats: Collection[datetime | None]) -> list[datetime | None]:
-    billed = sorted(sealed_at for sealed_at in sealed_ats if sealed_at is not None)
-    return [*billed, None] if None in sealed_ats else [*billed]
+def _generation_order(billings: Collection[Billing | None]) -> list[Billing | None]:
+    billed = sorted(billing for billing in billings if billing is not None)
+    return [*billed, None] if None in billings else [*billed]
 
 
 async def _delete_buckets(
@@ -391,16 +407,62 @@ async def _delete_buckets(
     )
 
 
+BUCKET_COLUMNS = [
+    "organization_id",
+    "reducer_id",
+    "customer_id",
+    "external_customer_id",
+    "bucket_start",
+    "bucket_end",
+    "generation",
+    "sealed_at",
+    "billed_at",
+    "order_id",
+    "synced_at",
+    "count",
+    "sum",
+    "min",
+    "max",
+]
+
+
 async def _insert_buckets(session: AsyncSession, buckets: list[BucketValues]) -> None:
-    for offset in range(0, len(buckets), INSERT_BATCH_SIZE):
-        batch = buckets[offset : offset + INSERT_BATCH_SIZE]
-        await session.execute(insert(ReducerBucket).values(batch))
+    """COPY, straight through asyncpg: three times faster than INSERT here."""
+    if not buckets:
+        return
+    created_at = utc_now()
+    records = [
+        (uuid4(), created_at, *(bucket[column] for column in BUCKET_COLUMNS))
+        for bucket in buckets
+    ]
+    connection = (
+        await (await session.connection()).get_raw_connection()
+    ).driver_connection
+    # COPY bypasses SQLAlchemy, which only begins the transaction on its first
+    # statement: the flush's delete. Without it, COPY would autocommit.
+    assert connection is not None
+    assert connection.is_in_transaction()
+    await connection.copy_records_to_table(
+        ReducerBucket.__tablename__,
+        records=records,
+        columns=["id", "created_at", *BUCKET_COLUMNS],
+    )
+
+
+def _prefer_organization_index(connection: Any, _: Any) -> None:
+    """Keeps the planner off the global timestamp index, which is slow where an
+    organization's events are sparse."""
+    connection.run_async(lambda raw: raw.execute("SET enable_incremental_sort = off"))
 
 
 @cli.command()
 @typer_async
 async def backfill(
-    start: datetime, end: datetime, organization_id: UUID | None = None
+    start: datetime,
+    end: datetime,
+    organization_id: UUID | None = None,
+    after_organization_id: UUID | None = None,
+    page_size: int = typer.Option(PAGE_SIZE, min=1),
 ) -> None:
     """Rebuild usage and billing buckets, excluding the latest ten minutes."""
     # Whole buckets only: a window ending inside a bucket would rebuild it from
@@ -411,12 +473,17 @@ async def backfill(
     )
     configure_script_logging()
     engine = create_async_engine("script")
+    event.listen(engine.sync_engine, "connect", _prefer_organization_index)
     sessionmaker = create_async_sessionmaker(engine)
     try:
         async with sessionmaker() as session:
             typer.echo(f"Backfilling [{start.isoformat()}, {end.isoformat()})")
-            for id in await _get_organization_ids(session, organization_id):
-                written = await backfill_organization(session, id, start, end)
+            for id in await _get_organization_ids(
+                session, organization_id, after_organization_id
+            ):
+                written = await backfill_organization(
+                    session, id, start, end, page_size=page_size
+                )
                 typer.echo(f"Organization {id}: {written} buckets")
     finally:
         await engine.dispose()

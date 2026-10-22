@@ -15,6 +15,10 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.authz.types import AccessibleOrganizationID
+from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditProperties,
+)
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -72,6 +76,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.logging import Logger
+from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -79,6 +84,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    Meter,
     Order,
     OrderItem,
     Organization,
@@ -115,6 +121,7 @@ from polar.organization.repository import (
 )
 from polar.product.guard import (
     is_custom_price,
+    is_metered_price,
     is_recurring_product,
     is_seat_price,
     is_static_price,
@@ -123,6 +130,7 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
+from polar.reducer.service import reducer as reducer_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -134,6 +142,7 @@ from .schemas import (
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
+    SubscriptionMeterChargePreview,
     SubscriptionPause,
     SubscriptionResume,
     SubscriptionRevoke,
@@ -1346,7 +1355,9 @@ class SubscriptionService:
         subscription = await repository.release_scheduler_lock(subscription)
 
         reset_at = min(cycle_at, utc_now())
-        await self.reset_meters(session, subscription, reset_at=reset_at)
+        await self.reset_meters(
+            session, subscription, reset_at=reset_at, include_meter_credits=not revoke
+        )
 
         if revoke:
             billing_reason = OrderBillingReasonInternal.subscription_cancel
@@ -1449,50 +1460,84 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         reset_at: datetime | None = None,
+        include_meter_credits: bool = True,
     ) -> None:
         """
-        Resets all the subscription meters to start fresh, optionally reporting
-        rollover units if applicable.
+        Resets the meters the subscription bills or credits to start fresh,
+        optionally reporting rollover units if applicable.
 
         This should be called when creating a new subscription or cycling an
-        existing one.
+        existing one. Meters are taken from the metered prices and from the
+        granted meter-credit benefits, so a meter that is only credited is reset
+        too, whether or not the renewal payment succeeds: its credits were for
+        the period that just ended.
         """
-        for subscription_meter in subscription.meters:
-            await self.reset_meter(
-                session, subscription, subscription_meter, reset_at=reset_at
+        meters: dict[tuple[uuid.UUID, uuid.UUID], tuple[Customer, Meter]] = {
+            (subscription.customer_id, price.meter_id): (
+                subscription.customer,
+                price.meter,
+            )
+            for price in subscription.prices
+            if is_metered_price(price)
+        }
+        if include_meter_credits:
+            benefit_grant_repository = BenefitGrantRepository.from_session(session)
+            grants = await benefit_grant_repository.list_granted_meter_credits_by_subscription(
+                subscription.id
+            )
+            meter_repository = MeterRepository.from_session(session)
+            for grant in grants:
+                properties = cast(
+                    BenefitMeterCreditProperties, grant.benefit.properties
+                )
+                meter_id = uuid.UUID(properties["meter_id"])
+                if (grant.customer_id, meter_id) in meters:
+                    continue
+                meter = await meter_repository.get_by_id(meter_id)
+                if meter is not None:
+                    meters[(grant.customer_id, meter_id)] = (grant.customer, meter)
+
+        for customer, meter in meters.values():
+            await self.reset_customer_meter(
+                session,
+                subscription.organization,
+                customer,
+                meter,
+                reset_at=reset_at,
             )
 
-    async def reset_meter(
+    async def reset_customer_meter(
         self,
         session: AsyncSession,
-        subscription: Subscription,
-        subscription_meter: SubscriptionMeter,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
         *,
         reset_at: datetime | None = None,
     ) -> None:
-        customer = subscription.customer
         rollover_units = await customer_meter_service.get_rollover_units(
-            session, customer, subscription_meter.meter, cutoff=reset_at
+            session, customer, meter, cutoff=reset_at
         )
-        await event_service.create_event(
+        reset_event = await event_service.create_event(
             session,
             build_system_event(
                 SystemEvent.meter_reset,
                 customer=customer,
-                organization=subscription.organization,
-                metadata={"meter_id": str(subscription_meter.meter_id)},
+                organization=organization,
+                metadata={"meter_id": str(meter.id)},
                 timestamp=reset_at,
             ),
         )
+        reducer_service.enqueue_seal(customer.id, meter.id, at=reset_event.timestamp)
         if rollover_units > 0:
             await event_service.create_event(
                 session,
                 build_system_event(
                     SystemEvent.meter_credited,
                     customer=customer,
-                    organization=subscription.organization,
+                    organization=organization,
                     metadata={
-                        "meter_id": str(subscription_meter.meter_id),
+                        "meter_id": str(meter.id),
                         "units": rollover_units,
                         "rollover": True,
                         "reason": "benefit",
@@ -1589,6 +1634,12 @@ class SubscriptionService:
                     subscription.meter_interval_count,
                 )
             subscription.current_meter_period_end = period_end
+            await self._after_subscription_updated(
+                session,
+                subscription,
+                previous_status=subscription.status,
+                previous_is_canceled=subscription.canceled,
+            )
             repository = SubscriptionRepository.from_session(session)
             return await repository.release_scheduler_lock(subscription)
 
@@ -1610,13 +1661,19 @@ class SubscriptionService:
         # Settlement stops at the boundary, so it excludes the reset and re-grant below.
         self._enqueue_meter_cycle_order(subscription, boundary)
 
-        await self.reset_meters(session, subscription)
+        await self.reset_meters(session, subscription, reset_at=boundary)
         enqueue_job(
             "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
         )
 
         subscription.current_meter_period_start = boundary
         subscription.current_meter_period_end = next_period_end
+        await self._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=subscription.status,
+            previous_is_canceled=subscription.canceled,
+        )
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.release_scheduler_lock(subscription)
@@ -3162,6 +3219,9 @@ class SubscriptionService:
         self, session: AsyncSession, subscription: Subscription
     ) -> SubscriptionChargePreview:
         next_period_start = subscription.current_period_end
+        # Usage of the current meter cycle is settled before any pending update
+        # applies, on its own order ahead of this invoice.
+        usage_billed_on_meter_cycle = self.bills_usage_on_meter_cycle(subscription)
 
         # Apply any pending subscription update (product change, seats change)
         pending_update = subscription.pending_update
@@ -3201,7 +3261,11 @@ class SubscriptionService:
         else:
             base_price = sum(p.amount for p in subscription.subscription_product_prices)
 
-        metered_amount = sum(meter.amount for meter in subscription.meters)
+        metered_amount = (
+            0
+            if usage_billed_on_meter_cycle
+            else sum(meter.amount for meter in subscription.meters)
+        )
 
         items = [
             OrderItem(
@@ -3250,6 +3314,71 @@ class SubscriptionService:
             metered_amount=metered_amount,
             prorations=prorations,
             proration_amount=proration_amount,
+        )
+
+    def bills_usage_on_meter_cycle(self, subscription: Subscription) -> bool:
+        """Whether the current usage is settled at the end of the meter cycle,
+        on its own order, before the next subscription invoice.
+
+        The meter cycle doesn't settle while the subscription is inactive, and
+        when both periods end together the renewal invoice includes the usage.
+        """
+        meter_period_end = subscription.current_meter_period_end
+        return (
+            subscription.active
+            and subscription.meter_interval is not None
+            and meter_period_end is not None
+            and meter_period_end < subscription.current_period_end
+            and len(subscription.meters) > 0
+        )
+
+    async def calculate_meter_charge_preview(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> SubscriptionMeterChargePreview:
+        """
+        Calculate a preview of the usage charge settled at the end of the current
+        meter cycle. Only valid when ``bills_usage_on_meter_cycle`` holds.
+        """
+        meter_period_end = subscription.current_meter_period_end
+        assert meter_period_end is not None
+
+        discount = subscription.discount
+        if discount is not None and discount.is_repetition_expired(
+            subscription.discount_applied_at or subscription.current_period_start,
+            meter_period_end,
+        ):
+            discount = None
+
+        metered_amount = sum(meter.amount for meter in subscription.meters)
+        items = [
+            OrderItem(
+                label="Metered usage",
+                amount=metered_amount,
+                net_amount=metered_amount,
+                tax_amount=0,
+                proration=False,
+            )
+        ]
+
+        nested = await session.begin_nested()
+        try:
+            order = await self._build_preview_order(
+                session,
+                subscription,
+                items,
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+                discount=discount,
+            )
+        finally:
+            await nested.rollback()
+
+        return SubscriptionMeterChargePreview(
+            metered_amount=metered_amount,
+            subtotal_amount=order.subtotal_amount,
+            discount_amount=order.discount_amount,
+            net_amount=order.net_amount,
+            tax_amount=order.tax_amount,
+            total_amount=order.total_amount,
         )
 
     async def calculate_cancel_preview(
@@ -3598,19 +3727,13 @@ class SubscriptionService:
         prorations: Sequence[SubscriptionChargePreviewProration],
         proration_amount: int,
     ) -> SubscriptionChargePreview:
-        """Price ``items`` through the cycle's builder and read the resulting order.
-        Non-locking and keyed on the subscription: a preview must not lock the
-        balance, and repeated identical previews reuse the tax calculation."""
-        from polar.order.service import order as order_service
-
-        order = await order_service.build_subscription_order(
+        """Price ``items`` through the cycle's builder and read the resulting order."""
+        order = await self._build_preview_order(
             session,
             subscription,
             items,
-            billing_reason,
-            lock_balance=False,
+            billing_reason=billing_reason,
             discount=discount,
-            reference=str(subscription.id),
         )
 
         return SubscriptionChargePreview(
@@ -3625,6 +3748,29 @@ class SubscriptionService:
             total_amount=order.total_amount,
             applied_balance_amount=order.applied_balance_amount,
             due_amount=order.due_amount,
+        )
+
+    async def _build_preview_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        items: Sequence[OrderItem],
+        *,
+        billing_reason: OrderBillingReasonInternal,
+        discount: Discount | None,
+    ) -> Order:
+        """Non-locking and keyed on the subscription: a preview must not lock the
+        balance, and repeated identical previews reuse the tax calculation."""
+        from polar.order.service import order as order_service
+
+        return await order_service.build_subscription_order(
+            session,
+            subscription,
+            items,
+            billing_reason,
+            lock_balance=False,
+            discount=discount,
+            reference=str(subscription.id),
         )
 
     async def _after_subscription_updated(
@@ -4598,8 +4744,19 @@ class SubscriptionService:
             )
             assert loaded is not None
             subscription = loaded
-            self._enqueue_meter_cycle_order(subscription, utc_now())
-            await self.reset_meters(session, subscription)
+            now = utc_now()
+            self._enqueue_meter_cycle_order(subscription, now)
+            await self.reset_meters(session, subscription, reset_at=now)
+
+            # Grants kept through the revocation grace period are skipped by the
+            # grant below, so the reset would leave them without credits: cycle
+            # them instead. Listed now, before the grant jobs run, so grants
+            # revoked during past_due are re-granted only once, by the grant.
+            benefit_grant_repository = BenefitGrantRepository.from_session(session)
+            for grant in await benefit_grant_repository.list_granted_by_scope(
+                subscription=subscription
+            ):
+                enqueue_job("benefit.cycle", benefit_grant_id=grant.id)
 
         await self._after_subscription_updated(
             session,

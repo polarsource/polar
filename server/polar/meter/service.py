@@ -22,7 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import aliased, joinedload
 
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -32,6 +32,10 @@ from polar.authz.service import (
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
+)
 from polar.event.repository import EventRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -91,7 +95,7 @@ class MeterService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
@@ -145,7 +149,7 @@ class MeterService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
@@ -162,7 +166,7 @@ class MeterService:
     async def get_external(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         external_id: str,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
@@ -183,7 +187,7 @@ class MeterService:
         self,
         session: AsyncSession,
         meter_create: MeterCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Meter:
         organization = await get_payload_organization(
             session, auth_subject, meter_create
@@ -194,6 +198,8 @@ class MeterService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        if organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
 
         repository = MeterRepository.from_session(session)
         if (
@@ -249,6 +255,7 @@ class MeterService:
 
         await reducer_service.sync_meter(session, meter)
 
+        enqueue_job("reducer.invalidate_cache", meter.organization_id)
         enqueue_job("meter.backfill_events", meter.id)
 
         return meter
@@ -258,11 +265,12 @@ class MeterService:
         session: AsyncSession,
         meter: Meter,
         meter_update: MeterUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Meter:
         await assert_resource_permission(
             session, auth_subject, meter, OrganizationPermission.products_manage
         )
+        await assert_catalog_editable(session, meter.organization_id)
         repository = MeterRepository.from_session(session)
 
         errors: list[ValidationError] = []
@@ -316,6 +324,7 @@ class MeterService:
 
         meter = await repository.update(meter, update_dict=update_dict)
         await reducer_service.sync_meter(session, meter)
+        enqueue_job("reducer.invalidate_cache", meter.organization_id)
         return meter
 
     async def archive(self, session: AsyncSession, meter: Meter) -> Meter:
@@ -345,6 +354,19 @@ class MeterService:
                 ]
             )
 
+        repository = MeterRepository.from_session(session)
+        if await repository.has_billable_subscriptions(meter.id):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "is_archived"),
+                        "msg": "Cannot archive meter that is still used by active subscriptions",
+                        "input": True,
+                    }
+                ]
+            )
+
         # Check if meter is referenced by any active Benefits with meter_credit type
         active_benefits = await session.scalar(
             select(func.count(Benefit.id)).where(
@@ -366,7 +388,6 @@ class MeterService:
                 ]
             )
 
-        repository = MeterRepository.from_session(session)
         return await repository.update(
             meter, update_dict={"archived_at": datetime.now(UTC)}
         )

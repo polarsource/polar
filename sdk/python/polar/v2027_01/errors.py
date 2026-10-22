@@ -11,6 +11,9 @@ from polar.v2027_01.outputs import (
     AmbiguousExternalMeterID as AmbiguousExternalMeterIDModel,
 )
 from polar.v2027_01.outputs import (
+    AmbiguousExternalWebhookEndpointID as AmbiguousExternalWebhookEndpointIDModel,
+)
+from polar.v2027_01.outputs import (
     BadRequest as BadRequestModel,
 )
 from polar.v2027_01.outputs import (
@@ -23,7 +26,13 @@ from polar.v2027_01.outputs import (
     CheckoutLocked as CheckoutLockedModel,
 )
 from polar.v2027_01.outputs import (
+    CheckoutPaymentError as CheckoutPaymentErrorModel,
+)
+from polar.v2027_01.outputs import (
     CustomerMeterCreditExternalIDConflict as CustomerMeterCreditExternalIDConflictModel,
+)
+from polar.v2027_01.outputs import (
+    CustomerMeterCreditNotReversible as CustomerMeterCreditNotReversibleModel,
 )
 from polar.v2027_01.outputs import (
     CustomerNotReady as CustomerNotReadyModel,
@@ -75,9 +84,6 @@ from polar.v2027_01.outputs import (
 )
 from polar.v2027_01.outputs import (
     PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
-)
-from polar.v2027_01.outputs import (
-    PaymentError as PaymentErrorModel,
 )
 from polar.v2027_01.outputs import (
     PaymentFailed as PaymentFailedModel,
@@ -258,6 +264,17 @@ class NotPermitted(PolarClientError):
         super().__init__(status_code, error)
 
 
+class AmbiguousExternalWebhookEndpointID(PolarClientError):
+    error_type = AmbiguousExternalWebhookEndpointIDModel
+    error: AmbiguousExternalWebhookEndpointIDModel
+
+    def __init__(
+        self, status_code: int, error: AmbiguousExternalWebhookEndpointIDModel
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
 class ProductNotDeletable(PolarClientError):
     error_type = ProductNotDeletableModel
     error: ProductNotDeletableModel
@@ -376,11 +393,11 @@ class CheckoutLocked(PolarClientError):
         super().__init__(status_code, error)
 
 
-class PaymentError(PolarClientError):
-    error_type = PaymentErrorModel
-    error: PaymentErrorModel
+class CheckoutsClientConfirm400Error(PolarClientError):
+    error_type = CheckoutPaymentErrorModel
+    error: CheckoutPaymentErrorModel
 
-    def __init__(self, status_code: int, error: PaymentErrorModel) -> None:
+    def __init__(self, status_code: int, error: CheckoutPaymentErrorModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 
@@ -1018,6 +1035,17 @@ class CustomerMetersCredits409Error(PolarClientError):
         status_code: int,
         error: CustomerMeterCreditExternalIDConflictModel
         | AmbiguousExternalCustomerIDModel,
+    ) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class CustomerMeterCreditNotReversible(PolarClientError):
+    error_type = CustomerMeterCreditNotReversibleModel
+    error: CustomerMeterCreditNotReversibleModel
+
+    def __init__(
+        self, status_code: int, error: CustomerMeterCreditNotReversibleModel
     ) -> None:
         self.error = error
         super().__init__(status_code, error)

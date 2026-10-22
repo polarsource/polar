@@ -81,7 +81,10 @@ class TestApply:
             "settings": None,
         }
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(
         self, mocker: MockerFixture, client: AsyncClient
@@ -605,7 +608,10 @@ class TestExport:
             }
         ]
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(
         self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization
@@ -619,3 +625,34 @@ class TestExport:
         assert response.status_code == 200
         [meter] = response.json()["config"]["meters"]
         assert meter["external_id"] == "my-meter"
+
+
+@pytest.mark.anyio
+class TestPrune:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unused_meter(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/prune",
+            json={
+                "meters": [{**METER, "deprecated": True}],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "entries": [
+                {
+                    "resource": "meter",
+                    "external_id": "sdk-tool-calls",
+                    "in_use": False,
+                    "referenced_by": [],
+                }
+            ]
+        }

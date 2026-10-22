@@ -8,6 +8,7 @@ from sqlalchemy.util.typing import TypedDict
 
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.address import AddressDict
+from polar.kit.utils import utc_now
 from polar.kit.versioning import Version
 from polar.models import Customer, Event, Organization
 from polar.models.benefit import BenefitType
@@ -1013,8 +1014,9 @@ def build_system_event(
         organization=organization,
         user_metadata=metadata,
     )
-    if timestamp is not None:
-        event.timestamp = timestamp
+    if timestamp is None:
+        timestamp = event.ingested_at = utc_now()
+    event.timestamp = timestamp
     return event
 
 

@@ -93,6 +93,11 @@ test('unexposed paths keep only the words an API path has at the same position',
     '/v1/customers/{}/{}',
   )
   expect(redactPath('/v1/products/')).toBe('/v1/products/')
+  expect(
+    redactPath(
+      '/v1/customer-portal/benefit-grants/11111111-1111-4111-8111-111111111111',
+    ),
+  ).toBe('/v1/customer-portal/benefit-grants/{}')
 })
 
 test('operation writes preserve path parameters and JSON body, and read-only tools reject writes', async () => {

@@ -1,3 +1,4 @@
+import publicPaths from './generated/public-paths.json'
 import scopes from './generated/scopes.json'
 import spec from './generated/spec.json'
 import { isRecord } from './json'
@@ -21,7 +22,7 @@ export const isAllowedOperation = (method: string, pathname: string) =>
   operationFor(method, pathname) !== undefined
 
 const literalSegmentsAt: Array<Set<string>> = []
-for (const path of Object.keys(spec.paths)) {
+for (const path of publicPaths) {
   path.split('/').forEach((segment, index) => {
     if (!segment.startsWith('{')) {
       ;(literalSegmentsAt[index] ??= new Set()).add(segment)

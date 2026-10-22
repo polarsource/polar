@@ -40,7 +40,7 @@ class CatalogService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
-    ) -> tuple[Sequence[tuple[Catalog, int]], int]:
+    ) -> tuple[Sequence[Catalog], int]:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.products_read
         )
@@ -52,17 +52,11 @@ class CatalogService:
         org_ids = {oid for oid in org_ids if oid in enabled_org_ids}
 
         repository = CatalogRepository.from_session(session)
-        catalogs, count = await repository.paginate(
+        return await repository.paginate(
             repository.get_statement_by_org_ids(org_ids),
             limit=pagination.limit,
             page=pagination.page,
         )
-        product_counts = await CatalogProductRepository.from_session(
-            session
-        ).count_by_catalogs([catalog.id for catalog in catalogs])
-        return [
-            (catalog, product_counts.get(catalog.id, 0)) for catalog in catalogs
-        ], count
 
     async def get_live_entries(
         self, session: AsyncReadSession, organization: Organization

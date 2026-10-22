@@ -13496,11 +13496,6 @@ export interface components {
        * @example 2026-01-01T00:00:00.000000Z
        */
       published_at: string
-      /**
-       * Product Count
-       * @description Number of products in the catalog.
-       */
-      product_count: number
     }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {

@@ -4,29 +4,16 @@ import pytest
 from httpx import AsyncClient
 
 from polar.kit.utils import utc_now
-from polar.models import Catalog, CatalogProduct, Organization, UserOrganization
+from polar.models import Catalog, Organization, UserOrganization
 from polar.models.catalog import CatalogStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_product
 
 
 @pytest.fixture
 async def catalogs(
     save_fixture: SaveFixture, organization: Organization
 ) -> tuple[Catalog, Catalog]:
-    first = await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        external_id="first",
-    )
-    second = await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        external_id="second",
-    )
     now = utc_now()
     archived = Catalog(
         organization=organization,
@@ -43,14 +30,6 @@ async def catalogs(
     draft = Catalog(organization=organization, status=CatalogStatus.draft)
     for catalog in (archived, live, draft):
         await save_fixture(catalog)
-    for catalog, products in ((archived, [first]), (live, [first, second])):
-        for product in products:
-            assert product.external_id is not None
-            await save_fixture(
-                CatalogProduct(
-                    catalog=catalog, product=product, external_id=product.external_id
-                )
-            )
     return archived, live
 
 
@@ -97,9 +76,8 @@ class TestList:
         json = response.json()
         assert json["pagination"]["total_count"] == 2
         assert [
-            (item["id"], item["status"], item["version_hash"], item["product_count"])
-            for item in json["items"]
+            (item["id"], item["status"], item["version_hash"]) for item in json["items"]
         ] == [
-            (str(live.id), "live", live.version_hash, 2),
-            (str(archived.id), "archived", archived.version_hash, 1),
+            (str(live.id), "live", live.version_hash),
+            (str(archived.id), "archived", archived.version_hash),
         ]

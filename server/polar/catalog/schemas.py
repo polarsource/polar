@@ -19,4 +19,3 @@ class Catalog(IDSchema, TimestampedSchema):
         description="`live` for the catalog new checkouts use, `archived` for previous versions."
     )
     published_at: datetime = Field(description="When the catalog was published.")
-    product_count: int = Field(description="Number of products in the catalog.")

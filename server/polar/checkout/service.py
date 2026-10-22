@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
-from polar.auth.models import Anonymous, AuthSubject
+from polar.auth.models import Agent, Anonymous, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.checkout.guard import has_product_checkout
@@ -293,7 +293,7 @@ class CheckoutService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
@@ -351,7 +351,7 @@ class CheckoutService:
     async def get_by_id(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
         *,
         for_update: bool = False,
@@ -387,7 +387,7 @@ class CheckoutService:
         self,
         session: AsyncSession,
         checkout_create: CheckoutCreate | CheckoutProductCreate | CheckoutPriceCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         ip_country = self._get_ip_country(
@@ -1808,7 +1808,7 @@ class CheckoutService:
     async def _get_validated_price(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         product_price_id: uuid.UUID,
     ) -> tuple[Sequence[Product], Product, PriceSet, str]:
         product_price_repository = ProductPriceRepository.from_session(session)
@@ -1903,7 +1903,7 @@ class CheckoutService:
     async def _get_validated_product(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         product_id: uuid.UUID,
         currency: str | None,
         ip_country: str | None,
@@ -1970,7 +1970,7 @@ class CheckoutService:
     async def _get_validated_products(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         product_ids: Sequence[uuid.UUID],
     ) -> Sequence[Product]:
         products = [
@@ -1982,7 +1982,7 @@ class CheckoutService:
     async def _get_validated_external_products(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         external_product_ids: Sequence[str],
     ) -> Sequence[Product]:
         products_by_external_id: dict[str | None, list[Product]] = {}
@@ -2080,7 +2080,7 @@ class CheckoutService:
     async def _get_validated_prices(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         products: Sequence[Product],
         prices: Mapping[uuid.UUID, ProductPriceCreateList]

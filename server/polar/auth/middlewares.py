@@ -23,6 +23,7 @@ from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
+    Agent,
     CustomerSession,
     MemberSession,
     OAuth2Token,
@@ -135,7 +136,7 @@ async def get_member_session(session: AsyncSession, value: str) -> MemberSession
 async def get_auth_subject(
     connection: HTTPConnection, session: AsyncSession
 ) -> AuthSubject[Subject]:
-    subject: User | Organization
+    subject: User | Organization | Agent
     credential: (
         UserSession | OAuth2Token | PersonalAccessToken | OrganizationAccessToken
     )
@@ -209,6 +210,13 @@ async def get_auth_subject(
         organization_id is not None
         and isinstance(subject, Organization)
         and organization_id != subject.id
+    ):
+        raise RequestedOrganizationNotAccessible()
+
+    if (
+        organization_id is not None
+        and isinstance(subject, Agent)
+        and organization_id != subject.organization_id
     ):
         raise RequestedOrganizationNotAccessible()
 

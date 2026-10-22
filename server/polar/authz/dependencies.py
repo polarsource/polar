@@ -7,7 +7,7 @@ from fastapi import Depends
 from polar.account.repository import AccountRepository
 from polar.auth.dependencies import Authenticator, WebUserSession
 from polar.auth.exceptions import SessionNotFreshError
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
@@ -30,7 +30,7 @@ from .types import PolicyFn
 
 
 @dataclass(frozen=True)
-class AuthzContext[S: User | Organization]:
+class AuthzContext[S: User | Organization | Agent]:
     """Result of an OrgPolicyGuard dependency.
 
     Contains both the resolved organization and the authenticated subject,
@@ -85,10 +85,10 @@ def OrgPolicyGuard(
     async def dependency(
         id: OrganizationID,
         auth_subject: Annotated[
-            AuthSubject[User | Organization], Depends(_authenticator)
+            AuthSubject[User | Organization | Agent], Depends(_authenticator)
         ],
         session: AsyncSession = Depends(get_db_session),
-    ) -> AuthzContext[User | Organization]:
+    ) -> AuthzContext[User | Organization | Agent]:
         organization = await get_accessible_organization(session, auth_subject, id)
         if organization is None:
             raise ResourceNotFound()

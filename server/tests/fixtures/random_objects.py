@@ -10,6 +10,7 @@ from typing import Any, Literal, TypeIs, Unpack
 
 import pytest
 
+from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
 from polar.enums import (
     EmailSender,
     PaymentProcessor,
@@ -27,6 +28,7 @@ from polar.meter.aggregation import Aggregation, CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Account,
+    Agent,
     Benefit,
     BillingEntry,
     Checkout,
@@ -51,6 +53,7 @@ from polar.models import (
     Meter,
     MeterEvent,
     MeterReducer,
+    OAuth2Client,
     Order,
     OrderItem,
     Organization,
@@ -82,6 +85,7 @@ from polar.models import (
     WalletTransaction,
     WebhookEndpoint,
 )
+from polar.models.agent import AgentStatus
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
     BenefitGrant,
@@ -234,6 +238,49 @@ async def organization_second(
     save_fixture: SaveFixture, account_second: Account
 ) -> Organization:
     return await create_organization(save_fixture, account_second)
+
+
+async def create_agent(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization | None = None,
+    status: AgentStatus = AgentStatus.unclaimed,
+    **kwargs: Any,
+) -> Agent:
+    oauth2_client = OAuth2Client(client_id=rstr("polar_ci_"))
+    oauth2_client.set_client_metadata(
+        {
+            "client_name": "Test Agent",
+            "token_endpoint_auth_method": "none",
+            "redirect_uris": [],
+            "scope": " ".join(sorted(UNCLAIMED_AGENT_SCOPES)),
+        }
+    )
+    agent = Agent(
+        name="Test Agent",
+        status=status,
+        oauth2_client=oauth2_client,
+        organization=organization,
+        **kwargs,
+    )
+    await save_fixture(agent)
+    return agent
+
+
+@pytest.fixture
+async def agent(save_fixture: SaveFixture, organization: Organization) -> Agent:
+    return await create_agent(save_fixture, organization=organization)
+
+
+@pytest.fixture
+async def config_as_code_enabled(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "config_as_code_enabled": True,
+    }
+    await save_fixture(organization)
 
 
 async def create_oauth_account(

@@ -25,6 +25,7 @@ from polar.integrations.stripe.account_risk import (
 )
 from polar.kit.http import UrlReachability
 from polar.models import (
+    Agent,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -330,6 +331,74 @@ class TestCreate:
         assert (
             organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.CREATED]
         )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_organization_skips_the_human_owner_steps_until_the_claim(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Agent],
+        session: AsyncSession,
+    ) -> None:
+        agent = auth_subject.subject
+        agent.organization = None
+        await save_fixture(agent)
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        create_customer_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_create_customer"
+        )
+        posthog_mock = mocker.patch(
+            "polar.organization.service.posthog.auth_subject_event"
+        )
+
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(name="Agent Organization", slug="agent-organization"),
+            auth_subject,
+        )
+
+        assert agent.organization_id == organization.id
+        assert organization.account is not None
+        await session.refresh(organization)
+        assert organization.is_config_as_code_enabled
+        assert (
+            await user_organization_service.get_member_count(session, organization.id)
+            == 0
+        )
+        create_customer_mock.assert_not_called()
+        enqueue_job_mock.assert_not_called()
+        posthog_mock.assert_not_called()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_create_fails_when_a_concurrent_create_linked_an_organization_first(
+        self,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Agent],
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """
+        A concurrent create links its organization after this request loaded
+        the agent, so the early check passes but the conditional update doesn't.
+        """
+        agent = auth_subject.subject
+        agent.organization = None
+        await save_fixture(agent)
+        await session.execute(
+            update(Agent)
+            .where(Agent.id == agent.id)
+            .values(organization_id=organization.id)
+            .execution_options(synchronize_session=False)
+        )
+
+        with pytest.raises(CannotCreateOrganizationError):
+            await organization_service.create(
+                session,
+                OrganizationCreate(
+                    name="Agent Organization", slug="agent-organization"
+                ),
+                auth_subject,
+            )
 
 
 @pytest.mark.anyio

@@ -21,7 +21,7 @@ export const MessageAvatar = ({ organization, fromMerchant }: Props) => {
 
   return (
     <div className="dark:bg-polar-50 dark:text-polar-900 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white">
-      <LogoIcon className="h-6 w-6" />
+      <LogoIcon className="h-5 w-5" />
     </div>
   )
 }

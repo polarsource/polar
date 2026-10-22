@@ -11,6 +11,7 @@ import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
 import {
   decodeState,
+  MissingExternalIdError,
   Outpost,
   type OutpostOptions,
   PolarOutpostError,
@@ -75,6 +76,8 @@ const dataPoints = (name: string) =>
 const timestamp = "2026-10-12T12:00:00Z";
 const bucket = getBucketStart(Date.parse(timestamp) * 1000);
 const customer = { external_customer_id: "alice" };
+let sequence = 0;
+const eventId = () => `event-${++sequence}`;
 const meter = { ...customer, meter_id: "meter" };
 const key = "outpost:state:external:alice:tokens";
 const connectionId = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60";
@@ -188,7 +191,13 @@ const readOutcomes = async (outpost: Outpost) => {
   ]);
 };
 const ingest = (outpost: Outpost, tokens: number) =>
-  outpost.track({ ...customer, name: "api_call", timestamp, metadata: { tokens } });
+  outpost.track({
+    ...customer,
+    name: "api_call",
+    external_id: eventId(),
+    timestamp,
+    metadata: { tokens },
+  });
 
 it.each([
   ["count", 12],
@@ -215,6 +224,13 @@ it.each([
     expect(commands).not.toHaveBeenCalled();
   },
 );
+
+it("rejects an event without an external_id", async () => {
+  const outpost = await start();
+  await expect(outpost.track({ ...customer, name: "api_call", timestamp })).rejects.toThrow(
+    MissingExternalIdError,
+  );
+});
 
 it("retains the connection ID while connected", async () => {
   const outpost = await start();
@@ -326,6 +342,7 @@ it("propagates snapshots, removes cold buckets, and rejects older cutoffs", asyn
   await writer.track({
     ...customer,
     name: "api",
+    external_id: eventId(),
     timestamp: "2026-10-12T11:55:00Z",
     metadata: { tokens: 999 },
   });
@@ -503,6 +520,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
   await first.track({
     ...customer,
     name: "api",
+    external_id: eventId(),
     timestamp: "2026-10-12T12:05:00Z",
     metadata: { tokens: 4 },
   });
@@ -602,6 +620,7 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   await outpost.track({
     ...customer,
     name: "api",
+    external_id: eventId(),
     timestamp: "2026-10-12T12:05:00Z",
     metadata: { tokens: 4 },
   });
@@ -626,6 +645,61 @@ it("preserves microsecond cutoffs when removing and rejecting local buckets", as
   expect(await redis.hget(key, `bucket:${bucket + BUCKET_SIZE}:sum`)).toBe("4");
   await ingest(outpost, 999);
   expect((await outpost.meter(meter))?.consumed_units).toBe(6);
+});
+
+// Polar seals a bucket with what it has ingested so far; the local events it has not received
+// yet must stay counted (PLR-329).
+const sealEmpty = async (cutoff: number): Promise<void> => {
+  await redis.eval(
+    APPLY_SNAPSHOT_SCRIPT,
+    1,
+    key,
+    "external:alice:tokens",
+    "outpost:0:updates",
+    "epoch",
+    cutoff,
+    cutoff + 1,
+    "meter",
+    100,
+    0,
+    0,
+    "",
+    "",
+  );
+};
+
+it.fails("keeps local events Polar has not ingested when their bucket goes cold", async () => {
+  await seed(0);
+  const outpost = await start();
+  await outpost.actor(customer);
+  for (let i = 0; i < 10; i++)
+    await outpost.track({
+      ...customer,
+      external_id: `event-${i}`,
+      name: "api_call",
+      timestamp,
+      metadata: { tokens: 10 },
+    });
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
+  await sealEmpty(bucket + BUCKET_SIZE);
+  await outpost["synchronize"]();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
+});
+
+it.fails("counts a late write into a cold bucket", async () => {
+  await seed(0);
+  const outpost = await start();
+  await outpost.actor(customer);
+  await sealEmpty(bucket + BUCKET_SIZE);
+  await outpost["synchronize"]();
+  await outpost.track({
+    ...customer,
+    external_id: "late",
+    name: "api_call",
+    timestamp,
+    metadata: { tokens: 5 },
+  });
+  expect((await outpost.meter(meter))?.consumed_units).toBe(5);
 });
 
 it("sends telemetry spans tagged with the connection ID", async () => {
@@ -940,8 +1014,14 @@ it("reports sync counts when telemetry is flushed", async () => {
   const reader = await start();
   await reader.actor(customer);
   for (const event of [
-    { ...customer, name: "api_call", timestamp, metadata: { tokens: 1 } },
-    { external_customer_id: "bob", name: "api_call", timestamp, metadata: { tokens: 1 } },
+    { ...customer, name: "api_call", external_id: eventId(), timestamp, metadata: { tokens: 1 } },
+    {
+      external_customer_id: "bob",
+      name: "api_call",
+      external_id: eventId(),
+      timestamp,
+      metadata: { tokens: 1 },
+    },
   ])
     await writer.track(event);
   await vi.waitFor(() => expect(reader["syncReceived"]).toBe(2));
@@ -1044,7 +1124,13 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
     await using metering = await polar
       .metering({ outpost: { redisUrl: redisServer.socket } })
       .start();
-    await metering.track({ ...customer, name: "api", timestamp, metadata: { tokens: 2 } });
+    await metering.track({
+      ...customer,
+      name: "api",
+      external_id: eventId(),
+      timestamp,
+      metadata: { tokens: 2 },
+    });
     expect((await reader.meter(meter))?.consumed_units).toBe(12);
     expect(fetch).not.toHaveBeenCalled();
   }

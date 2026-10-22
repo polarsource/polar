@@ -517,10 +517,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.MCP_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.MCP_CLOUDFLARE_ACCOUNT_ID }}
           MINTLIFY_SEARCH_KEY: ${{ secrets.MCP_MINTLIFY_SEARCH_KEY }}
+          MCP_ANALYTICS_SECRET: ${{ secrets.MCP_ANALYTICS_SECRET }}
         run: |
           set -euo pipefail
+          : "${MCP_ANALYTICS_SECRET:?MCP_ANALYTICS_SECRET is not set in the production environment}"
           secrets="$RUNNER_TEMP/mcp-secrets.json"
-          jq -n '{MINTLIFY_SEARCH_KEY: env.MINTLIFY_SEARCH_KEY}' > "$secrets"
+          jq -n '{MINTLIFY_SEARCH_KEY: env.MINTLIFY_SEARCH_KEY, MCP_ANALYTICS_SECRET: env.MCP_ANALYTICS_SECRET}' > "$secrets"
           pnpm exec cf deploy --prebuilt --tag "$GITHUB_SHA" --secrets-file "$secrets"
 
       # See update-backend-tag in deploy-environment.yml: tag advance is

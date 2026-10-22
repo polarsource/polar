@@ -579,6 +579,27 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
+class ConfigPruneEntry(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
+    external_id: str = Field(description="The resource's `external_id`.")
+    in_use: bool = Field(description="Whether a customer still uses the resource.")
+    referenced_by: list[str] = Field(
+        description=(
+            "External IDs of the products, benefits and discounts staying in the config "
+            "that reference the resource."
+        )
+    )
+
+
+class ConfigPrune(Schema):
+    entries: list[ConfigPruneEntry] = Field(
+        description=(
+            "Every deprecated resource in the config. Ones not in use "
+            "and not referenced can be removed from the config."
+        )
+    )
+
+
 class ConfigExportMeter(Schema, MetadataOutputMixin):
     external_id: str = Field(description="Your identifier for the meter.")
     name: str = Field(description=NAME_DESCRIPTION)

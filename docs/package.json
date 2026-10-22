@@ -17,12 +17,5 @@
     "mintlify": "^4.2.1028",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
-  },
-  "devDependencies": {
-    "@scalar/openapi-parser": "^0.29.13",
-    "@types/node": "^24.19.2",
-    "js-yaml": "^5.4.3",
-    "openapi-sampler": "^1.7.6",
-    "tsx": "^4.23.15"
   }
 }

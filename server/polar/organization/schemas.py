@@ -258,6 +258,16 @@ class OrganizationFeatureSettings(Schema):
             ),
         ),
     ] = False
+    staged_events_ingest_enabled: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "If this organization's ingested events are queued in "
+                "`staged_events` and moved to `events` out of band."
+            ),
+        ),
+    ] = False
     config_as_code_enabled: Annotated[
         bool,
         Version(starting_from=V2027_01),

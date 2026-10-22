@@ -1,7 +1,15 @@
 from typing import Protocol
 from uuid import UUID
 
-from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
+from polar.auth.models import (
+    Agent,
+    AuthSubject,
+    Organization,
+    User,
+    is_agent,
+    is_organization,
+    is_user,
+)
 from polar.auth.permission import PERMISSION_DENIED_MESSAGE, OrganizationPermission
 from polar.exceptions import NotPermitted
 from polar.models.organization import Organization as OrganizationModel
@@ -17,7 +25,7 @@ class _OrgScopedResource(Protocol):
 
 async def get_accessible_org_ids(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     *,
     permission: OrganizationPermission | None = None,
 ) -> set[AccessibleOrganizationID]:
@@ -26,20 +34,23 @@ async def get_accessible_org_ids(
     When ``permission`` is provided, user subjects are further restricted to
     organizations where their `UserOrganization.role` grants that permission.
     Organization-token subjects always pass (the token represents the org
-    itself).
+    itself). An unclaimed agent resolves to its one organization, if its fixed
+    role grants ``permission``.
     """
     if is_organization(auth_subject):
         return {AccessibleOrganizationID(auth_subject.subject.id)}
-    if is_user(auth_subject):
+    if is_user(auth_subject) or is_agent(auth_subject):
         repository = AuthzRepository.from_session(session)
-        raw_ids = await repository.get_user_org_ids(auth_subject, permission=permission)
+        raw_ids = await repository.get_accessible_org_ids(
+            auth_subject, permission=permission
+        )
         return {AccessibleOrganizationID(uid) for uid in raw_ids}
     return set()
 
 
 async def get_accessible_organization(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     organization_id: UUID,
 ) -> OrganizationModel | None:
     """Fetch an organization by ID, returning it only if the subject can access it."""
@@ -49,7 +60,7 @@ async def get_accessible_organization(
 
 async def assert_organization_permission(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     organization_id: UUID,
     permission: OrganizationPermission,
 ) -> None:
@@ -74,7 +85,7 @@ async def assert_organization_permission(
 
 async def assert_resource_permission(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     resource: _OrgScopedResource,
     permission: OrganizationPermission,
 ) -> None:

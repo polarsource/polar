@@ -1,7 +1,7 @@
 """add catalogs and subscription bulk updates
 
 Revision ID: 6124ede244c2
-Revises: 387e0ff257d4
+Revises: b862e002ad65
 Create Date: 2026-10-21 09:12:00.998696
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "6124ede244c2"
-down_revision = "387e0ff257d4"
+down_revision = "b862e002ad65"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

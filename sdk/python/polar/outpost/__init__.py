@@ -2,6 +2,7 @@ from polar.metering import EventInput
 from polar.outpost.client import (
     CustomerMeter,
     IngestResult,
+    MissingExternalIdError,
     Outpost,
     PolarOutpostError,
     UnavailableRedisError,
@@ -32,6 +33,7 @@ __all__ = [
     "Filter",
     "FilterClause",
     "IngestResult",
+    "MissingExternalIdError",
     "Outpost",
     "PolarOutpostError",
     "Reducer",

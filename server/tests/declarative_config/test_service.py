@@ -32,15 +32,18 @@ from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
+    Customer,
     Organization,
     ProductPriceMeteredTiers,
     ProductPriceUnit,
+    SubscriptionMeter,
     User,
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceAmountType
+from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -55,12 +58,14 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
     create_benefit,
+    create_benefit_grant,
     create_discount,
     create_event,
     create_meter,
     create_product,
     create_product_price_metered_tiers,
     create_product_price_unit_based,
+    create_subscription,
     create_webhook_endpoint,
 )
 
@@ -2721,3 +2726,233 @@ class TestPlan:
                 "Another discount in this config has the same code.",
             ),
         ]
+
+
+DEPRECATED_CONFIG = {
+    "meters": [{**FIXTURE_METER, "external_id": "apples", "deprecated": True}],
+    "benefits": [{**BETA_BENEFIT, "deprecated": True}],
+    "products": [
+        {
+            "external_id": "legacy",
+            "name": "Legacy",
+            "recurring_interval": "month",
+            "prices": [
+                {"amount_type": "metered_unit", "meter": "apples", "unit_amount": "1"}
+            ],
+            "benefits": ["beta"],
+            "deprecated": True,
+        }
+    ],
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestPrune:
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unused(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        result = await declarative_config_service.prune(
+            session, auth_subject, Config.model_validate(DEPRECATED_CONFIG)
+        )
+
+        assert [entry.model_dump() for entry in result.entries] == [
+            {
+                "resource": ConfigResource.meter,
+                "external_id": "apples",
+                "in_use": False,
+                "referenced_by": [],
+            },
+            {
+                "resource": ConfigResource.benefit,
+                "external_id": "beta",
+                "in_use": False,
+                "referenced_by": [],
+            },
+            {
+                "resource": ConfigResource.product,
+                "external_id": "legacy",
+                "in_use": False,
+                "referenced_by": [],
+            },
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        "status", [SubscriptionStatus.active, SubscriptionStatus.past_due]
+    )
+    async def test_kept_by_subscribed_product(
+        self,
+        status: SubscriptionStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="apples"
+        )
+        beta = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="beta",
+        )
+        legacy = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="legacy",
+        )
+        await create_subscription(
+            save_fixture,
+            product=legacy,
+            customer=customer,
+            status=status,
+        )
+        await create_subscription(
+            save_fixture,
+            product=legacy,
+            customer=customer_second,
+            revoke=True,
+        )
+        await create_benefit_grant(save_fixture, customer, beta, granted=True)
+        await create_benefit_grant(save_fixture, customer_second, beta, granted=False)
+
+        result = await declarative_config_service.prune(
+            session, auth_subject, Config.model_validate(DEPRECATED_CONFIG)
+        )
+
+        assert [
+            (entry.external_id, entry.in_use, entry.referenced_by)
+            for entry in result.entries
+        ] == [
+            ("apples", False, ["legacy"]),
+            ("beta", True, ["legacy"]),
+            ("legacy", True, []),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_kept_by_discount(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    **DEPRECATED_CONFIG,
+                    "discounts": [{**LAUNCH_DISCOUNT, "products": ["legacy"]}],
+                }
+            ),
+        )
+
+        assert [
+            (entry.external_id, entry.in_use, entry.referenced_by)
+            for entry in result.entries
+        ] == [
+            ("apples", False, ["legacy"]),
+            ("beta", False, ["legacy"]),
+            ("legacy", False, ["launch"]),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        "status", [SubscriptionStatus.active, SubscriptionStatus.past_due]
+    )
+    async def test_meter_in_use_by_subscription(
+        self,
+        status: SubscriptionStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="apples"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=status,
+        )
+        await save_fixture(SubscriptionMeter(subscription=subscription, meter=meter))
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
+        )
+
+        assert [(entry.external_id, entry.in_use) for entry in result.entries] == [
+            ("apples", True)
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_meter_in_use_by_credits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="apples"
+        )
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+        await create_benefit_grant(save_fixture, customer, credits, granted=True)
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
+        )
+
+        assert [(entry.external_id, entry.in_use) for entry in result.entries] == [
+            ("apples", True)
+        ]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.products_read})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_requires_section_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.prune(
+                session,
+                auth_subject,
+                Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
+            )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_active_entries_are_skipped(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [TOOL_CALLS_METER], "benefits": [BETA_BENEFIT]}
+            ),
+        )
+
+        assert result.entries == []

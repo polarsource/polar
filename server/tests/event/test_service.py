@@ -621,6 +621,17 @@ class TestListNames:
 
 @pytest.mark.anyio
 class TestIngest:
+    @pytest.fixture(autouse=True, params=[False, True], ids=["events", "staged_events"])
+    async def staged_events_ingest(
+        self,
+        request: pytest.FixtureRequest,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> bool:
+        organization.feature_settings = {"staged_events_ingest_enabled": request.param}
+        await save_fixture(organization)
+        return request.param
+
     @pytest.mark.auth
     async def test_invalid_future_timestamp(self, organization: Organization) -> None:
         with pytest.raises(ValidationError):
@@ -769,6 +780,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
 
         events = await get_all_by_organization(session, organization.id)
         assert len(events) == count
@@ -776,8 +788,11 @@ class TestIngest:
         for event in events:
             assert event.source == EventSource.user
 
-        enqueue_events_mock.assert_called_once()
-        assert set(enqueue_events_mock.call_args[0]) == {event.id for event in events}
+        assert {
+            event_id
+            for call in enqueue_events_mock.call_args_list
+            for event_id in call.args
+        } == {event.id for event in events}
 
     @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -799,6 +814,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == count
@@ -806,8 +822,11 @@ class TestIngest:
         for event in events:
             assert event.source == EventSource.user
 
-        enqueue_events_mock.assert_called_once()
-        assert set(enqueue_events_mock.call_args[0]) == {event.id for event in events}
+        assert {
+            event_id
+            for call in enqueue_events_mock.call_args_list
+            for event_id in call.args
+        } == {event.id for event in events}
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_rollup_reducer_buckets(
@@ -924,13 +943,56 @@ class TestIngest:
             )
 
         await event_service.ingest(session, auth_subject, build_ingest(), redis=redis)
+        await event_service.move_staged_events(session, 1000)
         await event_service.ingest(session, auth_subject, build_ingest(), redis=redis)
+        await event_service.move_staged_events(session, 1000)
 
         key = get_reducer_bucket_key(
             reducer.id, get_reducer_bucket_start(timestamp), None, "test"
         )
         assert cast(bytes | None, await redis.get(key)) == b"2"
         assert len(await get_all_by_organization(session, organization.id)) == 2
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_duplicates_waiting_in_staged_events(
+        self,
+        mocker: MockerFixture,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        organization = auth_subject.subject
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        timestamp = utc_now() - timedelta(minutes=1)
+        mocker.patch("polar.reducer.service.utc_now", return_value=timestamp)
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name=METER_TEST_EVENT,
+                    timestamp=timestamp,
+                    external_customer_id="test",
+                    external_id="first",
+                )
+            ]
+        )
+
+        first = await event_service.ingest(session, auth_subject, ingest, redis=redis)
+        second = await event_service.ingest(session, auth_subject, ingest, redis=redis)
+        await event_service.move_staged_events(session, 1000)
+
+        assert (first.inserted, first.duplicates) == (1, 0)
+        assert (second.inserted, second.duplicates) == (0, 1)
+        key = get_reducer_bucket_key(
+            reducer.id, get_reducer_bucket_start(timestamp), None, "test"
+        )
+        assert cast(bytes | None, await redis.get(key)) == b"1"
+        assert len(await get_all_by_organization(session, organization.id)) == 1
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_rollup_reducer_buckets_redis_error(
@@ -964,6 +1026,7 @@ class TestIngest:
         response = await event_service.ingest(
             session, auth_subject, ingest, redis=redis
         )
+        await event_service.move_staged_events(session, 1000)
 
         assert response.inserted == 1
         assert len(await get_all_by_organization(session, organization.id)) == 1
@@ -1054,6 +1117,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
@@ -1077,6 +1141,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest_first)
+        await event_service.move_staged_events(session, 1000)
 
         event_type = await event_type_repository.get_by_name_and_organization(
             "api.request", auth_subject.subject.id
@@ -1099,6 +1164,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest_second)
+        await event_service.move_staged_events(session, 1000)
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 2
@@ -1140,6 +1206,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
         await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
@@ -1186,6 +1253,7 @@ class TestIngest:
             ]
         )
         await event_service.ingest(session, auth_subject, child_ingest)
+        await event_service.move_staged_events(session, 1000)
         await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
@@ -1204,6 +1272,7 @@ class TestIngest:
             ]
         )
         await event_service.ingest(session, auth_subject, parent_ingest)
+        await event_service.move_staged_events(session, 1000)
         await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         await session.refresh(child)
@@ -1256,6 +1325,7 @@ class TestIngest:
                     ]
                 ),
             )
+            await event_service.move_staged_events(session, 1000)
             await event_service.ingested(
                 session, list(enqueue_events_mock.call_args[0])
             )
@@ -1289,6 +1359,7 @@ class TestIngest:
                 ]
             ),
         )
+        await event_service.move_staged_events(session, 1000)
         await event_service.ingested(session, list(enqueue_events_mock.call_args[0]))
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
@@ -1361,6 +1432,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
@@ -1438,6 +1510,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1
@@ -1461,6 +1534,7 @@ class TestIngest:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
 
         events = await get_all_by_organization(session, auth_subject.subject.id)
         assert len(events) == 1

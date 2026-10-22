@@ -52,7 +52,7 @@ This releases all locks held by that session, allowing the blocked operation to 
 
 - [ ] Verify the blocked operation completes successfully
 - [ ] Check application logs / Sentry for errors caused by the terminated session
-- [ ] Document in the [on-call log](/engineering/oncall/on-call-log)
+- [ ] Document in the [on-call log](/engineering/on-call-log)
 - [ ] Notify the team
 
 ## Root causes to investigate
@@ -63,4 +63,4 @@ Common reasons a session holds locks for too long:
 - **Missing `lock_timeout` on DDL migrations** — without a timeout, a `DROP TABLE` or `ALTER TABLE` will queue indefinitely behind hot-table readers, and while queued it also blocks new readers.
 - **No `idle_in_transaction_session_timeout`** — connections left idle inside a transaction are never auto-killed by the DB.
 
-See also the [on-call log](/engineering/oncall/on-call-log) entry for the 2026-06-02 incident for a worked example.
+See also the [on-call log](/engineering/on-call-log) entry for the 2026-06-02 incident for a worked example.

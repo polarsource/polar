@@ -4,7 +4,9 @@ from polar.auth.models import AuthSubject
 from polar.authz.policies import finance as finance_policy
 from polar.authz.policies import members
 from polar.authz.policies import organization as org_policy
-from polar.models import Organization, User
+from polar.kit.utils import utc_now
+from polar.models import Agent, Organization, User
+from polar.models.agent import AgentStatus
 from polar.models.user_organization import OrganizationRole, UserOrganization
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -149,6 +151,43 @@ class TestOrgCanManage:
         result = await org_policy.can_manage(session, auth_subject, organization)
         assert result == "You don't have permission to manage the organization"
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_allowed(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        result = await org_policy.can_manage(session, auth_subject, organization)
+        assert result is True
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_other_organization_denied(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization_second: Organization,
+    ) -> None:
+        result = await org_policy.can_manage(session, auth_subject, organization_second)
+        assert result == "You don't have permission to manage the organization"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_claimed_agent_denied(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+        user: User,
+    ) -> None:
+        agent = auth_subject.subject
+        agent.status = AgentStatus.claimed
+        agent.claimed_at = utc_now()
+        agent.claimed_by_user = user
+        await session.flush()
+
+        result = await org_policy.can_manage(session, auth_subject, organization)
+        assert result == "You don't have permission to manage the organization"
+
 
 @pytest.mark.anyio
 class TestMembersCanManage:
@@ -191,5 +230,15 @@ class TestMembersCanManage:
     ) -> None:
         await _set_role(save_fixture, user_organization, OrganizationRole.finance)
 
+        result = await members.can_manage(session, auth_subject, organization)
+        assert result == "You don't have permission to manage members"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_denied(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
         result = await members.can_manage(session, auth_subject, organization)
         assert result == "You don't have permission to manage members"

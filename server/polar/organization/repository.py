@@ -535,6 +535,16 @@ class OrganizationRepository(
         )
         return await self.get_all(statement)
 
+    async def get_ids_with_feature(
+        self, organization_ids: set[UUID], feature: str
+    ) -> set[UUID]:
+        statement = select(Organization.id).where(
+            Organization.id.in_(organization_ids),
+            Organization.feature_settings[feature].as_boolean().is_(True),
+        )
+        result = await self.session.execute(statement)
+        return set(result.scalars().all())
+
 
 class OrganizationReviewRepository(RepositoryBase[OrganizationReview]):
     model = OrganizationReview

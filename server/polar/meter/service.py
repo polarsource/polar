@@ -32,6 +32,10 @@ from polar.authz.service import (
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
+)
 from polar.event.repository import EventRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -194,6 +198,8 @@ class MeterService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        if organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
 
         repository = MeterRepository.from_session(session)
         if (
@@ -264,6 +270,7 @@ class MeterService:
         await assert_resource_permission(
             session, auth_subject, meter, OrganizationPermission.products_manage
         )
+        await assert_catalog_editable(session, meter.organization_id)
         repository = MeterRepository.from_session(session)
 
         errors: list[ValidationError] = []

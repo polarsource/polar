@@ -6,7 +6,7 @@ from typing import Any
 import structlog
 from py_svg_hush import filter_svg
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import BadRequest
@@ -48,7 +48,7 @@ class FileService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         ids: Sequence[uuid.UUID] | None = None,
@@ -77,7 +77,7 @@ class FileService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> File | None:
         repository = FileRepository.from_session(session)

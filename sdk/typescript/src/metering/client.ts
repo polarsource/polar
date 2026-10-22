@@ -71,6 +71,12 @@ export interface MeteringStrategy {
   actor?(input: ActorInput): Promise<void>;
   meter?(input: MeterInput & { meter_id: string }): Promise<CustomerMeter | null>;
   /**
+   * Reject an event before any strategy accepts it.
+   *
+   * @param event Event including its customer identity.
+   */
+  validate?(event: EventInput): void;
+  /**
    * Accept an event for this strategy.
    *
    * @param event Event including its customer identity.
@@ -160,15 +166,19 @@ export class Metering {
    * Track an event. It'll be dispatched to all configured strategies.
    *
    * @param event Event fields with exactly one customer_id or external_customer_id.
-   * Member IDs must match the identifier kind.
+   * Member IDs must match the identifier kind. An event without a timestamp is dated now,
+   * once, before any strategy sees it.
    * @throws InvalidActorError if customer or member identifiers are inconsistent.
    */
   async track(event: EventInput): Promise<void> {
     if (!this.started) throw new PolarError("Metering is not running");
     validateActor(event);
+    const dated =
+      event.timestamp === undefined ? { ...event, timestamp: new Date().toISOString() } : event;
+    for (const strategy of this.strategies) strategy.validate?.(dated);
     this.activeOperations++;
     try {
-      for (const strategy of this.strategies) await strategy.track(event);
+      for (const strategy of this.strategies) await strategy.track(dated);
     } finally {
       if (--this.activeOperations === 0) this.onDrained?.();
     }
@@ -346,6 +356,9 @@ export const createMetering = (
         const { Outpost } = await import("../outpost/client");
         outpost = new Outpost(redisUrl, { ...outpostOptions, client });
         await outpost.start();
+      },
+      validate(event) {
+        outpost!.validate(event);
       },
       async track(event) {
         await outpost!.track(event);

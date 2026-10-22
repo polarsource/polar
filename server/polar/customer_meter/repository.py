@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import Select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -15,6 +15,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.kit.repository.base import Options
+from polar.meter.aggregation import AggregationFunction
 from polar.models import Customer, CustomerMeter, Meter, MeterReducer
 
 from .sorting import CustomerMeterSortProperty
@@ -38,6 +39,23 @@ class CustomerMeterRepository(
             .order_by(
                 CustomerMeter.created_at.asc(),
             )
+        )
+        return await self.get_all(statement)
+
+    async def get_all_by_highest_consumed_units(
+        self, aggregation_function: AggregationFunction, limit: int
+    ) -> Sequence[CustomerMeter]:
+        statement = (
+            self.get_base_statement()
+            .join(CustomerMeter.meter)
+            .where(
+                Meter.aggregation["func"].astext == aggregation_function,
+                Meter.archived_at.is_(None),
+                Meter.deleted_at.is_(None),
+            )
+            .order_by(CustomerMeter.consumed_units.desc())
+            .limit(limit)
+            .options(joinedload(CustomerMeter.customer))
         )
         return await self.get_all(statement)
 

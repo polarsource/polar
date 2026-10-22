@@ -264,5 +264,5 @@ const write = (fileName: string, value: unknown) => {
 
 mkdirSync(outputDirectory, { recursive: true })
 console.log(
-  `Generated ${operations.length} operations: ${write('spec.json', buildSpec())}, ${write('tools.json', buildTools())}, ${write('scopes.json', buildScopes())}`,
+  `Generated ${operations.length} operations: ${write('spec.json', buildSpec())}, ${write('tools.json', buildTools())}, ${write('scopes.json', buildScopes())}, ${write('public-paths.json', Object.keys(source.paths))}`,
 )

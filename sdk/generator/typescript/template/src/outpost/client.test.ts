@@ -90,6 +90,12 @@ let snapshot: Record<string, unknown> | undefined;
 let delayConfiguration = false;
 let refuseConnections = false;
 let meterSnapshots: Record<string, { credited_units: number; delay: number }> = {};
+// The events Polar counted: a confirm request is answered with the ids among them and the
+// snapshot read with them, `snapshot` unless overridden.
+let ingested = new Set<string>();
+let answerConfirm = true;
+let confirmSnapshot: Record<string, unknown> | undefined;
+const confirmRequests: Record<string, unknown>[] = [];
 const connections: WebSocket[] = [];
 const outposts: Outpost[] = [];
 
@@ -127,6 +133,23 @@ beforeAll(async () => {
         const payload = { customer_exists: true, ...snapshot, meter_id: meterId, ...override };
         setTimeout(() => ws.send(JSON.stringify({ type: "meter_usage", payload })), delay);
       }
+      if (message.type === "confirm") {
+        confirmRequests.push(message.payload);
+        const { meter_id, ids, ...payload } = message.payload;
+        if (answerConfirm)
+          ws.send(
+            JSON.stringify({
+              type: "confirmed",
+              payload: {
+                customer_id: null,
+                external_customer_id: null,
+                ...payload,
+                ids: ids.filter((id: string) => ingested.has(id)),
+                snapshot: { customer_exists: true, ...(confirmSnapshot ?? snapshot), meter_id },
+              },
+            }),
+          );
+      }
     });
   });
 });
@@ -145,6 +168,10 @@ beforeEach(async () => {
   delayConfiguration = false;
   refuseConnections = false;
   meterSnapshots = {};
+  ingested = new Set();
+  answerConfirm = true;
+  confirmSnapshot = undefined;
+  confirmRequests.length = 0;
   exported.length = 0;
   metrics.length = 0;
 });
@@ -736,6 +763,96 @@ it("drops a cold bucket once every event is confirmed", async () => {
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
   expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
   expect(await redis.hget(key, `pending:${bucket}:sum`)).toBeNull();
+});
+
+// Before applying a snapshot that seals a bucket, the client asks Polar which of the bucket's
+// pending events the snapshot counts, and settles those in the same transaction (PLR-330).
+const sealing = (count: number, sum: number) => ({
+  ...customer,
+  customer_id: null,
+  meter_id: "meter",
+  cold_until: bucket + BUCKET_SIZE,
+  version: 1791807000000005,
+  count,
+  sum,
+  min: count ? 10 : null,
+  max: count ? 10 : null,
+  credited_units: 100,
+});
+
+it("settles the pending events the snapshot counts, and keeps the rest", async () => {
+  const outpost = await warm();
+  const events = Array.from({ length: 10 }, (_, i) => usage(`event-${i}`, 10));
+  for (const event of events) await outpost.track(event);
+  ingested = new Set(["event-0", "event-1", "event-2", "event-3"]);
+  snapshot = sealing(4, 40);
+  const other = await start();
+  await other.actor(customer);
+  await vi.waitFor(async () => expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("6"));
+  expect((await other.meter(meter))?.consumed_units).toBe(100);
+  expect(await redis.hget(key, "cold:count")).toBe("4");
+  expect(confirmRequests).toEqual([
+    {
+      reducer_id: "tokens",
+      external_customer_id: "alice",
+      bucket_start: bucket,
+      meter_id: "meter",
+      ids: events.map((event) => event.external_id),
+    },
+  ]);
+});
+
+it("applies the snapshot Polar read with its confirmation, not the one that asked", async () => {
+  const outpost = await warm();
+  const events = Array.from({ length: 10 }, (_, i) => usage(`event-${i}`, 10));
+  for (const event of events) await outpost.track(event);
+  snapshot = sealing(4, 40);
+  // Polar stored one more event by the time it answers: both its snapshot and the confirmation
+  // count it.
+  ingested = new Set(["event-0", "event-1", "event-2", "event-3", "event-4"]);
+  confirmSnapshot = { ...sealing(5, 50), version: 1791807000000006 };
+  const other = await start();
+  await other.actor(customer);
+  await vi.waitFor(async () => expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("5"));
+  expect(await redis.hget(key, "cold:count")).toBe("5");
+  expect(await redis.hget(key, "snapshot_version")).toBe("1791807000000006");
+  expect((await other.meter(meter))?.consumed_units).toBe(100);
+});
+
+it("drops a cold bucket once Polar confirmed every pending event", async () => {
+  const outpost = await warm();
+  const events = Array.from({ length: 3 }, (_, i) => usage(`event-${i}`, 10));
+  for (const event of events) await outpost.track(event);
+  ingested = new Set(events.map((event) => event.external_id));
+  snapshot = sealing(3, 30);
+  const other = await start();
+  await other.actor(customer);
+  await vi.waitFor(async () => expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull());
+  expect(await redis.hget(key, `pending:${bucket}:sum`)).toBeNull();
+  expect((await other.meter(meter))?.consumed_units).toBe(30);
+});
+
+it("applies a snapshot Polar did not confirm in time, keeping its events pending", async () => {
+  const outpost = await warm();
+  for (let i = 0; i < 3; i++) await outpost.track(usage(`event-${i}`, 10));
+  answerConfirm = false;
+  snapshot = sealing(3, 30);
+  const other = await start({ confirmTimeout: 50 });
+  await other.actor(customer);
+  await vi.waitFor(async () => expect(await redis.hget(key, "cold:count")).toBe("3"));
+  expect(confirmRequests).toHaveLength(1);
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("3");
+  expect((await other.meter(meter))?.consumed_units).toBe(60);
+});
+
+it("asks for a bucket's pending events a thousand at a time", async () => {
+  const outpost = await warm();
+  for (let i = 0; i < 1_001; i++) await outpost.track(usage(`event-${i}`, 1));
+  snapshot = sealing(0, 0);
+  const other = await start();
+  await other.actor(customer);
+  await vi.waitFor(() => expect(confirmRequests).toHaveLength(2));
+  expect(confirmRequests.map((request) => (request.ids as string[]).length)).toEqual([1_000, 1]);
 });
 
 it("forgets pending events an hour after Polar sealed their bucket", async () => {

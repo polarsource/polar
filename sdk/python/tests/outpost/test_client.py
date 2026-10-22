@@ -168,12 +168,26 @@ def configuration_gates() -> list[anyio.Event]:
     return []
 
 
+# The events Polar counted: a confirm request is answered with the ids among them and the
+# snapshot read with them, the requested customer's unless overridden.
+@pytest.fixture
+def ingested() -> set[str]:
+    return set()
+
+
+@pytest.fixture
+def confirmations() -> dict[str, typing.Any]:
+    return {"answer": True, "snapshot": None}
+
+
 @pytest.fixture
 async def polar_client(
     configuration: dict[str, typing.Any],
     snapshots: dict[str, dict[str, typing.Any]],
     websocket_requests: list[dict[str, typing.Any]],
     configuration_gates: list[anyio.Event],
+    ingested: set[str],
+    confirmations: dict[str, typing.Any],
 ) -> collections.abc.AsyncIterator[httpx.AsyncClient]:
     async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
         assert (b"authorization", b"Bearer test-token") in scope["headers"]
@@ -226,6 +240,43 @@ async def polar_client(
                             ),
                         }
                     )
+            elif request["type"] == "confirm" and confirmations["answer"]:
+                payload = request["payload"]
+                kind = "customer" if "customer_id" in payload else "external"
+                identifier = payload.get(
+                    "customer_id", payload.get("external_customer_id")
+                )
+                answered = (
+                    confirmations["snapshot"] or snapshots[f"{kind}:{identifier}"]
+                )
+                await send(
+                    {
+                        "type": "websocket.send",
+                        "text": json.dumps(
+                            {
+                                "type": "confirmed",
+                                "payload": {
+                                    "reducer_id": payload["reducer_id"],
+                                    "customer_id": payload.get("customer_id"),
+                                    "external_customer_id": payload.get(
+                                        "external_customer_id"
+                                    ),
+                                    "bucket_start": payload["bucket_start"],
+                                    "ids": [
+                                        external_id
+                                        for external_id in payload["ids"]
+                                        if external_id in ingested
+                                    ],
+                                    "snapshot": {
+                                        "customer_exists": True,
+                                        **answered,
+                                        "meter_id": payload["meter_id"],
+                                    },
+                                },
+                            }
+                        ),
+                    }
+                )
 
     async with httpx.AsyncClient(
         base_url="http://polar.test",
@@ -1208,6 +1259,199 @@ async def test_drops_a_cold_bucket_once_every_event_is_confirmed(
         assert await _consumed(outpost) == 20
     assert await redis.hget(key, f"bucket:{BUCKET}:sum") is None
     assert await redis.hget(key, f"pending:{BUCKET}:sum") is None
+
+
+# Before applying a snapshot that seals a bucket, the client asks Polar which of the bucket's
+# pending events the snapshot counts, and settles those in the same transaction (PLR-330).
+def _sealing(count: int, total: int) -> dict[str, typing.Any]:
+    return {
+        "customer_id": None,
+        "external_customer_id": "alice",
+        "meter_id": "meter",
+        "cold_until": BUCKET + BUCKET_SIZE,
+        "version": 1791807000000005,
+        "count": count,
+        "sum": total,
+        "min": 10 if count else None,
+        "max": 10 if count else None,
+        "credited_units": 100,
+    }
+
+
+async def _pending_count(redis: Redis) -> bytes | str | None:
+    return await redis.hget(
+        "outpost:state:external:alice:tokens", f"pending:{BUCKET}:count"
+    )
+
+
+async def _wait_for(
+    condition: collections.abc.Callable[[], typing.Awaitable[bool]],
+) -> None:
+    with anyio.fail_after(2):
+        while not await condition():
+            await anyio.sleep(0.01)
+
+
+@pytest.mark.anyio
+async def test_settles_the_pending_events_the_snapshot_counts(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
+    ingested: set[str],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        events = [_usage(f"event-{index}", 10) for index in range(10)]
+        for event in events:
+            await outpost.track(event)
+        ingested.update(["event-0", "event-1", "event-2", "event-3"])
+        snapshots["external:alice"] = _sealing(4, 40)
+        async with Outpost(url, client=polar_client) as other:
+            await other.actor(external_customer_id="alice")
+
+            async def six_pending() -> bool:
+                return await _pending_count(redis) == b"6"
+
+            await _wait_for(six_pending)
+            assert await _consumed(other) == 100
+    assert await redis.hget(key, "cold:count") == b"4"
+    assert [
+        request for request in websocket_requests if request["type"] == "confirm"
+    ] == [
+        {
+            "type": "confirm",
+            "payload": {
+                "reducer_id": "tokens",
+                "external_customer_id": "alice",
+                "bucket_start": BUCKET,
+                "meter_id": "meter",
+                "ids": [event["external_id"] for event in events],
+            },
+        }
+    ]
+
+
+@pytest.mark.anyio
+async def test_applies_the_snapshot_polar_read_with_its_confirmation(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    ingested: set[str],
+    confirmations: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(10):
+            await outpost.track(_usage(f"event-{index}", 10))
+        snapshots["external:alice"] = _sealing(4, 40)
+        # Polar stored one more event by the time it answers: both its snapshot and the
+        # confirmation count it.
+        ingested.update(f"event-{index}" for index in range(5))
+        confirmations["snapshot"] = {**_sealing(5, 50), "version": 1791807000000006}
+        async with Outpost(url, client=polar_client) as other:
+            await other.actor(external_customer_id="alice")
+
+            async def five_pending() -> bool:
+                return await _pending_count(redis) == b"5"
+
+            await _wait_for(five_pending)
+            assert await _consumed(other) == 100
+    assert await redis.hget(key, "cold:count") == b"5"
+    assert await redis.hget(key, "snapshot_version") == b"1791807000000006"
+
+
+@pytest.mark.anyio
+async def test_drops_a_cold_bucket_once_polar_confirmed_every_pending_event(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    ingested: set[str],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(3):
+            await outpost.track(_usage(f"event-{index}", 10))
+        ingested.update(f"event-{index}" for index in range(3))
+        snapshots["external:alice"] = _sealing(3, 30)
+        async with Outpost(url, client=polar_client) as other:
+            await other.actor(external_customer_id="alice")
+
+            async def bucket_dropped() -> bool:
+                return await redis.hget(key, f"bucket:{BUCKET}:sum") is None
+
+            await _wait_for(bucket_dropped)
+            assert await _consumed(other) == 30
+    assert await redis.hget(key, f"pending:{BUCKET}:sum") is None
+
+
+@pytest.mark.anyio
+async def test_applies_a_snapshot_polar_did_not_confirm_in_time(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
+    confirmations: dict[str, bool],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(3):
+            await outpost.track(_usage(f"event-{index}", 10))
+        confirmations["answer"] = False
+        snapshots["external:alice"] = _sealing(3, 30)
+        async with Outpost(url, client=polar_client, confirm_timeout=0.05) as other:
+            await other.actor(external_customer_id="alice")
+
+            async def sealed() -> bool:
+                return await redis.hget(key, "cold:count") == b"3"
+
+            await _wait_for(sealed)
+            assert await _consumed(other) == 60
+    assert sum(request["type"] == "confirm" for request in websocket_requests) == 1
+    assert await _pending_count(redis) == b"3"
+
+
+@pytest.mark.anyio
+async def test_asks_for_pending_events_a_thousand_at_a_time(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(1001):
+            await outpost.track(_usage(f"event-{index}", 1))
+        snapshots["external:alice"] = _sealing(0, 0)
+        async with Outpost(url, client=polar_client) as other:
+            await other.actor(external_customer_id="alice")
+
+            async def two_requests() -> bool:
+                return (
+                    sum(request["type"] == "confirm" for request in websocket_requests)
+                    == 2
+                )
+
+            await _wait_for(two_requests)
+    assert [
+        len(request["payload"]["ids"])
+        for request in websocket_requests
+        if request["type"] == "confirm"
+    ] == [1000, 1]
 
 
 @pytest.mark.anyio

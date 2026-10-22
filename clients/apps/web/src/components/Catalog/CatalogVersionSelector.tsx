@@ -40,7 +40,6 @@ const CatalogVersionRow = ({ catalog }: { catalog: schemas['Catalog'] }) => {
         </Text>
         <Text variant="caption" color="muted" truncate>
           <PolarTimeAgo date={new Date(catalog.published_at)} />
-          {` · ${catalog.product_count} ${catalog.product_count === 1 ? 'product' : 'products'}`}
         </Text>
       </Box>
       <Box marginLeft="auto">

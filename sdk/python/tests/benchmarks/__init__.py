@@ -15,8 +15,8 @@ REDUCER: Reducer = DATA["reducer"]
 SNAPSHOT: dict[str, typing.Any] = DATA["snapshot"]
 # Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
 PENDING_COUNTS = [1, 100, 1000]
-# What WRITE_BUCKET stores per event: count, sum, min and max, as strings.
-PENDING_ENTRY = json.dumps(["1", "7", "7", "7"])
+# What WRITE_BUCKET stores per event: its value.
+PENDING_ENTRY = "7"
 
 
 def pending_ids(count: int) -> list[str]:

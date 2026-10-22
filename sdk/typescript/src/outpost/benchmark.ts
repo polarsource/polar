@@ -12,8 +12,8 @@ export const {
 export const REDUCER = benchmark.reducer as Reducer;
 // Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
 export const PENDING_COUNTS = [1, 100, 1000];
-// What WRITE_BUCKET stores per event: count, sum, min and max, as strings.
-const PENDING_ENTRY = JSON.stringify(["1", "7", "7", "7"]);
+// What WRITE_BUCKET stores per event: its value.
+const PENDING_ENTRY = "7";
 
 export const pendingIds = (count: number): string[] =>
   Array.from({ length: count }, (_, i) => `event-${i}`);

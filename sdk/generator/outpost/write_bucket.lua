@@ -17,10 +17,6 @@ local function reply()
     end
     return update
 end
--- An external_id Polar has not confirmed yet: tracking it again changes nothing.
-if redis.call('HEXISTS', KEYS[2], ARGV[9]) == 1 then
-    return reply()
-end
 local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + tonumber(ARGV[6])
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
 for i, func in ipairs({'min', 'max'}) do
@@ -29,6 +25,13 @@ for i, func in ipairs({'min', 'max'}) do
         local value = tonumber(raw)
         assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
     end
+end
+-- One event pending: its value, or nothing when it only counts. An external_id Polar has not
+-- confirmed yet: tracking it again changes nothing.
+assert(ARGV[5] == '1', 'One event per write')
+local entry = ARGV[7] ~= '' and ARGV[6] or ''
+if redis.call('HSETNX', KEYS[2], ARGV[9], entry) == 0 then
+    return reply()
 end
 -- Every local event counts in its bucket; the pending part is what Polar has not confirmed.
 for _, prefix in ipairs({bucket, pending}) do
@@ -47,7 +50,6 @@ for _, prefix in ipairs({bucket, pending}) do
         end
     end
 end
-redis.call('HSET', KEYS[2], ARGV[9], cjson.encode({ARGV[5], ARGV[6], ARGV[7], ARGV[8]}))
 -- Events nobody confirms are forgotten an hour after the last write to their bucket.
 redis.call('EXPIRE', KEYS[2], 3900)
 

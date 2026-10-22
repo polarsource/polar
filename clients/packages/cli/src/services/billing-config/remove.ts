@@ -67,7 +67,14 @@ const trim = (code: string, { start, end }: Range): Range => {
 const sectionEntries = (source: string, section: string) => {
   const code = codeOnly(source)
   const range = sectionRange(source, section)
-  const offset = code.slice(range.start, range.end).search(/[{[]/)
+  const body = code.slice(range.start, range.end)
+  const returned = /^\s*\{/.test(body)
+    ? [...body.matchAll(/\breturn\s*\(?\s*[{[]/g)].at(-1)
+    : undefined
+  const offset =
+    returned === undefined
+      ? body.search(/[{[]/)
+      : returned.index + returned[0].length - 1
   if (offset === -1) return new Map<string, Range>()
   const open = range.start + offset
   const pattern = code.charAt(open) === '[' ? TUPLE_KEY : KEY

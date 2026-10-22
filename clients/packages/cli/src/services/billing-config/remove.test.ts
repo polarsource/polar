@@ -122,6 +122,36 @@ describe('removeFromScript', () => {
     )
   })
 
+  test('removes entries a block-bodied section returns', () => {
+    const { source, missing } = removeFromScript(
+      [
+        'defineConfig({',
+        '  meters: ({ meter }) => {',
+        "    const base = () => { return { a: meter('A') } }",
+        '    return {',
+        '      apples: base().count(),',
+        '      pears: base().count(),',
+        '    }',
+        '  },',
+        '})',
+      ].join('\n'),
+      [{ section: 'meters', id: 'apples' }],
+    )
+    expect(missing).toEqual([])
+    expect(source).toBe(
+      [
+        'defineConfig({',
+        '  meters: ({ meter }) => {',
+        "    const base = () => { return { a: meter('A') } }",
+        '    return {',
+        '      pears: base().count(),',
+        '    }',
+        '  },',
+        '})',
+      ].join('\n'),
+    )
+  })
+
   test('matches quoted keys with escapes', () => {
     const { source, missing } = removeFromScript(
       [

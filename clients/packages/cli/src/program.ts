@@ -1,6 +1,7 @@
 import { commands } from '@polar-sh/cli-commands'
 import { Command, GlobalFlag } from 'effect/cli'
 import { Output } from '@/utils/output'
+import { agent } from '@/commands/agent'
 import { auth } from '@/commands/auth'
 import { config } from '@/commands/config'
 import { polar } from '@/commands/home'
@@ -21,7 +22,7 @@ export const program = ({ preview }: ProgramOptions) =>
     Command.withSubcommands([
       {
         group: 'CLI COMMANDS',
-        commands: [auth, webhook, update, ...(preview ? previews : [])],
+        commands: [auth, agent, webhook, update, ...(preview ? previews : [])],
       },
       { group: 'API RESOURCES', commands },
     ]),

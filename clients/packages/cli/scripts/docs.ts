@@ -5,6 +5,7 @@ import { CliConfig, CliOutput, Command, type HelpDoc } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { ApiRuntime } from '@polar-sh/cli-commands'
 import { builtIns, program } from '@/program'
+import { AgentSetup } from '@/services/agent-setup/service'
 import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Deliveries } from '@/services/deliveries'
@@ -18,6 +19,16 @@ import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 const unused = () => Effect.die('help never runs command handlers')
 
 const helpOnlyServices = Layer.mergeAll(
+  Layer.succeed(
+    AgentSetup,
+    AgentSetup.of({
+      callingAgent: undefined,
+      detect: unused,
+      setUp: unused,
+      skills: unused,
+      installSkills: unused,
+    }),
+  ),
   Layer.succeed(Auth, fakeAuth().auth),
   Layer.succeed(
     BillingConfig,

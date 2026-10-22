@@ -1,0 +1,60 @@
+---
+title: "polar agent"
+sidebarTitle: "agent"
+description: "Set up coding agents to build with Polar"
+---
+
+{/* Generated from the CLI by `pnpm --filter @polar-sh/cli docs:generate`. Do not edit by hand. */}
+
+```bash
+polar agent <subcommand> [flags]
+```
+
+**Subcommands**
+
+- [`polar agent setup`](#polar-agent-setup) Install the Polar plugin, MCP server and skills for your coding agents
+
+## polar agent setup
+
+Install the Polar plugin, MCP server and skills for your coding agents
+
+```bash
+polar agent setup [flags]
+```
+
+**Flags**
+
+| Flag | Type | Description |
+| --- | --- | --- |
+| `--status` | `boolean` | Show what is set up without changing anything |
+| `--yes`, `-y` | `boolean` | Set up every detected agent without asking |
+| `--force` | `boolean` | Reinstall even when an agent is already set up |
+| `--client` | `choice` | Only set up this agent (choices: claude-code, codex, cursor) |
+| `--skills` | `choice` | Also install the Polar skills into .agents/skills of this directory (project) or your home directory (global), for agents without a Polar plugin (choices: project, global) |
+
+**Examples**
+
+Detect Claude Code, Codex and Cursor, then choose what to set up
+```bash
+polar agent setup
+```
+
+Show what is already set up
+```bash
+polar agent setup --status
+```
+
+Only install the Polar plugin for Claude Code
+```bash
+polar agent setup --client claude-code
+```
+
+Install the Polar skills into .agents/skills for any other agent
+```bash
+polar agent setup --skills project
+```
+
+Set up every detected agent without asking, for scripts
+```bash
+polar agent setup --yes --json
+```

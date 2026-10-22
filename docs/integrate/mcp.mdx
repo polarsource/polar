@@ -10,9 +10,20 @@ Use Polar's remote Model Context Protocol (MCP) server to give AI agents secure 
   Polar MCP uses OAuth. When you connect a client, your browser opens so you can sign in and authorize access to your organization. You never need to copy an API key into your agent.
 </Info>
 
+## Set up with the Polar CLI
+
+The recommended way to connect your agent: the [Polar CLI](/integrate/cli/introduction) detects Claude Code, Codex and Cursor and sets each one up for you. Claude Code and Codex get the [Polar plugin](https://github.com/polarsource/agent-toolkit), which bundles the MCP servers and skills. Run it again with `--force` to update them. Cursor gets the MCP servers in `~/.cursor/mcp.json` and the skills in `~/.cursor/skills`.
+
+```bash Terminal
+curl -fsSL https://polar.sh/install.sh | bash
+polar agent setup
+```
+
+Run `polar agent setup --status` to see what is set up. For other agents, `polar agent setup --skills project` installs the Polar skills into `.agents/skills`; then connect the MCP server as described below.
+
 ## Connect your agent
 
-Use the production server at `https://mcp.polar.sh/mcp/polar-mcp` for your live organization. While building or testing, use the sandbox server at `https://mcp.polar.sh/mcp/polar-sandbox` and give it a distinct name such as `polar-sandbox`.
+To connect a client yourself, use the production server at `https://mcp.polar.sh/mcp/polar-mcp` for your live organization. While building or testing, use the sandbox server at `https://mcp.polar.sh/mcp/polar-sandbox` and give it a distinct name such as `polar-sandbox`.
 
 Choose your client and add the appropriate server.
 

@@ -24,7 +24,10 @@ def to_epoch_microseconds(value: datetime) -> int:
 
 def from_epoch_microseconds(value: typing.Any) -> typing.Any:
     if isinstance(value, int):
-        return datetime.fromtimestamp(value / 1_000_000, UTC)
+        try:
+            return datetime.fromtimestamp(value / 1_000_000, UTC)
+        except (OverflowError, OSError) as e:
+            raise ValueError("Timestamp out of range") from e
     return value
 
 

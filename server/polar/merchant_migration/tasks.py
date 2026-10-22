@@ -133,8 +133,8 @@ async def merchant_migration_notify_waiting_for_ops(
     time_limit=600_000,
 )
 async def merchant_migration_close_idle() -> None:
-    """Close migrations with no activity for the retention period, each in its
-    own transaction. One interrupted run is picked up by the next."""
+    """Close migrations with no activity for the retention period. A migration
+    that fails or is interrupted is retried by the next run."""
     idle_since = utc_now() - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD
     async with AsyncSessionMaker() as session:
         repository = MerchantMigrationRepository.from_session(session)
@@ -142,12 +142,24 @@ async def merchant_migration_close_idle() -> None:
 
     closed = 0
     for migration_id in migration_ids:
-        async with AsyncSessionMaker() as session:
-            if await merchant_migration_service.close_idle(
-                session, migration_id, idle_since=idle_since
-            ):
-                closed += 1
-        await asyncio.sleep(0.1)
+        steps = 0
+        try:
+            while True:
+                async with AsyncSessionMaker() as session:
+                    if not await merchant_migration_service.close_idle(
+                        session, migration_id, idle_since=idle_since
+                    ):
+                        break
+                steps += 1
+                await asyncio.sleep(0.1)
+        except Exception:
+            log.exception(
+                "merchant_migration.close_idle.failed",
+                merchant_migration_id=migration_id,
+            )
+            continue
+        if steps:
+            closed += 1
 
     log.info(
         "merchant_migration.close_idle",

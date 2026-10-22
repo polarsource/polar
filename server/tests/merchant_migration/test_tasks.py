@@ -11,6 +11,9 @@ from polar.integrations.slack.client import SlackClientError
 from polar.kit.utils import utc_now
 from polar.merchant_migration.pan_transfer import PanTransferMethod
 from polar.merchant_migration.repository import MerchantMigrationRecordRepository
+from polar.merchant_migration.service import (
+    merchant_migration as merchant_migration_service,
+)
 from polar.merchant_migration.slack import SlackAlertInProgress
 from polar.merchant_migration.tasks import (
     merchant_migration_close_idle,
@@ -268,6 +271,29 @@ class TestCloseIdle:
             "cus_skipped",
         }
 
+    async def test_finishes_an_interrupted_close(
+        self, worker_session: AsyncSession, idle_migration: MerchantMigration
+    ) -> None:
+        idle_since = utc_now() - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD
+        idle_at = idle_migration.modified_at
+        await merchant_migration_service.close_idle(
+            worker_session, idle_migration.id, idle_since=idle_since
+        )
+        await worker_session.flush()
+        await worker_session.refresh(idle_migration)
+        assert "api_key_encrypted" not in idle_migration.source_credentials
+        assert idle_migration.modified_at == idle_at
+
+        await merchant_migration_close_idle()
+
+        await worker_session.flush()
+        await worker_session.refresh(idle_migration)
+        assert idle_migration.step == MerchantMigrationStep.completed
+        assert await record_source_ids(worker_session, idle_migration) == {
+            "cus_imported",
+            "cus_skipped",
+        }
+
     async def test_skips_a_recently_active_migration(
         self,
         worker_session: AsyncSession,
@@ -353,7 +379,7 @@ class TestCloseIdle:
         organization: Organization,
     ) -> None:
         migration = MerchantMigration(
-            organization_id=organization.id,
+            organization=organization,
             source_platform=MerchantMigrationSourcePlatform.stripe,
             created_at=utc_now() - IDLE,
         )

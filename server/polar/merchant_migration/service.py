@@ -1412,12 +1412,14 @@ class MerchantMigrationService:
     async def close_idle(
         self, session: AsyncSession, migration_id: UUID, *, idle_since: datetime
     ) -> bool:
-        """Close a migration with no activity since ``idle_since``.
+        """Take one bounded step towards closing a migration with no activity
+        since ``idle_since``, and return whether it changed anything.
 
-        Deletes the stored source key and the records never imported, then marks
-        the migration completed. Imported records stay: they map source objects
-        to their Polar counterparts. Holds the row lock `start_cutover` takes, so
-        no new work starts meanwhile.
+        In order: delete the stored source key, delete the records never
+        imported one batch at a time, then mark the migration completed. Call it
+        again, in a new transaction, until it returns False. Imported records
+        stay: they map source objects to their Polar counterparts. Each step
+        holds the row lock `start_cutover` takes, so no new work starts meanwhile.
         """
         repository = MerchantMigrationRepository.from_session(session)
         migration = await repository.get_by_id(migration_id, for_update=True)
@@ -1429,21 +1431,27 @@ class MerchantMigrationService:
         ):
             return False
 
-        await repository.update(
-            migration,
-            update_dict={
-                "source_credentials": {
-                    key: value
-                    for key, value in migration.source_credentials.items()
-                    if key != "api_key_encrypted"
-                }
-            },
-        )
+        if "api_key_encrypted" in migration.source_credentials:
+            await repository.update(
+                migration,
+                update_dict={
+                    "source_credentials": {
+                        key: value
+                        for key, value in migration.source_credentials.items()
+                        if key != "api_key_encrypted"
+                    },
+                    # Kept as is, so an interrupted close is still idle next run.
+                    "modified_at": MerchantMigration.modified_at,
+                },
+            )
+            return True
+
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        while await record_repository.delete_pending_batch(
+        if await record_repository.delete_pending_batch(
             migration.id, batch_size=CLOSE_DELETE_BATCH_SIZE
         ):
-            pass
+            return True
+
         await repository.update(
             migration, update_dict={"step": MerchantMigrationStep.completed}
         )

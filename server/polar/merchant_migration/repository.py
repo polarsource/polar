@@ -37,9 +37,9 @@ from polar.models import (
     MerchantMigration,
     MerchantMigrationRecord,
     MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
     PaymentMethod,
 )
-from polar.models.merchant_migration import MerchantMigrationStep
 from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationSelection,
 )

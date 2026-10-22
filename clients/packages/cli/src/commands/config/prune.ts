@@ -1,5 +1,5 @@
 import { Clock, Effect, Option, Stdio } from 'effect'
-import { Command, Flag, Prompt } from 'effect/cli'
+import { Command, Prompt } from 'effect/cli'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
   BillingConfigError,
@@ -13,16 +13,10 @@ import { plural } from '@/utils/billing-config/problems'
 import { removable } from '@/utils/billing-config/prune'
 import { NOUNS, box, found, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
-import { configFile as file, org } from '@/utils/flags'
+import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
-
-const confirmed = Flag.Boolean('confirm').pipe(
-  Flag.withAlias('c'),
-  Flag.withDefault(false),
-  Flag.withDescription('Remove without asking for confirmation'),
-)
 
 const reason = (entry: PruneEntry) =>
   [

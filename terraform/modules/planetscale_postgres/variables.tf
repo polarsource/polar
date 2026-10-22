@@ -25,7 +25,7 @@ variable "region" {
 }
 
 variable "cluster_size" {
-  description = "Cluster size SKU, e.g. PS_10_AWS_ARM."
+  description = "PlanetScale cluster size SKU."
   type        = string
 }
 
@@ -33,6 +33,12 @@ variable "major_version" {
   description = "PostgreSQL major version."
   type        = string
   default     = "18"
+}
+
+variable "deletion_protected" {
+  description = "Whether deletion protection is enabled for the branch."
+  type        = bool
+  default     = true
 }
 
 variable "parameters" {

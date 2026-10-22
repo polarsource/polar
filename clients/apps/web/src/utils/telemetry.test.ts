@@ -47,10 +47,23 @@ describe('redactClaimTokens', () => {
     expect(breadcrumb.data.to).toContain(TOKEN)
   })
 
-  it('handles circular references', () => {
+  it('replaces circular references instead of returning the unredacted ancestor', () => {
     const data: Record<string, unknown> = { url: `/agent/claim?token=${TOKEN}` }
     data.self = data
 
-    expect(redactClaimTokens(data).url).toBe('/agent/claim?token={link_token}')
+    expect(redactClaimTokens(data)).toEqual({
+      url: '/agent/claim?token={link_token}',
+      self: '[Circular]',
+    })
+  })
+
+  it('redacts URL instances and keeps them as URLs', () => {
+    const redacted = redactClaimTokens({
+      url: new URL(`https://polar.sh/agent/claim?token=${TOKEN}`),
+    }).url
+
+    expect(redacted).toBeInstanceOf(URL)
+    expect(redacted.href).not.toContain(TOKEN)
+    expect(redacted.searchParams.get('token')).toBe('{link_token}')
   })
 })

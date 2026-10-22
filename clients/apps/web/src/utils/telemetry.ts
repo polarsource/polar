@@ -15,8 +15,14 @@ export const redactClaimTokens = <T>(
   if (typeof value === 'string') {
     return value.replace(CLAIM_LINK_TOKEN, '{link_token}') as T
   }
-  if (typeof value !== 'object' || value === null || ancestors.has(value)) {
+  if (value instanceof URL) {
+    return new URL(redactClaimTokens(value.href)) as T
+  }
+  if (typeof value !== 'object' || value === null) {
     return value
+  }
+  if (ancestors.has(value)) {
+    return '[Circular]' as T
   }
   if (!Array.isArray(value) && !isPlainObject(value)) {
     return value

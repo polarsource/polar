@@ -40,7 +40,10 @@ const polar = {
       data = text
     }
     if (!response.ok) {
-      throw new Error('Polar API ' + response.status + ': ' + (typeof data === 'string' ? data : JSON.stringify(data)))
+      throw Object.assign(
+        new Error('Polar API ' + response.status + ': ' + (typeof data === 'string' ? data : JSON.stringify(data))),
+        { status: response.status, body: data },
+      )
     }
     return data
   },

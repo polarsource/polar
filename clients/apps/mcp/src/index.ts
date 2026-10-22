@@ -5,6 +5,7 @@ import {
 import { env } from 'cloudflare:workers'
 import { Effect, Layer, ManagedRuntime } from 'effect'
 import { FetchHttpClient, HttpClient } from 'effect/http'
+import { subjectFor } from './analytics'
 import { Auth, authUnavailable, getBearerToken, unauthorized } from './auth'
 import { type ToolMode, toolModeFor } from './clients'
 import { Docs } from './docs'
@@ -26,6 +27,7 @@ const OPENAI_APPS_CHALLENGE_TOKEN =
   'ZjVpZNBFeHL9gB3r9BKCLpb68RF88tIzveJIntQm90E'
 
 const MCP_PATH = /^\/mcp\/([^/]+)$/
+const TELEMETRY_OPT_OUTS = new Set(['false', '0', 'no', 'off'])
 const PROTECTED_RESOURCE_PATH =
   /^\/\.well-known\/oauth-protected-resource\/mcp\/([^/]+)$/
 
@@ -103,6 +105,9 @@ const handle = Effect.fn('handle')(function* (request: Request) {
     server,
     mode,
     readOnly: props.readOnly,
+    telemetry: !TELEMETRY_OPT_OUTS.has(
+      url.searchParams.get('telemetry')?.toLowerCase() ?? '',
+    ),
     userAgent: request.headers.get('User-Agent'),
   }
   const response = yield* handleMcp(request, url, props, mode).pipe(
@@ -126,18 +131,21 @@ const handleMcp = Effect.fn('handleMcp')(function* (
     return unauthorized(resourceMetadataUrl, scopes)
   }
   const auth = yield* Auth
-  const rejection = yield* auth.isTokenValid(apiUrl, token).pipe(
-    Effect.map((valid) =>
-      valid
-        ? undefined
-        : unauthorized(resourceMetadataUrl, scopes, 'invalid_token'),
+  const caller = yield* auth.authenticate(apiUrl, token).pipe(
+    Effect.map(
+      (caller) =>
+        caller ?? unauthorized(resourceMetadataUrl, scopes, 'invalid_token'),
     ),
     Effect.catchTag('AuthUnavailable', () => Effect.succeed(authUnavailable())),
   )
-  if (rejection) {
-    return rejection
+  if (caller instanceof Response) {
+    return caller
   }
-  Object.assign(yield* RequestLog, yield* readRpcFields(request))
+  Object.assign(yield* RequestLog, yield* readRpcFields(request), {
+    subject: yield* Effect.tryPromise(() =>
+      subjectFor(caller.account ?? `token:${token}`),
+    ).pipe(Effect.orElseSucceed(() => undefined)),
+  })
 
   const context = yield* Effect.context<
     Sandbox | Docs | HttpClient.HttpClient | RequestLog

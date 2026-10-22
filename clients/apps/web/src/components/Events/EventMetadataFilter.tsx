@@ -1,5 +1,4 @@
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import { AddOutlined, ClearOutlined } from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { useCallback } from 'react'

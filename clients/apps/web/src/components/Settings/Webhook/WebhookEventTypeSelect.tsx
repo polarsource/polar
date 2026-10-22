@@ -7,7 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown } from '@polar-sh/orbit/icons'
 import { useCallback, useMemo, useState } from 'react'
 
 interface WebhookEventTypeSelectProps {

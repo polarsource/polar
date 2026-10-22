@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+import { Check } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Button } from '@polar-sh/orbit'

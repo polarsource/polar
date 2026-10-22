@@ -5,7 +5,11 @@ import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight, CheckIcon, ExternalLink } from 'lucide-react'
+import {
+  ArrowRight,
+  Check as CheckIcon,
+  ExternalLink,
+} from '@polar-sh/orbit/icons'
 import { useCallback, useState } from 'react'
 import { StatusBlock } from '../Account/sections/StatusBlock'
 import { CheckPayoutStatusButton } from '../CheckPayoutStatusButton'

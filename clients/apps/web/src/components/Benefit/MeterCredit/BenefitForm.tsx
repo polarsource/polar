@@ -11,7 +11,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { PlusIcon } from 'lucide-react'
+import { Plus as PlusIcon } from '@polar-sh/orbit/icons'
 import { useCallback } from 'react'
 import { useFormContext } from 'react-hook-form'
 

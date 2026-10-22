@@ -6,7 +6,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { CheckOutlined } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 
 /**

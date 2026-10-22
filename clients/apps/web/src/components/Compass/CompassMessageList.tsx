@@ -2,7 +2,7 @@
 
 import { messageTime, relativeTime } from '@/components/Chat/time'
 import { AssistantMessage } from '@/hooks/useCompassAssistant'
-import RefreshRounded from '@mui/icons-material/RefreshRounded'
+import { RefreshRounded } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

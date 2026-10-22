@@ -11,7 +11,7 @@ import IntervalPicker, {
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { isMeteredPrice, MeteredPrice } from '@/utils/product'
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
+import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

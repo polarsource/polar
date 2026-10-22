@@ -1,6 +1,5 @@
 import { Box } from '@polar-sh/orbit/Box'
-import { BrickWallShieldIcon } from 'lucide-react'
-
+import { BrickWallShield as BrickWallShieldIcon } from '@polar-sh/orbit/icons'
 export interface AccessRestrictedProps {
   message: string
 }

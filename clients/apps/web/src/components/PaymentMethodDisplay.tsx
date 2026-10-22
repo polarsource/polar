@@ -1,7 +1,7 @@
 import type { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Wallet } from 'lucide-react'
+import { Wallet } from '@polar-sh/orbit/icons'
 import CreditCardBrandIcon from './CreditCardBrandIcon'
 
 export interface PaymentMethodCardInfo {

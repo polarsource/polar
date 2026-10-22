@@ -11,10 +11,12 @@ import { useModal } from '@/components/Modal/useModal'
 import { useInfiniteBenefits } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { usePushRouteWithoutCache } from '@/utils/router'
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
-import ArrowUpward from '@mui/icons-material/ArrowUpward'
-import Search from '@mui/icons-material/Search'
+import {
+  AddOutlined,
+  ArrowDownward,
+  ArrowUpward,
+  SearchFilled as Search,
+} from '@polar-sh/orbit/icons'
 import { enums, schemas } from '@polar-sh/client'
 import { Input, Button, Spinner, InlineModal } from '@polar-sh/orbit'
 import Link from 'next/link'

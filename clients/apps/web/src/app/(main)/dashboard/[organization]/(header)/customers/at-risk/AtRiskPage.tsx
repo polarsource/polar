@@ -12,7 +12,7 @@ import { useClientSidePagination } from '@/hooks/useClientSidePagination'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Alert, DataTable, DataTableColumnDef, Text } from '@polar-sh/orbit'
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 
 // Maximum accepted per status query (API_PAGINATION_MAX_LIMIT).

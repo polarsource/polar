@@ -22,7 +22,7 @@ To achieve that, we propose to follow some design principles:
 2. Every change in a product or benefit gets a **new row with a new ID**. Old rows don't change, and existing orders and subscriptions keep pointing to them.
 3. **Full freeze.** No change reaches existing customers until the merchant explicitly moves them to the new version.
 
-Versioning comes with declarative config (config as code). Organizations that only use the dashboard keep today's behavior.
+Versioning is only enabled for organizations that use declarative config (config as code). For them, changes from the config and from the dashboard go to a draft first. Organizations without declarative config keep today's behavior: dashboard changes are live right away, and there is no versioning.
 
 This doc covers what we ship first. Migrations as config (selectors, scheduling, cancel) get their own design doc, but we need them before the public launch.
 
@@ -71,6 +71,7 @@ There are only 4 concepts that make all of this possible:
 
 1. **Catalog.** It contains the full list of products and benefits at a point in time. It is identified by a hash, not a number, and has a state: `draft`, `live`, or `archived`. Every organization has one live catalog and at most one draft.
    - Like git, we store the full hash, unique per organization, and show the shortest prefix that is unique in the organization (6 characters). The examples below use 4 characters to keep them short.
+   - The hash is computed from the previous published hash and the catalog content. So every published catalog gets a new hash, even if it goes back to an older definition.
    - Hashes don't have an order, so history is sorted by `published_at`.
 2. **Copy-on-write** for products and benefits. Every change creates a new row in the draft catalog. Once the catalog is published, those rows are locked.
 3. **`external_id` is the stable name.** It is required for every product, benefit, and meter. All rows with the same `external_id` are versions of one resource. Each row stores the catalog where it was created.
@@ -167,12 +168,13 @@ From the dashboard, the flow is: edit → save draft → review → publish. On 
 
 There are some rules:
 
-- If a draft already exists, `apply` fails. `apply --force` replaces it. There is no automatic merge: to keep the dashboard changes, the merchant can `pull` the draft into the config first.
+- The dashboard changes the current draft step by step. `apply` replaces the whole draft with the new definition, in the same draft catalog, so the merchant can apply many times while iterating.
+- If the draft changed in the dashboard since the last `apply` or `pull`, `apply` fails. `apply --force` replaces it anyway. There is no automatic merge: to keep the dashboard changes, the merchant can `pull` the draft into the config first.
 - Every dashboard save sends the draft revision it was based on. A save based on an old revision fails.
 - Publishing is atomic, and checks that the draft was built on the current live catalog. If another publish happened first, it fails, and the merchant applies the changes again on top of the new live catalog.
 - Draft rows have `is_current = false`, like an archived version, so they cannot be sold. A row is a draft when it is only in the draft catalog. API endpoints don't return it unless the draft is asked for.
 - Every draft is complete and valid: it is the full next catalog, including dependent products.
-- There is no revert. To go back, the merchant applies the old definition, which publishes a new catalog.
+- There is no revert. To go back, the merchant applies the old definition, which publishes a new catalog with a new hash.
 
 #### New sales
 

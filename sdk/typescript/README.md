@@ -207,6 +207,7 @@ The metering helper buffers events in memory and sends them in batches to Polar.
 | `batchIntervalMs`   | `1000`      | Milliseconds to collect a batch, starting with its first event. |
 | `shutdownTimeoutMs` | `5000`      | Milliseconds allowed to drain on scope exit.                    |
 | `maxAttempts`       | `3`         | Total attempts per batch, including the first.                  |
+| `onDelivered`       | `undefined` | Callback receiving the events Polar accepted; may be async.     |
 | `onDropped`         | `undefined` | Callback receiving the dropped events and reason; may be async. |
 
 #### Outpost

@@ -428,3 +428,27 @@ async def test_structural_metering_client(events: list[EventInput]) -> None:
 def test_rejects_non_positive_batch_size(client: AsyncMock, batch_size: int) -> None:
     with pytest.raises(ValueError, match="batch_size must be greater than zero"):
         BufferedMeteringStrategy(client, batch_size=batch_size)
+
+
+@pytest.mark.anyio
+async def test_a_failing_on_delivered_stays_out_of_the_delivery_retries(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    failure = PolarNetworkError("callback failed")
+    on_delivered = AsyncMock(side_effect=failure)
+    on_dropped = AsyncMock()
+    strategy = BufferedMeteringStrategy(
+        client, max_attempts=1, on_delivered=on_delivered, on_dropped=on_dropped
+    )
+    with anyio.fail_after(1):
+        try:
+            async with strategy:
+                await strategy.track(events[0])
+                with pytest.raises(PolarNetworkError):
+                    await strategy.flush()
+        except ExceptionGroup as errors:
+            assert errors.exceptions == (failure,)
+        else:
+            pytest.fail("the worker should have failed")
+    client.events.ingest.assert_awaited_once()
+    on_dropped.assert_not_awaited()

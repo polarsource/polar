@@ -82,7 +82,7 @@ export default function OrganizationDeleteSettings({
       <SettingsGroup>
         <SettingsGroupItem
           title="Delete Organization"
-          description="Permanently delete this organization and all associated data. This action cannot be undone."
+          description="Permanently delete this organization and all its associated data. This action cannot be undone."
         >
           <Button
             variant="destructive"

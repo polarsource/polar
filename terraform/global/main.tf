@@ -7,6 +7,18 @@ resource "tfe_variable_set" "global" {
   organization = "polar-sh"
 }
 
+resource "tfe_variable" "planetscale_organization" {
+  key             = "planetscale_organization"
+  category        = "terraform"
+  description     = "PlanetScale organization slug"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "apple_client_id" {
   key             = "apple_client_id"
   category        = "terraform"

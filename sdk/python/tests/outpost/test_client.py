@@ -235,7 +235,11 @@ async def polar_client(
                             "text": json.dumps(
                                 {
                                     "type": "meter_usage",
-                                    "payload": {"customer_exists": True, **snapshot},
+                                    "payload": {
+                                        "customer_exists": True,
+                                        **snapshot,
+                                        "meter_id": payload["meter_id"],
+                                    },
                                 }
                             ),
                         }
@@ -1392,6 +1396,40 @@ async def test_drops_a_cold_bucket_once_polar_confirmed_every_pending_event(
             await _wait_for(bucket_dropped)
             assert await _consumed(other) == 30
     assert await redis.hget(key, f"pending:{BUCKET}:sum") is None
+
+
+@pytest.mark.anyio
+async def test_confirms_once_per_meter_and_applies_each_meters_snapshot(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+    snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
+    ingested: set[str],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:state:external:alice:tokens"
+    configuration["reducers"][0]["meter_ids"] = ["meter", "other"]
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(2):
+            await outpost.track(_usage(f"event-{index}", 10))
+        ingested.update(f"event-{index}" for index in range(2))
+        snapshots["external:alice"] = _sealing(2, 20)
+        async with Outpost(url, client=polar_client) as other:
+            await other.actor(external_customer_id="alice")
+
+            async def other_credited() -> bool:
+                return await redis.hget(key, "credited:other") == b"100"
+
+            await _wait_for(other_credited)
+    assert await redis.hget(key, "credited:meter") == b"100"
+    assert sorted(
+        request["payload"]["meter_id"]
+        for request in websocket_requests
+        if request["type"] == "confirm"
+    ) == ["meter", "other"]
 
 
 @pytest.mark.anyio

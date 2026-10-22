@@ -136,6 +136,7 @@ beforeAll(async () => {
       if (message.type === "confirm") {
         confirmRequests.push(message.payload);
         const { meter_id, ids, ...payload } = message.payload;
+        const { delay: _delay, ...override } = meterSnapshots[meter_id] ?? {};
         if (answerConfirm)
           ws.send(
             JSON.stringify({
@@ -145,7 +146,12 @@ beforeAll(async () => {
                 external_customer_id: null,
                 ...payload,
                 ids: ids.filter((id: string) => ingested.has(id)),
-                snapshot: { customer_exists: true, ...(confirmSnapshot ?? snapshot), meter_id },
+                snapshot: {
+                  customer_exists: true,
+                  ...(confirmSnapshot ?? snapshot),
+                  meter_id,
+                  ...override,
+                },
               },
             }),
           );
@@ -830,6 +836,21 @@ it("drops a cold bucket once Polar confirmed every pending event", async () => {
   await vi.waitFor(async () => expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull());
   expect(await redis.hget(key, `pending:${bucket}:sum`)).toBeNull();
   expect((await other.meter(meter))?.consumed_units).toBe(30);
+});
+
+it("confirms once per meter of a reducer and applies each meter's snapshot", async () => {
+  reducers[0].meter_ids = ["meter", "other"];
+  meterSnapshots = { other: { credited_units: 50, delay: 0 } };
+  const outpost = await warm();
+  const events = [usage("event-0", 10), usage("event-1", 10)];
+  for (const event of events) await outpost.track(event);
+  ingested = new Set(events.map((event) => event.external_id));
+  snapshot = sealing(2, 20);
+  const other = await start();
+  await other.actor(customer);
+  await vi.waitFor(async () => expect(await redis.hget(key, "credited:other")).toBe("50"));
+  expect(await redis.hget(key, "credited:meter")).toBe("100");
+  expect(confirmRequests.map((request) => request.meter_id).sort()).toEqual(["meter", "other"]);
 });
 
 it("applies a snapshot Polar did not confirm in time, keeping its events pending", async () => {

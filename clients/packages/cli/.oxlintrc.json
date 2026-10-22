@@ -18,6 +18,7 @@
     "polar-cli/no-effect-run-outside-entrypoint": "error",
     "polar-cli/no-hardcoded-hosts": "error",
     "polar-cli/no-process-env": "error",
+    "polar-cli/no-yes-flag": "error",
     "polar-cli/schemas-are-pure": "error",
     "polar-cli/service-facade": "error",
     "polar-cli/service-boundaries": "error",

@@ -25,8 +25,8 @@ import { Organizations } from '@/services/organizations'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
-const yes = Flag.Boolean('yes').pipe(
-  Flag.withAlias('y'),
+const confirmed = Flag.Boolean('confirm').pipe(
+  Flag.withAlias('c'),
   Flag.withAlias('aladåb'),
   Flag.withDefault(false),
   Flag.withDescription('Apply without asking for confirmation'),
@@ -65,15 +65,15 @@ const interactive = Effect.gen(function* () {
 const confirm = (
   organization: ActiveOrganization,
   json: boolean,
-  yes: boolean,
+  confirmed: boolean,
   say: Say['say'],
 ) =>
   Effect.gen(function* () {
-    if (yes) return true
+    if (confirmed) return true
     if (json || !(yield* interactive)) {
       return yield* new BillingConfigError({
         message: `Confirmation needed to apply to ${target(organization)}`,
-        hint: 'Pass --yes to apply without asking, after reviewing polar config plan.',
+        hint: 'Pass --confirm to apply without asking, after reviewing polar config plan.',
       })
     }
     yield* say([ui.blank])
@@ -84,7 +84,7 @@ const confirm = (
     ).pipe(Effect.orElseSucceed(() => false))
   })
 
-export const apply = Command.make('apply', { file, org, yes }).pipe(
+export const apply = Command.make('apply', { file, org, confirmed }).pipe(
   Command.withDescription(
     'Create or update everything in a billing config file for your organization',
   ),
@@ -103,17 +103,17 @@ export const apply = Command.make('apply', { file, org, yes }).pipe(
       description: 'Apply to another organization, by slug or ID',
     },
     {
-      command: 'polar config apply --yes',
+      command: 'polar config apply --confirm',
       description: 'Apply without asking, for scripts and CI',
     },
     {
-      command: 'polar config apply --yes --json',
+      command: 'polar config apply --confirm --json',
       description: 'Print what was applied as JSON, for scripts and agents',
     },
   ]),
   output({
     result: ApplyOutput,
-    run: ({ file, org, yes }, { say }) =>
+    run: ({ file, org, confirmed }, { say }) =>
       Effect.gen(function* () {
         const billing = yield* BillingConfig
         const { json } = yield* Output
@@ -156,7 +156,7 @@ export const apply = Command.make('apply', { file, org, yes }).pipe(
                 }
               }
               yield* say(changes(config, organization, plan))
-              if (!(yield* confirm(organization, json, yes, say))) {
+              if (!(yield* confirm(organization, json, confirmed, say))) {
                 return yield* new BillingConfigError({
                   message: 'Apply cancelled, nothing changed',
                 })

@@ -107,7 +107,11 @@ export default function CLITokenPage() {
     <OnboardingLayout
       branding={
         <Box color="text-primary">
-          <PolarLogotype logoVariant="logotype" logoClassName="ml-0" />
+          <PolarLogotype
+            logoVariant="logotype"
+            logoClassName="ml-0"
+            size={80}
+          />
         </Box>
       }
       introduction={

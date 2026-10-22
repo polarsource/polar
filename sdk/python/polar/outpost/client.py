@@ -73,6 +73,11 @@ class UnavailableRedisError(PolarOutpostError):
         super().__init__("Redis is unavailable")
 
 
+class MissingExternalIdError(PolarOutpostError):
+    def __init__(self) -> None:
+        super().__init__("Outpost needs an external_id on every event")
+
+
 def _number(value: str) -> int | float:
     if value.isdecimal() or (value[:1] == "-" and value[1:].isdecimal()):
         return int(value)
@@ -546,12 +551,22 @@ class Outpost:
             and self._configured.is_set()
         )
 
+    def validate(self, event: EventInput) -> None:
+        """Reject an event Outpost cannot reconcile with Polar.
+
+        Raises:
+            MissingExternalIdError: The event has no external_id.
+        """
+        if not event.get("external_id"):
+            raise MissingExternalIdError()
+
     @_raise_redis_unavailable
     async def track(self, event: EventInput) -> None:
         self._require_redis()
         started = time.perf_counter()
         outcome = "ok"
         try:
+            self.validate(event)
             parsed = self._parse_event(event)
             if not self._configured.is_set():
                 with anyio.fail_after(5):

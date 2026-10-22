@@ -165,6 +165,8 @@ async def record_usage() -> None:
             )
 ```
 
+An event without a `timestamp` is dated when you call `track()`, not when its batch reaches Polar.
+
 ### Actor context
 
 It's common to have several events for the same customer in the same session. You can create an actor context, so you don't have to pass the customer identifier for each event:
@@ -200,6 +202,8 @@ if meter is not None:
 Outpost is our local reduction engine. It can reduce events locally and share a state across all your clients via Redis. It's enabled automatically when you set the `REDIS_URL` environment variable.
 
 In high throughput scenarios, Outpost can return you accurate meter reads only milliseconds after the event is ingested.
+
+Outpost needs an `external_id` on every event; `track()` rejects an event without one.
 
 To disable it, pass `outpost=False` to `polar.metering()`. You can also configure it explicitly with a dictionary.
 

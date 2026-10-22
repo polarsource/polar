@@ -3,7 +3,7 @@ from uuid import UUID
 
 import structlog
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
 from polar.models import Benefit, Customer, Member, Organization, User
@@ -116,7 +116,7 @@ class BenefitLicenseKeysService(
 
     async def validate_properties(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitLicenseKeysProperties:

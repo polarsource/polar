@@ -9,7 +9,7 @@ from sqlalchemy import select
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
-from polar.models import Event, Organization
+from polar.models import Event, Organization, StagedEvent
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -471,3 +471,38 @@ class TestGetLatestMeterReset:
 
         assert reset is not None
         assert reset.timestamp == now - timedelta(days=1)
+
+
+@pytest.mark.anyio
+class TestGetStagedEventsBacklog:
+    async def test_empty(self, session: AsyncSession) -> None:
+        repository = EventRepository.from_session(session)
+        assert await repository.get_staged_events_backlog() == (0, None)
+
+    async def test_count_and_oldest(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        now = utc_now()
+        for ingested_at in [
+            now,
+            now - timedelta(minutes=5),
+            now - timedelta(minutes=1),
+        ]:
+            await save_fixture(
+                StagedEvent(
+                    name="test_event",
+                    source=EventSource.user,
+                    timestamp=ingested_at,
+                    ingested_at=ingested_at,
+                    organization_id=organization.id,
+                )
+            )
+
+        repository = EventRepository.from_session(session)
+        assert await repository.get_staged_events_backlog() == (
+            3,
+            now - timedelta(minutes=5),
+        )

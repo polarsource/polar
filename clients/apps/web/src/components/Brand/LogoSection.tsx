@@ -4,13 +4,15 @@ import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode, useCallback, useState } from 'react'
 import { Chapter } from '../Landing/Chapter'
+import { StreamVideo } from '../Shared/StreamVideo'
 import { brandSections } from './brand'
 import LogoIcon from './logos/LogoIcon'
 import LogoLoader from './logos/LogoLoader'
 import LogoReveal from './logos/LogoReveal'
 import LogoType from './logos/LogoType'
-import { LogoVideo } from './logos/LogoVideo'
 import { LOGO_MARK_PATH } from './logos/paths'
+
+const LOGO_VIDEO_ID = 'd4e6d6f9f184a80ee8db27577897e626'
 
 const LOGO_ICON_SVG = `<svg width="310" height="310" viewBox="0 0 310 310" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="${LOGO_MARK_PATH}" fill="currentColor"/>
@@ -76,7 +78,7 @@ export function LogoSection() {
         </>
       }
     >
-      <LogoVideo />
+      <StreamVideo videoId={LOGO_VIDEO_ID} />
       <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap="l">
         <Panel>
           <LogoIcon size={88} />

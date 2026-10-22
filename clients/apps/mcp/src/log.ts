@@ -1,17 +1,22 @@
 import { Context, Effect } from 'effect'
+import { captureToolCall } from './analytics'
 import type { ToolMode } from './clients'
+import { isRecord } from './json'
 import type { ToolErrorKind } from './results'
 
 const CLIENT_INFO_META = 'io.modelcontextprotocol/clientInfo'
 
-// One line per MCP request, queried in Workers Logs. It must never carry the
-// token, tool arguments or results: they hold customer data.
+// One line per MCP request, queried in Workers Logs, and one PostHog event per
+// tool call. It must never carry the token, tool arguments or results: they
+// hold customer data.
 export interface RequestLogEntry {
   event: 'mcp.request'
   server: string
   mode: ToolMode
   readOnly: boolean
+  telemetry: boolean
   userAgent: string | null
+  subject?: string
   rpcMethod?: string
   tool?: string
   client?: { name: string; version: string }
@@ -21,26 +26,26 @@ export interface RequestLogEntry {
   errorKind?: ToolErrorKind
   errorMessage?: string
   apiStatus?: number
+  apiErrorFields?: ReadonlyArray<string>
   resultChars?: number
   truncated?: boolean
+  emptyResult?: boolean
   apiRequests?: number
+  apiOperations?: string[]
+  unexposedOperations?: string[]
+  scriptError?: string
 }
 
 export class RequestLog extends Context.Service<RequestLog, RequestLogEntry>()(
   'mcp/RequestLog',
 ) {}
 
-type JsonObject = Record<string, unknown>
-
-const isObject = (value: unknown): value is JsonObject =>
-  value !== null && typeof value === 'object' && !Array.isArray(value)
-
 const rpcFields = (body: unknown): Partial<RequestLogEntry> => {
-  if (!isObject(body)) {
+  if (!isRecord(body)) {
     return {}
   }
-  const params = isObject(body.params) ? body.params : {}
-  const meta = isObject(params._meta) ? params._meta : {}
+  const params = isRecord(body.params) ? body.params : {}
+  const meta = isRecord(params._meta) ? params._meta : {}
   const clientInfo = params.clientInfo ?? meta[CLIENT_INFO_META]
   return {
     rpcMethod: typeof body.method === 'string' ? body.method : undefined,
@@ -48,7 +53,7 @@ const rpcFields = (body: unknown): Partial<RequestLogEntry> => {
       body.method === 'tools/call' && typeof params.name === 'string'
         ? params.name
         : undefined,
-    client: isObject(clientInfo)
+    client: isRecord(clientInfo)
       ? { name: String(clientInfo.name), version: String(clientInfo.version) }
       : undefined,
   }
@@ -71,15 +76,20 @@ export const logOnCompletion = (
   entry: RequestLogEntry,
   startedAt: number,
 ) => {
-  const write = () =>
+  const write = () => {
+    const completed = {
+      ...entry,
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+    }
     console.info({
       message: [entry.server, entry.rpcMethod, entry.tool, response.status]
         .filter(Boolean)
         .join(' '),
-      ...entry,
-      status: response.status,
-      durationMs: Date.now() - startedAt,
+      ...completed,
     })
+    captureToolCall(completed)
+  }
   if (!response.body) {
     write()
     return response

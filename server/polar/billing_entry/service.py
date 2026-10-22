@@ -33,6 +33,7 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
+from .types import BillingEntrySelector, PendingByMeter, PendingByPrice
 
 log = structlog.get_logger(__name__)
 
@@ -59,19 +60,6 @@ class MeteredLineItem:
     currency: str
     label: str
     proration: Literal[False] = False
-
-
-@dataclasses.dataclass(frozen=True)
-class PendingByPrice:
-    product_price_id: uuid.UUID
-
-
-@dataclasses.dataclass(frozen=True)
-class PendingByMeter:
-    meter_id: uuid.UUID
-
-
-type BillingEntrySelector = Sequence[uuid.UUID] | PendingByPrice | PendingByMeter
 
 
 class BillingEntryService:
@@ -340,20 +328,6 @@ class BillingEntryService:
                 )
                 selector: BillingEntrySelector = PendingByMeter(meter_id)
             else:
-                # For summable aggregations (sum, count), we also need to verify
-                # the price is still active on the subscription. This prevents
-                # billing entries from discontinued prices being re-billed
-                # every cycle after a product/price change.
-                is_active_price = any(
-                    price.id == product_price_id for price in active_prices
-                )
-                if not is_active_price:
-                    log.info(
-                        f"Skipping billing entry for inactive price {product_price_id} "
-                        f"in subscription {subscription.id}"
-                    )
-                    continue
-
                 metered_line_item = await self._get_metered_line_item(
                     session,
                     metered_price,

@@ -320,6 +320,8 @@ class ValidateSubAndPrompt:
                 requested_sub_type = SubType(sub_type)
             except ValueError as e:
                 raise InvalidRequestError("Invalid sub_type") from e
+            if requested_sub_type == SubType.agent:
+                raise InvalidRequestError("Invalid sub_type")
         else:
             client: OAuth2Client = typing.cast(OAuth2Client, grant.client)
             requested_sub_type = client.default_sub_type

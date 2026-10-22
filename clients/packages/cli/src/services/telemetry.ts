@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { stripVTControlCharacters } from 'node:util'
 import {
   Cause,
   Context,
@@ -139,7 +140,7 @@ export const redact = (text: string) =>
   redactions
     .reduce(
       (result, pattern) => result.replace(pattern, '<redacted>'),
-      text.slice(0, 1000),
+      stripVTControlCharacters(text).slice(0, 1000),
     )
     .slice(0, 200)
 
@@ -149,6 +150,10 @@ const field = (value: unknown, key: string): unknown =>
     : undefined
 
 const usageName = (error: unknown) => {
+  const subcommand = field(error, 'subcommand')
+  if (typeof subcommand === 'string') {
+    return /^[a-z][a-z_-]{0,39}$/.test(subcommand) ? subcommand : undefined
+  }
   const name = field(error, 'option') ?? field(error, 'argument')
   return typeof name === 'string' && /^-{0,2}[a-z][\w-]{0,39}$/i.test(name)
     ? name
@@ -168,7 +173,11 @@ export const describeFailure = (error: unknown): Failure => {
         ? error.name
         : 'Unknown'
   const message =
-    tag === 'ShowHelp' ? usageName(reason) : field(error, 'message')
+    tag === 'ShowHelp'
+      ? usageName(reason)
+      : [field(error, 'message'), field(error, 'hint')]
+          .filter((part): part is string => typeof part === 'string' && !!part)
+          .join('\n')
   const code =
     field(error, 'code') ??
     field(error, 'statusCode') ??

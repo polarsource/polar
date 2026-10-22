@@ -1,10 +1,12 @@
+import { createHmac } from 'node:crypto'
 import { runInThisContext } from 'node:vm'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { request, rpc } from './client'
 import scopes from '../src/generated/scopes.json'
+import { toolNames } from '../src/analytics'
 import tools from '../src/generated/tools.json'
 import { spec } from '../src/spec'
-import { evaluate, exports, get } from './workers'
+import { env, evaluate, exports, get, waitUntil } from './workers'
 
 const DOCS_TOOLS = ['search_docs', 'read_docs_page']
 
@@ -253,8 +255,9 @@ test('the execute sandbox client serializes requests and handles every kind of r
         const created = await polar.request({ method: 'POST', path: '/v1/products/', body: { name: 'Pro' } })
         const text = await polar.request({ path: '/v1/files/' })
         const empty = await polar.request({ method: 'DELETE', path: '/v1/products/1' })
-        const failure = await polar.request({ path: '/v1/products/2' }).catch((error) => error.message)
-        return { list, created, text, empty, failure }
+        const failure = await polar.request({ path: '/v1/products/2' }).catch(({ message, status }) => ({ message, status }))
+        const offline = await polar.request({ path: '/v1/orders/' }).catch(({ message }) => message)
+        return { list, created, text, empty, failure, offline }
       }`,
     },
   })
@@ -268,21 +271,37 @@ test('the execute sandbox client serializes requests and handles every kind of r
     .mockResolvedValueOnce(
       Response.json({ detail: 'Not found' }, { status: 404 }),
     )
+    .mockRejectedValueOnce(new Error('network down'))
   const Worker = runInThisContext(
     `(WorkerEntrypoint, globalThis) => {${source
       .replace("import { WorkerEntrypoint } from 'cloudflare:workers'", '')
       .replace('export default', 'return')}}`,
   )(class {}, { fetch: sandboxFetch })
-  const { result, error, requests } = await new Worker().evaluate()
+  const { result, error, requests, calls } = await new Worker().evaluate()
   expect(error).toBeUndefined()
-  expect(requests).toBe(5)
+  expect(requests).toBe(6)
   expect(JSON.parse(result)).toEqual({
     list: { items: [] },
     created: { id: 'product' },
     text: 'plain text',
     empty: null,
-    failure: 'Polar API 404: {"detail":"Not found"}',
+    failure: { message: 'Polar API 404: {"detail":"Not found"}', status: 404 },
+    offline: 'network down',
   })
+  expect(
+    calls.map(({ method, url, status }: Record<string, unknown>) => [
+      method,
+      new URL(url as string).pathname,
+      status,
+    ]),
+  ).toEqual([
+    ['GET', '/v1/products/', 200],
+    ['POST', '/v1/products/', 201],
+    ['GET', '/v1/files/', 200],
+    ['DELETE', '/v1/products/1', 204],
+    ['GET', '/v1/products/2', 404],
+    ['GET', '/v1/orders/', 0],
+  ])
 
   const [listUrl, listInit] = sandboxFetch.mock.calls[0]
   const url = listUrl as URL
@@ -379,6 +398,8 @@ test('every MCP request logs one line without the token, arguments or results', 
   const base = {
     event: 'mcp.request',
     server: 'polar-mcp',
+    telemetry: true,
+    subject: expect.stringMatching(/^[0-9a-f]{32}$/),
     rpcMethod: 'tools/call',
     status: 200,
     durationMs: expect.any(Number),
@@ -394,6 +415,8 @@ test('every MCP request logs one line without the token, arguments or results', 
       isError: true,
       errorKind: 'api',
       apiStatus: 404,
+      apiRequests: 1,
+      apiOperations: ['GET /v1/customers/{id} 404'],
     },
     {
       ...base,
@@ -406,6 +429,7 @@ test('every MCP request logs one line without the token, arguments or results', 
       isError: false,
       resultChars: 30_000,
       truncated: true,
+      emptyResult: false,
       apiRequests: 3,
     },
     {
@@ -429,6 +453,272 @@ test('every MCP request logs one line without the token, arguments or results', 
   ]) {
     expect(logged).not.toContain(secret)
   }
+  log.mockRestore()
+})
+
+test('code mode logs the operations a call hit and tells API failures from script errors', async () => {
+  const log = vi.spyOn(console, 'info').mockImplementation(() => {})
+  evaluate.mockResolvedValueOnce({
+    error: 'Polar API 422: {"detail":"jane@example.com is invalid"}',
+    errorName: 'Error',
+    status: 422,
+    body: {
+      detail: [
+        {
+          loc: ['body', 'prices', 0, 'price_amount'],
+          msg: 'jane@example.com is invalid',
+          type: 'int_parsing',
+        },
+        {
+          loc: ['body', 'metadata', 'plan'],
+          msg: 'Input should be a valid string',
+          type: 'string_type',
+        },
+        {
+          loc: ['body', 'metadata', 'jane@example.com'],
+          msg: 'Input should be a valid string',
+          type: 'string_type',
+        },
+      ],
+    },
+    requests: 2,
+    calls: [
+      null as never,
+      {
+        method: 'GET',
+        url: 'https://api.polar.test/v1/products/00000000-0000-4000-8000-000000000001',
+        status: 200,
+      },
+      {
+        method: 'POST',
+        url: 'https://api.polar.test/v1/customers/',
+        status: 422,
+      },
+    ],
+  })
+  await rpc('tools/call', { name: 'execute', arguments: { code: 'x' } })
+  evaluate.mockResolvedValueOnce({
+    error: 'items is not iterable',
+    errorName: 'TypeError',
+    requests: 1,
+    calls: [
+      {
+        method: 'GET',
+        url: 'https://api.polar.test/v1/customers/jane@example.com/bogus',
+        status: 403,
+      },
+    ],
+  })
+  await rpc('tools/call', { name: 'execute', arguments: { code: 'x' } })
+  evaluate.mockResolvedValueOnce({ result: '[]' })
+  await rpc('tools/call', { name: 'search', arguments: { code: 'x' } })
+  fetchMock.mockResolvedValueOnce(
+    Response.json(
+      {
+        detail: [
+          {
+            loc: ['query', 'limit'],
+            msg: 'Input should be less than or equal to 100',
+            type: 'less_than_equal',
+          },
+        ],
+      },
+      { status: 422 },
+    ),
+  )
+  await rpc(
+    'tools/call',
+    { name: 'products_list', arguments: {} },
+    '?codemode=false',
+  )
+  evaluate.mockResolvedValueOnce({
+    error: 'boom',
+    errorName: 'jane@example.com',
+  })
+  await rpc('tools/call', { name: 'execute', arguments: { code: 'x' } })
+
+  const [
+    apiFailure,
+    scriptFailure,
+    emptySearch,
+    operationFailure,
+    unknownErrorFailure,
+  ] = log.mock.calls.map(([entry]) => entry)
+  expect(unknownErrorFailure).toMatchObject({ errorKind: 'script' })
+  expect(unknownErrorFailure).not.toHaveProperty('scriptError')
+  expect(operationFailure).toMatchObject({
+    tool: 'products_list',
+    errorKind: 'api',
+    apiStatus: 422,
+    apiErrorFields: ['query.limit less_than_equal'],
+  })
+  expect(apiFailure).toMatchObject({
+    isError: true,
+    errorKind: 'api',
+    apiStatus: 422,
+    apiOperations: ['GET /v1/products/{id} 200', 'POST /v1/customers/ 422'],
+    apiErrorFields: [
+      'body.prices.0.price_amount int_parsing',
+      'body.metadata.plan string_type',
+      'body.metadata.{} string_type',
+    ],
+  })
+  expect(apiFailure).not.toHaveProperty('scriptError')
+  expect(scriptFailure).toMatchObject({
+    isError: true,
+    errorKind: 'script',
+    scriptError: 'TypeError',
+    unexposedOperations: ['GET /v1/customers/{}/{}'],
+  })
+  expect(emptySearch).toMatchObject({ isError: false, emptyResult: true })
+  expect(JSON.stringify(log.mock.calls)).not.toContain('jane@')
+  log.mockRestore()
+})
+
+test('tool calls are sent to PostHog as $mcp_tool_call events without the token, arguments or results, unless ?telemetry=false', async () => {
+  env.POSTHOG_PROJECT_KEY = 'phc_test'
+  waitUntil.mockClear()
+  const auth = { Authorization: 'Bearer polar_oat_capture' }
+  const call = (params: Record<string, unknown>, query = '') =>
+    rpc('tools/call', params, query, auth)
+  try {
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ items: [{ id: 'org-capture' }] }),
+    )
+    await rpc('tools/list', {}, '', auth)
+    evaluate.mockResolvedValueOnce({
+      result: '"secret result"',
+      requests: 1,
+      calls: [
+        {
+          method: 'GET',
+          url: 'https://api.polar.test/v1/products/',
+          status: 200,
+        },
+      ],
+    })
+    await call({
+      name: 'execute',
+      arguments: { code: 'async () => "secret code"' },
+    })
+    await call({ name: 'execute', arguments: {} })
+    evaluate.mockResolvedValueOnce({
+      error: 'Polar API 404: not an operation exposed by this server',
+      status: 404,
+      requests: 1,
+      calls: [
+        {
+          method: 'GET',
+          url: 'https://api.polar.test/v1/oauth2/userinfo',
+          status: 404,
+        },
+      ],
+    })
+    await call({ name: 'execute', arguments: { code: 'x' } })
+    for (const value of ['false', '0', 'OFF', 'no']) {
+      await call(
+        { name: 'execute', arguments: { code: 'x' } },
+        `?telemetry=${value}`,
+      )
+    }
+    await rpc('tools/call', { name: 'execute', arguments: { code: 'x' } }, '', {
+      ...auth,
+      'User-Agent': 'claude-code/2.1.0 (darwin)',
+    })
+    await call({ name: 'jane@example.com', arguments: { code: 'x' } })
+    env.MCP_ANALYTICS_SECRET = ''
+    await call({ name: 'execute', arguments: { code: 'x' } })
+
+    const events = fetchMock.mock.calls
+      .filter(([url]) => url === 'https://us.i.posthog.com/capture/')
+      .map(([, init]) => JSON.parse(init!.body as string))
+    expect(events).toHaveLength(5)
+    expect(waitUntil).toHaveBeenCalledTimes(5)
+    expect(events[3].properties).toMatchObject({
+      $mcp_client_name: 'claude-code',
+      $mcp_client_version: '2.1.0',
+      user_agent: 'claude-code/2.1.0 (darwin)',
+    })
+    expect(events[4].properties).toMatchObject({
+      $mcp_tool_name: 'unknown',
+      $mcp_is_error: true,
+    })
+    expect(events[0]).toEqual({
+      api_key: 'phc_test',
+      event: '$mcp_tool_call',
+      distinct_id: `mcp:${createHmac('sha256', 'analytics-secret-test').update('organization:org-capture').digest('hex').slice(0, 32)}`,
+      properties: expect.objectContaining({
+        $mcp_tool_name: 'execute',
+        $mcp_is_error: false,
+        $mcp_server_name: 'polar',
+        server: 'polar-mcp',
+        mode: 'codemode',
+        api_requests: 1,
+        api_operations: ['GET /v1/products/ 200'],
+        $process_person_profile: false,
+        $geoip_disable: true,
+      }),
+    })
+    expect(events[1].properties).toMatchObject({
+      $mcp_tool_name: 'execute',
+      $mcp_is_error: true,
+      $mcp_error_type: 'validation',
+    })
+    expect(events[2].properties).toMatchObject({
+      $mcp_error_status: 404,
+      $mcp_error_type: 'api_4xx',
+      unexposed_operations: ['GET /v1/oauth2/userinfo'],
+    })
+    expect(events[1].distinct_id).toBe(events[0].distinct_id)
+    const sent = JSON.stringify(events)
+    for (const secret of [
+      'polar_oat_capture',
+      'org-capture',
+      'secret code',
+      'secret result',
+      'jane@',
+    ]) {
+      expect(sent).not.toContain(secret)
+    }
+  } finally {
+    env.POSTHOG_PROJECT_KEY = ''
+    env.MCP_ANALYTICS_SECRET = 'analytics-secret-test'
+  }
+})
+
+test('every tool the server registers is reported to PostHog under its own name', async () => {
+  for (const query of ['', '?codemode=false']) {
+    const { tools } = (await rpc('tools/list', {}, query)).result
+    for (const { name } of tools) {
+      expect(toolNames.has(name)).toBe(true)
+    }
+  }
+})
+
+test('the analytics id is a keyed hash of the account, so a refreshed token keeps it', async () => {
+  const log = vi.spyOn(console, 'info').mockImplementation(() => {})
+  const hash = (account: string) =>
+    createHmac('sha256', 'analytics-secret-test')
+      .update(account)
+      .digest('hex')
+      .slice(0, 32)
+  for (const [token, body] of [
+    ['polar_at_u_first', { sub: 'user-1' }],
+    ['polar_at_u_refreshed', { sub: 'user-1' }],
+    ['polar_at_o_app', { sub: 'org-1' }],
+    ['polar_oat_without_read_scope', undefined],
+  ] as const) {
+    fetchMock.mockResolvedValueOnce(
+      body ? Response.json(body) : new Response(null, { status: 403 }),
+    )
+    await rpc('tools/list', {}, '', { Authorization: `Bearer ${token}` })
+  }
+  expect(log.mock.calls.map(([entry]) => entry.subject)).toEqual([
+    hash('user:user-1'),
+    hash('user:user-1'),
+    hash('organization:org-1'),
+    hash('token:polar_oat_without_read_scope'),
+  ])
   log.mockRestore()
 })
 

@@ -207,7 +207,7 @@ async def files(
 )
 async def grants(
     id: BenefitID,
-    auth_subject: auth.BenefitsRead,
+    auth_subject: auth.BenefitGrantsRead,
     pagination: PaginationParamsQuery,
     is_granted: bool | None = Query(
         None,

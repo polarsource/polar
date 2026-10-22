@@ -140,7 +140,10 @@ class TestCreateCheckoutLink:
 
         assert response.status_code == 403
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.checkout_links_write}),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_valid(
         self, client: AsyncClient, product: Product, user_organization: UserOrganization
     ) -> None:
@@ -235,6 +238,21 @@ class TestUpdateCheckoutLink:
     ) -> None:
         response = await client.patch(
             f"/v1/checkout-links/{checkout_link.id}",
+            json={
+                "metadata": {"test": "test"},
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_cannot_update_another_organizations_checkout_link(
+        self,
+        client: AsyncClient,
+        checkout_link_organization_second: CheckoutLink,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/checkout-links/{checkout_link_organization_second.id}",
             json={
                 "metadata": {"test": "test"},
             },

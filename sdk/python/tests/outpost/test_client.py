@@ -3,6 +3,7 @@ import copy
 import dataclasses
 import datetime
 import functools
+import itertools
 import json
 import typing
 from unittest.mock import DEFAULT, AsyncMock
@@ -37,6 +38,7 @@ from polar.metering import EventInput
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     WRITE_BUCKET_SCRIPT,
+    MissingExternalIdError,
     Outpost,
     PolarOutpostError,
     RedisReconnectBackoff,
@@ -52,6 +54,7 @@ from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
 from polar.outpost.telemetry import TELEMETRY_ENV
 
 CONNECTION_ID = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60"
+_ids = itertools.count(1)
 TIMESTAMP = "2026-10-12T12:00:00Z"
 BUCKET = get_bucket_start(datetime.datetime.fromisoformat(TIMESTAMP))
 CONFIGURATION: dict[str, typing.Any] = {
@@ -248,6 +251,7 @@ async def test_ingest_accepts_single_events(
         },
         {
             "name": "call",
+            "external_id": f"event-{next(_ids)}",
             "customer_id": "alice",
             "metadata": {"tokens": 5},
         },
@@ -265,6 +269,16 @@ async def test_ingest_accepts_single_events(
         and value == b"5"
         for field, value in own.items()
     )
+
+
+@pytest.mark.anyio
+async def test_ingest_requires_external_id(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+        with pytest.raises(MissingExternalIdError):
+            await outpost.track({"name": "call", "external_customer_id": "alice"})
 
 
 @pytest.mark.anyio
@@ -297,6 +311,7 @@ async def test_ingest_pipelines_buckets(
         await outpost.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "timestamp": TIMESTAMP,
                 "metadata": {"tokens": 3},
@@ -327,6 +342,7 @@ async def test_ingest_pipelines_buckets(
                 await outpost.track(
                     {
                         "name": "call",
+                        "external_id": f"event-{next(_ids)}",
                         "external_customer_id": "alice",
                         "timestamp": TIMESTAMP,
                         "metadata": {"tokens": 2},
@@ -357,7 +373,9 @@ async def test_connection_id_is_retained_while_connected(
     url, _ = redis_connection
     outpost = Outpost(url, client=polar_client)
     async with outpost:
-        await outpost.track({"name": "call", "external_customer_id": "alice"})
+        await outpost.track(
+            {"name": "call", "external_customer_id": "alice", "external_id": "event"}
+        )
         assert outpost.connection_id == CONNECTION_ID
     assert outpost.connection_id is None
 
@@ -398,6 +416,7 @@ async def test_customer_meter_reads_cold_and_shared_buckets(
             await writer.track(
                 {
                     "name": "call",
+                    "external_id": f"event-{next(_ids)}",
                     "external_customer_id": "alice",
                     "timestamp": TIMESTAMP,
                     "metadata": {"tokens": value},
@@ -441,12 +460,14 @@ async def test_bucket_ownership_and_internal_customer(
         events: list[EventInput] = [
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "customer_id": "alice",
                 "timestamp": "2026-10-12T11:59:59Z",
                 "metadata": {"tokens": 999},
             },
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "customer_id": "alice",
                 "timestamp": TIMESTAMP,
                 "metadata": {"tokens": 2},
@@ -529,6 +550,7 @@ async def test_startup_does_not_wait_for_configuration(
     configuration_gates.append(gate)
     event: EventInput = {
         "name": "call",
+        "external_id": f"event-{next(_ids)}",
         "external_customer_id": "alice",
         "timestamp": TIMESTAMP,
         "metadata": {"tokens": 3},
@@ -647,6 +669,7 @@ async def test_warmed_reads_do_not_use_redis(
         await outpost.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "timestamp": TIMESTAMP,
                 "metadata": {"tokens": 3},
@@ -733,6 +756,7 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         await outpost.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "timestamp": TIMESTAMP,
                 "metadata": {"tokens": 3},
@@ -749,6 +773,7 @@ async def test_old_messages_and_redis_reset_do_not_roll_back_cache(
         await outpost.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "timestamp": TIMESTAMP,
                 "metadata": {"tokens": 2},
@@ -775,6 +800,7 @@ async def test_bucket_updates_apply_in_order_and_reload_after_a_missed_revision(
         await writer.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "timestamp": TIMESTAMP,
                 "metadata": {"tokens": tokens},
@@ -991,6 +1017,7 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
                 await writer.track(
                     {
                         "name": "call",
+                        "external_id": f"event-{next(_ids)}",
                         "external_customer_id": "alice",
                         "timestamp": TIMESTAMP,
                         "metadata": {"tokens": value},
@@ -1028,6 +1055,7 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
         await first.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "timestamp": "2026-10-12T12:05:00Z",
                 "metadata": {"tokens": 4},
@@ -1069,6 +1097,68 @@ async def test_independent_reducers_concurrent_statistics_and_meter_credits(
         assert average is not None and average.consumed_units == pytest.approx(124 / 23)
         assert shared is not None and shared.credited_units == 200
         assert await redis.exists("outpost:state:customer:alice:tokens") == 0
+
+
+# Polar seals a bucket with what it has ingested so far; the local events it has not received
+# yet must stay counted (PLR-329).
+async def _seal_empty(redis: Redis, cutoff: int) -> None:
+    identity = "external:alice:tokens"
+    await redis.register_script(APPLY_SNAPSHOT_SCRIPT)(
+        keys=[f"outpost:state:{identity}"],
+        args=[identity, "outpost:0:updates", "epoch", cutoff, cutoff + 1, "meter", 100]
+        + [0, 0, "", ""],
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.xfail(strict=True, reason="PLR-329")
+async def test_keeps_local_events_when_bucket_goes_cold(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal_empty(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(10):
+            await outpost.track(
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "external_id": f"event-{index}",
+                    "timestamp": TIMESTAMP,
+                    "metadata": {"tokens": 10},
+                }
+            )
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
+        assert meter is not None and meter.consumed_units == 100
+        await _seal_empty(redis, BUCKET + BUCKET_SIZE)
+        await outpost._refresh_states()
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
+        assert meter is not None and meter.consumed_units == 100
+
+
+@pytest.mark.anyio
+@pytest.mark.xfail(strict=True, reason="PLR-329")
+async def test_counts_a_late_write_into_a_cold_bucket(
+    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal_empty(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        await _seal_empty(redis, BUCKET + BUCKET_SIZE)
+        await outpost._refresh_states()
+        await outpost.track(
+            {
+                "name": "call",
+                "external_customer_id": "alice",
+                "external_id": "late",
+                "timestamp": TIMESTAMP,
+                "metadata": {"tokens": 5},
+            }
+        )
+        meter = await outpost.meter(external_customer_id="alice", meter_id="meter")
+        assert meter is not None and meter.consumed_units == 5
 
 
 @pytest.mark.anyio
@@ -1129,6 +1219,7 @@ async def test_telemetry_spans(
         await outpost.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "metadata": {"tokens": 3},
             }
@@ -1199,11 +1290,13 @@ async def test_flush_telemetry_reports_sync_counts(
         events: list[EventInput] = [
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "metadata": {"tokens": 1},
             },
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "bob",
                 "metadata": {"tokens": 1},
             },
@@ -1253,6 +1346,7 @@ async def test_sync_report_does_not_split_a_message_in_flight(
         await writer.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "metadata": {"tokens": 1},
             }
@@ -1290,6 +1384,7 @@ async def test_sync_counts_are_reported_periodically(
         await outpost.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "metadata": {"tokens": 1},
             }
@@ -1314,7 +1409,9 @@ async def test_telemetry_opt_out(
         monkeypatch.setenv(TELEMETRY_ENV, environment)
     url, _ = redis_connection
     async with Outpost(url, client=polar_client, telemetry=telemetry) as outpost:
-        await outpost.track({"name": "call", "external_customer_id": "alice"})
+        await outpost.track(
+            {"name": "call", "external_customer_id": "alice", "external_id": "event"}
+        )
         await outpost.flush_telemetry()
     assert exported_spans == []
 
@@ -1332,7 +1429,9 @@ async def test_flush_telemetry_exports_buffered_spans(
     )
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
-        await outpost.track({"name": "call", "external_customer_id": "alice"})
+        await outpost.track(
+            {"name": "call", "external_customer_id": "alice", "external_id": "event"}
+        )
         assert exported_spans == []
         assert exported_metrics == []
         assert await outpost.flush_telemetry()
@@ -1456,7 +1555,9 @@ async def test_websocket_reconnects_and_keeps_serving(
         reconnecting_client(["first", "second"], requests) as client,
         Outpost(url, client=client) as outpost,
     ):
-        result = await outpost.track({"name": "call", "external_customer_id": "alice"})
+        result = await outpost.track(
+            {"name": "call", "external_customer_id": "alice", "external_id": "event"}
+        )
         with anyio.fail_after(1):
             while outpost.connection_id != "second":
                 await anyio.lowlevel.checkpoint()
@@ -1546,6 +1647,7 @@ async def test_snapshot_redis_error_reconnects_and_keeps_serving(
         await outpost.track(
             {
                 "name": "call",
+                "external_id": f"event-{next(_ids)}",
                 "external_customer_id": "alice",
                 "timestamp": "2026-10-12T12:10:00Z",
                 "metadata": {"tokens": 5},
@@ -1799,7 +1901,13 @@ async def test_redis_errors_raise_outpost_errors(
         await outpost.flush_telemetry()
         assert read_outcomes(exported_metrics) == [("meter", "redis_unavailable")]
         with pytest.raises(UnavailableRedisError):
-            await outpost.track({"name": "call", "external_customer_id": "alice"})
+            await outpost.track(
+                {
+                    "name": "call",
+                    "external_customer_id": "alice",
+                    "external_id": "event",
+                }
+            )
         server.connected = True
         with anyio.fail_after(3):
             while True:
@@ -1926,6 +2034,7 @@ async def test_stored_values_parse_the_same_with_and_without_json(
             await outpost.track(
                 {
                     "name": "call",
+                    "external_id": f"event-{next(_ids)}",
                     "external_customer_id": "alice",
                     "timestamp": TIMESTAMP,
                     "metadata": {"tokens": tokens},

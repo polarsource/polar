@@ -1,3 +1,4 @@
+import noBrokenMdxLinks from './no-broken-mdx-links.mjs'
 import noClassnameBox from './no-classname-box.mjs'
 import noClassnameText from './no-classname-text.mjs'
 import noExternalLinkComponent from './no-external-link-component.mjs'
@@ -16,6 +17,7 @@ const polarPlugin = {
     name: 'polar',
   },
   rules: {
+    'no-broken-mdx-links': noBrokenMdxLinks,
     'no-classname-box': noClassnameBox,
     'no-classname-text': noClassnameText,
     'no-external-link-component': noExternalLinkComponent,

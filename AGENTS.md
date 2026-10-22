@@ -305,7 +305,8 @@ On or after **2026-10-23**, recheck the [upstream disclosure](https://emudhra.we
 and the certificate stores shipped by our actual base images, runtimes and Stripe SDK.
 If upstream fixes cover every affected path, remove the manual mitigations consistently:
 the `sed` root exclusions and `trust extract` blocklists in Dockerfiles under `server/`,
-`dev/docker/` and `infra/`, plus the Stripe workaround that sets
+`dev/docker/` and `infra/`, the EC2 host blocklists in
+`terraform/modules/ec2_tailscale/tailscale-init.sh`, plus the Stripe workaround that sets
 `stripe_lib.ca_bundle_path = certifi.where()` in `polar.integrations.stripe` before platform
 and merchant migration HTTP clients are constructed. Remove that override only after
 Stripe's own bundle is verified safe for both client paths. Keep patched dependency
@@ -313,8 +314,9 @@ versions and security minimums.
 
 Before removing a mitigation, verify the replacement without that workaround rejects all
 twelve compromised test chains from the disclosure while legitimate, credential-free HTTPS
-connections still succeed. Check build stages, API/workers, Lambda, merchant migration clients
-and Node separately; one updated trust store does not establish protection for the others.
+connections still succeed. Check build stages, API/workers, Lambda, merchant migration clients,
+Node and EC2 Tailscale hosts separately; one updated trust store does not establish protection
+for the others.
 If upstream coverage is incomplete, retain the necessary workarounds and update this note
 with the remaining gaps and a new review date. Update regression tests alongside any cleanup.
 Once every workaround has been safely removed, delete this entire temporary section from

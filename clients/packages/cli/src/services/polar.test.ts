@@ -226,7 +226,8 @@ test.each([
   {
     name: 'a network failure',
     rejection: new TypeError('fetch failed'),
-    message: 'Polar API request failed. Check your connection and try again.',
+    message:
+      'Polar API request failed (TypeError). Check your connection and try again.',
   },
 ])('surfaces the API message for $name', async ({ rejection, message }) => {
   const polar = await polarWith(() => Effect.succeed(overrideCredential()))

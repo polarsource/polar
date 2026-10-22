@@ -109,6 +109,11 @@ export class UnavailableRedisError extends PolarOutpostError {
     super("Redis is unavailable", options);
   }
 }
+export class MissingExternalIdError extends PolarOutpostError {
+  constructor() {
+    super("Outpost needs an external_id on every event");
+  }
+}
 const redisUnavailable = (error: unknown): UnavailableRedisError =>
   new UnavailableRedisError({ cause: error });
 const isRedisConnectionError = (error: unknown): boolean => {
@@ -467,11 +472,21 @@ export class Outpost {
     await this.close();
   }
 
+  /**
+   * Reject an event Outpost cannot reconcile with Polar.
+   *
+   * @throws MissingExternalIdError when the event has no external_id.
+   */
+  validate(event: EventInput): void {
+    if (!event.external_id) throw new MissingExternalIdError();
+  }
+
   async track(event: EventInput): Promise<void> {
     const redis = this.requireRedis();
     const started = performance.now();
     let outcome = "ok";
     try {
+      this.validate(event);
       const parsed = parseEvent(event);
       await this.waitConfigured();
       const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));

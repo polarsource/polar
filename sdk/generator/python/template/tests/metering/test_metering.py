@@ -1,7 +1,8 @@
+import datetime
 import subprocess
 import sys
 import typing
-from unittest.mock import AsyncMock
+from unittest.mock import ANY, AsyncMock, Mock
 
 import anyio
 import anyio.lowlevel
@@ -19,6 +20,7 @@ from polar.metering import (
     MeteringError,
     MeteringOutpostOptions,
     MeteringStrategyProtocol,
+    ValidateProtocol,
     InvalidActorError,
 )
 from polar.metering.buffered import BufferedMeteringStrategy
@@ -157,7 +159,8 @@ async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
                     await anyio.lowlevel.checkpoint()
         send.assert_awaited_once()
         on_dropped.assert_awaited_once_with(
-            [{"name": "usage", "external_customer_id": "customer"}], "retry_exhausted"
+            [{"name": "usage", "external_customer_id": "customer", "timestamp": ANY}],
+            "retry_exhausted",
         )
 
 
@@ -202,7 +205,11 @@ async def test_metering_enters_and_calls_both_strategies(
             monkeypatch.setattr(strategy, "track", ingest)
             mocks.append((enter, exit, ingest))
 
-        event: EventInput = {"name": "usage", "external_customer_id": "customer"}
+        event: EventInput = {
+            "name": "usage",
+            "external_id": "event",
+            "external_customer_id": "customer",
+        }
         async with Metering(
             strategies=[buffered, outpost], client=polar._client
         ) as metering:
@@ -214,10 +221,61 @@ async def test_metering_enters_and_calls_both_strategies(
             await metering.track(**event)
 
             for _, _, ingest in mocks:
-                ingest.assert_awaited_once_with(event)
+                ingest.assert_awaited_once_with({**event, "timestamp": ANY})
 
         for _, exit, _ in mocks:
             exit.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_dates_an_event_that_carries_no_timestamp() -> None:
+    seen: list[EventInput] = []
+
+    class Recording:
+        async def __aenter__(self) -> typing.Self:
+            return self
+
+        async def __aexit__(self, *exc_info: object) -> None:
+            return None
+
+        async def track(self, event: EventInput) -> None:
+            seen.append(event)
+
+    async with (
+        PolarAsync("token") as polar,
+        Metering(
+            strategies=[Recording(), Recording()], client=polar._client
+        ) as metering,
+    ):
+        before = datetime.datetime.now(datetime.UTC)
+        await metering.track(name="usage", external_customer_id="customer")
+        await metering.track(
+            name="usage",
+            external_customer_id="customer",
+            timestamp="2026-10-22T08:00:00Z",
+        )
+    first, second, explicit, _ = seen
+    stamped = datetime.datetime.fromisoformat(first["timestamp"])
+    assert stamped.tzinfo is not None and stamped >= before
+    assert second["timestamp"] == first["timestamp"]
+    assert explicit["timestamp"] == "2026-10-22T08:00:00Z"
+
+
+@pytest.mark.anyio
+async def test_strategy_validation_runs_before_any_track() -> None:
+    accepting = AsyncMock(spec=MeteringStrategyProtocol)
+    refusing = AsyncMock(spec=MeteringStrategyProtocol)
+    refusing.validate = Mock(side_effect=RuntimeError("refused"))
+    assert isinstance(refusing, ValidateProtocol)
+    assert not isinstance(accepting, ValidateProtocol)
+    async with (
+        PolarAsync("token") as polar,
+        polar.metering(strategies=[accepting, refusing]) as metering,
+    ):
+        with pytest.raises(RuntimeError, match="refused"):
+            await metering.track(name="usage", external_customer_id="customer")
+        accepting.track.assert_not_awaited()
+        refusing.track.assert_not_awaited()
 
 
 @pytest.mark.anyio
@@ -271,7 +329,12 @@ async def test_actor_metering(identity: dict[str, typing.Any]) -> None:
             external_customer_id=identity.get("external_customer_id"),
         )
         await actor.track(name="usage", metadata={"tokens": 3})
-        expected_event = {**identity, "name": "usage", "metadata": {"tokens": 3}}
+        expected_event = {
+            **identity,
+            "name": "usage",
+            "metadata": {"tokens": 3},
+            "timestamp": ANY,
+        }
         strategy.track.assert_awaited_once_with(expected_event)
         ordinary_strategy.track.assert_awaited_once_with(expected_event)
 

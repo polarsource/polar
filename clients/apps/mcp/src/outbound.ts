@@ -22,8 +22,12 @@ export class PolarApiOutbound extends WorkerEntrypoint<
       return forbidden('This connection is read-only: only GET is allowed')
     }
     if (!isAllowedOperation(request.method, url.pathname)) {
-      return forbidden(
-        `${request.method} ${url.pathname} is not an operation exposed by this server. Use the search tool to find it.`,
+      return Response.json(
+        {
+          error: 'NotFound',
+          detail: `${request.method} ${url.pathname} is not an operation exposed by this server. Use the search tool to find it.`,
+        },
+        { status: 404 },
       )
     }
 

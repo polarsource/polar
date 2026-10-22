@@ -15,7 +15,6 @@ import {
   getSeatPrice,
   getUnitPrice,
   hasProductCheckout,
-  isLegacyRecurringProductPrice,
 } from '../guards'
 import { getSeatRows } from '../utils/seats'
 import {
@@ -59,9 +58,7 @@ const CheckoutPricingBreakdown = ({
   const temporaryDiscount = isTemporaryDiscount(checkout.discount)
 
   const interval = hasProductCheckout(checkout)
-    ? isLegacyRecurringProductPrice(checkout.product_price)
-      ? checkout.product_price.recurring_interval
-      : checkout.product.recurring_interval
+    ? checkout.product.recurring_interval
     : null
   const intervalCount = hasProductCheckout(checkout)
     ? checkout.product.recurring_interval_count

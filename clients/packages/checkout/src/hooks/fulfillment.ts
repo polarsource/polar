@@ -3,7 +3,6 @@
 import type { Client, schemas } from '@polar-sh/client'
 import { useCallback, useState } from 'react'
 
-import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { createSSEListener } from '../utils/sse'
 
 export const useCheckoutFulfillmentListener = (
@@ -21,23 +20,15 @@ export const useCheckoutFulfillmentListener = (
 
       let checkoutSuccessful = false
       let orderCreated = false
-      let subscriptionCreated =
-        !hasProductCheckout(checkout) ||
-        !isLegacyRecurringProductPrice(checkout.product_price)
       let webhookEventDelivered = false
 
       const checkResolution = () => {
-        if (checkoutSuccessful && orderCreated && subscriptionCreated) {
+        if (checkoutSuccessful && orderCreated) {
           setFulfillmentLabel(
             `Waiting confirmation from ${checkout.organization.name} `,
           )
         }
-        if (
-          checkoutSuccessful &&
-          orderCreated &&
-          subscriptionCreated &&
-          webhookEventDelivered
-        ) {
+        if (checkoutSuccessful && orderCreated && webhookEventDelivered) {
           controller.abort()
           resolve()
         }
@@ -61,21 +52,6 @@ export const useCheckoutFulfillmentListener = (
         checkResolution()
       }
       checkoutEvents.on('checkout.order_created', orderCreatedListener)
-
-      const subscriptionCreatedListener = () => {
-        subscriptionCreated = true
-        checkoutEvents.off(
-          'checkout.subscription_created',
-          subscriptionCreatedListener,
-        )
-        checkResolution()
-      }
-      if (!subscriptionCreated) {
-        checkoutEvents.on(
-          'checkout.subscription_created',
-          subscriptionCreatedListener,
-        )
-      }
 
       const webhookEventDeliveredListener = (data: {
         status: schemas['CheckoutStatus']

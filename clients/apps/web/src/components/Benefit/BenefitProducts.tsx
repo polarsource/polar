@@ -1,10 +1,8 @@
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { Pagination } from '@/components/Products/Benefits/components/Pagination'
-import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { useProducts } from '@/hooks/queries/products'
-import { hasLegacyRecurringPrices } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Pill, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -84,14 +82,10 @@ export const BenefitProducts = ({
                     )}
                   </Box>
                   <div className="shrink-0 text-sm leading-snug">
-                    {hasLegacyRecurringPrices(product) ? (
-                      <LegacyRecurringProductPrices product={product} />
-                    ) : (
-                      <ProductPriceLabel
-                        product={product}
-                        currency={organization.default_presentment_currency}
-                      />
-                    )}
+                    <ProductPriceLabel
+                      product={product}
+                      currency={organization.default_presentment_currency}
+                    />
                   </div>
                 </ListItem>
               </Link>

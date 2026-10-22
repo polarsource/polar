@@ -4,7 +4,12 @@ variable "organization" {
 }
 
 variable "database" {
-  description = "Database name. Created together with its first branch."
+  description = "PlanetScale database slug. Created together with its first branch."
+  type        = string
+}
+
+variable "app_database_name" {
+  description = "Logical PostgreSQL database for the application. Must be created with SQL before applying app_role_setup_sql."
   type        = string
 }
 
@@ -15,7 +20,7 @@ variable "branch" {
 }
 
 variable "app_role_name" {
-  description = "Base name of the application role. PlanetScale appends a suffix."
+  description = "Display name of the application role. PlanetScale generates its SQL username."
   type        = string
 }
 

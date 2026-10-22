@@ -1,6 +1,6 @@
 locals {
   app_role_sql_identifier = "\"${replace(planetscale_postgres_redacted_branch_role.app.base_username, "\"", "\"\"")}\""
-  database_sql_identifier = "\"${replace(planetscale_postgres_redacted_branch_role.app.database_name, "\"", "\"\"")}\""
+  database_sql_identifier = "\"${replace(var.app_database_name, "\"", "\"\"")}\""
 }
 
 output "branch_id" {
@@ -30,15 +30,15 @@ output "app_role_base_username" {
 
 output "database_name" {
   description = "PostgreSQL database name to connect to, distinct from the PlanetScale database slug."
-  value       = planetscale_postgres_redacted_branch_role.app.database_name
+  value       = var.app_database_name
 }
 
 output "app_role_setup_sql" {
-  description = "Run as the default postgres role in database_name before importing data or running migrations. Import objects as the app role; existing objects retain their owners."
+  description = "Run as the default postgres role connected to database_name, which must already exist. Import objects and run migrations as the app role; existing objects retain their owners."
   value       = <<-SQL
-    GRANT ${local.app_role_sql_identifier} TO CURRENT_USER;
+    -- Run as the default postgres role connected to ${local.database_sql_identifier}.
     GRANT CONNECT, CREATE ON DATABASE ${local.database_sql_identifier} TO ${local.app_role_sql_identifier};
-    ALTER SCHEMA public OWNER TO ${local.app_role_sql_identifier};
+    GRANT USAGE, CREATE ON SCHEMA public TO ${local.app_role_sql_identifier};
   SQL
 }
 

@@ -840,7 +840,11 @@ it("drops a cold bucket once Polar confirmed every pending event", async () => {
 
 it("confirms once per meter of a reducer and applies each meter's snapshot", async () => {
   reducers[0].meter_ids = ["meter", "other"];
-  meterSnapshots = { other: { credited_units: 50, delay: 0 } };
+  // Credits the warmup did not seed, so each meter's snapshot has to land.
+  meterSnapshots = {
+    meter: { credited_units: 80, delay: 0 },
+    other: { credited_units: 50, delay: 0 },
+  };
   const outpost = await warm();
   const events = [usage("event-0", 10), usage("event-1", 10)];
   for (const event of events) await outpost.track(event);
@@ -849,7 +853,7 @@ it("confirms once per meter of a reducer and applies each meter's snapshot", asy
   const other = await start();
   await other.actor(customer);
   await vi.waitFor(async () => expect(await redis.hget(key, "credited:other")).toBe("50"));
-  expect(await redis.hget(key, "credited:meter")).toBe("100");
+  expect(await redis.hget(key, "credited:meter")).toBe("80");
   expect(confirmRequests.map((request) => request.meter_id).sort()).toEqual(["meter", "other"]);
 });
 

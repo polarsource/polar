@@ -1416,15 +1416,16 @@ async def test_confirms_once_per_meter_and_applies_each_meters_snapshot(
         for index in range(2):
             await outpost.track(_usage(f"event-{index}", 10))
         ingested.update(f"event-{index}" for index in range(2))
-        snapshots["external:alice"] = _sealing(2, 20)
+        # Credits the warmup did not seed, so each meter's snapshot has to land.
+        snapshots["external:alice"] = {**_sealing(2, 20), "credited_units": 80}
         async with Outpost(url, client=polar_client) as other:
             await other.actor(external_customer_id="alice")
 
             async def other_credited() -> bool:
-                return await redis.hget(key, "credited:other") == b"100"
+                return await redis.hget(key, "credited:other") == b"80"
 
             await _wait_for(other_credited)
-    assert await redis.hget(key, "credited:meter") == b"100"
+    assert await redis.hget(key, "credited:meter") == b"80"
     assert sorted(
         request["payload"]["meter_id"]
         for request in websocket_requests

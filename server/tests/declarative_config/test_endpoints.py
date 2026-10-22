@@ -81,7 +81,10 @@ class TestApply:
             "settings": None,
         }
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(
         self, mocker: MockerFixture, client: AsyncClient
@@ -550,7 +553,10 @@ class TestExport:
             }
         ]
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(
         self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization

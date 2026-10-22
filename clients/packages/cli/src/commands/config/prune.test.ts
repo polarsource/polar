@@ -29,14 +29,20 @@ const acme = {
 const apples: PruneEntry = {
   resource: 'meter',
   external_id: 'apples',
-  in_use: false,
+  customers: 0,
   referenced_by: [],
 }
 const beta: PruneEntry = {
   resource: 'benefit',
   external_id: 'beta',
-  in_use: true,
+  customers: 3,
   referenced_by: ['legacy'],
+}
+const legacy: PruneEntry = {
+  resource: 'product',
+  external_id: 'legacy',
+  customers: 1,
+  referenced_by: [],
 }
 
 const run = async (
@@ -57,7 +63,8 @@ const run = async (
           pull: () => Effect.die('unused'),
           prune: (_config, _organization, confirm) =>
             entries.some(
-              (entry) => !entry.in_use && entry.referenced_by.length === 0,
+              (entry) =>
+                entry.customers === 0 && entry.referenced_by.length === 0,
             )
               ? confirm(entries).pipe(
                   Effect.tap(() => Effect.sync(() => removed())),
@@ -91,14 +98,18 @@ const message = (exit: Exit.Exit<unknown, unknown>) =>
 
 describe('polar config prune', () => {
   test('removes only the unused entries with --confirm', async () => {
-    const { output, removed, exit } = await run([apples, beta], ['--confirm'])
+    const { output, removed, exit } = await run(
+      [apples, beta, legacy],
+      ['--confirm'],
+    )
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(removed).toBe(1)
     expect(output).toContain('╭─ Deprecated')
     expect(output).toContain('│ meters\n  │ - apples')
     expect(output).toContain(
-      '│ benefits\n  │ = beta  has customers, used by legacy',
+      '│ benefits\n  │ = beta    3 customers, used by legacy',
     )
+    expect(output).toContain('│ products\n  │ = legacy  1 subscriber')
     expect(output).toContain(
       'polar.json: 1 entry removed, nothing changed on Polar',
     )

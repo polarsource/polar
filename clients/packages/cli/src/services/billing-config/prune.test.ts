@@ -37,13 +37,13 @@ const source = `${JSON.stringify(
 const apples: PruneEntry = {
   resource: 'meter',
   external_id: 'apples',
-  in_use: false,
+  customers: 0,
   referenced_by: [],
 }
 const beta: PruneEntry = {
   resource: 'benefit',
   external_id: 'beta',
-  in_use: true,
+  customers: 3,
   referenced_by: [],
 }
 

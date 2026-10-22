@@ -590,7 +590,7 @@ class TestPrune:
                 {
                     "resource": "meter",
                     "external_id": "sdk-tool-calls",
-                    "in_use": False,
+                    "customers": 0,
                     "referenced_by": [],
                 }
             ]

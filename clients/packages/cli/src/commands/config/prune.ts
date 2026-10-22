@@ -26,7 +26,13 @@ const confirmed = Flag.Boolean('confirm').pipe(
 
 const reason = (entry: PruneEntry) =>
   [
-    ...(entry.in_use ? ['has customers'] : []),
+    ...(entry.customers === 0
+      ? []
+      : [
+          entry.resource === 'product'
+            ? plural(entry.customers, 'subscriber', 'subscribers')
+            : plural(entry.customers, 'customer', 'customers'),
+        ]),
     ...(entry.referenced_by.length > 0
       ? [`used by ${entry.referenced_by.map(ui.printable).join(', ')}`]
       : []),

@@ -1,10 +1,12 @@
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, exists
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import aliased
 
 from polar.auth.models import AuthSubject, Customer, Member, is_member
 from polar.kit.repository import RepositoryBase
+from polar.kit.utils import utc_now
 from polar.models.downloadable import Downloadable, DownloadableStatus
 from polar.models.file import File
 from polar.postgres import sql
@@ -47,6 +49,44 @@ class DownloadableRepository(RepositoryBase[Downloadable]):
         )
         result = await self.session.execute(statement)
         return result.scalars().one()
+
+    async def repoint_benefit(
+        self,
+        *,
+        customer_id: UUID,
+        member_id: UUID | None,
+        benefit_id: UUID,
+        new_benefit_id: UUID,
+    ) -> None:
+        """Move the downloadables of a benefit to another benefit.
+
+        A file the customer already has through the other benefit keeps that row,
+        so the previous one is deleted instead of violating the scope uniqueness.
+        """
+        scope = (
+            Downloadable.customer_id == customer_id,
+            Downloadable.member_id.is_not_distinct_from(member_id),
+            Downloadable.benefit_id == benefit_id,
+            Downloadable.deleted_at.is_(None),
+        )
+        existing = aliased(Downloadable)
+        await self.session.execute(
+            sql.update(Downloadable)
+            .where(
+                *scope,
+                ~exists().where(
+                    existing.customer_id == Downloadable.customer_id,
+                    existing.member_id.is_not_distinct_from(Downloadable.member_id),
+                    existing.file_id == Downloadable.file_id,
+                    existing.benefit_id == new_benefit_id,
+                    existing.deleted_at.is_(None),
+                ),
+            )
+            .values(benefit_id=new_benefit_id)
+        )
+        await self.session.execute(
+            sql.update(Downloadable).where(*scope).values(deleted_at=utc_now())
+        )
 
     def get_customer_statement(
         self, auth_subject: AuthSubject[Customer | Member]

@@ -111,6 +111,8 @@ export const credits = (name?: string) => ({
 export type BenefitHelpers<Meter extends string> = {
   readonly flag: typeof flag
   readonly credits: (name?: string) => {
-    readonly meter: (meter: Meter) => CreditsBuilder<Meter>
+    readonly meter: <const Credited extends Meter>(
+      meter: Credited,
+    ) => CreditsBuilder<Credited>
   }
 }

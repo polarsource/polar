@@ -104,7 +104,10 @@ class ProductRepository(
     ) -> Select[tuple[Product]]:
         return (
             self.get_base_statement()
-            .where(Product.organization_id == organization_id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.is_current.is_(True),
+            )
             .order_by(Product.created_at, Product.id)
         )
 

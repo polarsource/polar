@@ -59,8 +59,6 @@ export { fixed, free, metered, seats, units } from './schema/price'
 export type { PriceConfig, PriceDefinition, TaxBehavior } from './schema/price'
 export { product } from './schema/product'
 export type { ProductConfig, ProductDefinition } from './schema/product'
-export { discount } from './schema/discount'
-export type { DiscountConfig, DiscountDefinition } from './schema/discount'
 export {
   defineWebhookHandler,
   discord,

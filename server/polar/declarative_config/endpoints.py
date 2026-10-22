@@ -106,7 +106,7 @@ async def apply(
     """
     Apply a declarative config document to the organization.
 
-    Meters, benefits, products, discounts and webhook endpoints are matched by
+    Meters, benefits, products and webhook endpoints are matched by
     `external_id`: missing ones are created, changed ones are updated, and ones
     not listed are left untouched.
     `settings` are applied first, so products can be priced in a new

@@ -15,7 +15,6 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import catalog as catalog_service
-from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
@@ -33,7 +32,7 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, catalogs, discounts, products, validation
+from . import benefits, catalogs, products, validation
 from .auth import SECTION_SCOPES
 from .schemas import (
     MAXIMUM_METERS,
@@ -63,7 +62,6 @@ from .schemas import (
 )
 from .validation import (
     BenefitChange,
-    DiscountChange,
     MeterChange,
     ProductChange,
     ResourceChange,
@@ -223,7 +221,7 @@ class DeclarativeConfigService:
         benefit_results, benefit_ids = await self._apply_benefits(
             session, redis, auth_subject, organization, changes.benefits, meter_ids
         )
-        product_results, product_ids, new_products = await self._apply_products(
+        product_results, new_products = await self._apply_products(
             session,
             auth_subject,
             organization,
@@ -236,9 +234,6 @@ class DeclarativeConfigService:
             await catalog_service.publish(
                 session, organization, live, new_products, version_hash
             )
-        discount_results = await self._apply_discounts(
-            session, auth_subject, organization, changes.discounts, product_ids
-        )
         await catalogs.carry_over_references(session, changes.products, new_products)
         if (
             changes.settings is not None
@@ -258,7 +253,6 @@ class DeclarativeConfigService:
                 *meter_results,
                 *benefit_results,
                 *product_results,
-                *discount_results,
             ],
             settings=settings_result,
         )
@@ -295,7 +289,6 @@ class DeclarativeConfigService:
                 *self._plan_changes(ConfigResource.meter, changes.meters),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *product_changes,
-                *self._plan_changes(ConfigResource.discount, changes.discounts),
             ],
             settings=None
             if changes.settings is None
@@ -353,19 +346,14 @@ class DeclarativeConfigService:
                 product_id is not None
                 and await subscription_repository.exists_billable_by_product(product_id)
             )
-            referenced_by = [
-                discount.external_id
-                for discount in config.discounts
-                if product.external_id in discount.products
-            ]
-            if in_use or referenced_by:
+            if in_use:
                 kept_products.append(product)
             product_entries.append(
                 ConfigPruneEntry(
                     resource=ConfigResource.product,
                     external_id=product.external_id,
                     in_use=in_use,
-                    referenced_by=referenced_by,
+                    referenced_by=[],
                 )
             )
 
@@ -710,7 +698,7 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Product]]:
+    ) -> tuple[list[ConfigResult], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
             str(id): external_id
@@ -718,7 +706,6 @@ class DeclarativeConfigService:
             for external_id, id in ids.items()
         }
         results: list[ConfigResult] = []
-        product_ids: dict[str, UUID] = {}
         new_products: dict[str, Product] = {}
         for change in changes:
             config = change.config
@@ -767,7 +754,6 @@ class DeclarativeConfigService:
                     )
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
-            product_ids[config.external_id] = product.id
             if (change.existing is None or copy_on_write) and not product.is_archived:
                 new_products[config.external_id] = product
             results.append(
@@ -777,49 +763,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, product_ids, new_products
-
-    async def _apply_discounts(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization | Agent],
-        organization: Organization,
-        changes: Sequence[DiscountChange],
-        product_ids: dict[str, UUID],
-    ) -> list[ConfigResult]:
-        external_ids = {str(id): external_id for external_id, id in product_ids.items()}
-        results: list[ConfigResult] = []
-        for change in changes:
-            try:
-                if change.existing is None:
-                    await discount_service.create(
-                        session,
-                        discounts.discount_create(
-                            change.config,
-                            None if is_organization(auth_subject) else organization.id,
-                            product_ids,
-                        ),
-                        auth_subject,
-                        declarative_config=True,
-                    )
-                elif change.update_dict:
-                    await discount_service.update(
-                        session,
-                        change.existing,
-                        discounts.discount_update(change, product_ids),
-                        auth_subject,
-                        declarative_config=True,
-                    )
-            except PolarRequestValidationError as e:
-                raise discounts.discount_error(e, change.index, external_ids) from e
-            results.append(
-                ConfigResult(
-                    resource=ConfigResource.discount,
-                    external_id=change.config.external_id,
-                    action=change.action,
-                )
-            )
-        return results
+        return results, new_products
 
 
 declarative_config = DeclarativeConfigService()

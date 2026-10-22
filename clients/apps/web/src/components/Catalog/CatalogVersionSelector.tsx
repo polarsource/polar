@@ -57,7 +57,7 @@ export const CatalogVersionSelector = ({
 }) => {
   const enabled = !!organization.feature_settings?.config_as_code_enabled
   const { data, isLoading } = useCatalogs(organization.id, enabled)
-  const versions = useMemo(() => catalogVersions(data?.items ?? []), [data])
+  const versions = useMemo(() => catalogVersions(data ?? []), [data])
 
   if (!enabled) {
     return null

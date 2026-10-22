@@ -63,6 +63,7 @@ class OrganizationReviewRepository(
             reviewed_at=reviewed_at,
         )
         self.session.add(agent_review)
+        await self.session.flush()
         return agent_review
 
     async def get_latest_agent_review(

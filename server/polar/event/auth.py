@@ -3,11 +3,17 @@ from typing import Annotated
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator
-from polar.auth.models import AuthSubject, User, is_single_organization_credential
+from polar.auth.models import (
+    Agent,
+    AuthSubject,
+    User,
+    is_single_organization_credential,
+)
 from polar.auth.scope import Scope
 from polar.exceptions import NotPermitted
 from polar.models.organization import Organization
 
+# Not for unclaimed agents: events embed the customer they belong to.
 _EventRead = Authenticator(
     required_scopes={
         Scope.events_read,
@@ -17,18 +23,29 @@ _EventRead = Authenticator(
 )
 EventRead = Annotated[AuthSubject[User | Organization], Depends(_EventRead)]
 
+_EventNamesRead = Authenticator(
+    required_scopes={
+        Scope.events_read,
+        Scope.events_write,
+    },
+    allowed_subjects={User, Organization, Agent},
+)
+EventNamesRead = Annotated[
+    AuthSubject[User | Organization | Agent], Depends(_EventNamesRead)
+]
+
 _EventWrite = Authenticator(
     required_scopes={
         Scope.events_write,
     },
-    allowed_subjects={User, Organization},
+    allowed_subjects={User, Organization, Agent},
 )
-EventWrite = Annotated[AuthSubject[User | Organization], Depends(_EventWrite)]
+EventWrite = Annotated[AuthSubject[User | Organization | Agent], Depends(_EventWrite)]
 
 
 async def _event_write_single_organization(
     auth_subject: EventWrite,
-) -> AuthSubject[User | Organization]:
+) -> AuthSubject[User | Organization | Agent]:
     if not is_single_organization_credential(auth_subject):
         raise NotPermitted(
             "Ingesting events requires an organization access token, "
@@ -38,5 +55,6 @@ async def _event_write_single_organization(
 
 
 EventWriteSingleOrganization = Annotated[
-    AuthSubject[User | Organization], Depends(_event_write_single_organization)
+    AuthSubject[User | Organization | Agent],
+    Depends(_event_write_single_organization),
 ]

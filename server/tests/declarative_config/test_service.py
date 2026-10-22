@@ -32,6 +32,7 @@ from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
+    Agent,
     Customer,
     Organization,
     ProductPriceMeteredTiers,
@@ -1593,11 +1594,12 @@ class TestPlan:
         assert plan.issues == []
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read}),
+        AuthSubjectFixture(subject="agent"),
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_webhooks_require_webhooks_scope(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization | Agent]
     ) -> None:
         with pytest.raises(InsufficientScopeError):
             await declarative_config_service.plan(

@@ -13,7 +13,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import get_accessible_org_ids
@@ -38,6 +38,7 @@ from polar.meter.aggregation import PropertyAggregation
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
 from polar.models import (
+    Agent,
     Customer,
     CustomerMeter,
     Event,
@@ -724,7 +725,7 @@ class EventService:
     async def list_names(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
@@ -898,7 +899,7 @@ class EventService:
     async def ingest(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         ingest: EventsIngest,
         *,
         redis: Redis | None = None,
@@ -1264,7 +1265,7 @@ class EventService:
     async def _get_org_ids_with_staged_events_enabled(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization_ids: set[uuid.UUID],
     ) -> set[uuid.UUID]:
         if is_organization(auth_subject):
@@ -1282,7 +1283,9 @@ class EventService:
         )
 
     async def _get_organization_validation_function(
-        self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Callable[[int, uuid.UUID | None], uuid.UUID]:
         if is_organization(auth_subject):
 
@@ -1310,10 +1313,15 @@ class EventService:
         allowed_organizations = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.events_ingest
         )
+        default_organization_id = (
+            auth_subject.subject.organization_id if is_agent(auth_subject) else None
+        )
 
         def _validate_organization_id_by_user(
             index: int, organization_id: uuid.UUID | None
         ) -> uuid.UUID:
+            if organization_id is None:
+                organization_id = default_organization_id
             if organization_id is None:
                 raise EventIngestValidationError(
                     [
@@ -1344,7 +1352,7 @@ class EventService:
     async def _get_customer_validation_function(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         customer_ids: set[uuid.UUID],
     ) -> Callable[[int, uuid.UUID], uuid.UUID]:
         if not customer_ids:
@@ -1354,7 +1362,7 @@ class EventService:
                 ~Customer.is_deleted,
                 Customer.id.in_(customer_ids),
             )
-            if is_user(auth_subject):
+            if is_user(auth_subject) or is_agent(auth_subject):
                 statement = statement.where(
                     Customer.organization_id.in_(
                         select_accessible_org_ids(auth_subject)
@@ -1387,7 +1395,7 @@ class EventService:
     async def _get_member_validation_function(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         member_ids: set[uuid.UUID],
     ) -> Callable[[int, uuid.UUID], uuid.UUID]:
         if not member_ids:
@@ -1397,7 +1405,7 @@ class EventService:
                 ~Member.is_deleted,
                 Member.id.in_(member_ids),
             )
-            if is_user(auth_subject):
+            if is_user(auth_subject) or is_agent(auth_subject):
                 statement = statement.where(
                     Member.organization_id.in_(select_accessible_org_ids(auth_subject))
                 )
@@ -1428,7 +1436,7 @@ class EventService:
     async def _get_organization_ids_for_subject(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: Sequence[uuid.UUID] | None,
     ) -> set[AccessibleOrganizationID]:
         """Get accessible org IDs, optionally filtered to a subset."""

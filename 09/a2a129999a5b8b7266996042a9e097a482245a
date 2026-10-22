@@ -1,0 +1,22 @@
+server/tests/event/test_system.py
+  s_203c33c3a8ce3d::t_105fb0e9c11c9d 1-31
+server/polar/event/system.py
+  s_203c33c3a8ce3d::t_a94f2542cf7fea 11
+  s_203c33c3a8ce3d::t_e2c5d4c39f1eef 1017-1019
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "09a2a129999a5b8b7266996042a9e097a482245a",
+  "prompts": {},
+  "sessions": {
+    "s_203c33c3a8ce3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e8722df0-121c-4871-80e6-6ec22fdfcf3e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

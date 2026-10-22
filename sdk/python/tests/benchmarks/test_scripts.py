@@ -79,9 +79,12 @@ def test_write_bucket_one_event(
     newest_bucket_start = COLD_UNTIL + (buckets - 1) * BUCKET_SIZE
     # The client loads each script once and calls it by hash.
     sha = redis.script_load(WRITE_BUCKET_SCRIPT)
-    benchmark(
-        redis.evalsha, sha, 2, *write_args(identity_of(buckets), newest_bucket_start)
-    )
+    identity = identity_of(buckets)
+
+    def write() -> None:
+        redis.evalsha(sha, 2, *write_args(identity, newest_bucket_start))
+
+    benchmark(write)
 
 
 def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) -> None:

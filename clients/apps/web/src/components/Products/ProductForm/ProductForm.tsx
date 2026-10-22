@@ -48,15 +48,17 @@ const ProductForm = ({
   update,
   benefitsSlot,
   hasMeterCreditBenefit,
+  nameFlagged,
 }: {
   organization: schemas['Organization']
   update?: boolean
   benefitsSlot: React.ReactNode
   hasMeterCreditBenefit?: boolean
+  nameFlagged?: boolean
 }) => {
   return (
     <div className="dark:divide-polar-700 flex flex-col divide-y">
-      <ProductInfoSection />
+      <ProductInfoSection nameFlagged={nameFlagged} />
 
       <ProductPricingSection
         organization={organization}

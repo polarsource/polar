@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends, Query
 
+from polar.authz.dependencies import AuthorizeWebUserRead
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -24,11 +25,14 @@ from polar.routing import APIRouter
 from polar.version import V2027_01
 
 from . import auth, legacy_schemas
+from .name_check import check_product_name
 from .schemas import Product as ProductSchema
 from .schemas import (
     ProductBenefitsUpdate,
     ProductCreate,
     ProductID,
+    ProductNameCheck,
+    ProductNameCheckRequest,
     ProductUpdate,
 )
 from .service import ProductNotDeletable
@@ -201,6 +205,20 @@ async def get(
         raise ResourceNotFound()
 
     return product
+
+
+@router.post(
+    "/name-check",
+    summary="Check Product Name",
+    response_model=ProductNameCheck,
+    tags=[APITag.private],
+)
+async def name_check(
+    auth_subject: AuthorizeWebUserRead,
+    name_check_request: ProductNameCheckRequest,
+) -> ProductNameCheck:
+    """Warn when a product name suggests a use case the Acceptable Use Policy forbids."""
+    return await check_product_name(name_check_request.name)
 
 
 @router.post(

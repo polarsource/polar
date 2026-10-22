@@ -15,7 +15,7 @@ import {
   ProductEditOrCreateForm,
   productToCreateForm,
 } from '@/utils/product'
-import { findFlaggedProductPhrase } from '@/utils/blocked-words'
+import { useFlaggedProductName } from '@/hooks/useFlaggedProductName'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -98,7 +98,7 @@ export const CreateProductPage = ({
   })
   const { handleSubmit, setError } = form
   const name = useWatch({ control: form.control, name: 'name' })
-  const flaggedPhrase = findFlaggedProductPhrase(name ?? '')
+  const flaggedPhrase = useFlaggedProductName(name ?? '')
 
   const onInvalid = useCallback(
     (errors: FieldErrors<ProductEditOrCreateForm>) => {
@@ -236,6 +236,7 @@ export const CreateProductPage = ({
               organization={organization}
               update={false}
               hasMeterCreditBenefit={hasMeterCreditBenefit}
+              nameFlagged={flaggedPhrase !== null}
               benefitsSlot={
                 <Benefits
                   organization={organization}
@@ -251,15 +252,17 @@ export const CreateProductPage = ({
           </form>
         </Form>
       </div>
-      <Box flexDirection="column" rowGap="l" paddingBottom="3xl">
+      <Box flexDirection="column" rowGap="xl" paddingBottom="3xl">
         {flaggedPhrase && (
           <Alert
             variant="warning"
             title="This product may not be allowed on Polar"
             description={
               <>
-                “{flaggedPhrase.phrase}” suggests {flaggedPhrase.category},
-                which is not permitted under our{' '}
+                {flaggedPhrase.phrase
+                  ? `“${flaggedPhrase.phrase}” suggests`
+                  : 'The name suggests'}{' '}
+                {flaggedPhrase.category}, which is not permitted under our{' '}
                 <a
                   href="https://polar.sh/legal/acceptable-use-policy"
                   className="underline"

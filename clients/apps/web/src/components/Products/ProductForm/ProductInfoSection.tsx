@@ -1,7 +1,7 @@
 'use client'
 
 import { Section } from '@/components/Layout/Section'
-import { Input } from '@polar-sh/orbit'
+import { Input, Text } from '@polar-sh/orbit'
 import {
   FormControl,
   FormField,
@@ -15,11 +15,13 @@ import { ProductFormType } from './ProductForm'
 export interface ProductInfoSectionProps {
   className?: string
   compact?: boolean
+  nameFlagged?: boolean
 }
 
 export const ProductInfoSection = ({
   className,
   compact,
+  nameFlagged,
 }: ProductInfoSectionProps) => {
   const { control } = useFormContext<ProductFormType>()
 
@@ -55,6 +57,20 @@ export const ProductInfoSection = ({
                 <Input {...field} value={field.value || ''} />
               </FormControl>
               <FormMessage />
+              {nameFlagged && (
+                <Text variant="caption" color="warning">
+                  This name suggests a product that is not permitted under our{' '}
+                  <a
+                    href="https://polar.sh/legal/acceptable-use-policy"
+                    className="underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Acceptable Use Policy
+                  </a>
+                  .
+                </Text>
+              )}
             </FormItem>
           )}
         />

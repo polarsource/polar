@@ -262,10 +262,11 @@ for payments it processes.
 
   <Accordion title="Inactive migrations">
     A migration with no activity for 90 days is closed. Polar deletes the Stripe
-    API key it stored and removes the records that were never imported. The key
-    stays active in Stripe, so revoke it there if you no longer need it. You can
-    no longer switch subscriptions still on Stripe from that migration. To move
-    them later, start a new migration.
+    API key it stored and removes the records still waiting to be imported.
+    Skipped and failed records are kept. The key stays active in Stripe, so
+    revoke it there if you no longer need it. You can no longer switch
+    subscriptions still on Stripe from that migration. To move them later, start
+    a new migration.
 
   </Accordion>
 

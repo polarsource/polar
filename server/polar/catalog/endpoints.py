@@ -5,9 +5,9 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session
+from polar.product.auth import CreatorProductsRead
 from polar.routing import APIRouter
 
-from . import auth
 from .schemas import Catalog as CatalogSchema
 from .service import catalog as catalog_service
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/catalogs", tags=["catalogs", APITag.private])
 
 @router.get("/", summary="List Catalogs", response_model=ListResource[CatalogSchema])
 async def list(
-    auth_subject: auth.CatalogRead,
+    auth_subject: CreatorProductsRead,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
@@ -29,15 +29,17 @@ async def list(
     )
     return ListResource.from_paginated_results(
         [
-            CatalogSchema(
-                id=catalog.id,
-                created_at=catalog.created_at,
-                modified_at=catalog.modified_at,
-                organization_id=catalog.organization_id,
-                version_hash=catalog.version_hash,
-                status=catalog.status,
-                published_at=catalog.published_at,
-                product_count=product_count,
+            CatalogSchema.model_validate(
+                {
+                    "id": catalog.id,
+                    "created_at": catalog.created_at,
+                    "modified_at": catalog.modified_at,
+                    "organization_id": catalog.organization_id,
+                    "version_hash": catalog.version_hash,
+                    "status": catalog.status,
+                    "published_at": catalog.published_at,
+                    "product_count": product_count,
+                }
             )
             for catalog, product_count in results
         ],

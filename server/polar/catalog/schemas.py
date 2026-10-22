@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import Field
 
@@ -11,11 +12,11 @@ class Catalog(IDSchema, TimestampedSchema):
     """A published version of an organization's product catalog."""
 
     organization_id: OrganizationID
-    version_hash: str | None = Field(
+    version_hash: str = Field(
         description="Hash identifying this version of the catalog."
     )
-    status: CatalogStatus = Field(
+    status: Literal[CatalogStatus.live, CatalogStatus.archived] = Field(
         description="`live` for the catalog new checkouts use, `archived` for previous versions."
     )
-    published_at: datetime | None = Field(description="When the catalog was published.")
+    published_at: datetime = Field(description="When the catalog was published.")
     product_count: int = Field(description="Number of products in the catalog.")

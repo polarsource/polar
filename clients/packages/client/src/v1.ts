@@ -31473,6 +31473,11 @@ export interface components {
       product_id?: string | null
       /** Name */
       name: string
+      /**
+       * Tier
+       * @description Plan tier shared by the monthly and annual variants of the same plan. Read from the product's `tier` metadata, falling back to its name.
+       */
+      tier: string
       /** Description */
       description?: string | null
       /** Recurring Interval */

@@ -18,6 +18,7 @@ export const PlanCard = ({
   isSelected,
   onSelect,
   startupProgramOffer,
+  annualSavingsPercent,
 }: {
   plan: schemas['OrganizationPlan']
   isCurrent: boolean
@@ -27,6 +28,7 @@ export const PlanCard = ({
   /** When set, this plan is the org's Startup Program target — render the
    * free-for-N-months highlight on top of the normal plan card. */
   startupProgramOffer?: { monthsFree: number }
+  annualSavingsPercent?: number | null
 }) => {
   const amount = plan.price?.amount ?? 0
   const currency = plan.price?.currency ?? 'usd'
@@ -54,6 +56,9 @@ export const PlanCard = ({
           </Text>
           {isCurrent && <Pill color="gray">Current</Pill>}
           {hasOffer && <Pill color="green">Free for {offerMonths} months</Pill>}
+          {annualSavingsPercent != null && !hasOffer && (
+            <Pill color="green">Save {annualSavingsPercent}%</Pill>
+          )}
           {plan.highlight && !isCurrent && !hasOffer && (
             <Pill color="blue">Popular</Pill>
           )}

@@ -15,9 +15,18 @@ import {
 } from '@/hooks/queries/billing'
 import { useBillingPlanTelemetry } from '@/hooks/useBillingPlanTelemetry'
 import { extractApiErrorMessage } from '@/utils/api/errors'
+import {
+  PLAN_INTERVAL_LABELS,
+  PlanInterval,
+  annualSavingsPercent,
+  availablePlanIntervals,
+  defaultPlanInterval,
+  filterPlansByInterval,
+  isIntervalSwitch,
+} from '@/utils/planIntervals'
 import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import Link from 'next/link'
@@ -90,6 +99,26 @@ export default function ChangePlanPage({
     )
     return currentInList ? data : [...data, subscription.plan]
   }, [plansQuery.data, subscription, isCurrentPlanCustom])
+  const intervals = useMemo(() => availablePlanIntervals(plans), [plans])
+  const showIntervalToggle = intervals.length > 1
+  const startupProgramPlan = plans.find(
+    (p) =>
+      subscription?.startup_program_status === 'invited' &&
+      p.product_id === subscription.startup_program_scale_product_id,
+  )
+  const [selectedInterval, setSelectedInterval] = useState<PlanInterval | null>(
+    null,
+  )
+  const interval =
+    selectedInterval ??
+    defaultPlanInterval(intervals, [
+      subscription?.plan.recurring_interval,
+      startupProgramPlan?.recurring_interval,
+    ])
+  const visiblePlans = useMemo(
+    () => (showIntervalToggle ? filterPlansByInterval(plans, interval) : plans),
+    [plans, interval, showIntervalToggle],
+  )
   // Use the plan's base price (not subscription.amount, which is the
   // post-discount net) so a 100%-discounted paid plan isn't mistaken for the
   // free plan — that misroutes downgrades through start_checkout and 422s.
@@ -98,15 +127,17 @@ export default function ChangePlanPage({
   const selectedPlan = useMemo(() => {
     if (selectedPlanId === null) return null
     return (
-      plans.find((p) => (p.product_id ?? FREE_PLAN_KEY) === selectedPlanId) ??
-      null
+      visiblePlans.find(
+        (p) => (p.product_id ?? FREE_PLAN_KEY) === selectedPlanId,
+      ) ?? null
     )
-  }, [plans, selectedPlanId])
+  }, [visiblePlans, selectedPlanId])
 
   const isSelectedPlanFree = (selectedPlan?.price?.amount ?? 0) === 0
 
-  const changeKind: 'upgrade' | 'downgrade' | null = useMemo(() => {
+  const changeKind: 'upgrade' | 'downgrade' | 'switch' | null = useMemo(() => {
     if (!selectedPlan || !subscription) return null
+    if (isIntervalSwitch(subscription.plan, selectedPlan)) return 'switch'
     // Compare gross plan prices, not subscription.amount — subscription.amount
     // is the post-discount net (0 for a 100%-discounted Scale plan), which
     // mislabels downgrades as upgrades.
@@ -116,6 +147,15 @@ export default function ChangePlanPage({
     if (targetAmount < currentAmount) return 'downgrade'
     return null
   }, [selectedPlan, subscription])
+
+  // Mirrors the backend's proration: a pricier target is invoiced now, anything
+  // else switches at the end of the current period.
+  const isChargedNow =
+    (selectedPlan?.price?.amount ?? 0) > (subscription?.plan.price?.amount ?? 0)
+  const switchIntervalLabel =
+    PLAN_INTERVAL_LABELS[
+      selectedPlan?.recurring_interval as PlanInterval
+    ]?.toLowerCase()
 
   const requiresCheckout =
     isCurrentPlanFree && (selectedPlan?.price?.amount ?? 0) > 0
@@ -132,6 +172,10 @@ export default function ChangePlanPage({
       base = `You'll be redirected to checkout to add a payment method and complete the upgrade to ${selectedPlan.name}.`
     } else if (isSelectedPlanFree) {
       base = `Your subscription will be canceled at the end of the current period. You'll then be on the free plan with standard transaction fees.`
+    } else if (changeKind === 'switch') {
+      base = isChargedNow
+        ? `You'll be charged a prorated amount for the rest of the current period and switched to ${switchIntervalLabel} billing.`
+        : `Your plan will switch to ${switchIntervalLabel} billing at the end of the current period.`
     } else if (changeKind === 'upgrade') {
       base = `You'll be charged a prorated amount for the rest of the current period and switched to ${selectedPlan.name}.`
     } else {
@@ -150,6 +194,8 @@ export default function ChangePlanPage({
     selectedPlan,
     subscription,
     changeKind,
+    isChargedNow,
+    switchIntervalLabel,
     requiresCheckout,
     isSelectedPlanFree,
   ])
@@ -241,7 +287,9 @@ export default function ChangePlanPage({
     })
     toast({
       title:
-        changeKind === 'downgrade' ? 'Plan change scheduled' : 'Plan changed',
+        changeKind === 'downgrade' || (changeKind === 'switch' && !isChargedNow)
+          ? 'Plan change scheduled'
+          : 'Plan changed',
       description: `You're now on the ${selectedPlan.name} plan.`,
     })
     router.push(billingHref)
@@ -255,7 +303,9 @@ export default function ChangePlanPage({
         ? 'Upgrade plan'
         : changeKind === 'downgrade'
           ? 'Downgrade plan'
-          : 'Confirm'
+          : changeKind === 'switch'
+            ? `Switch to ${switchIntervalLabel}`
+            : 'Confirm'
 
   return (
     <DashboardBody title={null} wide>
@@ -278,6 +328,18 @@ export default function ChangePlanPage({
                 : 'Pick a new plan for your Polar subscription. You can change again at any time.'}
             </Text>
           </Box>
+          {showIntervalToggle && (
+            <Box>
+              <SegmentedControl<PlanInterval>
+                options={intervals.map((value) => ({
+                  value,
+                  label: PLAN_INTERVAL_LABELS[value],
+                }))}
+                value={interval}
+                onChange={setSelectedInterval}
+              />
+            </Box>
+          )}
         </Box>
 
         {plansQuery.isLoading || subscriptionQuery.isLoading ? (
@@ -293,7 +355,7 @@ export default function ChangePlanPage({
             gridTemplateRows="repeat(3, auto)"
             gap="l"
           >
-            {plans.map((plan) => {
+            {visiblePlans.map((plan) => {
               const key = planKey(plan)
               const currentKey = subscription
                 ? planKey(subscription.plan)
@@ -316,6 +378,7 @@ export default function ChangePlanPage({
                   startupProgramOffer={
                     isStartupProgramTarget ? { monthsFree: 12 } : undefined
                   }
+                  annualSavingsPercent={annualSavingsPercent(plan, plans)}
                 />
               )
             })}

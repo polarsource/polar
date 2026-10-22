@@ -26,9 +26,6 @@ const claim: schemas['AgentClaim'] = {
     name: 'Acme',
     slug: 'acme',
     avatar_url: null,
-    product_count: 3,
-    benefit_count: 2,
-    meter_count: 1,
   },
 }
 
@@ -69,16 +66,13 @@ describe('ClaimAgentPage', () => {
     document.elementFromPoint = () => null
   })
 
-  it('shows what the agent built and claims it with the code', async () => {
+  it('shows the organization and claims it with the code', async () => {
     const confirmations = serveClaim()
     const assign = stubLocationAssign()
     renderPage()
 
     expect(await screen.findByText('Claim Claude')).toBeInTheDocument()
     expect(screen.getByText('Acme')).toBeInTheDocument()
-    expect(screen.getByText('Products').previousSibling).toHaveTextContent('3')
-    expect(screen.getByText('Benefits').previousSibling).toHaveTextContent('2')
-    expect(screen.getByText('Meters').previousSibling).toHaveTextContent('1')
     expect(screen.getByText(/This claim is for ada@example.com/)).toBeVisible()
 
     await enterCode('123456')

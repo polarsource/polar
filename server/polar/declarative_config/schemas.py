@@ -582,7 +582,13 @@ class ConfigPlan(Schema):
 class ConfigPruneEntry(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
-    in_use: bool = Field(description="Whether a customer still uses the resource.")
+    customer_count: int = Field(
+        description=(
+            "Number of customers still using the resource: subscribers for a product, "
+            "customers granted a benefit, from a subscription or an order, and "
+            "subscribers or credit holders for a meter."
+        )
+    )
     referenced_by: list[str] = Field(
         description=(
             "External IDs of the products, benefits and discounts staying in the config "

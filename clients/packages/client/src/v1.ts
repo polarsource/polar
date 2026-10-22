@@ -16891,10 +16891,10 @@ export interface components {
        */
       external_id: string
       /**
-       * In Use
-       * @description Whether a customer still uses the resource.
+       * Customer Count
+       * @description Number of customers still using the resource: subscribers for a product, customers granted a benefit, from a subscription or an order, and subscribers or credit holders for a meter.
        */
-      in_use: boolean
+      customer_count: number
       /**
        * Referenced By
        * @description External IDs of the products, benefits and discounts staying in the config that reference the resource.

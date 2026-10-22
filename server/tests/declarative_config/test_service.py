@@ -20,6 +20,7 @@ from polar.declarative_config.schemas import (
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigProductPrice,
+    ConfigProductPriceFixedRead,
     ConfigResource,
     ConfigSkippedReason,
 )
@@ -3317,6 +3318,37 @@ class TestExport:
         assert plan.settings.action == ConfigAction.unchanged
         assert {change.action for change in applied.changes} == {ConfigAction.unchanged}
         assert again.config == exported.config
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_exports_only_current_versions(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        config = Config.model_validate(exported.config.model_dump(mode="json"))
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+
+        [product] = exported.config.products
+        assert product.external_id == "pro"
+        assert isinstance(product.prices[0], ConfigProductPriceFixedRead)
+        assert product.prices[0].price_amount == 2500
+        assert plan.issues == []
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_skips_what_config_cannot_express(

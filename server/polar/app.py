@@ -216,9 +216,10 @@ def create_app() -> FastAPI:
     if not settings.is_testing():
         rate_limit_redis = create_redis("rate-limit")
         app.state.rate_limit_redis = rate_limit_redis
-        app.add_middleware(AuthSubjectMiddleware, redis=rate_limit_redis)
-        app.add_middleware(TransactionalMiddleware)
         app.add_middleware(rate_limit.get_middleware, redis=rate_limit_redis)
+        app.add_middleware(AuthSubjectMiddleware)
+        app.add_middleware(TransactionalMiddleware)
+        app.add_middleware(rate_limit.get_ip_middleware, redis=rate_limit_redis)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     if settings.is_vercel():
         # The app origin mounts the API at /api (api.* hosts serve it

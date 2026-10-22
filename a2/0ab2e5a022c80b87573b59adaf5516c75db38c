@@ -1,7 +1,21 @@
+server/polar/oauth2/grants/jwt_bearer.py
+  s_5baa939665e021::t_a6c84c80fc3d1f 5,12,15,18,53
+server/polar/oauth2/grants/agent.py
+  s_5baa939665e021::t_4717f721def510 1-2,4-6,8,10-28,30-41
 ---
 {
   "schema_version": "authorship/3.0.0",
   "git_ai_version": "1.5.2",
   "base_commit_sha": "a20ab2e5a022c80b87573b59adaf5516c75db38c",
-  "prompts": {}
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
 }

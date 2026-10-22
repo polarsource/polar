@@ -279,7 +279,7 @@ class TestCloseIdle:
         )
         await worker_session.flush()
         await worker_session.refresh(idle_migration)
-        assert "api_key_encrypted" not in idle_migration.source_credentials
+        assert idle_migration.source_credentials.get("api_key_encrypted")
         assert idle_migration.modified_at == idle_at
 
         await merchant_migration_close_idle()
@@ -287,6 +287,7 @@ class TestCloseIdle:
         await worker_session.flush()
         await worker_session.refresh(idle_migration)
         assert idle_migration.step == MerchantMigrationStep.completed
+        assert "api_key_encrypted" not in idle_migration.source_credentials
         assert await record_source_ids(worker_session, idle_migration) == {
             "cus_imported",
             "cus_skipped",

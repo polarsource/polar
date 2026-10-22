@@ -19,6 +19,11 @@ echo "Updating system packages..."
 apt-get update -y
 apt-get install -y wget gnupg2 lsb-release curl unzip ca-certificates netcat-openbsd sqlite3
 
+# Temporary eMudhra mitigation; recheck with the other workarounds in AGENTS.md.
+sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+  -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' /etc/ca-certificates.conf
+update-ca-certificates
+
 # =============================================================================
 # Install PostgreSQL 18
 # =============================================================================

@@ -22,7 +22,10 @@ export default defineConfig({
   benefits: ({ flag, credits }) => ({
     custom_servers: flag('Custom servers').metadata({ tag: 'primary' }),
     tool_calls: credits('Included tool calls').meter('tool_call').units(1200),
-    free_tool_calls: credits('Free tool calls').meter('tool_call').units(5).deprecated(),
+    free_tool_calls: credits('Free tool calls')
+      .meter('tool_call')
+      .units(5)
+      .deprecated(),
     // Rollover keeps purchased credits across the Pro billing cycle reset
     topup_100: credits('100 extra tool calls')
       .meter('tool_call')
@@ -42,8 +45,7 @@ export default defineConfig({
     free: product('Free')
       .prices(free())
       .recurring('monthly')
-      .grants(['free_tool_calls'])
-      .deprecated(),
+      .grants(['free_tool_calls']),
     team: product('Team')
       .prices(
         seats()

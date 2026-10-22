@@ -839,10 +839,11 @@ it("applies a snapshot Polar did not confirm in time, keeping its events pending
   snapshot = sealing(3, 30);
   const other = await start({ confirmTimeout: 50 });
   await other.actor(customer);
-  await vi.waitFor(async () => expect(await redis.hget(key, "cold:count")).toBe("3"));
+  // The read moves once the snapshot applied and reached the cache: Polar's 30 plus the 30 pending.
+  await vi.waitFor(async () => expect((await other.meter(meter))?.consumed_units).toBe(60));
   expect(confirmRequests).toHaveLength(1);
+  expect(await redis.hget(key, "cold:count")).toBe("3");
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("3");
-  expect((await other.meter(meter))?.consumed_units).toBe(60);
 });
 
 it("asks for a bucket's pending events a thousand at a time", async () => {

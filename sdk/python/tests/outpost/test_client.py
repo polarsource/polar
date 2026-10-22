@@ -1414,12 +1414,14 @@ async def test_applies_a_snapshot_polar_did_not_confirm_in_time(
         async with Outpost(url, client=polar_client, confirm_timeout=0.05) as other:
             await other.actor(external_customer_id="alice")
 
+            # The read moves once the snapshot applied and reached the cache: Polar's 30 plus
+            # the 30 pending.
             async def sealed() -> bool:
-                return await redis.hget(key, "cold:count") == b"3"
+                return await _consumed(other) == 60
 
             await _wait_for(sealed)
-            assert await _consumed(other) == 60
     assert sum(request["type"] == "confirm" for request in websocket_requests) == 1
+    assert await redis.hget(key, "cold:count") == b"3"
     assert await _pending_count(redis) == b"3"
 
 

@@ -9,6 +9,7 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
+import { record } from '@/utils/billing-config/describe'
 import { plural } from '@/utils/billing-config/problems'
 import { removable } from '@/utils/billing-config/prune'
 import { NOUNS, found, section, target } from '@/utils/billing-config/review'
@@ -18,60 +19,78 @@ import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
-const reason = (entry: PruneEntry) =>
+// referenced_by holds bare external IDs, so the type comes from the config itself
+const kind = (config: LoadedConfig, externalId: string) => {
+  const sections = record(config.input) ?? {}
+  const match = NOUNS.find(([name]) => {
+    const items = sections[name]
+    return (
+      Array.isArray(items) &&
+      items.some((item) => record(item)?.['external_id'] === externalId)
+    )
+  })
+  return match
+    ? `${match[1]} ${ui.printable(externalId)}`
+    : ui.printable(externalId)
+}
+
+const reason = (config: LoadedConfig, entry: PruneEntry) =>
   [
     ...(entry.customer_count === 0
       ? []
-      : [
-          entry.resource === 'product'
-            ? plural(entry.customer_count, 'subscriber', 'subscribers')
-            : plural(entry.customer_count, 'customer', 'customers'),
-        ]),
+      : [plural(entry.customer_count, 'customer', 'customers')]),
     ...(entry.referenced_by.length > 0
-      ? [`used by ${entry.referenced_by.map(ui.printable).join(', ')}`]
+      ? [
+          `used by ${entry.referenced_by.map((id) => kind(config, id)).join(', ')}`,
+        ]
       : []),
   ].join(', ')
 
-const width = (entry: PruneEntry) =>
-  Bun.stringWidth(ui.printable(entry.external_id))
-
-const group = (
-  section: string,
-  entries: ReadonlyArray<PruneEntry>,
-  idWidth: number,
-) =>
-  [
-    `${ui.INDENT}${ui.bold(section)}`,
-    ...entries
-      .filter(removable)
-      .map(
-        (entry) =>
-          `${ui.INDENT}${ui.red('-')} ${ui.bold(ui.printable(entry.external_id))}`,
-      ),
-    ...entries
-      .filter((entry) => !removable(entry))
-      .map(
-        (entry) =>
-          `${ui.INDENT}${ui.dim('=')} ${ui.printable(entry.external_id)}${' '.repeat(idWidth - width(entry))}  ${ui.dim(reason(entry))}`,
-      ),
-  ].join('\n')
+const pad = (text: string, size: number) =>
+  text + ' '.repeat(Math.max(0, size - Bun.stringWidth(text)))
 
 const report = (
+  config: LoadedConfig,
   organization: ActiveOrganization,
   entries: ReadonlyArray<PruneEntry>,
 ) => {
-  // Shared across sections so every reason starts in the same column
-  const idWidth = Math.max(
-    0,
-    ...entries.filter((entry) => !removable(entry)).map(width),
+  if (entries.length === 0) return []
+  const ordered = NOUNS.flatMap(([, resource]) =>
+    entries.filter((entry) => entry.resource === resource),
   )
-  const groups = NOUNS.flatMap(([section, resource]) => {
-    const own = entries.filter((entry) => entry.resource === resource)
-    return own.length === 0 ? [] : [group(section, own, idWidth)]
-  })
-  return groups.length === 0
-    ? []
-    : section(`Deprecated ${ui.dim(target(organization))}`, groups.join('\n\n'))
+  // Shared across both groups so ids and reasons line up in one column each
+  const typeWidth = Math.max(...ordered.map((entry) => entry.resource.length))
+  const idWidth = Math.max(
+    ...ordered.map((entry) => Bun.stringWidth(ui.printable(entry.external_id))),
+  )
+  const row = (mark: string, entry: PruneEntry, detail: string) =>
+    `${ui.INDENT}${mark} ${pad(entry.resource, typeWidth)}  ${pad(ui.printable(entry.external_id), idWidth)}  ${detail}`.trimEnd()
+  const remove = ordered.filter(removable)
+  const keep = ordered.filter((entry) => !removable(entry))
+  const groups = [
+    ...(remove.length === 0
+      ? []
+      : [
+          [
+            `${ui.INDENT}${ui.bold('Remove')}`,
+            ...remove.map((entry) => row(ui.red('-'), entry, '')),
+          ].join('\n'),
+        ]),
+    ...(keep.length === 0
+      ? []
+      : [
+          [
+            `${ui.INDENT}${ui.bold('Keep, still in use')}`,
+            ...keep.map((entry) =>
+              row(ui.dim('='), entry, ui.dim(reason(config, entry))),
+            ),
+          ].join('\n'),
+        ]),
+  ]
+  return section(
+    `Deprecated ${ui.dim(target(organization))}`,
+    groups.join('\n\n'),
+  )
 }
 
 const interactive = Effect.gen(function* () {
@@ -89,7 +108,7 @@ const confirm =
   ) =>
   (entries: ReadonlyArray<PruneEntry>) =>
     Effect.gen(function* () {
-      yield* say(report(organization, entries))
+      yield* say(report(config, organization, entries))
       if (confirmed) return
       if (json || !(yield* interactive)) {
         return yield* new BillingConfigError({
@@ -125,7 +144,7 @@ const render = (
         ),
       ]
     : [
-        ...report(organization, entries),
+        ...report(config, organization, entries),
         ui.blank,
         ui.success(
           entries.length === 0

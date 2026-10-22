@@ -15,7 +15,11 @@ import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 const config: LoadedConfig = {
   file: 'polar.json',
   source: '{}',
-  input: { meters: [{ external_id: 'apples' }] },
+  input: {
+    meters: [{ external_id: 'apples' }],
+    benefits: [{ external_id: 'beta' }],
+    products: [{ external_id: 'legacy' }],
+  },
   generated: false,
 }
 
@@ -105,12 +109,15 @@ describe('polar config prune', () => {
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(removed).toBe(1)
     expect(output).toMatch(/ {2}Deprecated Acme \(sandbox\)\n {2}╭─+╮\n/)
-    expect(output).toMatch(/│ {2}meters *│\n {2}│ {2}- apples *│\n/)
+    expect(output).toMatch(/│ {2}Remove *│\n {2}│ {2}- meter {4}apples *│\n/)
     expect(output).toMatch(
-      /│ {2}benefits *│\n {2}│ {2}= beta {4}3 customers, used by legacy *│\n/,
-    )
-    expect(output).toMatch(
-      /│ {2}products *│\n {2}│ {2}= legacy {2}1 subscriber *│\n/,
+      new RegExp(
+        [
+          '│ {2}Keep, still in use *│',
+          ' {2}│ {2}= benefit {2}beta {4}3 customers, used by product legacy *│',
+          ' {2}│ {2}= product {2}legacy {2}1 customer *│',
+        ].join('\n'),
+      ),
     )
     expect(output).toContain(
       'polar.json: 1 entry removed, nothing changed on Polar',

@@ -53979,6 +53979,15 @@ export interface operations {
           'application/json': components['schemas']['ListResource_Catalog_']
         }
       }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {

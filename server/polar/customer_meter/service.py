@@ -610,8 +610,11 @@ class CustomerMeterService:
             statement = statement.where(Event.customer_id == customer.id)
 
         if meter_reset_event is not None:
+            # A reset without an explicit timestamp is ingested a moment before its
+            # own timestamp, and must still fall in its window.
             statement = statement.where(
-                Event.ingested_at >= meter_reset_event.timestamp
+                Event.ingested_at
+                >= min(meter_reset_event.timestamp, meter_reset_event.ingested_at)
             )
 
         if cutoff is not None:

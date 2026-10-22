@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, ValidationError, create_model
 from sqlalchemy.exc import IntegrityError
 from typing_extensions import TypeForm
 
-from polar.auth.models import AuthSubject, is_organization
+from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.benefit.grant.repository import BenefitGrantRepository
@@ -19,7 +19,11 @@ from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
+<<<<<<< HEAD
 from polar.models import Organization, Product, User
+=======
+from polar.models import Agent, Organization, User
+>>>>>>> cursor/catalog-v2-1-schema-f42a
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -78,7 +82,10 @@ _WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
 
 
 def _assert_section_scopes(
-    auth_subject: AuthSubject[User | Organization], config: Config, *, write: bool
+    auth_subject: AuthSubject[User | Organization | Agent],
+    config: Config,
+    *,
+    write: bool,
 ) -> None:
     for section, (read_scope, write_scope) in SECTION_SCOPES.items():
         if section not in config.model_fields_set:
@@ -92,7 +99,7 @@ def _assert_section_scopes(
 # permissions don't imply.
 async def _assert_webhooks_permission(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     config: Config,
     organization: Organization,
 ) -> None:
@@ -178,7 +185,7 @@ class DeclarativeConfigService:
         self,
         session: AsyncSession,
         redis: Redis,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
     ) -> ConfigApplyResult:
         _assert_section_scopes(auth_subject, config, write=True)
@@ -263,7 +270,7 @@ class DeclarativeConfigService:
     async def plan(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
     ) -> ConfigPlan:
         _assert_section_scopes(auth_subject, config, write=False)
@@ -305,7 +312,7 @@ class DeclarativeConfigService:
     async def prune(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
     ) -> ConfigPrune:
         _assert_section_scopes(auth_subject, config, write=False)
@@ -429,7 +436,7 @@ class DeclarativeConfigService:
     async def export(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: UUID | None,
     ) -> ConfigExport:
         organization = await self._get_organization(
@@ -497,7 +504,7 @@ class DeclarativeConfigService:
     async def _get_organization(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         target: OrganizationIDModel,
         permission: OrganizationPermission,
     ) -> Organization:
@@ -512,10 +519,14 @@ class DeclarativeConfigService:
     async def _apply_webhooks(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         changes: Sequence[WebhookChange],
     ) -> list[ConfigResult]:
+        if not changes:
+            return []
+        # `_assert_section_scopes` rejects a webhooks section from an agent.
+        assert is_user(auth_subject) or is_organization(auth_subject)
         repository = WebhookEndpointRepository.from_session(session)
         results: list[ConfigResult] = []
         for change in changes:
@@ -642,7 +653,7 @@ class DeclarativeConfigService:
         self,
         session: AsyncSession,
         redis: Redis,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
@@ -698,7 +709,7 @@ class DeclarativeConfigService:
     async def _apply_products(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
@@ -775,7 +786,7 @@ class DeclarativeConfigService:
     async def _apply_discounts(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         changes: Sequence[DiscountChange],
         product_ids: dict[str, UUID],

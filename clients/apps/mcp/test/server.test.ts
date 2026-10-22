@@ -667,7 +667,7 @@ test('tool calls are sent to PostHog as $mcp_tool_call events without the token,
     expect(events[2].properties).toMatchObject({
       $mcp_error_status: 404,
       $mcp_error_type: 'api_4xx',
-      unexposed_operations: ['GET /v1/{}/{}'],
+      unexposed_operations: ['GET /v1/oauth2/userinfo'],
     })
     expect(events[1].distinct_id).toBe(events[0].distinct_id)
     const sent = JSON.stringify(events)

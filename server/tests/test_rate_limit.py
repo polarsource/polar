@@ -30,13 +30,11 @@ def _http_scope(
     *,
     headers: list[tuple[bytes, bytes]] | None = None,
     client: tuple[str, int] | None = ("8.8.8.8", 1234),
-    path: str = "/",
 ) -> dict[str, object]:
     return {
         "type": "http",
         "headers": headers or [],
         "client": client,
-        "path": path,
     }
 
 
@@ -403,47 +401,17 @@ class TestRefundsElevatedAndGetFallThrough:
         assert rule.zone == "api"
 
 
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
 @pytest.mark.parametrize("path", ["/v1/agent/identity", "/v1/agent/identity/"])
+@pytest.mark.parametrize("group", [RateLimitGroup.default, RateLimitGroup.pending_auth])
 class TestAgentSignUpZone:
-    """Each sign-up creates an OAuth client and an agent, so the cap holds per IP,
-    whatever credentials the caller sends."""
+    """Each sign-up creates an OAuth client and an agent, so callers with no
+    credentials or unvalidated ones are capped like login codes."""
 
-    @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
     def test_resolves_to_agent_sign_up_zone(
-        self, rules: dict[str, Sequence[Rule]], path: str
+        self, rules: dict[str, Sequence[Rule]], path: str, group: RateLimitGroup
     ) -> None:
-        rule = _select_rule(rules, path, RateLimitGroup.default, method="POST")
+        rule = _select_rule(rules, path, group, method="POST")
 
         assert rule is not None
         assert rule.zone == "agent-sign-up"
-
-    @pytest.mark.parametrize(
-        "headers",
-        [
-            pytest.param([], id="no credentials"),
-            pytest.param(
-                [(b"authorization", b"Bearer polar_pat_random")],
-                id="unknown bearer token",
-            ),
-            pytest.param(
-                [(b"authorization", b"Bearer polar_pat_cached")],
-                id="authenticated bearer token",
-            ),
-            pytest.param(
-                [(b"cookie", f"{settings.USER_SESSION_COOKIE_KEY}=x".encode())],
-                id="session cookie",
-            ),
-        ],
-    )
-    async def test_keyed_by_ip(
-        self, redis: Redis, path: str, headers: list[tuple[bytes, bytes]]
-    ) -> None:
-        await write_cached_identity(
-            redis, "polar_pat_cached", ("user:a", RateLimitGroup.elevated)
-        )
-
-        identity = await _authenticate(
-            _http_scope(headers=headers, path=path), redis=redis
-        )
-
-        assert identity == ("8.8.8.8", RateLimitGroup.default)

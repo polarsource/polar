@@ -12,6 +12,11 @@ from polar.kit.http import get_ip_address
 from polar.redis import create_redis
 
 
+async def _authenticate_ip(scope: Scope) -> tuple[str, RateLimitGroup]:
+    ip = get_ip_address(Request(scope))
+    return f"ip:{ip or 'anonymous'}", RateLimitGroup.default
+
+
 async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
     auth_subject: AuthSubject[Subject] = scope["state"]["auth_subject"]
     if is_anonymous(auth_subject):
@@ -151,4 +156,14 @@ def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
     )
 
 
-__all__ = ["get_middleware"]
+def get_ip_middleware(app: ASGIApp) -> RateLimitMiddleware:
+    rules: dict[str, Sequence[Rule]] = {}
+    if settings.ENV in {Environment.production, Environment.sandbox}:
+        # Allow shared IPs ten times the highest per-identity rate.
+        rules = {"^/v1": [Rule(second=1000, zone="ip")]}
+    return RateLimitMiddleware(
+        app, _authenticate_ip, RedisBackend(create_redis("rate-limit")), rules
+    )
+
+
+__all__ = ["get_ip_middleware", "get_middleware"]

@@ -13,7 +13,7 @@ from starlette.types import Receive, Scope, Send
 from polar.app import create_app
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.auth.models import AuthSubject, Subject
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.enums import RateLimitGroup
 from polar.middlewares import TransactionalMiddleware
 from polar.oauth2.constants import CLIENT_REGISTRATION_TOKEN_PREFIX
@@ -22,8 +22,10 @@ from polar.rate_limit import (
     _PRODUCTION_RULES,
     _SANDBOX_RULES,
     _authenticate,
+    get_ip_middleware,
     get_middleware,
 )
+from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 
 
@@ -117,10 +119,78 @@ class TestMiddleware:
         mocker.patch("polar.app.settings.is_testing", return_value=False)
         middleware: list[object] = [item.cls for item in create_app().user_middleware]
         assert (
-            middleware.index(TransactionalMiddleware)
+            middleware.index(get_ip_middleware)
+            < middleware.index(TransactionalMiddleware)
             < middleware.index(AuthSubjectMiddleware)
             < middleware.index(get_middleware)
         )
+
+
+@pytest.mark.anyio
+class TestIPMiddleware:
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            {"authorization": "Bearer random-token"},
+            {"cookie": f"{settings.USER_SESSION_COOKIE_KEY}=random-session"},
+        ],
+    )
+    async def test_blocked_ip_skips_database_and_authentication(
+        self, mocker: MockerFixture, redis: Redis, headers: dict[str, str]
+    ) -> None:
+        mocker.patch("polar.rate_limit.create_redis", return_value=redis)
+        mocker.patch.object(settings, "ENV", Environment.production)
+
+        async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+            raise AssertionError("Blocked requests must not reach the endpoint")
+
+        limiter = get_ip_middleware(
+            TransactionalMiddleware(AuthSubjectMiddleware(endpoint))
+        )
+        rule = next(iter(limiter.config.values()))[0]
+        for key in rule.ruleset("ip", "ip:1.1.1.1"):
+            await redis.set(key, 0, ex=60)
+
+        async with AsyncClient(
+            transport=ASGITransport(app=limiter), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/v1/products/", headers={**headers, "true-client-ip": "1.1.1.1"}
+            )
+        assert response.status_code == 429
+        assert response.headers["retry-after"] == "1"
+
+    async def test_ip_budgets_are_separate_and_health_is_exempt(
+        self, mocker: MockerFixture, redis: Redis
+    ) -> None:
+        mocker.patch("polar.rate_limit.create_redis", return_value=redis)
+        mocker.patch.object(settings, "ENV", Environment.production)
+
+        async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+            await Response(status_code=204)(scope, receive, send)
+
+        limiter = get_ip_middleware(endpoint)
+        rule = next(iter(limiter.config.values()))[0]
+        for key in rule.ruleset("ip", "ip:1.1.1.1"):
+            await redis.set(key, 1, ex=60)
+
+        async with AsyncClient(
+            transport=ASGITransport(app=limiter), base_url="http://test"
+        ) as client:
+            first = await client.get(
+                "/v1/products/", headers={"true-client-ip": "1.1.1.1"}
+            )
+            blocked = await client.get(
+                "/v1/orders/", headers={"true-client-ip": "1.1.1.1"}
+            )
+            other_ip = await client.get(
+                "/v1/products/", headers={"true-client-ip": "2.2.2.2"}
+            )
+            health = await client.get("/healthz", headers={"true-client-ip": "1.1.1.1"})
+        assert first.status_code == 204
+        assert blocked.status_code == 429
+        assert other_ip.status_code == 204
+        assert health.status_code == 204
 
 
 def _select_rule(

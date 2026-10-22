@@ -129,6 +129,14 @@ class SnapshotStep(TimelineStep):
     operation: typing.ClassVar[typing.Literal["snapshot"]] = "snapshot"
 
 
+# Polar stored these events: it confirms them when a client asks before applying a snapshot.
+@dataclasses.dataclass(frozen=True)
+class IngestedStep(TimelineStep):
+    arguments: IngestArguments
+    client: typing.ClassVar[typing.Literal["polar"]] = "polar"
+    operation: typing.ClassVar[typing.Literal["ingested"]] = "ingested"
+
+
 Step: typing.TypeAlias = (
     IngestStep
     | ConfirmStep
@@ -138,6 +146,7 @@ Step: typing.TypeAlias = (
     | DisconnectStep
     | RedisStep
     | SnapshotStep
+    | IngestedStep
 )
 
 

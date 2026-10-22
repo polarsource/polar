@@ -9,6 +9,7 @@ from harness import (
     ExternalCustomerID,
     ExternalCustomerMeterRequest,
     Failure,
+    IngestedStep,
     IngestStep,
     ReadStep,
     RedisStep,
@@ -72,6 +73,24 @@ def emit(
 def confirm(at: float, client: str, *steps: IngestStep) -> ConfirmStep:
     events = [event for step in steps for event in step.arguments["events"]]
     return ConfirmStep(at, client, {"events": events})
+
+
+# Polar stored the events of these steps: it confirms them to a client applying a snapshot.
+def ingested(at: float, *steps: IngestStep) -> IngestedStep:
+    events = [event for step in steps for event in step.arguments["events"]]
+    return IngestedStep(at, {"events": events})
+
+
+def sealed(version_offset: int, count: int, total: int) -> Snapshot:
+    return {
+        **INITIAL,
+        "cold_until": BUCKET + BUCKET_SIZE,
+        "version": BUCKET + BUCKET_SIZE + version_offset,
+        "count": count,
+        "sum": total,
+        "min": 7 if count else None,
+        "max": 7 if count else None,
+    }
 
 
 def expect(at: float, client: str, consumed: int, *, within: float = 2) -> ReadStep:
@@ -163,6 +182,33 @@ SCENARIOS = [
             emit(0.9, "writer", 7),
             expect(1, "writer", 18, within=0),
             expect(1, "reader", 18),
+        ],
+    ),
+    Scenario(
+        "server confirmation",
+        CONFIGURATION,
+        [INITIAL],
+        [
+            expect(0, "writer", 0),
+            expect(0, "reader", 0),
+            seven := emit(0.2, "writer", 7),
+            expect(0.3, "reader", 7),
+            # Polar stored the event: sealing the bucket settles it, counted once.
+            ingested(0.4, seven),
+            SnapshotStep(0.5, sealed(1, 1, 7)),
+            expect(0.7, "writer", 7),
+            expect(0.7, "reader", 7),
+            # A late event Polar has not stored stays pending through a snapshot.
+            late := emit(0.9, "writer", 7),
+            expect(1, "writer", 14, within=0),
+            SnapshotStep(1.1, sealed(2, 1, 7)),
+            expect(1.3, "writer", 14),
+            expect(1.3, "reader", 14),
+            # Stored at last, it leaves pending as the snapshot counting it applies.
+            ingested(1.4, late),
+            SnapshotStep(1.5, sealed(3, 2, 14)),
+            expect(1.7, "writer", 14),
+            expect(1.7, "reader", 14),
         ],
     ),
     Scenario(

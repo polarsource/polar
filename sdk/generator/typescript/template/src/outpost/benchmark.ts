@@ -10,6 +10,28 @@ export const {
   snapshot: SNAPSHOT,
 } = benchmark;
 export const REDUCER = benchmark.reducer as Reducer;
+// Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
+export const PENDING_COUNTS = [1, 100, 1000];
+// What WRITE_BUCKET stores per event: count, sum, min and max, as strings.
+const PENDING_ENTRY = JSON.stringify(["1", "7", "7", "7"]);
+
+export const pendingIds = (count: number): string[] =>
+  Array.from({ length: count }, (_, i) => `event-${i}`);
+
+// The `pending:<start>:<statistic>` fields of a bucket with `count` events of 7 units pending.
+export const encodePending = (start: number, count: number): string[] => [
+  `pending:${start}:count`,
+  String(count),
+  `pending:${start}:sum`,
+  String(7 * count),
+  `pending:${start}:min`,
+  "7",
+  `pending:${start}:max`,
+  "7",
+];
+
+// The pending hash of a bucket: one entry per event id.
+export const pendingEntries = (ids: string[]): string[] => ids.flatMap((id) => [id, PENDING_ENTRY]);
 
 // The flat field list decodeState reads: one `bucket:<start>:<statistic>` entry per bucket.
 export const encodeState = (buckets: number): string[] => {

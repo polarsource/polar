@@ -163,6 +163,7 @@ class PythonEmitter(EmitterBase):
             ("tests", "benchmarks", "test_read_buckets.py"),
             ("tests", "benchmarks", "test_seal.py"),
             ("tests", "benchmarks", "test_confirm.py"),
+            ("tests", "benchmarks", "test_seal_confirmed.py"),
             (".python-version",),
             ("justfile",),
             ("LICENSE",),

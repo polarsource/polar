@@ -213,6 +213,28 @@ test.each([
       'The request is invalid:\n    prices: Field required\n    config.body: Too long\n    prices.0.price_amount: Input should be a valid integer',
   },
   {
+    name: 'a JSON array passed to a repeatable flag',
+    rejection: {
+      statusCode: 422,
+      error: {
+        detail: [
+          {
+            loc: ['body', 'percentage', 'products', 0],
+            msg: 'Input should be a valid UUID, invalid character: found `[` at 1',
+            type: 'uuid_parsing',
+          },
+          {
+            loc: ['body', 'percentage', 'products', 1],
+            msg: 'Input should be a valid UUID, invalid character: found `]` at 37',
+            type: 'uuid_parsing',
+          },
+        ],
+      },
+    },
+    message:
+      'The request is invalid:\n    percentage.products.0: Input should be a valid UUID, invalid character: found `[` at 1\n    percentage.products.1: Input should be a valid UUID, invalid character: found `]` at 37\n    Repeat --products once per value instead of passing a JSON array, e.g. --products <id1> --products <id2>.',
+  },
+  {
     name: 'a body without detail',
     rejection: { statusCode: 422, error: 'Unprocessable Entity' },
     message: 'The Polar API rejected the request (422).',

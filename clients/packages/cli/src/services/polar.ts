@@ -60,14 +60,32 @@ const ErrorDetail = Schema.Struct({
   detail: Schema.Union([Schema.String, Schema.Array(ValidationIssue)]),
 })
 
-const describeIssues = (issues: ReadonlyArray<typeof ValidationIssue.Type>) =>
-  [
+const jsonArrayFlag = ({ loc, msg }: typeof ValidationIssue.Type) => {
+  const index = loc.at(-1)
+  const name = loc.at(-2)
+  return typeof index === 'number' &&
+    typeof name === 'string' &&
+    msg.includes('found `[`')
+    ? `--${name.replaceAll('_', '-')}`
+    : undefined
+}
+
+const describeIssues = (issues: ReadonlyArray<typeof ValidationIssue.Type>) => {
+  const flags = [
+    ...new Set(issues.map(jsonArrayFlag).filter((flag) => flag !== undefined)),
+  ]
+  return [
     'The request is invalid:',
     ...issues.map(({ loc, msg }) => {
       const field = (loc[0] === 'body' ? loc.slice(1) : loc).join('.')
       return field ? `${field}: ${msg}` : msg
     }),
+    ...flags.map(
+      (flag) =>
+        `Repeat ${flag} once per value instead of passing a JSON array, e.g. ${flag} <id1> ${flag} <id2>.`,
+    ),
   ].join('\n    ')
+}
 
 const detailOf = (body: unknown) => {
   const detail = Option.getOrUndefined(

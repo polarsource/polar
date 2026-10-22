@@ -84,10 +84,9 @@ def benchmark_ingest(
 
     def ingest() -> None:
         nonlocal ingested
-        # A new external_id each time: the same one would be a duplicate and write nothing.
-        loop.run_until_complete(
-            outpost.track({**event, "external_id": f"event-{ingested}"})
-        )
+        # Every call carries its own external_id, as production events do.
+        tracked = typing.cast(EventInput, {**event, "external_id": f"event-{ingested}"})
+        loop.run_until_complete(outpost.track(tracked))
         ingested += 1
 
     benchmark(ingest)

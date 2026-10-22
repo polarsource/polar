@@ -95,7 +95,7 @@ describe("Outpost.track", () => {
     bench(
       scenario.name,
       async () => {
-        // A new external_id each time: the same one would be a duplicate and write nothing.
+        // Every call carries its own external_id, as production events do.
         await outpost.track({ ...event, external_id: `event-${scenario.ingested}` });
         scenario.ingested += 1;
       },

@@ -30,7 +30,7 @@ class CatalogStatus(StrEnum):
 class Catalog(RecordModel):
     __tablename__ = "catalogs"
     __table_args__ = (
-        UniqueConstraint("organization_id", "hash"),
+        UniqueConstraint("organization_id", "version_hash"),
         Index(
             "ix_catalogs_organization_id_live",
             "organization_id",
@@ -42,7 +42,9 @@ class Catalog(RecordModel):
     organization_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("organizations.id", ondelete="cascade"), nullable=False
     )
-    hash: Mapped[str | None] = mapped_column(String(64), nullable=True, default=None)
+    version_hash: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, default=None
+    )
     status: Mapped[CatalogStatus] = mapped_column(
         StringEnum(CatalogStatus), nullable=False
     )

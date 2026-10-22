@@ -1,8 +1,8 @@
 'use client'
 
 import { useCatalogs } from '@/hooks/queries/catalogs'
+import GraphicEqOutlined from '@mui/icons-material/GraphicEqOutlined'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
-import LayersOutlined from '@mui/icons-material/LayersOutlined'
 import { schemas } from '@polar-sh/client'
 import { Status, StatusColor, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -18,8 +18,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useMemo } from 'react'
-import { CatalogVersion, catalogVersions } from './catalogVersions'
 
 const STATUS: Record<
   schemas['Catalog']['status'],
@@ -29,18 +27,20 @@ const STATUS: Record<
   archived: { label: 'Archived', color: 'gray' },
 }
 
-const CatalogVersionRow = ({ version }: { version: CatalogVersion }) => {
-  const status = STATUS[version.catalog.status]
+const shortHash = (catalog: schemas['Catalog']) =>
+  catalog.version_hash.slice(0, 7)
+
+const CatalogVersionRow = ({ catalog }: { catalog: schemas['Catalog'] }) => {
+  const status = STATUS[catalog.status]
   return (
     <Box alignItems="center" columnGap="s" width="100%">
       <Box flexDirection="column" minWidth={0}>
-        <Text truncate>{version.label}</Text>
+        <Text monospace truncate>
+          {shortHash(catalog)}
+        </Text>
         <Text variant="caption" color="muted" truncate>
-          <Text as="span" variant="caption" color="muted" monospace>
-            {version.shortHash}
-          </Text>
-          {' · '}
-          <PolarTimeAgo date={new Date(version.catalog.published_at)} />
+          <PolarTimeAgo date={new Date(catalog.published_at)} />
+          {` · ${catalog.product_count} ${catalog.product_count === 1 ? 'product' : 'products'}`}
         </Text>
       </Box>
       <Box marginLeft="auto">
@@ -56,44 +56,59 @@ export const CatalogVersionSelector = ({
   organization: schemas['Organization']
 }) => {
   const enabled = !!organization.feature_settings?.config_as_code_enabled
-  const { data, isLoading } = useCatalogs(organization.id, enabled)
-  const versions = useMemo(() => catalogVersions(data ?? []), [data])
+  const { data: catalogs = [], isLoading } = useCatalogs(
+    organization.id,
+    enabled,
+  )
 
   if (!enabled) {
     return null
   }
 
   const current =
-    versions.find(({ catalog }) => catalog.status === 'live') ?? versions[0]
+    catalogs.find((catalog) => catalog.status === 'live') ?? catalogs[0]
 
   return (
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton tooltip="Catalog version">
-              <LayersOutlined fontSize="inherit" />
-              <Text as="span" truncate>
-                {current
-                  ? `Catalog ${current.label}`
-                  : isLoading
-                    ? 'Loading…'
-                    : 'No catalog published'}
-              </Text>
-              <Box as="span" marginLeft="auto">
-                <KeyboardArrowDown fontSize="inherit" />
-              </Box>
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          {versions.length > 0 ? (
+          <Box
+            borderRadius="s"
+            borderWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+            backgroundColor="background-primary"
+            boxShadow="s"
+          >
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton tooltip="Catalog version">
+                <Box as="span" color="text-secondary">
+                  <GraphicEqOutlined fontSize="inherit" />
+                </Box>
+                {current ? (
+                  <Text as="span" monospace truncate>
+                    {shortHash(current)}
+                  </Text>
+                ) : (
+                  <Text as="span" truncate>
+                    {isLoading ? 'Loading…' : 'No catalog published'}
+                  </Text>
+                )}
+                <Box as="span" marginLeft="auto">
+                  <KeyboardArrowDown fontSize="inherit" />
+                </Box>
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+          </Box>
+          {catalogs.length > 0 ? (
             <DropdownMenuContent
               side="bottom"
               align="start"
               className="w-(--radix-popper-anchor-width) min-w-[220px]"
             >
-              {versions.map((version) => (
-                <DropdownMenuItem key={version.catalog.id}>
-                  <CatalogVersionRow version={version} />
+              {catalogs.map((catalog) => (
+                <DropdownMenuItem key={catalog.id}>
+                  <CatalogVersionRow catalog={catalog} />
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>

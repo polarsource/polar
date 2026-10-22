@@ -75,7 +75,7 @@ export default function SharedLayout({
   const branding = (
     <Box alignItems="center" gap="m">
       <Box color="text-primary">
-        <PolarLogotype logoVariant="logotype" logoClassName="ml-0" />
+        <PolarLogotype logoVariant="logotype" logoClassName="ml-0" size={80} />
       </Box>
       {client?.logo_uri && (
         <>

@@ -85,7 +85,7 @@ const MobileNav = () => {
         href="/"
         className="shrink-0 items-center font-semibold text-black dark:text-white"
       >
-        <LogoIcon className="h-10 w-10" />
+        <LogoIcon className="h-8 w-8" />
       </a>
 
       <div className="flex flex-row items-center gap-x-6">

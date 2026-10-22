@@ -9,6 +9,7 @@ import noDoubleCast from './rules/no-double-cast.js'
 import noEffectRunOutsideEntrypoint from './rules/no-effect-run-outside-entrypoint.js'
 import noHardcodedHosts from './rules/no-hardcoded-hosts.js'
 import noProcessEnv from './rules/no-process-env.js'
+import noYesFlag from './rules/no-yes-flag.js'
 import schemasArePure from './rules/schemas-are-pure.js'
 import serviceFacade from './rules/service-facade.js'
 import serviceBoundaries from './rules/service-boundaries.js'
@@ -29,6 +30,7 @@ export default {
     'no-effect-run-outside-entrypoint': noEffectRunOutsideEntrypoint,
     'no-hardcoded-hosts': noHardcodedHosts,
     'no-process-env': noProcessEnv,
+    'no-yes-flag': noYesFlag,
     'schemas-are-pure': schemasArePure,
     'service-facade': serviceFacade,
     'service-boundaries': serviceBoundaries,

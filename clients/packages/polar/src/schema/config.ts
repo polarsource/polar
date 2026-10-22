@@ -160,8 +160,19 @@ type DeprecatedMeterKey<Meters extends MeterEntries> = {
     : never
 }[MeterKey<Meters>]
 
-// Only deprecated benefits can use a deprecated meter. The literal names the
-// problem in the type error.
+// Deprecated references, as keys an entry must have. A definition never has
+// them, so the type error leads with the message: "Property '<message>' is
+// missing". TypeScript has no custom type errors, so this stands in for one.
+type DeprecationError<Message extends string> = {
+  readonly [Key in Message]: true
+}
+
+type DeprecatedMeterIssue<
+  Meter extends string,
+  Owner extends string,
+> = `Meter '${Meter}' is deprecated, so only a deprecated ${Owner} can use it.`
+
+// Only deprecated benefits can use a deprecated meter.
 type ActiveMeter<
   Benefit,
   DeprecatedMeter extends string,
@@ -170,13 +181,9 @@ type ActiveMeter<
   : Benefit extends {
         readonly properties: { readonly meter: infer Meter extends string }
       }
-    ? Meter extends DeprecatedMeter
-      ? {
-          readonly properties: {
-            readonly meter: DeprecatedMeterIssue<Meter, 'benefit'>
-          }
-        }
-      : unknown
+    ? DeprecationError<
+        DeprecatedMeterIssue<Extract<Meter, DeprecatedMeter>, 'benefit'>
+      >
     : unknown
 
 type ValidBenefits<
@@ -235,39 +242,29 @@ type ProductGrant<Product> =
     ? Granted
     : never
 
-type DeprecatedMeterIssue<
-  Meter extends string,
-  Owner extends string,
-> = `Meter "${Meter}" is deprecated, so only a deprecated ${Owner} can use it.`
-
-type ActivePrices<Prices, DeprecatedMeter extends string> = {
-  readonly [Index in keyof Prices]: Prices[Index] extends {
-    readonly kind: 'metered'
-    readonly meter: infer Meter extends DeprecatedMeter
-  }
-    ? { readonly meter: DeprecatedMeterIssue<Meter, 'product'> }
-    : unknown
+type PricedMeter<Product> = Product extends {
+  readonly priceList: ReadonlyArray<infer Price>
 }
+  ? Price extends { readonly kind: 'metered'; readonly meter: infer Meter }
+    ? Meter & string
+    : never
+  : never
 
 // Only deprecated products can grant deprecated benefits or price by a
-// deprecated meter. The literals name the problem in the type error.
+// deprecated meter.
 type ActiveProduct<
   Product,
   DeprecatedBenefit extends string,
   DeprecatedMeter extends string,
 > = Product extends Deprecated
   ? unknown
-  : {
-      readonly benefits: ReadonlyArray<
-        ProductGrant<Product> extends infer Grant extends string
-          ? Grant extends DeprecatedBenefit
-            ? `Benefit "${Grant}" is deprecated, so only a deprecated product can grant it.`
-            : Grant
-          : never
-      >
-    } & (Product extends { readonly priceList: infer Prices }
-      ? { readonly priceList: ActivePrices<Prices, DeprecatedMeter> }
-      : unknown)
+  : DeprecationError<
+      | `Benefit '${Extract<ProductGrant<Product>, DeprecatedBenefit>}' is deprecated, so only a deprecated product can grant it.`
+      | DeprecatedMeterIssue<
+          Extract<PricedMeter<Product>, DeprecatedMeter>,
+          'product'
+        >
+    >
 
 type ValidProducts<
   Products extends ProductEntries,

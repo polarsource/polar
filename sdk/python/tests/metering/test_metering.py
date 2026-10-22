@@ -2,7 +2,7 @@ import datetime
 import subprocess
 import sys
 import typing
-from unittest.mock import ANY, AsyncMock, Mock, call
+from unittest.mock import ANY, AsyncMock, Mock
 
 import anyio
 import anyio.lowlevel
@@ -175,7 +175,9 @@ async def test_factory_confirms_accepted_and_dropped_events_in_outpost(
         return outpost
 
     monkeypatch.setattr(Outpost, "__aenter__", enter)
+    acknowledge = AsyncMock()
     confirm = AsyncMock()
+    monkeypatch.setattr(Outpost, "acknowledge", acknowledge)
     monkeypatch.setattr(Outpost, "confirm", confirm)
     accepted: EventInput = {
         "name": "usage",
@@ -207,7 +209,9 @@ async def test_factory_confirms_accepted_and_dropped_events_in_outpost(
             await metering.track(**accepted)
             await metering.track(**dropped)
             await metering.flush()
-    assert confirm.await_args_list == [call([accepted]), call([dropped])]
+    # Received events settle where their bucket is hot; dropped ones settle everywhere.
+    acknowledge.assert_awaited_once_with([accepted])
+    confirm.assert_awaited_once_with([dropped])
     on_delivered.assert_awaited_once_with([accepted])
     on_dropped.assert_awaited_once_with([dropped], "permanent_error")
 
@@ -224,13 +228,13 @@ async def test_factory_drains_the_buffer_into_outpost_before_closing_it(
     async def exit(outpost: Outpost, *exc_info: object) -> None:
         calls.append("close")
 
-    async def confirm(outpost: Outpost, events: list[EventInput]) -> None:
-        calls.append("confirm")
+    async def acknowledge(outpost: Outpost, events: list[EventInput]) -> None:
+        calls.append("acknowledge")
 
     monkeypatch.setattr(Outpost, "__aenter__", enter)
     monkeypatch.setattr(Outpost, "__aexit__", exit)
     monkeypatch.setattr(Outpost, "track", AsyncMock(return_value=None))
-    monkeypatch.setattr(Outpost, "confirm", confirm)
+    monkeypatch.setattr(Outpost, "acknowledge", acknowledge)
     async with PolarAsync("token") as polar:
         monkeypatch.setattr(polar.events, "ingest", AsyncMock())
         async with polar.metering(
@@ -241,7 +245,7 @@ async def test_factory_drains_the_buffer_into_outpost_before_closing_it(
             await metering.track(
                 name="usage", external_customer_id="customer", external_id="last"
             )
-    assert calls == ["confirm", "close"]
+    assert calls == ["acknowledge", "close"]
 
 
 @pytest.mark.anyio

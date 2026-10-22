@@ -445,6 +445,7 @@ it("confirms events in Outpost once Polar accepts or drops them", async () => {
   );
   vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
   vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
+  const acknowledge = vi.spyOn(Outpost.prototype, "acknowledge").mockResolvedValue(undefined);
   const confirm = vi.spyOn(Outpost.prototype, "confirm").mockResolvedValue(undefined);
   const polar = createPolar({ accessToken: "token" });
   const accepted = { ...event, external_id: "accepted", timestamp: "2026-10-22T08:00:00Z" };
@@ -464,7 +465,9 @@ it("confirms events in Outpost once Polar accepts or drops them", async () => {
   await metering.track(accepted);
   await metering.track(dropped);
   await metering.flush();
-  expect(confirm.mock.calls).toEqual([[[accepted]], [[dropped]]]);
+  // Received events settle where their bucket is hot; dropped ones settle everywhere.
+  expect(acknowledge).toHaveBeenCalledExactlyOnceWith([accepted]);
+  expect(confirm).toHaveBeenCalledExactlyOnceWith([dropped]);
   expect(onDelivered).toHaveBeenCalledExactlyOnceWith([accepted]);
   expect(onDropped).toHaveBeenCalledExactlyOnceWith([dropped], "permanent_error");
 });
@@ -481,8 +484,8 @@ it("drains the buffer into Outpost before closing it", async () => {
     calls.push("close");
   });
   vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
-  vi.spyOn(Outpost.prototype, "confirm").mockImplementation(async () => {
-    calls.push("confirm");
+  vi.spyOn(Outpost.prototype, "acknowledge").mockImplementation(async () => {
+    calls.push("acknowledge");
   });
   const polar = createPolar({ accessToken: "token" });
   vi.spyOn(polar.events, "ingest").mockResolvedValue({} as never);
@@ -491,7 +494,7 @@ it("drains the buffer into Outpost before closing it", async () => {
     .start();
   await metering.track({ ...event, external_id: "last" });
   await metering.close();
-  expect(calls).toEqual(["confirm", "close"]);
+  expect(calls).toEqual(["acknowledge", "close"]);
 });
 
 it("propagates Outpost startup failures and closes the buffer", async () => {

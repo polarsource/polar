@@ -167,6 +167,10 @@ Precheck and catalog import run as **Dramatiq background jobs** (batched self-re
 
 The UI should treat this as leave-and-return background work (poll while `pending`/`running`; retry on `failed`). Details are out of scope here.
 
+## Data retention
+
+A daily job closes every migration with no activity for 90 days (`modified_at`), at any step, unless it is already `completed` or has an operation running. Closing deletes the stored Stripe restricted key and the records that were never imported (`pending`), then sets `step = completed`. That step is written last, so an interrupted close is picked up by the next run. Imported, skipped and failed records stay, including card details (last4, brand, expiry), because they map Stripe objects to Polar ones and help with debugging. Stripe has no API to revoke a restricted key, so the merchant deletes it in their Stripe dashboard.
+
 ## Testing and rollout
 
 We can't test this on sandbox: PAN Copy and PAN Import only run on Stripe live, so we validate against live production. (love the YOLO mode with money)

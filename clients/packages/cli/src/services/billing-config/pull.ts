@@ -34,9 +34,11 @@ const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
     )
     if (response.status !== 200) {
       return yield* unexpected(response, organization, [
+        'organizations:read',
         'meters:read',
         'benefits:read',
         'products:read',
+        'discounts:read',
       ])
     }
     return yield* HttpClientResponse.schemaBodyJson(ConfigExport)(response)
@@ -61,7 +63,10 @@ const loadDocument = (
       })
     }
     const unexpected = Object.entries(input)
-      .filter(([key, value]) => !Array.isArray(value) && !IGNORED_KEYS.has(key))
+      .filter(
+        ([key, value]) =>
+          !Array.isArray(value) && key !== 'settings' && !IGNORED_KEYS.has(key),
+      )
       .map(([key]) => key)
     if (unexpected.length > 0) {
       return yield* new BillingConfigError({
@@ -70,7 +75,9 @@ const loadDocument = (
       })
     }
     return Object.fromEntries(
-      Object.entries(input).filter(([, items]) => Array.isArray(items)),
+      Object.entries(input).filter(
+        ([key, value]) => Array.isArray(value) || key === 'settings',
+      ),
     ) as ConfigDocument
   })
 
@@ -99,7 +106,9 @@ const resolveFile = (fs: FileSystem.FileSystem) =>
 
 const entries = (document: ConfigDocument) =>
   Object.entries(document).flatMap(([section, items]) =>
-    items.map((item) => ({ section, id: externalIdOf(item) ?? section })),
+    Array.isArray(items)
+      ? items.map((item) => ({ section, id: externalIdOf(item) ?? section }))
+      : [{ section, id: section }],
   )
 
 export const pull =

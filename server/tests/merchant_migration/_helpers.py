@@ -71,11 +71,7 @@ async def record_source_ids(
     session: AsyncSession, migration: MerchantMigration
 ) -> set[str]:
     repository = MerchantMigrationRecordRepository.from_session(session)
-    records = await repository.get_all(
-        repository.get_base_statement().where(
-            MerchantMigrationRecord.merchant_migration_id == migration.id
-        )
-    )
+    records = await repository.list_by_migration(migration.id)
     return {record.source_id for record in records}
 
 

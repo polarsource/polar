@@ -136,7 +136,7 @@ module "test" {
     database_pool_size     = "10"
     postgres_database      = module.planetscale.database_name
     postgres_read_database = module.planetscale.database_name
-    pre_deploy_command     = "POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
+    pre_deploy_command     = "env POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
     redis_db               = "1"
     plan                   = "pro"
   }

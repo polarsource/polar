@@ -18,7 +18,7 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   PLAN_INTERVAL_LABELS,
   PlanInterval,
-  annualSavingsPercent,
+  annualMonthsFree,
   availablePlanIntervals,
   defaultPlanInterval,
   filterPlansByInterval,
@@ -378,7 +378,7 @@ export default function ChangePlanPage({
                   startupProgramOffer={
                     isStartupProgramTarget ? { monthsFree: 12 } : undefined
                   }
-                  annualSavingsPercent={annualSavingsPercent(plan, plans)}
+                  annualMonthsFree={annualMonthsFree(plan, plans)}
                 />
               )
             })}

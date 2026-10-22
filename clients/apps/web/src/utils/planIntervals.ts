@@ -47,17 +47,14 @@ export const isIntervalSwitch = (from: Plan, to: Plan): boolean =>
   to.recurring_interval != null &&
   from.recurring_interval !== to.recurring_interval
 
-export const annualSavingsPercent = (
-  plan: Plan,
-  plans: Plan[],
-): number | null => {
+export const annualMonthsFree = (plan: Plan, plans: Plan[]): number | null => {
   if (plan.recurring_interval !== 'year' || !plan.price?.amount) return null
   const monthlyAmount = plans.find(
     (p) => p.tier === plan.tier && p.recurring_interval === 'month',
   )?.price?.amount
   if (!monthlyAmount) return null
-  const percent = Math.round(
-    (1 - plan.price.amount / (monthlyAmount * 12)) * 100,
+  const monthsFree = Math.round(
+    (monthlyAmount * 12 - plan.price.amount) / monthlyAmount,
   )
-  return percent > 0 ? percent : null
+  return monthsFree > 0 ? monthsFree : null
 }

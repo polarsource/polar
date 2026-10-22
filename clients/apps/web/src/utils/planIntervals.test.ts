@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
 import {
-  annualSavingsPercent,
+  annualMonthsFree,
   availablePlanIntervals,
   defaultPlanInterval,
   filterPlansByInterval,
@@ -27,7 +27,7 @@ const plan = (
 
 const free = plan('Free', null, 0)
 const proMonthly = plan('Pro', 'month', 2000)
-const proAnnual = plan('Pro', 'year', 20000)
+const proAnnual = plan('Pro', 'year', 22000)
 const scaleMonthly = plan('Scale', 'month', 10000)
 
 describe('availablePlanIntervals', () => {
@@ -82,21 +82,21 @@ describe('isIntervalSwitch', () => {
   })
 })
 
-describe('annualSavingsPercent', () => {
-  it('compares the annual price to twelve monthly payments', () => {
-    expect(annualSavingsPercent(proAnnual, [proMonthly, proAnnual])).toBe(17)
+describe('annualMonthsFree', () => {
+  it('counts the monthly payments the annual price saves', () => {
+    expect(annualMonthsFree(proAnnual, [proMonthly, proAnnual])).toBe(1)
   })
 
   it('is null without a monthly equivalent', () => {
-    expect(annualSavingsPercent(proAnnual, [proAnnual])).toBeNull()
+    expect(annualMonthsFree(proAnnual, [proAnnual])).toBeNull()
   })
 
   it('is null for monthly plans', () => {
-    expect(annualSavingsPercent(proMonthly, [proMonthly, proAnnual])).toBeNull()
+    expect(annualMonthsFree(proMonthly, [proMonthly, proAnnual])).toBeNull()
   })
 
   it('is null when the annual plan is not cheaper', () => {
     const pricey = plan('Pro', 'year', 30000)
-    expect(annualSavingsPercent(pricey, [proMonthly, pricey])).toBeNull()
+    expect(annualMonthsFree(pricey, [proMonthly, pricey])).toBeNull()
   })
 })

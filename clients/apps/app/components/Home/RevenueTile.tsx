@@ -1,61 +1,22 @@
 import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
-import { useMetrics } from '@/hooks/polar/metrics'
-import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { useCumulativeRevenue } from '@/hooks/useCumulativeRevenue'
 import { formatCurrency } from '@polar-sh/currency'
-import { subDays } from 'date-fns'
-import { useContext, useEffect, useMemo } from 'react'
-import { useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 import { CartesianChart, Line } from 'victory-native'
 import { Text } from '../Shared/Text'
 import { Tile } from './Tile'
 
 export interface RevenueTileProps {
   loading?: boolean
+  hero?: boolean
 }
 
-export const RevenueTile = ({ loading }: RevenueTileProps) => {
-  const { organization } = useContext(OrganizationContext)
+export const RevenueTile = ({ loading, hero }: RevenueTileProps) => {
   const theme = useTheme()
-
-  const startDate = useMemo(() => subDays(new Date(), 29), [])
-  const endDate = useMemo(() => new Date(), [])
-
-  const metrics = useMetrics(organization?.id, startDate, endDate, {
-    interval: 'day',
-  })
-
-  const cumulativeRevenueData = useMemo(() => {
-    return (
-      metrics.data?.periods.reduce<{ value: number; index: number }[]>(
-        (acc, period, index) => [
-          ...acc,
-          {
-            value: (acc[acc.length - 1]?.value ?? 0) + (period.revenue ?? 0),
-            index,
-          },
-        ],
-        [],
-      ) ?? []
-    )
-  }, [metrics])
-
-  const maxValue = useMemo(() => {
-    if (cumulativeRevenueData.length === 0) return 1
-    return Math.max(...cumulativeRevenueData.map((d) => d.value), 1)
-  }, [cumulativeRevenueData])
-
-  const lineProgress = useSharedValue(0)
-
-  useEffect(() => {
-    if (cumulativeRevenueData.length > 0) {
-      lineProgress.value = 0
-      lineProgress.value = withDelay(500, withTiming(1, { duration: 800 }))
-    }
-  }, [cumulativeRevenueData.length, lineProgress])
+  const { data, maxValue, total, lineProgress } = useCumulativeRevenue()
 
   return (
-    <Tile href="/metrics">
+    <Tile href="/metrics" square={!hero}>
       <Box
         flex={1}
         flexDirection="column"
@@ -72,12 +33,12 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
               Revenue
             </Text>
           </Box>
-          <Text variant="body">30 Days</Text>
+          <Text variant="body">{hero ? 'Last 30 days' : '30 Days'}</Text>
         </Box>
-        {cumulativeRevenueData.length > 0 ? (
+        {data.length > 0 ? (
           <Box flex={1} flexGrow={1} width="100%">
             <CartesianChart
-              data={cumulativeRevenueData}
+              data={data}
               xKey="index"
               yKeys={['value']}
               domain={{ y: [0, maxValue] }}
@@ -92,7 +53,7 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
                 <Line
                   points={points.value}
                   color={theme.colors.primary}
-                  strokeWidth={2}
+                  strokeWidth={hero ? 3 : 2}
                   curveType="monotoneX"
                   end={lineProgress}
                 />
@@ -101,15 +62,12 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
           </Box>
         ) : null}
         <Text
-          variant="headline"
+          variant={hero ? 'display' : 'headline'}
           numberOfLines={1}
           loading={loading}
           placeholderText="$1,234"
         >
-          {formatCurrency('statistics')(
-            metrics.data?.totals.revenue ?? 0,
-            'usd',
-          )}
+          {formatCurrency('statistics')(total, 'usd')}
         </Text>
       </Box>
     </Tile>

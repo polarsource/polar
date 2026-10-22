@@ -1,30 +1,35 @@
 import { AnimatedHeader } from '@/components/Home/AnimatedHeader'
 import { CatalogueTile } from '@/components/Home/CatalogueTile'
+import { DuoToolbar } from '@/components/Home/DuoToolbar'
 import { FinanceTile } from '@/components/Home/FinanceTile'
+import { LaptopDashboard } from '@/components/Home/LaptopDashboard'
 import { OrganizationTile } from '@/components/Home/OrganizationTile'
+import {
+  RecentOrders,
+  RecentSubscriptions,
+} from '@/components/Home/RecentActivity'
 import { RevenueTile } from '@/components/Home/RevenueTile'
-import { OrderRow } from '@/components/Orders/OrderRow'
+import { WideDashboard } from '@/components/Home/WideDashboard'
 import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
 import { Box } from '@/components/Shared/Box'
-import { Button } from '@/components/Shared/Button'
-import { EmptyState } from '@/components/Shared/EmptyState'
 import { LinkList } from '@/components/Shared/LinkList'
-import { Text } from '@/components/Shared/Text'
-import { SubscriptionRow } from '@/components/Subscriptions/SubscriptionRow'
 import { useTheme } from '@/design-system/useTheme'
 import { useCustomers } from '@/hooks/polar/customers'
 import { useCreateNotificationRecipient } from '@/hooks/polar/notifications'
 import { useOrders } from '@/hooks/polar/orders'
 import { useSubscriptions } from '@/hooks/polar/subscriptions'
+import { useContentInsets } from '@/hooks/useContentInsets'
 import { useHomeHeaderHeight } from '@/hooks/useHomeHeaderHeight'
+import { useIsDuo } from '@/hooks/useIsDuo'
 import { useStoreReview } from '@/hooks/useStoreReview'
+import { foldProgress, useHinge } from '@/modules/duo-hinge'
 import {
   AnimatedScrollProvider,
   useAnimatedScroll,
 } from '@/providers/AnimatedScrollProvider'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import { Link, Stack } from 'expo-router'
+import { Stack } from 'expo-router'
 import React, {
   useCallback,
   useContext,
@@ -49,6 +54,15 @@ function HomeContent() {
   const theme = useTheme()
   const { scrollHandler, scrollViewRef } = useAnimatedScroll()
   const { grossHeaderHeight } = useHomeHeaderHeight()
+  const { isMedium, isWide, paddingLeft, paddingRight } = useContentInsets()
+  const isDuo = useIsDuo()
+  const hinge = useHinge()
+  const laptopDivision =
+    hinge?.status === 'partiallyOpen' &&
+    hinge.division &&
+    hinge.division.width > hinge.division.height
+      ? hinge.division
+      : null
 
   const {
     data: orders,
@@ -123,150 +137,132 @@ function HomeContent() {
   }, [shouldShow, flatOrders.length, requestReview])
 
   const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
+  const openOrganizationsSheet = useCallback(
+    () => setShowOrganizationsSheet(true),
+    [],
+  )
 
   return (
     <GestureHandlerRootView>
       <Box flex={1} backgroundColor="background-regular">
-        <Stack.Screen options={{ headerShown: false, title: 'Home' }} />
-        <AnimatedHeader />
-        <Animated.ScrollView
-          ref={scrollViewRef}
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-          contentContainerStyle={{
-            paddingTop: grossHeaderHeight,
-            paddingBottom: theme.spacing['spacing-48'],
-            backgroundColor: theme.colors['background-regular'],
-            gap: theme.spacing['spacing-32'],
+        <Stack.Screen
+          options={{
+            headerShown: false,
+            title: 'Home',
+            contentStyle: {
+              backgroundColor: theme.colors.background,
+              paddingLeft,
+              paddingRight: isDuo ? 0 : paddingRight,
+            },
           }}
-          refreshControl={
-            <RefreshControl
-              onRefresh={refresh}
-              refreshing={isRefetching}
-              progressViewOffset={grossHeaderHeight}
-            />
-          }
-        >
-          <Box
-            padding="spacing-16"
-            gap="spacing-32"
-            flex={1}
-            flexDirection="column"
+        />
+        {isDuo ? <DuoToolbar /> : null}
+        <AnimatedHeader />
+        {laptopDivision ? (
+          <LaptopDashboard
+            division={laptopDivision}
+            foldProgress={foldProgress(hinge?.angle ?? Math.PI)}
+            headerHeight={grossHeaderHeight}
+            loading={!organization}
+            loadingSubscriptions={isLoadingSubscriptions}
+            loadingOrders={isLoadingOrders}
+            subscriptions={flatSubscriptions}
+            orders={flatOrders}
+            subscriptionCount={subscriptions?.pages[0].pagination.total_count}
+            orderCount={orders?.pages[0].pagination.total_count}
+            customerCount={customers?.pages[0].pagination.total_count}
+          />
+        ) : (
+          <Animated.ScrollView
+            ref={scrollViewRef}
+            onScroll={scrollHandler}
+            scrollEventThrottle={16}
+            contentContainerStyle={{
+              paddingTop: grossHeaderHeight,
+              paddingBottom: theme.spacing['spacing-48'],
+              backgroundColor: theme.colors['background-regular'],
+            }}
+            refreshControl={
+              <RefreshControl
+                onRefresh={refresh}
+                refreshing={isRefetching}
+                progressViewOffset={grossHeaderHeight}
+              />
+            }
           >
-            <Box gap="spacing-16">
-              <Box flexDirection="row" gap="spacing-16">
-                <Box flex={1}>
-                  <OrganizationTile
-                    onPress={() => setShowOrganizationsSheet(true)}
-                    loading={!organization}
-                  />
-                </Box>
-                <Box flex={1}>
-                  <RevenueTile loading={!organization} />
-                </Box>
-              </Box>
-              <Box flexDirection="row" gap="spacing-16">
-                <Box flex={1}>
-                  <CatalogueTile loading={!organization} />
-                </Box>
-                <Box flex={1}>
-                  <FinanceTile loading={!organization} />
-                </Box>
-              </Box>
-            </Box>
-
-            <Box gap="spacing-24" flexDirection="column" flex={1}>
+            {isMedium ? (
+              <WideDashboard
+                stackLists={!isWide}
+                loading={!organization}
+                loadingSubscriptions={isLoadingSubscriptions}
+                loadingOrders={isLoadingOrders}
+                subscriptions={flatSubscriptions}
+                orders={flatOrders}
+                subscriptionCount={
+                  subscriptions?.pages[0].pagination.total_count
+                }
+                orderCount={orders?.pages[0].pagination.total_count}
+                customerCount={customers?.pages[0].pagination.total_count}
+                onOrganizationPress={openOrganizationsSheet}
+              />
+            ) : (
               <Box
-                flexDirection="row"
-                alignItems="center"
-                justifyContent="space-between"
+                padding="spacing-16"
+                gap="spacing-32"
+                flex={1}
+                flexDirection="column"
               >
-                <Text variant="title">Recent Subscriptions</Text>
-                <Link href="/subscriptions" asChild>
-                  <Button size="small" variant="secondary">
-                    View All
-                  </Button>
-                </Link>
-              </Box>
-              {isLoadingSubscriptions ? (
-                <Box gap="spacing-8">
-                  {Array.from({ length: 2 }).map((_, i) => (
-                    <SubscriptionRow key={i} loading showCustomer />
-                  ))}
+                <Box gap="spacing-16">
+                  <Box flexDirection="row" gap="spacing-16">
+                    <Box flex={1}>
+                      <OrganizationTile
+                        onPress={openOrganizationsSheet}
+                        loading={!organization}
+                      />
+                    </Box>
+                    <Box flex={1}>
+                      <RevenueTile loading={!organization} />
+                    </Box>
+                  </Box>
+                  <Box flexDirection="row" gap="spacing-16">
+                    <Box flex={1}>
+                      <CatalogueTile loading={!organization} />
+                    </Box>
+                    <Box flex={1}>
+                      <FinanceTile loading={!organization} />
+                    </Box>
+                  </Box>
                 </Box>
-              ) : flatSubscriptions.length > 0 ? (
-                <Box gap="spacing-8">
-                  {flatSubscriptions.map((subscription) => (
-                    <SubscriptionRow
-                      key={subscription.id}
-                      subscription={subscription}
-                      showCustomer
-                    />
-                  ))}
-                </Box>
-              ) : (
-                <EmptyState
-                  title="No Subscriptions"
-                  description="No active subscriptions found for this organization"
+                <RecentSubscriptions
+                  subscriptions={flatSubscriptions}
+                  loading={isLoadingSubscriptions}
                 />
-              )}
-            </Box>
-
-            <Box gap="spacing-24" flexDirection="column" flex={1}>
-              <Box
-                flexDirection="row"
-                alignItems="center"
-                justifyContent="space-between"
-              >
-                <Text variant="title">Recent Orders</Text>
-                <Link href="/orders" asChild>
-                  <Button size="small" variant="secondary">
-                    View All
-                  </Button>
-                </Link>
-              </Box>
-              {isLoadingOrders ? (
-                <Box gap="spacing-8">
-                  {Array.from({ length: 2 }).map((_, i) => (
-                    <OrderRow key={i} loading showTimestamp />
-                  ))}
-                </Box>
-              ) : flatOrders.length > 0 ? (
-                <Box gap="spacing-8">
-                  {flatOrders.map((order) => (
-                    <OrderRow key={order.id} order={order} showTimestamp />
-                  ))}
-                </Box>
-              ) : (
-                <EmptyState
-                  title="No Orders"
-                  description="No orders found for this organization"
+                <RecentOrders orders={flatOrders} loading={isLoadingOrders} />
+                <LinkList
+                  items={[
+                    {
+                      title: 'Customers',
+                      meta: `${customers?.pages[0].pagination.total_count}`,
+                      link: '/customers',
+                    },
+                    {
+                      title: 'Products',
+                      link: '/products',
+                    },
+                    {
+                      title: 'Subscriptions',
+                      link: '/subscriptions',
+                    },
+                    {
+                      title: 'Checkout Links',
+                      link: '/checkout-links',
+                    },
+                  ]}
                 />
-              )}
-            </Box>
-            <LinkList
-              items={[
-                {
-                  title: 'Customers',
-                  meta: `${customers?.pages[0].pagination.total_count}`,
-                  link: '/customers',
-                },
-                {
-                  title: 'Products',
-                  link: '/products',
-                },
-                {
-                  title: 'Subscriptions',
-                  link: '/subscriptions',
-                },
-                {
-                  title: 'Checkout Links',
-                  link: '/checkout-links',
-                },
-              ]}
-            />
-          </Box>
-        </Animated.ScrollView>
+              </Box>
+            )}
+          </Animated.ScrollView>
+        )}
 
         {showOrganizationsSheet ? (
           <OrganizationsSheet

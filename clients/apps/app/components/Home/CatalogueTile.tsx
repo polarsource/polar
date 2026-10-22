@@ -10,9 +10,10 @@ import { Tile } from './Tile'
 
 export interface CatalogueTileProps {
   loading?: boolean
+  square?: boolean
 }
 
-export const CatalogueTile = ({ loading }: CatalogueTileProps) => {
+export const CatalogueTile = ({ loading, square }: CatalogueTileProps) => {
   const theme = useTheme()
 
   const { organization } = useContext(OrganizationContext)
@@ -33,7 +34,7 @@ export const CatalogueTile = ({ loading }: CatalogueTileProps) => {
   })
 
   return (
-    <Tile href="/products">
+    <Tile href="/products" square={square}>
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
           <Text variant="body" color="subtext">

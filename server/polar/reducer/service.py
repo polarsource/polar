@@ -303,6 +303,37 @@ class ReducerService:
         )
         return cold_until, totals
 
+    async def get_stored_external_ids(
+        self,
+        session: AsyncReadSession,
+        reducer: Reducer,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        *,
+        bucket_start: datetime,
+        external_ids: Sequence[str],
+    ) -> set[str]:
+        """The given external ids of the customer identity's stored events that the
+        synced part of the bucket starting at `bucket_start` counts: a seal can
+        split a bucket, and sync then recomputes each part on its own."""
+        repository = ReducerBucketRepository.from_session(session)
+        synced_end = await repository.get_synced_end_within(
+            reducer.organization_id,
+            reducer.id,
+            customer_id,
+            external_customer_id,
+            bucket_start,
+            bucket_start + REDUCER_BUCKET_SIZE,
+        )
+        if synced_end is None:
+            return set()
+        return await EventRepository.from_session(session).get_stored_external_ids(
+            reducer.organization_id,
+            external_ids,
+            timestamp_from=bucket_start,
+            timestamp_to=synced_end,
+        )
+
     async def get_database_now(self, session: AsyncReadSession) -> datetime:
         return await ReducerBucketRepository.from_session(session).get_database_now()
 

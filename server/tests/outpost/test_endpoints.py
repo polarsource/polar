@@ -22,14 +22,20 @@ from polar.models import (
     Meter,
     Organization,
     ReducerBucket,
+    StagedEvent,
 )
+from polar.models.event import EventSource
 from polar.outpost.schemas import to_epoch_microseconds
 from polar.outpost.service import SYNCED_LOOKBACK
 from polar.outpost.stream import publish
 from polar.redis import Redis
 from polar.reducer.service import get_reducer_bucket_start
 from tests.fixtures import AuthSubjectFixture, SaveFixture
-from tests.fixtures.random_objects import create_reducer
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_event,
+    create_reducer,
+)
 
 
 @pytest.fixture
@@ -318,6 +324,270 @@ class TestOutpost:
         payload = response["payload"]
         assert payload["cold_until"] == to_epoch_microseconds(bucket_end)
         assert payload["count"] == 1
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_pending(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
+        synced_at = bucket_start + timedelta(minutes=5)
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                external_customer_id="alice",
+                bucket_start=bucket_start,
+                bucket_end=synced_at,
+                count=2,
+                sum=Decimal(2),
+                min=Decimal(1),
+                max=Decimal(1),
+                synced_at=synced_at,
+            )
+        )
+        # The answer carries the ids stored, staged ones included, and the snapshot read in
+        # the same transaction: what the snapshot counts and the ids agree.
+        await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=bucket_start + timedelta(seconds=1),
+            external_customer_id="alice",
+            external_id="counted",
+        )
+        await save_fixture(
+            StagedEvent(
+                organization_id=organization.id,
+                name=METER_TEST_EVENT,
+                source=EventSource.user,
+                timestamp=bucket_start + timedelta(seconds=2),
+                ingested_at=utc_now(),
+                external_customer_id="alice",
+                external_id="staged",
+                user_metadata={},
+            )
+        )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "confirm",
+                    "payload": {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": "alice",
+                        "bucket_start": to_epoch_microseconds(bucket_start),
+                        "meter_id": str(meter.id),
+                        "ids": ["counted", "unknown", "staged"],
+                    },
+                }
+            )
+            response = await websocket.receive_json(timeout=2)
+
+        assert isinstance(response["payload"]["snapshot"].pop("version"), int)
+        assert response == {
+            "type": "confirmed",
+            "payload": {
+                "reducer_id": str(reducer.id),
+                "customer_id": None,
+                "external_customer_id": "alice",
+                "bucket_start": to_epoch_microseconds(bucket_start),
+                "ids": ["counted", "staged"],
+                "snapshot": {
+                    "meter_id": str(meter.id),
+                    "customer_id": None,
+                    "external_customer_id": "alice",
+                    "customer_exists": False,
+                    "credited_units": 0,
+                    "cold_until": to_epoch_microseconds(synced_at),
+                    "count": 2,
+                    "sum": 2.0,
+                    "min": 1.0,
+                    "max": 1.0,
+                },
+            },
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_pending_split_bucket(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
+        # A seal split the bucket: only its first half is synced, so the snapshot's
+        # cold usage stops there and only the events before the split count.
+        split_at = bucket_start + timedelta(minutes=2)
+        for interval_start, interval_end, synced_at in (
+            (bucket_start, split_at, split_at),
+            (split_at, bucket_start + timedelta(minutes=5), None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    external_customer_id="alice",
+                    bucket_start=interval_start,
+                    bucket_end=interval_end,
+                    count=1,
+                    sum=Decimal(1),
+                    min=Decimal(1),
+                    max=Decimal(1),
+                    synced_at=synced_at,
+                )
+            )
+        for external_id, timestamp in (
+            ("early", bucket_start + timedelta(minutes=1)),
+            ("late", bucket_start + timedelta(minutes=3)),
+        ):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                timestamp=timestamp,
+                external_customer_id="alice",
+                external_id=external_id,
+            )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "confirm",
+                    "payload": {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": "alice",
+                        "bucket_start": to_epoch_microseconds(bucket_start),
+                        "meter_id": str(meter.id),
+                        "ids": ["early", "late"],
+                    },
+                }
+            )
+            response = await websocket.receive_json(timeout=2)
+
+        assert response["payload"]["ids"] == ["early"]
+        assert response["payload"]["snapshot"]["cold_until"] == to_epoch_microseconds(
+            split_at
+        )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_pending_bucket_not_synced(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=bucket_start + timedelta(seconds=1),
+            external_customer_id="alice",
+            external_id="ingested",
+        )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "confirm",
+                    "payload": {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": "alice",
+                        "bucket_start": to_epoch_microseconds(bucket_start),
+                        "meter_id": str(meter.id),
+                        "ids": ["ingested"],
+                    },
+                }
+            )
+            response = await websocket.receive_json(timeout=2)
+
+        # Nothing synced, so nothing confirmed: the snapshot leaves the bucket hot, where
+        # the local copy counts the event, pending or not.
+        assert response["type"] == "confirmed"
+        assert response["payload"]["ids"] == []
+        assert response["payload"]["snapshot"]["cold_until"] <= to_epoch_microseconds(
+            bucket_start
+        )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_pending_bucket_start_out_of_range(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "confirm",
+                    "payload": {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": "alice",
+                        "bucket_start": 10**24,
+                        "meter_id": str(meter.id),
+                        "ids": ["event"],
+                    },
+                }
+            )
+            # The message is invalid and dropped: the next answer is to the next request.
+            await websocket.send_json({"type": "configuration"})
+            response = await websocket.receive_json(timeout=2)
+
+        assert response["type"] == "configuration"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_pending_too_many_ids(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "confirm",
+                    "payload": {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": "alice",
+                        "bucket_start": to_epoch_microseconds(bucket_start),
+                        "meter_id": str(meter.id),
+                        "ids": [f"event-{index}" for index in range(1001)],
+                    },
+                }
+            )
+            # The message is invalid and dropped: the next answer is to the next request.
+            await websocket.send_json({"type": "configuration"})
+            response = await websocket.receive_json(timeout=2)
+
+        assert response["type"] == "configuration"
 
 
 def _export_request(**attributes: str) -> ExportTraceServiceRequest:

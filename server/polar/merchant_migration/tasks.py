@@ -1,11 +1,20 @@
+import asyncio
 from typing import Annotated
 from uuid import UUID
 
 import structlog
 
+from polar.config import settings
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.observability.task_logging import LoggableField
-from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
+from polar.worker import (
+    AsyncSessionMaker,
+    CronTrigger,
+    RedisMiddleware,
+    TaskPriority,
+    actor,
+)
 
 from . import pan_transfer, slack
 from .repository import MerchantMigrationRepository
@@ -114,3 +123,34 @@ async def merchant_migration_notify_waiting_for_ops(
         if step is None or step.key != step_key:
             return
         await slack.notify_waiting_for_ops(RedisMiddleware.get(), migration, step)
+
+
+@actor(
+    actor_name="merchant_migration.close_idle",
+    cron_trigger=CronTrigger.from_crontab("0 3 * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+    time_limit=600_000,
+)
+async def merchant_migration_close_idle() -> None:
+    """Close migrations with no activity for the retention period, each in its
+    own transaction. One interrupted run is picked up by the next."""
+    idle_since = utc_now() - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD
+    async with AsyncSessionMaker() as session:
+        repository = MerchantMigrationRepository.from_session(session)
+        migration_ids = await repository.list_idle_ids(idle_since)
+
+    closed = 0
+    for migration_id in migration_ids:
+        async with AsyncSessionMaker() as session:
+            if await merchant_migration_service.close_idle(
+                session, migration_id, idle_since=idle_since
+            ):
+                closed += 1
+        await asyncio.sleep(0.1)
+
+    log.info(
+        "merchant_migration.close_idle",
+        candidates=len(migration_ids),
+        closed=closed,
+    )

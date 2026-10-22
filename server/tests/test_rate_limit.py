@@ -115,9 +115,17 @@ class TestMiddleware:
                 statuses.append(response.status_code)
         assert statuses == [204] * 6 + [429]
 
-    def test_app_middleware_order(self, mocker: MockerFixture) -> None:
+    def test_app_middleware_order(self, mocker: MockerFixture, redis: Redis) -> None:
         mocker.patch("polar.app.settings.is_testing", return_value=False)
-        middleware: list[object] = [item.cls for item in create_app().user_middleware]
+        create_redis = mocker.patch("polar.app.create_redis", return_value=redis)
+        app = create_app()
+        create_redis.assert_called_once_with("rate-limit")
+        assert app.state.rate_limit_redis is redis
+        middleware: list[object] = [item.cls for item in app.user_middleware]
+        for factory in (get_middleware, get_ip_middleware):
+            assert (
+                app.user_middleware[middleware.index(factory)].kwargs["redis"] is redis
+            )
         assert (
             middleware.index(get_ip_middleware)
             < middleware.index(TransactionalMiddleware)
@@ -138,14 +146,13 @@ class TestIPMiddleware:
     async def test_blocked_ip_skips_database_and_authentication(
         self, mocker: MockerFixture, redis: Redis, headers: dict[str, str]
     ) -> None:
-        mocker.patch("polar.rate_limit.create_redis", return_value=redis)
         mocker.patch.object(settings, "ENV", Environment.production)
 
         async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
             raise AssertionError("Blocked requests must not reach the endpoint")
 
         limiter = get_ip_middleware(
-            TransactionalMiddleware(AuthSubjectMiddleware(endpoint))
+            TransactionalMiddleware(AuthSubjectMiddleware(endpoint)), redis
         )
         rule = next(iter(limiter.config.values()))[0]
         for key in rule.ruleset("ip", "ip:1.1.1.1"):
@@ -163,13 +170,12 @@ class TestIPMiddleware:
     async def test_ip_budgets_are_separate_and_health_is_exempt(
         self, mocker: MockerFixture, redis: Redis
     ) -> None:
-        mocker.patch("polar.rate_limit.create_redis", return_value=redis)
         mocker.patch.object(settings, "ENV", Environment.production)
 
         async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
             await Response(status_code=204)(scope, receive, send)
 
-        limiter = get_ip_middleware(endpoint)
+        limiter = get_ip_middleware(endpoint, redis)
         rule = next(iter(limiter.config.values()))[0]
         for key in rule.ruleset("ip", "ip:1.1.1.1"):
             await redis.set(key, 1, ex=60)

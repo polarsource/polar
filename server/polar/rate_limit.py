@@ -9,7 +9,7 @@ from polar.auth.models import AuthSubject, Subject, is_anonymous
 from polar.config import Environment, settings
 from polar.enums import RateLimitGroup
 from polar.kit.http import get_ip_address
-from polar.redis import create_redis
+from polar.redis import Redis
 
 
 async def _authenticate_ip(scope: Scope) -> tuple[str, RateLimitGroup]:
@@ -143,7 +143,7 @@ _PRODUCTION_RULES: dict[str, Sequence[Rule]] = {
 }
 
 
-def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
+def get_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     match settings.ENV:
         case Environment.production:
             rules = _PRODUCTION_RULES
@@ -151,19 +151,15 @@ def get_middleware(app: ASGIApp) -> RateLimitMiddleware:
             rules = _SANDBOX_RULES
         case _:
             rules = {}
-    return RateLimitMiddleware(
-        app, _authenticate, RedisBackend(create_redis("rate-limit")), rules
-    )
+    return RateLimitMiddleware(app, _authenticate, RedisBackend(redis), rules)
 
 
-def get_ip_middleware(app: ASGIApp) -> RateLimitMiddleware:
+def get_ip_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     rules: dict[str, Sequence[Rule]] = {}
     if settings.ENV in {Environment.production, Environment.sandbox}:
         # Allow shared IPs ten times the highest per-identity rate.
         rules = {"^/v1": [Rule(second=1000, zone="ip")]}
-    return RateLimitMiddleware(
-        app, _authenticate_ip, RedisBackend(create_redis("rate-limit")), rules
-    )
+    return RateLimitMiddleware(app, _authenticate_ip, RedisBackend(redis), rules)
 
 
 __all__ = ["get_ip_middleware", "get_middleware"]

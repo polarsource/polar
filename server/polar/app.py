@@ -191,6 +191,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     stop_remote_write_pusher()
 
     await redis.close(True)
+    rate_limit_redis = getattr(app.state, "rate_limit_redis", None)
+    if rate_limit_redis is not None:
+        await rate_limit_redis.close(True)
     await async_engine.dispose()
     if async_read_engine is not async_engine:
         await async_read_engine.dispose()
@@ -211,10 +214,12 @@ def create_app() -> FastAPI:
         app.add_middleware(HSTSMiddleware)
     app.add_middleware(CacheControlMiddleware)
     if not settings.is_testing():
-        app.add_middleware(rate_limit.get_middleware)
+        rate_limit_redis = create_redis("rate-limit")
+        app.state.rate_limit_redis = rate_limit_redis
+        app.add_middleware(rate_limit.get_middleware, redis=rate_limit_redis)
         app.add_middleware(AuthSubjectMiddleware)
         app.add_middleware(TransactionalMiddleware)
-        app.add_middleware(rate_limit.get_ip_middleware)
+        app.add_middleware(rate_limit.get_ip_middleware, redis=rate_limit_redis)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     if settings.is_vercel():
         # The app origin mounts the API at /api (api.* hosts serve it

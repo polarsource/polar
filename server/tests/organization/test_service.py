@@ -77,8 +77,11 @@ from polar.organization.service import (
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
-from polar.organization_review.repository import OrganizationRiskSignalRepository
-from polar.organization_review.schemas import ReviewContext, ReviewVerdict
+from polar.organization_review.repository import (
+    OrganizationReviewRepository,
+    OrganizationRiskSignalRepository,
+)
+from polar.organization_review.schemas import ActorType, ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
@@ -1995,6 +1998,7 @@ class TestSetOrganizationUnderReview:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         # Given organization active
         organization.status = OrganizationStatus.ACTIVE
@@ -2003,7 +2007,7 @@ class TestSetOrganizationUnderReview:
 
         # When
         result = await organization_service.set_organization_under_review(
-            session, organization
+            session, organization, actor_type=ActorType.HUMAN, reviewer_id=user.id
         )
 
         # Then
@@ -2011,6 +2015,13 @@ class TestSetOrganizationUnderReview:
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
+        await session.flush()
+        decision = await OrganizationReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert decision is not None
+        assert decision.actor_type == ActorType.HUMAN
+        assert decision.reviewer_id == user.id
 
     async def test_set_organization_under_review_from_offboarding(
         self,
@@ -2025,7 +2036,7 @@ class TestSetOrganizationUnderReview:
 
         # When reverting it to review
         result = await organization_service.set_organization_under_review(
-            session, organization
+            session, organization, actor_type=ActorType.HUMAN
         )
 
         # Then it transitions back into the review flow
@@ -2108,6 +2119,13 @@ class TestHandleAccountRiskSignal:
         signals = await self._signals(session, organization)
         assert len(signals) == 1
         assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
+        await session.flush()
+        decision = await OrganizationReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert decision is not None
+        assert decision.actor_type == ActorType.STRIPE
+        assert decision.reviewer_id is None
 
     async def test_actionable_website_matches_org_by_evaluation_id(
         self,

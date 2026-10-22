@@ -1810,6 +1810,8 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
         *,
+        actor_type: ActorType,
+        reviewer_id: uuid.UUID | None = None,
         enqueue_review: bool = True,
     ) -> Organization:
         self.set_status(organization, OrganizationStatus.REVIEW)
@@ -1818,12 +1820,13 @@ class OrganizationService:
         organization.snooze_type = None
         session.add(organization)
 
-        # Record a human ESCALATE decision so the agent knows not to auto-act
+        # Record a manual ESCALATE decision so the agent knows not to auto-act
         review_repository = AgentReviewRepository.from_session(session)
         await review_repository.deactivate_current_decisions(organization.id)
         await review_repository.save_review_decision(
             organization_id=organization.id,
-            actor_type=ActorType.HUMAN,
+            actor_type=actor_type,
+            reviewer_id=reviewer_id,
             decision=DecisionType.ESCALATE,
             review_context=ReviewContext.MANUAL,
         )
@@ -1995,7 +1998,10 @@ class OrganizationService:
         )
         if organization.status == OrganizationStatus.ACTIVE:
             await self.set_organization_under_review(
-                session, organization, enqueue_review=False
+                session,
+                organization,
+                actor_type=ActorType.STRIPE,
+                enqueue_review=False,
             )
 
     async def _handle_merchant_risk_signal(
@@ -2031,7 +2037,10 @@ class OrganizationService:
             )
             if organization.status == OrganizationStatus.ACTIVE:
                 await self.set_organization_under_review(
-                    session, organization, enqueue_review=False
+                    session,
+                    organization,
+                    actor_type=ActorType.STRIPE,
+                    enqueue_review=False,
                 )
 
     async def set_organization_offboarding(

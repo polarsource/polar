@@ -14,6 +14,8 @@ export const polar = RuntimeSDK(config, {
   // baseUrl: 'http://127.0.0.1:8000',
 })
 
+const currency = config.toJSON().settings?.payments?.currency ?? 'usd'
+
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const findProducts = async (recurring: boolean) => {
@@ -38,23 +40,24 @@ const findPlan = async (externalId: 'free' | 'pro') => {
 
 type Product = Awaited<ReturnType<typeof findPlan>>
 
-const formatUsdPrice = (product: Product) => {
+const formatPrice = (product: Product) => {
   const price = product.prices.find(
-    (price) => price.amount_type === 'fixed' && price.price_currency === 'usd',
+    (price) =>
+      price.amount_type === 'fixed' && price.price_currency === currency,
   )
   if (price?.amount_type !== 'fixed') {
     throw new Error(
-      `The ${product.external_id} product has no fixed USD price.`,
+      `The ${product.external_id} product has no fixed ${currency.toUpperCase()} price.`,
     )
   }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'usd',
+    currency,
     maximumFractionDigits: price.price_amount % 100 === 0 ? 0 : 2,
   }).format(price.price_amount / 100)
 }
 
-export const getProPrice = async () => formatUsdPrice(await findPlan('pro'))
+export const getProPrice = async () => formatPrice(await findPlan('pro'))
 
 const TOP_UPS = ['topup_100', 'topup_500', 'topup_1000'] as const
 
@@ -79,7 +82,7 @@ export const getTopUps = async () =>
     .map((product) => ({
       id: product.external_id as TopUp,
       units: creditedUnits(product),
-      price: formatUsdPrice(product),
+      price: formatPrice(product),
     }))
 
 export const createProCheckout = async (externalId: string, origin: string) => {
@@ -175,7 +178,7 @@ export const purchaseTopUp = async (externalId: string, topUp: TopUp) => {
   const order = await polar.sdk.orders.create({
     customer_id: customer.id,
     product_id: topUpProduct.id,
-    currency: 'usd',
+    currency,
   })
 
   try {

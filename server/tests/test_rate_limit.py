@@ -356,6 +356,32 @@ class TestRefundsElevatedAndGetFallThrough:
 
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize(
+    "group",
+    [RateLimitGroup.default, RateLimitGroup.web],
+)
+class TestAgentClaimZone:
+    """Confirming a claim checks a 6-digit code, so guesses are capped like
+    login codes; loading the claim page isn't."""
+
+    def test_confirm_resolves_to_agent_claim_zone(
+        self, rules: dict[str, Sequence[Rule]], group: RateLimitGroup
+    ) -> None:
+        rule = _select_rule(rules, "/v1/agent/claim", group, method="POST")
+
+        assert rule is not None
+        assert rule.zone == "agent-claim"
+
+    def test_get_claim_uses_api_zone(
+        self, rules: dict[str, Sequence[Rule]], group: RateLimitGroup
+    ) -> None:
+        rule = _select_rule(rules, "/v1/agent/claim/polar_acl_link", group)
+
+        assert rule is not None
+        assert rule.zone == "api"
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
 @pytest.mark.parametrize("path", ["/v1/agent/identity", "/v1/agent/identity/"])
 class TestAgentSignUpZone:
     """Each sign-up creates an OAuth client and an agent, so anonymous callers

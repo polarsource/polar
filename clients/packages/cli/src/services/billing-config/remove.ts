@@ -20,8 +20,18 @@ const codeOnly = (source: string) =>
       : ' '.repeat(match.length),
   )
 
-const KEY = /^(?:(['"`])(.*?)\1|([A-Za-z_$][\w$]*))\s*:/
-const TUPLE_KEY = /^\[\s*(['"`])(.*?)\1\s*,/
+const QUOTED = String.raw`(['"\`])((?:\\[\s\S]|(?!\1)[^\\])*)\1`
+const KEY = new RegExp(String.raw`^(?:${QUOTED}|([A-Za-z_$][\w$]*))\s*:`)
+const TUPLE_KEY = new RegExp(String.raw`^\[\s*${QUOTED}\s*,`)
+
+// The generator writes keys with JSON.stringify; other escapes fall back to raw text and get reported as missing
+const decode = (text: string) => {
+  try {
+    return JSON.parse(`"${text}"`) as string
+  } catch {
+    return text
+  }
+}
 
 const OPENING = '{(['
 const CLOSING = '})]'
@@ -67,7 +77,7 @@ const sectionEntries = (source: string, section: string) => {
       .map((entry) => trim(code, entry))
       .flatMap((entry) => {
         const match = pattern.exec(source.slice(entry.start, entry.end))
-        const key = match?.[2] ?? match?.[3]
+        const key = match?.[2] === undefined ? match?.[3] : decode(match[2])
         return key === undefined ? [] : [[key, entry] as const]
       }),
   )

@@ -1,5 +1,6 @@
 import { Clock, Effect, Option, Stdio } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
+import type { ActiveOrganization } from '@/schemas/Auth'
 import {
   BillingConfigError,
   type LoadedConfig,
@@ -10,7 +11,7 @@ import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { plural } from '@/utils/billing-config/problems'
 import { removable } from '@/utils/billing-config/prune'
-import { found } from '@/utils/billing-config/review'
+import { NOUNS, box, found, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
 import { configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
@@ -27,33 +28,54 @@ const reason = (entry: PruneEntry) =>
   [
     ...(entry.in_use ? ['has customers'] : []),
     ...(entry.referenced_by.length > 0
-      ? [`used by ${entry.referenced_by.join(', ')}`]
+      ? [`used by ${entry.referenced_by.map(ui.printable).join(', ')}`]
       : []),
   ].join(', ')
 
-const section = (
-  title: string,
+const width = (entry: PruneEntry) =>
+  Bun.stringWidth(ui.printable(entry.external_id))
+
+const group = (
+  section: string,
   entries: ReadonlyArray<PruneEntry>,
-  value: (entry: PruneEntry) => string,
+  idWidth: number,
 ) =>
-  entries.length === 0
+  [
+    `${ui.INDENT}${ui.bold(section)}`,
+    ...entries
+      .filter(removable)
+      .map(
+        (entry) =>
+          `${ui.INDENT}${ui.red('-')} ${ui.bold(ui.printable(entry.external_id))}`,
+      ),
+    ...entries
+      .filter((entry) => !removable(entry))
+      .map(
+        (entry) =>
+          `${ui.INDENT}${ui.dim('=')} ${ui.printable(entry.external_id)}${' '.repeat(idWidth - width(entry))}  ${ui.dim(reason(entry))}`,
+      ),
+  ].join('\n')
+
+const report = (
+  organization: ActiveOrganization,
+  entries: ReadonlyArray<PruneEntry>,
+) => {
+  // Shared across sections so every reason starts in the same column
+  const idWidth = Math.max(
+    0,
+    ...entries.filter((entry) => !removable(entry)).map(width),
+  )
+  const groups = NOUNS.flatMap(([section, resource]) => {
+    const own = entries.filter((entry) => entry.resource === resource)
+    return own.length === 0 ? [] : [group(section, own, idWidth)]
+  })
+  return groups.length === 0
     ? []
     : [
         ui.blank,
-        `${ui.INDENT}${ui.dim(title)}`,
-        ui.keyValue(entries.map((entry) => [entry.resource, value(entry)])),
+        box(`Deprecated ${ui.dim(target(organization))}`, groups.join('\n\n')),
       ]
-
-const report = (entries: ReadonlyArray<PruneEntry>) => [
-  ...section('REMOVABLE', entries.filter(removable), (entry) =>
-    ui.printable(entry.external_id),
-  ),
-  ...section(
-    'STILL IN USE',
-    entries.filter((entry) => !removable(entry)),
-    (entry) => `${ui.printable(entry.external_id)}  ${ui.dim(reason(entry))}`,
-  ),
-]
+}
 
 const interactive = Effect.gen(function* () {
   const stdio = yield* Stdio.Stdio
@@ -61,10 +83,16 @@ const interactive = Effect.gen(function* () {
 })
 
 const confirm =
-  (config: LoadedConfig, json: boolean, yes: boolean, say: Say['say']) =>
+  (
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+    json: boolean,
+    yes: boolean,
+    say: Say['say'],
+  ) =>
   (entries: ReadonlyArray<PruneEntry>) =>
     Effect.gen(function* () {
-      yield* say(report(entries))
+      yield* say(report(organization, entries))
       if (yes) return
       if (json || !(yield* interactive)) {
         return yield* new BillingConfigError({
@@ -75,7 +103,7 @@ const confirm =
       yield* say([ui.blank])
       const confirmed = yield* Prompt.run(
         Prompt.Confirm({
-          message: `Remove ${plural(entries.filter(removable).length, 'entry', 'entries')} from ${config.file}?`,
+          message: `Remove ${plural(entries.filter(removable).length, 'entry', 'entries')} from ${config.file}? Nothing on Polar changes.`,
         }),
       ).pipe(Effect.orElseSucceed(() => false))
       if (!confirmed) {
@@ -88,6 +116,7 @@ const confirm =
 // The report was already shown before confirming when entries were removed
 const render = (
   config: LoadedConfig,
+  organization: ActiveOrganization,
   entries: ReadonlyArray<PruneEntry>,
   removed: boolean,
 ) =>
@@ -95,11 +124,11 @@ const render = (
     ? [
         ui.blank,
         ui.success(
-          `${config.file}: ${plural(entries.filter(removable).length, 'entry', 'entries')} removed`,
+          `${config.file}: ${plural(entries.filter(removable).length, 'entry', 'entries')} removed, nothing changed on Polar`,
         ),
       ]
     : [
-        ...report(entries),
+        ...report(organization, entries),
         ui.blank,
         ui.success(
           entries.length === 0
@@ -145,7 +174,7 @@ export const prune = Command.make('prune', { file, org, yes }).pipe(
               yield* progress.finish(config.file)
               yield* progress.start('Found')
               yield* progress.finish(found(config))
-              yield* progress.start('Checking usage')
+              yield* progress.start('Checking')
               const startedAt = yield* Clock.currentTimeMillis
               const checked = Clock.currentTimeMillis.pipe(
                 Effect.flatMap((now) =>
@@ -160,16 +189,19 @@ export const prune = Command.make('prune', { file, org, yes }).pipe(
                 organization,
                 (entries) =>
                   checked.pipe(
-                    Effect.andThen(confirm(config, json, yes, say)(entries)),
+                    Effect.andThen(
+                      confirm(config, organization, json, yes, say)(entries),
+                    ),
                   ),
               )
               yield* checked
-              return { config, ...result }
+              return { config, organization, ...result }
             }),
           'columns',
         )
       }),
-    render: ({ config, entries, removed }) => render(config, entries, removed),
+    render: ({ config, organization, entries, removed }) =>
+      render(config, organization, entries, removed),
     json: ({ config, entries, removed }) => ({
       file: config.file,
       entries,

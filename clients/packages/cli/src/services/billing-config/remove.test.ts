@@ -122,6 +122,30 @@ describe('removeFromScript', () => {
     )
   })
 
+  test('matches quoted keys with escapes', () => {
+    const { source, missing } = removeFromScript(
+      [
+        'defineConfig({ meters: ({ meter }) => ({',
+        '  "say \\"hi\\"": meter().count(),',
+        '  "a\\u0062c": meter().count(),',
+        '  b: meter().count(),',
+        '}) })',
+      ].join('\n'),
+      [
+        { section: 'meters', id: 'say "hi"' },
+        { section: 'meters', id: 'abc' },
+      ],
+    )
+    expect(missing).toEqual([])
+    expect(source).toBe(
+      [
+        'defineConfig({ meters: ({ meter }) => ({',
+        '  b: meter().count(),',
+        '}) })',
+      ].join('\n'),
+    )
+  })
+
   test('changes nothing when an entry cannot be found', () => {
     const removals = [
       { section: 'meters', id: 'apples' },

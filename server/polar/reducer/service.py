@@ -327,7 +327,7 @@ class ReducerService:
         )
         if synced_end is None:
             return set()
-        return await repository.get_stored_external_ids(
+        return await EventRepository.from_session(session).get_stored_external_ids(
             reducer.organization_id,
             external_ids,
             timestamp_from=bucket_start,

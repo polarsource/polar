@@ -1,9 +1,10 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
@@ -37,6 +38,18 @@ class CatalogRepository(
         result = await self.session.execute(statement)
         return {id: version_hash for id, version_hash in result.tuples()}
 
+    def get_statement_by_org_ids(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Catalog]]:
+        return (
+            self.get_base_statement()
+            .where(
+                Catalog.organization_id.in_(org_ids),
+                Catalog.status != CatalogStatus.draft,
+            )
+            .order_by(Catalog.published_at.desc(), Catalog.created_at.desc())
+        )
+
 
 class CatalogProductRepository(
     RepositorySoftDeletionIDMixin[CatalogProduct, UUID],
@@ -52,3 +65,15 @@ class CatalogProductRepository(
             .options(joinedload(CatalogProduct.product))
         )
         return await self.get_all(statement)
+
+    async def count_by_catalogs(self, catalog_ids: Sequence[UUID]) -> dict[UUID, int]:
+        statement = (
+            select(CatalogProduct.catalog_id, func.count(CatalogProduct.id))
+            .where(
+                CatalogProduct.catalog_id.in_(catalog_ids),
+                CatalogProduct.deleted_at.is_(None),
+            )
+            .group_by(CatalogProduct.catalog_id)
+        )
+        result = await self.session.execute(statement)
+        return {catalog_id: count for catalog_id, count in result.tuples()}

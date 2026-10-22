@@ -234,7 +234,7 @@ describe('outcomes', () => {
           new CliError.ShowHelp({ commandPath: ['polar'], errors: [] }),
         ),
       ),
-    ).toEqual({ outcome: 'success' })
+    ).toEqual({ outcome: 'help' })
     expect(
       outcomeOf(
         Exit.fail(
@@ -263,6 +263,18 @@ describe('outcomes', () => {
     expect(outcomeOf(Exit.failCause(Cause.interrupt()))).toEqual({
       outcome: 'interrupted',
     })
+  })
+
+  test('counts --help and -h as help views', () => {
+    expect(outcomeOf(Exit.succeed(1), ['help'])).toEqual({ outcome: 'help' })
+    expect(outcomeOf(Exit.succeed(1), ['json', 'h'])).toEqual({
+      outcome: 'help',
+    })
+    expect(
+      outcomeOf(Exit.fail(new AuthError({ message: 'Not logged in' })), [
+        'help',
+      ]),
+    ).toMatchObject({ outcome: 'failure' })
   })
 
   test('extracts status codes from listen and HTTP errors', () => {
@@ -545,6 +557,7 @@ describe('Telemetry.record', () => {
         os: process.platform,
         arch: process.arch,
         agent: 'claude-code',
+        tty: Boolean(process.stdout.isTTY),
         ci: true,
         build: 'release',
         $process_person_profile: false,

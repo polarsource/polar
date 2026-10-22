@@ -119,7 +119,7 @@ export interface Failure {
 export interface CommandOutcome extends Partial<Failure> {
   command: string[]
   flags: string[]
-  outcome: 'success' | 'failure' | 'interrupted'
+  outcome: 'success' | 'failure' | 'interrupted' | 'help'
   durationMs: number
 }
 
@@ -193,11 +193,19 @@ export const describeFailure = (error: unknown): Failure => {
 
 export const outcomeOf = (
   exit: Exit.Exit<unknown, unknown>,
+  flags: ReadonlyArray<string> = [],
 ): Pick<CommandOutcome, 'outcome' | 'error' | 'errorMessage' | 'errorCode'> => {
-  if (Exit.isSuccess(exit)) return { outcome: 'success' }
+  if (Exit.isSuccess(exit)) {
+    return {
+      outcome:
+        flags.includes('help') || flags.includes('h') ? 'help' : 'success',
+    }
+  }
   if (Cause.hasInterruptsOnly(exit.cause)) return { outcome: 'interrupted' }
   const error = Cause.squash(exit.cause)
-  if (Runtime.getErrorExitCode(error) === 0) return { outcome: 'success' }
+  if (Runtime.getErrorExitCode(error) === 0) {
+    return { outcome: field(error, '_tag') === 'ShowHelp' ? 'help' : 'success' }
+  }
   return { outcome: 'failure', ...describeFailure(error) }
 }
 
@@ -284,6 +292,7 @@ export const layer = Layer.effect(
               arch: process.arch,
               runtime: `bun ${Bun.version}`,
               agent: detectAgent(env) ?? null,
+              tty: Boolean(process.stdout.isTTY),
               ci: isCI(env),
               build,
               $process_person_profile: false,

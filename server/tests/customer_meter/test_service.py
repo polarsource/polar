@@ -452,6 +452,62 @@ class TestUpdateCustomerMeter:
 
         assert updated is True
 
+    async def test_old_event_reset_last_with_lookback(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now() - timedelta(days=1)
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=timestamp,
+                ingested_at=timestamp,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=1),
+                ingested_at=timestamp + timedelta(seconds=1),
+                organization=customer.organization,
+                customer=customer,
+                source=EventSource.system,
+                name=SystemEvent.meter_reset,
+                metadata={"meter_id": str(meter.id)},
+            ),
+        ]
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            last_balanced_event=events[0],
+            consumed_units=Decimal(20),
+            credited_units=0,
+            balance=Decimal(-20),
+            activated_at=utc_now(),
+        )
+        await save_fixture(customer_meter)
+
+        _, updated = await customer_meter_service.update_customer_meter(
+            session, customer, meter
+        )
+        assert updated is False
+
+        (
+            updated_customer_meter,
+            updated,
+        ) = await customer_meter_service.update_customer_meter(
+            session, customer, meter, lookback=timedelta(days=2)
+        )
+
+        assert updated_customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(0)
+        assert updated_customer_meter.last_balanced_event == events[-1]
+        assert updated is True
+
     async def test_customer_with_external_id(
         self,
         session: AsyncSession,

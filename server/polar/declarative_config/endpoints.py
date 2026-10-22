@@ -14,7 +14,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from .auth import ConfigRead, ConfigWrite
-from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan
+from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan, ConfigPrune
 from .service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
@@ -150,3 +150,36 @@ async def plan(
     Each section requires the read or write scope for its resource.
     """
     return await declarative_config_service.plan(session, auth_subject, config)
+
+
+@router.post(
+    "/prune",
+    response_model=ConfigPrune,
+    summary="Prune Config",
+    responses={
+        200: {"description": "Deprecated resources checked."},
+        401: {"description": "Not authenticated.", "model": Unauthorized.schema()},
+        403: {
+            "description": (
+                "Not allowed to read this organization's products, "
+                "missing a scope required by one of the sections, "
+                "or config as code isn't enabled for it."
+            ),
+            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+        },
+    },
+)
+async def prune(
+    config: Config,
+    auth_subject: ConfigRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ConfigPrune:
+    """
+    Report which deprecated resources in a declarative config document are still in use.
+
+    A deprecated resource can be removed from the config once no customer uses it
+    and no product or benefit staying in the config references it.
+
+    Each section requires the read or write scope for its resource.
+    """
+    return await declarative_config_service.prune(session, auth_subject, config)

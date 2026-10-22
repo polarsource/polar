@@ -111,6 +111,34 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
+    async def exists_granted_by_benefit(self, benefit_id: UUID) -> bool:
+        statement = (
+            select(BenefitGrant.id)
+            .where(
+                BenefitGrant.benefit_id == benefit_id,
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.first() is not None
+
+    async def exists_granted_by_meter(self, meter_id: UUID) -> bool:
+        statement = (
+            select(BenefitGrant.id)
+            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .where(
+                Benefit.type == BenefitType.meter_credit,
+                Benefit.properties["meter_id"].as_string() == str(meter_id),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.first() is not None
+
     async def list_granted_by_customer(
         self,
         customer_id: UUID,

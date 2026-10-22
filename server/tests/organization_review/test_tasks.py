@@ -739,6 +739,10 @@ class TestRunReviewAgentProductChanged:
         assert decision.decision == DecisionType.ESCALATE
         assert decision.review_context == ReviewContext.PRODUCT_CHANGED
 
+        agent_review = await agent_review_repo.get_latest_agent_review(organization.id)
+        assert agent_review is not None
+        assert decision.agent_review_id == agent_review.id
+
     async def test_approve_keeps_org_active(
         self,
         save_fixture: SaveFixture,

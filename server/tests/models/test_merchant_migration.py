@@ -2,8 +2,8 @@ from typing import Any
 
 import pytest
 
-from polar.models import MerchantMigration
-from polar.models.merchant_migration import (
+from polar.models import (
+    MerchantMigration,
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )

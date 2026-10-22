@@ -20,20 +20,18 @@ from polar.merchant_migration.tasks import (
     merchant_migration_notify_created,
     merchant_migration_notify_waiting_for_ops,
 )
-from polar.models import MerchantMigration, MerchantMigrationRecord, Organization
-from polar.models.merchant_migration import (
-    MerchantMigrationSourcePlatform,
-    MerchantMigrationStep,
-)
-from polar.models.merchant_migration_operation import (
-    STALL_THRESHOLD,
+from polar.models import (
+    MerchantMigration,
     MerchantMigrationOperation,
     MerchantMigrationOperationStatus,
-)
-from polar.models.merchant_migration_record import (
+    MerchantMigrationRecord,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
+    MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
+    Organization,
 )
+from polar.models.merchant_migration_operation import STALL_THRESHOLD
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture

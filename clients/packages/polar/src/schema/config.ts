@@ -155,9 +155,7 @@ type ValidEntries<Entries, Checks> =
     : { readonly [Key in keyof Entries]: Checks[Key & keyof Checks] }
 
 type DeprecatedMeterKey<Meters extends MeterEntries> = {
-  [Key in MeterKey<Meters>]: EntryAt<Meters, Key> extends {
-    readonly deprecated: true
-  }
+  [Key in MeterKey<Meters>]: EntryAt<Meters, Key> extends Deprecated
     ? Key
     : never
 }[MeterKey<Meters>]
@@ -391,7 +389,7 @@ export const defineConfig = <
   const meterIds = new Set(entries.map(([external_id]) => external_id))
   const deprecatedMeterIds = new Set(
     entries.flatMap(([external_id, definition]) =>
-      definition.deprecated ? [external_id] : [],
+      definition[deprecatedKey] ? [external_id] : [],
     ),
   )
   const benefits = input.benefits?.({ flag, credits })
@@ -434,13 +432,24 @@ export const defineConfig = <
     onExcessProperty: 'error',
   })({
     ...(input.settings !== undefined && { settings: input.settings }),
-    meters: entries.map(([external_id, definition]) => {
-      const { name } = validateMeterNaming({
+    meters: entries.map(
+      ([
         external_id,
-        name: definition.name,
-      })
-      return { ...definition, external_id, name: name ?? external_id }
-    }),
+        { [metadataKey]: metadata, [deprecatedKey]: deprecated, ...definition },
+      ]) => {
+        const { name } = validateMeterNaming({
+          external_id,
+          name: definition.name,
+        })
+        return {
+          ...definition,
+          external_id,
+          name: name ?? external_id,
+          ...(metadata !== undefined && { metadata }),
+          ...(deprecated && { deprecated: true as const }),
+        }
+      },
+    ),
     ...(benefits !== undefined && {
       benefits: benefitEntries.map(
         ([

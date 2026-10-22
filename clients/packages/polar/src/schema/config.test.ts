@@ -614,6 +614,18 @@ test('deprecating a meter anywhere in its chain marks it deprecated', () => {
       }),
     }),
   ).toThrow('Benefit "included" uses meter "pears", which is deprecated.')
+  expect(() =>
+    defineConfig({
+      events,
+      meters: ({ meter, events }) => ({
+        plums: meter().on(events.call).count().deprecated(),
+      }),
+      // @ts-expect-error included is active, so it cannot use plums
+      benefits: ({ credits }) => ({
+        included: credits('Plums').meter('plums').units(10),
+      }),
+    }),
+  ).toThrow('Benefit "included" uses meter "plums", which is deprecated.')
 })
 
 test('deprecated benefits stay in the config', () => {

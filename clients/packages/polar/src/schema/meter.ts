@@ -11,7 +11,7 @@ import {
 } from './event'
 import { Builder } from './builder'
 import { deprecatedKey, withDeprecation } from './deprecation'
-import type { Deprecated, KeepDeprecation } from './deprecation'
+import type { KeepDeprecation } from './deprecation'
 import {
   Metadata as MeterMetadata,
   metadataKey,
@@ -185,10 +185,9 @@ type Unit =
   | { readonly unit: 'scalar' | 'token' }
   | { readonly unit: 'custom'; readonly custom_label: string }
 
-// Type-only: lets a config tell a deprecated meter from its definition.
-type DeprecatedMeter<Builder> = Builder extends Deprecated
-  ? { readonly deprecated: true }
-  : unknown
+// What an aggregation returns: the meter's fields, plus `.metadata()` and
+// `.deprecated()` so they can still go at the end of the chain.
+class AggregatedMeter extends withDeprecation(withMetadata(Builder)) {}
 
 type Property<Metadata, Type> = unknown extends Metadata
   ? string
@@ -271,17 +270,20 @@ export class MeterBuilder<
   }
 
   private aggregate(aggregation: MeterAggregation) {
-    const definition = {
+    const fields = {
       name: this.name,
       filter: structuredClone(this.meterFilter),
       aggregation,
       ...this.meterUnit,
-      ...(this[metadataKey] !== undefined && {
-        metadata: { ...this[metadataKey] },
-      }),
-      ...(this[deprecatedKey] && { deprecated: true as const }),
     }
-    return definition as typeof definition & DeprecatedMeter<this>
+    // Skips the field initializers, so unset markers stay absent rather than
+    // `undefined`, which deep equality treats as a difference.
+    return Object.assign(Object.create(AggregatedMeter.prototype), fields, {
+      ...(this[metadataKey] !== undefined && {
+        [metadataKey]: { ...this[metadataKey] },
+      }),
+      ...(this[deprecatedKey] && { [deprecatedKey]: true }),
+    }) as KeepDeprecation<this, AggregatedMeter & typeof fields>
   }
 }
 

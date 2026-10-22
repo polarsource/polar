@@ -637,6 +637,7 @@ test('active products cannot grant a deprecated benefit', () => {
     defineConfig({
       meters: ({ meter }) => ({ calls: meter().count() }),
       benefits: ({ flag }) => ({ beta: flag('Beta').deprecated() }),
+      // @ts-expect-error pro is active, so it cannot grant beta
       products: ({ product, free }) => ({
         pro: product().prices(free()).recurring('monthly').grants(['beta']),
       }),
@@ -644,6 +645,39 @@ test('active products cannot grant a deprecated benefit', () => {
   ).toThrow(
     'Product "pro" uses benefit "beta", which is deprecated. Undeprecate the benefit or create a new one.',
   )
+})
+
+test('deprecating a product after or before grants() allows deprecated benefits', () => {
+  defineConfig({
+    meters: () => ({}),
+    benefits: ({ flag }) => ({
+      beta: flag('Beta').deprecated(),
+      support: flag('Support'),
+    }),
+    products: ({ product, free }) => ({
+      legacy: product()
+        .prices(free())
+        .recurring('monthly')
+        .grants(['beta'])
+        .deprecated(),
+      older: product()
+        .deprecated()
+        .prices(free())
+        .recurring('monthly')
+        .grants(['beta', 'support']),
+      pro: product().prices(free()).recurring('monthly').grants(['support']),
+    }),
+  })
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      benefits: ({ flag }) => [['beta', flag('Beta').deprecated()]],
+      // @ts-expect-error pro is active, so it cannot grant beta
+      products: ({ product, free }) => [
+        ['pro', product().prices(free()).recurring('monthly').grants(['beta'])],
+      ],
+    }),
+  ).toThrow('Product "pro" uses benefit "beta", which is deprecated.')
 })
 
 test('product names must be between 3 and 64 characters', () => {

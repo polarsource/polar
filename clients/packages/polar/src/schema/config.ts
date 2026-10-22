@@ -8,6 +8,7 @@ import {
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import { deprecatedKey } from './deprecation'
+import type { Deprecated } from './deprecation'
 import {
   createEventReferences,
   type EventDefinitions,
@@ -154,6 +155,12 @@ type WithMetadata<Benefit, Values> = Benefit extends unknown
   ? Omit<Benefit, 'metadata'> & { readonly metadata: Values }
   : never
 
+type DeprecatedBenefitKey<Benefits extends BenefitEntries> = {
+  [Key in BenefitKey<Benefits>]: BenefitAt<Benefits, Key> extends Deprecated
+    ? Key
+    : never
+}[BenefitKey<Benefits>]
+
 type ConnectedBenefit<Definition> =
   Definition extends DeclaredMetadata<infer Values>
     ? WithMetadata<BenefitConfig, MetadataShape<Values>>
@@ -170,6 +177,48 @@ type ProductEntries<
   | ReadonlyArray<
       readonly [externalId: string, product: ProductDefinition<Meter, Benefit>]
     >
+
+type ProductGrant<Product> =
+  Product extends ProductDefinition<string, string, infer Granted>
+    ? Granted
+    : never
+
+// Only deprecated products can grant deprecated benefits. The literal names
+// the problem in the type error.
+type ActiveGrants<
+  Product,
+  DeprecatedBenefit extends string,
+> = Product extends Deprecated
+  ? unknown
+  : {
+      readonly benefits: ReadonlyArray<
+        ProductGrant<Product> extends infer Grant extends string
+          ? Grant extends DeprecatedBenefit
+            ? `Benefit "${Grant}" is deprecated, so only a deprecated product can grant it.`
+            : Grant
+          : never
+      >
+    }
+
+type ValidProducts<
+  Products extends ProductEntries,
+  DeprecatedBenefit extends string,
+> =
+  Products extends ReadonlyArray<unknown>
+    ? {
+        readonly [Index in keyof Products]: Products[Index] extends readonly [
+          infer Key,
+          infer Product,
+        ]
+          ? readonly [Key, ActiveGrants<Product, DeprecatedBenefit>]
+          : Products[Index]
+      }
+    : {
+        readonly [Key in keyof Products]: ActiveGrants<
+          Products[Key],
+          DeprecatedBenefit
+        >
+      }
 
 type ProductKey<Products extends ProductEntries> =
   Products extends ReadonlyArray<readonly [infer Key, ProductDefinition]>
@@ -253,7 +302,7 @@ export const defineConfig = <
   readonly benefits?: (helpers: BenefitHelpers<MeterKey<Meters>>) => Benefits
   readonly products?: (
     helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
-  ) => Products
+  ) => Products & ValidProducts<Products, DeprecatedBenefitKey<Benefits>>
   readonly discounts?: (
     helpers: DiscountHelpers<ProductKey<Products>>,
   ) => Discounts

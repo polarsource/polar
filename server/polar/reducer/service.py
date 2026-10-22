@@ -281,20 +281,19 @@ class ReducerService:
         *,
         since: datetime,
     ) -> tuple[datetime, Row[Any]]:
-        """The end of the customer identity's last synced bucket starting from
+        """The end of the customer identity's last fully synced slot starting from
         `since`, or `since`, with the count, sum, min and max of its usage not
-        billed yet before it."""
+        billed yet before it. Clients count whole slots: a slot a seal split, with
+        only its first part synced, stays theirs."""
         repository = ReducerBucketRepository.from_session(session)
-        cold_until = (
-            await repository.get_last_synced_end(
-                reducer.organization_id,
-                reducer.id,
-                customer_id,
-                external_customer_id,
-                since=since,
-            )
-            or since
+        synced_end = await repository.get_last_synced_end(
+            reducer.organization_id,
+            reducer.id,
+            customer_id,
+            external_customer_id,
+            since=since,
         )
+        cold_until = get_reducer_bucket_start(synced_end) if synced_end else since
         totals = await repository.get_unsealed_totals(
             reducer.organization_id,
             reducer.id,

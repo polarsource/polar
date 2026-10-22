@@ -169,11 +169,11 @@ const message = (exit: Exit.Exit<unknown, unknown>) =>
     : undefined
 
 describe('polar config apply', () => {
-  test('applies with --yes and reports what was applied', async () => {
+  test('applies with --confirm and reports what was applied', async () => {
     const { output, failed, applied } = await run(
       { entries: [created, kept], issues: [] },
       { status: 'applied', entries: [created, kept] },
-      ['--yes'],
+      ['--confirm'],
     )
     expect(failed).toBe(false)
     expect(applied).toBe(1)
@@ -188,7 +188,7 @@ describe('polar config apply', () => {
     )
   })
 
-  test.each(['-y', '--aladåb'])(
+  test.each(['-c', '--aladåb'])(
     'also skips the question with %s',
     async (flag) => {
       const { failed, applied } = await run(
@@ -226,7 +226,7 @@ describe('polar config apply', () => {
     expect(output).toContain('polar.json applied to Acme (sandbox): 1 entry')
   })
 
-  test('needs --yes when there is no terminal to ask', async () => {
+  test('needs --confirm when there is no terminal to ask', async () => {
     const { output, terminal, applied, exit } = await run(
       { entries: [created], issues: [] },
       { status: 'applied', entries: [created] },
@@ -281,7 +281,7 @@ describe('polar config apply', () => {
     const { output, failed, applied } = await run(
       { entries: [created], issues },
       { status: 'rejected', issues },
-      ['--yes'],
+      ['--confirm'],
     )
     expect(failed).toBe(true)
     expect(applied).toBe(0)

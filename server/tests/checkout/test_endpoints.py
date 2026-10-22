@@ -640,6 +640,14 @@ class TestCreateCheckoutExternalProducts:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        superseded = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+        superseded.is_current = False
+        await save_fixture(superseded)
         product_one = await create_product(
             save_fixture,
             organization=organization,

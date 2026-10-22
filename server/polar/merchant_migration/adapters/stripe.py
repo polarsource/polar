@@ -575,7 +575,7 @@ class StripeAdapter:
                 "Invoices", self._client.v1.invoice_items.list_async(params=params)
             )
             owners.update(self._invoice_item_owner(item) for item in items.data)
-            if not items.has_more or not items.data:
+            if not items.has_more:
                 return owners
             params["starting_after"] = items.data[-1].id
 

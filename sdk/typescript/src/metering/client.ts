@@ -363,21 +363,23 @@ export const createMetering = (
   if (options.outpost !== false && redisUrl) {
     let outpost: import("../outpost/client").Outpost | undefined;
 
-    const confirm = async (events: EventInput[]): Promise<void> => {
+    // Polar received the delivered events: they settle where their bucket is hot. It will
+    // never count the dropped ones: they settle everywhere.
+    const settle = async (events: EventInput[], dropped: boolean): Promise<void> => {
       try {
-        await outpost?.confirm(events);
+        await (dropped ? outpost?.confirm(events) : outpost?.acknowledge(events));
       } catch (error) {
-        console.warn(`Could not confirm ${events.length} events in Outpost: ${String(error)}`);
+        console.warn(`Could not settle ${events.length} events in Outpost: ${String(error)}`);
       }
     };
     buffered = {
       ...options.buffered,
       async onDelivered(events) {
-        await confirm(events);
+        await settle(events, false);
         await options.buffered?.onDelivered?.(events);
       },
       async onDropped(events, reason) {
-        await confirm(events);
+        await settle(events, true);
         await options.buffered?.onDropped?.(events, reason);
       },
     };

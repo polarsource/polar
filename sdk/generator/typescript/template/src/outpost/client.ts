@@ -596,6 +596,20 @@ export class Outpost {
    * @param events Tracked events, including their external_id.
    */
   async confirm(events: EventInput[]): Promise<void> {
+    await this.settle(events, false);
+  }
+
+  /**
+   * Settle events Polar has received, in the buckets no snapshot has sealed yet. Events of a
+   * sealed bucket stay pending until a snapshot counts them.
+   *
+   * @param events Tracked events, including their external_id.
+   */
+  async acknowledge(events: EventInput[]): Promise<void> {
+    await this.settle(events, true);
+  }
+
+  private async settle(events: EventInput[], hotOnly: boolean): Promise<void> {
     const redis = this.requireRedis();
     await this.waitConfigured();
     const groups = new Map<string, { identity: string; bucketStart: number; ids: string[] }>();
@@ -621,6 +635,7 @@ export class Outpost {
         this.channel,
         generateEpoch(),
         bucketStart,
+        hotOnly ? "1" : "",
         ...ids,
       );
     const results = await pipeline.exec().catch((error: unknown) => {
@@ -633,6 +648,8 @@ export class Outpost {
         firstError ??= error;
         continue;
       }
+      // Nothing settled: the state did not change.
+      if (!(state as string[]).length) continue;
       await this.receiveState(confirmations[index].identity, decodeState(state as string[]));
     }
     if (firstError) throw redisUnavailable(firstError);
@@ -1199,6 +1216,7 @@ export class Outpost {
               this.channel,
               generateEpoch(),
               bucketStart,
+              "",
               ...ids,
             );
           transaction.outpostApplySnapshot(key, ...snapshotArguments);

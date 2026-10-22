@@ -445,25 +445,30 @@ class Metering:
 def _confirming(
     buffered: BufferedMeteringOptions, outpost: "Outpost"
 ) -> BufferedMeteringOptions:
-    """Confirm in Outpost the events the buffer delivered or dropped, before the user's callbacks."""
+    """Settle in Outpost the events the buffer delivered or dropped, before the user's
+    callbacks. Polar received the delivered events: they settle where their bucket is hot.
+    It will never count the dropped ones: they settle everywhere."""
     user_delivered = buffered.get("on_delivered")
     user_dropped = buffered.get("on_dropped")
 
-    async def confirm(events: list[EventInput]) -> None:
+    async def settle(events: list[EventInput], *, dropped: bool) -> None:
         try:
-            await outpost.confirm(events)
+            if dropped:
+                await outpost.confirm(events)
+            else:
+                await outpost.acknowledge(events)
         except Exception:
             log.warning(
-                "Could not confirm %s events in Outpost", len(events), exc_info=True
+                "Could not settle %s events in Outpost", len(events), exc_info=True
             )
 
     async def on_delivered(events: list[EventInput]) -> None:
-        await confirm(events)
+        await settle(events, dropped=False)
         if user_delivered is not None:
             await user_delivered(events)
 
     async def on_dropped(events: list[EventInput], reason: DropReason) -> None:
-        await confirm(events)
+        await settle(events, dropped=True)
         if user_dropped is not None:
             await user_dropped(events, reason)
 

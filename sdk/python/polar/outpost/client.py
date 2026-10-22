@@ -298,8 +298,16 @@ CONFIRM_SCRIPT = """
 local bucket = 'bucket:' .. ARGV[4] .. ':'
 local pending = 'pending:' .. ARGV[4] .. ':'
 local BATCH = 1000
+-- Polar received the events but no snapshot counts them yet: a cold bucket keeps them
+-- pending for the snapshot that will, a hot one counts them whole either way.
+if ARGV[5] == '1' then
+    local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
+    if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
+        return {}
+    end
+end
 local ids = {}
-for i = 5, #ARGV do table.insert(ids, ARGV[i]) end
+for i = 6, #ARGV do table.insert(ids, ARGV[i]) end
 local gone, seen = {}, {}
 local removed, sum = 0, 0
 local current = redis.call('HMGET', KEYS[1], pending .. 'min', pending .. 'max')
@@ -791,13 +799,27 @@ class Outpost:
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
 
-    @_raise_redis_unavailable
     async def confirm(self, events: collections.abc.Sequence[EventInput]) -> None:
         """Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
 
         Args:
             events: Tracked events, including their external_id.
         """
+        await self._settle(events, hot_only=False)
+
+    async def acknowledge(self, events: collections.abc.Sequence[EventInput]) -> None:
+        """Settle events Polar has received, in the buckets no snapshot has sealed yet.
+        Events of a sealed bucket stay pending until a snapshot counts them.
+
+        Args:
+            events: Tracked events, including their external_id.
+        """
+        await self._settle(events, hot_only=True)
+
+    @_raise_redis_unavailable
+    async def _settle(
+        self, events: collections.abc.Sequence[EventInput], *, hot_only: bool
+    ) -> None:
         self._require_redis()
         if not self._configured.is_set():
             with anyio.fail_after(5):
@@ -827,6 +849,7 @@ class Outpost:
                     self._channel,
                     _generate_epoch(),
                     bucket_start,
+                    "1" if hot_only else "",
                     *ids,
                 ]
                 confirmations.append((identity, arguments))
@@ -842,6 +865,9 @@ class Outpost:
             if isinstance(state, Exception):
                 if first_error is None:
                     first_error = state
+                continue
+            # Nothing settled: the state did not change.
+            if not state:
                 continue
             await self._receive_state(identity, decode_state(state))
         if first_error is not None:
@@ -1464,6 +1490,7 @@ class Outpost:
                                 self._channel,
                                 _generate_epoch(),
                                 bucket_start,
+                                "",
                                 *ids,
                             ],
                             client=pipeline,

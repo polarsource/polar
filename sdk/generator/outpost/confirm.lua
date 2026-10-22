@@ -1,8 +1,16 @@
 local bucket = 'bucket:' .. ARGV[4] .. ':'
 local pending = 'pending:' .. ARGV[4] .. ':'
 local BATCH = 1000
+-- Polar received the events but no snapshot counts them yet: a cold bucket keeps them
+-- pending for the snapshot that will, a hot one counts them whole either way.
+if ARGV[5] == '1' then
+    local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
+    if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
+        return {}
+    end
+end
 local ids = {}
-for i = 5, #ARGV do table.insert(ids, ARGV[i]) end
+for i = 6, #ARGV do table.insert(ids, ARGV[i]) end
 local gone, seen = {}, {}
 local removed, sum = 0, 0
 local current = redis.call('HMGET', KEYS[1], pending .. 'min', pending .. 'max')

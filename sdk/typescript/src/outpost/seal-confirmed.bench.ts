@@ -72,6 +72,7 @@ describe("CONFIRM then APPLY_SNAPSHOT", () => {
               CHANNEL,
               EPOCH,
               newestBucketStart,
+              "",
               ...ids,
             )
             .evalsha(

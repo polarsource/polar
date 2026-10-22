@@ -62,6 +62,7 @@ describe("CONFIRM", () => {
             CHANNEL,
             EPOCH,
             COLD_UNTIL,
+            "",
             ...ids,
           )
           .exec();

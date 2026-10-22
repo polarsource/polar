@@ -1,40 +1,22 @@
-import typing
 from collections.abc import Iterable
 from typing import Any
 from uuid import UUID
 
-from authlib.oauth2.rfc6749.errors import (
-    InvalidClientError,
-    InvalidGrantError,
-    InvalidRequestError,
-    UnauthorizedClientError,
-)
-from authlib.oauth2.rfc6749.grants import BaseGrant, TokenEndpointMixin
+from authlib.oauth2.rfc6749.errors import InvalidGrantError, InvalidRequestError
 from authlib.oauth2.rfc6749.hooks import hooked
-from authlib.oauth2.rfc6749.util import extract_basic_authorization
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
-from sqlalchemy import select
-from sqlalchemy.orm import contains_eager
 
 from polar.agent.identity_assertion import decode_identity_assertion
 from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
 from polar.kit import jwt
-from polar.models import Agent, OAuth2Client
+from polar.models import Agent
 
 from ..sub_type import SubType, SubTypeValue
-
-if typing.TYPE_CHECKING:
-    from ..authorization_server import AuthorizationServer
+from .agent import AgentGrant
 
 
-class JWTBearerGrant(BaseGrant, TokenEndpointMixin):
-    """Trades an agent's identity assertion for an access token (RFC 7523).
-
-    The client is the agent's own, never one the caller names, so no other OAuth
-    app can use this grant.
-    """
-
-    server: "AuthorizationServer"
+class JWTBearerGrant(AgentGrant):
+    """Trades an agent's identity assertion for an access token (RFC 7523)."""
 
     GRANT_TYPE = JWT_BEARER_GRANT_TYPE
 
@@ -68,25 +50,9 @@ class JWTBearerGrant(BaseGrant, TokenEndpointMixin):
         return 200, token, self.TOKEN_RESPONSE_HEADER
 
     def _get_agent(self, agent_id: UUID) -> Agent | None:
-        statement = (
-            select(Agent)
-            .join(Agent.oauth2_client)
-            .where(Agent.id == agent_id, ~OAuth2Client.is_deleted)
-            .options(contains_eager(Agent.oauth2_client))
-        )
+        statement = self._get_agent_statement().where(Agent.id == agent_id)
         result = self.server.session.execute(statement)
         return result.unique().scalar_one_or_none()
-
-    def _validate_request_client(self, client: OAuth2Client) -> None:
-        basic_client_id, _ = extract_basic_authorization(self.request.headers)
-        for client_id in (self.request.payload.client_id, basic_client_id):
-            if client_id is not None and client_id != client.client_id:
-                raise InvalidClientError()
-
-        if not client.check_grant_type(self.GRANT_TYPE):
-            raise UnauthorizedClientError(
-                f"The client is not authorized to use 'grant_type={self.GRANT_TYPE}'"
-            )
 
     def _authenticate_agent(self, agent: Agent) -> SubTypeValue:
         if not agent.can_authenticate:

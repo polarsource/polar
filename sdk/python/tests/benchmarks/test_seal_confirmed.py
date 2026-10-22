@@ -64,6 +64,7 @@ def test_apply_snapshot_after_confirm(
             CHANNEL,
             EPOCH,
             newest_bucket_start,
+            "",
             *ids,
         )
         pipeline.evalsha(

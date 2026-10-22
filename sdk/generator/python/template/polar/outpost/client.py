@@ -591,13 +591,27 @@ class Outpost:
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
 
-    @_raise_redis_unavailable
     async def confirm(self, events: collections.abc.Sequence[EventInput]) -> None:
         """Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
 
         Args:
             events: Tracked events, including their external_id.
         """
+        await self._settle(events, hot_only=False)
+
+    async def acknowledge(self, events: collections.abc.Sequence[EventInput]) -> None:
+        """Settle events Polar has received, in the buckets no snapshot has sealed yet.
+        Events of a sealed bucket stay pending until a snapshot counts them.
+
+        Args:
+            events: Tracked events, including their external_id.
+        """
+        await self._settle(events, hot_only=True)
+
+    @_raise_redis_unavailable
+    async def _settle(
+        self, events: collections.abc.Sequence[EventInput], *, hot_only: bool
+    ) -> None:
         self._require_redis()
         if not self._configured.is_set():
             with anyio.fail_after(5):
@@ -627,6 +641,7 @@ class Outpost:
                     self._channel,
                     _generate_epoch(),
                     bucket_start,
+                    "1" if hot_only else "",
                     *ids,
                 ]
                 confirmations.append((identity, arguments))
@@ -642,6 +657,9 @@ class Outpost:
             if isinstance(state, Exception):
                 if first_error is None:
                     first_error = state
+                continue
+            # Nothing settled: the state did not change.
+            if not state:
                 continue
             await self._receive_state(identity, decode_state(state))
         if first_error is not None:
@@ -1264,6 +1282,7 @@ class Outpost:
                                 self._channel,
                                 _generate_epoch(),
                                 bucket_start,
+                                "",
                                 *ids,
                             ],
                             client=pipeline,

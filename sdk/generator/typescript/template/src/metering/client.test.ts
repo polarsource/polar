@@ -118,7 +118,7 @@ it("starts and ingests in order, then closes in reverse order", async () => {
       calls.push(`start:${name}`);
     },
     async track(value) {
-      expect(value).toBe(event);
+      expect(value).toEqual({ ...event, timestamp: expect.any(String) });
       calls.push(`track:${name}`);
     },
     async close() {
@@ -282,6 +282,7 @@ it("captures the actor identity before awaiting warmup", async () => {
     name: "usage",
     external_customer_id: "alice",
     external_member_id: undefined,
+    timestamp: expect.any(String),
   });
 });
 
@@ -337,7 +338,9 @@ it("creates buffered metering using the configured HTTP client", async () => {
   expect(headers.get("Authorization")).toBe("Bearer token");
   expect(headers.get("Polar-Organization")).toBe("org");
   expect(headers.get("Polar-Version")).toBe("{{ (ir.versions[-2] | default(ir.versions[0])).version }}");
-  expect(JSON.parse(request!.body as string)).toEqual({ events: [event] });
+  expect(JSON.parse(request!.body as string)).toEqual({
+    events: [{ ...event, timestamp: expect.any(String) }],
+  });
 });
 
 it.each<[string | undefined, false | MeteringOutpostOptions | undefined, string | undefined]>([
@@ -423,7 +426,10 @@ it("forwards buffer options and reports failed delivery", async () => {
       .start();
     await metering.track(event);
     await vi.waitFor(() =>
-      expect(onDropped).toHaveBeenCalledExactlyOnceWith([event], "retry_exhausted"),
+      expect(onDropped).toHaveBeenCalledExactlyOnceWith(
+        [{ ...event, timestamp: expect.any(String) }],
+        "retry_exhausted",
+      ),
     );
   }
   expect(send).toHaveBeenCalledOnce();

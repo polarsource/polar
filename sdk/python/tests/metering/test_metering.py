@@ -2,7 +2,7 @@ import datetime
 import subprocess
 import sys
 import typing
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import ANY, AsyncMock, Mock
 
 import anyio
 import anyio.lowlevel
@@ -159,7 +159,8 @@ async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
                     await anyio.lowlevel.checkpoint()
         send.assert_awaited_once()
         on_dropped.assert_awaited_once_with(
-            [{"name": "usage", "external_customer_id": "customer"}], "retry_exhausted"
+            [{"name": "usage", "external_customer_id": "customer", "timestamp": ANY}],
+            "retry_exhausted",
         )
 
 
@@ -220,7 +221,7 @@ async def test_metering_enters_and_calls_both_strategies(
             await metering.track(**event)
 
             for _, _, ingest in mocks:
-                ingest.assert_awaited_once_with(event)
+                ingest.assert_awaited_once_with({**event, "timestamp": ANY})
 
         for _, exit, _ in mocks:
             exit.assert_awaited_once()
@@ -328,7 +329,12 @@ async def test_actor_metering(identity: dict[str, typing.Any]) -> None:
             external_customer_id=identity.get("external_customer_id"),
         )
         await actor.track(name="usage", metadata={"tokens": 3})
-        expected_event = {**identity, "name": "usage", "metadata": {"tokens": 3}}
+        expected_event = {
+            **identity,
+            "name": "usage",
+            "metadata": {"tokens": 3},
+            "timestamp": ANY,
+        }
         strategy.track.assert_awaited_once_with(expected_event)
         ordinary_strategy.track.assert_awaited_once_with(expected_event)
 

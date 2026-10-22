@@ -16568,6 +16568,7 @@ export interface components {
       | 'duplicate_external_id'
       | 'duration_changed'
       | 'interval_changed'
+      | 'meter_cycle_unused'
       | 'meter_locked'
       | 'missing_currency'
       | 'not_supported'
@@ -16714,6 +16715,13 @@ export interface components {
        * @description Billing cycle length in intervals. Defaults to 1.
        */
       recurring_interval_count?: number | null
+      /** @description Optional meter cycle, independent of the billing interval. Overage settlement, meter resets and meter-credit grants run on it. It must evenly divide the billing interval. Leave it empty to follow the billing interval. Can't be updated once the product is applied. Leaving it empty on an existing product keeps its current cycle. */
+      meter_interval?: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Meter cycle length in intervals. Defaults to 1.
+       */
+      meter_interval_count?: number | null
       /**
        * Prices
        * @description The prices of the product.
@@ -72100,6 +72108,7 @@ export const configIssueTypeValues: ReadonlyArray<
   'duplicate_external_id',
   'duration_changed',
   'interval_changed',
+  'meter_cycle_unused',
   'meter_locked',
   'missing_currency',
   'not_supported',

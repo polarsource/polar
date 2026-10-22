@@ -42,6 +42,42 @@ describe('locateInScript', () => {
     ).toEqual({ line: 10, column: 7, length: 5 })
   })
 
+  test('points at the meter cycle of a product', () => {
+    const products = [
+      'export default defineConfig({',
+      '  products: ({ product, fixed }) => ({',
+      "    annual: product('Annual')",
+      '      .prices(fixed().amount(usd(10)))',
+      "      .recurring('yearly')",
+      "      .meterCycle('monthly'),",
+      "    quarterly: product('Quarterly')",
+      '      .prices(fixed().amount(usd(10)))',
+      "      .recurring(3, 'months')",
+      "      .meterCycle(2, 'months'),",
+      '  }),',
+      '})',
+    ].join('\n')
+    const entries = {
+      products: [{ external_id: 'annual' }, { external_id: 'quarterly' }],
+    }
+    expect(
+      locateInScript(
+        products,
+        entries,
+        ['products', 0, 'meter_interval'],
+        'month',
+      ),
+    ).toEqual({ line: 6, column: 7, length: 12 })
+    expect(
+      locateInScript(
+        products,
+        entries,
+        ['products', 1, 'meter_interval_count'],
+        2,
+      ),
+    ).toEqual({ line: 10, column: 19, length: 1 })
+  })
+
   test('points at a plain object field by its key', () => {
     const plain = [
       'export default {',

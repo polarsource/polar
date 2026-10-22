@@ -2,12 +2,14 @@ import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   Rendered,
   describeValue,
+  isSet,
   name,
   priceGroups,
 } from '@/utils/billing-config/describe'
 import {
   discountDuration,
   discountValue,
+  meterCycle,
   recurrence,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
@@ -149,8 +151,6 @@ const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
   )
 }
 
-const isSet = (value: unknown) => value !== null && value !== undefined
-
 const merge = (
   diff: ReadonlyArray<Change>,
   fields: ReadonlyArray<string>,
@@ -227,8 +227,17 @@ const renderSetting = (change: Change): Change => ({
   after: settingValue(change.field, change.after),
 })
 
+const METER_CYCLE = ['meter_interval', 'meter_interval_count']
+
+const mergeMeterCycle = (diff: ReadonlyArray<Change>) =>
+  METER_CYCLE.every((field) => diff.some((change) => change.field === field))
+    ? merge(diff, METER_CYCLE, 'meter cycle', (values) =>
+        meterCycle(values['meter_interval'], values['meter_interval_count']),
+      )
+    : [...diff]
+
 export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
-  mergeDiscount(mergeRecurrence(diff))
+  mergeDiscount(mergeMeterCycle(mergeRecurrence(diff)))
     .map((change) => (section === 'settings' ? renderSetting(change) : change))
     .flatMap(expand)
     .map((change) => ({ ...change, field: name(change.field) }))

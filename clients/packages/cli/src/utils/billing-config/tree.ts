@@ -45,6 +45,8 @@ const COVERED: Record<Section, ReadonlySet<string>> = {
     'visibility',
     'recurring_interval',
     'recurring_interval_count',
+    'meter_interval',
+    'meter_interval_count',
     'prices',
     'benefits',
   ]),

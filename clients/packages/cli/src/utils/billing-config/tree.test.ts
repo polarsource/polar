@@ -278,6 +278,47 @@ describe('formatTree', () => {
     )
   })
 
+  test('describes the meter cycle of a created product', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          products: [
+            {
+              external_id: 'annual',
+              name: 'Annual',
+              recurring_interval: 'year',
+              recurring_interval_count: 1,
+              meter_interval: 'month',
+              meter_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'usd',
+                  price_amount: 24000,
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [
+          entry('products', 'annual', 'created', [
+            { field: 'meter_interval', before: null, after: 'month' },
+            { field: 'meter_interval_count', before: null, after: 1 },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  products',
+        '  + annual',
+        '      $240 per year, metered per month',
+      ].join('\n'),
+    )
+  })
+
   test('shows the tiers of a created seat- or unit-based product', () => {
     const output = stripAnsi(
       formatTree(

@@ -367,9 +367,15 @@ const renderProduct =
       recurring_interval_count: count,
       trial_interval: trialInterval,
       trial_interval_count: trialCount,
+      meter_interval: meterInterval,
+      meter_interval_count: meterCount,
     } = product
     const plural = (unit: string, amount: number) =>
       literal(amount === 1 ? unit : `${unit}s`)
+    const cycle = (unit: keyof typeof cadences, amount: number | undefined) =>
+      amount === undefined || amount === 1
+        ? literal(cadences[unit])
+        : `${literal(amount)}, ${plural(unit, amount)}`
     return [
       `product(${literal(product.name)})`,
       '.prices(',
@@ -377,9 +383,10 @@ const renderProduct =
       ')',
       interval === null
         ? '.once()'
-        : count === null || count === 1
-          ? `.recurring(${literal(cadences[interval])})`
-          : `.recurring(${literal(count)}, ${plural(interval, count)})`,
+        : `.recurring(${cycle(interval, count ?? undefined)})`,
+      ...(interval !== null && meterInterval !== undefined
+        ? [`.meterCycle(${cycle(meterInterval, meterCount)})`]
+        : []),
       ...(interval !== null &&
       trialInterval !== undefined &&
       trialCount !== undefined

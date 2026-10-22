@@ -388,6 +388,7 @@ export const defineConfig = <
           name: name ?? external_id,
           ...definition.billing,
           ...definition.trialPeriod,
+          ...definition.meterPeriod,
           prices: productPrices(
             external_id,
             definition,

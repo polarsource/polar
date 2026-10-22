@@ -36,21 +36,7 @@ async def list(
         session, auth_subject, organization_id=organization_id, pagination=pagination
     )
     return ListResource.from_paginated_results(
-        [
-            CatalogSchema.model_validate(
-                {
-                    "id": catalog.id,
-                    "created_at": catalog.created_at,
-                    "modified_at": catalog.modified_at,
-                    "organization_id": catalog.organization_id,
-                    "version_hash": catalog.version_hash,
-                    "status": catalog.status,
-                    "published_at": catalog.published_at,
-                    "product_count": product_count,
-                }
-            )
-            for catalog, product_count in results
-        ],
+        [CatalogSchema.model_validate(result) for result in results],
         count,
         pagination,
     )

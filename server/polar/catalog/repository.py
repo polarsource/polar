@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -69,15 +69,3 @@ class CatalogProductRepository(
             .options(joinedload(CatalogProduct.product))
         )
         return await self.get_all(statement)
-
-    async def count_by_catalogs(self, catalog_ids: Sequence[UUID]) -> dict[UUID, int]:
-        statement = (
-            select(CatalogProduct.catalog_id, func.count(CatalogProduct.id))
-            .where(
-                CatalogProduct.catalog_id.in_(catalog_ids),
-                CatalogProduct.deleted_at.is_(None),
-            )
-            .group_by(CatalogProduct.catalog_id)
-        )
-        result = await self.session.execute(statement)
-        return {catalog_id: count for catalog_id, count in result.tuples()}

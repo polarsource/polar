@@ -216,9 +216,7 @@ class BufferedMeteringStrategy:
         while True:
             try:
                 await self.polar.events.ingest(events=batch)
-                if self.on_delivered is not None:
-                    await self.on_delivered(batch)
-                return
+                break
             except (PolarNetworkError, PolarRateLimitError, PolarServerError) as e:
                 if isinstance(e, PolarRateLimitError) and e.retry_after is not None:
                     delay = max(float(e.retry_after), 1.0)
@@ -236,3 +234,5 @@ class BufferedMeteringStrategy:
             except PolarError:
                 await self._on_dropped(batch, "permanent_error")
                 return
+        if self.on_delivered is not None:
+            await self.on_delivered(batch)

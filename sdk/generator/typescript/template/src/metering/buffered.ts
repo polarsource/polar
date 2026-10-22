@@ -225,8 +225,7 @@ export class BufferedMeteringStrategy {
     for (;;) {
       try {
         await this.polar.events.ingest({ events: batch }, { signal: this.abort.signal });
-        await this.options.onDelivered?.(batch);
-        return;
+        break;
       } catch (error) {
         this.abort.signal.throwIfAborted();
         if (
@@ -260,6 +259,7 @@ export class BufferedMeteringStrategy {
         }
       }
     }
+    await this.options.onDelivered?.(batch);
   }
 
   private async onDropped(events: EventInput[], reason: DropReason): Promise<void> {

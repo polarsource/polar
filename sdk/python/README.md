@@ -205,7 +205,7 @@ In high throughput scenarios, Outpost can return you accurate meter reads only m
 
 Outpost needs an `external_id` on every event; `track()` rejects an event without one.
 
-An event counts locally until Polar confirms it stored it, so a meter read never loses an event Polar is still ingesting.
+An event counts locally until Polar confirms it stored it, or until the buffer gives it up, so a meter read never loses an event Polar is still ingesting.
 
 To disable it, pass `outpost=False` to `polar.metering()`. You can also configure it explicitly with a dictionary.
 

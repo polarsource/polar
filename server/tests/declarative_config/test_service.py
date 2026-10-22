@@ -2521,19 +2521,19 @@ class TestPrune:
             {
                 "resource": ConfigResource.meter,
                 "external_id": "apples",
-                "customers": 0,
+                "customer_count": 0,
                 "referenced_by": [],
             },
             {
                 "resource": ConfigResource.benefit,
                 "external_id": "beta",
-                "customers": 0,
+                "customer_count": 0,
                 "referenced_by": [],
             },
             {
                 "resource": ConfigResource.product,
                 "external_id": "legacy",
-                "customers": 0,
+                "customer_count": 0,
                 "referenced_by": [],
             },
         ]
@@ -2593,7 +2593,7 @@ class TestPrune:
         )
 
         assert [
-            (entry.external_id, entry.customers, entry.referenced_by)
+            (entry.external_id, entry.customer_count, entry.referenced_by)
             for entry in result.entries
         ] == [
             ("apples", 0, ["legacy"]),
@@ -2636,9 +2636,9 @@ class TestPrune:
             Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
         )
 
-        assert [(entry.external_id, entry.customers) for entry in result.entries] == [
-            ("apples", 1)
-        ]
+        assert [
+            (entry.external_id, entry.customer_count) for entry in result.entries
+        ] == [("apples", 1)]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_meter_in_use_by_credits(
@@ -2666,9 +2666,9 @@ class TestPrune:
             Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
         )
 
-        assert [(entry.external_id, entry.customers) for entry in result.entries] == [
-            ("apples", 1)
-        ]
+        assert [
+            (entry.external_id, entry.customer_count) for entry in result.entries
+        ] == [("apples", 1)]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_meters_count_each_customer_once(
@@ -2732,7 +2732,9 @@ class TestPrune:
             ),
         )
 
-        assert [(entry.external_id, entry.customers) for entry in result.entries] == [
+        assert [
+            (entry.external_id, entry.customer_count) for entry in result.entries
+        ] == [
             ("apples", 2),
             ("pears", 1),
         ]

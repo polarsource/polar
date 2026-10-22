@@ -397,7 +397,7 @@ class DeclarativeConfigService:
                 ConfigPruneEntry(
                     resource=ConfigResource.product,
                     external_id=product.external_id,
-                    customers=customers,
+                    customer_count=customers,
                     referenced_by=[],
                 )
             )
@@ -420,7 +420,7 @@ class DeclarativeConfigService:
                 ConfigPruneEntry(
                     resource=ConfigResource.benefit,
                     external_id=benefit.external_id,
-                    customers=customers,
+                    customer_count=customers,
                     referenced_by=referenced_by,
                 )
             )
@@ -452,7 +452,7 @@ class DeclarativeConfigService:
                 ConfigPruneEntry(
                     resource=ConfigResource.meter,
                     external_id=meter.external_id,
-                    customers=customers,
+                    customer_count=customers,
                     referenced_by=referenced_by,
                 )
             )

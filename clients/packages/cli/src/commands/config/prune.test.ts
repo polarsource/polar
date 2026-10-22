@@ -29,19 +29,19 @@ const acme = {
 const apples: PruneEntry = {
   resource: 'meter',
   external_id: 'apples',
-  customers: 0,
+  customer_count: 0,
   referenced_by: [],
 }
 const beta: PruneEntry = {
   resource: 'benefit',
   external_id: 'beta',
-  customers: 3,
+  customer_count: 3,
   referenced_by: ['legacy'],
 }
 const legacy: PruneEntry = {
   resource: 'product',
   external_id: 'legacy',
-  customers: 1,
+  customer_count: 1,
   referenced_by: [],
 }
 
@@ -64,7 +64,7 @@ const run = async (
           prune: (_config, _organization, confirm) =>
             entries.some(
               (entry) =>
-                entry.customers === 0 && entry.referenced_by.length === 0,
+                entry.customer_count === 0 && entry.referenced_by.length === 0,
             )
               ? confirm(entries).pipe(
                   Effect.tap(() => Effect.sync(() => removed())),

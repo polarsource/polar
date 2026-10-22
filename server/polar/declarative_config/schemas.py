@@ -532,7 +532,7 @@ class ConfigPlan(Schema):
 class ConfigPruneEntry(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
-    customers: int = Field(
+    customer_count: int = Field(
         description=(
             "Number of customers still using the resource: subscribers for a product, "
             "customers granted a benefit, from a subscription or an order, and "

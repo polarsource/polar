@@ -485,10 +485,16 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
       ? []
       : renderEntries('discounts', config.discounts, renderDiscount(imports))
 
+  const settings =
+    config.settings === undefined
+      ? []
+      : [`  settings: ${JSON.stringify(config.settings)},`]
+
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
     '',
     'export default defineConfig({',
+    ...settings,
     ...meters,
     ...benefits,
     ...products,

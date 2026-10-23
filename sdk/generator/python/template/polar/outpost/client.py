@@ -307,15 +307,22 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
 # Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
 # them, and every local event in the buckets Polar has not sealed yet.
 def consumed_units(state: ReducerState, func: str) -> int | float:
-    assert state.cold_until is not None
-    combined = dataclasses.replace(state.cold)
-    for bucket_start, statistics in state.pending.items():
-        if bucket_start < state.cold_until:
-            combined.add(statistics)
-    for bucket_start, statistics in state.buckets.items():
-        if bucket_start >= state.cold_until:
-            combined.add(statistics)
-    return combined.quantity(func)
+    cold_until = state.cold_until
+    assert cold_until is not None
+    cold = state.cold
+    count, total, low, high = cold.count, cold.sum, cold.min, cold.max
+    parts = [s for start, s in state.pending.items() if start < cold_until]
+    parts += [s for start, s in state.buckets.items() if start >= cold_until]
+    for statistics in parts:
+        count += statistics.count
+        total += statistics.sum
+        if statistics.min is not None and (low is None or statistics.min < low):
+            low = statistics.min
+        if statistics.max is not None and (high is None or statistics.max > high):
+            high = statistics.max
+    if isinstance(total, float) and not math.isfinite(total):
+        raise ValueError("Aggregation values must be finite")
+    return BucketStatistics(count, total, low, high).quantity(func)
 
 
 @dataclasses.dataclass

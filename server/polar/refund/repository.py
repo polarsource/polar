@@ -57,7 +57,7 @@ class RefundRepository(
             Refund.status == RefundStatus.succeeded,
             Refund.tax_transaction_processor_id.is_not(None),
         )
-        return (await self.session.execute(statement)).scalar_one()
+        return int((await self.session.execute(statement)).scalar_one())
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

@@ -834,3 +834,11 @@ resource "tfe_variable" "redis_private_link_host_sandbox" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "planetscale_app_password_sandbox" {
+  key             = "planetscale_app_password"
+  category        = "terraform"
+  description     = "PlanetScale application role password for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}

@@ -2,6 +2,7 @@
 
 import { promptSessionRefresh } from '@/components/SessionRefresh/store'
 import { useAuth } from '@/hooks/auth'
+import { usePostHog } from '@/hooks/posthog'
 import { useConfirmAgentClaim } from '@/hooks/queries/agents'
 import { isSessionNotFreshError } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -13,6 +14,7 @@ import {
 import {
   type AgentClaimError,
   getAgentClaimError,
+  getAgentClaimErrorType,
   RATE_LIMITED_MESSAGE,
   UNKNOWN_ERROR_MESSAGE,
 } from './claimErrors'
@@ -29,6 +31,7 @@ export const useClaimAgent = (
   handoverMs: number,
 ) => {
   const { currentUser } = useAuth()
+  const posthog = usePostHog()
   const { mutateAsync, isPending } = useConfirmAgentClaim()
   const [state, setState] = useState<ClaimState>({ status: 'idle' })
   const resumedActionId = useRef<string | null>(null)
@@ -36,15 +39,21 @@ export const useClaimAgent = (
 
   const submitCode = useCallback(
     async (code: string): Promise<ClaimState | null> => {
+      posthog.capture('dashboard:agent:code:submit')
       const result = await mutateAsync({ link_token: linkToken, code }).catch(
         () => undefined,
       )
       if (!result) {
+        posthog.capture('dashboard:agent:code:fail', { reason: 'network' })
         return { status: 'invalid', message: UNKNOWN_ERROR_MESSAGE }
       }
 
       const { error, response } = result
       if (response.ok) {
+        posthog.capture('dashboard:agent:claim:complete', {
+          organization_id: claim?.organization?.id ?? null,
+          products: claim?.products.length ?? 0,
+        })
         const destination = claim?.organization
           ? `/dashboard/${claim.organization.slug}`
           : '/dashboard'
@@ -53,6 +62,7 @@ export const useClaimAgent = (
       }
 
       if (response.status === 429) {
+        posthog.capture('dashboard:agent:code:fail', { reason: 'rate_limited' })
         return { status: 'invalid', message: RATE_LIMITED_MESSAGE }
       }
 
@@ -68,9 +78,12 @@ export const useClaimAgent = (
         return null
       }
 
+      posthog.capture('dashboard:agent:code:fail', {
+        reason: getAgentClaimErrorType(error) ?? 'unknown',
+      })
       return getAgentClaimError(error)
     },
-    [claim, currentUser, handoverMs, linkToken, mutateAsync],
+    [claim, currentUser, handoverMs, linkToken, mutateAsync, posthog],
   )
 
   const confirm = useCallback(

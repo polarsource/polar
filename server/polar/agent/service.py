@@ -25,6 +25,7 @@ from polar.oauth2.constants import CLAIM_GRANT_TYPE, CLIENT_ID_PREFIX
 from polar.oauth2.repository import OAuth2TokenRepository
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.posthog import posthog
 from polar.product.repository import ProductRepository
 
 from .identity_assertion import (
@@ -145,6 +146,7 @@ class AgentService:
         identity_assertion = await asyncio.to_thread(
             create_identity_assertion, agent.id
         )
+        posthog.agent_event(agent, "signup", "done")
         return AgentIdentity(
             registration_id=agent.id,
             registration_type="anonymous",
@@ -189,6 +191,12 @@ class AgentService:
             },
         )
         log.info("agent.claim.started", agent_id=agent.id)
+        posthog.agent_event(
+            agent,
+            "claim",
+            "start",
+            {"has_organization": agent.organization_id is not None},
+        )
         return AgentClaimAttempt(
             id=uuid.uuid4(),
             agent=agent,
@@ -286,6 +294,18 @@ class AgentService:
             agent_id=agent.id,
             user_id=user.id,
             organization_id=agent.organization_id,
+        )
+        posthog.user_event(
+            user,
+            "agent",
+            "claim",
+            "done",
+            {
+                "agent_id": str(agent.id),
+                "organization_id": str(agent.organization_id)
+                if agent.organization_id
+                else None,
+            },
         )
         return agent
 

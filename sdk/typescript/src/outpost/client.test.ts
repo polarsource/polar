@@ -1183,7 +1183,8 @@ it.each([
   await outpost.actor(customer);
   await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
   await outpost.actor(customer);
-  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  // The snapshot can take longer than the test's snapshotTimeout to arrive after a reconnection.
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(3));
   await ingest(outpost, 5);
   expect((await outpost.meter(meter))?.consumed_units).toBe(8);
   expect((await outpost.meter(meter))?.balance).toBe(2);

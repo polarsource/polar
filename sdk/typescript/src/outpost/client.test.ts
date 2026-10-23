@@ -1209,6 +1209,21 @@ it.each([
   expect(connections).toHaveLength(1);
 });
 
+it("gives every key a day to live, refreshed by each read, snapshot and write", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  await outpost.actor(customer);
+  expect((await outpost.meter(meter))?.balance).toBe(7);
+  const ttl = await redis.ttl(key);
+  expect(ttl).toBeGreaterThan(0);
+  expect(ttl).toBeLessThanOrEqual(86_400);
+  await ingest(outpost, 3);
+  expect(await redis.ttl(key)).toBeGreaterThan(0);
+  const pending = await redis.ttl(`outpost:pending:external:alice:tokens:${bucket}`);
+  expect(pending).toBeGreaterThan(0);
+  expect(pending).toBeLessThanOrEqual(3_900);
+});
+
 it("waits for the first snapshot on a cold read", async () => {
   snapshot = aliceSnapshot;
   const outpost = await start();

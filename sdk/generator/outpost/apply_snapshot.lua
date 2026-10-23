@@ -52,6 +52,7 @@ if not fields['epoch'] then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
+redis.call('EXPIRE', KEYS[1], 86400)
 state = redis.call('HGETALL', KEYS[1])
 redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
 return {state, replaced}

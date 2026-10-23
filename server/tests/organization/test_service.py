@@ -44,6 +44,7 @@ from polar.models.organization import (
     OrganizationStatus,
     OrganizationSubscriptionSettings,
     SnoozeType,
+    transition_capabilities,
 )
 from polar.models.organization import (
     OrganizationDetails as OrganizationDetailsDict,
@@ -1122,6 +1123,33 @@ class TestConfirmOrganizationReviewed:
         assert result.status == OrganizationStatus.ACTIVE
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
+
+    @pytest.mark.parametrize(
+        "status", [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED]
+    )
+    async def test_preserves_capability_overrides(
+        self,
+        status: OrganizationStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[status],
+            "checkout_payments": False,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        assert result is not None
+        assert result.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.ACTIVE],
+            "checkout_payments": False,
+        }
 
     async def test_rejects_non_review_status(
         self,
@@ -5705,33 +5733,53 @@ class TestCapabilityOverrides:
 
 @pytest.mark.anyio
 class TestSetStatusCapabilities:
+    @pytest.mark.parametrize("previous_status", list(OrganizationStatus))
     @pytest.mark.parametrize("status", list(OrganizationStatus))
-    async def test_set_status_writes_capabilities(
+    async def test_defaults_move_to_new_status_defaults(
         self,
+        previous_status: OrganizationStatus,
         status: OrganizationStatus,
-        organization: Organization,
     ) -> None:
-        # Bypass set_status's transition validation: this test verifies the
-        # capability mapping for each status, not the transition rules.
-        organization.status = status
-        organization.set_status(status)
+        assert (
+            transition_capabilities(
+                {**STATUS_CAPABILITIES[previous_status]}, previous_status, status
+            )
+            == STATUS_CAPABILITIES[status]
+        )
 
-        assert organization.status == status
-        assert organization.capabilities == STATUS_CAPABILITIES[status]
-
-    async def test_set_status_overwrites_prior_overrides(
+    async def test_set_status_preserves_overrides(
         self,
         organization: Organization,
     ) -> None:
+        organization.status = OrganizationStatus.SNOOZED
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[OrganizationStatus.SNOOZED],
+            "checkout_payments": False,
+        }
+
+        organization.set_status(OrganizationStatus.REVIEW)
+
+        assert organization.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.REVIEW],
+            "checkout_payments": False,
+        }
+
+    async def test_set_status_moves_non_overridden_capabilities(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[OrganizationStatus.DENIED],
+            "dashboard_access": False,
+        }
+
         organization.set_status(OrganizationStatus.ACTIVE)
-        assert organization.capabilities is not None
-        organization.capabilities = {**organization.capabilities, "payouts": False}
 
-        organization.set_status(OrganizationStatus.BLOCKED)
-
-        assert (
-            organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.BLOCKED]
-        )
+        assert organization.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.ACTIVE],
+            "dashboard_access": False,
+        }
 
 
 @pytest.mark.anyio

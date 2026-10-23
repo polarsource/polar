@@ -60,6 +60,9 @@ class Agent(RecordModel):
     claim_expires_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
+    claim_polled_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
 
     claimed_by_user_id: Mapped[UUID | None] = mapped_column(
         Uuid,

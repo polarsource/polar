@@ -9,7 +9,7 @@ import structlog
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
 
-from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
+from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
 from polar.exceptions import PolarError, ResourceNotFound
 from polar.kit.crypto import (
     generate_token,
@@ -22,7 +22,7 @@ from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Agent, OAuth2Client, User
 from polar.models.agent import AgentStatus
-from polar.oauth2.constants import CLIENT_ID_PREFIX
+from polar.oauth2.constants import CLAIM_GRANT_TYPE, CLIENT_ID_PREFIX
 from polar.oauth2.repository import OAuth2TokenRepository
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -117,7 +117,7 @@ class AgentService:
                 "client_name": identity_create.name or "Agent",
                 "token_endpoint_auth_method": "none",
                 "redirect_uris": [],
-                "grant_types": [JWT_BEARER_GRANT_TYPE],
+                "grant_types": [JWT_BEARER_GRANT_TYPE, CLAIM_GRANT_TYPE],
                 "response_types": [],
                 "scope": " ".join(sorted(UNCLAIMED_AGENT_SCOPES)),
             }
@@ -150,6 +150,7 @@ class AgentService:
             claim_url=claim_url,
             claim_token=claim_token,
             claim_token_expires=claim_token_expires_at,
+            post_claim_scopes=sorted(CLAIMED_AGENT_SCOPES),
         )
 
     async def start_claim(
@@ -246,6 +247,13 @@ class AgentService:
             },
         )
 
+        oauth2_client = agent.oauth2_client
+        oauth2_client.set_client_metadata(
+            {
+                **oauth2_client.client_metadata,
+                "scope": " ".join(sorted(CLAIMED_AGENT_SCOPES)),
+            }
+        )
         oauth2_token_repository = OAuth2TokenRepository.from_session(session)
         await oauth2_token_repository.revoke_by_agent(agent.id)
 

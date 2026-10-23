@@ -1,13 +1,12 @@
 import { schemas } from '@polar-sh/client'
 import {
-  AlertCircleIcon,
-  BanknoteIcon,
-  CheckIcon,
-  ClockIcon,
+  Banknote as BanknoteIcon,
+  Check as CheckIcon,
+  CircleAlert as AlertCircleIcon,
+  Clock as ClockIcon,
   type LucideIcon,
-  UsersIcon,
-} from 'lucide-react'
-
+  Users as UsersIcon,
+} from '@polar-sh/orbit/icons'
 export type PayoutAccountState =
   | 'not_connected'
   | 'managed_by_another_member'

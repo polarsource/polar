@@ -224,6 +224,10 @@ class CanonicalSubscription:
     # applies it to the next invoice and Polar has nowhere to carry it. None when
     # the customer wasn't expanded.
     customer_balance: int | None = None
+    # Charges or credits queued for the next invoice, like a mid-cycle
+    # proration. The switch stops the source without invoicing them, and Polar
+    # doesn't carry them over.
+    has_pending_invoice_items: bool = False
     # Sold through Stripe Managed Payments: Link is the seller and holds the card
     # authorization, so the merchant can't hand it to Polar.
     managed_payments: bool = False
@@ -602,6 +606,7 @@ def deserialize(
                 tax_rate_behavior=parse_tax_behavior(data.get("tax_rate_behavior")),
                 tax_behavior=parse_tax_behavior(data.get("tax_behavior")),
                 customer_balance=data.get("customer_balance"),
+                has_pending_invoice_items=data.get("has_pending_invoice_items", False),
                 managed_payments=data.get("managed_payments", False),
                 add_on=CanonicalSubscriptionAddOn(
                     price_source_id=add_on["price_source_id"],

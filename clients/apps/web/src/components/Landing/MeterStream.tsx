@@ -5,7 +5,7 @@ import { StaticImage } from '@/components/Image/StaticImage'
 import { useInView } from '@/hooks/useInView'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, LoaderCircle } from 'lucide-react'
+import { Check, LoaderCircle } from '@polar-sh/orbit/icons'
 import { Shimmer } from './Shimmer'
 import { useEffect, useState } from 'react'
 

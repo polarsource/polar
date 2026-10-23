@@ -2,7 +2,7 @@
 
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { CreditCard } from 'lucide-react'
+import { CreditCard } from '@polar-sh/orbit/icons'
 import { useTweened } from './useTweened'
 import { dollars, PLAN_PRICE } from './useUsageStream'
 

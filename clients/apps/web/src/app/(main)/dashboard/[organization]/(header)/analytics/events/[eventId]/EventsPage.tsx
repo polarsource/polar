@@ -10,11 +10,13 @@ import {
   useEventVarianceStats,
   useInfiniteEvents,
 } from '@/hooks/queries/events'
-import KeyboardArrowUpOutlined from '@mui/icons-material/KeyboardArrowUpOutlined'
+import {
+  KeyboardArrowUpOutlined,
+  TriangleAlert as AlertTriangle,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
-import { AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import React, { useMemo } from 'react'
 

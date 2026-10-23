@@ -33,6 +33,7 @@ variable "api_service_config" {
     database_pool_size     = optional(string, "10")
     postgres_database      = optional(string, "polar_cpit")
     postgres_read_database = optional(string, "polar_cpit")
+    pre_deploy_command     = optional(string, "uv run task pre_deploy")
     redis_db               = optional(string, "0")
     plan                   = optional(string, "standard")
   })
@@ -69,6 +70,8 @@ variable "postgres_config" {
     read_password      = string
     read_host_fallback = optional(string)
     read_port_fallback = optional(string)
+    sslmode            = optional(string)
+    sslrootcert        = optional(string)
   })
   sensitive = true
 }
@@ -222,7 +225,6 @@ variable "environment_groups" {
       POLAR_POLAR_ACCESS_TOKEN     = string
       POLAR_POLAR_WEBHOOK_SECRET   = string
       POLAR_POLAR_ORGANIZATION_ID  = string
-      POLAR_POLAR_FREE_PRODUCT_ID  = string
       POLAR_POLAR_API_URL          = string
       POLAR_POLAR_SCALE_PRODUCT_ID = string
     })

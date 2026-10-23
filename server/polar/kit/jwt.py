@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import Any, Literal
 
@@ -10,6 +11,7 @@ from .utils import utc_now
 
 DEFAULT_EXPIRATION = 60 * 15  # 15 minutes
 
+InvalidTokenError = jwt.InvalidTokenError
 DecodeError = jwt.DecodeError
 ExpiredSignatureError = jwt.ExpiredSignatureError
 
@@ -26,10 +28,11 @@ TYPE = Literal[
     "github_repository_benefit_oauth",
     "customer_oauth",
     "slack_integration_oauth",
+    "agent_identity_assertion",
 ]
 
 
-async def encode(
+def encode_sync(
     *,
     data: dict[str, Any],
     expires_at: datetime | None = None,
@@ -40,8 +43,20 @@ async def encode(
         expires_at = create_expiration_dt(seconds=expires_in or DEFAULT_EXPIRATION)
 
     claims = {**data, "type": type, "exp": int(expires_at.timestamp())}
+    return sign_jws(claims, get_signer())
+
+
+async def encode(
+    *,
+    data: dict[str, Any],
+    expires_at: datetime | None = None,
+    expires_in: int | None = DEFAULT_EXPIRATION,
+    type: TYPE,
+) -> str:
     # Signing is a blocking KMS call in production.
-    return await asyncio.to_thread(sign_jws, claims, get_signer())
+    return await asyncio.to_thread(
+        encode_sync, data=data, expires_at=expires_at, expires_in=expires_in, type=type
+    )
 
 
 def _verification_key(token: str) -> Any:
@@ -52,17 +67,32 @@ def _verification_key(token: str) -> Any:
     raise DecodeError(f"No published key with id {kid}")
 
 
-def decode_unsafe(*, token: str) -> dict[str, Any]:
-    return jwt.decode(token, _verification_key(token), algorithms=[ALGORITHM])
+def decode_unsafe(
+    *,
+    token: str,
+    audience: str | None = None,
+    issuer: str | None = None,
+    require: Sequence[str] = (),
+) -> dict[str, Any]:
+    return jwt.decode(
+        token,
+        _verification_key(token),
+        algorithms=[ALGORITHM],
+        audience=audience,
+        issuer=issuer,
+        options={"require": list(require)},
+    )
 
 
-async def decode(
+def decode_sync(
     *,
     token: str,
     type: TYPE,
+    audience: str | None = None,
+    issuer: str | None = None,
+    require: Sequence[str] = (),
 ) -> dict[str, Any]:
-    # Resolving the key is a blocking KMS call the first time a process sees it.
-    res = await asyncio.to_thread(decode_unsafe, token=token)
+    res = decode_unsafe(token=token, audience=audience, issuer=issuer, require=require)
 
     token_type = res.get("type", "")
     if token_type != type:
@@ -71,3 +101,12 @@ async def decode(
         )
 
     return res
+
+
+async def decode(
+    *,
+    token: str,
+    type: TYPE,
+) -> dict[str, Any]:
+    # Resolving the key is a blocking KMS call the first time a process sees it.
+    return await asyncio.to_thread(decode_sync, token=token, type=type)

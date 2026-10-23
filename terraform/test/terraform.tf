@@ -31,6 +31,11 @@ terraform {
       source  = "vercel/vercel"
       version = "~> 5.3"
     }
+
+    planetscale = {
+      source  = "planetscale/planetscale"
+      version = "~> 1.14"
+    }
   }
 
   required_version = ">= 1.2"

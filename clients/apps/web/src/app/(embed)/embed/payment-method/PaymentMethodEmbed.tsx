@@ -11,7 +11,7 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { X } from 'lucide-react'
+import { X } from '@polar-sh/orbit/icons'
 import { useCallback, useEffect, useMemo } from 'react'
 import {
   PaymentMethodForm,

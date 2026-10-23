@@ -16,8 +16,10 @@ import TOTPSetupModal from './TOTPSetupModal'
 import BackupCodesModal from './BackupCodesModal'
 import BackupCodesRegenerateModal from './BackupCodesRegenerateModal'
 import { toast } from '../Toast/use-toast'
-import { KeyRoundIcon, ShieldCheckIcon } from 'lucide-react'
-
+import {
+  KeyRound as KeyRoundIcon,
+  ShieldCheck as ShieldCheckIcon,
+} from '@polar-sh/orbit/icons'
 const AuthenticationMethod = ({
   icon,
   title,

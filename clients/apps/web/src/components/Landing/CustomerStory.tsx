@@ -1,6 +1,6 @@
 import { Grid, GridItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { ChapterHeadline } from './Chapter'
 import { StillaAI } from './Logos'

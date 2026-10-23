@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    Select,
     distinct,
     func,
     or_,
@@ -17,6 +18,7 @@ from polar.models import (
     Checkout,
     Customer,
     Discount,
+    DiscountProduct,
     DiscountRedemption,
     Order,
     Payment,
@@ -30,6 +32,19 @@ from polar.models.refund import RefundReason, RefundStatus
 
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
     model = Discount
+
+    async def add_product(self, product_id: UUID, new_product_id: UUID) -> None:
+        """Extend the discounts restricted to a product to another product."""
+        discount_ids = await self.session.scalars(
+            select(DiscountProduct.discount_id).where(
+                DiscountProduct.product_id == product_id,
+                DiscountProduct.deleted_at.is_(None),
+            )
+        )
+        self.session.add_all(
+            DiscountProduct(discount_id=discount_id, product_id=new_product_id)
+            for discount_id in discount_ids
+        )
 
     async def get_by_code_and_organization_for_update(
         self,
@@ -76,6 +91,15 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
         if for_update:
             statement = statement.with_for_update(of=Discount, key_share=True)
         return await self.get_all(statement)
+
+    def get_organization_statement(
+        self, organization_id: UUID
+    ) -> Select[tuple[Discount]]:
+        return (
+            select(Discount)
+            .where(Discount.organization_id == organization_id, ~Discount.is_deleted)
+            .order_by(Discount.created_at, Discount.id)
+        )
 
     async def get_all_by_codes(
         self, organization_id: UUID, codes: Sequence[str]

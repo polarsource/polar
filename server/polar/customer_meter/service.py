@@ -27,6 +27,7 @@ from polar.event.system import (
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.math import non_negative_running_sum
+from polar.kit.metadata import get_nested_metadata_attr
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
@@ -610,8 +611,11 @@ class CustomerMeterService:
             statement = statement.where(Event.customer_id == customer.id)
 
         if meter_reset_event is not None:
+            # A reset without an explicit timestamp is ingested a moment before its
+            # own timestamp, and must still fall in its window.
             statement = statement.where(
-                Event.ingested_at >= meter_reset_event.timestamp
+                Event.ingested_at
+                >= min(meter_reset_event.timestamp, meter_reset_event.ingested_at)
             )
 
         if cutoff is not None:
@@ -733,9 +737,9 @@ class CustomerMeterService:
             if prop in Event._filterable_fields:
                 _, attr = Event._filterable_fields[prop]
                 return func.cast(attr, Float)
-            return Event.user_metadata[prop].as_float()
+            return get_nested_metadata_attr(Event, prop).as_float()
         elif isinstance(meter.aggregation, UniqueAggregation):
-            return Event.user_metadata[meter.aggregation.property]
+            return get_nested_metadata_attr(Event, meter.aggregation.property)
         return Event.id
 
     def _get_outer_aggregation(self, meter: Meter, column: Any) -> Any:

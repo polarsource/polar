@@ -1,6 +1,6 @@
 'use client'
 
-import HistoryRounded from '@mui/icons-material/HistoryRounded'
+import { HistoryRounded } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { AnimatePresence, motion } from 'motion/react'

@@ -1,6 +1,6 @@
 'use client'
 
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { CheckOutlined } from '@polar-sh/orbit/icons'
 import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'

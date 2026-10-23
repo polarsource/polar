@@ -9,7 +9,7 @@ import { ChartRange, getChartRangeParams, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Alert, DataTable, DataTableColumnDef } from '@polar-sh/orbit'
-import { Coins } from 'lucide-react'
+import { Coins } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 

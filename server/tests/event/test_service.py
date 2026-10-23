@@ -36,6 +36,7 @@ from polar.meter.aggregation import (
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
+    Agent,
     Customer,
     CustomerMeter,
     EventType,
@@ -385,6 +386,7 @@ class TestListNames:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     async def test_basic(
         self,
@@ -713,15 +715,45 @@ class TestIngest:
         errors = e.value.errors()
         assert len(errors) == 1
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_cannot_ingest_events_for_another_organization(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name="test",
+                    external_customer_id="test",
+                    organization_id=organization_second.id,
+                ),
+                EventCreateExternalCustomer(
+                    name="test",
+                    external_customer_id="test",
+                    organization_id=organization.id,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await event_service.ingest(session, auth_subject, ingest)
+
+        [error] = e.value.errors()
+        assert error["loc"] == ("body", "events", 0, "organization_id")
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     async def test_invalid_customer_id(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         organization_second: Organization,
         user_organization: UserOrganization,
@@ -1406,13 +1438,16 @@ class TestIngest:
             str(ggc.id),
         }
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_ingest_with_member_id(
         self,
         save_fixture: SaveFixture,
         enqueue_events_mock: AsyncMock,
         session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
+        auth_subject: AuthSubject[Organization | Agent],
         organization: Organization,
         customer: Customer,
     ) -> None:
@@ -1434,7 +1469,7 @@ class TestIngest:
         await event_service.ingest(session, auth_subject, ingest)
         await event_service.move_staged_events(session, 1000)
 
-        events = await get_all_by_organization(session, auth_subject.subject.id)
+        events = await get_all_by_organization(session, organization.id)
         assert len(events) == 1
         assert events[0].member_id == member.id
         assert events[0].customer_id == customer.id

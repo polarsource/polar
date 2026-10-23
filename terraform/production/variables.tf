@@ -352,11 +352,6 @@ variable "polar_organization_id" {
   type        = string
 }
 
-variable "polar_free_product_id" {
-  description = "Polar free-tier product ID"
-  type        = string
-}
-
 variable "polar_scale_product_id" {
   description = "Polar Scale-tier product ID"
   type        = string

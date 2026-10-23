@@ -1,4 +1,4 @@
-import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import { ClearOutlined } from '@polar-sh/orbit/icons'
 import {
   Button,
   Input,

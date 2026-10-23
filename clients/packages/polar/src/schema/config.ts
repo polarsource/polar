@@ -8,6 +8,7 @@ import {
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import { deprecatedKey } from './deprecation'
+import type { Deprecated } from './deprecation'
 import {
   createEventReferences,
   type EventDefinitions,
@@ -134,6 +135,70 @@ type MeterKey<Meters extends MeterEntries> =
     ? Key & string
     : keyof Meters & string
 
+type EntryAt<Entries, Key extends string> =
+  Entries extends ReadonlyArray<infer Entry>
+    ? Extract<Entry, readonly [Key, unknown]>[1]
+    : Entries[Key & keyof Entries]
+
+// Intersected with a config section's entries: `Checks` holds what each
+// entry must also satisfy, by external ID.
+type ValidEntries<Entries, Checks> =
+  Entries extends ReadonlyArray<unknown>
+    ? {
+        readonly [Index in keyof Entries]: Entries[Index] extends readonly [
+          infer Key,
+          unknown,
+        ]
+          ? readonly [Key, Checks[Key & keyof Checks]]
+          : Entries[Index]
+      }
+    : { readonly [Key in keyof Entries]: Checks[Key & keyof Checks] }
+
+type DeprecatedMeterKey<Meters extends MeterEntries> = {
+  [Key in MeterKey<Meters>]: EntryAt<Meters, Key> extends Deprecated
+    ? Key
+    : never
+}[MeterKey<Meters>]
+
+// Deprecated references, as keys an entry must have. A definition never has
+// them, so the type error leads with the message: "Property '<message>' is
+// missing". TypeScript has no custom type errors, so this stands in for one.
+type DeprecationError<Message extends string> = {
+  readonly [Key in Message]: true
+}
+
+type DeprecatedMeterIssue<
+  Meter extends string,
+  Owner extends string,
+> = `Meter '${Meter}' is deprecated, so only a deprecated ${Owner} can use it.`
+
+// Only deprecated benefits can use a deprecated meter.
+type ActiveMeter<
+  Benefit,
+  DeprecatedMeter extends string,
+> = Benefit extends Deprecated
+  ? unknown
+  : Benefit extends {
+        readonly properties: { readonly meter: infer Meter extends string }
+      }
+    ? DeprecationError<
+        DeprecatedMeterIssue<Extract<Meter, DeprecatedMeter>, 'benefit'>
+      >
+    : unknown
+
+type ValidBenefits<
+  Benefits extends BenefitEntries,
+  DeprecatedMeter extends string,
+> = ValidEntries<
+  Benefits,
+  {
+    [Key in BenefitKey<Benefits>]: ActiveMeter<
+      EntryAt<Benefits, Key>,
+      DeprecatedMeter
+    >
+  }
+>
+
 type BenefitEntries<Meter extends string = string> =
   | Readonly<Record<string, BenefitDefinition<Meter>>>
   | ReadonlyArray<
@@ -145,14 +210,15 @@ type BenefitKey<Benefits extends BenefitEntries> =
     ? Key & string
     : keyof Benefits & string
 
-type BenefitAt<Benefits extends BenefitEntries, Key extends string> =
-  Benefits extends ReadonlyArray<infer Entry>
-    ? Extract<Entry, readonly [Key, BenefitDefinition]>[1]
-    : Benefits[Key & keyof Benefits]
-
 type WithMetadata<Benefit, Values> = Benefit extends unknown
   ? Omit<Benefit, 'metadata'> & { readonly metadata: Values }
   : never
+
+type DeprecatedBenefitKey<Benefits extends BenefitEntries> = {
+  [Key in BenefitKey<Benefits>]: EntryAt<Benefits, Key> extends Deprecated
+    ? Key
+    : never
+}[BenefitKey<Benefits>]
 
 type ConnectedBenefit<Definition> =
   Definition extends DeclaredMetadata<infer Values>
@@ -170,6 +236,50 @@ type ProductEntries<
   | ReadonlyArray<
       readonly [externalId: string, product: ProductDefinition<Meter, Benefit>]
     >
+
+type ProductGrant<Product> =
+  Product extends ProductDefinition<string, string, infer Granted>
+    ? Granted
+    : never
+
+type PricedMeter<Product> = Product extends {
+  readonly priceList: ReadonlyArray<infer Price>
+}
+  ? Price extends { readonly kind: 'metered'; readonly meter: infer Meter }
+    ? Meter & string
+    : never
+  : never
+
+// Only deprecated products can grant deprecated benefits or price by a
+// deprecated meter.
+type ActiveProduct<
+  Product,
+  DeprecatedBenefit extends string,
+  DeprecatedMeter extends string,
+> = Product extends Deprecated
+  ? unknown
+  : DeprecationError<
+      | `Benefit '${Extract<ProductGrant<Product>, DeprecatedBenefit>}' is deprecated, so only a deprecated product can grant it.`
+      | DeprecatedMeterIssue<
+          Extract<PricedMeter<Product>, DeprecatedMeter>,
+          'product'
+        >
+    >
+
+type ValidProducts<
+  Products extends ProductEntries,
+  DeprecatedBenefit extends string,
+  DeprecatedMeter extends string,
+> = ValidEntries<
+  Products,
+  {
+    [Key in ProductKey<Products>]: ActiveProduct<
+      EntryAt<Products, Key>,
+      DeprecatedBenefit,
+      DeprecatedMeter
+    >
+  }
+>
 
 type ProductKey<Products extends ProductEntries> =
   Products extends ReadonlyArray<readonly [infer Key, ProductDefinition]>
@@ -191,7 +301,7 @@ type ConnectedConfig<
   readonly meters: Readonly<Record<MeterKey<Meters>, MeterConfig>>
   readonly benefits: {
     readonly [Key in BenefitKey<Benefits>]: ConnectedBenefit<
-      BenefitAt<Benefits, Key>
+      EntryAt<Benefits, Key>
     >
   }
   readonly webhooks: Webhooks
@@ -232,6 +342,31 @@ const byExternalId = <Resource extends { readonly external_id: string }>(
   return byId
 }
 
+type BenefitsInput<
+  Meters extends MeterEntries,
+  Benefits extends BenefitEntries,
+> = (
+  helpers: BenefitHelpers<MeterKey<Meters>>,
+) => Benefits & ValidBenefits<Benefits, DeprecatedMeterKey<Meters>>
+
+type ProductsInput<
+  Meters extends MeterEntries,
+  Benefits extends BenefitEntries,
+  Products extends ProductEntries,
+> = (
+  helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
+) => Products &
+  ValidProducts<
+    Products,
+    DeprecatedBenefitKey<Benefits>,
+    DeprecatedMeterKey<Meters>
+  >
+
+// TypeScript only points an error at the offending entry, rather than at the
+// whole section, when the section's key is required. So once a section is
+// given, this repeats its key as required.
+type Present<Entries, Section> = [Entries] extends [never] ? unknown : Section
+
 export const defineConfig = <
   const Meters extends MeterEntries,
   const Benefits extends BenefitEntries<MeterKey<Meters>> = never,
@@ -242,23 +377,30 @@ export const defineConfig = <
   const Discounts extends DiscountEntries<ProductKey<Products>> = never,
   Events extends EventDefinitions | undefined = undefined,
   const Webhooks extends WebhookEntries = Record<never, never>,
->(input: {
-  readonly settings?: SettingsConfig
-  readonly events?: Events &
-    (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
-  readonly meters: (helpers: {
-    readonly meter: typeof meter<DeclaredEvents<Events>>
-    readonly events: EventReferences<DeclaredEvents<Events>>
-  }) => Meters
-  readonly benefits?: (helpers: BenefitHelpers<MeterKey<Meters>>) => Benefits
-  readonly products?: (
-    helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
-  ) => Products
-  readonly discounts?: (
-    helpers: DiscountHelpers<ProductKey<Products>>,
-  ) => Discounts
-  readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
-}): Config<Meters, Benefits, Events, Webhooks> => {
+>(
+  input: {
+    readonly settings?: SettingsConfig
+    readonly events?: Events &
+      (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
+    readonly meters: (helpers: {
+      readonly meter: typeof meter<DeclaredEvents<Events>>
+      readonly events: EventReferences<DeclaredEvents<Events>>
+    }) => Meters
+    readonly benefits?: BenefitsInput<Meters, Benefits>
+    readonly products?: ProductsInput<Meters, Benefits, Products>
+    readonly discounts?: (
+      helpers: DiscountHelpers<ProductKey<Products>>,
+    ) => Discounts
+    readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
+  } & Present<
+    Benefits,
+    { readonly benefits: BenefitsInput<Meters, Benefits> }
+  > &
+    Present<
+      Products,
+      { readonly products: ProductsInput<Meters, Benefits, Products> }
+    >,
+): Config<Meters, Benefits, Events, Webhooks> => {
   const events = input.events as Events
   const entries = toEntries(
     input.meters({
@@ -269,7 +411,7 @@ export const defineConfig = <
   const meterIds = new Set(entries.map(([external_id]) => external_id))
   const deprecatedMeterIds = new Set(
     entries.flatMap(([external_id, definition]) =>
-      definition.deprecated ? [external_id] : [],
+      definition[deprecatedKey] ? [external_id] : [],
     ),
   )
   const benefits = input.benefits?.({ flag, credits })
@@ -312,13 +454,24 @@ export const defineConfig = <
     onExcessProperty: 'error',
   })({
     ...(input.settings !== undefined && { settings: input.settings }),
-    meters: entries.map(([external_id, definition]) => {
-      const { name } = validateMeterNaming({
+    meters: entries.map(
+      ([
         external_id,
-        name: definition.name,
-      })
-      return { ...definition, external_id, name: name ?? external_id }
-    }),
+        { [metadataKey]: metadata, [deprecatedKey]: deprecated, ...definition },
+      ]) => {
+        const { name } = validateMeterNaming({
+          external_id,
+          name: definition.name,
+        })
+        return {
+          ...definition,
+          external_id,
+          name: name ?? external_id,
+          ...(metadata !== undefined && { metadata }),
+          ...(deprecated && { deprecated: true as const }),
+        }
+      },
+    ),
     ...(benefits !== undefined && {
       benefits: benefitEntries.map(
         ([

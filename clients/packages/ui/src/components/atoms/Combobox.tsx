@@ -1,6 +1,10 @@
 'use client'
 
-import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
+import {
+  Check,
+  ChevronsUpDown,
+  LoaderCircle as Loader2,
+} from '@polar-sh/orbit/icons'
 import * as React from 'react'
 
 import { Button } from '@polar-sh/orbit/ui/button'

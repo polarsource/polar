@@ -7,7 +7,7 @@ import type {
   TextColorToken,
 } from '@polar-sh/orbit/theme'
 import { motion } from 'motion/react'
-import type { LucideIcon } from 'lucide-react'
+import type { LucideIcon } from '@polar-sh/orbit/icons'
 import type { ReactNode } from 'react'
 
 type Tone = 'success' | 'warning' | 'danger' | 'pending' | 'neutral'

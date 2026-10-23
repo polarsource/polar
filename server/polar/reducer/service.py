@@ -281,20 +281,19 @@ class ReducerService:
         *,
         since: datetime,
     ) -> tuple[datetime, Row[Any]]:
-        """The end of the customer identity's last synced bucket starting from
+        """The end of the customer identity's last fully synced slot starting from
         `since`, or `since`, with the count, sum, min and max of its usage not
-        billed yet before it."""
+        billed yet before it. Clients count whole slots: a slot a seal split, with
+        only its first part synced, stays theirs."""
         repository = ReducerBucketRepository.from_session(session)
-        cold_until = (
-            await repository.get_last_synced_end(
-                reducer.organization_id,
-                reducer.id,
-                customer_id,
-                external_customer_id,
-                since=since,
-            )
-            or since
+        synced_end = await repository.get_last_synced_end(
+            reducer.organization_id,
+            reducer.id,
+            customer_id,
+            external_customer_id,
+            since=since,
         )
+        cold_until = get_reducer_bucket_start(synced_end) if synced_end else since
         totals = await repository.get_unsealed_totals(
             reducer.organization_id,
             reducer.id,
@@ -302,6 +301,37 @@ class ReducerService:
             before=cold_until,
         )
         return cold_until, totals
+
+    async def get_stored_external_ids(
+        self,
+        session: AsyncReadSession,
+        reducer: Reducer,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        *,
+        bucket_start: datetime,
+        external_ids: Sequence[str],
+    ) -> set[str]:
+        """The given external ids of the customer identity's stored events that the
+        synced part of the bucket starting at `bucket_start` counts: a seal can
+        split a bucket, and sync then recomputes each part on its own."""
+        repository = ReducerBucketRepository.from_session(session)
+        synced_end = await repository.get_synced_end_within(
+            reducer.organization_id,
+            reducer.id,
+            customer_id,
+            external_customer_id,
+            bucket_start,
+            bucket_start + REDUCER_BUCKET_SIZE,
+        )
+        if synced_end is None:
+            return set()
+        return await EventRepository.from_session(session).get_stored_external_ids(
+            reducer.organization_id,
+            external_ids,
+            timestamp_from=bucket_start,
+            timestamp_to=synced_end,
+        )
 
     async def get_database_now(self, session: AsyncReadSession) -> datetime:
         return await ReducerBucketRepository.from_session(session).get_database_now()

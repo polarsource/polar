@@ -13,6 +13,34 @@ CHANNEL: str = DATA["channel"]
 EPOCH: str = DATA["epoch"]
 REDUCER: Reducer = DATA["reducer"]
 SNAPSHOT: dict[str, typing.Any] = DATA["snapshot"]
+# Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
+PENDING_COUNTS = [1, 100, 1000]
+# What WRITE_BUCKET stores per event: its value.
+PENDING_ENTRY = "7"
+
+
+def pending_ids(count: int) -> list[str]:
+    return [f"event-{index}" for index in range(count)]
+
+
+# The `pending:<start>:<statistic>` fields of a bucket with `count` events of 7 units pending.
+def encode_pending(start: int, count: int) -> list[str]:
+    prefix = f"pending:{start}:"
+    return [
+        f"{prefix}count",
+        str(count),
+        f"{prefix}sum",
+        str(7 * count),
+        f"{prefix}min",
+        "7",
+        f"{prefix}max",
+        "7",
+    ]
+
+
+# The pending hash of a bucket: one entry per event id.
+def pending_entries(ids: list[str]) -> list[str]:
+    return [field for external_id in ids for field in (external_id, PENDING_ENTRY)]
 
 
 # The flat field list decode_state reads: one `bucket:<start>:<statistic>` entry per bucket.

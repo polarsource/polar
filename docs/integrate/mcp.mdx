@@ -132,6 +132,12 @@ Code runs in an isolated sandbox. It can only call the Polar operations listed b
 
 For agents that should look up data but never change it, add `?readonly=true` to the server URL, for example `https://mcp.polar.sh/mcp/polar-mcp?readonly=true`. Only read operations are available, and the agent asks for read-only access when you authorize it.
 
+## Telemetry
+
+The server sends one event per tool call to help us improve it: the tool name, whether it succeeded, the error type and status code, the duration, your agent's name and version when its client reports them, the API operations the call used (for example `GET /v1/products/{id}`) with their status codes, the names of any fields the API rejected (for example `body.prices.0.price_amount`), and the size of the result. Events from the same account share an identifier, a keyed one-way hash of your user or organization ID, so we can see how a session unfolds. The ID itself, access tokens, tool arguments, results, field values, request and response bodies, and IDs in URLs are never sent.
+
+To opt out, add `?telemetry=false` (or `0`, `no`, `off`) to the server URL, for example `https://mcp.polar.sh/mcp/polar-mcp?telemetry=false`. It combines with read-only mode: `?readonly=true&telemetry=false`. The server still keeps request logs to operate and secure the service, as the Polar API does.
+
 ## Available operations
 
 <Accordion title="Available operations (103)">

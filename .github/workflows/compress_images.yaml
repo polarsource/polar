@@ -1,12 +1,12 @@
-name: Compress docs images
+name: Compress images
 
 on:
   pull_request:
     paths:
-      - "docs/**.png"
-      - "docs/**.jpg"
-      - "docs/**.jpeg"
-      - "docs/**.webp"
+      - "**.png"
+      - "**.jpg"
+      - "**.jpeg"
+      - "**.webp"
 
 jobs:
   compress:
@@ -22,3 +22,5 @@ jobs:
         uses: calibreapp/image-actions@1.5.0
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          jpegQuality: "60"
+          ignorePaths: "node_modules/**,server/tests/fixtures/**"

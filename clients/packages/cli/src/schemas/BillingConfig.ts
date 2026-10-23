@@ -105,6 +105,7 @@ export const ApplyResult = Schema.Union([
   Schema.Struct({
     status: Schema.Literal('applied'),
     entries: Schema.Array(AppliedEntry),
+    issues: Schema.optionalKey(Schema.Array(ConfigIssue)),
   }),
   Schema.Struct({
     status: Schema.Literal('rejected'),
@@ -126,7 +127,10 @@ export const ApplyOutput = Schema.Union(
 
 export const ConfigDocument = Schema.Record(
   Schema.String,
-  Schema.Array(Schema.Unknown),
+  Schema.Union([
+    Schema.Array(Schema.Unknown),
+    Schema.Record(Schema.String, Schema.Unknown),
+  ]),
 )
 export type ConfigDocument = typeof ConfigDocument.Type
 

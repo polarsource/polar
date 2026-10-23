@@ -1,3 +1,8 @@
+output "planetscale" {
+  description = "PlanetScale connection details and SQL to grant application schema access."
+  value       = module.planetscale
+}
+
 output "lambda_worker_ecr_repository_url" {
   description = "ECR repository URL for the test Lambda worker image."
   value       = try(module.lambda_worker_ecr[0].repository_url, null)

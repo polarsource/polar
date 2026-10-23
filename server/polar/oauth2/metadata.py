@@ -75,6 +75,33 @@ class OpenIDProviderMetadata(OAuth2AuthorizationServerMetadata):
     require_request_uri_registration: bool | None = None
 
 
+class OAuth2ProtectedResourceMetadata(BaseModel):
+    """
+    OAuth 2.0 Protected Resource Metadata
+
+    Conforms to RFC9728.
+    https://datatracker.ietf.org/doc/html/rfc9728
+    """
+
+    resource: str
+    authorization_servers: list[str]
+    scopes_supported: list[str]
+    bearer_methods_supported: list[str]
+    resource_name: str
+    resource_documentation: str
+
+
+def get_protected_resource_metadata() -> OAuth2ProtectedResourceMetadata:
+    return OAuth2ProtectedResourceMetadata(
+        resource=constants.ISSUER,
+        authorization_servers=[constants.ISSUER],
+        scopes_supported=SCOPES_SUPPORTED,
+        bearer_methods_supported=["header"],
+        resource_name="Polar",
+        resource_documentation=constants.SERVICE_DOCUMENTATION,
+    )
+
+
 def get_server_metadata(
     authorization_server: "AuthorizationServer", url_for: Callable[[str], str]
 ) -> OpenIDProviderMetadata:

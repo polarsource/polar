@@ -611,7 +611,6 @@ class TestAuthSubjectMiddlewareRequestedOrganization:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        redis: Redis,
         user: User,
         organization_second: Organization,
     ) -> None:
@@ -632,7 +631,7 @@ class TestAuthSubjectMiddlewareRequestedOrganization:
         request = _request_with_bearer_token(
             access_token, requested_organization=organization_second.id
         )
-        await AuthSubjectMiddleware(app, redis)(
+        await AuthSubjectMiddleware(app)(
             {**request.scope, "state": {"async_session": session}}, receive, send
         )
 
@@ -710,7 +709,7 @@ class TestAuthSubjectMiddlewareWebSocket:
         async def receive() -> Message:
             return {"type": "websocket.connect"}
 
-        await AuthSubjectMiddleware(app, redis)(
+        await AuthSubjectMiddleware(app)(
             {
                 "type": "websocket",
                 "headers": headers,

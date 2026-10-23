@@ -1,8 +1,11 @@
 'use client'
 
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
-import FilterListOutlined from '@mui/icons-material/FilterListOutlined'
-import SearchOutlined from '@mui/icons-material/SearchOutlined'
+import {
+  ArrowBackOutlined,
+  Check as CheckIcon,
+  FilterListOutlined,
+  SearchOutlined,
+} from '@polar-sh/orbit/icons'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -18,7 +21,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { CheckIcon } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

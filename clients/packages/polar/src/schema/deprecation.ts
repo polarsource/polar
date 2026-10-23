@@ -8,9 +8,21 @@ export type HasDeprecation = {
   readonly [deprecatedKey]?: boolean | undefined
 }
 
+/** Type-only marker left by `.deprecated()`, so configs can check references. */
+export type Deprecated = {
+  readonly [deprecatedKey]: true
+}
+
+/**
+ * For builder methods that return a new builder type: carries over the
+ * `.deprecated()` marker from the current one.
+ */
+export type KeepDeprecation<Self extends DeprecationBuilder, Next> = Next &
+  Pick<Self, typeof deprecatedKey>
+
 export interface DeprecationBuilder {
   readonly [deprecatedKey]: boolean
-  deprecated(): this
+  deprecated(): this & Deprecated
 }
 
 /**
@@ -23,8 +35,8 @@ export const withDeprecation = <Base extends Mixin<Builder>>(
   abstract class WithDeprecation extends base implements DeprecationBuilder {
     readonly [deprecatedKey]: boolean = false
 
-    deprecated(): this {
-      return this.with({ [deprecatedKey]: true })
+    deprecated(): this & Deprecated {
+      return this.with<this & Deprecated>({ [deprecatedKey]: true })
     }
   }
   return WithDeprecation

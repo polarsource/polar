@@ -26,6 +26,7 @@ const helpOnlyServices = Layer.mergeAll(
       plan: unused,
       apply: unused,
       pull: unused,
+      prune: unused,
     }),
   ),
   Layer.succeed(Organizations, fakeOrganizations().organizations),

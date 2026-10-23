@@ -53,7 +53,7 @@ export const errorName = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.orElseSucceed(() => undefined),
   )
 
-const SECTIONS = {
+export const SECTIONS = {
   meter: 'meters',
   benefit: 'benefits',
   product: 'products',

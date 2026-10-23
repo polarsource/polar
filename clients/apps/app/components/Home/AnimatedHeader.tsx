@@ -4,6 +4,7 @@ import PolarLogo from '@/components/Shared/PolarLogo'
 import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useHomeHeaderHeight } from '@/hooks/useHomeHeaderHeight'
+import { useIsDuo } from '@/hooks/useIsDuo'
 import { useAnimatedScroll } from '@/providers/AnimatedScrollProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { Link } from 'expo-router'
@@ -22,9 +23,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 const DURATION = 150
 
 export const AnimatedHeader: FC = () => {
-  const { netHeaderHeight } = useHomeHeaderHeight()
+  const { netHeaderHeight, topSafeAreaHeight } = useHomeHeaderHeight()
   const theme = useTheme()
   const insets = useSafeAreaInsets()
+  const isDuo = useIsDuo()
 
   const {
     offsetY,
@@ -136,12 +138,12 @@ export const AnimatedHeader: FC = () => {
         {
           position: 'absolute',
           left: 0,
-          right: 0,
+          right: isDuo ? insets.right : 0,
           backgroundColor: theme.colors['background-regular'],
           zIndex: 50,
           paddingTop: Platform.select({
-            ios: insets.top,
-            android: insets.top + theme.spacing['spacing-12'],
+            ios: topSafeAreaHeight,
+            android: topSafeAreaHeight + theme.spacing['spacing-12'],
           }),
         },
         rPositionContainer,
@@ -163,15 +165,17 @@ export const AnimatedHeader: FC = () => {
         <PolarLogo size={36} />
         <Box flexDirection="row" gap="spacing-20">
           <NotificationBadge />
-          <Link href="/settings" asChild>
-            <Touchable hitSlop={16}>
-              <MaterialIcons
-                name="tune"
-                size={24}
-                color={theme.colors['foreground-regular']}
-              />
-            </Touchable>
-          </Link>
+          {isDuo ? null : (
+            <Link href="/settings" asChild>
+              <Touchable hitSlop={16}>
+                <MaterialIcons
+                  name="tune"
+                  size={24}
+                  color={theme.colors['foreground-regular']}
+                />
+              </Touchable>
+            </Link>
+          )}
         </Box>
       </Animated.View>
     </Animated.View>

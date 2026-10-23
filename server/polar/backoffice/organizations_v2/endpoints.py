@@ -92,6 +92,7 @@ from polar.organization_review.repository import (
 )
 from polar.organization_review.schemas import (
     AUP_SECTION_LABELS,
+    ActorType,
     AUPSection,
     DecisionType,
     ReviewAgentReport,
@@ -2514,6 +2515,7 @@ async def under_review_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Set organization under review dialog and action."""
     repository = OrganizationRepository(session)
@@ -2524,7 +2526,11 @@ async def under_review_dialog(
 
     if request.method == "POST":
         await organization_service.set_organization_under_review(
-            session, organization, enqueue_review=False
+            session,
+            organization,
+            actor_type=ActorType.HUMAN,
+            reviewer_id=user_session.user.id,
+            enqueue_review=False,
         )
 
         return HXRedirectResponse(

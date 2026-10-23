@@ -1,7 +1,6 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
-import type { DiscountConfig } from './schema/discount'
 import type { Metadata } from './schema/metadata'
 import type { MeterConfig, MeterFilter } from './schema/meter'
 import { majorAmount, scaleRate } from './schema/money'
@@ -399,44 +398,6 @@ const renderProduct =
     ].join('\n')
   }
 
-const renderDuration = (discount: DiscountConfig): string => {
-  const months = discount.duration_in_months
-  if (discount.duration !== 'repeating' || months === undefined) {
-    return `.${discount.duration}()`
-  }
-  const [count, unit] =
-    months % 12 === 0 ? [months / 12, 'year'] : [months, 'month']
-  return `.repeating(${literal(count)}, ${literal(count === 1 ? unit : `${unit}s`)})`
-}
-
-const renderDiscount =
-  (imports: Set<string>) =>
-  (discount: DiscountConfig, helpers: Set<string>): string => {
-    helpers.add('discount')
-    const optional = (method: string, value: string | number | undefined) =>
-      value === undefined ? [] : [`.${method}(${literal(value)})`]
-    return [
-      `discount(${literal(discount.name)})`,
-      discount.type === 'percentage'
-        ? `.percent(${literal(discount.basis_points / 100)})`
-        : `.amount(${Object.entries(discount.amounts)
-            .map(([currency, amount]) =>
-              renderMoney(currency as Currency, String(amount), imports),
-            )
-            .join(', ')})`,
-      renderDuration(discount),
-      ...optional('code', discount.code),
-      ...(discount.products === undefined
-        ? []
-        : [`.products(${discount.products.map(literal).join(', ')})`]),
-      ...optional('maxRedemptions', discount.max_redemptions),
-      ...optional('perCustomer', discount.max_redemptions_per_customer),
-      ...optional('starts', discount.starts_at),
-      ...optional('ends', discount.ends_at),
-      ...renderMetadata(discount.metadata),
-    ].join('\n')
-  }
-
 const renderEntries = <Resource extends { readonly external_id: string }>(
   property: string,
   resources: ReadonlyArray<Resource>,
@@ -480,10 +441,6 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     config.products === undefined
       ? []
       : renderEntries('products', config.products, renderProduct(imports))
-  const discounts =
-    config.discounts === undefined
-      ? []
-      : renderEntries('discounts', config.discounts, renderDiscount(imports))
 
   const settings =
     config.settings === undefined
@@ -498,7 +455,6 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     ...meters,
     ...benefits,
     ...products,
-    ...discounts,
     '})',
     '',
   ].join('\n')

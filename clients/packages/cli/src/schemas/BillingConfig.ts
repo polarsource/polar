@@ -43,7 +43,6 @@ export const ConfigResource = Schema.Literals([
   'meter',
   'benefit',
   'product',
-  'discount',
   'webhook',
 ])
 

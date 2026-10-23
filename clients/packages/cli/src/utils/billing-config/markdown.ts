@@ -21,7 +21,6 @@ const HEADINGS: Record<string, string> = {
   meters: 'Meters',
   benefits: 'Benefits',
   products: 'Products',
-  discounts: 'Discounts',
 }
 
 const heading = (section: string) => {

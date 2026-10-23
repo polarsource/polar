@@ -96,6 +96,7 @@ class TestBeforeSend:
                     "assertion": "eyJ.xxx.yyy",
                     "client_secret": "polar_cs_xxx",
                     "cf-turnstile-response": "cf_xxx",
+                    "claim_token": "polar_act_xxx",
                     "code": "123456",
                     "customer_external_id": "buyer@example.com",
                     "customer_metadata": {"crm_contact": "buyer@example.com"},
@@ -103,6 +104,7 @@ class TestBeforeSend:
                     "external_customer_id": "buyer@example.com",
                     "external_id": "buyer@example.com",
                     "invitation_token": "polar_it_xxx",
+                    "link_token": "polar_acl_xxx",
                     "metadata": {"crm_contact": "buyer@example.com"},
                     "refresh_token": "polar_rt_xxx",
                     "secret": "whsec_xxx",
@@ -125,6 +127,7 @@ class TestBeforeSend:
         assert "assertion" not in data
         assert "client_secret" not in data
         assert "cf-turnstile-response" not in data
+        assert "claim_token" not in data
         assert "code" not in data
         assert "customer_external_id" not in data
         assert "customer_metadata" not in data
@@ -132,6 +135,7 @@ class TestBeforeSend:
         assert "external_customer_id" not in data
         assert "external_id" not in data
         assert "invitation_token" not in data
+        assert "link_token" not in data
         assert "metadata" not in data
         assert "refresh_token" not in data
         assert "secret" not in data

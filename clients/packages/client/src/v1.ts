@@ -6722,6 +6722,46 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/agent/claim/{link_token}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Agent Claim
+     * @description Get what an agent built, for the human it asked to claim it.
+     */
+    get: operations['agent:get_claim']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm Agent Claim
+     * @description Claim an agent and its organization with the code the agent gave.
+     */
+    post: operations['agent:confirm_claim']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export interface webhooks {
   'checkout.created': {
@@ -8444,6 +8484,87 @@ export interface components {
        * @description ISO currency code of the amounts.
        */
       currency: string
+    }
+    /**
+     * AgentClaim
+     * @description What the human reviews before claiming the agent.
+     */
+    AgentClaim: {
+      /**
+       * Agent Name
+       * @description What the agent calls itself.
+       */
+      agent_name: string | null
+      /**
+       * Email
+       * @description The email the agent started the claim for.
+       */
+      email: string
+      /**
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+      /** @description The organization the agent built, if any. */
+      organization: components['schemas']['AgentClaimOrganization'] | null
+    }
+    /** AgentClaimConfirm */
+    AgentClaimConfirm: {
+      /** Link Token */
+      link_token: string
+      /**
+       * Code
+       * @description The code the agent gave.
+       */
+      code: string
+    }
+    /** AgentClaimEmailMismatch */
+    AgentClaimEmailMismatch: {
+      /**
+       * Error
+       * @example AgentClaimEmailMismatch
+       * @constant
+       */
+      error: 'AgentClaimEmailMismatch'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimExpired */
+    AgentClaimExpired: {
+      /**
+       * Error
+       * @example AgentClaimExpired
+       * @constant
+       */
+      error: 'AgentClaimExpired'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimInvalidCode */
+    AgentClaimInvalidCode: {
+      /**
+       * Error
+       * @example AgentClaimInvalidCode
+       * @constant
+       */
+      error: 'AgentClaimInvalidCode'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimOrganization */
+    AgentClaimOrganization: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Name */
+      name: string
+      /** Slug */
+      slug: string
+      /** Avatar Url */
+      avatar_url: string | null
     }
     AggregateField: string
     /**
@@ -64446,6 +64567,133 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Feedback']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:get_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        link_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaim']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimEmailMismatch']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:confirm_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AgentClaimConfirm']
+      }
+    }
+    responses: {
+      /** @description The agent and its organization are now the user's. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimInvalidCode']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SessionNotFreshError']
+            | components['schemas']['AgentClaimEmailMismatch']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
         }
       }
       /** @description Validation Error */

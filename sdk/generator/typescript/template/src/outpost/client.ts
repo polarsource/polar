@@ -52,7 +52,7 @@ const MAX_RECONNECT_DELAY = 30_000;
 const REDIS_RECONNECT_DELAY = 100;
 const MAX_REDIS_RECONNECT_DELAY = 2_000;
 // Every key and the channel carry the layout version. A new layout takes a new version, starts
-// cold from Polar's snapshot and never reads the previous keys, which are left to expire.
+// cold from Polar's snapshot and never reads the previous keys.
 const KEY_VERSION = "outpost:v1";
 const BUCKET_PREFIX = "bucket:";
 const PENDING_PREFIX = "pending:";

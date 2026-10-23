@@ -13,6 +13,7 @@ from polar.meter.aggregation import (
     AggregationFunction,
     CountAggregation,
     PropertyAggregation,
+    UniqueAggregation,
 )
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
@@ -791,8 +792,6 @@ class TestUpdateCustomerMeter:
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
-        from polar.meter.aggregation import UniqueAggregation
-
         meter = await create_meter(
             save_fixture,
             name="Unique Users",
@@ -910,6 +909,71 @@ class TestUpdateCustomerMeter:
         assert customer_meter is not None
         assert customer_meter.consumed_units == Decimal(80)
         assert updated is True
+
+    async def test_nested_property_aggregations_with_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer_with_external_id: Customer,
+        organization: Organization,
+    ) -> None:
+        filter = Filter(
+            conjunction=FilterConjunction.and_,
+            clauses=[
+                FilterClause(property="type", operator=FilterOperator.eq, value="llm")
+            ],
+        )
+        max_meter = await create_meter(
+            save_fixture,
+            name="Max Tokens",
+            filter=filter,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="_llm.total_tokens"
+            ),
+            organization=organization,
+        )
+        unique_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            name="Unique Models",
+            filter=filter,
+            aggregation=UniqueAggregation(property="_llm.model"),
+            organization=organization,
+        )
+
+        timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={
+                "type": "llm",
+                "_llm": {"total_tokens": 200, "model": "model_a"},
+            },
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=organization,
+            external_customer_id=customer_with_external_id.external_id,
+            metadata={
+                "type": "llm",
+                "_llm": {"total_tokens": 100, "model": "model_b"},
+            },
+        )
+
+        max_customer_meter, _ = await customer_meter_service.update_customer_meter(
+            session, customer_with_external_id, max_meter
+        )
+        unique_customer_meter, _ = await customer_meter_service.update_customer_meter(
+            session, customer_with_external_id, unique_meter
+        )
+
+        assert max_customer_meter is not None
+        assert max_customer_meter.consumed_units == Decimal(200)
+        assert unique_customer_meter is not None
+        assert unique_customer_meter.consumed_units == Decimal(2)
 
     async def test_notifies_outpost_of_the_reducer(
         self,

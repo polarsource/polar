@@ -2073,7 +2073,7 @@ async def test_snapshot_reports_a_cold_bucket_by_its_pending_part(
 
 
 @pytest.mark.anyio
-async def test_keys_live_a_day_refreshed_by_reads_snapshots_and_writes(
+async def test_state_lives_a_day_refreshed_by_reads_writes_and_confirmations(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
@@ -2082,23 +2082,26 @@ async def test_keys_live_a_day_refreshed_by_reads_snapshots_and_writes(
     snapshots["external:alice"] = ALICE_SNAPSHOT
     key = "outpost:state:external:alice:tokens"
     written = datetime.datetime.fromisoformat("2026-10-12T12:10:00Z")
+    event = {
+        "name": "call",
+        "external_id": f"event-{next(_ids)}",
+        "external_customer_id": "alice",
+        "timestamp": written.isoformat(),
+        "metadata": {"tokens": 3},
+    }
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         meter = await outpost.meter(meter_id="meter", external_customer_id="alice")
         assert meter is not None and meter.balance == 7
         assert 0 < await redis.ttl(key) <= 86_400
-        await outpost.track(
-            {
-                "name": "call",
-                "external_id": f"event-{next(_ids)}",
-                "external_customer_id": "alice",
-                "timestamp": written.isoformat(),
-                "metadata": {"tokens": 3},
-            }
-        )
-        assert 0 < await redis.ttl(key) <= 86_400
+        await redis.expire(key, 60)
+        await outpost.track(event)
+        assert await redis.ttl(key) > 60
         pending = f"outpost:pending:external:alice:tokens:{get_bucket_start(written)}"
         assert 0 < await redis.ttl(pending) <= 3_900
+        await redis.expire(key, 60)
+        await outpost.confirm([event])
+        assert await redis.ttl(key) > 60
 
 
 def reconnecting_client(

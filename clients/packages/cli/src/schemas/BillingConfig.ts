@@ -105,6 +105,7 @@ export const ApplyResult = Schema.Union([
   Schema.Struct({
     status: Schema.Literal('applied'),
     entries: Schema.Array(AppliedEntry),
+    issues: Schema.optionalKey(Schema.Array(ConfigIssue)),
   }),
   Schema.Struct({
     status: Schema.Literal('rejected'),

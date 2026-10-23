@@ -147,7 +147,11 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
                 return {
                   config,
                   organization,
-                  result: { status: 'applied', entries: plan.entries } as const,
+                  result: {
+                    status: 'applied',
+                    entries: plan.entries,
+                    issues: plan.issues,
+                  } as const,
                 }
               }
               yield* say(changes(config, organization, plan))
@@ -164,7 +168,14 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
                 billing.apply(config, organization),
               )
               yield* progress.finish(`(${milliseconds(elapsed)})`)
-              return { config, organization, result }
+              return {
+                config,
+                organization,
+                result:
+                  result.status === 'applied'
+                    ? { ...result, issues: plan.issues }
+                    : result,
+              }
             }),
           'columns',
         )

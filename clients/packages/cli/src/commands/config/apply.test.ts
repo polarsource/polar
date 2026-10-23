@@ -268,6 +268,34 @@ describe('polar config apply', () => {
     expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
   })
 
+  test.each([
+    ['nothing changed', [kept], []],
+    ['changes were applied', [created], ['--confirm']],
+  ])(
+    'includes plan warnings in --json output when %s',
+    async (_, entries, args) => {
+      const warning: ConfigIssue = {
+        severity: 'warning',
+        code: 'unknown_event',
+        path: 'meters.0.filter.clauses.0.value',
+        message: 'No events with this name have been received yet.',
+        got: '"tool_call"',
+        location,
+      }
+      const { output, failed } = await run(
+        { entries, issues: [warning] },
+        { status: 'applied', entries },
+        [...args, '--json'],
+      )
+      expect(failed).toBe(false)
+      expect(JSON.parse(output)).toMatchObject({
+        file: 'polar.json',
+        status: 'applied',
+        issues: [{ severity: 'warning', code: 'unknown_event' }],
+      })
+    },
+  )
+
   test('fails and shows the problems when the plan has errors', async () => {
     const issues: ConfigIssue[] = [
       {

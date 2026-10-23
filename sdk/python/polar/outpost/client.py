@@ -96,21 +96,28 @@ def _report_local_value(
     fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
     if "cold_until" not in fields:
         return
+    previous = int(fields["cold_until"])
     local = BucketStatistics()
     buckets: dict[str, BucketStatistics] = {}
+    pending: dict[str, BucketStatistics] = {}
     for field, value in fields.items():
         if field.startswith("cold:"):
             setattr(local, field.removeprefix("cold:"), _number(value))
-        elif field.startswith("bucket:"):
-            _, start, statistic = field.split(":")
-            setattr(
-                buckets.setdefault(start, BucketStatistics()), statistic, _number(value)
-            )
-    for bucket in buckets.values():
-        local.add(bucket)
+            continue
+        kind, _, rest = field.partition(":")
+        if kind not in ("bucket", "pending"):
+            continue
+        start, _, statistic = rest.partition(":")
+        group = buckets if kind == "bucket" else pending
+        setattr(group.setdefault(start, BucketStatistics()), statistic, _number(value))
+    # A bucket already cold before this snapshot was read by its pending part only.
+    for start, bucket in buckets.items():
+        local.add(
+            pending.get(start, BucketStatistics()) if int(start) < previous else bucket
+        )
     span.set_attributes(
         {
-            "outpost.local.cold_until": int(fields["cold_until"]),
+            "outpost.local.cold_until": previous,
             "outpost.local.count": local.count,
             "outpost.local.sum": local.sum,
             "outpost.snapshot.count": snapshot["count"],
@@ -398,8 +405,9 @@ local previous = fields['snapshot_version']
 if not previous or version >= tonumber(previous) then
     if current then replaced = {'cold_until', current} end
     -- Polar's totals now cover the buckets before the cutoff. The local copy of each is
-    -- reported, and kept while events Polar has not confirmed remain pending in it, for an
-    -- hour at most: its pending part is what the local read adds on top of Polar's totals.
+    -- reported with its pending part, and kept while events Polar has not confirmed remain
+    -- pending in it, for an hour at most: that pending part is what the local read adds on
+    -- top of Polar's totals.
     local function sealed(start)
         local pending = fields['pending:' .. start .. ':count']
         return not pending or tonumber(pending) <= 0 or tonumber(start) + 3600000000 < cutoff
@@ -413,10 +421,8 @@ if not previous or version >= tonumber(previous) then
         else
             local kind, start = string.match(field, '^(%a+):(%-?%d+):')
             if (kind == 'bucket' or kind == 'pending') and tonumber(start) < cutoff then
-                if kind == 'bucket' then
-                    table.insert(replaced, field)
-                    table.insert(replaced, value)
-                end
+                table.insert(replaced, field)
+                table.insert(replaced, value)
                 if sealed(start) then table.insert(dropped, field) end
             end
         end

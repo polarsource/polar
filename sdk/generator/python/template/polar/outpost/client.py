@@ -96,21 +96,28 @@ def _report_local_value(
     fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
     if "cold_until" not in fields:
         return
+    previous = int(fields["cold_until"])
     local = BucketStatistics()
     buckets: dict[str, BucketStatistics] = {}
+    pending: dict[str, BucketStatistics] = {}
     for field, value in fields.items():
         if field.startswith("cold:"):
             setattr(local, field.removeprefix("cold:"), _number(value))
-        elif field.startswith("bucket:"):
-            _, start, statistic = field.split(":")
-            setattr(
-                buckets.setdefault(start, BucketStatistics()), statistic, _number(value)
-            )
-    for bucket in buckets.values():
-        local.add(bucket)
+            continue
+        kind, _, rest = field.partition(":")
+        if kind not in ("bucket", "pending"):
+            continue
+        start, _, statistic = rest.partition(":")
+        group = buckets if kind == "bucket" else pending
+        setattr(group.setdefault(start, BucketStatistics()), statistic, _number(value))
+    # A bucket already cold before this snapshot was read by its pending part only.
+    for start, bucket in buckets.items():
+        local.add(
+            pending.get(start, BucketStatistics()) if int(start) < previous else bucket
+        )
     span.set_attributes(
         {
-            "outpost.local.cold_until": int(fields["cold_until"]),
+            "outpost.local.cold_until": previous,
             "outpost.local.count": local.count,
             "outpost.local.sum": local.sum,
             "outpost.snapshot.count": snapshot["count"],

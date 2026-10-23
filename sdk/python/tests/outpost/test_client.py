@@ -1963,6 +1963,70 @@ async def test_snapshot_reports_local_value(
     assert span.attributes["outpost.snapshot.delta"] is delta
 
 
+@pytest.mark.anyio
+async def test_snapshot_reports_a_cold_bucket_by_its_pending_part(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    exported_spans: list[ReadableSpan],
+) -> None:
+    url, redis = redis_connection
+    cold = BUCKET - 2 * BUCKET_SIZE
+    await redis.hset(
+        "outpost:state:external:alice:tokens",
+        mapping={
+            "cold_until": BUCKET - BUCKET_SIZE,
+            "cold:count": 1,
+            "cold:sum": 5,
+            "cold:min": 5,
+            "cold:max": 5,
+            # Already cold, kept for one unconfirmed event: the local read adds that event only.
+            f"bucket:{cold}:count": 3,
+            f"bucket:{cold}:sum": 9,
+            f"bucket:{cold}:min": 2,
+            f"bucket:{cold}:max": 4,
+            f"pending:{cold}:count": 1,
+            f"pending:{cold}:sum": 2,
+            f"pending:{cold}:min": 2,
+            f"pending:{cold}:max": 2,
+            f"bucket:{BUCKET - BUCKET_SIZE}:count": 1,
+            f"bucket:{BUCKET - BUCKET_SIZE}:sum": 3,
+            f"bucket:{BUCKET - BUCKET_SIZE}:min": 3,
+            f"bucket:{BUCKET - BUCKET_SIZE}:max": 3,
+        },
+    )
+    snapshots["external:alice"] = {
+        "customer_id": None,
+        "external_customer_id": "alice",
+        "meter_id": "meter",
+        "version": 1791807000000000,
+        "cold_until": BUCKET,
+        "count": 3,
+        "sum": 10,
+        "min": 2,
+        "max": 5,
+        "credited_units": 10,
+    }
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        with anyio.fail_after(1):
+            while not any(
+                span.name == "outpost.snapshot.received" for span in exported_spans
+            ):
+                await anyio.lowlevel.checkpoint()
+
+    [span] = [
+        span for span in exported_spans if span.name == "outpost.snapshot.received"
+    ]
+    assert span.attributes is not None
+    assert span.attributes["outpost.local.cold_until"] == BUCKET - BUCKET_SIZE
+    assert span.attributes["outpost.local.count"] == 3
+    assert span.attributes["outpost.local.sum"] == 10
+    assert span.attributes["outpost.local.min"] == 2
+    assert span.attributes["outpost.local.max"] == 5
+    assert span.attributes["outpost.snapshot.delta"] is False
+
+
 def reconnecting_client(
     connections: list[str], requests: list[dict[str, typing.Any]]
 ) -> httpx.AsyncClient:

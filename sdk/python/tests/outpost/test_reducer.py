@@ -136,6 +136,39 @@ def test_equality_filters_use_operand_values(
     ) is (equal if operator == "eq" else not equal)
 
 
+@pytest.mark.parametrize(
+    ("actual", "expected", "contained"),
+    [
+        ("gpt-4o-mini", "4o", True),
+        ("gpt-4o-mini", "claude", False),
+        (1234, "23", True),
+        (1234, 5, False),
+        (True, "Tru", True),
+        ("100%_done", "%_", True),
+    ],
+)
+def test_contains_filters_compare_strings(
+    actual: str | int | bool, expected: str | int, contained: bool
+) -> None:
+    event = Event("call", "customer", TIMESTAMP, {"value": actual})
+    like: FilterClause = {"property": "value", "operator": "like", "value": expected}
+    not_like: FilterClause = {
+        "property": "value",
+        "operator": "not_like",
+        "value": expected,
+    }
+    assert get_matcher(like)(event) is contained
+    assert get_matcher(not_like)(event) is not contained
+
+
+@pytest.mark.parametrize("operator", ["like", "not_like"])
+def test_contains_filters_ignore_missing_properties(
+    operator: typing.Literal["like", "not_like"],
+) -> None:
+    clause: FilterClause = {"property": "missing", "operator": operator, "value": "a"}
+    assert not get_matcher(clause)(Event("call", "customer", TIMESTAMP))
+
+
 @pytest.mark.parametrize("value", [True, "5", None])
 def test_non_numeric_aggregation_is_skipped(value: object) -> None:
     reducer: Reducer = {

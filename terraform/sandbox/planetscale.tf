@@ -9,19 +9,20 @@ module "planetscale" {
   cluster_size      = "PS_80_AWS_ARM"
 }
 
-# module "planetscale_migration" {
-#   source = "../modules/planetscale_migration"
-#
-#   name                     = "polar-sandbox-planetscale-migration"
-#   subnet_id                = module.vpc.secondary_private_subnet_ids[0]
-#   instance_type            = "c7i.xlarge"
-#   volume_size              = 500
-#   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
-#
-#   tags = {
-#     Environment = "sandbox"
-#     Service     = "planetscale-migration"
-#   }
-#
-#   depends_on = [module.vpc]
-# }
+module "planetscale_migration" {
+  source = "../modules/planetscale_migration"
+
+  name                     = "polar-sandbox-planetscale-migration"
+  subnet_id                = module.vpc.secondary_private_subnet_ids[0]
+  instance_type            = "c7i.xlarge"
+  volume_size              = 500
+  volume_iops              = 3000
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  tags = {
+    Environment = "sandbox"
+    Service     = "planetscale-migration"
+  }
+
+  depends_on = [module.vpc]
+}

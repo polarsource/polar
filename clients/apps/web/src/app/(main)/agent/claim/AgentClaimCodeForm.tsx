@@ -28,8 +28,6 @@ const AgentClaimCodeForm = ({
   onChange: (code: string) => void
   onSubmit: () => void
 }) => {
-  const words = normalizeClaimCode(code)?.split('-')
-
   return (
     <Box
       as="form"
@@ -52,21 +50,6 @@ const AgentClaimCodeForm = ({
         value={code}
         onChange={(event) => onChange(event.target.value)}
       />
-      {words && (
-        <Box columnGap="s">
-          {words.map((word, index) => (
-            <Box
-              key={index}
-              paddingHorizontal="m"
-              paddingVertical="xs"
-              borderRadius="full"
-              backgroundColor="background-secondary"
-            >
-              <Text variant="caption">{word}</Text>
-            </Box>
-          ))}
-        </Box>
-      )}
       {error && <Text color="danger">{error}</Text>}
     </Box>
   )

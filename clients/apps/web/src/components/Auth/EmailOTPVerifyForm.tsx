@@ -67,9 +67,10 @@ const EmailOTPVerifyForm = ({
           name="code"
           render={({ field }) => {
             return (
-              <FormItem>
+              <FormItem className="w-full">
                 <FormControl>
                   <InputOTP
+                    containerClassName="w-full"
                     maxLength={6}
                     pattern="^[a-zA-Z0-9]+$"
                     inputMode="text"
@@ -79,12 +80,12 @@ const EmailOTPVerifyForm = ({
                     onChange={(value) => field.onChange(value.toUpperCase())}
                     onComplete={handleSubmit(onSubmit)}
                   >
-                    <InputOTPGroup>
+                    <InputOTPGroup className="w-full">
                       {Array.from({ length: 6 }).map((_, index) => (
                         <InputOTPSlot
                           key={index}
                           index={index}
-                          className="dark:border-polar-600 h-12 w-12 border-gray-300 text-xl md:h-16 md:w-16 md:text-2xl"
+                          className="dark:border-polar-600 h-12 flex-1 border-gray-300 text-xl md:h-16 md:text-2xl"
                         />
                       ))}
                     </InputOTPGroup>

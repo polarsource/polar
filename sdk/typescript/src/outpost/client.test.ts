@@ -1076,6 +1076,56 @@ it.each([
   },
 );
 
+it("reports a bucket already cold by its pending part only", async () => {
+  await redis.hset(key, {
+    cold_until: bucket - BUCKET_SIZE,
+    "cold:count": 1,
+    "cold:sum": 5,
+    "cold:min": 5,
+    "cold:max": 5,
+    // Already cold, kept for one unconfirmed event: the local read adds that event only.
+    [`bucket:${bucket - 2 * BUCKET_SIZE}:count`]: 3,
+    [`bucket:${bucket - 2 * BUCKET_SIZE}:sum`]: 9,
+    [`bucket:${bucket - 2 * BUCKET_SIZE}:min`]: 2,
+    [`bucket:${bucket - 2 * BUCKET_SIZE}:max`]: 4,
+    [`pending:${bucket - 2 * BUCKET_SIZE}:count`]: 1,
+    [`pending:${bucket - 2 * BUCKET_SIZE}:sum`]: 2,
+    [`pending:${bucket - 2 * BUCKET_SIZE}:min`]: 2,
+    [`pending:${bucket - 2 * BUCKET_SIZE}:max`]: 2,
+    [`bucket:${bucket - BUCKET_SIZE}:count`]: 1,
+    [`bucket:${bucket - BUCKET_SIZE}:sum`]: 3,
+    [`bucket:${bucket - BUCKET_SIZE}:min`]: 3,
+    [`bucket:${bucket - BUCKET_SIZE}:max`]: 3,
+  });
+  snapshot = {
+    ...customer,
+    customer_id: null,
+    meter_id: "meter",
+    cold_until: bucket,
+    version: 1791807000000004,
+    count: 3,
+    sum: 10,
+    min: 2,
+    max: 5,
+    credited_units: 10,
+  };
+  const outpost = await start();
+  await outpost.actor(customer);
+  await vi.waitFor(() =>
+    expect(exported.map((span) => span.name)).toContain("outpost.snapshot.received"),
+  );
+
+  const span = exported.find((span) => span.name === "outpost.snapshot.received")!;
+  expect(span.attributes).toMatchObject({
+    "outpost.local.cold_until": bucket - BUCKET_SIZE,
+    "outpost.local.count": 3,
+    "outpost.local.sum": 10,
+    "outpost.local.min": 2,
+    "outpost.local.max": 5,
+    "outpost.snapshot.delta": false,
+  });
+});
+
 it("reconnects the WebSocket and keeps serving from Redis", async () => {
   const outpost = await start();
   connections[0].terminate();

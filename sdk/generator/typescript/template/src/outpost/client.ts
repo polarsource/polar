@@ -264,21 +264,30 @@ const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): v
   for (let index = 0; index < replaced.length; index += 2)
     fields[replaced[index]] = replaced[index + 1];
   if (fields.cold_until === undefined) return;
+  const previous = Number(fields.cold_until);
   const local = emptyStatistics();
   const buckets = new Map<string, BucketStatistics>();
+  const pending = new Map<string, BucketStatistics>();
   for (const [field, value] of Object.entries(fields)) {
     if (field.startsWith(COLD_PREFIX)) {
       local[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(value);
-    } else if (field.startsWith("bucket:")) {
-      const [, start, statistic] = field.split(":");
-      const bucket = buckets.get(start) ?? emptyStatistics();
-      bucket[statistic as keyof BucketStatistics] = number(value);
-      buckets.set(start, bucket);
+      continue;
     }
+    const [kind, start, statistic] = field.split(":");
+    if (kind !== "bucket" && kind !== "pending") continue;
+    const group = kind === "bucket" ? buckets : pending;
+    const statistics = group.get(start) ?? emptyStatistics();
+    statistics[statistic as keyof BucketStatistics] = number(value);
+    group.set(start, statistics);
   }
-  for (const bucket of buckets.values()) addStatistics(local, bucket);
+  // A bucket already cold before this snapshot was read by its pending part only.
+  for (const [start, bucket] of buckets)
+    addStatistics(
+      local,
+      Number(start) < previous ? (pending.get(start) ?? emptyStatistics()) : bucket,
+    );
   span.setAttributes({
-    "outpost.local.cold_until": Number(fields.cold_until),
+    "outpost.local.cold_until": previous,
     "outpost.local.count": local.count,
     "outpost.local.sum": local.sum,
     "outpost.snapshot.count": snapshot.count,

@@ -1692,6 +1692,53 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/subscriptions/bulk-update': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Bulk Update Subscriptions
+     * @description Move the active subscriptions of a product, in any version, to another product.
+     *
+     *     Subscriptions move in the background, each one at its own renewal. Subscriptions
+     *     that are canceling or already have a pending change are left alone.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['subscriptions:bulk_update']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/subscriptions/bulk-update/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Subscription Bulk Update
+     * @description Get the progress of a subscription bulk update.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_bulk_update']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/transactions/search': {
     parameters: {
       query?: never
@@ -16120,6 +16167,8 @@ export interface components {
     ConfigApplyResult: {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
+      /** @description The published catalog, if applying published a new one. */
+      catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Result for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsResult'] | null
     }
@@ -16259,6 +16308,19 @@ export interface components {
        * @default false
        */
       rollover: boolean
+    }
+    /** ConfigCatalogChange */
+    ConfigCatalogChange: {
+      /**
+       * Before
+       * @description Version hash of the live catalog before applying.
+       */
+      before: string | null
+      /**
+       * After
+       * @description Version hash of the live catalog after applying.
+       */
+      after: string
     }
     /** ConfigChange */
     ConfigChange: {
@@ -16650,6 +16712,8 @@ export interface components {
     ConfigPlan: {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
+      /** @description The catalog that applying publishes, if any. */
+      catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Change for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsChange'] | null
       /** Issues */
@@ -36996,6 +37060,83 @@ export interface components {
       /** New Period End */
       new_period_end: string
     }
+    /** SubscriptionBulkUpdate */
+    SubscriptionBulkUpdate: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       */
+      organization_id: string
+      /**
+       * Product External Id
+       * @description `external_id` of the product whose subscriptions move.
+       */
+      product_external_id: string
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product to move to.
+       */
+      target_product_id: string
+      /** @description When each subscription moves. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Subscriptions Count
+       * @description Subscriptions scheduled to move at their renewal so far.
+       */
+      subscriptions_count: number
+      /**
+       * Skipped Count
+       * @description Subscriptions that couldn't move, for example on a currency mismatch.
+       */
+      skipped_count: number
+      /**
+       * Completed At
+       * @description When every subscription was handled. `None` while running.
+       */
+      completed_at: string | null
+    }
+    /** SubscriptionBulkUpdateCreate */
+    SubscriptionBulkUpdateCreate: {
+      /**
+       * Product External Id
+       * @description `external_id` of the product whose subscriptions move, in any version.
+       */
+      product_external_id: string
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product to move to. Must be a current version.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      target_product_id: string
+      /**
+       * Proration Behavior
+       * @description When each subscription moves. Each one moves at its own renewal.
+       * @default next_period
+       * @constant
+       */
+      proration_behavior: 'next_period'
+    }
     /** SubscriptionCancel */
     SubscriptionCancel: {
       /**
@@ -46175,6 +46316,89 @@ export interface operations {
         }
       }
       /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:bulk_update': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubscriptionBulkUpdateCreate']
+      }
+    }
+    responses: {
+      /** @description Bulk update started. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionBulkUpdate']
+        }
+      }
+      /** @description You don't have the permission to update subscriptions, or the organization doesn't use catalog versioning. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_bulk_update': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription bulk update ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionBulkUpdate']
+        }
+      }
+      /** @description Subscription bulk update not found. */
       404: {
         headers: {
           [name: string]: unknown

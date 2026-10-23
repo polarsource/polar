@@ -2,16 +2,21 @@ import uuid
 
 import structlog
 
+from polar.auth.models import AuthSubject, User
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission
 from polar.enums import SubscriptionProrationBehavior
-from polar.exceptions import PolarError
+from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, Product, Subscription, SubscriptionBulkUpdate
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
+from polar.product.service import product as product_service
 from polar.worker import enqueue_job
 
 from .repository import SubscriptionBulkUpdateRepository, SubscriptionRepository
+from .schemas import SubscriptionBulkUpdateCreate
 from .service import SubscriptionUpdateContext
 from .service import subscription as subscription_service
 
@@ -21,6 +26,50 @@ BATCH_SIZE = 100
 
 
 class SubscriptionBulkUpdateService:
+    async def get(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> SubscriptionBulkUpdate | None:
+        repository = SubscriptionBulkUpdateRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            SubscriptionBulkUpdate.id == id
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def create(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        bulk_update_create: SubscriptionBulkUpdateCreate,
+    ) -> SubscriptionBulkUpdate:
+        target = await product_service.get(
+            session, auth_subject, bulk_update_create.target_product_id
+        )
+        if target is None or not target.is_current or target.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "target_product_id"),
+                        "msg": "Product not found, or not a current version.",
+                        "input": bulk_update_create.target_product_id,
+                    }
+                ]
+            )
+        await assert_resource_permission(
+            session, auth_subject, target, OrganizationPermission.sales_manage
+        )
+        if not target.organization.is_config_as_code_enabled:
+            raise NotPermitted("Config as code isn't enabled for this organization.")
+        return await self.start(
+            session,
+            target.organization,
+            source_external_id=bulk_update_create.product_external_id,
+            target_product=target,
+        )
+
     async def start(
         self,
         session: AsyncSession,

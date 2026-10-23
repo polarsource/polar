@@ -199,7 +199,6 @@ locals {
 
   polar_self_environment_variables = var.polar_self_config != null ? {
     POLAR_POLAR_ORGANIZATION_ID  = var.polar_self_config.organization_id
-    POLAR_POLAR_FREE_PRODUCT_ID  = var.polar_self_config.free_product_id
     POLAR_POLAR_API_URL          = var.polar_self_config.api_url
     POLAR_POLAR_SCALE_PRODUCT_ID = var.polar_self_config.scale_product_id
   } : {}

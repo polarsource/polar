@@ -321,7 +321,10 @@ def consumed_units(state: ReducerState, func: str) -> int | float:
 @dataclasses.dataclass
 class LocalState:
     state: ReducerState | None = None
-    lock: anyio.Lock = dataclasses.field(default_factory=anyio.Lock)
+    # Uncontended, the lock is taken without yielding to the event loop.
+    lock: anyio.Lock = dataclasses.field(
+        default_factory=lambda: anyio.Lock(fast_acquire=True)
+    )
     missing: bool = False
     changed: anyio.Event = dataclasses.field(default_factory=anyio.Event)
 

@@ -68,6 +68,7 @@ export type ReducerMatchers = readonly (readonly [Reducer, EventMatcher, Propert
 export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   if (!("property" in filter)) {
     const children = filter.clauses.map(getMatcher);
+    if (children.length === 1) return children[0];
     return filter.conjunction === "and"
       ? (event) => children.every((match) => match(event))
       : (event) => children.some((match) => match(event));

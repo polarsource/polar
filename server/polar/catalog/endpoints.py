@@ -6,9 +6,9 @@ from polar.kit.schemas import MultipleQueryFilter
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session
-from polar.product.auth import CreatorProductsRead
 from polar.routing import APIRouter
 
+from . import auth
 from .schemas import Catalog as CatalogSchema
 from .service import catalog as catalog_service
 
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/catalogs", tags=["catalogs", APITag.private])
     },
 )
 async def list(
-    auth_subject: CreatorProductsRead,
+    auth_subject: auth.CatalogRead,
     pagination: PaginationParamsQuery,
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."

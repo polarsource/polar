@@ -16,7 +16,7 @@ def identity_of(buckets: int) -> str:
 
 
 def key_of(buckets: int) -> str:
-    return f"outpost:state:{identity_of(buckets)}"
+    return f"outpost:v1:state:{identity_of(buckets)}"
 
 
 @pytest.fixture(scope="module")

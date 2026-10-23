@@ -215,6 +215,9 @@ async def connect_websocket(
         yield websocket
 
 
+# Every key and the channel carry the layout version. A new layout takes a new version, starts
+# cold from Polar's snapshot and never reads the previous keys, which are left to expire.
+KEY_VERSION = "outpost:v1"
 CACHE_SIZE = 1024
 REDIS_TIMEOUT = 5.0
 REDIS_RECONNECT_DELAY = 0.1
@@ -457,7 +460,7 @@ class Outpost:
                 self._redis = await self._stack.enter_async_context(
                     connect_redis(self.redis_url)
                 )
-            self._channel = f"outpost:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
+            self._channel = f"{KEY_VERSION}:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
             self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
             self._confirm_script = self._redis.register_script(CONFIRM_SCRIPT)
@@ -564,8 +567,8 @@ class Outpost:
             for (customer, reducer_id, bucket_start), statistics in updates.items():
                 identity = f"{customer}:{reducer_id}"
                 arguments: list[str | int | float] = [
-                    f"outpost:state:{identity}",
-                    f"outpost:pending:{identity}:{bucket_start}",
+                    f"{KEY_VERSION}:state:{identity}",
+                    f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
                     identity,
                     self._channel,
                     _generate_epoch(),
@@ -660,8 +663,8 @@ class Outpost:
         async with self._redis.pipeline(transaction=False) as pipeline:
             for (identity, bucket_start), ids in groups.items():
                 arguments: list[str | int] = [
-                    f"outpost:state:{identity}",
-                    f"outpost:pending:{identity}:{bucket_start}",
+                    f"{KEY_VERSION}:state:{identity}",
+                    f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
                     identity,
                     self._channel,
                     _generate_epoch(),
@@ -937,7 +940,7 @@ class Outpost:
         assert self._read_state is not None
         epoch = _generate_epoch()
         state = await self._read_state(
-            keys=[f"outpost:state:{customer}"],
+            keys=[f"{KEY_VERSION}:state:{customer}"],
             args=[epoch],
         )
         return decode_state(state)
@@ -1197,7 +1200,9 @@ class Outpost:
         reducer_id = identity[len(customer) + 1 :]
         assert self._redis is not None
         for bucket_start in sealed:
-            ids = await self._redis.hkeys(f"outpost:pending:{identity}:{bucket_start}")
+            ids = await self._redis.hkeys(
+                f"{KEY_VERSION}:pending:{identity}:{bucket_start}"
+            )
             for offset in range(0, len(ids), CONFIRM_BATCH):
                 batch = [
                     external_id.decode()
@@ -1268,7 +1273,7 @@ class Outpost:
         assert self._redis is not None
         assert self._apply_snapshot is not None
         assert self._confirm_script is not None
-        key = f"outpost:state:{identity}"
+        key = f"{KEY_VERSION}:state:{identity}"
         snapshot_arguments: list[str | int | float] = [
             identity,
             self._channel,
@@ -1301,7 +1306,10 @@ class Outpost:
                 async with self._redis.pipeline(transaction=True) as pipeline:
                     for bucket_start, ids in confirmed.items():
                         await self._confirm_script(
-                            keys=[key, f"outpost:pending:{identity}:{bucket_start}"],
+                            keys=[
+                                key,
+                                f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
+                            ],
                             args=[
                                 identity,
                                 self._channel,

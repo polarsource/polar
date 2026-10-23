@@ -530,7 +530,7 @@ class LocalState:
     state: ReducerState | None = None
     # Uncontended, the lock is taken without yielding to the event loop.
     lock: anyio.Lock = dataclasses.field(
-        default_factory=lambda: anyio.Lock(fast_acquire=True)
+        default_factory=functools.partial(anyio.Lock, fast_acquire=True)
     )
     missing: bool = False
     changed: anyio.Event = dataclasses.field(default_factory=anyio.Event)

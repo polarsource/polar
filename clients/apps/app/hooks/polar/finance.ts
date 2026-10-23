@@ -85,6 +85,47 @@ export const usePayoutEstimate = (organizationId?: string) => {
   })
 }
 
+const COOLDOWN_PAYOUT_STATUSES: schemas['PayoutStatus'][] = [
+  'pending',
+  'in_transit',
+  'succeeded',
+  'failed',
+  'held',
+]
+
+export const useNextPayoutAt = (account?: schemas['Account']) => {
+  const { polar } = usePolarClient()
+
+  return useQuery({
+    queryKey: ['finance', account?.id, 'payouts', 'latest'],
+    queryFn: account
+      ? () =>
+          unwrap(
+            polar.GET('/v1/payouts/', {
+              params: {
+                query: {
+                  account_id: account.id,
+                  limit: 1,
+                  sorting: ['-created_at'],
+                  status: COOLDOWN_PAYOUT_STATUSES,
+                },
+              },
+            }),
+          )
+      : skipToken,
+    select: (data) => {
+      const latest = data.items[0]
+      if (!latest || !account) {
+        return null
+      }
+      const nextPayoutAt = new Date(
+        new Date(latest.created_at).getTime() + account.payout_interval * 1000,
+      )
+      return nextPayoutAt > new Date() ? nextPayoutAt : null
+    },
+  })
+}
+
 export const useCreatePayout = (organizationId?: string) => {
   const { polar } = usePolarClient()
 

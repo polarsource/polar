@@ -19,6 +19,8 @@ from .checkout_link_product import CheckoutLinkProduct
 from .checkout_product import CheckoutProduct
 from .compass_thread import CompassThread
 from .compass_thread_message import CompassThreadMessage
+from .credit_note import CreditNote
+from .credit_note_item import CreditNoteItem
 from .custom_field import CustomField
 from .customer import Customer
 from .customer_email_verification import CustomerEmailVerification
@@ -161,6 +163,8 @@ __all__ = [
     "CheckoutProduct",
     "CompassThread",
     "CompassThreadMessage",
+    "CreditNote",
+    "CreditNoteItem",
     "CustomField",
     "Customer",
     "CustomerEmailVerification",

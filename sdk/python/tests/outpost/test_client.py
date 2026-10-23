@@ -46,6 +46,7 @@ from polar.outpost.client import (
     UnavailableRedisError,
     _backoff_delay,
     _is_connection_error,
+    _NotReadyError,
     _number,
     connect_websocket,
     decode_state,
@@ -2212,7 +2213,16 @@ async def test_snapshot_redis_error_reconnects_and_keeps_serving(
                 await anyio.lowlevel.checkpoint()
 
         await outpost.actor(external_customer_id="alice")
-        meter = await outpost.meter(meter_id="meter", external_customer_id="alice")
+        # Once reconnected, the snapshot can arrive after the test's short SNAPSHOT_TIMEOUT.
+        with anyio.fail_after(1):
+            while True:
+                try:
+                    meter = await outpost.meter(
+                        meter_id="meter", external_customer_id="alice"
+                    )
+                    break
+                except _NotReadyError:
+                    pass
         assert meter is not None and meter.consumed_units == 3
         await outpost.track(
             {

@@ -219,6 +219,17 @@ class LicenseKeyWithActivations(LicenseKeyRead):
     activations: list[LicenseKeyActivationBase]
 
 
+class LicenseKeyActivationWithConditions(LicenseKeyActivationBase):
+    conditions: Annotated[
+        dict[str, str | int | float | bool],
+        Field(description="Conditions stored when the activation was created."),
+    ]
+
+
+class LicenseKeyWithActivationConditions(LicenseKeyRead):
+    activations: list[LicenseKeyActivationWithConditions]
+
+
 class LicenseKeySubscription(IDSchema):
     status: Annotated[SubscriptionStatus, SubscriptionBase.model_fields["status"]]
     current_period_start: Annotated[

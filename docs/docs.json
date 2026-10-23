@@ -112,7 +112,8 @@
                 ]
               },
               "features/usage-based-billing/meters",
-              "features/usage-based-billing/credits"
+              "features/usage-based-billing/credits",
+              "features/outpost"
             ]
           },
           {

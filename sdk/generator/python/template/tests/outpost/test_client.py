@@ -2082,7 +2082,7 @@ async def test_state_lives_a_day_refreshed_by_reads_writes_and_confirmations(
     snapshots["external:alice"] = ALICE_SNAPSHOT
     key = "outpost:state:external:alice:tokens"
     written = datetime.datetime.fromisoformat("2026-10-12T12:10:00Z")
-    event = {
+    event: EventInput = {
         "name": "call",
         "external_id": f"event-{next(_ids)}",
         "external_customer_id": "alice",

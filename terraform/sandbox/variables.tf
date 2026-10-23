@@ -500,4 +500,5 @@ variable "slo_report_slack_bot_token" {
   description = "Slack Bot Token, shared with production"
   type        = string
   sensitive   = true
+  default     = ""
 }

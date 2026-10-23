@@ -53,14 +53,10 @@ class ClaimGrant(AgentGrant):
         ):
             raise SlowDownError()
 
-        if agent.claim_token_expires_at is not None and (
-            agent.claim_token_expires_at <= now
-        ):
-            raise ExpiredTokenError()
-
         if agent.status == AgentStatus.unclaimed:
-            if agent.claim_expires_at is not None and agent.claim_expires_at <= now:
-                raise ExpiredTokenError()
+            for expires_at in (agent.claim_token_expires_at, agent.claim_expires_at):
+                if expires_at is not None and expires_at <= now:
+                    raise ExpiredTokenError()
             raise AuthorizationPendingError()
 
         self.agent = agent

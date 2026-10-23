@@ -172,3 +172,18 @@ class TestClaimGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
+    @pytest.mark.usefixtures("agent_sign_up_enabled")
+    async def test_claimed_after_claim_token_expiry(
+        self, save_fixture: SaveFixture, client: AsyncClient, user: User
+    ) -> None:
+        await create_claim_agent(
+            save_fixture,
+            status=AgentStatus.claimed,
+            claimed_by_user=user,
+            claimed_at=utc_now(),
+            claim_token_expires_at=utc_now() - timedelta(seconds=1),
+        )
+
+        response = await client.post("/v1/oauth2/token", data=POLL)
+
+        assert response.status_code == 200

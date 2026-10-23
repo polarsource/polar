@@ -74,6 +74,8 @@ class JWTBearerGrant(AgentGrant):
             raise InvalidGrantError()
 
         # `iat` has whole seconds: an assertion minted in the claim's second passes.
+        # Pre-claim assertions are only minted at sign-up, which a claim can't share
+        # a second with: it needs a fresh human login and the code.
         assert agent.claimed_at is not None
         if issued_at < agent.claimed_at.replace(microsecond=0):
             raise InvalidGrantError()

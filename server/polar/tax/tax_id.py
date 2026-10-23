@@ -471,6 +471,14 @@ class MUTANValidator(ValidatorProtocol):
         return number
 
 
+class ZAVATValidator(ValidatorProtocol):
+    def validate(self, number: str, country: str) -> str:
+        number = number.replace(" ", "").replace("-", "").replace(".", "").strip()
+        if len(number) != 10 or not number.isdigit() or not number.startswith("4"):
+            raise InvalidTaxID(number, country)
+        return number
+
+
 def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
     match tax_id_type:
         case TaxIDFormat.ae_trn:
@@ -505,6 +513,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return INGSTValidator()
         case TaxIDFormat.vn_tin:
             return VNTINValidator()
+        case TaxIDFormat.za_vat:
+            return ZAVATValidator()
         case TaxIDFormat.mu_tan:
             return MUTANValidator()
         case _:

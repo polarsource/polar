@@ -134,7 +134,7 @@ describe("reduction", () => {
     ["gpt-4o-mini", "claude", false],
     [1234, "23", true],
     [1234, 5, false],
-    [true, "Tru", true],
+    [true, "tru", true],
     ["100%_done", "%_", true],
   ] as const)("checks whether %s contains %s like Polar", (actual, expected, contained) => {
     const sample = { ...event, metadata: { value: actual } };

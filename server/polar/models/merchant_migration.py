@@ -102,8 +102,14 @@ class MerchantMigration(RecordModel):
 
     @property
     def source_connected(self) -> bool:
-        """Whether the source provider has been connected (credentials stored)."""
-        return bool(self.source_credentials.get("api_key_encrypted"))
+        """Whether the source provider has been connected (credentials stored).
+
+        A completed migration counts as connected: closing it deletes the key.
+        """
+        return (
+            bool(self.source_credentials.get("api_key_encrypted"))
+            or self.step == MerchantMigrationStep.completed
+        )
 
     @property
     def source(self) -> dict[str, Any] | None:

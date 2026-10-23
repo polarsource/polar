@@ -17,6 +17,9 @@ from polar.models import (
     ExternalEvent,
     Member,
     MemberSession,
+    MerchantMigration,
+    MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
     OAuth2State,
     OAuth2Token,
     Organization,
@@ -240,6 +243,15 @@ async def create_deletable_records(
     )
     checkout.customer_email = "john@example.com"
     await save_fixture(checkout)
+    await save_fixture(
+        MerchantMigration(
+            organization=organization,
+            source_platform=MerchantMigrationSourcePlatform.stripe,
+            step=MerchantMigrationStep.activate_subscriptions,
+            modified_at=deletable_at
+            - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
+        )
+    )
 
 
 @pytest.mark.anyio
@@ -377,6 +389,15 @@ class TestCheck:
             response=None,
             created_at=deletable_at
             - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        )
+        await save_fixture(
+            MerchantMigration(
+                organization=organization,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+                step=MerchantMigrationStep.completed,
+                modified_at=deletable_at
+                - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
+            )
         )
 
         invariant = ExpiredRecordsNotDeletedInvariant(session)

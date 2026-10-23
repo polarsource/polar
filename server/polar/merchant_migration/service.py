@@ -172,6 +172,7 @@ _MIGRATION_STEP_BY_PAN_STEP = {
 
 # One Stripe round trip per customer, so a whole catalog can't be one job.
 CARD_VERIFICATION_BATCH_SIZE = 25
+CLOSE_DELETE_BATCH_SIZE = 1000
 
 
 class StripeSourceCredentials(TypedDict):
@@ -1407,6 +1408,48 @@ class MerchantMigrationService:
             update_dict={"operation": self._failed_operation(migration, error)},
             flush=flush,
         )
+
+    async def close_idle(
+        self, session: AsyncSession, migration_id: UUID, *, idle_since: datetime
+    ) -> bool:
+        """Take one bounded step towards closing a migration with no activity
+        since ``idle_since``, and return whether it changed anything.
+
+        First delete the records never imported, one batch per call. Then, in a
+        single call, delete the stored source key and mark the migration
+        completed, so no other step ever sees a migration without its key that
+        isn't completed. Call it again, in a new transaction, until it returns
+        False. Imported records stay: they map source objects to their Polar
+        counterparts. Each call holds the row lock `start_cutover` takes.
+        """
+        repository = MerchantMigrationRepository.from_session(session)
+        migration = await repository.get_by_id(migration_id, for_update=True)
+        if (
+            migration is None
+            or migration.step == MerchantMigrationStep.completed
+            or (migration.modified_at or migration.created_at) >= idle_since
+            or self._operation_blocks_new_work(migration)
+        ):
+            return False
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        if await record_repository.delete_pending_batch(
+            migration.id, batch_size=CLOSE_DELETE_BATCH_SIZE
+        ):
+            return True
+
+        await repository.update(
+            migration,
+            update_dict={
+                "source_credentials": {
+                    key: value
+                    for key, value in migration.source_credentials.items()
+                    if key != "api_key_encrypted"
+                },
+                "step": MerchantMigrationStep.completed,
+            },
+        )
+        return True
 
     def _operation_blocks_new_work(self, migration: MerchantMigration) -> bool:
         operation = migration.operation

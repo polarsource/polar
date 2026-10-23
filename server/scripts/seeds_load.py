@@ -132,6 +132,9 @@ from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
 )
 from scripts.seed_polar_for_polar import (
+    MONTHLY_PRODUCTS as POLAR_SELF_MONTHLY_PRODUCTS,
+)
+from scripts.seed_polar_for_polar import (
     PRODUCTS as POLAR_SELF_PRODUCTS,
 )
 from tests.fixtures.database import save_fixture_factory
@@ -1091,6 +1094,7 @@ async def _seed_polar_self_billing_catalog(
         price_amount = product_data["price_amount"]
         benefit_descriptions = product_data["benefits"]
         visibility_value = product_data.get("visibility")
+        recurring_interval = product_data.get("recurring_interval", "month")
         visibility = (
             Visibility(visibility_value)
             if isinstance(visibility_value, str)
@@ -1101,6 +1105,7 @@ async def _seed_polar_self_billing_catalog(
         assert isinstance(metadata, dict)
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
+        assert isinstance(recurring_interval, str)
 
         price_create: ProductPriceFixedCreate
         price_create = ProductPriceFixedCreate(
@@ -1116,7 +1121,7 @@ async def _seed_polar_self_billing_catalog(
                 name=name,
                 description=description,
                 organization_id=organization.id,
-                recurring_interval=SubscriptionRecurringInterval.month,
+                recurring_interval=SubscriptionRecurringInterval(recurring_interval),
                 prices=[price_create],
                 metadata=metadata,
                 visibility=visibility,
@@ -2859,7 +2864,7 @@ WEBHOOK_EVENTS: list[WebhookEventType] = [
 ]
 SERVER_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 WEBHOOK_SECRET_ENV_KEY = "POLAR_POLAR_WEBHOOK_SECRET"
-SCALE_PRODUCT_NAME = str(POLAR_SELF_PRODUCTS[-1]["name"])
+SCALE_PRODUCT_NAME = str(POLAR_SELF_MONTHLY_PRODUCTS[-1]["name"])
 
 
 def _write_webhook_secret_to_env(secret: str) -> None:

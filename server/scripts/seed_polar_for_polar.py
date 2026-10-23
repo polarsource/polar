@@ -109,7 +109,7 @@ BENEFITS: list[dict[str, object]] = [
     },
 ]
 
-PRODUCTS: list[dict[str, object]] = [
+MONTHLY_PRODUCTS: list[dict[str, object]] = [
     {
         "name": "Pro",
         "description": "For entrepreneurs & early teams.",
@@ -160,6 +160,30 @@ PRODUCTS: list[dict[str, object]] = [
             "Single Sign-On",
         ],
     },
+]
+
+ANNUAL_PRICE_MONTHS = 11
+
+
+def _annual_variant(product: dict[str, object]) -> dict[str, object]:
+    name = product["name"]
+    price_amount = product["price_amount"]
+    metadata = product["metadata"]
+    assert isinstance(name, str)
+    assert isinstance(price_amount, int)
+    assert isinstance(metadata, dict)
+    return {
+        **product,
+        "name": f"{name} (Annual)",
+        "recurring_interval": "year",
+        "price_amount": price_amount * ANNUAL_PRICE_MONTHS,
+        "metadata": {**metadata, "tier": name},
+    }
+
+
+PRODUCTS: list[dict[str, object]] = [
+    *MONTHLY_PRODUCTS,
+    *(_annual_variant(product) for product in MONTHLY_PRODUCTS),
 ]
 
 
@@ -274,12 +298,14 @@ async def _seed_products(
         price_amount = product["price_amount"]
         benefit_descriptions = product["benefits"]
         desired_visibility = product.get("visibility", "public")
+        recurring_interval = product.get("recurring_interval", "month")
         assert isinstance(name, str)
         assert desired_description is None or isinstance(desired_description, str)
         assert isinstance(desired_metadata, dict)
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
         assert desired_visibility in ("draft", "private", "public")
+        assert recurring_interval in ("month", "year")
 
         desired_benefit_ids: list[str] = []
         for description in benefit_descriptions:
@@ -314,7 +340,7 @@ async def _seed_products(
             created = await polar.products.create(
                 name=name,
                 description=desired_description,
-                recurring_interval="month",
+                recurring_interval=recurring_interval,
                 prices=[price],
                 metadata=desired_metadata,
                 visibility=desired_visibility,

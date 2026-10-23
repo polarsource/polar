@@ -467,7 +467,6 @@ class Settings(BaseSettings):
     POLAR_ACCESS_TOKEN: str = ""
     POLAR_WEBHOOK_SECRET: str = ""
     POLAR_ORGANIZATION_ID: str = ""
-    POLAR_FREE_PRODUCT_ID: str = ""
     # Scale plan product, used by the Startup Program to grant a 100% discount
     POLAR_SCALE_PRODUCT_ID: str = ""
     POLAR_API_URL: str = "https://api.polar.sh"
@@ -478,7 +477,6 @@ class Settings(BaseSettings):
             [
                 self.POLAR_ACCESS_TOKEN,
                 self.POLAR_ORGANIZATION_ID,
-                self.POLAR_FREE_PRODUCT_ID,
             ]
         )
 

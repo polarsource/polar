@@ -3,7 +3,6 @@ from typing import Any
 
 from fastapi import Depends, Request
 
-from polar.agent.dependencies import agent_sign_up_enabled
 from polar.kit.signer import get_published_signers
 from polar.routing import APIRouter
 
@@ -37,7 +36,6 @@ async def well_known_openid_configuration(
 @router.get(
     "/oauth-protected-resource",
     name="well_known.oauth_protected_resource",
-    dependencies=[Depends(agent_sign_up_enabled)],
 )
 async def well_known_oauth_protected_resource() -> dict[str, Any]:
     return get_protected_resource_metadata().model_dump()

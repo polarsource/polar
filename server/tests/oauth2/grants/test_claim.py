@@ -8,7 +8,6 @@ from sqlalchemy import select
 from polar.agent.identity_assertion import decode_identity_assertion
 from polar.agent.service import CLAIM_TOKEN_TTL
 from polar.auth.scope import CLAIMED_AGENT_SCOPES
-from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import Session
 from polar.kit.utils import utc_now
@@ -21,11 +20,6 @@ from tests.fixtures.random_objects import create_agent
 
 CLAIM_TOKEN = "polar_act_claim"
 POLL = {"grant_type": CLAIM_GRANT_TYPE, "claim_token": CLAIM_TOKEN}
-
-
-@pytest.fixture
-def agent_sign_up_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "AGENT_SIGN_UP_ENABLED", True)
 
 
 async def create_claim_agent(save_fixture: SaveFixture, **kwargs: Any) -> Agent:
@@ -41,17 +35,6 @@ async def create_claim_agent(save_fixture: SaveFixture, **kwargs: Any) -> Agent:
 
 @pytest.mark.anyio
 class TestClaimGrant:
-    async def test_disabled(
-        self, save_fixture: SaveFixture, client: AsyncClient
-    ) -> None:
-        await create_claim_agent(save_fixture)
-
-        response = await client.post("/v1/oauth2/token", data=POLL)
-
-        assert response.status_code == 400
-        assert response.json()["error"] == "unsupported_grant_type"
-
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_pending(
         self, save_fixture: SaveFixture, client: AsyncClient
     ) -> None:
@@ -64,7 +47,6 @@ class TestClaimGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "authorization_pending"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_slow_down(
         self, save_fixture: SaveFixture, sync_session: Session, client: AsyncClient
     ) -> None:
@@ -77,7 +59,6 @@ class TestClaimGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "slow_down"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     @pytest.mark.parametrize(
         "agent_fields",
         [
@@ -104,7 +85,6 @@ class TestClaimGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "expired_token"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     @pytest.mark.parametrize(
         "agent_fields",
         [
@@ -125,7 +105,6 @@ class TestClaimGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_claimed(
         self,
         save_fixture: SaveFixture,
@@ -173,7 +152,6 @@ class TestClaimGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_claimed_after_claim_token_expiry(
         self, save_fixture: SaveFixture, client: AsyncClient, user: User
     ) -> None:

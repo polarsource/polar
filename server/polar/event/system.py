@@ -486,6 +486,7 @@ class OrderPaidMetadata(TypedDict):
     order_id: str
     product_id: NotRequired[str]
     billing_type: NotRequired[str]
+    billing_reason: NotRequired[str]
     amount: int
     currency: NotRequired[str]
     net_amount: NotRequired[int]

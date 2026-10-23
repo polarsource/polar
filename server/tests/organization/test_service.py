@@ -370,7 +370,9 @@ class TestCreate:
             == 0
         )
         create_customer_mock.assert_not_called()
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "organization.created", organization_id=organization.id
+        )
         posthog_mock.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))

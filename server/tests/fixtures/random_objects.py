@@ -9,6 +9,7 @@ from decimal import Decimal
 from typing import Any, Literal, TypeIs, Unpack
 
 import pytest
+from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
 
 from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
 from polar.enums import (
@@ -253,6 +254,8 @@ async def create_agent(
             "client_name": "Test Agent",
             "token_endpoint_auth_method": "none",
             "redirect_uris": [],
+            "grant_types": [JWT_BEARER_GRANT_TYPE],
+            "response_types": [],
             "scope": " ".join(sorted(UNCLAIMED_AGENT_SCOPES)),
         }
     )

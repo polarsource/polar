@@ -13717,6 +13717,11 @@ export interface components {
        */
       organization_id: string
       /**
+       * Name
+       * @description Optional name given when it was published.
+       */
+      name: string | null
+      /**
        * Version Hash
        * @description Hash identifying this version of the catalog.
        */
@@ -16389,6 +16394,11 @@ export interface components {
     Config: {
       /** @description Organization settings to update. Left untouched when omitted. */
       settings?: components['schemas']['ConfigSettings'] | null
+      /**
+       * Catalog Name
+       * @description Name of the catalog version this apply publishes, if it publishes one. It doesn't change the version hash.
+       */
+      catalog_name?: string | null
       /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.

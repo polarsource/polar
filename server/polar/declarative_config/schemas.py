@@ -351,6 +351,15 @@ class Config(Schema):
         default=None,
         description="Organization settings to update. Left untouched when omitted.",
     )
+    catalog_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=256,
+        description=(
+            "Name of the catalog version this apply publishes, if it publishes one. "
+            "It doesn't change the version hash."
+        ),
+    )
 
     meters: list[ConfigMeter] = Field(
         default_factory=list,

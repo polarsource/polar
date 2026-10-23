@@ -131,13 +131,6 @@ export default async function MainLayout({
       />
       <link
         rel="preload"
-        href="/fonts/Louize-Italic-205TF.otf"
-        as="font"
-        type="font/otf"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
         href="/fonts/GeistMono-Variable.woff2"
         as="font"
         type="font/woff2"

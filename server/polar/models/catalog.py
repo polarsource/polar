@@ -45,6 +45,7 @@ class Catalog(RecordModel):
     version_hash: Mapped[str | None] = mapped_column(
         String(64), nullable=True, default=None
     )
+    name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     status: Mapped[CatalogStatus] = mapped_column(
         StringEnum(CatalogStatus), nullable=False
     )

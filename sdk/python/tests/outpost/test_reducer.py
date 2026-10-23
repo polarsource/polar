@@ -141,14 +141,12 @@ def test_equality_filters_use_operand_values(
     [
         ("gpt-4o-mini", "4o", True),
         ("gpt-4o-mini", "claude", False),
-        (1234, "23", True),
-        (1234, 5, False),
-        (True, "Tru", True),
+        ("gpt-4o-mini", "GPT", False),
         ("100%_done", "%_", True),
     ],
 )
 def test_contains_filters_compare_strings(
-    actual: str | int | bool, expected: str | int, contained: bool
+    actual: str, expected: str, contained: bool
 ) -> None:
     event = Event("call", "customer", TIMESTAMP, {"value": actual})
     like: FilterClause = {"property": "value", "operator": "like", "value": expected}
@@ -159,6 +157,24 @@ def test_contains_filters_compare_strings(
     }
     assert get_matcher(like)(event) is contained
     assert get_matcher(not_like)(event) is not contained
+
+
+@pytest.mark.parametrize(
+    ("actual", "expected"), [(1234, "23"), (True, "True"), ("1234", 23), ("True", True)]
+)
+@pytest.mark.parametrize("operator", ["like", "not_like"])
+def test_contains_filters_match_strings_only(
+    actual: str | int | bool,
+    expected: str | int | bool,
+    operator: typing.Literal["like", "not_like"],
+) -> None:
+    event = Event("call", "customer", TIMESTAMP, {"value": actual})
+    clause: FilterClause = {
+        "property": "value",
+        "operator": operator,
+        "value": expected,
+    }
+    assert get_matcher(clause)(event) is False
 
 
 @pytest.mark.parametrize("operator", ["like", "not_like"])

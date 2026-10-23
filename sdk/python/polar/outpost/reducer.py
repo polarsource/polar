@@ -90,16 +90,6 @@ class BucketStatistics:
 Updates: typing.TypeAlias = dict[tuple[str, str, int], BucketStatistics]
 BUCKET_SIZE = 300_000_000
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
-
-
-def contains(actual: typing.Any, expected: typing.Any) -> bool:
-    return str(expected) in str(actual)
-
-
-def not_contains(actual: typing.Any, expected: typing.Any) -> bool:
-    return str(expected) not in str(actual)
-
-
 FILTER_OPERATORS = {
     "eq": operator.eq,
     "ne": operator.ne,
@@ -107,8 +97,6 @@ FILTER_OPERATORS = {
     "gte": operator.ge,
     "lt": operator.lt,
     "lte": operator.le,
-    "like": contains,
-    "not_like": not_contains,
 }
 
 
@@ -122,16 +110,28 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
     if is_filter_clause(clause):
         expected = clause["value"]
         expected_type = type(expected)
-        filter_operator = FILTER_OPERATORS[clause["operator"]]
         read = get_property_reader(clause["property"])
 
-        if filter_operator in (operator.eq, operator.ne, contains, not_contains):
+        if clause["operator"] in ("like", "not_like"):
+            # Polar compares strings; a number or boolean on either side matches nothing.
+            if not isinstance(expected, str):
+                return lambda event: False
+            contains = clause["operator"] == "like"
 
-            def value_matcher(event: Event) -> bool:
+            def contains_matcher(event: Event) -> bool:
+                actual = read(event)
+                return isinstance(actual, str) and (expected in actual) is contains
+
+            return contains_matcher
+
+        filter_operator = FILTER_OPERATORS[clause["operator"]]
+        if filter_operator in (operator.eq, operator.ne):
+
+            def equality_matcher(event: Event) -> bool:
                 actual = read(event)
                 return actual is not None and filter_operator(actual, expected)
 
-            return value_matcher
+            return equality_matcher
 
         if expected_type in (int, float):
             comparable: tuple[type, ...] = (int, float)

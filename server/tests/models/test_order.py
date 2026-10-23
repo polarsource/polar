@@ -1,7 +1,13 @@
 import pytest
 
 from polar.enums import TaxBehavior
-from polar.models import Customer, Product
+from polar.models import Customer, OrderItem, Product
+from polar.models.order import OrderStatus
+from polar.models.product_price import (
+    ProductPriceFixed,
+    ProductPriceSeatUnit,
+    ProductPriceUnit,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order
 
@@ -199,3 +205,86 @@ async def test_calculate_refunded_tax_from_subtotal(
     refund_tax_amount = order.calculate_refunded_tax_from_subtotal(refund_amount)
 
     assert refund_tax_amount == expected_refund_tax_amount
+
+
+class TestFormatPriceLabel:
+    def test_seat_plural(self) -> None:
+        product = Product(name="Acme Pro")
+        assert (
+            OrderItem.format_price_label(product, ProductPriceSeatUnit(), seats=14)
+            == "Acme Pro (14 seats)"
+        )
+
+    def test_seat_singular(self) -> None:
+        product = Product(name="Acme Pro")
+        assert (
+            OrderItem.format_price_label(product, ProductPriceSeatUnit(), seats=1)
+            == "Acme Pro (1 seat)"
+        )
+
+    def test_seat_without_count(self) -> None:
+        product = Product(name="Acme Pro")
+        assert (
+            OrderItem.format_price_label(product, ProductPriceSeatUnit(), seats=None)
+            == "Acme Pro"
+        )
+
+    def test_fixed(self) -> None:
+        product = Product(name="Acme Pro")
+        assert (
+            OrderItem.format_price_label(product, ProductPriceFixed(), seats=10)
+            == "Acme Pro"
+        )
+
+    def test_unit_default_plural(self) -> None:
+        product = Product(name="Acme Pro")
+        assert (
+            OrderItem.format_price_label(
+                product, ProductPriceUnit(), seats=None, units=3
+            )
+            == "Acme Pro (3 units)"
+        )
+
+    def test_unit_default_singular(self) -> None:
+        product = Product(name="Acme Pro")
+        assert (
+            OrderItem.format_price_label(
+                product, ProductPriceUnit(), seats=None, units=1
+            )
+            == "Acme Pro (1 unit)"
+        )
+
+    def test_unit_custom_label(self) -> None:
+        product = Product(name="Acme Pro")
+        price = ProductPriceUnit(
+            unit_label={"en": {"=1": "device", "other": "devices"}}
+        )
+        assert (
+            OrderItem.format_price_label(product, price, seats=None, units=3)
+            == "Acme Pro (3 devices)"
+        )
+        assert (
+            OrderItem.format_price_label(product, price, seats=None, units=1)
+            == "Acme Pro (1 device)"
+        )
+
+
+@pytest.mark.anyio
+class TestUpdateRefunds:
+    async def test_tax_only(
+        self, save_fixture: SaveFixture, customer: Customer
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            subtotal_amount=100_00,
+            tax_amount=20_00,
+        )
+
+        order.update_refunds(refunded_amount=0, refunded_tax_amount=20_00)
+
+        assert order.status == OrderStatus.paid
+        assert order.refunded_amount == 0
+        assert order.refunded_tax_amount == 20_00
+        assert order.refundable_amount == 100_00
+        assert order.refundable_tax_amount == 0

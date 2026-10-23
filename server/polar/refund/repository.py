@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -47,6 +47,17 @@ class RefundRepository(
             .order_by(Refund.created_at.asc())
         )
         return await self.get_all(statement)
+
+    async def get_reverted_tax_amount(
+        self, order_id: UUID, *, exclude_refund_id: UUID
+    ) -> int:
+        statement = select(func.coalesce(func.sum(Refund.tax_amount), 0)).where(
+            Refund.order_id == order_id,
+            Refund.id != exclude_refund_id,
+            Refund.status == RefundStatus.succeeded,
+            Refund.tax_transaction_processor_id.is_not(None),
+        )
+        return int((await self.session.execute(statement)).scalar_one())
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

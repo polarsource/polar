@@ -527,6 +527,8 @@ class OrganizationService:
                 ]
             ) from e
 
+        enqueue_job("organization.created", organization_id=organization.id)
+
         if is_agent(auth_subject):
             agent_repository = AgentRepository.from_session(session)
             agent = await agent_repository.set_organization(
@@ -559,8 +561,6 @@ class OrganizationService:
             role=OrganizationRole.owner,
             enqueue_polar_self_member=False,
         )
-
-        enqueue_job("organization.created", organization_id=organization.id)
 
         posthog.user_event(
             owner,

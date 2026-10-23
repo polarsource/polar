@@ -306,6 +306,14 @@ export default function ChangePlanPage({
     router.push(billingHref)
   }
 
+  const maybeShowConfirm = () => {
+    if (requiresCheckout) {
+      void performPlanChange()
+      return
+    }
+    showConfirm()
+  }
+
   const ctaLabel = requiresCheckout
     ? 'Continue to checkout'
     : isSelectedPlanFree
@@ -447,7 +455,7 @@ export default function ChangePlanPage({
         {selectedPlan && (
           <Box flexDirection="row-reverse" columnGap="s">
             <Button
-              onClick={showConfirm}
+              onClick={maybeShowConfirm}
               disabled={isSubmitting || isPlanBlocked(selectedPlan)}
               loading={isSubmitting}
               size="lg"

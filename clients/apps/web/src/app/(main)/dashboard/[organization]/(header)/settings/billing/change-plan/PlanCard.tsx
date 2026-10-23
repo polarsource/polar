@@ -14,6 +14,7 @@ const formatFee = (fee: schemas['OrganizationPlanFee']) =>
 export const PlanCard = ({
   plan,
   isCurrent,
+  isCurrentTier,
   isLocked,
   isSelected,
   onSelect,
@@ -22,6 +23,8 @@ export const PlanCard = ({
 }: {
   plan: schemas['OrganizationPlan']
   isCurrent: boolean
+  /** The org is on this plan's tier at another billing interval. */
+  isCurrentTier: boolean
   isLocked: boolean
   isSelected: boolean
   onSelect: () => void
@@ -33,6 +36,7 @@ export const PlanCard = ({
   const amount = plan.price?.amount ?? 0
   const currency = plan.price?.currency ?? 'usd'
   const disabled = isCurrent || isLocked
+  const showCurrent = isCurrent || isCurrentTier
   const hasOffer = startupProgramOffer != null && !isCurrent
   const offerMonths = startupProgramOffer?.monthsFree ?? 0
   return (
@@ -41,7 +45,7 @@ export const PlanCard = ({
       onClick={onSelect}
       disabled={disabled}
       className={twMerge(
-        'dark:border-polar-700 row-span-3 grid h-full w-full grid-rows-[subgrid] gap-y-8 rounded-2xl border bg-white p-8 text-left transition-colors dark:bg-transparent',
+        'dark:border-polar-700 row-span-3 grid h-full w-full grid-rows-subgrid gap-y-8 rounded-2xl border bg-white p-8 text-left transition-colors dark:bg-transparent',
         disabled
           ? 'dark:bg-polar-800 cursor-not-allowed border-gray-200 bg-gray-50 opacity-70'
           : isSelected
@@ -54,23 +58,23 @@ export const PlanCard = ({
           <Text variant="heading-xs" as="h3">
             {plan.name}
           </Text>
-          {isCurrent && <Pill color="gray">Current</Pill>}
+          {showCurrent && <Pill color="gray">Current</Pill>}
           {hasOffer && <Pill color="green">Free for {offerMonths} months</Pill>}
+          {plan.highlight && !showCurrent && !hasOffer && (
+            <Pill color="blue">Popular</Pill>
+          )}
           {annualMonthsFree != null && !hasOffer && (
             <Pill color="green">
               {annualMonthsFree} {annualMonthsFree === 1 ? 'month' : 'months'}{' '}
               free
             </Pill>
           )}
-          {plan.highlight && !isCurrent && !hasOffer && (
-            <Pill color="blue">Popular</Pill>
-          )}
         </Box>
         {plan.description && <Text color="muted">{plan.description}</Text>}
       </Box>
 
       <Box flexDirection="column" rowGap="s">
-        <Box alignItems="baseline" columnGap="m">
+        <Box alignItems="baseline" columnGap="xs">
           {hasOffer ? (
             <>
               <Text variant="heading-s" as="span">

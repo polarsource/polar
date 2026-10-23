@@ -3128,6 +3128,8 @@ def polar_self_env() -> None:
                     select(Product).where(
                         Product.organization_id == org.id,
                         Product.name == SCALE_PRODUCT_NAME,
+                        Product.recurring_interval
+                        == SubscriptionRecurringInterval.month,
                     )
                 )
             ).scalar_one_or_none()

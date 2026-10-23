@@ -6,6 +6,8 @@ import {
   defaultPlanInterval,
   filterPlansByInterval,
   isIntervalSwitch,
+  monthlyPlanAmount,
+  planForInterval,
 } from './planIntervals'
 
 const plan = (
@@ -79,6 +81,32 @@ describe('isIntervalSwitch', () => {
 
   it('is false from the free plan', () => {
     expect(isIntervalSwitch(free, proAnnual)).toBe(false)
+  })
+})
+
+describe('planForInterval', () => {
+  const plans = [free, proMonthly, proAnnual, scaleMonthly]
+
+  it('finds the same tier at the other interval', () => {
+    expect(planForInterval(proMonthly, plans, 'year')).toBe(proAnnual)
+  })
+
+  it('keeps plans without an interval', () => {
+    expect(planForInterval(free, plans, 'year')).toBe(free)
+  })
+
+  it('is null when the tier has no plan at that interval', () => {
+    expect(planForInterval(scaleMonthly, plans, 'year')).toBeNull()
+  })
+})
+
+describe('monthlyPlanAmount', () => {
+  it('spreads annual prices over twelve months', () => {
+    expect(monthlyPlanAmount(plan('Pro', 'year', 24000))).toBe(2000)
+  })
+
+  it('keeps monthly prices as-is', () => {
+    expect(monthlyPlanAmount(proMonthly)).toBe(2000)
   })
 })
 

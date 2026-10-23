@@ -23,6 +23,8 @@ import {
   defaultPlanInterval,
   filterPlansByInterval,
   isIntervalSwitch,
+  monthlyPlanAmount,
+  planForInterval,
 } from '@/utils/planIntervals'
 import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
@@ -115,6 +117,17 @@ export default function ChangePlanPage({
       subscription?.plan.recurring_interval,
       startupProgramPlan?.recurring_interval,
     ])
+  const handleIntervalChange = (next: PlanInterval) => {
+    setSelectedInterval(next)
+    const selected = plans.find((p) => planKey(p) === selectedPlanId)
+    if (!selected) return
+    const match = planForInterval(selected, plans, next)
+    const isSelectable =
+      match != null &&
+      !isPlanBlocked(match) &&
+      (!subscription || planKey(match) !== planKey(subscription.plan))
+    setSelectedPlanId(isSelectable ? planKey(match) : null)
+  }
   const visiblePlans = useMemo(
     () => (showIntervalToggle ? filterPlansByInterval(plans, interval) : plans),
     [plans, interval, showIntervalToggle],
@@ -140,9 +153,10 @@ export default function ChangePlanPage({
     if (isIntervalSwitch(subscription.plan, selectedPlan)) return 'switch'
     // Compare gross plan prices, not subscription.amount — subscription.amount
     // is the post-discount net (0 for a 100%-discounted Scale plan), which
-    // mislabels downgrades as upgrades.
-    const targetAmount = selectedPlan.price?.amount ?? 0
-    const currentAmount = subscription.plan.price?.amount ?? 0
+    // mislabels downgrades as upgrades. Normalize to a monthly price so an
+    // annual plan isn't compared against a monthly one at face value.
+    const targetAmount = monthlyPlanAmount(selectedPlan)
+    const currentAmount = monthlyPlanAmount(subscription.plan)
     if (targetAmount > currentAmount) return 'upgrade'
     if (targetAmount < currentAmount) return 'downgrade'
     return null
@@ -172,14 +186,14 @@ export default function ChangePlanPage({
       base = `You'll be redirected to checkout to add a payment method and complete the upgrade to ${selectedPlan.name}.`
     } else if (isSelectedPlanFree) {
       base = `Your subscription will be canceled at the end of the current period. You'll then be on the free plan with standard transaction fees.`
-    } else if (changeKind === 'switch') {
-      base = isChargedNow
-        ? `You'll be charged a prorated amount for the rest of the current period and switched to ${switchIntervalLabel} billing.`
-        : `Your plan will switch to ${switchIntervalLabel} billing at the end of the current period.`
-    } else if (changeKind === 'upgrade') {
-      base = `You'll be charged a prorated amount for the rest of the current period and switched to ${selectedPlan.name}.`
     } else {
-      base = `Your plan will switch to ${selectedPlan.name} at the end of the current period.`
+      const target =
+        changeKind === 'switch'
+          ? `${switchIntervalLabel} billing`
+          : selectedPlan.name
+      base = isChargedNow
+        ? `You'll be charged a prorated amount for the rest of the current period and switched to ${target}.`
+        : `Your plan will switch to ${target} at the end of the current period.`
     }
     // Discounts are scoped to a product and don't follow a plan switch.
     // Warn the admin so they don't expect the discount to carry over.
@@ -286,10 +300,7 @@ export default function ChangePlanPage({
       to_plan_amount_cents: selectedPlan.price?.amount ?? null,
     })
     toast({
-      title:
-        changeKind === 'downgrade' || (changeKind === 'switch' && !isChargedNow)
-          ? 'Plan change scheduled'
-          : 'Plan changed',
+      title: isChargedNow ? 'Plan changed' : 'Plan change scheduled',
       description: `You're now on the ${selectedPlan.name} plan.`,
     })
     router.push(billingHref)
@@ -319,69 +330,89 @@ export default function ChangePlanPage({
             <span>Back to Billing</span>
           </Link>
           <Box flexDirection="column" rowGap="s">
-            <Text variant="heading-s" as="h1">
-              Change plan
-            </Text>
-            <Text color="muted">
-              {isCurrentPlanCustom
-                ? 'You are on a custom plan. Send an email to support to change plan or discuss terms.'
-                : 'Pick a new plan for your Polar subscription. You can change again at any time.'}
-            </Text>
-          </Box>
-          {showIntervalToggle && (
-            <Box>
-              <SegmentedControl<PlanInterval>
-                options={intervals.map((value) => ({
-                  value,
-                  label: PLAN_INTERVAL_LABELS[value],
-                }))}
-                value={interval}
-                onChange={setSelectedInterval}
-              />
+            <Box
+              flexDirection={{ base: 'column', xl: 'row' }}
+              rowGap="xl"
+              columnGap="xl"
+              justifyContent="between"
+              alignItems="start"
+            >
+              <Box flexDirection="column" rowGap="s">
+                <Text variant="heading-s" as="h1">
+                  Change plan
+                </Text>
+                <Text color="muted">
+                  {isCurrentPlanCustom
+                    ? 'You are on a custom plan. Send an email to support to change plan or discuss terms.'
+                    : 'Pick a new plan for your Polar subscription. You can change again at any time.'}
+                </Text>
+              </Box>
+
+              {showIntervalToggle && (
+                <Box alignSelf={{ base: 'stretch', xl: 'auto' }}>
+                  <SegmentedControl<PlanInterval>
+                    options={intervals.map((value) => ({
+                      value,
+                      label: PLAN_INTERVAL_LABELS[value],
+                    }))}
+                    value={interval}
+                    onChange={handleIntervalChange}
+                    size="lg"
+                    variant="tabs"
+                  />
+                </Box>
+              )}
             </Box>
-          )}
+          </Box>
         </Box>
 
         {plansQuery.isLoading || subscriptionQuery.isLoading ? (
           <LoadingBox height={320} borderRadius="m" />
         ) : (
-          <Box
-            display="grid"
-            gridTemplateColumns={{
-              base: '1fr',
-              md: 'repeat(2, 1fr)',
-              xl: 'repeat(4, 1fr)',
-            }}
-            gridTemplateRows="repeat(3, auto)"
-            gap="l"
-          >
-            {visiblePlans.map((plan) => {
-              const key = planKey(plan)
-              const currentKey = subscription
-                ? planKey(subscription.plan)
-                : null
-              // Highlight the Scale plan with "Free for 12 months" when the
-              // org has an unclaimed Startup Program invitation.
-              const isStartupProgramTarget =
-                subscription?.startup_program_status === 'invited' &&
-                subscription.startup_program_scale_product_id != null &&
-                plan.product_id ===
-                  subscription.startup_program_scale_product_id
-              return (
-                <PlanCard
-                  key={key}
-                  plan={plan}
-                  isCurrent={key === currentKey}
-                  isLocked={isPlanBlocked(plan)}
-                  isSelected={key === selectedPlanId}
-                  onSelect={() => setSelectedPlanId(key)}
-                  startupProgramOffer={
-                    isStartupProgramTarget ? { monthsFree: 12 } : undefined
-                  }
-                  annualMonthsFree={annualMonthsFree(plan, plans)}
-                />
-              )
-            })}
+          <Box rowGap="l" flexDirection="column" alignItems="end">
+            <Box
+              alignSelf="stretch"
+              display="grid"
+              gridTemplateColumns={{
+                base: '1fr',
+                md: 'repeat(2, 1fr)',
+                xl: 'repeat(4, 1fr)',
+              }}
+              gridTemplateRows="repeat(3, auto)"
+              gap="l"
+            >
+              {visiblePlans.map((plan) => {
+                const key = planKey(plan)
+                const currentKey = subscription
+                  ? planKey(subscription.plan)
+                  : null
+                // Highlight the Scale plan with "Free for 12 months" when the
+                // org has an unclaimed Startup Program invitation.
+                const isStartupProgramTarget =
+                  subscription?.startup_program_status === 'invited' &&
+                  subscription.startup_program_scale_product_id != null &&
+                  plan.product_id ===
+                    subscription.startup_program_scale_product_id
+                return (
+                  <PlanCard
+                    key={key}
+                    plan={plan}
+                    isCurrent={key === currentKey}
+                    isCurrentTier={
+                      subscription != null &&
+                      isIntervalSwitch(subscription.plan, plan)
+                    }
+                    isLocked={isPlanBlocked(plan)}
+                    isSelected={key === selectedPlanId}
+                    onSelect={() => setSelectedPlanId(key)}
+                    startupProgramOffer={
+                      isStartupProgramTarget ? { monthsFree: 12 } : undefined
+                    }
+                    annualMonthsFree={annualMonthsFree(plan, plans)}
+                  />
+                )
+              })}
+            </Box>
           </Box>
         )}
 

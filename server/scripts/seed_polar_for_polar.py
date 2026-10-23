@@ -174,7 +174,6 @@ def _annual_variant(product: dict[str, object]) -> dict[str, object]:
     assert isinstance(metadata, dict)
     return {
         **product,
-        "name": f"{name} (Annual)",
         "recurring_interval": "year",
         "price_amount": price_amount * ANNUAL_PRICE_MONTHS,
         "metadata": {**metadata, "tier": name},
@@ -212,15 +211,15 @@ async def _existing_benefits(
 
 async def _existing_products(
     polar: PolarAsync, organization_id: str | None
-) -> dict[str, Product]:
-    by_name: dict[str, Product] = {}
+) -> dict[tuple[str, str | None], Product]:
+    by_name_and_interval: dict[tuple[str, str | None], Product] = {}
     async for product in polar.products.iter_list(
         page=1,
         limit=100,
         organization_id=organization_id,
     ):
-        by_name[product.name] = product
-    return by_name
+        by_name_and_interval[(product.name, product.recurring_interval)] = product
+    return by_name_and_interval
 
 
 async def _seed_benefits(
@@ -321,7 +320,7 @@ async def _seed_products(
                 )
             desired_benefit_ids.append(benefit.id)
 
-        current = existing.get(name)
+        current = existing.get((name, recurring_interval))
         if current is None:
             if dry_run:
                 typer.echo(

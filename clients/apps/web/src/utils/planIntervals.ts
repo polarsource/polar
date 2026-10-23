@@ -47,6 +47,24 @@ export const isIntervalSwitch = (from: Plan, to: Plan): boolean =>
   to.recurring_interval != null &&
   from.recurring_interval !== to.recurring_interval
 
+// The plan's same-tier equivalent at another interval; plans without an
+// interval (the free plan) show under every tab, so they carry over as-is.
+export const planForInterval = (
+  plan: Plan,
+  plans: Plan[],
+  interval: PlanInterval,
+): Plan | null =>
+  plan.recurring_interval == null
+    ? plan
+    : (plans.find(
+        (p) => p.tier === plan.tier && p.recurring_interval === interval,
+      ) ?? null)
+
+export const monthlyPlanAmount = (plan: Plan): number => {
+  const amount = plan.price?.amount ?? 0
+  return plan.recurring_interval === 'year' ? amount / 12 : amount
+}
+
 export const annualMonthsFree = (plan: Plan, plans: Plan[]): number | null => {
   if (plan.recurring_interval !== 'year' || !plan.price?.amount) return null
   const monthlyAmount = plans.find(

@@ -14,6 +14,7 @@ import {
   purchaseTopUp,
   type TopUp,
 } from '../polar'
+import { readOutpost } from '../outpost'
 
 const COOKIE = 'external_customer_id'
 
@@ -52,7 +53,20 @@ export async function getBalance() {
   const externalId = await getExternalCustomerId()
   if (!externalId) redirect('/')
 
-  return polar.actor({ externalCustomerId: externalId }).balance('tool_call')
+  const start = performance.now()
+  const { balance } = await polar
+    .actor({ externalCustomerId: externalId })
+    .balance('tool_call')
+  const readMs = performance.now() - start
+
+  return { balance, readMs, outpost: await readOutpost(externalId) }
+}
+
+export async function getOutpost() {
+  const externalId = await getExternalCustomerId()
+  if (!externalId) redirect('/')
+
+  return readOutpost(externalId)
 }
 
 export async function upgrade() {

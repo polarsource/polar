@@ -10,7 +10,7 @@ import {
   topUp,
   upgrade,
 } from './actions'
-import { CodePanel, type Outcomes } from './code-panel'
+import { CodePanel, type Outcomes, type OutpostRead } from './code-panel'
 import type { HighlightedSteps } from './highlight'
 import type { Step } from './steps'
 
@@ -121,6 +121,7 @@ export function Demo({
   const [claimError, setClaimError] = useState<string>()
   const [paywallServer, setPaywallServer] = useState<Server>()
   const [balance, setBalance] = useState<number>()
+  const [outpost, setOutpost] = useState<OutpostRead | null>(null)
   const [refreshing, setRefreshing] = useState(true)
   const [calling, setCalling] = useState(false)
   const [heldCount, setHeldCount] = useState(1)
@@ -144,6 +145,7 @@ export function Demo({
     setRefreshing(true)
     const result = await getBalance()
     setBalance(result.balance)
+    setOutpost(result)
     setOutcome(
       'balance',
       `balance('tool_call') → { balance: ${result.balance} }`,
@@ -504,7 +506,12 @@ export function Demo({
           )}
         </dialog>
       </main>
-      <CodePanel snippets={snippets} active={active} outcomes={outcomes} />
+      <CodePanel
+        snippets={snippets}
+        active={active}
+        outcomes={outcomes}
+        outpost={outpost}
+      />
     </>
   )
 }

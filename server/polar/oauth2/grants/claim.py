@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from datetime import timedelta
 from typing import Any
 
 from authlib.oauth2.rfc6749.errors import InvalidGrantError, InvalidRequestError
@@ -11,25 +12,14 @@ from authlib.oauth2.rfc8628 import (
 
 from polar.agent.identity_assertion import create_identity_assertion
 from polar.auth.scope import CLAIMED_AGENT_SCOPES
-from polar.kit.crypto import get_token_hash, get_token_hash_candidates
+from polar.kit.crypto import get_token_hash_candidates
 from polar.kit.utils import utc_now
 from polar.models import Agent
 from polar.models.agent import AgentStatus
-from polar.redis import Redis
 
 from ..constants import CLAIM_GRANT_TYPE, CLAIM_POLL_INTERVAL
 from ..sub_type import SubType
 from .agent import AgentGrant
-
-
-async def check_claim_poll_interval(redis: Redis, claim_token: str) -> None:
-    """Raise `slow_down` if the claim token was polled within the interval.
-
-    The grant runs synchronously, without Redis, so the endpoint calls this first.
-    """
-    key = f"agent_claim_poll:{get_token_hash(claim_token)}"
-    if not await redis.set(key, "1", nx=True, ex=CLAIM_POLL_INTERVAL):
-        raise SlowDownError()
 
 
 class ClaimGrant(AgentGrant):
@@ -56,6 +46,13 @@ class ClaimGrant(AgentGrant):
         self._validate_request_client(client)
 
         now = utc_now()
+        polled_at = agent.claim_polled_at
+        agent.claim_polled_at = now
+        if polled_at is not None and polled_at > now - timedelta(
+            seconds=CLAIM_POLL_INTERVAL
+        ):
+            raise SlowDownError()
+
         if agent.claim_token_expires_at is not None and (
             agent.claim_token_expires_at <= now
         ):

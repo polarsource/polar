@@ -16,7 +16,6 @@ from polar.models import Agent, OAuth2Token, User
 from polar.models.agent import AgentStatus
 from polar.oauth2.constants import CLAIM_GRANT_TYPE
 from polar.oauth2.sub_type import SubType
-from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_agent
 
@@ -131,7 +130,6 @@ class TestClaimGrant:
         save_fixture: SaveFixture,
         sync_session: Session,
         client: AsyncClient,
-        redis: Redis,
         user: User,
     ) -> None:
         claimed_at = utc_now()
@@ -169,8 +167,8 @@ class TestClaimGrant:
         assert claims.issued_at >= claimed_at.replace(microsecond=0)
         assert datetime.fromisoformat(json["assertion_expires"]) > claims.issued_at
 
-        await redis.flushall()
         response = await client.post("/v1/oauth2/token", data=POLL)
 
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
+

@@ -8,13 +8,11 @@ from polar.auth.dependencies import WebUserOrAnonymous
 from polar.auth.models import is_user
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 from polar.authz.service import get_accessible_org_ids
-from polar.config import settings
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import OAuth2Token, Organization
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
-from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from ..authorization_server import (
@@ -24,10 +22,8 @@ from ..authorization_server import (
     IntrospectionEndpoint,
     RevocationEndpoint,
 )
-from ..constants import CLAIM_GRANT_TYPE
 from ..dependencies import get_authorization_server, get_token
 from ..grants import AuthorizationCodeGrant
-from ..grants.claim import check_claim_poll_interval
 from ..schemas import (
     AuthorizeResponse,
     IntrospectTokenResponse,
@@ -253,17 +249,9 @@ async def consent(
 async def token(
     request: Request,
     authorization_server: AuthorizationServer = Depends(get_authorization_server),
-    redis: Redis = Depends(get_redis),
 ) -> Response:
     """Request an access token using a valid grant."""
-    form = await request.form()
-    claim_token = form.get("claim_token")
-    if (
-        settings.AGENT_SIGN_UP_ENABLED
-        and form.get("grant_type") == CLAIM_GRANT_TYPE
-        and isinstance(claim_token, str)
-    ):
-        await check_claim_poll_interval(redis, claim_token)
+    await request.form()
     return authorization_server.create_token_response(request)
 
 

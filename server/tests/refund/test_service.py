@@ -30,7 +30,7 @@ from polar.refund.service import (
     RefundPaymentTransactionNotFound,
 )
 from polar.refund.service import refund as refund_service
-from polar.tax.calculation import TaxCalculationService
+from polar.tax.calculation import TaxCalculationService, tax_calculation
 from polar.tax.calculation.base import AlreadyRevertedError
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
@@ -956,6 +956,71 @@ class TestUpdatedWebhooks(StripeRefund):
         assert updated_order.status == OrderStatus.paid
 
         refund_transaction_service_mock.revert.assert_awaited_once()
+
+
+@pytest.mark.anyio
+class TestTaxReversals:
+    @pytest.mark.parametrize("processor", [TaxProcessor.stripe, TaxProcessor.numeral])
+    async def test_tax_only_then_remaining_refund(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        processor: TaxProcessor,
+    ) -> None:
+        mocker.patch(
+            "polar.refund.service.tax_calculation_service", new=tax_calculation
+        )
+        provider = mocker.patch(
+            f"polar.tax.calculation.{processor.value}_tax_service.revert",
+            side_effect=["tax_refund_1", "tax_refund_2"],
+        )
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=10000,
+            tax_amount=2000,
+            tax_processor=processor,
+            tax_transaction_processor_id="tax_transaction_123",
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        for status in ("pending", "failed", "succeeded"):
+            ignored = await create_refund(
+                save_fixture,
+                order,
+                payment,
+                amount=0,
+                tax_amount=100,
+                status=status,
+                processor_id=f"ignored_{status}",
+            )
+            if status != "succeeded":
+                ignored.tax_transaction_processor_id = f"tax_refund_{status}"
+
+        refunds = []
+        for index, amount in enumerate((0, 10000)):
+            refund = await create_refund(
+                save_fixture,
+                order,
+                payment,
+                amount=amount,
+                tax_amount=1000,
+                processor_id=f"refund_{index}",
+            )
+            await refund_service._on_succeeded(session, refund)
+            refunds.append(refund)
+
+        assert provider.await_args_list == [
+            mocker.call("tax_transaction_123", str(refunds[0].id), 6000, 1000),
+            mocker.call("tax_transaction_123", str(refunds[1].id), 6000, 1000),
+        ]
+        assert refunds[0].tax_transaction_processor_id == "tax_refund_1"
+        assert refunds[1].tax_transaction_processor_id == "tax_refund_2"
+        assert order.refunded_amount == 10000
+        assert order.refunded_tax_amount == 2000
 
 
 @pytest.mark.anyio

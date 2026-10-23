@@ -532,10 +532,17 @@ class RefundService:
                 order.stripe_invoice_id is None  # Tax managed via Stripe Billing
                 and order.tax_transaction_processor_id
                 and order.tax_amount > 0
+                and refund.tax_transaction_processor_id is None
             ):
                 assert order.tax_processor is not None
                 assert order.billing_address is not None
                 assert order.product is not None
+                refund_repository = RefundRepository.from_session(session)
+                previous_reverted_tax_amount = (
+                    await refund_repository.get_reverted_tax_amount(
+                        order.id, exclude_refund_id=refund.id
+                    )
+                )
                 try:
                     transaction_id = await tax_calculation_service.revert(
                         order.tax_processor,
@@ -548,6 +555,7 @@ class RefundService:
                         tax_amount=order.tax_amount,
                         reverted_amount=refund.total_amount,
                         reverted_tax_amount=refund.tax_amount,
+                        previous_reverted_tax_amount=previous_reverted_tax_amount,
                     )
                     refund.tax_transaction_processor_id = transaction_id
                     session.add(refund)

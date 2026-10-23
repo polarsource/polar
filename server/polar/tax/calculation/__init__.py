@@ -254,17 +254,16 @@ class TaxCalculationService:
         tax_amount: int,
         reverted_amount: int,
         reverted_tax_amount: int,
-    ) -> str:
+        previous_reverted_tax_amount: int = 0,
+    ) -> str | None:
         """Reverse a recorded tax transaction for a customer refund.
 
-        For regular transactions, a positive tax-only refund reconstructs the
-        total reversal using the original tax-to-total ratio. For example,
-        refunding all 20 tax on a 100 sale plus 20 tax reverses the full 120
-        in the processor's ledger, including the sale amount. This does not
-        change the amount refunded to the customer.
-
-        Backfilled transactions instead record negative sale and tax amounts
-        directly, without applying the tax-only ratio.
+        Cumulative refunded tax determines the target reversal using the original
+        tax-to-total ratio. Only the increase from the previous target is reversed.
+        Refunding 10 tax on a 100 sale plus 20 tax reverses 60 in the processor's
+        ledger; refunding the remaining 10 tax reverses the remaining 60.
+        This includes synthetic sale reversals for backfilled transactions and
+        does not change the amount refunded to the customer.
 
         Args:
             processor: Processor holding the original transaction.
@@ -278,17 +277,32 @@ class TaxCalculationService:
             total_amount: Original sale total including tax, in currency minor
                 units.
             tax_amount: Original sale tax in currency minor units. Must be
-                positive when reconstructing a tax-only reversal.
+                positive.
             reverted_amount: Total customer refund including tax, in currency
                 minor units. Pass ``Refund.total_amount``, not ``Refund.amount``.
             reverted_tax_amount: Tax portion of the customer refund, in currency
                 minor units. Pass ``Refund.tax_amount``.
+            previous_reverted_tax_amount: Tax on other succeeded refunds with a
+                recorded processor reversal, in currency minor units.
 
         Returns:
             The processor's reversal ID, or a ``backfill_``-prefixed record ID
-            for a negative manual entry.
+            for a negative manual entry. None if the cumulative target does not
+            increase, including refunds with zero tax.
         """
         tax_processor_service = _get_tax_service(processor)
+
+        previous_target = round(
+            min(previous_reverted_tax_amount, tax_amount) * total_amount / tax_amount
+        )
+        cumulative_tax_amount = min(
+            previous_reverted_tax_amount + reverted_tax_amount, tax_amount
+        )
+        target = round(cumulative_tax_amount * total_amount / tax_amount)
+        reverted_amount = target - previous_target
+        if reverted_amount <= 0:
+            return None
+        reverted_tax_amount = cumulative_tax_amount - previous_reverted_tax_amount
 
         if transaction_id.startswith(_BACKFILL_REFERENCE_PREFIX):
             backfill_reference = await tax_processor_service.backfill(
@@ -301,9 +315,6 @@ class TaxCalculationService:
                 utc_now(),
             )
             return f"{_BACKFILL_REFERENCE_PREFIX}{backfill_reference}"
-
-        if reverted_amount == reverted_tax_amount and reverted_amount > 0:
-            reverted_amount = round(reverted_amount * total_amount / tax_amount)
 
         if reverted_amount >= total_amount:
             return await tax_processor_service.revert(transaction_id, reference)

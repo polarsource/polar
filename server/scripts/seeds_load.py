@@ -165,7 +165,6 @@ EXPECTED_ORGANIZATION_SLUGS = {
     "melted-sql",
     "polar",
     "seatbased-members-corp",
-    "seatbased-only-corp",
     "widget-industries",
 }
 
@@ -1771,41 +1770,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                 {
                     "email": "customer-with-members@polar.sh",
                     "name": "Customer With Members Inc",
-                    "seats_purchased": 5,
-                    "seats_allocated": 2,
-                },
-            ],
-        },
-        {
-            "name": "SeatBased Only Corp",
-            "slug": "seatbased-only-corp",
-            "email": "admin@polar.sh",
-            "website": "https://seatbased-only.com",
-            "bio": "Organization with seat-based pricing but members model disabled",
-            "status": OrganizationStatus.ACTIVE,
-            "details": {
-                "about": "Testing seat-based pricing without members model",
-                "switching": False,
-                "switching_from": None,
-                "product_description": "Team software licenses with simple seat billing",
-                "previous_annual_revenue": 0,
-            },
-            "feature_settings": {
-                "member_model_enabled": False,
-            },
-            "products": [
-                {
-                    "name": "Simple Team Plan",
-                    "description": "Per-seat team plan without member management",
-                    "recurring": SubscriptionRecurringInterval.month,
-                    "seat_based": True,
-                    "price_per_seat": 1500,  # $15 per seat
-                },
-            ],
-            "seat_based_customers": [
-                {
-                    "email": "customer-no-members@polar.sh",
-                    "name": "Customer Without Members Inc",
                     "seats_purchased": 5,
                     "seats_allocated": 2,
                 },

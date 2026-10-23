@@ -421,6 +421,50 @@ async def test_ingest_pipelines_buckets(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("flush_scripts", [False, True])
+async def test_ingest_writes_a_single_bucket_without_a_pipeline(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+    flush_scripts: bool,
+) -> None:
+    url, redis = redis_connection
+    await redis.hset(
+        "outpost:state:external:alice:tokens",
+        mapping={"cold_until": BUCKET, "credited:meter": 100},
+    )
+    async with Outpost(url, client=polar_client) as outpost:
+        assert outpost._redis is not None
+        # Redis no longer has the script cached: the write falls back to EVAL.
+        if flush_scripts:
+            await redis.script_flush()
+        monkeypatch.setattr(
+            outpost._redis,
+            "pipeline",
+            lambda **kwargs: pytest.fail("one bucket needs no pipeline"),
+        )
+        await outpost.track(
+            {
+                "name": "call",
+                "external_id": f"event-{next(_ids)}",
+                "external_customer_id": "alice",
+                "timestamp": TIMESTAMP,
+                "metadata": {"tokens": 3},
+            }
+        )
+        meter = await outpost.meter(meter_id="meter", external_customer_id="alice")
+        assert meter is not None
+        assert meter.consumed_units == 3
+        assert meter.balance == 97
+        assert (
+            await redis.hget(
+                "outpost:state:external:alice:tokens", f"bucket:{BUCKET}:count"
+            )
+            == b"1"
+        )
+
+
+@pytest.mark.anyio
 async def test_connection_id_is_retained_while_connected(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

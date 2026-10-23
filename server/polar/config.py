@@ -306,6 +306,9 @@ class Settings(BaseSettings):
     PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
     PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.5"
 
+    # TypeSafe AI (Jev)
+    TYPESAFE_API_KEY: str | None = None
+
     # Organization review website scraping. Firecrawl Cloud backs the JS-render
     # path of the collector: it renders JavaScript, follows redirects, and
     # egresses from Firecrawl's network rather than ours.

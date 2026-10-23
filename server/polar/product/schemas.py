@@ -1196,3 +1196,16 @@ BenefitPublicList = Annotated[
     BeforeValidator(_filter_benefit_public_list),
     Field(description="List of benefits granted by the product."),
 ]
+
+
+class ProductNameCheckRequest(Schema):
+    name: str = Field(min_length=1, max_length=64)
+
+
+class ProductNameCheck(Schema):
+    category: str | None = Field(
+        description="Acceptable Use Policy category the name suggests, if any."
+    )
+    phrase: str | None = Field(
+        description="The exact phrase that matched, when a word-list rule flagged it."
+    )

@@ -72,6 +72,9 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   )
 
   const getPayoutEstimate = useCallback(async () => {
+    setPayoutEstimate(null)
+    setErrorMessage(null)
+
     if (!canManageFinance || !canWithdraw || isPayoutIntervalLimited) {
       return
     }
@@ -98,10 +101,10 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   /* oxlint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
   useEffect(() => {
-    if (isShown) {
+    if (isShown && !isPending) {
       getPayoutEstimate()
     }
-  }, [isShown, getPayoutEstimate])
+  }, [isShown, isPending, getPayoutEstimate])
   /* oxlint-enable react-hooks/set-state-in-effect */
 
   const [loading, setLoading] = useState(false)
@@ -204,7 +207,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                 </div>
               </div>
             )}
-            {payoutEstimate && (
+            {payoutEstimate && !isPayoutIntervalLimited && (
               <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-8">
                   <div className="flex flex-col gap-2">

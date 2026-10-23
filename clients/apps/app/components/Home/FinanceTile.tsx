@@ -24,7 +24,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
     organization?.payout_account_id || undefined,
   )
   const { data: summary } = useTransactionsSummary(account?.id)
-  const { data: nextPayoutAt } = useNextPayoutAt(account)
+  const { nextPayoutAt } = useNextPayoutAt(account)
   const router = useRouter()
 
   const canWithdraw =
@@ -32,7 +32,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
     payoutAccount.is_payout_ready &&
     summary?.available_balance?.amount &&
     summary.available_balance.amount >= 1000 &&
-    !nextPayoutAt
+    nextPayoutAt === null
   const availableBalance = formatCurrency('compact')(
     summary?.available_balance.amount ?? 0,
     summary?.available_balance.currency ?? 'usd',

@@ -22,7 +22,7 @@ export default function Index() {
   const { data: account } = useOrganizationAccount(organization?.id)
   const { data: estimate } = usePayoutEstimate(organization?.id)
   const { data: summary } = useTransactionsSummary(account?.id)
-  const { data: nextPayoutAt, isPending: isNextPayoutAtPending } =
+  const { nextPayoutAt, isFetching: isNextPayoutAtFetching } =
     useNextPayoutAt(account)
   const { data: orders } = useOrders(organization?.id, { limit: 1 })
   const theme = useTheme()
@@ -79,7 +79,7 @@ export default function Index() {
             )}
           />
         </Details>
-        {isNextPayoutAtPending || nextPayoutAt ? null : (
+        {nextPayoutAt !== null || isNextPayoutAtFetching ? null : (
           <SlideToAction
             text="Slide To Withdraw"
             loadingText="Withdrawing..."

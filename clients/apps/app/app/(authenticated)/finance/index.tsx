@@ -43,7 +43,7 @@ export default function Finance() {
     refetch: refetchPayouts,
   } = usePayouts()
 
-  const { data: nextPayoutAt, refetch: refetchNextPayoutAt } =
+  const { nextPayoutAt, refetch: refetchNextPayoutAt } =
     useNextPayoutAt(account)
 
   const refresh = useCallback(() => {
@@ -63,7 +63,7 @@ export default function Finance() {
     payoutAccount.is_payout_ready &&
     summary?.available_balance?.amount &&
     summary.available_balance.amount >= 1000 &&
-    !nextPayoutAt
+    nextPayoutAt === null
   const availableBalance = formatCurrency('accounting')(
     summary?.available_balance.amount ?? 0,
     summary?.available_balance.currency ?? 'usd',

@@ -8,6 +8,7 @@ import {
   useQuery,
   UseQueryResult,
 } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 
 export const useOrganizationAccount = (organizationId?: string) => {
   const { polar } = usePolarClient()
@@ -95,8 +96,9 @@ const COOLDOWN_PAYOUT_STATUSES: schemas['PayoutStatus'][] = [
 
 export const useNextPayoutAt = (account?: schemas['Account']) => {
   const { polar } = usePolarClient()
+  const [now, setNow] = useState(() => Date.now())
 
-  return useQuery({
+  const { data, isError, isFetching, refetch } = useQuery({
     queryKey: ['finance', account?.id, 'payouts', 'latest'],
     queryFn: account
       ? () =>
@@ -113,17 +115,37 @@ export const useNextPayoutAt = (account?: schemas['Account']) => {
             }),
           )
       : skipToken,
-    select: (data) => {
-      const latest = data.items[0]
-      if (!latest || !account) {
-        return null
-      }
-      const nextPayoutAt = new Date(
-        new Date(latest.created_at).getTime() + account.payout_interval * 1000,
-      )
-      return nextPayoutAt > new Date() ? nextPayoutAt : null
-    },
   })
+
+  const cooldownEndsAt = useMemo(() => {
+    const latest = data?.items[0]
+    if (!latest || !account) {
+      return null
+    }
+    return new Date(
+      new Date(latest.created_at).getTime() + account.payout_interval * 1000,
+    )
+  }, [data, account])
+
+  useEffect(() => {
+    if (!cooldownEndsAt) {
+      return
+    }
+    const timeout = setTimeout(
+      () => setNow(Date.now()),
+      Math.max(cooldownEndsAt.getTime() - Date.now(), 0),
+    )
+    return () => clearTimeout(timeout)
+  }, [cooldownEndsAt])
+
+  const nextPayoutAt: Date | null | undefined =
+    !data || isError
+      ? undefined
+      : cooldownEndsAt && cooldownEndsAt.getTime() > now
+        ? cooldownEndsAt
+        : null
+
+  return { nextPayoutAt, isFetching, refetch }
 }
 
 export const useCreatePayout = (organizationId?: string) => {

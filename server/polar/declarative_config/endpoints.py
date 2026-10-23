@@ -1,7 +1,6 @@
 from fastapi import Depends, Query
 
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.meter.auth import MeterRead
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
@@ -38,6 +37,7 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
+                "missing a scope required by one of the sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -45,7 +45,7 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
     },
 )
 async def export(
-    auth_subject: MeterRead,
+    auth_subject: ConfigRead,
     organization_id: OrganizationID | None = Query(
         None,
         description=(
@@ -60,9 +60,12 @@ async def export(
 
     `config` has the shape plan and apply accept, without `organization_id`:
     planning it for the same organization without edits reports no changes.
-    Meters without an `external_id`, archived meters, meters that wouldn't pass
-    config validation, and meters beyond the config limit are listed in
-    `skipped`.
+    Resources without an `external_id`, archived ones, ones config can't express
+    (or that reference a skipped resource), and ones beyond the config limit are
+    listed in `skipped`, up to the config limit per section. Webhook endpoints
+    are not exported.
+
+    Requires the read or write scope of every exported section.
     """
     return await declarative_config_service.export(
         session, auth_subject, organization_id

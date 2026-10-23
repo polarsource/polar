@@ -1,5 +1,5 @@
 import { useCustomerPaymentMethods } from '@/hooks/queries/customerPortal'
-import { isFreePrice } from '@/utils/product'
+import { isPaymentSetupRequired } from '@/utils/paymentSetup'
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import type { Client, schemas } from '@polar-sh/client'
 import { useQueryClient } from '@tanstack/react-query'
@@ -15,7 +15,7 @@ export const useRequirePaymentMethod = (
   const queryClient = useQueryClient()
   const { data: paymentMethods, isPending } = useCustomerPaymentMethods(api)
 
-  const required = !subscription.prices.every(isFreePrice)
+  const required = isPaymentSetupRequired(subscription)
 
   const withPaymentMethod = useCallback(
     async (action: () => Promise<void>) => {

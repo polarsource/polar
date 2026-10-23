@@ -761,25 +761,36 @@ class Outpost:
             await self._warm_actor(parsed.external_customer_id)
             assert self._redis is not None
             writes: list[tuple[str, list[str | int | float]]] = []
-            async with self._redis.pipeline(transaction=False) as pipeline:
-                for (customer, reducer_id, bucket_start), statistics in updates.items():
-                    identity = f"{customer}:{reducer_id}"
-                    arguments: list[str | int | float] = [
-                        f"outpost:state:{identity}",
-                        f"outpost:pending:{identity}:{bucket_start}",
-                        identity,
-                        self._channel,
-                        _generate_epoch(),
-                        bucket_start,
-                        statistics.count,
-                        statistics.sum,
-                        statistics.min if statistics.min is not None else "",
-                        statistics.max if statistics.max is not None else "",
-                        typing.cast(str, event["external_id"]),
+            for (customer, reducer_id, bucket_start), statistics in updates.items():
+                identity = f"{customer}:{reducer_id}"
+                arguments: list[str | int | float] = [
+                    f"outpost:state:{identity}",
+                    f"outpost:pending:{identity}:{bucket_start}",
+                    identity,
+                    self._channel,
+                    _generate_epoch(),
+                    bucket_start,
+                    statistics.count,
+                    statistics.sum,
+                    statistics.min if statistics.min is not None else "",
+                    statistics.max if statistics.max is not None else "",
+                    typing.cast(str, event["external_id"]),
+                ]
+                writes.append((identity, arguments))
+            # Most events match one reducer: one EVALSHA writes its bucket. A pipeline only
+            # pays off for several writes, and closing it costs two extra event-loop turns.
+            if len(writes) == 1:
+                try:
+                    states = [
+                        await self._redis.evalsha(WRITE_BUCKET_SHA, 2, *writes[0][1])
                     ]
-                    writes.append((identity, arguments))
-                    pipeline.evalsha(WRITE_BUCKET_SHA, 2, *arguments)
-                states = await pipeline.execute(raise_on_error=False)
+                except NoScriptError as error:
+                    states = [error]
+            else:
+                async with self._redis.pipeline(transaction=False) as pipeline:
+                    for _, arguments in writes:
+                        pipeline.evalsha(WRITE_BUCKET_SHA, 2, *arguments)
+                    states = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for (identity, arguments), state in zip(writes, states, strict=True):
                 # Redis caches the script with the first EVAL, so this happens once per server.

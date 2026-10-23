@@ -79,7 +79,7 @@ const customer = { external_customer_id: "alice" };
 let sequence = 0;
 const eventId = () => `event-${++sequence}`;
 const meter = { ...customer, meter_id: "meter" };
-const key = "outpost:state:external:alice:tokens";
+const key = "outpost:v1:state:external:alice:tokens";
 const connectionId = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60";
 let redisServer: RedisServer;
 let redis: Redis;
@@ -285,7 +285,7 @@ it.each([
     meter_ids: [`meter-${i}`],
   }));
   for (let i = 0; i < bucketCount; i++) {
-    await redis.hset(`outpost:state:external:alice:tokens-${i}`, {
+    await redis.hset(`outpost:v1:state:external:alice:tokens-${i}`, {
       cold_until: bucket,
       [`credited:meter-${i}`]: 100,
     });
@@ -300,12 +300,12 @@ it.each([
       balance: 97,
     });
     expect(
-      await redis.hget(`outpost:state:external:alice:tokens-${i}`, `bucket:${bucket}:count`),
+      await redis.hget(`outpost:v1:state:external:alice:tokens-${i}`, `bucket:${bucket}:count`),
     ).toBe("1");
   }
   if (fail) {
     outpost["channel"] = "outpost:test:unsubscribed";
-    await redis.hset("outpost:state:external:alice:tokens-1", `bucket:${bucket}:sum`, "invalid");
+    await redis.hset("outpost:v1:state:external:alice:tokens-1", `bucket:${bucket}:sum`, "invalid");
     await expect(ingest(outpost, 2)).rejects.toBeInstanceOf(UnavailableRedisError);
     expect(execute).toHaveBeenCalledTimes(2);
     for (const i of [0, 2]) {
@@ -314,7 +314,7 @@ it.each([
         balance: 95,
       });
       expect(
-        await redis.hget(`outpost:state:external:alice:tokens-${i}`, `bucket:${bucket}:sum`),
+        await redis.hget(`outpost:v1:state:external:alice:tokens-${i}`, `bucket:${bucket}:sum`),
       ).toBe("5");
     }
   }
@@ -360,7 +360,7 @@ it("propagates snapshots, rejects older cutoffs, and counts a late write until P
     1,
     key,
     "external:alice:tokens",
-    "outpost:0:updates",
+    "outpost:v1:0:updates",
     "unused",
     bucket - BUCKET_SIZE,
     1,
@@ -483,13 +483,13 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     filter: { conjunction: "and", clauses: [] },
     aggregation: { func: "avg", property: "tokens" },
   });
-  const averageKey = "outpost:state:external:alice:average";
+  const averageKey = "outpost:v1:state:external:alice:average";
   await redis.eval(
     APPLY_SNAPSHOT_SCRIPT,
     1,
     key,
     "external:alice:tokens",
-    "outpost:0:updates",
+    "outpost:v1:0:updates",
     "epoch",
     bucket,
     20,
@@ -505,7 +505,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     1,
     averageKey,
     "external:alice:average",
-    "outpost:0:updates",
+    "outpost:v1:0:updates",
     "epoch",
     bucket,
     20,
@@ -521,7 +521,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     1,
     key,
     "external:alice:tokens",
-    "outpost:0:updates",
+    "outpost:v1:0:updates",
     "epoch",
     bucket,
     19,
@@ -567,7 +567,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     1,
     key,
     "external:alice:tokens",
-    "outpost:0:updates",
+    "outpost:v1:0:updates",
     "epoch",
     bucket + BUCKET_SIZE,
     21,
@@ -587,7 +587,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     (await first.meter({ ...customer, meter_id: "average-meter" }))?.consumed_units,
   ).toBeCloseTo(124 / 23);
   expect((await first.meter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(200);
-  expect(await redis.exists("outpost:state:customer:alice:tokens")).toBe(0);
+  expect(await redis.exists("outpost:v1:state:customer:alice:tokens")).toBe(0);
 });
 
 it("orders same-cutoff corrections at microsecond precision and keeps null extrema", async () => {
@@ -696,7 +696,7 @@ const seal = async (cutoff: number, count = 0, sum = 0): Promise<void> => {
     1,
     key,
     "external:alice:tokens",
-    "outpost:0:updates",
+    "outpost:v1:0:updates",
     "epoch",
     cutoff,
     cutoff + 1,
@@ -777,7 +777,7 @@ it("settles an event the previous SDK version left pending", async () => {
   const outpost = await warm();
   await outpost.track(usage("new", 10));
   // What WRITE_BUCKET used to store per event: count, sum, min and max, as strings.
-  await redis.hset(`outpost:pending:external:alice:tokens:${bucket}`, "old", '["1","7","7","7"]');
+  await redis.hset(`outpost:v1:pending:external:alice:tokens:${bucket}`, "old", '["1","7","7","7"]');
   await redis.hincrby(key, `pending:${bucket}:count`, 1);
   await redis.hincrbyfloat(key, `pending:${bucket}:sum`, 7);
   await outpost.confirm([usage("old", 7)]);

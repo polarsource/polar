@@ -21,7 +21,7 @@ REDUCERS = ["tokens", "calls", "cost"]
 
 
 def state_key(identity: str) -> str:
-    return f"outpost:state:{identity}"
+    return f"outpost:v1:state:{identity}"
 
 
 def identity_of(buckets: int) -> str:
@@ -38,7 +38,7 @@ _ids = itertools.count(1)
 
 
 def write_args(identity: str, bucket_start: int) -> list[str | int]:
-    pending_key = f"outpost:pending:{identity}:{bucket_start}"
+    pending_key = f"outpost:v1:pending:{identity}:{bucket_start}"
     return [
         state_key(identity),
         pending_key,

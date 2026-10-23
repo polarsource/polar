@@ -2,6 +2,7 @@ import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { extractApiErrorMessage } from '@/utils/api/errors'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
@@ -47,14 +48,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     [organization.capabilities.payouts],
   )
 
-  const { data: latestPayouts, isPending } = usePayouts(
-    canManageFinance ? account.id : undefined,
-    {
-      limit: 1,
-      sorting: ['-created_at'],
-      status: COOLDOWN_PAYOUT_STATUSES,
-    },
-  )
+  const {
+    data: latestPayouts,
+    isPending,
+    isFetching,
+  } = usePayouts(canManageFinance ? account.id : undefined, {
+    limit: 1,
+    sorting: ['-created_at'],
+    status: COOLDOWN_PAYOUT_STATUSES,
+  })
 
   const nextPayoutAt = useMemo(() => {
     const latest = latestPayouts?.items?.[0]
@@ -101,10 +103,10 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   /* oxlint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
   useEffect(() => {
-    if (isShown && !isPending) {
+    if (isShown && !isFetching) {
       getPayoutEstimate()
     }
-  }, [isShown, isPending, getPayoutEstimate])
+  }, [isShown, isFetching, getPayoutEstimate])
   /* oxlint-enable react-hooks/set-state-in-effect */
 
   const [loading, setLoading] = useState(false)
@@ -129,6 +131,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     })
 
     onSuccess?.(data.id)
+    getQueryClient().invalidateQueries({ queryKey: ['payouts'] })
   }, [organization, onSuccess])
 
   return (

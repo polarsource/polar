@@ -13,6 +13,7 @@ export const SUPPORTED_LOCALES = [
   'ja',
   'tr',
   'pl',
+  'zh-TW',
 ] as const
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE = 'en' satisfies SupportedLocale
@@ -70,4 +71,5 @@ export const LOCALE_NAMES: Record<SupportedLocale, string> = {
   ja: 'Japanese',
   tr: 'Turkish',
   pl: 'Polish',
+  'zh-TW': 'Chinese (Traditional, Taiwan)',
 }

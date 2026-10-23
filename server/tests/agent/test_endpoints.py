@@ -38,11 +38,6 @@ CODE = "123456"
 
 
 @pytest.fixture
-def agent_sign_up_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "AGENT_SIGN_UP_ENABLED", True)
-
-
-@pytest.fixture
 async def claim_agent(
     save_fixture: SaveFixture, organization: Organization, user: User
 ) -> Agent:
@@ -61,12 +56,6 @@ async def claim_agent(
 
 @pytest.mark.anyio
 class TestCreateIdentity:
-    async def test_disabled(self, client: AsyncClient) -> None:
-        response = await client.post("/v1/agent/identity", json={"type": "anonymous"})
-
-        assert response.status_code == 404
-
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_anonymous(self, client: AsyncClient, session: AsyncSession) -> None:
         response = await client.post(
             "/v1/agent/identity", json={"type": "anonymous", "name": "Claude"}
@@ -114,7 +103,6 @@ class TestCreateIdentity:
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("agent_sign_up_enabled")
 class TestStartClaim:
     @pytest.mark.parametrize(
         "agent_fields",
@@ -226,7 +214,6 @@ class TestStartClaim:
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("agent_sign_up_enabled")
 class TestGetClaim:
     @pytest.mark.auth
     async def test_valid(
@@ -250,7 +237,6 @@ class TestGetClaim:
 
 
 @pytest.mark.anyio
-@pytest.mark.usefixtures("agent_sign_up_enabled")
 class TestConfirmClaim:
     @pytest.mark.auth
     async def test_valid(
@@ -390,13 +376,7 @@ class TestConfirmClaim:
 
 @pytest.mark.anyio
 class TestAuthMd:
-    async def test_disabled(self, client: AsyncClient) -> None:
-        response = await client.get("/auth.md")
-
-        assert response.status_code == 404
-
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
-    async def test_enabled(self, client: AsyncClient) -> None:
+    async def test_valid(self, client: AsyncClient) -> None:
         response = await client.get("/auth.md")
 
         assert response.status_code == 200

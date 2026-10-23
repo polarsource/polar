@@ -97,8 +97,6 @@ class NotPermitted(PolarError):
 def get_resource_metadata_attribute() -> dict[str, str]:
     """The `WWW-Authenticate` pointer to our protected resource metadata (RFC 9728),
     which is how agents discover how to sign up."""
-    if not settings.AGENT_SIGN_UP_ENABLED:
-        return {}
     return {
         "resource_metadata": settings.generate_external_url(
             "/.well-known/oauth-protected-resource"

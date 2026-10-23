@@ -1,7 +1,5 @@
 import typing
 
-from polar.config import settings
-
 from .authorization_code import (
     AuthorizationCodeGrant,
     CodeChallenge,
@@ -28,9 +26,8 @@ def register_grants(server: "AuthorizationServer") -> None:
     )
     server.register_grant(RefreshTokenGrant)
     server.register_grant(WebGrant)
-    if settings.AGENT_SIGN_UP_ENABLED:
-        server.register_grant(JWTBearerGrant)
-        server.register_grant(ClaimGrant)
+    server.register_grant(JWTBearerGrant)
+    server.register_grant(ClaimGrant)
 
 
 __all__ = ["AuthorizationCodeGrant", "CodeChallenge", "register_grants"]

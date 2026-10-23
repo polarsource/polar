@@ -43,6 +43,7 @@ interface MetricChartBoxProps {
   previousData?: ParsedMetricsResponse
   interval: schemas['TimeInterval']
   className?: string
+  chartClassName?: string
   height?: number
   width?: number
   loading?: boolean
@@ -77,6 +78,7 @@ const MetricChartBox = ({
   previousData,
   interval,
   className,
+  chartClassName,
   height = 300,
   width,
   loading,
@@ -375,6 +377,7 @@ const MetricChartBox = ({
       <div
         className={twMerge(
           'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white',
+          chartClassName,
         )}
       >
         {loading ? (

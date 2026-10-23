@@ -4,7 +4,10 @@ import { useCatalogs } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Status, StatusColor, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { GraphicEqOutlined, KeyboardArrowDown } from '@polar-sh/orbit/icons'
+import {
+  SignalCellularAltOutlined,
+  KeyboardArrowDown,
+} from '@polar-sh/orbit/icons'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import {
   SidebarMenu,
@@ -80,7 +83,7 @@ export const CatalogVersionSelector = ({
             <DropdownMenuTrigger asChild>
               <SidebarMenuButton tooltip="Catalog version">
                 <Box as="span" color="text-secondary">
-                  <GraphicEqOutlined fontSize="inherit" />
+                  <SignalCellularAltOutlined fontSize="inherit" />
                 </Box>
                 <Text as="span" truncate>
                   {hasLive

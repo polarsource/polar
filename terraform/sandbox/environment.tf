@@ -145,4 +145,9 @@ module "backend_environment" {
   prometheus_config = local.prometheus_config
   polar_self_config = local.polar_self_config
   tinybird_config   = local.tinybird_config
+
+  # Token only: without POLAR_SLACK_CHANNEL, invariant failures don't post to Slack.
+  slo_report_config = {
+    slack_bot_token = var.slo_report_slack_bot_token
+  }
 }

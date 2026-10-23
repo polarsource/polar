@@ -176,7 +176,7 @@ locals {
     } : {},
   ) : {}
 
-  slo_report_environment_variables = var.slo_report_config != null ? {
+  slo_report_environment_variables = try(var.slo_report_config.slack_channel, null) != null ? {
     POLAR_SLACK_CHANNEL = var.slo_report_config.slack_channel
   } : {}
 

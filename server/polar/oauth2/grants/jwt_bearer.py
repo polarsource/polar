@@ -62,7 +62,11 @@ class JWTBearerGrant(AgentGrant):
         return 200, token, self.TOKEN_RESPONSE_HEADER
 
     def _get_agent(self, agent_id: UUID) -> Agent | None:
-        statement = self._get_agent_statement().where(Agent.id == agent_id)
+        statement = (
+            self._get_agent_statement()
+            .where(Agent.id == agent_id)
+            .with_for_update(of=Agent)
+        )
         result = self.server.session.execute(statement)
         return result.unique().scalar_one_or_none()
 

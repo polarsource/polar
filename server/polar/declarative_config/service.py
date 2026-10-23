@@ -234,7 +234,12 @@ class DeclarativeConfigService:
         if new_products:
             assert version_hash is not None
             await catalog_service.publish(
-                session, organization, live, new_products, version_hash
+                session,
+                organization,
+                live,
+                new_products,
+                version_hash,
+                name=config.catalog_name,
             )
         discount_results = await self._apply_discounts(
             session, auth_subject, organization, changes.discounts, product_ids

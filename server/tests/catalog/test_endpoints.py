@@ -23,6 +23,7 @@ async def catalogs(
     )
     live = Catalog(
         organization=organization,
+        name="Spring pricing",
         version_hash="b" * 64,
         status=CatalogStatus.live,
         published_at=now,
@@ -76,8 +77,9 @@ class TestList:
         json = response.json()
         assert json["pagination"]["total_count"] == 2
         assert [
-            (item["id"], item["status"], item["version_hash"]) for item in json["items"]
+            (item["id"], item["name"], item["status"], item["version_hash"])
+            for item in json["items"]
         ] == [
-            (str(live.id), "live", live.version_hash),
-            (str(archived.id), "archived", archived.version_hash),
+            (str(live.id), "Spring pricing", "live", live.version_hash),
+            (str(archived.id), None, "archived", archived.version_hash),
         ]

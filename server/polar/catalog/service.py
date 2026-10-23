@@ -146,6 +146,7 @@ class CatalogService:
         live: Catalog | None,
         new_products: Mapping[str, Product],
         version_hash: str,
+        name: str | None = None,
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
         catalog_product_repository = CatalogProductRepository.from_session(session)
@@ -167,6 +168,7 @@ class CatalogService:
         catalog = await repository.create(
             Catalog(
                 organization=organization,
+                name=name,
                 version_hash=version_hash,
                 status=CatalogStatus.live,
                 published_at=utc_now(),

@@ -12,6 +12,7 @@ class Catalog(IDSchema, TimestampedSchema):
     """A published version of an organization's product catalog."""
 
     organization_id: OrganizationID
+    name: str | None = Field(description="Optional name given when it was published.")
     version_hash: str = Field(
         description="Hash identifying this version of the catalog."
     )

@@ -20,7 +20,7 @@ export const UNKNOWN_ERROR_MESSAGE = 'Something went wrong. Please try again.'
 export const RATE_LIMITED_MESSAGE =
   'Too many attempts. Wait a few minutes and try again.'
 
-const getErrorType = (body: unknown): string | undefined =>
+export const getAgentClaimErrorType = (body: unknown): string | undefined =>
   typeof body === 'object' &&
   body !== null &&
   'error' in body &&
@@ -34,7 +34,7 @@ const failed = (problem: AgentClaimProblem): AgentClaimError => ({
 })
 
 export const getAgentClaimError = (body: unknown): AgentClaimError => {
-  switch (getErrorType(body)) {
+  switch (getAgentClaimErrorType(body)) {
     case 'AgentClaimInvalidCode':
       return {
         status: 'invalid',

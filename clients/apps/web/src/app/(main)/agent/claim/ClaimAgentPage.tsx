@@ -5,6 +5,7 @@ import EmailOTPVerifyForm from '@/components/Auth/EmailOTPVerifyForm'
 import { OnboardingLayout } from '@/components/Layout/OnboardingLayout'
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { useAuth, useLogout } from '@/hooks/auth'
+import { useImpressionEvent } from '@/hooks/useImpressionEvent'
 import { useAgentClaim, useAgentClaimPreview } from '@/hooks/queries/agents'
 import { type LoginMethod } from '@/utils/auth'
 import { ClientResponseError, schemas } from '@polar-sh/client'
@@ -17,6 +18,7 @@ import AgentProgress, { type ProgressMessage } from './AgentProgress'
 import {
   type AgentClaimProblem,
   getAgentClaimError,
+  getAgentClaimErrorType,
   UNKNOWN_PROBLEM,
 } from './claimErrors'
 import { useClaimAgent } from './useClaimAgent'
@@ -97,6 +99,27 @@ export default function ClaimAgentPage({
   }, [arriving, pacingMs])
 
   const error = signedIn ? loadError : previewError
+  const summary = signedIn ? claim : preview
+
+  useImpressionEvent({
+    event: 'dashboard:agent:claim:view',
+    enabled: summary !== undefined,
+    build: () => ({
+      signed_in: signedIn,
+      has_organization: summary?.organization !== null,
+    }),
+  })
+  useImpressionEvent({
+    event: 'dashboard:agent:claim:fail',
+    enabled: error !== null,
+    build: () => ({
+      signed_in: signedIn,
+      reason:
+        (error instanceof ClientResponseError &&
+          getAgentClaimErrorType(error.error)) ||
+        'unknown',
+    }),
+  })
   const problem =
     state.status === 'failed'
       ? state.problem

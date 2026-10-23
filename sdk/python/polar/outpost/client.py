@@ -413,10 +413,8 @@ if not previous or version >= tonumber(previous) then
         else
             local kind, start = string.match(field, '^(%a+):(%-?%d+):')
             if (kind == 'bucket' or kind == 'pending') and tonumber(start) < cutoff then
-                if kind == 'bucket' then
-                    table.insert(replaced, field)
-                    table.insert(replaced, value)
-                end
+                table.insert(replaced, field)
+                table.insert(replaced, value)
                 if sealed(start) then table.insert(dropped, field) end
             end
         end

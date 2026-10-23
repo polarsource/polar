@@ -49,6 +49,7 @@ export interface ApiOperation<A, V extends ApiVersion = ApiVersion> {
   invoke: (
     client: ApiClients[V]['client'],
     core: ApiClients[V]['core'],
+    organizationIds: ReadonlyArray<string>,
   ) => Promise<A>
 }
 

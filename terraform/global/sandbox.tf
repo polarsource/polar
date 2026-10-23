@@ -831,3 +831,15 @@ resource "tfe_variable" "planetscale_app_password_sandbox" {
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "slo_report_slack_bot_token_sandbox" {
+  key             = "slo_report_slack_bot_token"
+  category        = "terraform"
+  description     = "Slack Bot Token for sandbox, shared with production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

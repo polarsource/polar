@@ -116,7 +116,7 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/agent/identity/?$": [
         Rule(minute=5, hour=20, block_time=3600, zone="agent-sign-up"),
     ],
-    # The claim code has 6 digits, so wrong guesses are capped like login codes.
+    # The claim code is three words, so wrong guesses are capped like login codes.
     # Only confirming counts: loading the claim page is `/v1/agent/claim/{token}`.
     "^/v1/agent/claim/?$": [
         Rule(minute=6, hour=12, block_time=900, zone="agent-claim"),

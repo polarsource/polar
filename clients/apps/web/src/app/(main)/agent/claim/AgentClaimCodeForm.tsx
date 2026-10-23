@@ -1,12 +1,19 @@
-import { Text } from '@polar-sh/orbit'
+import { Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from '@polar-sh/ui/components/atoms/InputOTP'
 
-export const CLAIM_CODE_LENGTH = 6
+const CLAIM_CODE_WORDS = 3
+
+export const normalizeClaimCode = (code: string): string | null => {
+  const words = code
+    .trim()
+    .toLowerCase()
+    .split(/[\s\-_]+/)
+    .filter((word) => word !== '')
+  return words.length === CLAIM_CODE_WORDS &&
+    words.every((word) => /^[a-z]+$/.test(word))
+    ? words.join('-')
+    : null
+}
 
 const AgentClaimCodeForm = ({
   id,
@@ -20,45 +27,49 @@ const AgentClaimCodeForm = ({
   error?: string
   onChange: (code: string) => void
   onSubmit: () => void
-}) => (
-  <Box
-    as="form"
-    id={id}
-    flexDirection="column"
-    alignItems="center"
-    rowGap="m"
-    onSubmit={(event) => {
-      event.preventDefault()
-      onSubmit()
-    }}
-  >
-    <Text variant="label">Enter the 6-digit code your agent gave you</Text>
-    <InputOTP
-      aria-label="Claim code"
-      maxLength={CLAIM_CODE_LENGTH}
-      pattern="^[0-9]+$"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      autoFocus
-      value={code}
-      onChange={onChange}
+}) => {
+  const words = normalizeClaimCode(code)?.split('-')
+
+  return (
+    <Box
+      as="form"
+      id={id}
+      flexDirection="column"
+      rowGap="m"
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit()
+      }}
     >
-      <InputOTPGroup>
-        {Array.from({ length: CLAIM_CODE_LENGTH }).map((_, index) => (
-          <InputOTPSlot
-            key={index}
-            index={index}
-            className="h-12 w-12 text-xl"
-          />
-        ))}
-      </InputOTPGroup>
-    </InputOTP>
-    {error && (
-      <Text color="danger" align="center">
-        {error}
-      </Text>
-    )}
-  </Box>
-)
+      <Input
+        className="h-14 font-mono text-lg tracking-wide"
+        aria-label="Claim code"
+        placeholder="amber-river-lemon"
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        autoFocus
+        value={code}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {words && (
+        <Box columnGap="s">
+          {words.map((word, index) => (
+            <Box
+              key={index}
+              paddingHorizontal="m"
+              paddingVertical="xs"
+              borderRadius="full"
+              backgroundColor="background-secondary"
+            >
+              <Text variant="caption">{word}</Text>
+            </Box>
+          ))}
+        </Box>
+      )}
+      {error && <Text color="danger">{error}</Text>}
+    </Box>
+  )
+}
 
 export default AgentClaimCodeForm

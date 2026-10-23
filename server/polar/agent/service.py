@@ -1,6 +1,5 @@
 import asyncio
 import dataclasses
-import secrets
 import time
 import uuid
 from datetime import datetime, timedelta
@@ -26,6 +25,7 @@ from polar.oauth2.constants import CLAIM_GRANT_TYPE, CLIENT_ID_PREFIX
 from polar.oauth2.repository import OAuth2TokenRepository
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.product.repository import ProductRepository
 
 from .identity_assertion import (
     IDENTITY_ASSERTION_TTL,
@@ -36,10 +36,13 @@ from .schemas import (
     AgentClaim,
     AgentClaimConfirm,
     AgentClaimOrganization,
+    AgentClaimPreview,
+    AgentClaimProduct,
     AgentClaimStart,
     AgentIdentity,
     AgentIdentityCreate,
 )
+from .words import generate_claim_code
 
 log: Logger = structlog.get_logger()
 
@@ -47,6 +50,7 @@ CLAIM_TOKEN_PREFIX = "polar_act_"
 CLAIM_TOKEN_TTL = IDENTITY_ASSERTION_TTL
 CLAIM_LINK_TOKEN_PREFIX = "polar_acl_"
 CLAIM_TTL = timedelta(days=7)
+CLAIM_PRODUCTS_LIMIT = 20
 
 
 class InvalidClaimTokenError(OAuth2Error):
@@ -173,7 +177,7 @@ class AgentService:
         link_token, link_token_hash = generate_token_hash_pair(
             prefix=CLAIM_LINK_TOKEN_PREFIX
         )
-        code = f"{secrets.randbelow(1_000_000):06d}"
+        code = generate_claim_code()
         expires_at = now + CLAIM_TTL
         agent = await repository.update(
             agent,
@@ -193,6 +197,22 @@ class AgentService:
             expires_at=expires_at,
         )
 
+    async def preview_claim(
+        self, session: AsyncReadSession, link_token: str
+    ) -> AgentClaimPreview:
+        repository = AgentRepository.from_session(session)
+        agent = self._validate_claim_link(
+            await repository.get_by_claim_link_token(link_token)
+        )
+        assert agent.claim_email is not None
+        assert agent.claim_expires_at is not None
+        return AgentClaimPreview(
+            agent_name=agent.name,
+            email=mask_email(agent.claim_email),
+            expires_at=agent.claim_expires_at,
+            organization=self._claim_organization(agent),
+        )
+
     async def get_claim(
         self, session: AsyncReadSession, user: User, link_token: str
     ) -> AgentClaim:
@@ -202,22 +222,21 @@ class AgentService:
         )
         assert agent.claim_email is not None
         assert agent.claim_expires_at is not None
-
-        organization = agent.organization
-        claim_organization: AgentClaimOrganization | None = None
-        if organization is not None:
-            claim_organization = AgentClaimOrganization(
-                id=organization.id,
-                name=organization.name,
-                slug=organization.slug,
-                avatar_url=organization.avatar_url,
+        products = (
+            await ProductRepository.from_session(session).get_all_by_organization(
+                agent.organization.id, limit=CLAIM_PRODUCTS_LIMIT
             )
-
+            if agent.organization is not None
+            else []
+        )
         return AgentClaim(
             agent_name=agent.name,
             email=agent.claim_email,
             expires_at=agent.claim_expires_at,
-            organization=claim_organization,
+            organization=self._claim_organization(agent),
+            products=[
+                AgentClaimProduct.model_validate(product) for product in products
+            ],
         )
 
     async def confirm_claim(
@@ -270,17 +289,32 @@ class AgentService:
         )
         return agent
 
-    def _validate_claim(self, agent: Agent | None, user: User) -> Agent:
+    def _validate_claim_link(self, agent: Agent | None) -> Agent:
         if agent is None or agent.status != AgentStatus.unclaimed:
             raise ResourceNotFound()
 
-        assert agent.claim_email is not None
         assert agent.claim_expires_at is not None
         if agent.claim_expires_at <= utc_now():
             raise AgentClaimExpired()
+        return agent
+
+    def _validate_claim(self, agent: Agent | None, user: User) -> Agent:
+        agent = self._validate_claim_link(agent)
+        assert agent.claim_email is not None
         if agent.claim_email.lower() != user.email.lower():
             raise AgentClaimEmailMismatch(agent.claim_email)
         return agent
+
+    def _claim_organization(self, agent: Agent) -> AgentClaimOrganization | None:
+        organization = agent.organization
+        if organization is None:
+            return None
+        return AgentClaimOrganization(
+            id=organization.id,
+            name=organization.name,
+            slug=organization.slug,
+            avatar_url=organization.avatar_url,
+        )
 
 
 agent = AgentService()

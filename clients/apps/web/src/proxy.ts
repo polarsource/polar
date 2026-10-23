@@ -48,7 +48,6 @@ const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
 ]
 
 const AUTHENTICATED_ROUTES = [
-  new RegExp('^/agent(/.*)?$'),
   new RegExp('^/start(/.*)?$'),
   new RegExp('^/onboarding(/.*)?$'),
   new RegExp('^/dashboard(/.*)?$'),

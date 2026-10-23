@@ -27,6 +27,28 @@ const claim: schemas['AgentClaim'] = {
     slug: 'acme',
     avatar_url: null,
   },
+  products: [
+    {
+      id: 'prod_1',
+      name: 'Pro',
+      recurring_interval: 'month',
+      recurring_interval_count: 1,
+      prices: [
+        {
+          id: 'price_1',
+          created_at: '2026-10-20T12:00:00Z',
+          modified_at: null,
+          is_archived: false,
+          product_id: 'prod_1',
+          type: 'recurring',
+          recurring_interval: 'month',
+          amount_type: 'fixed',
+          price_currency: 'usd',
+          price_amount: 1900,
+        } as unknown as schemas['ProductPrice'],
+      ],
+    },
+  ],
 }
 
 const serveClaim = (
@@ -46,10 +68,25 @@ const serveClaim = (
   return confirmations
 }
 
-const renderPage = (resumeActionId?: string) =>
+const preview: schemas['AgentClaimPreview'] = {
+  agent_name: 'Claude',
+  email: 'a**@example.com',
+  expires_at: '2026-10-27T12:00:00Z',
+  organization: claim.organization,
+}
+
+const renderPage = (resumeActionId?: string, { signedOut = false } = {}) =>
   renderWithProviders(
-    <UserContextProvider user={user} userOrganizations={[]}>
-      <ClaimAgentPage linkToken={LINK_TOKEN} resumeActionId={resumeActionId} />
+    <UserContextProvider
+      user={signedOut ? undefined : user}
+      userOrganizations={[]}
+    >
+      <ClaimAgentPage
+        linkToken={LINK_TOKEN}
+        resumeActionId={resumeActionId}
+        authenticationSession={null}
+        pacingMs={0}
+      />
     </UserContextProvider>,
   )
 
@@ -57,7 +94,7 @@ const enterCode = async (code: string) => {
   fireEvent.change(await screen.findByLabelText('Claim code'), {
     target: { value: code },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Claim agent' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Complete setup' }))
 }
 
 describe('ClaimAgentPage', () => {
@@ -66,20 +103,62 @@ describe('ClaimAgentPage', () => {
     document.elementFromPoint = () => null
   })
 
+  it('shows what the claim is about and offers sign-in when signed out', async () => {
+    const previews: string[] = []
+    server.use(
+      http.get(`${API_URL}/v1/agent/claim/:linkToken/preview`, ({ params }) => {
+        previews.push(String(params.linkToken))
+        return HttpResponse.json(preview)
+      }),
+    )
+    renderPage(undefined, { signedOut: true })
+
+    expect(
+      await screen.findByText(
+        'Create an account with a**@example.com to finish setup.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Finish setup')).toBeInTheDocument()
+    expect(screen.queryByText('Acme')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Claim code')).not.toBeInTheDocument()
+    expect(previews).toEqual([LINK_TOKEN])
+  })
+
+  it('accepts the words however they are typed', async () => {
+    const confirmations = serveClaim()
+    stubLocationAssign()
+    renderPage()
+
+    await enterCode('  Amber River LEMON ')
+
+    await waitFor(() =>
+      expect(confirmations).toEqual([
+        { link_token: LINK_TOKEN, code: 'amber-river-lemon' },
+      ]),
+    )
+  })
+
   it('shows the organization and claims it with the code', async () => {
     const confirmations = serveClaim()
     const assign = stubLocationAssign()
     renderPage()
 
-    expect(await screen.findByText('Claim Claude')).toBeInTheDocument()
+    expect(
+      await screen.findByText(
+        'Switch back to your agent and copy the code it gave you.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Finish setup')).toBeInTheDocument()
     expect(screen.getByText('Acme')).toBeInTheDocument()
-    expect(screen.getByText(/This claim is for ada@example.com/)).toBeVisible()
+    expect(screen.getByText('Pro')).toBeInTheDocument()
 
-    await enterCode('123456')
+    await enterCode('amber-river-lemon')
 
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/dashboard/acme'))
-    expect(confirmations).toEqual([{ link_token: LINK_TOKEN, code: '123456' }])
-    expect(screen.getByText('Acme is yours')).toBeInTheDocument()
+    expect(confirmations).toEqual([
+      { link_token: LINK_TOKEN, code: 'amber-river-lemon' },
+    ])
+    expect(screen.getByText('Transferring ownership…')).toBeInTheDocument()
   })
 
   it('falls back to a generic name for an unnamed agent', async () => {
@@ -88,10 +167,9 @@ describe('ClaimAgentPage', () => {
 
     expect(
       await screen.findByText(
-        /^Once you claim it, the agent can do anything you can/,
+        /^Completing setup lets the agent act on your behalf/,
       ),
     ).toBeInTheDocument()
-    expect(screen.getByText('Claim your agent')).toBeInTheDocument()
   })
 
   it('claims an agent that built no organization', async () => {
@@ -99,8 +177,7 @@ describe('ClaimAgentPage', () => {
     const assign = stubLocationAssign()
     renderPage()
 
-    expect(await screen.findByText('No organization yet')).toBeInTheDocument()
-    await enterCode('123456')
+    await enterCode('amber-river-lemon')
 
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/dashboard'))
   })
@@ -111,7 +188,7 @@ describe('ClaimAgentPage', () => {
     )
     renderPage()
 
-    await enterCode('000000')
+    await enterCode('wrong-wrong-wrong')
 
     expect(await screen.findByText(/This code is wrong/)).toBeInTheDocument()
     expect(screen.getByLabelText('Claim code')).toBeInTheDocument()
@@ -122,7 +199,7 @@ describe('ClaimAgentPage', () => {
     const assign = stubLocationAssign()
     renderPage()
 
-    await enterCode('000000')
+    await enterCode('wrong-wrong-wrong')
 
     expect(await screen.findByText(/Too many attempts/)).toBeInTheDocument()
     expect(screen.getByLabelText('Claim code')).toBeInTheDocument()
@@ -164,7 +241,7 @@ describe('ClaimAgentPage', () => {
     onTestFinished(() => setSessionRefreshListener(null))
     const { unmount } = renderPage()
 
-    await enterCode('123456')
+    await enterCode('amber-river-lemon')
 
     await waitFor(() =>
       expect(prompt).toHaveBeenCalledWith({
@@ -197,8 +274,8 @@ describe('ClaimAgentPage', () => {
 
     await waitFor(() => expect(assign).toHaveBeenCalledWith('/dashboard/acme'))
     expect(confirmations).toEqual([
-      { link_token: LINK_TOKEN, code: '123456' },
-      { link_token: LINK_TOKEN, code: '123456' },
+      { link_token: LINK_TOKEN, code: 'amber-river-lemon' },
+      { link_token: LINK_TOKEN, code: 'amber-river-lemon' },
     ])
     expect(sessionStorage).toHaveLength(0)
   })

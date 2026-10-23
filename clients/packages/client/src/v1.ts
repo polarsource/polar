@@ -6722,6 +6722,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/agent/claim/{link_token}/preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Agent Claim
+     * @description What a claim is about, shown to the human before they sign in.
+     */
+    get: operations['agent:preview_claim']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/agent/claim/{link_token}': {
     parameters: {
       query?: never
@@ -8508,6 +8528,11 @@ export interface components {
       expires_at: string
       /** @description The organization the agent built, if any. */
       organization: components['schemas']['AgentClaimOrganization'] | null
+      /**
+       * Products
+       * @description The products the agent created in that organization.
+       */
+      products: components['schemas']['AgentClaimProduct'][]
     }
     /** AgentClaimConfirm */
     AgentClaimConfirm: {
@@ -8515,7 +8540,7 @@ export interface components {
       link_token: string
       /**
        * Code
-       * @description The code the agent gave.
+       * @description The three words the agent gave, separated by hyphens.
        */
       code: string
     }
@@ -8565,6 +8590,48 @@ export interface components {
       slug: string
       /** Avatar Url */
       avatar_url: string | null
+    }
+    /**
+     * AgentClaimPreview
+     * @description What a claim is about, for the human before they sign in.
+     */
+    AgentClaimPreview: {
+      /**
+       * Agent Name
+       * @description What the agent calls itself.
+       */
+      agent_name: string | null
+      /**
+       * Email
+       * @description The masked email the agent started the claim for.
+       */
+      email: string
+      /**
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+      /** @description The organization the agent created, if any. */
+      organization: components['schemas']['AgentClaimOrganization'] | null
+    }
+    /** AgentClaimProduct */
+    AgentClaimProduct: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Name */
+      name: string
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /** Recurring Interval Count */
+      recurring_interval_count: number | null
+      /** Prices */
+      prices: (
+        | components['schemas']['LegacyRecurringProductPrice']
+        | components['schemas']['ProductPrice']
+      )[]
     }
     AggregateField: string
     /**
@@ -64567,6 +64634,55 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Feedback']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:preview_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        link_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimPreview']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
         }
       }
       /** @description Validation Error */

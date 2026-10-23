@@ -1,5 +1,12 @@
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { notFound, redirect } from 'next/navigation'
+import {
+  checkAuthenticationSession,
+  getAuthenticationSessionRedirectPath,
+  type LoginMethod,
+} from '@/utils/auth'
+import { getServerSideAPI } from '@/utils/client/serverside'
 import { AGENT_CLAIM_RESUME_PARAM } from './claimContinuation'
 import ClaimAgentPage from './ClaimAgentPage'
 
@@ -18,12 +25,27 @@ export default async function Page(props: {
     notFound()
   }
 
+  const api = await getServerSideAPI()
+  const authenticationSession = await checkAuthenticationSession(api)
+  const redirectPath = getAuthenticationSessionRedirectPath(
+    authenticationSession,
+  )
+  if (redirectPath) {
+    redirect(redirectPath)
+  }
+
+  const cookieStore = await cookies()
+  const lastLoginMethod =
+    cookieStore.get('polar_last_login_method')?.value ?? null
+
   return (
     <ClaimAgentPage
       linkToken={token}
       resumeActionId={
         typeof resumeActionId === 'string' ? resumeActionId : undefined
       }
+      authenticationSession={authenticationSession}
+      lastLoginMethod={lastLoginMethod as LoginMethod | null}
     />
   )
 }

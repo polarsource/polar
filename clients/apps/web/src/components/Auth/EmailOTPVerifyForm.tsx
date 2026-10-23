@@ -20,7 +20,11 @@ import {
 import { useRef, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 
-const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
+const EmailOTPVerifyForm = ({
+  intent = 'login',
+}: {
+  intent?: 'login' | 'signup'
+}) => {
   const form = useForm<{ code: string }>()
   const { control, handleSubmit, setError } = form
   const emailOTPVerify = useEmailOTPVerify()
@@ -100,4 +104,4 @@ const VerifyPage = ({ intent = 'login' }: { intent?: 'login' | 'signup' }) => {
   )
 }
 
-export default VerifyPage
+export default EmailOTPVerifyForm

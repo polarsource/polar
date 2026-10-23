@@ -26,6 +26,7 @@ export const useClaimAgent = (
   linkToken: string,
   claim: schemas['AgentClaim'] | undefined,
   resumeActionId: string | undefined,
+  handoverMs: number,
 ) => {
   const { currentUser } = useAuth()
   const { mutateAsync, isPending } = useConfirmAgentClaim()
@@ -44,11 +45,10 @@ export const useClaimAgent = (
 
       const { error, response } = result
       if (response.ok) {
-        window.location.assign(
-          claim?.organization
-            ? `/dashboard/${claim.organization.slug}`
-            : '/dashboard',
-        )
+        const destination = claim?.organization
+          ? `/dashboard/${claim.organization.slug}`
+          : '/dashboard'
+        setTimeout(() => window.location.assign(destination), handoverMs)
         return { status: 'claimed' }
       }
 
@@ -70,7 +70,7 @@ export const useClaimAgent = (
 
       return getAgentClaimError(error)
     },
-    [claim, currentUser, linkToken, mutateAsync],
+    [claim, currentUser, handoverMs, linkToken, mutateAsync],
   )
 
   const confirm = useCallback(

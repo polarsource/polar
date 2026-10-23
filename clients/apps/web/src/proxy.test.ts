@@ -353,19 +353,15 @@ describe('middleware function', () => {
     consoleErrorSpy.mockRestore()
   })
 
-  it('should redirect unauthenticated agent claims to login preserving the link token', async () => {
+  it('lets unauthenticated agent claims through so the page can offer sign-in', async () => {
     const request = new NextRequest(
       'https://example.com/agent/claim?token=polar_acl_123',
     )
 
     const response = await proxy(request)
 
-    expect(response.status).toBe(307)
-    const location = response.headers.get('location')
-    expect(location).toContain('/auth')
-    expect(location).toContain(
-      'return_to=%2Fagent%2Fclaim%3Ftoken%3Dpolar_acl_123',
-    )
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
   })
 
   it('should redirect unauthenticated /to/* requests to login preserving the deep link', async () => {

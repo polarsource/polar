@@ -1,6 +1,7 @@
 import { extname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Effect, type FileSystem } from 'effect'
+import { lint } from '@/linters/lint'
 import {
   BillingConfigError,
   DEFAULT_CONFIG_FILES,
@@ -56,7 +57,11 @@ export const loadFailure = (file: string, error: unknown) => {
   })
 }
 
-const loadScript = (fs: FileSystem.FileSystem, file: string) =>
+const loadScript = (
+  fs: FileSystem.FileSystem,
+  file: string,
+  checked: boolean,
+) =>
   Effect.gen(function* () {
     const source = yield* fs
       .readFileString(file)
@@ -65,6 +70,10 @@ const loadScript = (fs: FileSystem.FileSystem, file: string) =>
           () => new BillingConfigError({ message: `Could not read ${file}` }),
         ),
       )
+    const issues = checked ? lint(file, source) : []
+    if (issues.some((issue) => issue.severity === 'error')) {
+      return { file, source, input: undefined, generated: true, issues }
+    }
     const exported = yield* Effect.tryPromise({
       try: async () => {
         const module = (await import(pathToFileURL(resolve(file)).href)) as {
@@ -88,6 +97,7 @@ const loadScript = (fs: FileSystem.FileSystem, file: string) =>
       source,
       input: JSON.parse(json) as unknown,
       generated: true,
+      issues,
     }
   })
 
@@ -109,7 +119,7 @@ export const loader = (fs: FileSystem.FileSystem) => {
             hint: error instanceof Error ? error.message : String(error),
           }),
       })
-      return { file, source, input, generated: false }
+      return { file, source, input, generated: false, issues: [] }
     })
 
   const exists = (file: string) =>
@@ -125,7 +135,10 @@ export const loader = (fs: FileSystem.FileSystem) => {
     })
   })
 
-  return (file?: string): Effect.Effect<LoadedConfig, BillingConfigError> =>
+  return (
+    file?: string,
+    options: { readonly lint: boolean } = { lint: true },
+  ): Effect.Effect<LoadedConfig, BillingConfigError> =>
     Effect.gen(function* () {
       const resolved = file ?? (yield* findDefault)
       if (!(yield* exists(resolved))) {
@@ -135,7 +148,7 @@ export const loader = (fs: FileSystem.FileSystem) => {
       }
       const extension = extname(resolved)
       if (SCRIPT_EXTENSIONS.has(extension)) {
-        return yield* loadScript(fs, resolved)
+        return yield* loadScript(fs, resolved, options.lint)
       }
       if (extension === '.json' || extension === '') {
         return yield* loadJson(resolved)

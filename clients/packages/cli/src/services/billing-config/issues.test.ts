@@ -50,6 +50,7 @@ describe('issues', () => {
     source,
     input: JSON.parse(source) as unknown,
     generated: false,
+    issues: [],
   }
 
   test('maps server errors onto the file, defaulting to error severity', () => {
@@ -94,6 +95,7 @@ describe('issues', () => {
       source: '{\n  "meters": [\n    { "name": null }\n  ]\n}',
       input: { meters: [{ name: null }] },
       generated: false,
+      issues: [],
     }
     const [literal, irrelevant] = issues(nulls, [
       {

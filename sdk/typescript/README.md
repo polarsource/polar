@@ -162,8 +162,6 @@ In high throughput scenarios, Outpost can return you accurate meter reads only m
 
 Outpost needs an `external_id` on every event; `track()` rejects an event without one.
 
-"Contains" and "Does Not Contain" meter filters compare JavaScript string forms locally, while Polar compares Python ones. Booleans read as `true`/`false` instead of `True`/`False`, and whole-number floats lose their decimal (`1.0` reads as `1`), so a filter on those can match differently in Outpost than in Polar.
-
 An event counts locally until Polar confirms it stored it, or until the buffer gives it up, so a meter read never loses an event Polar is still ingesting.
 
 To disable it, pass `outpost: false` to `polar.metering()`. You can also configure it explicitly with an object.

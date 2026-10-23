@@ -84,6 +84,7 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
     };
   }
   if (filter.operator === "like" || filter.operator === "not_like") {
+    // Unlike Polar's Python str(), booleans read as "true" and 1.0 as "1".
     const expected = String(filter.value);
     const contains = filter.operator === "like";
     return (event) => {

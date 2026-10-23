@@ -1,10 +1,13 @@
+import re
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import UUID4, EmailStr, Field
+from pydantic import UUID4, BeforeValidator, EmailStr, Field
 
 from polar.auth.scope import Scope
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import Schema
+from polar.product.schemas import ProductPrice
 
 
 class AgentIdentityCreate(Schema):
@@ -74,6 +77,14 @@ class AgentClaimOrganization(Schema):
     avatar_url: str | None
 
 
+class AgentClaimProduct(Schema):
+    id: UUID4
+    name: str
+    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval_count: int | None
+    prices: list[ProductPrice]
+
+
 class AgentClaim(Schema):
     """What the human reviews before claiming the agent."""
 
@@ -83,8 +94,31 @@ class AgentClaim(Schema):
     organization: AgentClaimOrganization | None = Field(
         description="The organization the agent built, if any."
     )
+    products: list[AgentClaimProduct] = Field(
+        description="The products the agent created in that organization."
+    )
+
+
+def normalize_claim_code(value: str) -> str:
+    return "-".join(
+        part for part in re.split(r"[\s\-_]+", value.strip().lower()) if part
+    )
+
+
+class AgentClaimPreview(Schema):
+    """What a claim is about, for the human before they sign in."""
+
+    agent_name: str | None = Field(description="What the agent calls itself.")
+    email: str = Field(description="The masked email the agent started the claim for.")
+    expires_at: datetime
+    organization: AgentClaimOrganization | None = Field(
+        description="The organization the agent created, if any."
+    )
 
 
 class AgentClaimConfirm(Schema):
     link_token: str
-    code: str = Field(pattern=r"^\d{6}$", description="The code the agent gave.")
+    code: Annotated[str, BeforeValidator(normalize_claim_code)] = Field(
+        pattern=r"^[a-z]+-[a-z]+-[a-z]+$",
+        description="The three words the agent gave, separated by hyphens.",
+    )

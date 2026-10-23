@@ -80,7 +80,7 @@ Response:
   "status": "initiated",
   "expires_at": "<ISO 8601>",
   "claim_attempt": {
-    "user_code": "123456",
+    "user_code": "amber-river-lemon",
     "expires_in": 604800,
     "verification_uri": "<link to the Polar dashboard>",
     "interval": 5
@@ -88,9 +88,10 @@ Response:
 }
 ```
 
-Give the human the `verification_uri` and the `user_code` in one message, for example:
+Give the human the `verification_uri` and the `user_code` in one message. The code is three
+words joined by hyphens; pass it on exactly as you received it, for example:
 
-> Open this link, sign in to Polar with <email>, and enter this code: **123456**
+> Open this link, sign in to Polar with <email>, and enter this code: **amber-river-lemon**
 
 Only the human signed in with that email can claim you. The link and code expire after 7 days.
 Starting a new claim replaces them with a new pair, valid for 7 more days, as long as your claim

@@ -142,6 +142,7 @@
               "features/usage-based-billing/event-ingestion",
               "features/usage-based-billing/meters",
               "features/usage-based-billing/credits",
+              "features/outpost",
               "features/cost-insights/introduction",
               {
                 "group": "Ingestion strategies",

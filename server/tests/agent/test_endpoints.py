@@ -386,3 +386,21 @@ class TestConfirmClaim:
         agent = await AgentRepository.from_session(session).get_by_id(claim_agent.id)
         assert agent is not None
         assert agent.status == AgentStatus.unclaimed
+
+
+@pytest.mark.anyio
+class TestAuthMd:
+    async def test_disabled(self, client: AsyncClient) -> None:
+        response = await client.get("/auth.md")
+
+        assert response.status_code == 404
+
+    @pytest.mark.usefixtures("agent_sign_up_enabled")
+    async def test_enabled(self, client: AsyncClient) -> None:
+        response = await client.get("/auth.md")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/markdown; charset=utf-8"
+        assert "POST http://test/v1/agent/identity\n" in response.text
+        assert "POST http://test/v1/agent/identity/claim\n" in response.text
+        assert "POST http://test/v1/oauth2/token\n" in response.text

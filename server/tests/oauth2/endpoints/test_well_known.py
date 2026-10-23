@@ -45,6 +45,7 @@ async def test_authorization_server_metadata(client: AsyncClient, path: str) -> 
     assert json["authorization_response_iss_parameter_supported"] is True
     assert JWT_BEARER_GRANT_TYPE not in json["grant_types_supported"]
     assert CLAIM_GRANT_TYPE not in json["grant_types_supported"]
+    assert "agent_auth" not in json
 
 
 @pytest.mark.anyio
@@ -58,6 +59,12 @@ async def test_authorization_server_metadata_agent_sign_up(
     json = response.json()
     assert JWT_BEARER_GRANT_TYPE in json["grant_types_supported"]
     assert CLAIM_GRANT_TYPE in json["grant_types_supported"]
+    assert json["agent_auth"] == {
+        "skill": "http://test/auth.md",
+        "identity_endpoint": "http://test/v1/agent/identity",
+        "claim_endpoint": "http://test/v1/agent/identity/claim",
+        "identity_types_supported": ["anonymous"],
+    }
 
 
 @pytest.mark.anyio

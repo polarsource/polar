@@ -12,7 +12,7 @@ from polar.outpost.event import Event, PropertyReader, get_property_reader
 
 class FilterClause(typing.TypedDict):
     property: str
-    operator: typing.Literal["eq", "ne", "gt", "gte", "lt", "lte"]
+    operator: typing.Literal["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"]
     value: str | int | float | bool
 
 
@@ -90,6 +90,16 @@ class BucketStatistics:
 Updates: typing.TypeAlias = dict[tuple[str, str, int], BucketStatistics]
 BUCKET_SIZE = 300_000_000
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+
+
+def contains(actual: typing.Any, expected: typing.Any) -> bool:
+    return str(expected) in str(actual)
+
+
+def not_contains(actual: typing.Any, expected: typing.Any) -> bool:
+    return str(expected) not in str(actual)
+
+
 FILTER_OPERATORS = {
     "eq": operator.eq,
     "ne": operator.ne,
@@ -97,6 +107,8 @@ FILTER_OPERATORS = {
     "gte": operator.ge,
     "lt": operator.lt,
     "lte": operator.le,
+    "like": contains,
+    "not_like": not_contains,
 }
 
 
@@ -113,13 +125,13 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
         filter_operator = FILTER_OPERATORS[clause["operator"]]
         read = get_property_reader(clause["property"])
 
-        if filter_operator in (operator.eq, operator.ne):
+        if filter_operator in (operator.eq, operator.ne, contains, not_contains):
 
-            def equality_matcher(event: Event) -> bool:
+            def value_matcher(event: Event) -> bool:
                 actual = read(event)
                 return actual is not None and filter_operator(actual, expected)
 
-            return equality_matcher
+            return value_matcher
 
         if expected_type in (int, float):
             comparable: tuple[type, ...] = (int, float)

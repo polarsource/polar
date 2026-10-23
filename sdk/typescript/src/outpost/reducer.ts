@@ -2,7 +2,7 @@ import { getPropertyReader, type Event, type PropertyReader } from "./event";
 
 export interface FilterClause {
   property: string;
-  operator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte";
+  operator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like" | "not_like";
   value: string | number | boolean;
 }
 export interface Filter {
@@ -65,6 +65,9 @@ export const getBucketStart = (timestamp: number): number => {
 export type EventMatcher = (event: Event) => boolean;
 export type ReducerMatchers = readonly (readonly [Reducer, EventMatcher, PropertyReader])[];
 
+const toPythonString = (value: unknown): string =>
+  typeof value === "boolean" ? (value ? "True" : "False") : String(value);
+
 export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   if (!("property" in filter)) {
     const children = filter.clauses.map(getMatcher);
@@ -81,6 +84,15 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
       const actual = read(event);
       if (actual === undefined || actual === null) return false;
       return ((typeof actual === "boolean" ? Number(actual) : actual) === expected) === equal;
+    };
+  }
+  if (filter.operator === "like" || filter.operator === "not_like") {
+    const expected = toPythonString(filter.value);
+    const contains = filter.operator === "like";
+    return (event) => {
+      const actual = read(event);
+      if (actual === undefined || actual === null) return false;
+      return toPythonString(actual).includes(expected) === contains;
     };
   }
   const expected = filter.value;

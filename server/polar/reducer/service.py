@@ -46,6 +46,8 @@ REDUCER_BUCKET_SIZE = timedelta(minutes=5)
 SEAL_DELAY = timedelta(minutes=11)
 
 type Contributions = dict[redis_store.BucketId, list[tuple[datetime, Decimal]]]
+# What an event adds to a count reducer.
+ONE = Decimal(1)
 
 
 def get_reducer_bucket_start(timestamp: datetime) -> datetime:
@@ -831,24 +833,35 @@ def _reduce_events_to_bucket_contributions(
     """The timestamped values each event adds to the buckets of the reducers it
     matches."""
     contributions: Contributions = defaultdict(list)
+    prepared = [
+        (
+            reducer,
+            reducer.filter,
+            reducer.aggregation
+            if isinstance(reducer.aggregation, PropertyAggregation)
+            else None,
+        )
+        for reducer in reducers
+    ]
     for event in events:
-        for reducer in reducers:
-            if not reducer.filter.matches(event):
+        timestamp = event.timestamp
+        bucket_start = get_reducer_bucket_start(timestamp)
+        for reducer, filter, aggregation in prepared:
+            if not filter.matches(event):
                 continue
-            aggregation = reducer.aggregation
-            value = Decimal(1)
-            if isinstance(aggregation, PropertyAggregation):
+            value = ONE
+            if aggregation is not None:
                 property_value = aggregation.get_value(event)
                 if property_value is None:
                     continue
                 value = Decimal(str(property_value))
             bucket_id = (
                 reducer,
-                get_reducer_bucket_start(event.timestamp),
+                bucket_start,
                 event.customer_id,
                 event.external_customer_id,
             )
-            contributions[bucket_id].append((event.timestamp, value))
+            contributions[bucket_id].append((timestamp, value))
     return contributions
 
 

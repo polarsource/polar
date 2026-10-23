@@ -216,7 +216,7 @@ async def connect_websocket(
 
 
 # Every key and the channel carry the layout version. A new layout takes a new version, starts
-# cold from Polar's snapshot and never reads the previous keys, which are left to expire.
+# cold from Polar's snapshot and never reads the previous keys.
 KEY_VERSION = "outpost:v1"
 CACHE_SIZE = 1024
 REDIS_TIMEOUT = 5.0

@@ -383,7 +383,8 @@ async def test_ingest_pipelines_buckets(
             assert meter.balance == 97
             assert (
                 await redis.hget(
-                    f"outpost:v1:state:external:alice:tokens-{i}", f"bucket:{BUCKET}:count"
+                    f"outpost:v1:state:external:alice:tokens-{i}",
+                    f"bucket:{BUCKET}:count",
                 )
                 == b"1"
             )
@@ -582,7 +583,8 @@ async def test_bucket_ownership_and_internal_customer(
     assert meter.consumed_units == 12 + 999
     assert (
         await redis.hget(
-            "outpost:v1:state:customer:alice:tokens", f"bucket:{BUCKET - BUCKET_SIZE}:sum"
+            "outpost:v1:state:customer:alice:tokens",
+            f"bucket:{BUCKET - BUCKET_SIZE}:sum",
         )
         == b"999"
     )
@@ -635,7 +637,9 @@ async def test_concurrent_writers_count_a_repeated_event_once(
         for outpost in [first, second] * 5:
             tasks.start_soon(outpost.track, event)
     assert (
-        await redis.hget("outpost:v1:state:external:alice:tokens", f"bucket:{BUCKET}:sum")
+        await redis.hget(
+            "outpost:v1:state:external:alice:tokens", f"bucket:{BUCKET}:sum"
+        )
         == b"1"
     )
 
@@ -666,7 +670,9 @@ async def test_startup_does_not_wait_for_configuration(
             assert not await redis.exists("outpost:v1:state:external:alice:tokens")
             gate.set()
     assert (
-        await redis.hget("outpost:v1:state:external:alice:tokens", f"bucket:{BUCKET}:sum")
+        await redis.hget(
+            "outpost:v1:state:external:alice:tokens", f"bucket:{BUCKET}:sum"
+        )
         == b"3"
     )
 
@@ -1204,7 +1210,15 @@ async def _seal(redis: Redis, cutoff: int, count: int = 0, total: int = 0) -> No
     identity = "external:alice:tokens"
     await redis.register_script(APPLY_SNAPSHOT_SCRIPT)(
         keys=[f"outpost:v1:state:{identity}"],
-        args=[identity, "outpost:v1:0:updates", "epoch", cutoff, cutoff + 1, "meter", 100]
+        args=[
+            identity,
+            "outpost:v1:0:updates",
+            "epoch",
+            cutoff,
+            cutoff + 1,
+            "meter",
+            100,
+        ]
         + [count, total, "", ""],
     )
 

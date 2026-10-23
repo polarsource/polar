@@ -545,6 +545,7 @@ class RefundService:
                         tax_code=order.product.tax_code,
                         currency=order.currency,
                         total_amount=order.total_amount,
+                        tax_amount=order.tax_amount,
                         reverted_amount=refund.total_amount,
                         reverted_tax_amount=refund.tax_amount,
                     )

@@ -48,6 +48,16 @@ TAX_EXCLUSIVE_COUNTRIES = {
 def get_tax_behavior_from_option(
     tax_behavior: TaxBehaviorOption, address: Address
 ) -> TaxBehavior:
+    """Resolve a tax behavior option for the customer's location.
+
+    Args:
+        tax_behavior: Inclusive, exclusive, or location-based tax behavior.
+        address: Customer address used to resolve location-based behavior.
+
+    Returns:
+        Exclusive behavior for location-based sales in CA, IN, or US;
+        inclusive behavior for other locations, or the explicitly chosen behavior.
+    """
     match tax_behavior:
         case TaxBehaviorOption.inclusive:
             return TaxBehavior.inclusive
@@ -65,6 +75,8 @@ _BACKFILL_REFERENCE_PREFIX = "backfill_"
 
 
 class TaxCalculationService:
+    """Coordinate tax calculations, recording, and reversals across processors."""
+
     async def calculate(
         self,
         identifier: uuid.UUID | str,
@@ -76,24 +88,25 @@ class TaxCalculationService:
         tax_ids: list[TaxID],
         customer_exempt: bool,
     ) -> tuple[TaxCalculation, TaxProcessor]:
-        """Calculate tax for the given parameters.
+        """Calculate tax using the configured processors in priority order.
 
-        Tries to calculate tax using the configured tax processors in order. If a
-        processor fails with a technical error, it will try the next one until all
-        processors have been tried.
+        Technical failures fall back to the next processor. Logical errors,
+        such as invalid customer tax details, propagate to the caller.
 
         Args:
             identifier: Unique identifier for this tax calculation.
-            currency: The currency code.
-            amount: The amount in cents to calculate tax on.
-            tax_behavior: The tax behavior option to determine if tax is inclusive, exclusive or location-based.
-            tax_code: The tax code for the product/service.
-            address: The address for tax calculation.
-            tax_ids: List of tax IDs for the customer.
+            currency: Currency code for the calculation.
+            amount: Sale amount in currency minor units. This method resolves
+                whether tax is included or added according to tax_behavior
+                and the customer address.
+            tax_behavior: Inclusive, exclusive, or location-based tax behavior.
+            tax_code: Tax category of the product or service.
+            address: Customer address used to determine tax jurisdiction.
+            tax_ids: Customer tax IDs used to determine tax treatment.
             customer_exempt: Whether the customer is tax exempt.
 
         Returns:
-            The calculated tax information.
+            The calculation and the processor that produced it.
 
         Raises:
             TaxCalculationTechnicalError: If all tax processors fail to calculate tax.
@@ -142,6 +155,29 @@ class TaxCalculationService:
         reference: str,
         transaction_date: datetime,
     ) -> tuple[str, TaxProcessor]:
+        """Record a completed sale with the configured recording processor.
+
+        Reuse the calculation when its processor matches the recording processor.
+        Otherwise, record the explicit amounts without recalculating tax.
+
+        Args:
+            calculation_processor: Processor that produced the calculation.
+            processor_id: Calculation ID returned by that processor.
+            amount: Sale amount excluding tax, in currency minor units. Used
+                when recording through a different processor.
+            tax_amount: Tax amount in currency minor units. Used when recording
+                through a different processor.
+            currency: Currency code for the sale.
+            address: Customer billing address.
+            tax_code: Tax category of the product or service.
+            reference: Internal reference identifying the sale.
+            transaction_date: Original sale timestamp, used when recording
+                explicit amounts through a different processor.
+
+        Returns:
+            The recorded transaction ID and its processor. Transactions recorded
+            from explicit amounts have a ``backfill_``-prefixed ID.
+        """
         tax_processor_service = _get_tax_service(settings.TAX_RECORD_PROCESSOR)
         if calculation_processor != settings.TAX_RECORD_PROCESSOR:
             log.info(
@@ -176,7 +212,21 @@ class TaxCalculationService:
         reference: str,
         transaction_date: datetime,
     ) -> tuple[str, TaxProcessor]:
-        """Record a tax transaction from explicit amounts, without a calculation."""
+        """Record explicit sale and tax amounts without recalculating tax.
+
+        Args:
+            amount: Sale amount excluding tax, in currency minor units.
+            tax_amount: Tax amount in currency minor units.
+            currency: Currency code for both amounts.
+            address: Customer billing address.
+            tax_code: Tax category of the product or service.
+            reference: Internal reference identifying the sale.
+            transaction_date: Original sale timestamp to preserve in the record.
+
+        Returns:
+            A ``backfill_``-prefixed record ID and the recording processor.
+            Returning an ID does not verify completion of asynchronous processing.
+        """
         tax_processor_service = _get_tax_service(settings.TAX_RECORD_PROCESSOR)
         backfill_reference = await tax_processor_service.backfill(
             amount,
@@ -201,9 +251,43 @@ class TaxCalculationService:
         tax_code: TaxCode,
         currency: str,
         total_amount: int,
+        tax_amount: int,
         reverted_amount: int,
         reverted_tax_amount: int,
     ) -> str:
+        """Reverse a recorded tax transaction for a customer refund.
+
+        For regular transactions, a positive tax-only refund reconstructs the
+        total reversal using the original tax-to-total ratio. For example,
+        refunding all 20 tax on a 100 sale plus 20 tax reverses the full 120
+        in the processor's ledger, including the sale amount. This does not
+        change the amount refunded to the customer.
+
+        Backfilled transactions instead record negative sale and tax amounts
+        directly, without applying the tax-only ratio.
+
+        Args:
+            processor: Processor holding the original transaction.
+            transaction_id: Recorded transaction ID, including any ``backfill_``
+                prefix returned when recording explicit amounts.
+            reference: Internal reference identifying the refund.
+            address: Customer billing address, used for backfilled reversals.
+            tax_code: Product or service tax category, used for backfilled
+                reversals.
+            currency: Currency code, used for backfilled reversals.
+            total_amount: Original sale total including tax, in currency minor
+                units.
+            tax_amount: Original sale tax in currency minor units. Must be
+                positive when reconstructing a tax-only reversal.
+            reverted_amount: Total customer refund including tax, in currency
+                minor units. Pass ``Refund.total_amount``, not ``Refund.amount``.
+            reverted_tax_amount: Tax portion of the customer refund, in currency
+                minor units. Pass ``Refund.tax_amount``.
+
+        Returns:
+            The processor's reversal ID, or a ``backfill_``-prefixed record ID
+            for a negative manual entry.
+        """
         tax_processor_service = _get_tax_service(processor)
 
         if transaction_id.startswith(_BACKFILL_REFERENCE_PREFIX):
@@ -217,6 +301,9 @@ class TaxCalculationService:
                 utc_now(),
             )
             return f"{_BACKFILL_REFERENCE_PREFIX}{backfill_reference}"
+
+        if reverted_amount == reverted_tax_amount and reverted_amount > 0:
+            reverted_amount = round(reverted_amount * total_amount / tax_amount)
 
         if reverted_amount >= total_amount:
             return await tax_processor_service.revert(transaction_id, reference)

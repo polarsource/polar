@@ -1209,7 +1209,7 @@ it.each([
   expect(connections).toHaveLength(1);
 });
 
-it("gives every key a day to live, refreshed by each read, snapshot and write", async () => {
+it("gives the state a day to live, refreshed by each read, write and confirmation", async () => {
   snapshot = aliceSnapshot;
   const outpost = await start();
   await outpost.actor(customer);
@@ -1217,11 +1217,16 @@ it("gives every key a day to live, refreshed by each read, snapshot and write", 
   const ttl = await redis.ttl(key);
   expect(ttl).toBeGreaterThan(0);
   expect(ttl).toBeLessThanOrEqual(86_400);
-  await ingest(outpost, 3);
-  expect(await redis.ttl(key)).toBeGreaterThan(0);
+  await redis.expire(key, 60);
+  const settled = usage(eventId(), 3);
+  await outpost.track(settled);
+  expect(await redis.ttl(key)).toBeGreaterThan(60);
   const pending = await redis.ttl(`outpost:pending:external:alice:tokens:${bucket}`);
   expect(pending).toBeGreaterThan(0);
   expect(pending).toBeLessThanOrEqual(3_900);
+  await redis.expire(key, 60);
+  await outpost.confirm([settled]);
+  expect(await redis.ttl(key)).toBeGreaterThan(60);
 });
 
 it("waits for the first snapshot on a cold read", async () => {

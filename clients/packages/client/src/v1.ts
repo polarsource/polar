@@ -3654,6 +3654,28 @@ export interface paths {
     patch: operations['checkout-links:update']
     trace?: never
   }
+  '/v1/catalogs/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Catalogs
+     * @description List the published catalogs of organizations using config as code, newest first.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['catalogs:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/custom-fields/': {
     parameters: {
       query?: never
@@ -13426,6 +13448,60 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * Catalog
+     * @description A published version of an organization's product catalog.
+     */
+    Catalog: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Name
+       * @description Optional name given when it was published.
+       */
+      name: string | null
+      /**
+       * Version Hash
+       * @description Hash identifying this version of the catalog.
+       */
+      version_hash: string
+      /**
+       * Status
+       * @description `live` for the catalog new checkouts use, `archived` for previous versions.
+       * @enum {string}
+       */
+      status: 'live' | 'archived'
+      /**
+       * Published At
+       * Format: date-time
+       * @description When the catalog was published.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      published_at: string
+    }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
       /**
@@ -16080,6 +16156,11 @@ export interface components {
     Config: {
       /** @description Organization settings to update. Left untouched when omitted. */
       settings?: components['schemas']['ConfigSettings'] | null
+      /**
+       * Catalog Name
+       * @description Name of the catalog version this apply publishes, if it publishes one. It doesn't change the version hash.
+       */
+      catalog_name?: string | null
       /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
@@ -25760,6 +25841,12 @@ export interface components {
     ListResource_Benefit_: {
       /** Items */
       items: components['schemas']['Benefit'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[Catalog] */
+    ListResource_Catalog_: {
+      /** Items */
+      items: components['schemas']['Catalog'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[CheckoutLink] */
@@ -53484,6 +53571,51 @@ export interface operations {
       }
     }
   }
+  'catalogs:list': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Catalog_']
+        }
+      }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'custom-fields:list': {
     parameters: {
       query?: {
@@ -72038,6 +72170,9 @@ export const canonicalPaymentMethodTypeValues: ReadonlyArray<
   'link',
   'other',
 ]
+export const catalogStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['Catalog']['status']
+> = ['live', 'archived']
 export const checkoutCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutCreatedEvent']['name']
 > = ['checkout.created']

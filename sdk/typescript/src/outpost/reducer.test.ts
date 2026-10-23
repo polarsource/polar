@@ -132,9 +132,7 @@ describe("reduction", () => {
   it.each([
     ["gpt-4o-mini", "4o", true],
     ["gpt-4o-mini", "claude", false],
-    [1234, "23", true],
-    [1234, 5, false],
-    [true, "tru", true],
+    ["gpt-4o-mini", "GPT", false],
     ["100%_done", "%_", true],
   ] as const)("checks whether %s contains %s like Polar", (actual, expected, contained) => {
     const sample = { ...event, metadata: { value: actual } };
@@ -145,6 +143,20 @@ describe("reduction", () => {
       !contained,
     );
   });
+
+  it.each([
+    [1234, "23"],
+    [true, "true"],
+    ["1234", 23],
+    ["true", true],
+  ] as const)(
+    "matches neither like nor not_like when %s or %s is not a string",
+    (actual, expected) => {
+      const sample = { ...event, metadata: { value: actual } };
+      for (const operator of ["like", "not_like"] as const)
+        expect(getMatcher({ property: "value", operator, value: expected })(sample)).toBe(false);
+    },
+  );
 
   it.each(["like", "not_like"] as const)("ignores missing properties for %s", (operator) => {
     expect(getMatcher({ property: "missing", operator, value: "a" })(event)).toBe(false);

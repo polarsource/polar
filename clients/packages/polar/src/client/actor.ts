@@ -1,16 +1,11 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { Data, Predicate } from 'effect'
-import {
-  creditCustomerMeter,
-  getCustomerMeter,
-} from '../internal/api/customer-meters'
-import { ingestEvents } from '../internal/api/events'
+import { creditCustomerMeter } from '../internal/api/customer-meters'
 import {
   assertBenefitDeployed,
   findBenefitGrant,
 } from '../internal/api/benefits'
 import { getDeployedMeter } from '../internal/api/meters'
-import { matchesMeter } from '../internal/meter'
 import type {
   CustomerIdentifier,
   MemberIdentifier,
@@ -18,11 +13,10 @@ import type {
 import type { EventInput, EventMetadata, EventSchema } from '../schema/event'
 import type { Metadata } from '../schema/metadata'
 import type { EventConfig, RuntimeSDKConfig } from '../schema/runtime'
-import type { models, Polar } from '../sdk'
+import type { ActorInput, Metering, models, Polar } from '../sdk'
 
 export type MeterBalance = {
   balance: number
-  pristine: boolean
 }
 
 const MAX_GRANT_UNITS = 1_000_000_000
@@ -106,15 +100,20 @@ export class EventValidationError extends Data.TaggedError(
 const isEventSchema = (event: EventConfig): event is EventSchema =>
   Predicate.hasProperty(event, '~standard')
 
-type ActorCustomerIdentifier =
-  | { externalCustomerId: string; customerId?: never }
-  | { customerId: string; externalCustomerId?: never }
-type ActorMemberIdentifier =
-  | { externalMemberId: string; memberId?: never }
-  | { memberId: string; externalMemberId?: never }
-  | { memberId?: never; externalMemberId?: never }
-
-type ActorIdentifier = ActorCustomerIdentifier & ActorMemberIdentifier
+// A member is identified the same way as its customer
+type ActorIdentifier =
+  | {
+      customerId: string
+      memberId?: string
+      externalCustomerId?: never
+      externalMemberId?: never
+    }
+  | {
+      externalCustomerId: string
+      externalMemberId?: string
+      customerId?: never
+      memberId?: never
+    }
 
 export type Actor<Config extends RuntimeSDKConfig> = (
   identifier: ActorIdentifier,
@@ -130,7 +129,6 @@ export type Actor<Config extends RuntimeSDKConfig> = (
     options?: GrantOptions,
   ) => Promise<void>
   track: {
-    // Ingests all events in a single request
     (events: readonly TrackedEvent<Config>[]): Promise<void>
     <Name extends EventName<Config>>(
       name: Name,
@@ -156,21 +154,25 @@ const toMemberIdentifier = (identifier: ActorIdentifier): MemberIdentifier => ({
       : {}),
 })
 
+const toActorInput = (identifier: ActorIdentifier): ActorInput =>
+  identifier.customerId !== undefined
+    ? {
+        customer_id: identifier.customerId,
+        member_id: identifier.memberId ?? null,
+      }
+    : {
+        external_customer_id: identifier.externalCustomerId,
+        external_member_id: identifier.externalMemberId ?? null,
+      }
+
 export const createActor = <Config extends RuntimeSDKConfig>(
   config: Config,
   sdk: Polar,
+  metering: () => Promise<Metering>,
 ): Actor<Config> => {
-  // Timestamp of the latest event ingested through this instance, per customer
-  // and meter. The server processes events asynchronously, so a customer meter
-  // last modified before this timestamp doesn't reflect that event yet.
-  const latestIngestedAt = new Map<string, Date>()
   // Polar meter ID per deployed meter external ID
   const deployedMeters = new Map<string, string>()
   const deployedBenefits = new Set<string>()
-  const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
-    identifier.customerId !== undefined
-      ? `customer:${identifier.customerId}:${externalMeterId}`
-      : `external_customer:${identifier.externalCustomerId}:${externalMeterId}`
   const getDeployedMeterId = async (externalMeterId: string) => {
     const cached = deployedMeters.get(externalMeterId)
     if (cached !== undefined) return cached
@@ -179,19 +181,6 @@ export const createActor = <Config extends RuntimeSDKConfig>(
     deployedMeters.set(externalMeterId, id)
     return id
   }
-  const markIngested = (
-    identifier: ActorIdentifier,
-    externalMeterId: string,
-    timestamp: Date,
-  ) => {
-    const key = cacheKey(identifier, externalMeterId)
-    const current = latestIngestedAt.get(key)
-
-    if (current === undefined || timestamp > current) {
-      latestIngestedAt.set(key, timestamp)
-    }
-  }
-
   const validateEvent = async (
     name: string,
     input: unknown,
@@ -219,8 +208,8 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   ) => {
     if (tracked.length === 0) return
 
-    // Validate every event before ingesting any of them
-    const timestamp = new Date()
+    // Validate every event before tracking any of them
+    const timestamp = new Date().toISOString()
     const events = await Promise.all(
       tracked.map(async ({ name, metadata }) => ({
         name,
@@ -229,22 +218,9 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       })),
     )
 
-    const inserted = await ingestEvents(
-      sdk,
-      toMemberIdentifier(identifier),
-      events,
-    )
-
-    if (inserted > 0) {
-      for (const [externalId, meter] of Object.entries(config.meters ?? {})) {
-        if (
-          events.some(({ name, metadata }) =>
-            matchesMeter(meter, { name, timestamp, metadata: metadata ?? {} }),
-          )
-        ) {
-          markIngested(identifier, externalId, timestamp)
-        }
-      }
+    const actor = await (await metering()).actor(toActorInput(identifier))
+    for (const { metadata, ...event } of events) {
+      await actor.track(metadata !== undefined ? { ...event, metadata } : event)
     }
   }
 
@@ -286,40 +262,12 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         throw new Error(`Unknown meter: ${name}`)
       }
 
-      // A customer meter only gets created in 2 cases:
-      //
-      // #1 - a benefit has granted meter credits for that meter -> customer meter gets created upon benefit grant
-      // #2 - an event has been ingested that matches the meter's filter definition -> customer meter gets created
-      //
-      // So a missing customer meter means a zero balance, unless the meter
-      // itself isn't deployed, which we check once per meter.
-      const customerMeter = await getCustomerMeter(
-        sdk,
-        toCustomerIdentifier(identifier),
-        name,
-      )
-      if (customerMeter === undefined) {
-        await getDeployedMeterId(name)
-      }
-
-      const key = cacheKey(identifier, name)
-      const ingestedAt = latestIngestedAt.get(key)
-
-      const updatedAt = customerMeter
-        ? new Date(customerMeter.modified_at ?? customerMeter.created_at)
-        : undefined
-      const pristine =
-        ingestedAt === undefined ||
-        (updatedAt !== undefined && updatedAt >= ingestedAt)
-
-      if (pristine) {
-        latestIngestedAt.delete(key)
-      }
-
-      return {
-        balance: customerMeter?.balance ?? 0,
-        pristine,
-      }
+      const meterId = await getDeployedMeterId(name)
+      const actor = await (await metering()).actor(toActorInput(identifier))
+      // A customer meter only exists once credits are granted or a matching
+      // event is ingested, so a missing one means a zero balance.
+      const customerMeter = await actor.meter(meterId)
+      return { balance: customerMeter?.balance ?? 0 }
     },
 
     async grant(name, units, { rollover = false, idempotencyKey } = {}) {
@@ -332,13 +280,12 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         )
       }
 
-      const event = await creditCustomerMeter(
+      await creditCustomerMeter(
         sdk,
         toCustomerIdentifier(identifier),
         { id: await getDeployedMeterId(name), externalId: name },
         { units, rollover, externalId: idempotencyKey },
       )
-      markIngested(identifier, name, new Date(event.timestamp))
     },
 
     track: ((

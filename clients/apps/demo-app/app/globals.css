@@ -561,3 +561,48 @@ dialog .actions .ghost:hover:not(:disabled) {
   white-space: pre-wrap;
   animation: fade-in 0.2s ease-out;
 }
+
+.outpost {
+  display: grid;
+  gap: 8px;
+  padding: 16px 20px;
+  border-top: 1px solid #ffffff14;
+  font-size: 12px;
+}
+
+.outpost header {
+  display: flex;
+  justify-content: space-between;
+  color: #8b949e;
+}
+
+.outpost-on {
+  color: #7ee787;
+}
+
+.outpost dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  margin: 0;
+}
+
+.outpost dt {
+  color: #8b949e;
+}
+
+.outpost dd {
+  margin: 0;
+  font:
+    13px/1.4 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  text-align: right;
+}
+
+.outpost .outpost-total {
+  padding-top: 4px;
+  border-top: 1px solid #ffffff14;
+  color: #7ee787;
+}

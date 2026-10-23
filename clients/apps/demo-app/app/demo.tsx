@@ -10,7 +10,7 @@ import {
   topUp,
   upgrade,
 } from './actions'
-import { CodePanel, type Outcomes } from './code-panel'
+import { CodePanel, type Outcomes, type OutpostRead } from './code-panel'
 import type { HighlightedSteps } from './highlight'
 import type { Step } from './steps'
 
@@ -121,8 +121,8 @@ export function Demo({
   const [claimError, setClaimError] = useState<string>()
   const [paywallServer, setPaywallServer] = useState<Server>()
   const [balance, setBalance] = useState<number>()
-  const [pristine, setPristine] = useState(false)
-  const [syncStartedAt, setSyncStartedAt] = useState<number>()
+  const [outpost, setOutpost] = useState<OutpostRead | null>(null)
+  const [refreshing, setRefreshing] = useState(true)
   const [calling, setCalling] = useState(false)
   const [heldCount, setHeldCount] = useState(1)
   const [entries, setEntries] = useState<Entry[]>([])
@@ -141,6 +141,18 @@ export function Demo({
   const setOutcome = (step: Step, outcome: string) =>
     setOutcomes((outcomes) => ({ ...outcomes, [step]: outcome }))
 
+  const refreshBalance = async () => {
+    setRefreshing(true)
+    const result = await getBalance()
+    setBalance(result.balance)
+    setOutpost(result)
+    setOutcome(
+      'balance',
+      `balance('tool_call') → { balance: ${result.balance} }`,
+    )
+    setRefreshing(false)
+  }
+
   useEffect(() => {
     if (modal) {
       setContent(modal)
@@ -158,7 +170,7 @@ export function Demo({
       if (await checkUpgraded()) {
         setPro(true)
         setModal('upgraded')
-        setPristine(false)
+        void refreshBalance()
       } else timeout = setTimeout(poll, 1000)
     }
     void poll()
@@ -210,25 +222,9 @@ export function Demo({
     return () => clearInterval(interval)
   }, [])
 
-  // Poll until the balance reflects every tracked tool call
   useEffect(() => {
-    if (pristine) return
-
-    let timeout: ReturnType<typeof setTimeout>
-    const poll = async () => {
-      const result = await getBalance()
-      setBalance(result.balance)
-      setOutcome(
-        'balance',
-        `balance('tool_call') → { balance: ${result.balance}, pristine: ${result.pristine} }`,
-      )
-      if (result.pristine) setPristine(true)
-      else timeout = setTimeout(poll, 1000)
-    }
-    void poll()
-
-    return () => clearTimeout(timeout)
-  }, [pristine])
+    void refreshBalance()
+  }, [])
 
   const onClick = async (server: Server, event: React.MouseEvent) => {
     const count = countOf(event)
@@ -255,8 +251,7 @@ export function Demo({
       ),
     )
     setNow(Date.now())
-    setSyncStartedAt(Date.now())
-    setPristine(false)
+    void refreshBalance()
   }
 
   const openTopUp = () => {
@@ -280,7 +275,7 @@ export function Demo({
     }
 
     setModal(undefined)
-    setPristine(false)
+    void refreshBalance()
   }
 
   const openSurvey = () => {
@@ -305,16 +300,11 @@ export function Demo({
     setActive({ step: 'grant' })
     setOutcome('grant', `grant('tool_call', 10) → credited`)
     setModal(undefined)
-    setSyncStartedAt(Date.now())
-    setPristine(false)
+    void refreshBalance()
   }
 
   const selectedPack = topUps.find((topUp) => topUp.id === pack)
-  const disabled = calling || !pristine
-  const syncSeconds =
-    syncStartedAt === undefined
-      ? 0
-      : Math.max(0, Math.floor((now - syncStartedAt) / 1000))
+  const disabled = calling || refreshing
 
   return (
     <>
@@ -335,13 +325,11 @@ export function Demo({
           ))}
         </ul>
         <footer className="footer">
-          <p className={pristine ? undefined : 'muted'}>
+          <p className={refreshing ? 'muted' : undefined}>
             {balance === undefined
               ? 'Loading balance…'
-              : !pristine
-                ? `Syncing balance… (${syncSeconds} ${syncSeconds === 1 ? 'second' : 'seconds'})`
-                : `${balance} tool ${balance === 1 ? 'call' : 'calls'} remaining`}
-            {pro && pristine && topUps.length > 0 && (
+              : `${balance} tool ${balance === 1 ? 'call' : 'calls'} remaining`}
+            {pro && !refreshing && topUps.length > 0 && (
               <>
                 {' · '}
                 <button className="link" onClick={openTopUp}>
@@ -518,7 +506,12 @@ export function Demo({
           )}
         </dialog>
       </main>
-      <CodePanel snippets={snippets} active={active} outcomes={outcomes} />
+      <CodePanel
+        snippets={snippets}
+        active={active}
+        outcomes={outcomes}
+        outpost={outpost}
+      />
     </>
   )
 }

@@ -474,7 +474,7 @@ class MUTANValidator(ValidatorProtocol):
 class ZAVATValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         number = number.replace(" ", "").replace("-", "").replace(".", "").strip()
-        if len(number) != 10 or not number.isdigit() or not number.startswith("4"):
+        if re.fullmatch(r"4[0-9]{9}", number) is None:
             raise InvalidTaxID(number, country)
         return number
 

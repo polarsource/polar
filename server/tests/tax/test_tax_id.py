@@ -136,6 +136,7 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("49098577", "NZ"),  # Wrong check digit
         ("1234567", "NZ"),  # Too short (7 digits)
         ("3123456789", "ZA"),  # Does not start with 4
+        ("4١٢٣٤٥٦٧٨٩", "ZA"),  # Non-ASCII digits
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

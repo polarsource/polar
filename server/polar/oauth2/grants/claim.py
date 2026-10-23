@@ -48,6 +48,8 @@ class ClaimGrant(AgentGrant):
         now = utc_now()
         polled_at = agent.claim_polled_at
         agent.claim_polled_at = now
+        self.server.session.add(agent)
+        self.server.session.flush()
         if polled_at is not None and polled_at > now - timedelta(
             seconds=CLAIM_POLL_INTERVAL
         ):

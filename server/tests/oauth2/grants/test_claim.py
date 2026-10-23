@@ -66,11 +66,12 @@ class TestClaimGrant:
 
     @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_slow_down(
-        self, save_fixture: SaveFixture, client: AsyncClient
+        self, save_fixture: SaveFixture, sync_session: Session, client: AsyncClient
     ) -> None:
         await create_claim_agent(save_fixture)
 
         await client.post("/v1/oauth2/token", data=POLL)
+        sync_session.expire_all()
         response = await client.post("/v1/oauth2/token", data=POLL)
 
         assert response.status_code == 400

@@ -71,7 +71,7 @@ const NESTED = ui.INDENT.repeat(3)
 const ids = (input: unknown): string[] =>
   Array.isArray(input) ? input.map((id) => name(id)) : []
 
-const documents = (input: unknown, section: Section) => {
+export const documents = (input: unknown, section: Section) => {
   const items = record(input)?.[section]
   const byId = new Map<string, unknown>()
   for (const item of Array.isArray(items) ? items : []) {

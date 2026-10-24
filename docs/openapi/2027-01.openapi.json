@@ -72192,12 +72192,6 @@
             "description": "If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.",
             "default": false
           },
-          "agentic_payments_enabled": {
-            "type": "boolean",
-            "title": "Agentic Payments Enabled",
-            "description": "If this organization accepts payments from AI agents through Stripe shared payment tokens.",
-            "default": false
-          },
           "config_as_code_enabled": {
             "type": "boolean",
             "title": "Config As Code Enabled",

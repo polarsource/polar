@@ -30971,12 +30971,6 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
-       * Agentic Payments Enabled
-       * @description If this organization accepts payments from AI agents through Stripe shared payment tokens.
-       * @default false
-       */
-      agentic_payments_enabled: boolean
-      /**
        * Staged Events Ingest Enabled
        * @description If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
        * @default false

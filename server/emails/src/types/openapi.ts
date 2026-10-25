@@ -709,6 +709,11 @@ export interface components {
        */
       permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin'
     }
+    /**
+     * BenefitGrantTarget
+     * @enum {string}
+     */
+    BenefitGrantTarget: 'member' | 'customer'
     /** BenefitLicenseKeyActivationProperties */
     BenefitLicenseKeyActivationProperties: {
       /** Limit */
@@ -869,6 +874,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitMeterCreditProperties']
+      /** @description Who receives the credits on seat-based products. `member` credits the units for every claimed seat. `customer` credits the units once, as a pool shared by all seats. Products without seats always credit the customer. Can't be changed after creation. */
+      grant_target: components['schemas']['BenefitGrantTarget']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
     }

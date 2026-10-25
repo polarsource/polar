@@ -1,10 +1,13 @@
 from typing import Annotated, Literal
 
 from annotated_types import Gt
+from pydantic import Field
 from pydantic.types import UUID4
 
 from polar.kit.schemas import Int32, Schema
-from polar.models.benefit import BenefitType
+from polar.kit.versioning import Version
+from polar.models.benefit import BenefitGrantTarget, BenefitType
+from polar.version import V2027_01
 
 from ..base.schemas import (
     BenefitBase,
@@ -36,6 +39,15 @@ class BenefitMeterCreditCreateProperties(Schema):
     meter_id: UUID4
 
 
+GRANT_TARGET_DESCRIPTION = (
+    "Who receives the credits on seat-based products. "
+    "`member` credits the units for every claimed seat. "
+    "`customer` credits the units once, as a pool shared by all seats. "
+    "Products without seats always credit the customer. "
+    "Can't be changed after creation."
+)
+
+
 class BenefitMeterCreditSubscriberProperties(Schema):
     """
     Properties available to subscribers for a benefit of type `meter_unit`.
@@ -53,6 +65,11 @@ class BenefitMeterCreditCreate(BenefitCreateBase):
 
     type: Literal[BenefitType.meter_credit]
     properties: BenefitMeterCreditCreateProperties
+    grant_target: Annotated[
+        BenefitGrantTarget,
+        Version(starting_from=V2027_01),
+        Field(description=GRANT_TARGET_DESCRIPTION),
+    ] = BenefitGrantTarget.member
 
 
 class BenefitMeterCreditUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
@@ -69,6 +86,11 @@ class BenefitMeterCredit(BenefitBase):
 
     type: Literal[BenefitType.meter_credit]
     properties: BenefitMeterCreditProperties
+    grant_target: Annotated[
+        BenefitGrantTarget,
+        Version(starting_from=V2027_01),
+        Field(description=GRANT_TARGET_DESCRIPTION),
+    ]
 
 
 class BenefitMeterCreditSubscriber(BenefitSubscriberBase):

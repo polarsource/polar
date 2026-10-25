@@ -30,6 +30,7 @@ from polar.models import (
     Product,
     User,
 )
+from polar.models.benefit import BenefitGrantTarget
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
@@ -365,9 +366,13 @@ class BenefitGrantService:
             else:
                 existing_grants = []
         else:
-            existing_grants = await repository.list_by_customer_and_scope(
-                customer, **scope
-            )
+            existing_grants = [
+                grant
+                for grant in await repository.list_by_customer_and_scope(
+                    customer, **scope
+                )
+                if grant.member_id is None
+            ]
 
         granted_benefit_ids = {g.benefit_id for g in existing_grants if g.is_granted}
         # Don't retry grants that failed due to required customer action
@@ -380,7 +385,7 @@ class BenefitGrantService:
         grant_benefit_ids = (
             [
                 b.id
-                for b in product.benefits
+                for b in self._get_grantable_benefits(product, member_id, **scope)
                 if b.id not in granted_benefit_ids and b.id not in errored_benefit_ids
             ]
             if task == "grant"
@@ -395,7 +400,9 @@ class BenefitGrantService:
 
         # Include outdated grants (from subscription upgrades/downgrades)
         outdated_grants = await repository.list_outdated_grants(product, **scope)
-        revoke_benefit_ids.extend(g.benefit_id for g in outdated_grants)
+        revoke_benefit_ids.extend(
+            g.benefit_id for g in outdated_grants if g.member_id == member_id
+        )
 
         if not revoke_benefit_ids and not grant_benefit_ids:
             return
@@ -434,6 +441,30 @@ class BenefitGrantService:
                 member_id=member_id,
                 **scope_args,
             )
+
+    def _get_grantable_benefits(
+        self,
+        product: Product,
+        member_id: UUID | None,
+        **scope: Unpack[BenefitGrantScope],
+    ) -> Sequence[Benefit]:
+        order = scope.get("order")
+        is_seat_based = (
+            order.seats is not None
+            if order is not None
+            else product.has_seat_based_price
+        )
+        if not is_seat_based:
+            return product.benefits
+
+        # Seat-based purchases grant member-targeted benefits to each claimed
+        # seat, and customer-targeted benefits once to the billing customer.
+        target = (
+            BenefitGrantTarget.member
+            if member_id is not None
+            else BenefitGrantTarget.customer
+        )
+        return [b for b in product.benefits if b.grant_target == target]
 
     async def enqueue_benefit_grant_updates(
         self,

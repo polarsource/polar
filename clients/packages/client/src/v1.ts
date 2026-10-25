@@ -12060,6 +12060,11 @@ export interface components {
       | '-granted_at'
       | 'revoked_at'
       | '-revoked_at'
+    /**
+     * BenefitGrantTarget
+     * @enum {string}
+     */
+    BenefitGrantTarget: 'member' | 'customer'
     BenefitGrantWebhook:
       | components['schemas']['BenefitGrantDiscordWebhook']
       | components['schemas']['BenefitGrantCustomWebhook']
@@ -12529,6 +12534,8 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
       properties: components['schemas']['BenefitMeterCreditProperties']
+      /** @description Who receives the credits on seat-based products. `member` credits the units for every claimed seat. `customer` credits the units once, as a pool shared by all seats. Products without seats always credit the customer. Can't be changed after creation. */
+      grant_target: components['schemas']['BenefitGrantTarget']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
     }
@@ -12578,6 +12585,11 @@ export interface components {
       /** @description The visibility of the benefit in the customer portal. */
       visibility?: components['schemas']['BenefitVisibility'] | null
       properties: components['schemas']['BenefitMeterCreditCreateProperties']
+      /**
+       * @description Who receives the credits on seat-based products. `member` credits the units for every claimed seat. `customer` credits the units once, as a pool shared by all seats. Products without seats always credit the customer. Can't be changed after creation.
+       * @default member
+       */
+      grant_target: components['schemas']['BenefitGrantTarget']
     }
     /**
      * BenefitMeterCreditCreateProperties
@@ -72203,6 +72215,9 @@ export const benefitGrantSortPropertyValues: ReadonlyArray<
   'revoked_at',
   '-revoked_at',
 ]
+export const benefitGrantTargetValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitGrantTarget']
+> = ['member', 'customer']
 export const benefitGrantedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGrantedEvent']['name']
 > = ['benefit.granted']

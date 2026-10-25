@@ -88,6 +88,11 @@ class BenefitType(StrEnum):
         return visibility if visibility is not None else self.default_visibility()
 
 
+class BenefitGrantTarget(StrEnum):
+    member = "member"
+    customer = "customer"
+
+
 VISIBILITY_CONFIGURABLE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(
     {
         BenefitType.custom,
@@ -126,6 +131,12 @@ class Benefit(VisibilityMixin, MetadataMixin, ExternalIDMixin, RecordModel):
     )
     selectable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     deletable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    grant_target: Mapped[BenefitGrantTarget] = mapped_column(
+        StringEnum(BenefitGrantTarget),
+        nullable=False,
+        default=BenefitGrantTarget.member,
+        server_default=BenefitGrantTarget.member.value,
+    )
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="cascade"),

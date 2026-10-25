@@ -22,11 +22,14 @@ import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@polar-sh/orbit'
 import { useMeters } from '@/hooks/queries/meters'
 import { Button } from '@polar-sh/orbit'
+import { GrantTargetField } from './GrantTargetField'
 
 export const MeterCreditBenefitForm = ({
   organization,
+  update,
 }: {
   organization: schemas['Organization']
+  update: boolean
 }) => {
   const { data: meters } = useMeters(organization.id, {
     sorting: ['name'],
@@ -152,6 +155,7 @@ export const MeterCreditBenefitForm = ({
               </FormItem>
             )}
           />
+          <GrantTargetField update={update} />
         </>
       )}
       <InlineModal

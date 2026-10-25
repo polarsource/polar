@@ -12,6 +12,7 @@ from polar.benefit.strategies import BenefitActionRequiredError, BenefitServiceP
 from polar.benefit.strategies.base.properties import BenefitGrantProperties
 from polar.benefit.strategies.base.service import BenefitRetriableError
 from polar.config import settings
+from polar.enums import SubscriptionRecurringInterval
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -21,14 +22,18 @@ from polar.models import (
     Product,
     Subscription,
 )
+from polar.models.benefit import BenefitGrantTarget
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
     create_benefit_grant,
     create_customer,
+    create_member,
     create_order,
+    create_product,
     create_subscription,
     set_product_benefits,
 )
@@ -680,6 +685,202 @@ class TestEnqueueBenefitsGrants:
             enqueue_grants_actor.message.return_value
         )
         group_mock.return_value.run.assert_called_once()
+
+
+@pytest.mark.anyio
+class TestEnqueueBenefitsGrantsGrantTarget:
+    async def _create_benefits(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> tuple[Benefit, Benefit]:
+        member_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            grant_target=BenefitGrantTarget.member,
+        )
+        customer_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            grant_target=BenefitGrantTarget.customer,
+        )
+        return member_benefit, customer_benefit
+
+    async def _create_seat_product(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        benefits: list[Benefit],
+    ) -> Product:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        return await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+    async def test_seat_based_subscription_customer_grants_customer_targeted(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        member_benefit, customer_benefit = await self._create_benefits(
+            save_fixture, organization
+        )
+        product = await self._create_seat_product(
+            save_fixture, organization, [member_benefit, customer_benefit]
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_called_once()
+        assert enqueue_job_mock.call_args[1]["grant_benefit_ids"] == [
+            customer_benefit.id
+        ]
+        assert enqueue_job_mock.call_args[1]["member_id"] is None
+
+    async def test_seat_based_subscription_member_grants_member_targeted(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        member_benefit, customer_benefit = await self._create_benefits(
+            save_fixture, organization
+        )
+        product = await self._create_seat_product(
+            save_fixture, organization, [member_benefit, customer_benefit]
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+        member = await create_member(
+            save_fixture, customer=customer, organization=organization
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session,
+            "grant",
+            customer,
+            product,
+            member_id=member.id,
+            subscription=subscription,
+        )
+
+        enqueue_job_mock.assert_called_once()
+        assert enqueue_job_mock.call_args[1]["grant_benefit_ids"] == [member_benefit.id]
+        assert enqueue_job_mock.call_args[1]["member_id"] == member.id
+
+    async def test_seat_based_order_customer_grants_customer_targeted(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        member_benefit, customer_benefit = await self._create_benefits(
+            save_fixture, organization
+        )
+        product = await set_product_benefits(
+            save_fixture,
+            product=product_one_time,
+            benefits=[member_benefit, customer_benefit],
+        )
+        order = await create_order(save_fixture, product=product, customer=customer)
+        order.seats = 3
+        await save_fixture(order)
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, order=order
+        )
+
+        enqueue_job_mock.assert_called_once()
+        assert enqueue_job_mock.call_args[1]["grant_benefit_ids"] == [
+            customer_benefit.id
+        ]
+
+    async def test_non_seat_based_grants_all_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        member_benefit, customer_benefit = await self._create_benefits(
+            save_fixture, organization
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[member_benefit, customer_benefit]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_called_once()
+        assert set(enqueue_job_mock.call_args[1]["grant_benefit_ids"]) == {
+            member_benefit.id,
+            customer_benefit.id,
+        }
+
+    async def test_customer_revoke_ignores_member_grants(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        group_mock = mocker.patch("polar.benefit.grant.service.group")
+        member_benefit, customer_benefit = await self._create_benefits(
+            save_fixture, organization
+        )
+        product = await self._create_seat_product(
+            save_fixture, organization, [customer_benefit]
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+        member = await create_member(
+            save_fixture, customer=customer, organization=organization
+        )
+        for benefit in (member_benefit, customer_benefit):
+            grant = BenefitGrant(
+                subscription=subscription,
+                customer=customer,
+                member=member,
+                benefit=benefit,
+            )
+            grant.set_granted()
+            await save_fixture(grant)
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "revoke", customer, product, subscription=subscription
+        )
+
+        enqueue_job_mock.assert_not_called()
+        group_mock.assert_not_called()
 
 
 @pytest.mark.anyio

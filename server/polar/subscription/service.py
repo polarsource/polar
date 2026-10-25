@@ -2210,9 +2210,9 @@ class SubscriptionService:
 
                 await self.enqueue_benefits_grants(session, subscription)
 
-                # Seat-based subscriptions short-circuit enqueue_benefits_grants
-                # while active, so existing claimed seats won't pick up the new
-                # product's benefits without an explicit re-sync.
+                # enqueue_benefits_grants only covers the customer-targeted
+                # benefits of seat-based subscriptions, so existing claimed seats
+                # won't pick up the new product's benefits without a re-sync.
                 if product.has_seat_based_price and subscription.active:
                     await seat_service.update_subscription_benefits_grants(
                         session, subscription
@@ -4378,17 +4378,11 @@ class SubscriptionService:
                 # Don't enqueue revocation yet, still within grace period
                 return
 
-        # For seat-based products, handle benefits through seats
-        if product.has_seat_based_price:
-            # When subscription is cancelled/revoked, revoke all seats
-            # which will in turn revoke benefits for each seat holder
-            if not subscription.active:
-                await seat_service.revoke_all_seats_for_subscription(
-                    session, subscription
-                )
-            # When subscription is active, benefits are granted when seats are claimed
-            # So we don't need to do anything here
-            return
+        # Seat holders get member-targeted benefits when they claim a seat, so
+        # an inactive subscription revokes them through its seats. The job below
+        # only handles the customer-targeted benefits of seat-based products.
+        if product.has_seat_based_price and not subscription.active:
+            await seat_service.revoke_all_seats_for_subscription(session, subscription)
 
         enqueue_job(
             "benefit.enqueue_benefits_grants",

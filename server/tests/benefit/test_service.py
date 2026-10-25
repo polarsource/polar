@@ -29,6 +29,10 @@ from polar.benefit.strategies.feature_flag.schemas import BenefitFeatureFlagUpda
 from polar.benefit.strategies.github_repository.schemas import (
     BenefitGitHubRepositoryUpdate,
 )
+from polar.benefit.strategies.meter_credit.schemas import (
+    BenefitMeterCreditCreate,
+    BenefitMeterCreditUpdate,
+)
 from polar.benefit.strategies.slack_shared_channel.schemas import (
     BenefitSlackSharedChannelCreate,
     BenefitSlackSharedChannelCreateProperties,
@@ -38,8 +42,15 @@ from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import Schema
 from polar.kit.visibility import Visibility
-from polar.models import Benefit, Organization, SlackApp, User, UserOrganization
-from polar.models.benefit import BenefitType
+from polar.models import (
+    Benefit,
+    Meter,
+    Organization,
+    SlackApp,
+    User,
+    UserOrganization,
+)
+from polar.models.benefit import BenefitGrantTarget, BenefitType
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
@@ -506,6 +517,41 @@ class TestUserCreate:
         assert benefit.visibility == Visibility.public
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("grant_target", "expected"),
+        [
+            (None, BenefitGrantTarget.member),
+            (BenefitGrantTarget.customer, BenefitGrantTarget.customer),
+        ],
+    )
+    async def test_meter_credit_grant_target(
+        self,
+        grant_target: BenefitGrantTarget | None,
+        expected: BenefitGrantTarget,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        create_schema = BenefitMeterCreditCreate.model_validate(
+            {
+                "type": BenefitType.meter_credit,
+                "description": "Credits",
+                "properties": {"meter_id": meter.id, "units": 100, "rollover": False},
+                "organization_id": organization.id,
+                **({"grant_target": grant_target} if grant_target else {}),
+            }
+        )
+
+        benefit = await benefit_service.user_create(
+            session, redis, create_schema, auth_subject
+        )
+
+        assert benefit.grant_target == expected
+
+    @pytest.mark.auth
     async def test_custom_respects_private_visibility(
         self,
         mocker: MockerFixture,
@@ -795,6 +841,46 @@ class TestUpdate:
         )
 
         assert updated_benefit.visibility == Visibility.public
+
+    @pytest.mark.auth
+    async def test_grant_target_cannot_be_changed(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        mocker.patch.object(
+            benefit_grant_service,
+            "enqueue_benefit_grant_updates",
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 100, "rollover": False},
+            grant_target=BenefitGrantTarget.customer,
+        )
+
+        update_schema = BenefitMeterCreditUpdate.model_validate(
+            {
+                "type": BenefitType.meter_credit,
+                "description": "Updated credits",
+                "grant_target": BenefitGrantTarget.member,
+            }
+        )
+
+        updated_benefit = await benefit_service.update(
+            session, redis, benefit, update_schema, auth_subject
+        )
+
+        assert updated_benefit.description == "Updated credits"
+        assert updated_benefit.grant_target == BenefitGrantTarget.customer
 
     @pytest.mark.auth
     async def test_same_external_id(

@@ -87,7 +87,7 @@ from polar.models import (
     WebhookEndpoint,
 )
 from polar.models.agent import AgentStatus
-from polar.models.benefit import BenefitType
+from polar.models.benefit import BenefitGrantTarget, BenefitType
 from polar.models.benefit_grant import (
     BenefitGrant,
     BenefitGrantScope,
@@ -1273,6 +1273,7 @@ async def create_benefit(
     deletable: bool = True,
     properties: dict[str, Any] | None = None,
     external_id: str | None = None,
+    grant_target: BenefitGrantTarget = BenefitGrantTarget.member,
 ) -> Benefit:
     if properties is None:
         properties = {"note": None}
@@ -1285,6 +1286,7 @@ async def create_benefit(
         deletable=deletable,
         properties=properties,
         external_id=external_id,
+        grant_target=grant_target,
     )
     await save_fixture(benefit)
     return benefit

@@ -147,7 +147,7 @@ const BenefitForm = ({
       )}
       {type === 'license_keys' && <LicenseKeysBenefitForm />}
       {type === 'meter_credit' && (
-        <MeterCreditBenefitForm organization={organization} />
+        <MeterCreditBenefitForm organization={organization} update={update} />
       )}
       {type === 'slack_shared_channel' && (
         <SlackSharedChannelBenefitForm

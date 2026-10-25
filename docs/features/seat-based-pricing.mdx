@@ -22,7 +22,7 @@ Seat-based products separate who pays from who uses, modeled through three entit
 - A **Member** is a person under a customer — who uses. Each member has their own email, role (`owner`, `billing_manager`, or `member`), and receives benefit grants independently. The purchaser becomes an `owner` member. Both `owner` and `billing_manager` roles can manage seats and the subscription.
 - A **CustomerSeat** is the link between a product and a member. It tracks assignment status (`pending`, `claimed`, `revoked`) and holds the invitation token.
 
-Because benefits are granted to members, not to the billing customer, always identify the end user by their member — not the customer who paid.
+Because benefits are granted to members, not to the billing customer, always identify the end user by their member — not the customer who paid. The exception is a [Credits benefit](/features/benefits/credits#seat-based-products) set to be shared by the team: it credits the customer once, and every member draws from that balance.
 
 ## How it works
 
@@ -81,7 +81,7 @@ Use **subscriptions** for ongoing team access. Use **one-time purchases** for pe
     - Volume discounts: 14 seats = 14 × \$8 = \$112 — all seats use the lowest matching rate
   </Step>
   <Step title="Add benefits">
-    Configure the benefits that seat holders will receive. These are only granted when a seat is claimed, not when purchased.
+    Configure the benefits that seat holders will receive. These are only granted when a seat is claimed, not when purchased. Credits benefits shared by the team are the exception: they are granted to the customer at purchase.
   </Step>
 </Steps>
 

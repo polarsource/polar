@@ -29,6 +29,15 @@ If the product has a [meter cycle](/features/usage-based-billing/billing#meter-c
 
 The customer will be credited the amount of units specified in the benefit once at the time of purchase.
 
+### Seat-based products
+
+On [seat-based products](/features/seat-based-pricing), choose who receives the credits when you create the benefit:
+
+- **Shared by the team** credits the units once to the customer, as soon as they purchase. All seat holders draw from that single balance. Use it to include a fixed allowance in a plan, for example 60,000 credits on Pro, whatever the number of seats.
+- **Per seat** credits the units each time a seat is claimed. The credits still land on the customer's balance, so 5 claimed seats on a 10,000-unit benefit give the team 50,000 units to share.
+
+Products without seats always credit the customer once. In the API, this is the `grant_target` field: `customer` for shared, `member` for per seat. It defaults to `member` and can't be changed after the benefit is created.
+
 ## Rollover unused credits
 
 You can choose to rollover unused credits to the next billing cycle. This means that if a customer doesn't use all of their credits in a given billing cycle, the remaining credits will be added to their balance for the next billing cycle. With a [meter cycle](/features/usage-based-billing/billing#meter-cycle), unused credits roll over to the next meter period. To enable this feature, check the "Rollover unused credits" checkbox when creating or editing the Credits benefit.

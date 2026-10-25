@@ -244,6 +244,14 @@ export const MeterCreditCells = ({
           rollover ? 'Unused credits roll over' : 'Balance resets on each grant'
         }
       />
+      <DetailCell
+        label="Seat-based products"
+        value={
+          benefit.grant_target === 'customer'
+            ? 'Shared by the team'
+            : 'Per seat'
+        }
+      />
     </>
   )
 }

@@ -6,6 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
+from polar.customer_seat.service import SeatService
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.dispute.service import DisputeNotOpenError, DisputePaymentNotFoundError
 from polar.dispute.service import dispute as dispute_service
@@ -34,8 +35,10 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_dispute,
     create_order,
+    create_order_with_seats,
     create_payment,
     create_payment_transaction,
+    create_product,
     create_refund,
 )
 from tests.fixtures.stripe import (
@@ -56,6 +59,11 @@ def dispute_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def refund_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.dispute.service.refund_service", spec=RefundService)
+
+
+@pytest.fixture
+def customer_seat_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.dispute.service.customer_seat_service", spec=SeatService)
 
 
 @pytest.fixture
@@ -653,6 +661,45 @@ class TestUpsertFromStripe:
             product=product_one_time,
             order=order,
         )
+
+    async def test_revoke_seat_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        benefit_grant_service_mock: MagicMock,
+        customer_seat_service_mock: MagicMock,
+        dispute_transaction_service_mock: MagicMock,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+        order = await create_order_with_seats(
+            save_fixture, product=product, customer=customer, seats=3
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+
+        await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        customer_seat_service_mock.revoke_all_seats_for_order.assert_awaited_once()
+        assert (
+            customer_seat_service_mock.revoke_all_seats_for_order.await_args.args[1].id
+            == order.id
+        )
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_not_awaited()
 
     async def test_revoke_subscription(
         self,

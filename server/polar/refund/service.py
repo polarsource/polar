@@ -11,6 +11,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
+from polar.customer_seat.service import seat_service as customer_seat_service
 from polar.dispute.repository import DisputeRepository
 from polar.enums import PaymentProcessor
 from polar.event.service import event as event_service
@@ -469,7 +470,9 @@ class RefundService:
         if refund.succeeded:
             await self._on_succeeded(session, refund)
 
-        if refund.revoke_benefits and order.product is not None:
+        if refund.revoke_benefits and order.seats is not None:
+            await customer_seat_service.revoke_all_seats_for_order(session, order)
+        elif refund.revoke_benefits and order.product is not None:
             await benefit_grant_service.enqueue_benefits_grants(
                 session,
                 task="revoke",

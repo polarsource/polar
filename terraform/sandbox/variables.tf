@@ -8,6 +8,17 @@ variable "planetscale_organization" {
   sensitive   = true
 }
 
+variable "planetscale_app_password" {
+  description = "Password for the PlanetScale app role returned by module.planetscale.app_role_username."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.planetscale_app_password) > 0
+    error_message = "Set planetscale_app_password before switching sandbox to PlanetScale."
+  }
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string

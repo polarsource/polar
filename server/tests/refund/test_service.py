@@ -6,6 +6,7 @@ import stripe as stripe_lib
 from httpx import AsyncClient, Response
 from pytest_mock import MockerFixture
 
+from polar.customer_seat.service import SeatService
 from polar.enums import TaxProcessor
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
@@ -39,6 +40,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_order_and_payment,
     create_payment,
+    create_product,
     create_refund,
     create_wallet_billing,
 )
@@ -772,6 +774,49 @@ class TestCreateFromDispute:
         assert refund.revoke_benefits is True
 
         assert refund_transaction_service_mock.create.call_count == 1
+
+    async def test_seat_based_order_revokes_seats(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        refund_transaction_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer_seat_service_mock = mocker.patch(
+            "polar.refund.service.customer_seat_service", spec=SeatService
+        )
+        benefit_grant_service_mock = mocker.patch(
+            "polar.refund.service.benefit_grant_service"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=0,
+        )
+        order.seats = 3
+        await save_fixture(order)
+        dispute = await create_dispute(save_fixture, order, payment, amount=1000)
+
+        await refund_service.create_from_dispute(
+            session, dispute, "DISPUTE_BALANCE_TRANSACTION_ID"
+        )
+
+        customer_seat_service_mock.revoke_all_seats_for_order.assert_awaited_once()
+        assert (
+            customer_seat_service_mock.revoke_all_seats_for_order.await_args.args[1].id
+            == order.id
+        )
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_not_called()
 
     async def test_valid_exceeding_refund(
         self,

@@ -15,6 +15,12 @@ import { useMetricsFilters } from './useMetricsFilters'
 
 type MetricKey = keyof schemas['Metrics']
 
+interface MetricGroupDefinition {
+  slug: string
+  title: string
+  metrics: MetricKey[]
+}
+
 interface ClientPageProps {
   organization: schemas['Organization']
   groupSlugs: string[]
@@ -63,6 +69,49 @@ const useFilteredMetrics = (
     metrics.length > 0,
   )
   return { data, interval, startDate, endDate, productId }
+}
+
+// Each built-in group queries its own metrics, so the page renders section by
+// section instead of waiting on one request for every metric.
+const BuiltInGroupSection = ({
+  organizationId,
+  group,
+  earliestDateISOString,
+}: {
+  organizationId: string
+  group: MetricGroupDefinition
+  earliestDateISOString: string
+}) => {
+  const { data, interval, startDate, endDate, productId } = useFilteredMetrics(
+    organizationId,
+    earliestDateISOString,
+    group.metrics,
+  )
+
+  return (
+    <DashboardSection id={group.slug} title={group.title}>
+      {!data ? (
+        <MetricGroup metricKeys={group.metrics} interval={interval} loading />
+      ) : group.slug === 'cancellations' ? (
+        <CancellationsContent
+          data={data}
+          interval={interval}
+          organizationId={organizationId}
+          startDate={startDate}
+          endDate={endDate}
+          productId={productId ?? undefined}
+        />
+      ) : group.slug === 'seats' ? (
+        <SeatsContent data={data} interval={interval} />
+      ) : (
+        <MetricGroup
+          metricKeys={group.metrics}
+          data={data}
+          interval={interval}
+        />
+      )}
+    </DashboardSection>
+  )
 }
 
 // Each custom dashboard queries its own metrics, so a dashboard holding a slug
@@ -125,7 +174,7 @@ export default function ClientPage({
   const [section, setSection] = useQueryState('section', parseAsString)
   const { data: customDashboards } = useMetricDashboards(organizationId)
 
-  const groups = useMemo(
+  const groups = useMemo<MetricGroupDefinition[]>(
     () =>
       METRIC_GROUPS.map((g) => ({
         slug: metricGroupSlug(g.category),
@@ -144,49 +193,23 @@ export default function ClientPage({
     [customDashboards],
   )
 
-  const metrics = useMemo(() => groups.flatMap((g) => g.metrics), [groups])
-
-  const { data, interval, startDate, endDate, productId } = useFilteredMetrics(
-    organizationId,
-    earliestDateISOString,
-    metrics,
-  )
-
   useEffect(() => {
-    if (!section || !data) return
+    if (!section) return
     const target = document.getElementById(section)
     if (!target) return
     target.scrollIntoView({ block: 'start' })
     setSection(null)
-  }, [section, data, dashboards, setSection])
-
-  if (!data) {
-    return null
-  }
+  }, [section, dashboards, setSection])
 
   return (
     <Box flexDirection="column" rowGap="4xl">
       {groups.map((group) => (
-        <DashboardSection key={group.slug} id={group.slug} title={group.title}>
-          {group.slug === 'cancellations' ? (
-            <CancellationsContent
-              data={data}
-              interval={interval}
-              organizationId={organizationId}
-              startDate={startDate}
-              endDate={endDate}
-              productId={productId ?? undefined}
-            />
-          ) : group.slug === 'seats' ? (
-            <SeatsContent data={data} interval={interval} />
-          ) : (
-            <MetricGroup
-              metricKeys={group.metrics}
-              data={data}
-              interval={interval}
-            />
-          )}
-        </DashboardSection>
+        <BuiltInGroupSection
+          key={group.slug}
+          organizationId={organizationId}
+          group={group}
+          earliestDateISOString={earliestDateISOString}
+        />
       ))}
       {dashboards.map((dashboard) => (
         <CustomDashboardSection

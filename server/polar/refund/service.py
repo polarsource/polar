@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any, Literal
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -206,7 +206,18 @@ class RefundService:
         )
 
         try:
-            return await self.create(session, order, create_schema=create_schema)
+            return await self.create(
+                session,
+                order,
+                amount=create_schema.amount,
+                tax_amount=order.calculate_refunded_tax_from_subtotal(
+                    create_schema.amount
+                ),
+                reason=create_schema.reason,
+                comment=create_schema.comment,
+                revoke_benefits=create_schema.revoke_benefits,
+                metadata=create_schema.metadata,
+            )
         except RefundAmountTooHigh as e:
             raise PolarRequestValidationError(
                 [
@@ -220,10 +231,17 @@ class RefundService:
             ) from e
 
     async def create(
-        self, session: AsyncSession, order: Order, create_schema: RefundCreate
+        self,
+        session: AsyncSession,
+        order: Order,
+        *,
+        amount: int,
+        tax_amount: int,
+        reason: RefundReason,
+        comment: str | None = None,
+        revoke_benefits: bool = False,
+        metadata: dict[str, Any] | None = None,
     ) -> Refund:
-        repository = RefundRepository.from_session(session)
-
         if order.refunds_blocked or not order.organization.can_refund:
             raise RefundsBlocked(order)
 
@@ -231,14 +249,8 @@ class RefundService:
             raise RefundedAlready(order)
 
         is_subscription = order.subscription_id is not None
-        if create_schema.revoke_benefits and is_subscription:
+        if revoke_benefits and is_subscription:
             raise RevokeSubscriptionBenefitsProhibited()
-
-        refund_amount = create_schema.amount
-        refund_tax_amount = order.calculate_refunded_tax_from_subtotal(
-            create_schema.amount
-        )
-        refund_id: UUID = uuid.uuid4()
 
         payment_repository = PaymentRepository.from_session(session)
         payment = await payment_repository.get_succeeded_by_order(order.id)
@@ -254,22 +266,39 @@ class RefundService:
         if payment_transaction is None:
             raise RefundPaymentTransactionNotFound(payment.id)
 
+        refund = Refund(
+            id=uuid.uuid4(),
+            status=RefundStatus.pending,
+            reason=reason,
+            comment=comment,
+            revoke_benefits=revoke_benefits,
+            user_metadata=metadata or {},
+            amount=amount,
+            tax_amount=tax_amount,
+            currency=order.currency,
+            payment=payment,
+            order=order,
+            subscription=order.subscription,
+            organization=order.organization,
+            customer=order.customer,
+            pledge=None,
+            dispute=None,
+            processor=payment.processor,
+        )
+
         if payment.processor == PaymentProcessor.stripe:
-            refund_total = refund_amount + refund_tax_amount
             stripe_metadata = {
-                "refund_id": str(refund_id),
+                "refund_id": str(refund.id),
                 "order_id": str(order.id),
                 "charge_id": payment.processor_id,
-                "amount": str(create_schema.amount),
-                "refund_amount": str(refund_amount),
-                "refund_tax_amount": str(refund_tax_amount),
-                "revoke_benefits": "1" if create_schema.revoke_benefits else "0",
+                "refund_amount": str(amount),
+                "refund_tax_amount": str(tax_amount),
             }
             try:
                 stripe_refund = await stripe_service.create_refund(
                     charge_id=payment.processor_id,
-                    amount=refund_total,
-                    reason=RefundReason.to_stripe(create_schema.reason),
+                    amount=refund.total_amount,
+                    reason=RefundReason.to_stripe(reason),
                     metadata=stripe_metadata,
                 )
             except stripe_lib.InvalidRequestError as e:
@@ -281,15 +310,13 @@ class RefundService:
                     raise RefundDisputedPayment(order)
                 else:
                     raise e
+            else:
+                refund.apply_stripe(stripe_refund)
 
-            refund = Refund.from_stripe(stripe_refund, order, payment)
         else:
             raise NotImplementedError()
 
-        refund.reason = create_schema.reason
-        refund.comment = create_schema.comment
-        refund.revoke_benefits = create_schema.revoke_benefits
-        refund.user_metadata = create_schema.metadata
+        repository = RefundRepository.from_session(session)
         refund = await repository.create(refund, flush=True)
 
         await self._on_created(session, refund)
@@ -505,10 +532,17 @@ class RefundService:
                 order.stripe_invoice_id is None  # Tax managed via Stripe Billing
                 and order.tax_transaction_processor_id
                 and order.tax_amount > 0
+                and refund.tax_transaction_processor_id is None
             ):
                 assert order.tax_processor is not None
                 assert order.billing_address is not None
                 assert order.product is not None
+                refund_repository = RefundRepository.from_session(session)
+                previous_reverted_tax_amount = (
+                    await refund_repository.get_reverted_tax_amount(
+                        order.id, exclude_refund_id=refund.id
+                    )
+                )
                 try:
                     transaction_id = await tax_calculation_service.revert(
                         order.tax_processor,
@@ -518,8 +552,10 @@ class RefundService:
                         tax_code=order.product.tax_code,
                         currency=order.currency,
                         total_amount=order.total_amount,
+                        tax_amount=order.tax_amount,
                         reverted_amount=refund.total_amount,
                         reverted_tax_amount=refund.tax_amount,
+                        previous_reverted_tax_amount=previous_reverted_tax_amount,
                     )
                     refund.tax_transaction_processor_id = transaction_id
                     session.add(refund)

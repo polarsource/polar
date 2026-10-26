@@ -39,6 +39,7 @@ class CatalogService:
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[CatalogStatus] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Catalog], int]:
         org_ids = await get_accessible_org_ids(
@@ -52,8 +53,11 @@ class CatalogService:
         org_ids = {oid for oid in org_ids if oid in enabled_org_ids}
 
         repository = CatalogRepository.from_session(session)
+        statement = repository.get_statement_by_org_ids(org_ids)
+        if status is not None:
+            statement = statement.where(Catalog.status.in_(status))
         return await repository.paginate(
-            repository.get_statement_by_org_ids(org_ids),
+            statement,
             limit=pagination.limit,
             page=pagination.page,
         )

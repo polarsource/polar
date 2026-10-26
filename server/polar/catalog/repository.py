@@ -43,10 +43,7 @@ class CatalogRepository(
     ) -> Select[tuple[Catalog]]:
         return (
             self.get_base_statement()
-            .where(
-                Catalog.organization_id.in_(org_ids),
-                Catalog.status != CatalogStatus.draft,
-            )
+            .where(Catalog.organization_id.in_(org_ids))
             .order_by(
                 Catalog.published_at.desc(),
                 Catalog.created_at.desc(),

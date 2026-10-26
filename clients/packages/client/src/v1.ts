@@ -3710,7 +3710,7 @@ export interface paths {
     }
     /**
      * List Catalogs
-     * @description List the published catalogs of organizations using config as code, newest first.
+     * @description List the catalogs of organizations using config as code, newest first.
      *
      *     **Scopes**: `products:read` `products:write`
      */
@@ -13688,7 +13688,7 @@ export interface components {
     }
     /**
      * Catalog
-     * @description A published version of an organization's product catalog.
+     * @description A version of an organization's product catalog.
      */
     Catalog: {
       /**
@@ -13725,20 +13725,14 @@ export interface components {
        * Version Hash
        * @description Hash identifying this version of the catalog.
        */
-      version_hash: string
-      /**
-       * Status
-       * @description `live` for the catalog new checkouts use, `archived` for previous versions.
-       * @enum {string}
-       */
-      status: 'live' | 'archived'
+      version_hash: string | null
+      /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
+      status: components['schemas']['CatalogStatus']
       /**
        * Published At
-       * Format: date-time
-       * @description When the catalog was published.
-       * @example 2026-01-01T00:00:00.000000Z
+       * @description When the catalog was published. Null for drafts.
        */
-      published_at: string
+      published_at: string | null
     }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
@@ -13762,6 +13756,11 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * CatalogStatus
+     * @enum {string}
+     */
+    CatalogStatus: 'draft' | 'live' | 'archived'
     /** ChannelNamePreviewRequest */
     ChannelNamePreviewRequest: {
       /** Organization Id */
@@ -53964,6 +53963,11 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by catalog status. */
+        status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -53982,15 +53986,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Catalog_']
-        }
-      }
-      /** @description Not authenticated. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Unauthorized']
         }
       }
       /** @description Validation Error */
@@ -72735,8 +72730,8 @@ export const canonicalPaymentMethodTypeValues: ReadonlyArray<
   'other',
 ]
 export const catalogStatusValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['Catalog']['status']
-> = ['live', 'archived']
+  FlattenedDeepRequired<components>['schemas']['CatalogStatus']
+> = ['draft', 'live', 'archived']
 export const checkoutCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutCreatedEvent']['name']
 > = ['checkout.created']

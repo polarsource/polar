@@ -13,7 +13,7 @@ from tests.fixtures.database import SaveFixture
 @pytest.fixture
 async def catalogs(
     save_fixture: SaveFixture, organization: Organization
-) -> tuple[Catalog, Catalog]:
+) -> tuple[Catalog, Catalog, Catalog]:
     now = utc_now()
     archived = Catalog(
         organization=organization,
@@ -31,7 +31,7 @@ async def catalogs(
     draft = Catalog(organization=organization, status=CatalogStatus.draft)
     for catalog in (archived, live, draft):
         await save_fixture(catalog)
-    return archived, live
+    return draft, live, archived
 
 
 @pytest.mark.anyio
@@ -67,19 +67,37 @@ class TestList:
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
-        catalogs: tuple[Catalog, Catalog],
+        catalogs: tuple[Catalog, Catalog, Catalog],
     ) -> None:
-        archived, live = catalogs
+        draft, live, archived = catalogs
 
         response = await client.get("/v1/catalogs/")
 
         assert response.status_code == 200
         json = response.json()
-        assert json["pagination"]["total_count"] == 2
+        assert json["pagination"]["total_count"] == 3
         assert [
             (item["id"], item["name"], item["status"], item["version_hash"])
             for item in json["items"]
         ] == [
+            (str(draft.id), None, "draft", None),
             (str(live.id), "Spring pricing", "live", live.version_hash),
             (str(archived.id), None, "archived", archived.version_hash),
+        ]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_status_filter(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, archived = catalogs
+
+        response = await client.get(
+            "/v1/catalogs/", params={"status": ["live", "archived"]}
+        )
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["items"]] == [
+            str(live.id),
+            str(archived.id),
         ]

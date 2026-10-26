@@ -9,5 +9,18 @@
         "no-restricted-imports": "off"
       }
     }
-  ]
+  ],
+  "settings": {
+    "react-doctor": {
+      "capabilities": [
+        "radix-ui",
+        "react",
+        "react-compiler",
+        "react:19",
+        "react:19.2",
+        "ssr",
+        "tanstack-table"
+      ]
+    }
+  }
 }

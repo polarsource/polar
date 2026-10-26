@@ -23,5 +23,19 @@
         ]
       }
     ]
+  },
+  "settings": {
+    "react-doctor": {
+      "capabilities": [
+        "i18n",
+        "radix-ui",
+        "react",
+        "react-compiler",
+        "react:19",
+        "react:19.2",
+        "shadcn",
+        "ssr"
+      ]
+    }
   }
 }

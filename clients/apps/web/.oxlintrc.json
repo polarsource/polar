@@ -108,5 +108,24 @@
         "polar/no-broken-mdx-links": "error"
       }
     }
-  ]
+  ],
+  "settings": {
+    "react-doctor": {
+      "capabilities": [
+        "i18n",
+        "nextjs",
+        "nextjs:15",
+        "radix-ui",
+        "react",
+        "react-compiler",
+        "react:19",
+        "react:19.2",
+        "shadcn",
+        "ssr",
+        "tanstack-query",
+        "tanstack-table",
+        "zod:4"
+      ]
+    }
+  }
 }

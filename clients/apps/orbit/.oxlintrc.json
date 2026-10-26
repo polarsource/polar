@@ -6,5 +6,18 @@
     "node_modules/**",
     "babel.config.js",
     "scripts/**"
-  ]
+  ],
+  "settings": {
+    "react-doctor": {
+      "capabilities": [
+        "nextjs",
+        "nextjs:15",
+        "react",
+        "react-compiler",
+        "react:19",
+        "react:19.2",
+        "ssr"
+      ]
+    }
+  }
 }

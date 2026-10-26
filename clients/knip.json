@@ -3,7 +3,7 @@
   "ignoreWorkspaces": ["apps/app", "examples/*"],
   "workspaces": {
     ".": {
-      "ignoreDependencies": ["only-allow"]
+      "ignoreDependencies": ["only-allow", "oxlint-plugin-react-doctor"]
     },
     "packages/client": {
       "ignore": ["src/v1.ts"]

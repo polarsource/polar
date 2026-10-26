@@ -52,7 +52,7 @@ Every instance of your application that runs the SDK with the same Redis shares 
     Outpost opens a WebSocket to Polar with the token your client uses. The token needs the `events:write` scope, the same one event ingestion needs.
   </Step>
   <Step title="Start Metering">
-    Outpost is on whenever `REDIS_URL` is set. If your application uses `REDIS_URL` for something else, pass `outpost: false`.
+    Outpost is off by default. Pass `outpost: true` to `polar.metering()`, or `outpost=True` in Python, to turn it on with `REDIS_URL`. Pass an object instead to configure it.
   </Step>
 </Steps>
 

@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     ColumnElement,
+    ColumnExpressionArgument,
     Select,
     String,
     and_,
@@ -223,6 +224,31 @@ class OrganizationRepository(
             )
         )
         return await self.get_one_or_none(statement)
+
+    async def is_website_used_by_active_organization(
+        self, organization: Organization
+    ) -> bool:
+        if not organization.website:
+            return False
+
+        def _normalized(
+            website: ColumnExpressionArgument[str | None],
+        ) -> ColumnElement[str]:
+            return func.rtrim(
+                func.regexp_replace(
+                    func.lower(func.btrim(website)), r"^(https?://)?(www\.)?", ""
+                ),
+                "/",
+            )
+
+        statement = self.get_base_statement().where(
+            Organization.id != organization.id,
+            Organization.status == OrganizationStatus.ACTIVE,
+            Organization.website.is_not(None),
+            _normalized(Organization.website)
+            == _normalized(literal(organization.website, String)),
+        )
+        return await self.get_one_or_none(statement.limit(1)) is not None
 
     async def slug_exists(self, slug: str) -> bool:
         """Check if slug exists, including soft-deleted organizations.

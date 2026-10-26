@@ -1,13 +1,15 @@
 import { useDeleteFile, useDownloadFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import AudioFileOutlined from '@mui/icons-material/AudioFileOutlined'
-import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined'
-import FolderZipOutlined from '@mui/icons-material/FolderZipOutlined'
-import ImageOutlined from '@mui/icons-material/ImageOutlined'
-import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import VideoFileOutlined from '@mui/icons-material/VideoFileOutlined'
+import {
+  AudioFileOutlined,
+  DescriptionOutlined,
+  FolderZipOutlined,
+  ImageOutlined,
+  InsertDriveFileOutlined,
+  MoreVertOutlined,
+  VideoFileOutlined,
+} from '@polar-sh/orbit/icons'
 import { Switch } from '@polar-sh/orbit'
 import {
   FocusEvent,

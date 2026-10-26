@@ -189,10 +189,15 @@ class Filter(BaseModel):
         return conjunction(*sql_clauses or (true(),))
 
     def matches(self, event: Event) -> bool:
-        results = [clause.matches(event) for clause in self.clauses]
         if self.conjunction == FilterConjunction.and_:
-            return all(results) if results else True
-        return any(results) if results else True
+            for clause in self.clauses:
+                if not clause.matches(event):
+                    return False
+            return True
+        for clause in self.clauses:
+            if clause.matches(event):
+                return True
+        return not self.clauses
 
 
 class FilterType(TypeDecorator[Any]):

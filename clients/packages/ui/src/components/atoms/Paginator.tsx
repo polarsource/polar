@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from '@polar-sh/orbit/icons'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Button } from '@polar-sh/orbit'

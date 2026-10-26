@@ -8,7 +8,7 @@ import { getQueryClient } from '@/utils/api/query'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Textarea } from '@polar-sh/orbit/ui/textarea'
-import { Loader2 } from 'lucide-react'
+import { LoaderCircle as Loader2 } from '@polar-sh/orbit/icons'
 import React, { useEffect, useState } from 'react'
 import HumanReviewCase from './HumanReviewCase'
 

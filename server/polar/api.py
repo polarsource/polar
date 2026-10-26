@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from polar.account.endpoints import router as accounts_router
+from polar.agent.endpoints import router as agent_router
 from polar.auth.endpoints import router as auth_router
 from polar.benefit.endpoints import router as benefits_router
 from polar.benefit.grant.endpoints import router as benefit_grants_router
@@ -194,3 +195,5 @@ router.include_router(payout_account_router)
 router.include_router(feedback_router)
 # /outpost
 router.include_router(outpost_router)
+# /agent
+router.include_router(agent_router)

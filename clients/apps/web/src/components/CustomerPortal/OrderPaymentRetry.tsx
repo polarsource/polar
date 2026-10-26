@@ -14,7 +14,7 @@ import {
   StripeElements,
   StripeError,
 } from '@stripe/stripe-js'
-import { WalletCards } from 'lucide-react'
+import { WalletCards } from '@polar-sh/orbit/icons'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface OrderPaymentRetryProps {

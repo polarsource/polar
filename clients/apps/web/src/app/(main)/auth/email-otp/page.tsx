@@ -1,6 +1,6 @@
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { Metadata } from 'next'
-import VerifyPage from './VerifyPage'
+import EmailOTPVerifyForm from '@/components/Auth/EmailOTPVerifyForm'
 import { checkAuthenticationSession } from '@/utils/auth'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { redirect } from 'next/navigation'
@@ -42,7 +42,7 @@ export default async function Page(props: {
         <div className="dark:text-polar-400 mb-6 text-center text-sm text-gray-500">
           Please enter the 6-character code below
         </div>
-        <VerifyPage intent={intent} />
+        <EmailOTPVerifyForm intent={intent} />
       </div>
     </div>
   )

@@ -2,6 +2,23 @@
 # Variables
 # =============================================================================
 
+variable "planetscale_organization" {
+  description = "PlanetScale organization slug."
+  type        = string
+  sensitive   = true
+}
+
+variable "planetscale_app_password" {
+  description = "Password for the PlanetScale app role returned by module.planetscale.app_role_username."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.planetscale_app_password) > 0
+    error_message = "Set planetscale_app_password before switching sandbox to PlanetScale."
+  }
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string
@@ -248,11 +265,6 @@ variable "polar_organization_id" {
   type        = string
 }
 
-variable "polar_free_product_id" {
-  description = "Polar free-tier product ID"
-  type        = string
-}
-
 variable "polar_scale_product_id" {
   description = "Polar Scale-tier product ID"
   type        = string
@@ -492,5 +504,12 @@ variable "linear_team_id" {
 variable "linear_payout_amount_mismatch_template_id" {
   description = "Linear payout amount mismatch issue template ID"
   type        = string
+  default     = ""
+}
+
+variable "slo_report_slack_bot_token" {
+  description = "Slack Bot Token, shared with production"
+  type        = string
+  sensitive   = true
   default     = ""
 }

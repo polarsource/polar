@@ -1,10 +1,12 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import RemoveOutlined from '@mui/icons-material/RemoveOutlined'
+import {
+  AddOutlined,
+  ArrowOutwardOutlined,
+  CheckOutlined,
+  RemoveOutlined,
+} from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Midday, StillaAI, Tailwind } from '../Logos'

@@ -85,6 +85,7 @@ export const COUNTRIES_WITH_FIXED_STATE_OPTIONS =
 
 const CountryStatePicker = ({
   className,
+  name,
   value,
   onChange,
   country,
@@ -99,6 +100,7 @@ const CountryStatePicker = ({
   className?: string
   contentClassName?: string
   itemClassName?: string
+  name?: string
   value?: string
   onChange: (value: string) => void
   country?: string
@@ -112,6 +114,7 @@ const CountryStatePicker = ({
   if (states) {
     return (
       <Select
+        name={name}
         onValueChange={onChange}
         value={value}
         autoComplete={autoComplete}
@@ -147,6 +150,8 @@ const CountryStatePicker = ({
     <Input
       data-testid={testId}
       type="text"
+      name={name}
+      autoComplete={autoComplete}
       placeholder={fallbackPlaceholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}

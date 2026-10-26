@@ -3,7 +3,7 @@
 import { type ScrollFadeHandle } from '@/components/Shared/ScrollFade'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Paperclip } from 'lucide-react'
+import { Paperclip } from '@polar-sh/orbit/icons'
 import React, { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Composer, type ComposerHandle } from './Composer'

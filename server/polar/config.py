@@ -134,6 +134,10 @@ class Settings(BaseSettings):
     LOCAL_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
 
+    # Self-service sign-up for AI agents (ADR-0014): the sign-up endpoint, the
+    # JWT-bearer grant and the discovery documents that point agents to them.
+    AGENT_SIGN_UP_ENABLED: bool = False
+
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []
 
@@ -219,6 +223,8 @@ class Settings(BaseSettings):
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
     DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
     DATABASE_CONNECT_TIMEOUT_SECONDS: float = 10.0
+    DATABASE_STATEMENT_CACHE_SIZE: int = 100
+    DATABASE_PREPARED_STATEMENT_CACHE_SIZE: int = 0
     DATABASE_STREAM_YIELD_PER: int = 100
 
     POSTGRES_READ_USER: str | None = None
@@ -467,7 +473,6 @@ class Settings(BaseSettings):
     POLAR_ACCESS_TOKEN: str = ""
     POLAR_WEBHOOK_SECRET: str = ""
     POLAR_ORGANIZATION_ID: str = ""
-    POLAR_FREE_PRODUCT_ID: str = ""
     # Scale plan product, used by the Startup Program to grant a 100% discount
     POLAR_SCALE_PRODUCT_ID: str = ""
     POLAR_API_URL: str = "https://api.polar.sh"
@@ -478,7 +483,6 @@ class Settings(BaseSettings):
             [
                 self.POLAR_ACCESS_TOKEN,
                 self.POLAR_ORGANIZATION_ID,
-                self.POLAR_FREE_PRODUCT_ID,
             ]
         )
 

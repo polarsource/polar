@@ -1,12 +1,14 @@
 import typing
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from pydantic import (
     UUID4,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Discriminator,
+    Field,
     PlainSerializer,
     TypeAdapter,
 )
@@ -20,10 +22,24 @@ def to_epoch_microseconds(value: datetime) -> int:
     return round(value.timestamp() * 1_000_000)
 
 
+def from_epoch_microseconds(value: typing.Any) -> typing.Any:
+    if isinstance(value, int):
+        try:
+            return datetime.fromtimestamp(value / 1_000_000, UTC)
+        except (OverflowError, OSError) as e:
+            raise ValueError("Timestamp out of range") from e
+    return value
+
+
 # Microseconds since the Unix epoch, so clients compare integers.
 type EpochMicroseconds = typing.Annotated[
-    datetime, PlainSerializer(to_epoch_microseconds, return_type=int)
+    datetime,
+    BeforeValidator(from_epoch_microseconds),
+    PlainSerializer(to_epoch_microseconds, return_type=int),
 ]
+
+# Pending ids per confirmation request: the client splits a bigger bucket.
+CONFIRM_MAX_IDS = 1000
 
 
 class MessageBase(BaseModel):
@@ -33,6 +49,7 @@ class MessageBase(BaseModel):
 class IncomingMessageType(StrEnum):
     configuration = "configuration"
     meter_usage = "meter_usage"
+    confirm = "confirm"
 
 
 class IncomingMessageBase(MessageBase):
@@ -68,8 +85,36 @@ class MeterUsageIncomingMessage(IncomingMessageBase):
     payload: MeterUsageIncomingMessagePayload
 
 
+class ConfirmIncomingMessagePayloadBase(MessageBase):
+    reducer_id: UUID4
+    # The meter whose snapshot the answer carries, read with the ids.
+    meter_id: UUID4
+    bucket_start: EpochMicroseconds
+    ids: list[str] = Field(max_length=CONFIRM_MAX_IDS)
+
+
+class ConfirmIncomingMessageCustomerPayload(ConfirmIncomingMessagePayloadBase):
+    customer_id: UUID4
+
+
+class ConfirmIncomingMessageExternalCustomerPayload(ConfirmIncomingMessagePayloadBase):
+    external_customer_id: str
+
+
+type ConfirmIncomingMessagePayload = (
+    ConfirmIncomingMessageCustomerPayload
+    | ConfirmIncomingMessageExternalCustomerPayload
+)
+
+
+class ConfirmIncomingMessage(IncomingMessageBase):
+    type: typing.Literal[IncomingMessageType.confirm]
+    payload: ConfirmIncomingMessagePayload
+
+
 type IncomingMessage = typing.Annotated[
-    ConfigurationIncomingMessage | MeterUsageIncomingMessage, Discriminator("type")
+    ConfigurationIncomingMessage | MeterUsageIncomingMessage | ConfirmIncomingMessage,
+    Discriminator("type"),
 ]
 
 IncomingMessageAdapter: TypeAdapter[IncomingMessage] = TypeAdapter(IncomingMessage)
@@ -82,6 +127,7 @@ class OutgoingMessageType(StrEnum):
     connection = "connection"
     configuration = "configuration"
     meter_usage = "meter_usage"
+    confirmed = "confirmed"
 
 
 class OutgoingMessageBase(MessageBase):
@@ -137,10 +183,27 @@ class MeterUsageOutgoingMessage(OutgoingMessageBase):
     payload: MeterUsageOutgoingMessagePayload
 
 
+class ConfirmedOutgoingMessagePayload(MessageBase):
+    reducer_id: UUID4
+    customer_id: UUID4 | None
+    external_customer_id: str | None
+    bucket_start: EpochMicroseconds
+    # The requested ids the snapshot counts; the rest stay pending.
+    ids: list[str]
+    # Read in the same transaction as the ids, so the two agree.
+    snapshot: MeterUsageOutgoingMessagePayload
+
+
+class ConfirmedOutgoingMessage(OutgoingMessageBase):
+    type: typing.Literal[OutgoingMessageType.confirmed]
+    payload: ConfirmedOutgoingMessagePayload
+
+
 type OutgoingMessage = typing.Annotated[
     ConnectionOutgoingMessage
     | ConfigurationOutgoingMessage
-    | MeterUsageOutgoingMessage,
+    | MeterUsageOutgoingMessage
+    | ConfirmedOutgoingMessage,
     Discriminator("type"),
 ]
 

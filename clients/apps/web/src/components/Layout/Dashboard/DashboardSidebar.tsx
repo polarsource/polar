@@ -5,10 +5,12 @@ import { NotificationsPopover } from '@/components/Notifications/NotificationsPo
 import { OmniSearch } from '@/components/Search/OmniSearch'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
-import LockOutlined from '@mui/icons-material/LockOutlined'
-import Search from '@mui/icons-material/Search'
+import {
+  ArrowOutwardOutlined,
+  KeyboardArrowDown,
+  LockOutlined,
+  SearchFilled as Search,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Button } from '@polar-sh/orbit'
 import {

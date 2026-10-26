@@ -837,7 +837,18 @@ async def refund(
                 comment=form.comment,
                 revoke_benefits=form.revoke_benefits,
             )
-            await refund_service.create(session, order, refund_create)
+            await refund_service.create(
+                session,
+                order,
+                amount=refund_create.amount,
+                tax_amount=order.calculate_refunded_tax_from_subtotal(
+                    refund_create.amount
+                ),
+                reason=refund_create.reason,
+                comment=refund_create.comment,
+                revoke_benefits=refund_create.revoke_benefits,
+                metadata=refund_create.metadata,
+            )
             await add_toast(request, "Refund created successfully.", "success")
             return HXRedirectResponse(
                 request, str(request.url_for("orders:get", id=id)), 303

@@ -1,6 +1,6 @@
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowUpRight, Check, CircleAlert } from 'lucide-react'
+import { ArrowUpRight, Check, CircleAlert } from '@polar-sh/orbit/icons'
 import {
   expectedStripeKeyMode,
   REQUIRED_PERMISSIONS,

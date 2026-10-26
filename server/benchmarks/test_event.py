@@ -1,3 +1,5 @@
+import itertools
+import random
 import typing
 
 import pytest
@@ -47,4 +49,39 @@ def test_ingest_100_events(
         return response.inserted
 
     assert ingest_batch() == 100
+    benchmark(ingest_batch)
+
+
+# Production batches change size from one request to the next
+def test_ingest_varying_batches(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    redis: Redis,
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    async def seed() -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+
+    run(seed())
+    auth_subject = AuthSubject(organization, {Scope.events_write}, None)
+    sizes = itertools.cycle(random.Random(0).sample(range(20, 220), 200))
+
+    def ingest_batch() -> int:
+        size = next(sizes)
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(
+                    name=METER_TEST_EVENT,
+                    external_customer_id=f"customer-{index % 10}",
+                )
+                for index in range(size)
+            ]
+        )
+        response = run(event_service.ingest(session, auth_subject, ingest, redis=redis))
+        return response.inserted
+
+    assert 20 <= ingest_batch() < 220
     benchmark(ingest_batch)

@@ -38,7 +38,6 @@ const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
         'meters:read',
         'benefits:read',
         'products:read',
-        'discounts:read',
       ])
     }
     return yield* HttpClientResponse.schemaBodyJson(ConfigExport)(response)

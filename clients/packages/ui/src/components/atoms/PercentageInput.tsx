@@ -1,4 +1,4 @@
-import { Percent } from 'lucide-react'
+import { Percent } from '@polar-sh/orbit/icons'
 import {
   ChangeEvent,
   FocusEvent,

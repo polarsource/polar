@@ -1,4 +1,4 @@
-import SupportIcon from '@mui/icons-material/Support'
+import { Support as SupportIcon } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { useSidebar } from '@polar-sh/ui/components/atoms/Sidebar'
 import { twMerge } from 'tailwind-merge'

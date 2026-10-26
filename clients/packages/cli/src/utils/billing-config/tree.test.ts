@@ -497,59 +497,6 @@ describe('formatTree', () => {
     expect(output).toBe(['  meters', '  + tokens'].join('\n'))
   })
 
-  test('describes a created discount', () => {
-    const output = stripAnsi(
-      formatTree(
-        {
-          ...input,
-          discounts: [
-            {
-              external_id: 'launch',
-              name: 'Launch',
-              type: 'percentage',
-              basis_points: 1250,
-              duration: 'repeating',
-              duration_in_months: 3,
-              code: 'LAUNCH',
-              products: ['pro', 'team'],
-              max_redemptions: 500,
-            },
-            {
-              external_id: 'welcome',
-              name: 'Welcome',
-              type: 'fixed',
-              amounts: { usd: 1000, eur: 900 },
-              duration: 'once',
-              products: [],
-            },
-          ],
-        },
-        [
-          entry('discounts', 'launch', 'created', [
-            { field: 'name', before: null, after: 'Launch' },
-            { field: 'basis_points', before: null, after: 1250 },
-          ]),
-          entry('discounts', 'welcome', 'created'),
-        ],
-      ),
-    )
-    expect(output).toBe(
-      [
-        '  discounts',
-        '  + launch',
-        '      value        12.5% off',
-        '      duration     3 months',
-        '      code         LAUNCH',
-        '      products     pro, team',
-        '      redemptions  500',
-        '  + welcome',
-        '      value     $10 / €9 off',
-        '      duration  once',
-        '      products  all',
-      ].join('\n'),
-    )
-  })
-
   test('lists a section it has no sentences for, with every field', () => {
     const output = stripAnsi(
       formatTree({}, [

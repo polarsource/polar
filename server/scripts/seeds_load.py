@@ -132,6 +132,9 @@ from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
 )
 from scripts.seed_polar_for_polar import (
+    MONTHLY_PRODUCTS as POLAR_SELF_MONTHLY_PRODUCTS,
+)
+from scripts.seed_polar_for_polar import (
     PRODUCTS as POLAR_SELF_PRODUCTS,
 )
 from tests.fixtures.database import save_fixture_factory
@@ -165,7 +168,6 @@ EXPECTED_ORGANIZATION_SLUGS = {
     "melted-sql",
     "polar",
     "seatbased-members-corp",
-    "seatbased-only-corp",
     "widget-industries",
 }
 
@@ -1091,6 +1093,7 @@ async def _seed_polar_self_billing_catalog(
         price_amount = product_data["price_amount"]
         benefit_descriptions = product_data["benefits"]
         visibility_value = product_data.get("visibility")
+        recurring_interval = product_data.get("recurring_interval", "month")
         visibility = (
             Visibility(visibility_value)
             if isinstance(visibility_value, str)
@@ -1101,6 +1104,7 @@ async def _seed_polar_self_billing_catalog(
         assert isinstance(metadata, dict)
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
+        assert isinstance(recurring_interval, str)
 
         price_create: ProductPriceFixedCreate
         price_create = ProductPriceFixedCreate(
@@ -1116,7 +1120,7 @@ async def _seed_polar_self_billing_catalog(
                 name=name,
                 description=description,
                 organization_id=organization.id,
-                recurring_interval=SubscriptionRecurringInterval.month,
+                recurring_interval=SubscriptionRecurringInterval(recurring_interval),
                 prices=[price_create],
                 metadata=metadata,
                 visibility=visibility,
@@ -1771,41 +1775,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                 {
                     "email": "customer-with-members@polar.sh",
                     "name": "Customer With Members Inc",
-                    "seats_purchased": 5,
-                    "seats_allocated": 2,
-                },
-            ],
-        },
-        {
-            "name": "SeatBased Only Corp",
-            "slug": "seatbased-only-corp",
-            "email": "admin@polar.sh",
-            "website": "https://seatbased-only.com",
-            "bio": "Organization with seat-based pricing but members model disabled",
-            "status": OrganizationStatus.ACTIVE,
-            "details": {
-                "about": "Testing seat-based pricing without members model",
-                "switching": False,
-                "switching_from": None,
-                "product_description": "Team software licenses with simple seat billing",
-                "previous_annual_revenue": 0,
-            },
-            "feature_settings": {
-                "member_model_enabled": False,
-            },
-            "products": [
-                {
-                    "name": "Simple Team Plan",
-                    "description": "Per-seat team plan without member management",
-                    "recurring": SubscriptionRecurringInterval.month,
-                    "seat_based": True,
-                    "price_per_seat": 1500,  # $15 per seat
-                },
-            ],
-            "seat_based_customers": [
-                {
-                    "email": "customer-no-members@polar.sh",
-                    "name": "Customer Without Members Inc",
                     "seats_purchased": 5,
                     "seats_allocated": 2,
                 },
@@ -2859,7 +2828,7 @@ WEBHOOK_EVENTS: list[WebhookEventType] = [
 ]
 SERVER_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 WEBHOOK_SECRET_ENV_KEY = "POLAR_POLAR_WEBHOOK_SECRET"
-SCALE_PRODUCT_NAME = str(POLAR_SELF_PRODUCTS[-1]["name"])
+SCALE_PRODUCT_NAME = str(POLAR_SELF_MONTHLY_PRODUCTS[-1]["name"])
 
 
 def _write_webhook_secret_to_env(secret: str) -> None:
@@ -3123,6 +3092,8 @@ def polar_self_env() -> None:
                     select(Product).where(
                         Product.organization_id == org.id,
                         Product.name == SCALE_PRODUCT_NAME,
+                        Product.recurring_interval
+                        == SubscriptionRecurringInterval.month,
                     )
                 )
             ).scalar_one_or_none()

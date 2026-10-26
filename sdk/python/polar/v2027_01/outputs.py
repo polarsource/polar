@@ -8935,9 +8935,6 @@ class OrganizationFeatureSettings:
     merchant_migration_enabled: bool = False
     """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
 
-    agentic_payments_enabled: bool = False
-    """If this organization accepts payments from AI agents through Stripe shared payment tokens."""
-
     config_as_code_enabled: bool = False
     """If this organization can manage its configuration from a declarative config document."""
 

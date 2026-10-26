@@ -1,13 +1,21 @@
 import re
+from typing import Annotated
 
 import structlog
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic_ai import Agent, Choices
+from pydantic_ai.models.typesafe import TypeSafeModel
+from pydantic_ai.providers.typesafe import TypeSafeProvider
+from typesafe_sdk import AsyncTypeSafeClient
 
-from polar.integrations.typesafe.client import Question
-from polar.integrations.typesafe.client import typesafe as typesafe_client
+from polar.config import settings
 
 from .schemas import ProductNameCheck
 
 log = structlog.get_logger()
+
+JEV_GATEWAY_URL = "https://gateway-us.pydantic.dev/proxy/jev"
+FLAGGED_CONFIDENCE_THRESHOLD = 0.7
 
 FLAGGED_PRODUCT_PHRASES: dict[str, str] = {
     "human services": "consulting, consultation, coaching, mentorship, 1-on-1, 1:1, done-for-you, custom, freelance, call, book a session",
@@ -30,8 +38,6 @@ FLAGGED_PRODUCT_PHRASES: dict[str, str] = {
     "technical support services": "remote repair, PC repair, tech support session, troubleshooting service, device repair, remote assistance",
 }
 
-FLAGGED_CATEGORY_THRESHOLD = 0.7
-
 _PATTERNS = {
     category: re.compile(
         rf"\b({'|'.join(map(re.escape, phrases.split(', ')))})s?\b", re.IGNORECASE
@@ -39,24 +45,45 @@ _PATTERNS = {
     for category, phrases in FLAGGED_PRODUCT_PHRASES.items()
 }
 
-_QUESTIONS: dict[str, Question] = {
-    category: {
-        "type": "noul",
-        "instructions": (
-            "Does `product_name`, read in whichever language it is written and "
-            "understood as its English meaning, describe a product that is or "
-            f"sells {category}?"
-        ),
-        "criteria": {
-            "true": f"The name means, translates to, or clearly implies something like: {phrases}.",
-            "false": (
-                "The name reads as an ordinary digital product (software, SaaS, "
-                f"course, e-book, template, API) with no connection to {category}."
+FlaggedCategory = Choices(
+    {
+        category: f"The name means, translates to, or clearly implies something like: {phrases}."
+        for category, phrases in FLAGGED_PRODUCT_PHRASES.items()
+    },
+    name="FlaggedCategory",
+)
+
+
+class ProductNameJudgment(BaseModel):
+    """Decide whether a product name describes a product Polar's Acceptable Use Policy forbids."""
+
+    model_config = ConfigDict(use_attribute_docstrings=True)
+
+    category: (
+        FlaggedCategory  # type: ignore[valid-type]
+        | Annotated[
+            None,
+            Field(
+                description="An ordinary digital product (software, SaaS, course, e-book, template, API) with no connection to any category."
             ),
-        },
-    }
-    for category, phrases in FLAGGED_PRODUCT_PHRASES.items()
-}
+        ]
+    )
+    """Which category does the product name describe or sell, read in whichever language it is written and understood as its English meaning?"""
+
+
+agent = Agent(
+    TypeSafeModel(
+        "jev-latest",
+        provider=TypeSafeProvider(
+            typesafe_client=AsyncTypeSafeClient(
+                api_key=settings.PYDANTIC_AI_GATEWAY_API_KEY,
+                base_url=JEV_GATEWAY_URL,
+                compression=False,
+            )
+        ),
+    ),
+    output_type=ProductNameJudgment,
+)
 
 
 def find_flagged_phrase(name: str) -> ProductNameCheck | None:
@@ -66,28 +93,17 @@ def find_flagged_phrase(name: str) -> ProductNameCheck | None:
     return None
 
 
-def pick_flagged_category(probabilities: dict[str, float]) -> str | None:
-    if not probabilities:
-        return None
-    category, probability = max(probabilities.items(), key=lambda item: item[1])
-    return category if probability >= FLAGGED_CATEGORY_THRESHOLD else None
-
-
 async def check_product_name(name: str) -> ProductNameCheck:
     if flagged := find_flagged_phrase(name):
         return flagged
-    if not typesafe_client.is_configured:
-        return ProductNameCheck(category=None, phrase=None)
-
     try:
-        response = await typesafe_client.system_one({"product_name": name}, _QUESTIONS)
+        result = await agent.run(name)
     except Exception as e:
-        log.warning("product.name_check.typesafe_failed", error=str(e))
+        log.warning("product.name_check.jev_failed", error=str(e))
         return ProductNameCheck(category=None, phrase=None)
 
-    probabilities = {
-        category: answer["noul"]
-        for category, answer in response["answers"].items()
-        if answer["type"] == "noul"
-    }
-    return ProductNameCheck(category=pick_flagged_category(probabilities), phrase=None)
+    confidence = (result.response.provider_details or {}).get("confidence", {})
+    category = result.output.category
+    if confidence.get("category", 0) < FLAGGED_CONFIDENCE_THRESHOLD:
+        category = None
+    return ProductNameCheck(category=category, phrase=None)

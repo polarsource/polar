@@ -112,6 +112,23 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="compass-assistant",
         ),
     ],
+    # Product name check validation in the dashboard product creation flow
+    "^/v1/products/name-check": [
+        Rule(minute=60, hour=500, zone="product-name-check"),
+        Rule(group=RateLimitGroup.web, minute=60, hour=500, zone="product-name-check"),
+        Rule(
+            group=RateLimitGroup.elevated,
+            minute=60,
+            hour=500,
+            zone="product-name-check",
+        ),
+        Rule(
+            group=RateLimitGroup.restricted,
+            minute=60,
+            hour=500,
+            zone="product-name-check",
+        ),
+    ],
     # Each sign-up creates an OAuth client and an agent.
     "^/v1/agent/identity/?$": [
         Rule(minute=5, hour=20, block_time=3600, zone="agent-sign-up"),

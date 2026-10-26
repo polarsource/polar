@@ -1,3 +1,4 @@
+import functools
 import re
 from typing import Annotated
 
@@ -71,19 +72,21 @@ class ProductNameJudgment(BaseModel):
     """Which category does the product name describe or sell, read in whichever language it is written and understood as its English meaning?"""
 
 
-agent = Agent(
-    TypeSafeModel(
-        "jev-latest",
-        provider=TypeSafeProvider(
-            typesafe_client=AsyncTypeSafeClient(
-                api_key=settings.PYDANTIC_AI_GATEWAY_API_KEY,
-                base_url=JEV_GATEWAY_URL,
-                compression=False,
-            )
+@functools.cache
+def jev_agent() -> Agent[None, ProductNameJudgment]:
+    return Agent(
+        TypeSafeModel(
+            "jev-latest",
+            provider=TypeSafeProvider(
+                typesafe_client=AsyncTypeSafeClient(
+                    api_key=settings.PYDANTIC_AI_GATEWAY_API_KEY,
+                    base_url=JEV_GATEWAY_URL,
+                    compression=False,
+                )
+            ),
         ),
-    ),
-    output_type=ProductNameJudgment,
-)
+        output_type=ProductNameJudgment,
+    )
 
 
 def find_flagged_phrase(name: str) -> ProductNameCheck | None:
@@ -97,7 +100,7 @@ async def check_product_name(name: str) -> ProductNameCheck:
     if flagged := find_flagged_phrase(name):
         return flagged
     try:
-        result = await agent.run(name)
+        result = await jev_agent().run(name)
     except Exception as e:
         log.warning("product.name_check.jev_failed", error=str(e))
         return ProductNameCheck(category=None, phrase=None)

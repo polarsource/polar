@@ -276,7 +276,7 @@ export const CreateProductPage = ({
             }
           />
         )}
-        <div className="flex flex-row items-center gap-2">
+        <Box alignItems="center" columnGap="s">
           <Button
             onClick={handleSubmit(onSubmit, onInvalid)}
             loading={isSubmitting}
@@ -284,7 +284,7 @@ export const CreateProductPage = ({
           >
             Create Product
           </Button>
-        </div>
+        </Box>
       </Box>
     </DashboardBody>
   )

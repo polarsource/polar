@@ -17,7 +17,7 @@ export const useFlaggedProductName = (
           body: { name: debouncedName },
         }),
       ),
-    enabled: debouncedName.length > 0,
+    enabled: debouncedName.length >= 3 && debouncedName.length <= 64,
     staleTime: Infinity,
     retry: false,
   })

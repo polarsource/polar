@@ -3,9 +3,9 @@ from pydantic_ai.messages import ModelMessage, ModelResponse, ToolCallPart
 from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from polar.product.name_check import (
-    agent,
     check_product_name,
     find_flagged_phrase,
+    jev_agent,
 )
 
 
@@ -50,32 +50,34 @@ class TestFindFlaggedPhrase:
 @pytest.mark.anyio
 class TestCheckProductName:
     async def test_word_list_hit_skips_jev(self) -> None:
-        with agent.override(model=jev_unavailable()):
+        with jev_agent().override(model=jev_unavailable()):
             result = await check_product_name("Casino Night")
 
         assert result.category == "gambling"
 
     async def test_jev_category(self) -> None:
-        with agent.override(model=jev_answers("sponsorships and donations", 0.93)):
+        with jev_agent().override(
+            model=jev_answers("sponsorships and donations", 0.93)
+        ):
             result = await check_product_name("Sponsoring mensuel")
 
         assert result.category == "sponsorships and donations"
         assert result.phrase is None
 
     async def test_jev_none_of_these(self) -> None:
-        with agent.override(model=jev_answers(None, 0.95)):
+        with jev_agent().override(model=jev_answers(None, 0.95)):
             result = await check_product_name("Monatsabo Premium")
 
         assert result.category is None
 
     async def test_low_confidence_returns_nothing(self) -> None:
-        with agent.override(model=jev_answers("gambling", 0.4)):
+        with jev_agent().override(model=jev_answers("gambling", 0.4)):
             result = await check_product_name("Sponsoring mensuel")
 
         assert result.category is None
 
     async def test_jev_failure_returns_nothing(self) -> None:
-        with agent.override(model=jev_unavailable()):
+        with jev_agent().override(model=jev_unavailable()):
             result = await check_product_name("Sponsoring mensuel")
 
         assert result.category is None

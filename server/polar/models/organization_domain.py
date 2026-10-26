@@ -48,3 +48,7 @@ class OrganizationDomain(RecordModel):
     verification_record_value: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
+
+    @property
+    def verification_record_name(self) -> str:
+        return f"_polar-challenge.{self.domain}"

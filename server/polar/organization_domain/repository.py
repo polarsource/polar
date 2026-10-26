@@ -46,3 +46,10 @@ class OrganizationDomainRepository(
             OrganizationDomain.domain == domain
         )
         return await self.get_one_or_none(statement)
+
+    async def get_verified_by_domain(self, domain: str) -> OrganizationDomain | None:
+        statement = self.get_base_statement().where(
+            OrganizationDomain.domain == domain,
+            OrganizationDomain.verified_at.is_not(None),
+        )
+        return await self.get_one_or_none(statement)

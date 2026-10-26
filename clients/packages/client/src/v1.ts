@@ -1539,6 +1539,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/domains/{domain_id}/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Verify Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_domains:verify_organization_domain']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -30761,8 +30781,13 @@ export interface components {
        */
       verified_at: string | null
       /**
+       * Verification Record Name
+       * @description Name of the DNS TXT record that proves ownership.
+       */
+      verification_record_name: string
+      /**
        * Verification Record Value
-       * @description Value to publish in a DNS TXT record to prove ownership.
+       * @description Value of the DNS TXT record that proves ownership.
        */
       verification_record_value: string | null
     }
@@ -30785,6 +30810,28 @@ export interface components {
        * @example example.com
        */
       domain: string
+    }
+    /** OrganizationDomainVerificationFailed */
+    OrganizationDomainVerificationFailed: {
+      /**
+       * Error
+       * @example OrganizationDomainVerificationFailed
+       * @constant
+       */
+      error: 'OrganizationDomainVerificationFailed'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationDomainVerifiedElsewhere */
+    OrganizationDomainVerifiedElsewhere: {
+      /**
+       * Error
+       * @example OrganizationDomainVerifiedElsewhere
+       * @constant
+       */
+      error: 'OrganizationDomainVerifiedElsewhere'
+      /** Detail */
+      detail: string
     }
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
@@ -45943,6 +45990,74 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:verify_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        domain_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomain']
+        }
+      }
+      /** @description The DNS TXT record was not found. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainVerificationFailed']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or domain not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Another organization already verified the domain. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainVerifiedElsewhere']
         }
       }
       /** @description Validation Error */

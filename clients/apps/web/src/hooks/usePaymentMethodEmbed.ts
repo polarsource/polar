@@ -18,7 +18,6 @@ export const usePaymentMethodEmbed = () => {
 
   return useCallback(
     async (sessionToken: string, onSuccess: () => void | Promise<void>) => {
-      embedRef.current?.close()
       const embed = await PolarEmbedPaymentMethod.create({
         sessionToken,
         theme: theme.resolvedTheme === 'dark' ? 'dark' : 'light',
@@ -27,6 +26,7 @@ export const usePaymentMethodEmbed = () => {
         embed.close()
         return
       }
+      embedRef.current?.close()
       embedRef.current = embed
       embed.addEventListener('success', () => void onSuccess(), { once: true })
     },

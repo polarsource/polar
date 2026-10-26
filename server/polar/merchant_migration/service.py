@@ -1252,18 +1252,18 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
-        if migration.pan_transfer_steps:
-            steps = list(migration.pan_transfer_steps)
-            if self._advance_retired_steps(migration, steps):
-                await self._advance_checklist(session, migration, steps)
-        if not self._cutover_reachable(migration):
-            raise CutoverNotStarted()
         # The switch needs the key, which finishing the migration deletes.
         if (
             migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
             or not migration.source_credentials.get("api_key_encrypted")
         ):
             raise SourceNotConnected()
+        if migration.pan_transfer_steps:
+            steps = list(migration.pan_transfer_steps)
+            if self._advance_retired_steps(migration, steps):
+                await self._advance_checklist(session, migration, steps)
+        if not self._cutover_reachable(migration):
+            raise CutoverNotStarted()
 
         selection = self._build_selection(record_ids, exclude_record_ids)
         record_repository = MerchantMigrationRecordRepository.from_session(session)

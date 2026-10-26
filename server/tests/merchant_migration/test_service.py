@@ -4549,16 +4549,18 @@ class TestStartCutover:
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        ("step", "keeps_key"),
+        ("step", "keeps_key", "reached_switch"),
         [
-            (MerchantMigrationStep.cleanup, True),
-            (MerchantMigrationStep.completed, False),
+            (MerchantMigrationStep.cleanup, True, True),
+            (MerchantMigrationStep.completed, False, True),
+            (MerchantMigrationStep.closed, False, False),
         ],
     )
     async def test_finished_migration_cannot_retry(
         self,
         step: MerchantMigrationStep,
         keeps_key: bool,
+        reached_switch: bool,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -4569,9 +4571,10 @@ class TestStartCutover:
     ) -> None:
         enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
         migration = await build_connected_migration(save_fixture, organization)
-        migration.pan_transfer_steps = pan_steps_until(
-            migration.pan_transfer_method, None
-        )
+        if reached_switch:
+            migration.pan_transfer_steps = pan_steps_until(
+                migration.pan_transfer_method, None
+            )
         migration.step = step
         if not keeps_key:
             migration.source_credentials = {"stripe_user_id": "acct_123"}

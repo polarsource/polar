@@ -270,6 +270,14 @@ async def run_review_agent(
         # For SUBMISSION context: also create OrganizationReview record and act
         if review_context == ReviewContext.SUBMISSION:
             mapped_verdict = _VERDICT_MAP[report.verdict]
+            website_already_approved = (
+                report.verdict == ReviewVerdict.APPROVE
+                and await repository.is_website_used_by_active_organization(
+                    organization
+                )
+            )
+            if website_already_approved:
+                mapped_verdict = OrganizationReview.Verdict.UNCERTAIN
 
             org_review_repository = OrgReviewRepository.from_session(session)
             existing = await org_review_repository.get_by_organization(organization_id)
@@ -325,6 +333,21 @@ async def run_review_agent(
                     organization_id=str(organization_id),
                     slug=organization.slug,
                     verdict=report.verdict.value,
+                )
+            elif website_already_approved:
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review_id,
+                    decision=DecisionType.ESCALATE,
+                    review_context=ReviewContext.SUBMISSION,
+                    verdict=report.verdict,
+                    risk_score=report.overall_risk_score,
+                )
+
+                log.info(
+                    "organization_review.submission.escalated_duplicate_website",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
                 )
             elif report.verdict == ReviewVerdict.APPROVE:
                 await organization_service.maybe_activate(session, organization)

@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from sqlalchemy import update
 
+from polar.models.account import Account
 from polar.models.organization import (
     FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
@@ -49,6 +50,7 @@ from polar.organization_review.tasks import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_organization
 
 # Access the unwrapped async function to bypass the actor decorator
 # which requires JobQueueManager / Redis / Dramatiq broker infrastructure.
@@ -518,6 +520,94 @@ class TestRunReviewAgentSubmission:
         # Verify the org was denied
         await session.refresh(organization)
         assert organization.status == OrganizationStatus.DENIED
+
+
+@pytest.mark.anyio
+class TestRunReviewAgentSubmissionDuplicateWebsite:
+    async def _run_submission(
+        self, session: AsyncSession, organization_id: uuid.UUID
+    ) -> AsyncMock:
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=_make_agent_result(verdict=ReviewVerdict.APPROVE),
+            ),
+            patch(
+                "polar.organization_review.tasks.organization_service.maybe_activate",
+                new_callable=AsyncMock,
+            ) as maybe_activate_mock,
+        ):
+            await _run_review_agent(organization_id, context=ReviewContext.SUBMISSION)
+        await session.flush()
+        return maybe_activate_mock
+
+    async def test_website_used_by_active_organization_escalates(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        account_second: Account,
+    ) -> None:
+        await create_organization(
+            save_fixture,
+            account_second,
+            status=OrganizationStatus.ACTIVE,
+            website="http://www.EXAMPLE.com",
+        )
+        organization.status = OrganizationStatus.CREATED
+        organization.website = "https://example.com/"
+        await save_fixture(organization)
+
+        maybe_activate_mock = await self._run_submission(session, organization.id)
+
+        maybe_activate_mock.assert_not_awaited()
+        review = await OrgReviewRepository.from_session(session).get_by_organization(
+            organization.id
+        )
+        assert review is not None
+        assert review.verdict == OrganizationReview.Verdict.UNCERTAIN
+        decision = await AgentReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert decision is not None
+        assert decision.decision == DecisionType.ESCALATE
+
+    @pytest.mark.parametrize(
+        ("status", "existing_website"),
+        [
+            (OrganizationStatus.DENIED, "https://example.com"),
+            (OrganizationStatus.ACTIVE, "https://example.com/other"),
+        ],
+    )
+    async def test_website_not_used_by_active_organization_activates(
+        self,
+        status: OrganizationStatus,
+        existing_website: str,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        account_second: Account,
+    ) -> None:
+        await create_organization(
+            save_fixture, account_second, status=status, website=existing_website
+        )
+        organization.status = OrganizationStatus.CREATED
+        organization.website = "https://example.com/"
+        await save_fixture(organization)
+
+        maybe_activate_mock = await self._run_submission(session, organization.id)
+
+        maybe_activate_mock.assert_awaited_once()
+        review = await OrgReviewRepository.from_session(session).get_by_organization(
+            organization.id
+        )
+        assert review is not None
+        assert review.verdict == OrganizationReview.Verdict.PASS
 
 
 @pytest.mark.anyio

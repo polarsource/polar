@@ -1559,8 +1559,7 @@ class OrganizationService:
 
         Returns True if THIS worker auto-approved (won the race). Returns
         False otherwise — either the verdict was not APPROVE, the org was
-        not in REVIEW, its website is already used by an active organization,
-        or another concurrent worker already confirmed it.
+        not in REVIEW, or another concurrent worker already confirmed it.
         Only the winner should record the agent decision and side-effects.
         """
         is_eligible = (
@@ -1568,15 +1567,6 @@ class OrganizationService:
             and verdict == ReviewVerdict.APPROVE
         )
         if not is_eligible:
-            return False
-
-        repository = OrganizationRepository.from_session(session)
-        if await repository.is_website_used_by_active_organization(organization):
-            log.info(
-                "organization.auto_approve.skip_duplicate_website",
-                organization_id=str(organization.id),
-                slug=organization.slug,
-            )
             return False
 
         confirmed = await self.confirm_organization_reviewed(session, organization)

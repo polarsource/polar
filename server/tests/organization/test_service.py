@@ -1385,68 +1385,6 @@ class TestHandleOngoingReviewVerdict:
         assert result is False
         enqueue_job_mock.assert_not_called()
 
-    @pytest.mark.parametrize(
-        "existing_website",
-        [
-            "https://example.com/",
-            "http://www.EXAMPLE.com",
-            "example.com",
-        ],
-    )
-    async def test_not_eligible_website_used_by_active_organization(
-        self,
-        existing_website: str,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        account_second: Account,
-    ) -> None:
-        await create_organization(
-            save_fixture,
-            account_second,
-            status=OrganizationStatus.ACTIVE,
-            website=existing_website,
-        )
-        organization.status = OrganizationStatus.REVIEW
-        organization.website = "https://www.example.com"
-
-        result = await organization_service.handle_ongoing_review_verdict(
-            session, organization, ReviewVerdict.APPROVE
-        )
-
-        assert result is False
-        assert organization.status == OrganizationStatus.REVIEW
-
-    @pytest.mark.parametrize(
-        ("status", "existing_website"),
-        [
-            (OrganizationStatus.DENIED, "https://example.com"),
-            (OrganizationStatus.ACTIVE, "https://example.com/other"),
-            (OrganizationStatus.ACTIVE, "https://other.com"),
-        ],
-    )
-    async def test_auto_approve_website_not_used_by_active_organization(
-        self,
-        status: OrganizationStatus,
-        existing_website: str,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        account_second: Account,
-    ) -> None:
-        await create_organization(
-            save_fixture, account_second, status=status, website=existing_website
-        )
-        organization.status = OrganizationStatus.REVIEW
-        organization.website = "https://example.com/"
-
-        result = await organization_service.handle_ongoing_review_verdict(
-            session, organization, ReviewVerdict.APPROVE
-        )
-
-        assert result is True
-        assert organization.status == OrganizationStatus.ACTIVE
-
 
 @pytest.mark.anyio
 class TestDenyOrganization:

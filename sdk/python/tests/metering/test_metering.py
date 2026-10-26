@@ -64,7 +64,8 @@ async def test_flush_optional_strategies(fail: bool) -> None:
     [
         (None, None, None),
         ("", None, None),
-        ("redis://environment:6379", None, "redis://environment:6379"),
+        ("redis://environment:6379", None, None),
+        ("redis://environment:6379", True, "redis://environment:6379"),
         ("redis://environment:6379", {}, "redis://environment:6379"),
         ("redis://environment:6379", False, None),
         (None, {"redis_url": "redis://explicit:6379"}, "redis://explicit:6379"),
@@ -78,7 +79,7 @@ async def test_flush_optional_strategies(fail: bool) -> None:
 async def test_factory_outpost_configuration(
     monkeypatch: pytest.MonkeyPatch,
     environment: str | None,
-    outpost_options: MeteringOutpostOptions | typing.Literal[False] | None,
+    outpost_options: MeteringOutpostOptions | bool | None,
     expected_url: str | None,
 ) -> None:
     if environment is not None:
@@ -103,8 +104,10 @@ async def test_factory_outpost_configuration(
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("outpost", [{}, {"redis_url": ""}])
-async def test_factory_requires_outpost_url(outpost: MeteringOutpostOptions) -> None:
+@pytest.mark.parametrize("outpost", [True, {}, {"redis_url": ""}])
+async def test_factory_requires_outpost_url(
+    outpost: MeteringOutpostOptions | typing.Literal[True],
+) -> None:
     async with PolarAsync("token") as polar:
         with pytest.raises(
             MeteringError, match="Outpost requires redis_url or REDIS_URL"

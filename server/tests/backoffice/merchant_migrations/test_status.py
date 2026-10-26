@@ -192,9 +192,10 @@ class TestAttention:
 
 
 class TestFinished:
-    def test_cleanup_and_completed_count_as_finished(self) -> None:
+    def test_cleanup_completed_and_closed_count_as_finished(self) -> None:
         assert is_finished(_migration(step=MerchantMigrationStep.cleanup))
         assert is_finished(_migration(step=MerchantMigrationStep.completed))
+        assert is_finished(_migration(step=MerchantMigrationStep.closed))
 
     def test_an_in_progress_step_is_not_finished(self) -> None:
         assert not is_finished(_migration(step=MerchantMigrationStep.copy_cards))
@@ -205,6 +206,19 @@ class TestFinished:
             == MerchantMigrationStep.completed
         )
         assert step_position(MerchantMigrationStep.cleanup) == step_position(
+            MerchantMigrationStep.completed
+        )
+
+    def test_closed_reads_as_done_on_the_last_step(self) -> None:
+        migration = _migration(
+            step=MerchantMigrationStep.closed, steps=_advance_to("start_copy")
+        )
+
+        result = attention(migration, 1)
+
+        assert result.level == AttentionLevel.done
+        assert result.label == "Closed"
+        assert step_position(MerchantMigrationStep.closed) == step_position(
             MerchantMigrationStep.completed
         )
 

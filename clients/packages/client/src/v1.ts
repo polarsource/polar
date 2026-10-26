@@ -27058,6 +27058,7 @@ export interface components {
       | 'activate_subscriptions'
       | 'cleanup'
       | 'completed'
+      | 'closed'
     /** MerchantMigrationTaxBehaviorUpdateResult */
     MerchantMigrationTaxBehaviorUpdateResult: {
       /**
@@ -73710,6 +73711,7 @@ export const merchantMigrationStepValues: ReadonlyArray<
   'activate_subscriptions',
   'cleanup',
   'completed',
+  'closed',
 ]
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']

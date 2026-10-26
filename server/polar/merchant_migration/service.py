@@ -1417,8 +1417,8 @@ class MerchantMigrationService:
 
         First delete the records never imported, one batch per call. Then, in a
         single call, delete the stored source key and mark the migration
-        completed, so no other step ever sees a migration without its key that
-        isn't completed. Call it again, in a new transaction, until it returns
+        closed, so no other step ever sees a migration without its key that
+        isn't closed. Call it again, in a new transaction, until it returns
         False. Imported records stay: they map source objects to their Polar
         counterparts. Each call holds the row lock `start_cutover` takes.
         """
@@ -1426,7 +1426,8 @@ class MerchantMigrationService:
         migration = await repository.get_by_id(migration_id, for_update=True)
         if (
             migration is None
-            or migration.step == MerchantMigrationStep.completed
+            or migration.step
+            in (MerchantMigrationStep.completed, MerchantMigrationStep.closed)
             or (migration.modified_at or migration.created_at) >= idle_since
             or self._operation_blocks_new_work(migration)
         ):
@@ -1438,6 +1439,11 @@ class MerchantMigrationService:
         ):
             return True
 
+        log.info(
+            "merchant_migration.closed",
+            merchant_migration_id=migration.id,
+            closed_from=migration.step,
+        )
         await repository.update(
             migration,
             update_dict={
@@ -1446,7 +1452,7 @@ class MerchantMigrationService:
                     for key, value in migration.source_credentials.items()
                     if key != "api_key_encrypted"
                 },
-                "step": MerchantMigrationStep.completed,
+                "step": MerchantMigrationStep.closed,
             },
         )
         return True

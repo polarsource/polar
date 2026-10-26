@@ -129,7 +129,9 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         MerchantMigration,
         lambda cutoff: and_(
             MerchantMigration.deleted_at.is_(None),
-            MerchantMigration.step != MerchantMigrationStep.completed,
+            MerchantMigration.step.not_in(
+                (MerchantMigrationStep.completed, MerchantMigrationStep.closed)
+            ),
             func.coalesce(MerchantMigration.modified_at, MerchantMigration.created_at)
             < cutoff - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
         ),

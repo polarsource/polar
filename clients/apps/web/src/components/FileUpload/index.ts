@@ -55,7 +55,7 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
   disabled = false,
 }: FileUploadProps<T>) => {
   const [files, setFilesState] = useState<FileObject<T>[]>(
-    buildFileObjects(initialFiles) as unknown as FileObject<T>[],
+    () => buildFileObjects(initialFiles) as unknown as FileObject<T>[],
   )
 
   const setFiles = (callback: (prev: FileObject<T>[]) => FileObject<T>[]) => {

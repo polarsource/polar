@@ -72,7 +72,7 @@ const marker = ${JSON.stringify(RESULT_MARKER)}
 try {
   const module = await import(${JSON.stringify(url)})
   const value = typeof module.default === 'function' ? await module.default() : module.default
-  console.log(marker + JSON.stringify({ json: JSON.stringify(value) ?? null }))
+  console.log(marker + JSON.stringify({ value }))
 } catch (error) {
   const position = error?.position
   console.log(marker + JSON.stringify({
@@ -85,21 +85,20 @@ try {
 `
 
 interface ChildResult {
-  readonly json?: string | null
+  readonly value?: unknown
   readonly error?: {
     readonly message: string
     readonly position: Position | null
   }
 }
 
-// Runs `executable` as plain Bun, which resolves the config's imports from
+// Runs this executable as plain Bun, which resolves the config's imports from
 // its node_modules like `bun polar.config.ts` would.
 export const evaluateInSubprocess = async (
   url: string,
-  executable: string,
   env: Record<string, string | undefined>,
 ) => {
-  const child = Bun.spawn([executable, '-e', childScript(url)], {
+  const child = Bun.spawn([process.execPath, '-e', childScript(url)], {
     env: { ...env, BUN_BE_BUN: '1' },
     stdout: 'pipe',
     stderr: 'pipe',
@@ -121,11 +120,9 @@ export const evaluateInSubprocess = async (
   const result = JSON.parse(line.slice(RESULT_MARKER.length)) as ChildResult
   if (result.error !== undefined) {
     const { message, position } = result.error
-    throw Object.assign(new Error(message), position ? { position } : {})
+    throw Object.assign(new Error(message), { position })
   }
-  return typeof result.json === 'string'
-    ? (JSON.parse(result.json) as unknown)
-    : undefined
+  return result.value
 }
 
 const loadScript = (fs: FileSystem.FileSystem, file: string) =>
@@ -144,7 +141,7 @@ const loadScript = (fs: FileSystem.FileSystem, file: string) =>
       // subdirectory (e.g. dist/index.js), which is nearly all of them.
       try: () =>
         isCompiledBinary()
-          ? evaluateInSubprocess(url, process.execPath, env)
+          ? evaluateInSubprocess(url, env)
           : evaluateInProcess(url),
       catch: (error) => loadFailure(file, error),
     })

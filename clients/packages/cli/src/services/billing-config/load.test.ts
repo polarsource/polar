@@ -165,21 +165,14 @@ describe('load', () => {
 
 describe('evaluateInSubprocess', () => {
   const evaluate = async (content: string, name = 'polar.config.ts') =>
-    evaluateInSubprocess(
-      pathToFileURL(await write(content, name)).href,
-      process.execPath,
-      {},
-    )
+    evaluateInSubprocess(pathToFileURL(await write(content, name)).href, {})
 
   test('returns the default export, calling it when it is a function', async () => {
+    expect(await evaluate("export default { meters: ['object'] }")).toEqual({
+      meters: ['object'],
+    })
     expect(
-      await evaluate("export default { meters: ['object'] }", 'object.ts'),
-    ).toEqual({ meters: ['object'] })
-    expect(
-      await evaluate(
-        "export default async () => ({ meters: ['async'] })",
-        'async.ts',
-      ),
+      await evaluate("export default async () => ({ meters: ['async'] })"),
     ).toEqual({ meters: ['async'] })
   })
 

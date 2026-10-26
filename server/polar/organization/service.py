@@ -527,6 +527,8 @@ class OrganizationService:
                 ]
             ) from e
 
+        enqueue_job("organization.created", organization_id=organization.id)
+
         if is_agent(auth_subject):
             agent_repository = AgentRepository.from_session(session)
             agent = await agent_repository.set_organization(
@@ -537,7 +539,13 @@ class OrganizationService:
             return organization
 
         assert is_user(auth_subject)
-        owner = auth_subject.subject
+        await self.set_up_for_owner(session, organization, auth_subject.subject)
+        return organization
+
+    async def set_up_for_owner(
+        self, session: AsyncSession, organization: Organization, owner: User
+    ) -> None:
+        """Make `owner` the owner of a new organization and run its setup."""
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
             name=organization.name,
@@ -549,15 +557,13 @@ class OrganizationService:
         await self.add_user(
             session,
             organization,
-            auth_subject.subject,
+            owner,
             role=OrganizationRole.owner,
             enqueue_polar_self_member=False,
         )
 
-        enqueue_job("organization.created", organization_id=organization.id)
-
-        posthog.auth_subject_event(
-            auth_subject,
+        posthog.user_event(
+            owner,
             "organizations",
             "create",
             "done",
@@ -567,7 +573,6 @@ class OrganizationService:
                 "slug": organization.slug,
             },
         )
-        return organization
 
     async def _validate_currency_change(
         self,
@@ -1298,7 +1303,6 @@ class OrganizationService:
             organization.id,
             next_review_threshold=next_review_threshold,
             min_threshold=_MIN_REVIEW_THRESHOLD,
-            active_capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
             now=datetime.now(UTC),
         )
 
@@ -1810,6 +1814,8 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
         *,
+        actor_type: ActorType,
+        reviewer_id: uuid.UUID | None = None,
         enqueue_review: bool = True,
     ) -> Organization:
         self.set_status(organization, OrganizationStatus.REVIEW)
@@ -1818,12 +1824,13 @@ class OrganizationService:
         organization.snooze_type = None
         session.add(organization)
 
-        # Record a human ESCALATE decision so the agent knows not to auto-act
+        # Record a manual ESCALATE decision so the agent knows not to auto-act
         review_repository = AgentReviewRepository.from_session(session)
         await review_repository.deactivate_current_decisions(organization.id)
         await review_repository.save_review_decision(
             organization_id=organization.id,
-            actor_type=ActorType.HUMAN,
+            actor_type=actor_type,
+            reviewer_id=reviewer_id,
             decision=DecisionType.ESCALATE,
             review_context=ReviewContext.MANUAL,
         )
@@ -1995,7 +2002,10 @@ class OrganizationService:
         )
         if organization.status == OrganizationStatus.ACTIVE:
             await self.set_organization_under_review(
-                session, organization, enqueue_review=False
+                session,
+                organization,
+                actor_type=ActorType.STRIPE,
+                enqueue_review=False,
             )
 
     async def _handle_merchant_risk_signal(
@@ -2031,7 +2041,10 @@ class OrganizationService:
             )
             if organization.status == OrganizationStatus.ACTIVE:
                 await self.set_organization_under_review(
-                    session, organization, enqueue_review=False
+                    session,
+                    organization,
+                    actor_type=ActorType.STRIPE,
+                    enqueue_review=False,
                 )
 
     async def set_organization_offboarding(
@@ -2682,8 +2695,8 @@ class OrganizationService:
     ) -> Organization:
         """Override a single capability on an organization.
 
-        The override persists until the next status transition — `set_status`
-        resets `capabilities` from `STATUS_CAPABILITIES`.
+        The override persists across status transitions: `set_status` only
+        moves capabilities that still match the previous status default.
         """
         current: OrganizationCapabilities = dict(  # type: ignore[assignment]
             organization.capabilities

@@ -118,7 +118,7 @@ export type MeteringOptions =
  */
 export class Metering {
   readonly strategies: readonly MeteringStrategy[];
-  private stack?: AsyncDisposableStack;
+  private running?: MeteringStrategy[];
   private started = false;
   private closing?: Promise<void>;
   private activeOperations = 0;
@@ -143,12 +143,12 @@ export class Metering {
   }
 
   async start(): Promise<this> {
-    if (this.stack || this.closing) throw new PolarError("Metering has already started");
-    this.stack = new AsyncDisposableStack();
+    if (this.running || this.closing) throw new PolarError("Metering has already started");
+    this.running = [];
     try {
       for (const strategy of this.strategies) {
         await strategy.start();
-        this.stack.defer(() => strategy.close());
+        this.running.push(strategy);
       }
       this.started = true;
       return this;
@@ -298,7 +298,17 @@ export class Metering {
         this.onDrained = resolve;
       });
     }
-    await this.stack?.disposeAsync();
+    // In start order: a strategy drains into the ones after it, the buffer into Outpost.
+    const errors: unknown[] = [];
+    for (const strategy of this.running ?? []) {
+      try {
+        await strategy.close();
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    if (errors.length === 1) throw errors[0];
+    if (errors.length) throw new AggregateError(errors, "Metering close failed");
   }
 }
 
@@ -343,14 +353,36 @@ export const createMetering = (
     }
     return new Metering({ strategies: options.strategies, client });
   }
-  const strategies: MeteringStrategy[] = [new BufferedMeteringStrategy(polar, options.buffered)];
   const { redisUrl: configuredRedisUrl, ...outpostOptions } = options.outpost || {};
   const redisUrl = configuredRedisUrl ?? process.env.REDIS_URL;
   if (options.outpost !== undefined && options.outpost !== false && !redisUrl) {
     throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
   }
+  let buffered = options.buffered;
+  const strategies: MeteringStrategy[] = [];
   if (options.outpost !== false && redisUrl) {
     let outpost: import("../outpost/client").Outpost | undefined;
+
+    // Polar received the delivered events: they settle where their bucket is hot. It will
+    // never count the dropped ones: they settle everywhere.
+    const settle = async (events: EventInput[], dropped: boolean): Promise<void> => {
+      try {
+        await (dropped ? outpost?.confirm(events) : outpost?.acknowledge(events));
+      } catch (error) {
+        console.warn(`Could not settle ${events.length} events in Outpost: ${String(error)}`);
+      }
+    };
+    buffered = {
+      ...options.buffered,
+      async onDelivered(events) {
+        await settle(events, false);
+        await options.buffered?.onDelivered?.(events);
+      },
+      async onDropped(events, reason) {
+        await settle(events, true);
+        await options.buffered?.onDropped?.(events, reason);
+      },
+    };
     strategies.push({
       async start() {
         const { Outpost } = await import("../outpost/client");
@@ -374,5 +406,8 @@ export const createMetering = (
       },
     });
   }
-  return new Metering({ strategies, client });
+  return new Metering({
+    strategies: [new BufferedMeteringStrategy(polar, buffered), ...strategies],
+    client,
+  });
 };

@@ -330,7 +330,7 @@ describe('pull', () => {
 
     expect(error.message).toBe('You do not have access to Acme')
     expect(error.hint).toBe(
-      'The token needs the organizations:read, meters:read, benefits:read, products:read, discounts:read scopes.',
+      'The token needs the organizations:read, meters:read, benefits:read, products:read scopes.',
     )
   })
 })

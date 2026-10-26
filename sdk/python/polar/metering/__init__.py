@@ -6,6 +6,7 @@ import typing
 
 from polar import PolarError
 from polar.base import AsyncClientBase, parse_response_json
+from polar.logging import get_logger
 from polar.metering.buffered import (
     BufferedMeteringOptions,
     BufferedMeteringStrategy,
@@ -19,6 +20,11 @@ from polar.metering.events import (
     EventInput,
 )
 from polar.metering.meter import CustomerMeter, CustomerMeterList, MeterProtocol
+
+if typing.TYPE_CHECKING:
+    from polar.outpost import Outpost
+
+log = get_logger(__name__)
 
 
 class MeteringError(PolarError):
@@ -187,14 +193,15 @@ class Metering:
         """
         self.strategies = strategies
         self._client = client
-        self._stack = contextlib.AsyncExitStack()
+        self._running: list[MeteringStrategyProtocol] = []
 
     async def __aenter__(self) -> typing.Self:
         try:
             for strategy in self.strategies:
-                await self._stack.enter_async_context(strategy)
+                await strategy.__aenter__()
+                self._running.append(strategy)
         except BaseException:
-            await self._stack.aclose()
+            await self._close()
             raise
         return self
 
@@ -204,7 +211,21 @@ class Metering:
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> bool | None:
-        await self._stack.aclose()
+        await self._close()
+
+    async def _close(self) -> None:
+        # In start order: a strategy drains into the ones after it, the buffer into Outpost.
+        errors: list[Exception] = []
+        for strategy in self._running:
+            try:
+                await strategy.__aexit__(None, None, None)
+            except Exception as error:  # noqa: BLE001
+                errors.append(error)
+        self._running = []
+        if len(errors) == 1:
+            raise errors[0]
+        if errors:
+            raise ExceptionGroup("Metering close failed", errors)
 
     async def flush(self) -> None:
         """Flush every capable strategy without closing the helper.
@@ -398,7 +419,8 @@ class Metering:
                     "Cannot combine strategies with buffered or outpost options"
                 )
             return cls(strategies=strategies, client=polar._client)
-        strategies = [BufferedMeteringStrategy(polar, **(buffered or {}))]
+        buffered = buffered or BufferedMeteringOptions()
+        strategies = []
         if outpost is not False:
             outpost_options = (
                 outpost if outpost is not None else MeteringOutpostOptions()
@@ -409,14 +431,48 @@ class Metering:
             if redis_url:
                 from polar.outpost import Outpost
 
-                strategies.append(
-                    Outpost.create(
-                        polar,
-                        redis_url,
-                        telemetry=outpost_options.get("telemetry", True),
-                    )
+                outpost_strategy = Outpost.create(
+                    polar, redis_url, telemetry=outpost_options.get("telemetry", True)
                 )
-        return cls(strategies=strategies, client=polar._client)
+                strategies.append(outpost_strategy)
+                buffered = _confirming(buffered, outpost_strategy)
+        return cls(
+            strategies=[BufferedMeteringStrategy(polar, **buffered), *strategies],
+            client=polar._client,
+        )
+
+
+def _confirming(
+    buffered: BufferedMeteringOptions, outpost: "Outpost"
+) -> BufferedMeteringOptions:
+    """Settle in Outpost the events the buffer delivered or dropped, before the user's
+    callbacks. Polar received the delivered events: they settle where their bucket is hot.
+    It will never count the dropped ones: they settle everywhere."""
+    user_delivered = buffered.get("on_delivered")
+    user_dropped = buffered.get("on_dropped")
+
+    async def settle(events: list[EventInput], *, dropped: bool) -> None:
+        try:
+            if dropped:
+                await outpost.confirm(events)
+            else:
+                await outpost.acknowledge(events)
+        except Exception:
+            log.warning(
+                "Could not settle %s events in Outpost", len(events), exc_info=True
+            )
+
+    async def on_delivered(events: list[EventInput]) -> None:
+        await settle(events, dropped=False)
+        if user_delivered is not None:
+            await user_delivered(events)
+
+    async def on_dropped(events: list[EventInput], reason: DropReason) -> None:
+        await settle(events, dropped=True)
+        if user_dropped is not None:
+            await user_dropped(events, reason)
+
+    return {**buffered, "on_delivered": on_delivered, "on_dropped": on_dropped}
 
 
 def _validate_actor(

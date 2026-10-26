@@ -212,6 +212,7 @@ def canonical_subscription(
     tax_rate_behavior: TaxBehavior | None = None,
     tax_behavior: TaxBehavior | None = None,
     customer_balance: int | None = None,
+    has_pending_invoice_items: bool = False,
     managed_payments: bool = False,
     add_on: CanonicalSubscriptionAddOn | None = None,
 ) -> CanonicalSubscription:
@@ -253,6 +254,7 @@ def canonical_subscription(
         tax_rate_behavior=tax_rate_behavior,
         tax_behavior=tax_behavior,
         customer_balance=customer_balance,
+        has_pending_invoice_items=has_pending_invoice_items,
         managed_payments=managed_payments,
         add_on=add_on,
     )

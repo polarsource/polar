@@ -1,5 +1,6 @@
 'use client'
 
+import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import FeatureSettings from '@/components/Settings/FeatureSettings'
@@ -14,7 +15,7 @@ import OrganizationPaymentSettings from '@/components/Settings/OrganizationPayme
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
 import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
 import { Section, SectionDescription } from '@/components/Settings/Section'
-import { useHasPermission } from '@/hooks/permissions'
+import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
 import { useUserOrganizationNotificationSettings } from '@/hooks/queries/user_organizations'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
@@ -27,6 +28,7 @@ export default function ClientPage({
   organization: schemas['Organization']
 }) {
   const canManageOrganization = useHasPermission(org.id, 'organization:manage')
+  const managedAsCode = useIsManagedAsCode(org.id)
   const { data: userNotificationSettings } =
     useUserOrganizationNotificationSettings(org.id)
 
@@ -45,7 +47,10 @@ export default function ClientPage({
         </Section>
 
         <Section id="payments">
-          <SectionDescription title="Payments" />
+          <SectionDescription
+            title="Payments"
+            badge={managedAsCode ? <ManagedAsCodeBadge /> : undefined}
+          />
           <OrganizationPaymentSettings
             organization={org}
             readOnly={!canManageOrganization}

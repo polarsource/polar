@@ -1,0 +1,1511 @@
+{
+  "ArrowDown": {
+    "source": "lucide",
+    "original": "ArrowDown",
+    "files": ["apps/web/src/components/Layout/Public/PolarLogotype.tsx"]
+  },
+  "ArrowDownRight": {
+    "source": "lucide",
+    "original": "ArrowDownRight",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/TrendBadge.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/[spanId]/CostsSpanPage.tsx",
+      "apps/web/src/components/Customer/CustomerPage/CustomerTrendStatBox.tsx"
+    ]
+  },
+  "ArrowLeft": {
+    "source": "lucide",
+    "original": "ArrowLeft",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/new/ai/AIProductPage.tsx",
+      "apps/web/src/components/Checkout/Checkout.tsx"
+    ]
+  },
+  "ArrowRight": {
+    "source": "lucide",
+    "original": "ArrowRight",
+    "files": [
+      "apps/orbit/src/app/components/button/page.tsx",
+      "apps/web/src/app/(main)/(website)/(landing)/legal/page.tsx",
+      "apps/web/src/components/Finance/Account/sections/PayoutAccountSection.tsx",
+      "apps/web/src/components/Finance/Account/sections/ProductConfigurationSection.tsx",
+      "apps/web/src/components/Finance/Steps/IdentityStep.tsx",
+      "apps/web/src/components/Finance/Steps/PayoutAccountStep.tsx",
+      "apps/web/src/components/Identity/IdentityVerificationStatusContent.tsx",
+      "apps/web/src/components/Landing/CustomerStory.tsx",
+      "apps/web/src/components/Landing/FeatureCards.tsx",
+      "apps/web/src/components/Landing/chapters/Platform.tsx",
+      "apps/web/src/components/Landing/integrate/DocsLink.tsx"
+    ]
+  },
+  "ArrowUpRight": {
+    "source": "lucide",
+    "original": "ArrowUpRight",
+    "files": [
+      "apps/orbit/src/app/page.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/TrendBadge.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/[spanId]/CostsSpanPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx",
+      "apps/web/src/components/Customer/CustomerPage/CustomerTrendStatBox.tsx",
+      "apps/web/src/components/Orders/OrderDetails.tsx",
+      "apps/web/src/components/Settings/Webhook/WebhookSettings.tsx",
+      "apps/web/src/components/Subscriptions/ScheduledUpdateSection.tsx",
+      "apps/web/src/components/Subscriptions/SubscriptionDetailsGrid.tsx"
+    ]
+  },
+  "Banknote": {
+    "source": "lucide",
+    "original": "Banknote",
+    "files": [
+      "apps/web/src/components/Finance/ManualPayoutStatusBlock.tsx",
+      "apps/web/src/components/Finance/payoutAccountPresentation.ts"
+    ]
+  },
+  "Bot": {
+    "source": "lucide",
+    "original": "Bot",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx"
+    ]
+  },
+  "BrickWallShield": {
+    "source": "lucide",
+    "original": "BrickWallShield",
+    "files": [
+      "apps/web/src/components/Finance/AccessRestricted.tsx",
+      "apps/web/src/components/Widgets/WidgetGuard.tsx"
+    ]
+  },
+  "CalendarDays": {
+    "source": "lucide",
+    "original": "CalendarDays",
+    "files": ["packages/ui/src/components/atoms/DateTimePicker.tsx"]
+  },
+  "ChartNoAxesColumn": {
+    "source": "lucide",
+    "original": "ChartNoAxesColumn",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx"
+    ]
+  },
+  "Check": {
+    "source": "lucide",
+    "original": "Check",
+    "files": [
+      "apps/orbit/src/components/docs/CodeBlock.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/finance/account/AccountPageApproved.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/stepMarker.tsx",
+      "apps/web/src/components/Benefit/SlackTeamInviteesSelect.tsx",
+      "apps/web/src/components/Events/EventSelect.tsx",
+      "apps/web/src/components/Finance/Account/StatusIcon.tsx",
+      "apps/web/src/components/Finance/Account/sections/ProductConfigurationSection.tsx",
+      "apps/web/src/components/Finance/Steps/IdentityStep.tsx",
+      "apps/web/src/components/Finance/Steps/PayoutAccountStep.tsx",
+      "apps/web/src/components/Finance/payoutAccountPresentation.ts",
+      "apps/web/src/components/Identity/IdentityVerificationStatusContent.tsx",
+      "apps/web/src/components/Landing/MeterStream.tsx",
+      "apps/web/src/components/Landing/Pipeline.tsx",
+      "apps/web/src/components/Landing/chapters/PlatformVignettes.tsx",
+      "apps/web/src/components/Landing/integrate/McpSession.tsx",
+      "apps/web/src/components/Landing/story/AgentsFigure.tsx",
+      "apps/web/src/components/Landing/story/ChargeFigure.tsx",
+      "apps/web/src/components/Landing/story/GrantFigure.tsx",
+      "apps/web/src/components/Landing/story/SellFigure.tsx",
+      "apps/web/src/components/Layout/OnboardingStepper.tsx",
+      "apps/web/src/components/Organization/HumanReviewCase/DecisionMessage.tsx",
+      "apps/web/src/components/Products/ProductCombobox.tsx",
+      "apps/web/src/components/Products/ProductSelect.tsx",
+      "apps/web/src/components/Shared/FilterPopover.tsx",
+      "packages/orbit/src/components/Checkbox.tsx",
+      "packages/orbit/src/components/ui/select.tsx",
+      "packages/ui/src/components/atoms/Combobox.tsx",
+      "packages/ui/src/components/atoms/CopyToClipboardInput.tsx"
+    ]
+  },
+  "ChevronDown": {
+    "source": "lucide",
+    "original": "ChevronDown",
+    "files": [
+      "apps/web/src/components/Checkout/CheckoutCollapsibleOrderSummary.tsx",
+      "apps/web/src/components/Export/ExportModal.tsx",
+      "apps/web/src/components/Settings/Webhook/WebhookEventTypeSelect.tsx",
+      "packages/orbit/src/components/ui/select.tsx",
+      "packages/ui/src/components/ui/accordion.tsx"
+    ]
+  },
+  "ChevronLeft": {
+    "source": "lucide",
+    "original": "ChevronLeft",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx",
+      "apps/web/src/components/Benefit/Downloadables/FileList/index.tsx",
+      "apps/web/src/components/CustomerPortal/Pagination.tsx",
+      "apps/web/src/components/Products/Benefits/components/Pagination.tsx",
+      "packages/orbit/src/components/datatable/DataTablePagination.tsx",
+      "packages/ui/src/components/atoms/Paginator.tsx",
+      "packages/ui/src/components/ui/calendar.tsx"
+    ]
+  },
+  "ChevronRight": {
+    "source": "lucide",
+    "original": "ChevronRight",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OnboardingChecklistCard/OnboardingChecklistCard.tsx",
+      "apps/web/src/components/Benefit/Downloadables/FileList/index.tsx",
+      "apps/web/src/components/Compass/CompassBox.tsx",
+      "apps/web/src/components/Compass/CompassConversation.tsx",
+      "apps/web/src/components/Compass/InsightCard.tsx",
+      "apps/web/src/components/CustomerPortal/Pagination.tsx",
+      "apps/web/src/components/Products/Benefits/components/Pagination.tsx",
+      "apps/web/src/components/Products/ProductPage/ProductBenefits.tsx",
+      "apps/web/src/components/Products/ProductPage/ProductDiscounts.tsx",
+      "packages/orbit/src/components/datatable/DataTablePagination.tsx",
+      "packages/ui/src/components/atoms/Paginator.tsx",
+      "packages/ui/src/components/ui/calendar.tsx"
+    ]
+  },
+  "ChevronUp": {
+    "source": "lucide",
+    "original": "ChevronUp",
+    "files": ["packages/orbit/src/components/ui/select.tsx"]
+  },
+  "ChevronsLeft": {
+    "source": "lucide",
+    "original": "ChevronsLeft",
+    "files": ["packages/orbit/src/components/datatable/DataTablePagination.tsx"]
+  },
+  "ChevronsRight": {
+    "source": "lucide",
+    "original": "ChevronsRight",
+    "files": ["packages/orbit/src/components/datatable/DataTablePagination.tsx"]
+  },
+  "ChevronsUpDown": {
+    "source": "lucide",
+    "original": "ChevronsUpDown",
+    "files": [
+      "apps/web/src/components/Events/EventSelect.tsx",
+      "apps/web/src/components/Products/ProductCombobox.tsx",
+      "packages/ui/src/components/atoms/Combobox.tsx"
+    ]
+  },
+  "Circle": {
+    "source": "lucide",
+    "original": "Circle",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/stepMarker.tsx",
+      "apps/web/src/components/Landing/Pipeline.tsx",
+      "packages/ui/src/components/ui/radio-group.tsx"
+    ]
+  },
+  "CircleAlert": {
+    "source": "lucide",
+    "original": "CircleAlert",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/DeniedBanner.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx",
+      "apps/web/src/components/Finance/Account/sections/PathCardBanner.tsx",
+      "apps/web/src/components/Finance/payoutAccountPresentation.ts",
+      "apps/web/src/components/Organization/AIValidationResult.tsx",
+      "packages/orbit/src/components/Alert.tsx"
+    ]
+  },
+  "CircleCheck": {
+    "source": "lucide",
+    "original": "CircleCheck",
+    "files": ["packages/orbit/src/components/Alert.tsx"]
+  },
+  "CircleCheckBig": {
+    "source": "lucide",
+    "original": "CircleCheckBig",
+    "files": [
+      "apps/web/src/components/Organization/AIValidationResult.tsx",
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "CircleDashed": {
+    "source": "lucide",
+    "original": "CircleDashed",
+    "files": ["apps/web/src/components/Finance/Account/StatusIcon.tsx"]
+  },
+  "CircleGauge": {
+    "source": "lucide",
+    "original": "CircleGauge",
+    "files": [
+      "apps/web/src/components/Customer/CustomerPage/CustomerUsageView.tsx"
+    ]
+  },
+  "CircleQuestionMark": {
+    "source": "lucide",
+    "original": "CircleQuestionMark",
+    "files": ["apps/web/src/components/Costs/CostsSidebarTitle.tsx"]
+  },
+  "CircleX": {
+    "source": "lucide",
+    "original": "CircleX",
+    "files": ["apps/web/src/components/Subscriptions/SubscriptionStatus.tsx"]
+  },
+  "Clipboard": {
+    "source": "lucide",
+    "original": "Clipboard",
+    "files": ["apps/web/src/components/Layout/Public/PolarLogotype.tsx"]
+  },
+  "ClipboardCheck": {
+    "source": "lucide",
+    "original": "ClipboardCheck",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/ResubmissionBanner.tsx"
+    ]
+  },
+  "Clock": {
+    "source": "lucide",
+    "original": "Clock",
+    "files": [
+      "apps/web/src/components/Finance/Account/StatusIcon.tsx",
+      "apps/web/src/components/Finance/payoutAccountPresentation.ts",
+      "apps/web/src/components/Identity/IdentityVerificationStatusContent.tsx",
+      "apps/web/src/components/Subscriptions/SubscriptionStatus.tsx"
+    ]
+  },
+  "Coins": {
+    "source": "lucide",
+    "original": "Coins",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/customers/cost-drivers/CostDriversPage.tsx",
+      "apps/web/src/components/Customer/TopCostCustomersList.tsx"
+    ]
+  },
+  "Copy": {
+    "source": "lucide",
+    "original": "Copy",
+    "files": ["apps/orbit/src/components/docs/CodeBlock.tsx"]
+  },
+  "CreditCard": {
+    "source": "lucide",
+    "original": "CreditCard",
+    "files": [
+      "apps/web/src/components/Landing/chapters/UsageBillingCharge.tsx",
+      "apps/web/src/components/Landing/story/ChargeFigure.tsx"
+    ]
+  },
+  "Download": {
+    "source": "lucide",
+    "original": "Download",
+    "files": ["apps/web/src/components/Benefit/utils.tsx"]
+  },
+  "EllipsisVertical": {
+    "source": "lucide",
+    "original": "EllipsisVertical",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/finance/(wide)/payouts/PayoutsPage.tsx",
+      "apps/web/src/components/Products/Benefits/components/BenefitRow.tsx"
+    ]
+  },
+  "ExternalLink": {
+    "source": "lucide",
+    "original": "ExternalLink",
+    "files": [
+      "apps/web/src/components/Benefit/BenefitPage.tsx",
+      "apps/web/src/components/Finance/Account/sections/SetupReadinessParts.tsx",
+      "apps/web/src/components/Finance/Steps/PayoutAccountStep.tsx",
+      "apps/web/src/components/Orders/ChargebackPreventionBanner.tsx",
+      "apps/web/src/components/Orders/OrderCalloutBanner.tsx",
+      "apps/web/src/components/Payouts/ManagePayoutAccountModal.tsx"
+    ]
+  },
+  "File": {
+    "source": "lucide",
+    "original": "File",
+    "files": ["apps/web/src/components/Chat/FileTypeIcon.tsx"]
+  },
+  "FileHeadphone": {
+    "source": "lucide",
+    "original": "FileHeadphone",
+    "files": ["apps/web/src/components/Chat/FileTypeIcon.tsx"]
+  },
+  "FileImage": {
+    "source": "lucide",
+    "original": "FileImage",
+    "files": ["apps/web/src/components/Chat/FileTypeIcon.tsx"]
+  },
+  "FilePlay": {
+    "source": "lucide",
+    "original": "FilePlay",
+    "files": ["apps/web/src/components/Chat/FileTypeIcon.tsx"]
+  },
+  "FileSpreadsheet": {
+    "source": "lucide",
+    "original": "FileSpreadsheet",
+    "files": ["apps/web/src/components/Chat/FileTypeIcon.tsx"]
+  },
+  "FileText": {
+    "source": "lucide",
+    "original": "FileText",
+    "files": ["apps/web/src/components/Chat/FileTypeIcon.tsx"]
+  },
+  "Flag": {
+    "source": "lucide",
+    "original": "Flag",
+    "files": ["apps/web/src/components/Benefit/utils.tsx"]
+  },
+  "Gauge": {
+    "source": "lucide",
+    "original": "Gauge",
+    "files": ["apps/web/src/components/Benefit/utils.tsx"]
+  },
+  "Gift": {
+    "source": "lucide",
+    "original": "Gift",
+    "files": [
+      "apps/web/src/components/Products/ProductPage/ProductBenefits.tsx"
+    ]
+  },
+  "Github": {
+    "source": "lucide",
+    "original": "Github",
+    "files": ["apps/orbit/src/components/docs/SourceLink.tsx"]
+  },
+  "GripVertical": {
+    "source": "lucide",
+    "original": "GripVertical",
+    "files": [
+      "apps/web/src/components/Products/Benefits/components/SortableBenefitRow.tsx"
+    ]
+  },
+  "Info": {
+    "source": "lucide",
+    "original": "Info",
+    "files": [
+      "apps/web/src/components/Meter/MeterFormUnit.tsx",
+      "apps/web/src/components/Products/ProductForm/Pricing/MeteredPricingFields.tsx",
+      "packages/orbit/src/components/Alert.tsx"
+    ]
+  },
+  "Key": {
+    "source": "lucide",
+    "original": "Key",
+    "files": ["apps/web/src/components/Benefit/utils.tsx"]
+  },
+  "KeyRound": {
+    "source": "lucide",
+    "original": "KeyRound",
+    "files": ["apps/web/src/components/Settings/TwoFactorSettings.tsx"]
+  },
+  "Loader": {
+    "source": "lucide",
+    "original": "Loader",
+    "files": ["apps/web/src/components/Benefit/utils.tsx"]
+  },
+  "LoaderCircle": {
+    "source": "lucide",
+    "original": "LoaderCircle",
+    "files": [
+      "apps/web/src/app/(main)/[organization]/portal/claim/ClaimPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/disputes/[id]/DisputeDetailPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/disputes/[id]/respond/DisputeRespondPage.tsx",
+      "apps/web/src/components/Chat/Composer.tsx",
+      "apps/web/src/components/CustomerPortal/CustomerPortalGrantsComplex.tsx",
+      "apps/web/src/components/Finance/Account/sections/ProductConfigurationSection.tsx",
+      "apps/web/src/components/Finance/Account/sections/ProductDescriptionSection.tsx",
+      "apps/web/src/components/Landing/MeterStream.tsx",
+      "apps/web/src/components/Landing/Pipeline.tsx",
+      "apps/web/src/components/Landing/chapters/PlatformVignettes.tsx",
+      "apps/web/src/components/Landing/integrate/McpSession.tsx",
+      "apps/web/src/components/Landing/story/AgentsFigure.tsx",
+      "apps/web/src/components/Landing/story/ChargeFigure.tsx",
+      "apps/web/src/components/Landing/story/GrantFigure.tsx",
+      "apps/web/src/components/Landing/story/SellFigure.tsx",
+      "apps/web/src/components/Organization/AIValidationResult.tsx",
+      "apps/web/src/components/Organization/AppealForm.tsx",
+      "apps/web/src/components/Organization/HumanReviewCase/index.tsx",
+      "apps/web/src/components/Products/Benefits/BenefitSearchComplex.tsx",
+      "apps/web/src/components/Products/ProductCombobox.tsx",
+      "apps/web/src/components/Search/OmniSearch.tsx",
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx",
+      "packages/orbit/src/components/Alert.tsx",
+      "packages/ui/src/components/atoms/Combobox.tsx"
+    ]
+  },
+  "Lock": {
+    "source": "lucide",
+    "original": "Lock",
+    "files": ["apps/web/src/components/Landing/story/GrantFigure.tsx"]
+  },
+  "Mail": {
+    "source": "lucide",
+    "original": "Mail",
+    "files": ["apps/orbit/src/app/components/input/page.tsx"]
+  },
+  "MailCheck": {
+    "source": "lucide",
+    "original": "MailCheck",
+    "files": ["apps/web/src/components/Checkout/CheckoutSeatInvitations.tsx"]
+  },
+  "MessageCircle": {
+    "source": "lucide",
+    "original": "MessageCircle",
+    "files": [
+      "apps/web/src/components/Disputes/DisputeConversation.tsx",
+      "apps/web/src/components/Organization/HumanReviewCase/index.tsx"
+    ]
+  },
+  "Minus": {
+    "source": "lucide",
+    "original": "Minus",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/TrendBadge.tsx",
+      "apps/web/src/components/CustomerPortal/CustomerSeatQuantityManager.tsx",
+      "apps/web/src/components/CustomerPortal/CustomerUnitQuantityManager.tsx",
+      "apps/web/src/components/Finance/Account/StatusIcon.tsx",
+      "packages/orbit/src/components/Checkbox.tsx"
+    ]
+  },
+  "MoveDown": {
+    "source": "lucide",
+    "original": "MoveDown",
+    "files": [
+      "packages/orbit/src/components/datatable/DataTableColumnHeader.tsx"
+    ]
+  },
+  "MoveUp": {
+    "source": "lucide",
+    "original": "MoveUp",
+    "files": [
+      "packages/orbit/src/components/datatable/DataTableColumnHeader.tsx"
+    ]
+  },
+  "Package": {
+    "source": "lucide",
+    "original": "Package",
+    "files": [
+      "apps/web/src/components/Benefit/BenefitProducts.tsx",
+      "apps/web/src/components/Finance/Account/sections/ProductConfigurationSection.tsx"
+    ]
+  },
+  "PanelLeft": {
+    "source": "lucide",
+    "original": "PanelLeft",
+    "files": ["packages/ui/src/components/ui/sidebar.tsx"]
+  },
+  "Paperclip": {
+    "source": "lucide",
+    "original": "Paperclip",
+    "files": [
+      "apps/web/src/components/Chat/Chat.tsx",
+      "apps/web/src/components/Chat/Composer.tsx"
+    ]
+  },
+  "Percent": {
+    "source": "lucide",
+    "original": "Percent",
+    "files": ["packages/ui/src/components/atoms/PercentageInput.tsx"]
+  },
+  "Plus": {
+    "source": "lucide",
+    "original": "Plus",
+    "files": [
+      "apps/orbit/src/app/components/button/page.tsx",
+      "apps/web/src/app/(main)/oauth2/authorize/components/SharedLayout.tsx",
+      "apps/web/src/components/Benefit/MeterCredit/BenefitForm.tsx",
+      "apps/web/src/components/Checkout/CheckoutSeatInvitations.tsx",
+      "apps/web/src/components/CustomerPortal/CustomerSeatQuantityManager.tsx",
+      "apps/web/src/components/CustomerPortal/CustomerUnitQuantityManager.tsx",
+      "apps/web/src/components/Meter/MeterFilterInput.tsx",
+      "apps/web/src/components/Payouts/ManagePayoutAccountModal.tsx",
+      "apps/web/src/components/Products/Benefits/Benefits.tsx",
+      "apps/web/src/components/Products/ProductForm/Pricing/ProductPriceMeteredUnitItem.tsx"
+    ]
+  },
+  "RefreshCw": {
+    "source": "lucide",
+    "original": "RefreshCw",
+    "files": ["apps/web/src/components/Finance/CheckPayoutStatusButton.tsx"]
+  },
+  "Rocket": {
+    "source": "lucide",
+    "original": "Rocket",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OnboardingChecklistCard/OnboardingChecklistCard.tsx"
+    ]
+  },
+  "Search": {
+    "source": "lucide",
+    "original": "Search",
+    "files": [
+      "apps/orbit/src/app/components/input/page.tsx",
+      "apps/web/src/components/CustomerPortal/CustomerPortalGrantsComplex.tsx",
+      "apps/web/src/components/Products/Benefits/BenefitSearchComplex.tsx",
+      "packages/ui/src/components/ui/command.tsx"
+    ]
+  },
+  "Send": {
+    "source": "lucide",
+    "original": "Send",
+    "files": ["apps/web/src/components/Chat/Composer.tsx"]
+  },
+  "Settings2": {
+    "source": "lucide",
+    "original": "Settings2",
+    "files": ["apps/web/src/components/DashboardOverview/OverviewSection.tsx"]
+  },
+  "Shield": {
+    "source": "lucide",
+    "original": "Shield",
+    "files": [
+      "apps/web/src/components/Identity/IdentityVerificationStatusContent.tsx"
+    ]
+  },
+  "ShieldCheck": {
+    "source": "lucide",
+    "original": "ShieldCheck",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/customers/at-risk/AtRiskPage.tsx",
+      "apps/web/src/components/Customer/AtRiskList.tsx",
+      "apps/web/src/components/Settings/TwoFactorSettings.tsx"
+    ]
+  },
+  "ShoppingCart": {
+    "source": "lucide",
+    "original": "ShoppingCart",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx"
+    ]
+  },
+  "SlidersHorizontal": {
+    "source": "lucide",
+    "original": "SlidersHorizontal",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/settings/MigrationSettingsButton.tsx"
+    ]
+  },
+  "Sparkles": {
+    "source": "lucide",
+    "original": "Sparkles",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OnboardingChecklistCard/OnboardingChecklistCard.tsx"
+    ]
+  },
+  "TicketPercent": {
+    "source": "lucide",
+    "original": "TicketPercent",
+    "files": [
+      "apps/web/src/components/Products/ProductPage/ProductDiscounts.tsx"
+    ]
+  },
+  "Trash": {
+    "source": "lucide",
+    "original": "Trash",
+    "files": [
+      "apps/orbit/src/app/components/button/page.tsx",
+      "apps/web/src/components/Meter/MeterFilterInput.tsx"
+    ]
+  },
+  "Trash2": {
+    "source": "lucide",
+    "original": "Trash2",
+    "files": ["apps/web/src/components/Payouts/ManagePayoutAccountModal.tsx"]
+  },
+  "TrendingUp": {
+    "source": "lucide",
+    "original": "TrendingUp",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/customers/top/TopCustomersPage.tsx",
+      "apps/web/src/components/Customer/TopCustomersList.tsx"
+    ]
+  },
+  "TriangleAlert": {
+    "source": "lucide",
+    "original": "TriangleAlert",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OffboardedBanner.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OffboardingBanner.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/events/[eventId]/EventsPage.tsx",
+      "apps/web/src/components/Finance/Account/sections/PathCardBanner.tsx",
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx",
+      "packages/orbit/src/components/Alert.tsx"
+    ]
+  },
+  "Users": {
+    "source": "lucide",
+    "original": "Users",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/costs/CostsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/customers/page.tsx",
+      "apps/web/src/components/Finance/payoutAccountPresentation.ts"
+    ]
+  },
+  "Wallet": {
+    "source": "lucide",
+    "original": "Wallet",
+    "files": ["apps/web/src/components/PaymentMethodDisplay.tsx"]
+  },
+  "WalletCards": {
+    "source": "lucide",
+    "original": "WalletCards",
+    "files": ["apps/web/src/components/CustomerPortal/OrderPaymentRetry.tsx"]
+  },
+  "WandSparkles": {
+    "source": "lucide",
+    "original": "WandSparkles",
+    "files": ["apps/web/src/components/Products/CreateProductPage.tsx"]
+  },
+  "X": {
+    "source": "lucide",
+    "original": "X",
+    "files": [
+      "apps/web/src/app/(embed)/embed/payment-method/PaymentMethodEmbed.tsx",
+      "apps/web/src/components/Benefit/SlackTeamInviteesSelect.tsx",
+      "apps/web/src/components/Chat/FileAttachmentPill.tsx",
+      "apps/web/src/components/Checkout/CheckoutSeatInvitations.tsx",
+      "apps/web/src/components/Checkout/Embed/CheckoutEmbedClose.tsx",
+      "apps/web/src/components/CheckoutLinks/CheckoutLinkForm.tsx",
+      "apps/web/src/components/CustomerPortal/PaymentMethod.tsx",
+      "apps/web/src/components/Finance/Account/StatusIcon.tsx",
+      "apps/web/src/components/Identity/IdentityVerificationStatusContent.tsx",
+      "apps/web/src/components/Meter/MeterFilterInput.tsx",
+      "apps/web/src/components/Organization/HumanReviewCase/DecisionMessage.tsx",
+      "apps/web/src/components/Products/Benefits/components/SortableBenefitRow.tsx",
+      "apps/web/src/components/Settings/Billing/BillingPaymentMethods.tsx",
+      "apps/web/src/components/Settings/OrganizationEmbedSettings.tsx",
+      "apps/web/src/components/Subscriptions/UpdateSubscriptionDiscountForm.tsx",
+      "apps/web/src/components/Toast/index.tsx",
+      "packages/orbit/src/components/Alert.tsx",
+      "packages/orbit/src/components/Modal.tsx",
+      "packages/ui/src/components/ui/dialog.tsx",
+      "packages/ui/src/components/ui/sheet.tsx"
+    ]
+  },
+  "Add": {
+    "source": "material",
+    "original": "Add",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/members/MembersPage.tsx"
+    ]
+  },
+  "AddOutlined": {
+    "source": "material",
+    "original": "AddOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/events/EventsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/ProductsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/discounts/DiscountsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/custom-fields/CustomFieldsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationsPage.tsx",
+      "apps/web/src/components/Benefit/BenefitListSidebar.tsx",
+      "apps/web/src/components/CheckoutLinks/CheckoutLinkListSidebar.tsx",
+      "apps/web/src/components/Customer/CustomerListSidebar.tsx",
+      "apps/web/src/components/Events/EventMetadataFilter.tsx",
+      "apps/web/src/components/Finance/Account/sections/SocialLinksField.tsx",
+      "apps/web/src/components/Landing/resources/WhyPolarPage.tsx",
+      "apps/web/src/components/Meter/MeterListSidebar.tsx",
+      "apps/web/src/components/Metrics/dashboards/DashboardsListSidebar.tsx",
+      "apps/web/src/components/Settings/OAuth/OAuthForm.tsx",
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "AddPhotoAlternateOutlined": {
+    "source": "material",
+    "original": "AddPhotoAlternateOutlined",
+    "files": [
+      "apps/web/src/components/Products/ProductMediasField/index.tsx",
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "AddRounded": {
+    "source": "material",
+    "original": "AddRounded",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/compass/CompassPage.tsx"
+    ]
+  },
+  "AllInclusiveOutlined": {
+    "source": "material",
+    "original": "AllInclusiveOutlined",
+    "files": [
+      "apps/web/src/components/CustomerPortal/CustomerPortalOverview.tsx",
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx",
+      "apps/web/src/components/Events/EventCard/SubscriptionEventCard.tsx",
+      "apps/web/src/components/Timeline/renderers.tsx"
+    ]
+  },
+  "AlternateEmailOutlined": {
+    "source": "material",
+    "original": "AlternateEmailOutlined",
+    "files": ["apps/web/src/components/Settings/AuthenticationSettings.tsx"]
+  },
+  "Apple": {
+    "source": "material",
+    "original": "Apple",
+    "files": ["apps/web/src/components/Auth/AppleLoginButton.tsx"]
+  },
+  "ArrowBack": {
+    "source": "material",
+    "original": "ArrowBack",
+    "files": [
+      "apps/web/src/components/Layout/Dashboard/DashboardNavigation.tsx"
+    ]
+  },
+  "ArrowBackOutlined": {
+    "source": "material",
+    "original": "ArrowBackOutlined",
+    "files": [
+      "apps/web/src/app/(main)/[organization]/portal/CustomerPortalLayoutWrapper.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/customers/[customerId]/meter/[meterId]/CustomerMeterPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/billing/change-plan/ChangePlanPage.tsx",
+      "apps/web/src/components/Shared/FilterPopover.tsx"
+    ]
+  },
+  "ArrowDownward": {
+    "source": "material",
+    "original": "ArrowDownward",
+    "files": [
+      "apps/web/src/components/Benefit/BenefitListSidebar.tsx",
+      "apps/web/src/components/Benefit/Downloadables/DownloadablesBenefitGrant.tsx",
+      "apps/web/src/components/Benefit/Downloadables/DownloadablesSection.tsx",
+      "apps/web/src/components/CheckoutLinks/CheckoutLinkListSidebar.tsx",
+      "apps/web/src/components/Customer/CustomerListSidebar.tsx",
+      "apps/web/src/components/Meter/MeterListSidebar.tsx"
+    ]
+  },
+  "ArrowDownwardOutlined": {
+    "source": "material",
+    "original": "ArrowDownwardOutlined",
+    "files": ["apps/web/src/components/Landing/resources/ResourceLayout.tsx"]
+  },
+  "ArrowForward": {
+    "source": "material",
+    "original": "ArrowForward",
+    "files": [
+      "apps/web/src/components/Landing/LandingLayout.tsx",
+      "apps/web/src/components/Landing/startup-program/StartupProgramHero.tsx",
+      "apps/web/src/components/Settings/OAuth/OAuthSettings.tsx"
+    ]
+  },
+  "ArrowForwardOutlined": {
+    "source": "material",
+    "original": "ArrowForwardOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/new/ai/AIProductChat.tsx",
+      "apps/web/src/components/Events/EventCard/SubscriptionEventCard.tsx"
+    ]
+  },
+  "ArrowOutwardOutlined": {
+    "source": "material",
+    "original": "ArrowOutwardOutlined",
+    "files": [
+      "apps/web/src/app/(main)/(website)/(landing)/company/OpenRoles.tsx",
+      "apps/web/src/app/(main)/(website)/(landing)/resources/page.tsx",
+      "apps/web/src/components/Events/EventCostCreationGuideModal.tsx",
+      "apps/web/src/components/Landing/DesktopNav.tsx",
+      "apps/web/src/components/Landing/resources/WhyPolarPage.tsx",
+      "apps/web/src/components/Layout/Dashboard/DashboardSidebar.tsx",
+      "apps/web/src/components/Metrics/MetricChartBox.tsx",
+      "apps/web/src/components/Onboarding/IntegrateStep.tsx",
+      "apps/web/src/components/Organization/Footer.tsx",
+      "apps/web/src/components/Payouts/WithdrawModal.tsx"
+    ]
+  },
+  "ArrowUpward": {
+    "source": "material",
+    "original": "ArrowUpward",
+    "files": [
+      "apps/web/src/components/Benefit/BenefitListSidebar.tsx",
+      "apps/web/src/components/CheckoutLinks/CheckoutLinkListSidebar.tsx",
+      "apps/web/src/components/Customer/CustomerListSidebar.tsx",
+      "apps/web/src/components/Meter/MeterListSidebar.tsx"
+    ]
+  },
+  "ArrowUpwardRounded": {
+    "source": "material",
+    "original": "ArrowUpwardRounded",
+    "files": ["apps/web/src/components/Compass/CompassInputBar.tsx"]
+  },
+  "AttachFileRounded": {
+    "source": "material",
+    "original": "AttachFileRounded",
+    "files": ["apps/web/src/components/Compass/CompassInputBar.tsx"]
+  },
+  "AttachMoneyOutlined": {
+    "source": "material",
+    "original": "AttachMoneyOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx",
+      "apps/web/src/components/Timeline/renderers.tsx"
+    ]
+  },
+  "AudioFileOutlined": {
+    "source": "material",
+    "original": "AudioFileOutlined",
+    "files": [
+      "apps/web/src/components/Benefit/Downloadables/FileList/FileListItem.tsx"
+    ]
+  },
+  "AutorenewOutlined": {
+    "source": "material",
+    "original": "AutorenewOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/subscriptions/SubscriptionFilters.tsx",
+      "apps/web/src/components/Discounts/DiscountForm.tsx",
+      "apps/web/src/components/Notifications/NotificationRow.tsx"
+    ]
+  },
+  "BoltOutlined": {
+    "source": "material",
+    "original": "BoltOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigationProducts.tsx",
+      "apps/web/src/components/Notifications/NotificationRow.tsx",
+      "apps/web/src/components/Notifications/NotificationsPopover.tsx",
+      "apps/web/src/components/Timeline/renderers.tsx"
+    ]
+  },
+  "CalendarMonth": {
+    "source": "material",
+    "original": "CalendarMonth",
+    "files": ["apps/web/src/components/CustomFields/CustomFieldTypeIcon.tsx"]
+  },
+  "CalendarMonthOutlined": {
+    "source": "material",
+    "original": "CalendarMonthOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/SalesFilters.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/subscriptions/SubscriptionFilters.tsx",
+      "apps/web/src/components/Metrics/DateRangePicker.tsx"
+    ]
+  },
+  "CheckBox": {
+    "source": "material",
+    "original": "CheckBox",
+    "files": ["apps/web/src/components/CustomFields/CustomFieldTypeIcon.tsx"]
+  },
+  "CheckFilled": {
+    "source": "material",
+    "original": "Check",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/members/ChangeRoleModal.tsx"
+    ]
+  },
+  "CheckOutlined": {
+    "source": "material",
+    "original": "CheckOutlined",
+    "files": [
+      "apps/web/src/app/(main)/[organization]/portal/claim/ClaimPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/billing/change-plan/PlanCard.tsx",
+      "apps/web/src/components/Benefit/BenefitTypeFilter.tsx",
+      "apps/web/src/components/CustomFields/CustomFieldValue.tsx",
+      "apps/web/src/components/Customer/CustomerListSidebar.tsx",
+      "apps/web/src/components/Landing/Pricing.tsx",
+      "apps/web/src/components/Landing/comparison/PolarLemonSqueezyPage.tsx",
+      "apps/web/src/components/Landing/comparison/PolarPaddlePage.tsx",
+      "apps/web/src/components/Landing/comparison/PolarStripePage.tsx",
+      "apps/web/src/components/Landing/resources/MORPage.tsx",
+      "apps/web/src/components/Landing/resources/WhyPolarPage.tsx",
+      "apps/web/src/components/Landing/startup-program/StartupProgramHero.tsx",
+      "apps/web/src/components/Meter/MeterListSidebar.tsx",
+      "apps/web/src/components/Settings/Billing/SandboxPreviewAccessNotice.tsx",
+      "apps/web/src/components/Upsell/PlanUpsell.tsx"
+    ]
+  },
+  "ChevronLeftRounded": {
+    "source": "material",
+    "original": "ChevronLeftRounded",
+    "files": ["apps/web/src/components/Products/Slideshow.tsx"]
+  },
+  "ChevronRightOutlined": {
+    "source": "material",
+    "original": "ChevronRightOutlined",
+    "files": ["apps/web/src/components/Timeline/TimelineItem.tsx"]
+  },
+  "ChevronRightRounded": {
+    "source": "material",
+    "original": "ChevronRightRounded",
+    "files": ["apps/web/src/components/Products/Slideshow.tsx"]
+  },
+  "CircleFilled": {
+    "source": "material",
+    "original": "Circle",
+    "files": ["apps/web/src/components/Events/CostDeviation.tsx"]
+  },
+  "ClearOutlined": {
+    "source": "material",
+    "original": "ClearOutlined",
+    "files": [
+      "apps/web/src/components/CustomFields/SortableOptionRow.tsx",
+      "apps/web/src/components/Discounts/DiscountForm.tsx",
+      "apps/web/src/components/Events/EventMetadataFilter.tsx",
+      "apps/web/src/components/Metadata/MetadataForm.tsx",
+      "apps/web/src/components/Products/ProductForm/ProductCustomFieldSection.tsx",
+      "apps/web/src/components/Products/ProductMediasField/FileListItem.tsx",
+      "apps/web/src/components/Settings/OAuth/OAuthForm.tsx"
+    ]
+  },
+  "Close": {
+    "source": "material",
+    "original": "Close",
+    "files": ["apps/web/src/components/Customer/CustomerSelector.tsx"]
+  },
+  "CloseOutlined": {
+    "source": "material",
+    "original": "CloseOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/finance/taxes/TaxesPage.tsx",
+      "apps/web/src/components/Benefit/LicenseKeys/LicenseKeyActivations.tsx",
+      "apps/web/src/components/BulkActions/BulkSelectionMenu.tsx",
+      "apps/web/src/components/CustomFields/CustomFieldValue.tsx",
+      "apps/web/src/components/DashboardOverview/MetricSelectorModal.tsx",
+      "apps/web/src/components/Finance/Account/sections/SocialLinksField.tsx",
+      "apps/web/src/components/Landing/comparison/PolarLemonSqueezyPage.tsx",
+      "apps/web/src/components/Landing/comparison/PolarPaddlePage.tsx",
+      "apps/web/src/components/Landing/comparison/PolarStripePage.tsx",
+      "apps/web/src/components/Landing/resources/MORPage.tsx",
+      "apps/web/src/components/Products/ProductForm/Pricing/CurrencyTabs.tsx",
+      "apps/web/src/components/Products/ProductForm/Pricing/MeteredTierCard.tsx",
+      "apps/web/src/components/Products/ProductForm/Pricing/ProductPriceItem.tsx",
+      "apps/web/src/components/Products/ProductForm/Pricing/UnitTierCard.tsx",
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx",
+      "apps/web/src/components/Upsell/PlanUpsell.tsx"
+    ]
+  },
+  "CodeOutlined": {
+    "source": "material",
+    "original": "CodeOutlined",
+    "files": ["apps/web/src/components/Dashboard/navigation.tsx"]
+  },
+  "CropFreeRounded": {
+    "source": "material",
+    "original": "CropFreeRounded",
+    "files": ["apps/web/src/components/Compass/CompassInputBar.tsx"]
+  },
+  "DeleteOutlineRounded": {
+    "source": "material",
+    "original": "DeleteOutlineRounded",
+    "files": ["apps/web/src/components/Compass/CompassThreadList.tsx"]
+  },
+  "DescriptionOutlined": {
+    "source": "material",
+    "original": "DescriptionOutlined",
+    "files": [
+      "apps/web/src/components/Benefit/Downloadables/FileList/FileListItem.tsx"
+    ]
+  },
+  "DiamondOutlined": {
+    "source": "material",
+    "original": "DiamondOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx",
+      "apps/web/src/components/Timeline/renderers.tsx"
+    ]
+  },
+  "DiscountOutlined": {
+    "source": "material",
+    "original": "DiscountOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx"
+    ]
+  },
+  "DonutLargeOutlined": {
+    "source": "material",
+    "original": "DonutLargeOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/SalesFilters.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/subscriptions/SubscriptionFilters.tsx",
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx",
+      "apps/web/src/components/Timeline/renderers.tsx"
+    ]
+  },
+  "DragHandleOutlined": {
+    "source": "material",
+    "original": "DragHandleOutlined",
+    "files": [
+      "apps/web/src/components/CustomFields/SortableOptionRow.tsx",
+      "apps/web/src/components/DashboardOverview/MetricSelectorModal.tsx"
+    ]
+  },
+  "ErrorOutlined": {
+    "source": "material",
+    "original": "ErrorOutlined",
+    "files": [
+      "apps/web/src/app/(main)/[organization]/portal/claim/ClaimPage.tsx"
+    ]
+  },
+  "ExpandMoreOutlined": {
+    "source": "material",
+    "original": "ExpandMoreOutlined",
+    "files": [
+      "apps/web/src/components/Benefit/SlackTeamInviteesSelect.tsx",
+      "apps/web/src/components/BulkActions/BulkSelectionMenu.tsx",
+      "apps/web/src/components/Products/ProductSelect.tsx",
+      "apps/web/src/components/Settings/GeneralSettings.tsx"
+    ]
+  },
+  "ExploreOutlined": {
+    "source": "material",
+    "original": "ExploreOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx"
+    ]
+  },
+  "Face": {
+    "source": "material",
+    "original": "Face",
+    "files": ["apps/web/src/components/Navigation/PublicProfileDropdown.tsx"]
+  },
+  "Facebook": {
+    "source": "material",
+    "original": "Facebook",
+    "files": [
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "FileDownloadOutlined": {
+    "source": "material",
+    "original": "FileDownloadOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/finance/(wide)/income/IncomePageHeader.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/SalesFilters.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/subscriptions/SubscriptionFilters.tsx",
+      "apps/web/src/components/Settings/Billing/BillingOrdersTable.tsx"
+    ]
+  },
+  "FileUploadOutlined": {
+    "source": "material",
+    "original": "FileUploadOutlined",
+    "files": ["apps/web/src/components/Benefit/Downloadables/BenefitForm.tsx"]
+  },
+  "FilterList": {
+    "source": "material",
+    "original": "FilterList",
+    "files": [
+      "apps/web/src/components/Benefit/BenefitTypeFilter.tsx",
+      "apps/web/src/components/Customer/CustomerListSidebar.tsx",
+      "apps/web/src/components/Meter/MeterListSidebar.tsx"
+    ]
+  },
+  "FilterListOutlined": {
+    "source": "material",
+    "original": "FilterListOutlined",
+    "files": ["apps/web/src/components/Shared/FilterPopover.tsx"]
+  },
+  "FolderZipOutlined": {
+    "source": "material",
+    "original": "FolderZipOutlined",
+    "files": [
+      "apps/web/src/components/Benefit/Downloadables/FileList/FileListItem.tsx"
+    ]
+  },
+  "GavelOutlined": {
+    "source": "material",
+    "original": "GavelOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx"
+    ]
+  },
+  "GitHub": {
+    "source": "material",
+    "original": "GitHub",
+    "files": [
+      "apps/web/src/components/Auth/GitHubLoginButton.tsx",
+      "apps/web/src/components/Settings/AuthenticationSettings.tsx",
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "Google": {
+    "source": "material",
+    "original": "Google",
+    "files": [
+      "apps/web/src/components/Auth/GoogleLoginButton.tsx",
+      "apps/web/src/components/Settings/AuthenticationSettings.tsx"
+    ]
+  },
+  "GppMaybeOutlined": {
+    "source": "material",
+    "original": "GppMaybeOutlined",
+    "files": ["apps/web/src/components/Notifications/NotificationRow.tsx"]
+  },
+  "HistoryRounded": {
+    "source": "material",
+    "original": "HistoryRounded",
+    "files": ["apps/web/src/components/Compass/CompassHistoryMenu.tsx"]
+  },
+  "HiveOutlined": {
+    "source": "material",
+    "original": "HiveOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/ProductsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/SalesFilters.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/subscriptions/SubscriptionFilters.tsx",
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx",
+      "apps/web/src/components/Search/quickActions.tsx"
+    ]
+  },
+  "HourglassEmptyOutlined": {
+    "source": "material",
+    "original": "HourglassEmptyOutlined",
+    "files": ["apps/web/src/components/Notifications/NotificationRow.tsx"]
+  },
+  "ImageOutlined": {
+    "source": "material",
+    "original": "ImageOutlined",
+    "files": [
+      "apps/web/src/components/Benefit/Downloadables/FileList/FileListItem.tsx"
+    ]
+  },
+  "InsertDriveFileOutlined": {
+    "source": "material",
+    "original": "InsertDriveFileOutlined",
+    "files": [
+      "apps/web/src/components/Benefit/Downloadables/FileList/FileListItem.tsx",
+      "apps/web/src/components/Notifications/NotificationRow.tsx"
+    ]
+  },
+  "Instagram": {
+    "source": "material",
+    "original": "Instagram",
+    "files": [
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "KeyFilled": {
+    "source": "material",
+    "original": "Key",
+    "files": ["apps/web/src/components/Auth/SSOLoginButton.tsx"]
+  },
+  "KeyboardArrowDown": {
+    "source": "material",
+    "original": "KeyboardArrowDown",
+    "files": [
+      "apps/web/src/components/Events/EventCostBadge.tsx",
+      "apps/web/src/components/Layout/Dashboard/DashboardSidebar.tsx",
+      "apps/web/src/components/Widgets/RevenueWidget.tsx"
+    ]
+  },
+  "KeyboardArrowDownOutlined": {
+    "source": "material",
+    "original": "KeyboardArrowDownOutlined",
+    "files": [
+      "apps/web/src/components/Events/EventRow.tsx",
+      "apps/web/src/components/Settings/Webhook/WebhookDeliveriesTable.tsx"
+    ]
+  },
+  "KeyboardArrowRight": {
+    "source": "material",
+    "original": "KeyboardArrowRight",
+    "files": ["apps/web/src/components/Auth/GetStartedButton.tsx"]
+  },
+  "KeyboardArrowRightOutlined": {
+    "source": "material",
+    "original": "KeyboardArrowRightOutlined",
+    "files": [
+      "apps/web/src/components/Events/EventRow.tsx",
+      "apps/web/src/components/Settings/Webhook/WebhookDeliveriesTable.tsx"
+    ]
+  },
+  "KeyboardArrowUp": {
+    "source": "material",
+    "original": "KeyboardArrowUp",
+    "files": [
+      "apps/web/src/components/Events/EventCostBadge.tsx",
+      "apps/web/src/components/Widgets/RevenueWidget.tsx"
+    ]
+  },
+  "KeyboardArrowUpOutlined": {
+    "source": "material",
+    "original": "KeyboardArrowUpOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/events/[eventId]/EventsPage.tsx"
+    ]
+  },
+  "KeyboardReturnOutlined": {
+    "source": "material",
+    "original": "KeyboardReturnOutlined",
+    "files": ["apps/web/src/components/Search/components/Result.tsx"]
+  },
+  "LinkOutlined": {
+    "source": "material",
+    "original": "LinkOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/checkout-links/page.tsx",
+      "apps/web/src/components/CheckoutLinks/CheckoutLinkListSidebar.tsx",
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx"
+    ]
+  },
+  "LinkedIn": {
+    "source": "material",
+    "original": "LinkedIn",
+    "files": [
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "List": {
+    "source": "material",
+    "original": "List",
+    "files": ["apps/web/src/components/CustomFields/CustomFieldTypeIcon.tsx"]
+  },
+  "LockOutlined": {
+    "source": "material",
+    "original": "LockOutlined",
+    "files": ["apps/web/src/components/Layout/Dashboard/DashboardSidebar.tsx"]
+  },
+  "LogoutOutlined": {
+    "source": "material",
+    "original": "LogoutOutlined",
+    "files": ["apps/web/src/components/Navigation/PublicProfileDropdown.tsx"]
+  },
+  "MoreVert": {
+    "source": "material",
+    "original": "MoreVert",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/members/MembersPage.tsx",
+      "apps/web/src/components/Customer/CustomerListSidebar.tsx",
+      "apps/web/src/components/Customer/CustomerPage/CustomerHeader.tsx",
+      "apps/web/src/components/Products/ProductPage/ProductPage.tsx"
+    ]
+  },
+  "MoreVertOutlined": {
+    "source": "material",
+    "original": "MoreVertOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/benefits/[benefitId]/BenefitPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/checkout-links/[checkoutLinkId]/CheckoutLinksPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/discounts/DiscountsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/meters/(list)/[meterId]/MetersPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/sales/[id]/SalesPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/custom-fields/CustomFieldsPage.tsx",
+      "apps/web/src/components/Benefit/Downloadables/DownloadablesBenefitGrant.tsx",
+      "apps/web/src/components/Benefit/Downloadables/FileList/FileListItem.tsx",
+      "apps/web/src/components/Customer/CustomerPage/MembersSection.tsx",
+      "apps/web/src/components/CustomerPortal/CustomerPortalTeam.tsx",
+      "apps/web/src/components/CustomerPortal/SeatManagementTable.tsx",
+      "apps/web/src/components/Metrics/MetricChartBox.tsx",
+      "apps/web/src/components/Metrics/dashboards/DashboardViewHeader.tsx",
+      "apps/web/src/components/Orders/DownloadInvoice.tsx",
+      "apps/web/src/components/Payouts/ManagePayoutAccountModal.tsx",
+      "apps/web/src/components/Products/ProductListItem.tsx",
+      "apps/web/src/components/Seats/OrganizationSeatTable.tsx",
+      "apps/web/src/components/Subscriptions/SubscriptionActionsMenu.tsx"
+    ]
+  },
+  "Numbers": {
+    "source": "material",
+    "original": "Numbers",
+    "files": ["apps/web/src/components/CustomFields/CustomFieldTypeIcon.tsx"]
+  },
+  "OpenInNew": {
+    "source": "material",
+    "original": "OpenInNew",
+    "files": ["apps/web/src/components/Benefit/BenefitDetailCells.tsx"]
+  },
+  "PeopleAltOutlined": {
+    "source": "material",
+    "original": "PeopleAltOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx"
+    ]
+  },
+  "PercentRounded": {
+    "source": "material",
+    "original": "PercentRounded",
+    "files": ["apps/web/src/components/Compass/CompassConversation.tsx"]
+  },
+  "PersonAddAltOutlined": {
+    "source": "material",
+    "original": "PersonAddAltOutlined",
+    "files": ["apps/web/src/components/Notifications/NotificationRow.tsx"]
+  },
+  "PersonOutlineOutlined": {
+    "source": "material",
+    "original": "PersonOutlineOutlined",
+    "files": ["apps/web/src/components/Timeline/renderers.tsx"]
+  },
+  "PersonRemoveOutlined": {
+    "source": "material",
+    "original": "PersonRemoveOutlined",
+    "files": ["apps/web/src/components/Notifications/NotificationRow.tsx"]
+  },
+  "Public": {
+    "source": "material",
+    "original": "Public",
+    "files": [
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "RefreshOutlined": {
+    "source": "material",
+    "original": "RefreshOutlined",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/events/EventsPage.tsx",
+      "apps/web/src/components/Benefit/GitHubRepositoryBenefitForm.tsx"
+    ]
+  },
+  "RefreshRounded": {
+    "source": "material",
+    "original": "RefreshRounded",
+    "files": ["apps/web/src/components/Compass/CompassMessageList.tsx"]
+  },
+  "RemoveOutlined": {
+    "source": "material",
+    "original": "RemoveOutlined",
+    "files": [
+      "apps/web/src/components/Landing/resources/WhyPolarPage.tsx",
+      "apps/web/src/components/Widgets/RevenueWidget.tsx"
+    ]
+  },
+  "SearchFilled": {
+    "source": "material",
+    "original": "Search",
+    "files": [
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/analytics/events/EventsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/ProductsPage.tsx",
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/discounts/DiscountsPage.tsx",
+      "apps/web/src/components/Benefit/BenefitListSidebar.tsx",
+      "apps/web/src/components/Customer/CustomerListSidebar.tsx",
+      "apps/web/src/components/Customer/CustomerSelector.tsx",
+      "apps/web/src/components/CustomerPortal/CustomerUsage.tsx",
+      "apps/web/src/components/Layout/Dashboard/DashboardSidebar.tsx",
+      "apps/web/src/components/Meter/MeterListSidebar.tsx"
+    ]
+  },
+  "SearchOutlined": {
+    "source": "material",
+    "original": "SearchOutlined",
+    "files": ["apps/web/src/components/Shared/FilterPopover.tsx"]
+  },
+  "ShoppingBagOutlined": {
+    "source": "material",
+    "original": "ShoppingBagOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx",
+      "apps/web/src/components/Notifications/NotificationRow.tsx",
+      "apps/web/src/components/Timeline/renderers.tsx"
+    ]
+  },
+  "ShoppingCartOutlined": {
+    "source": "material",
+    "original": "ShoppingCartOutlined",
+    "files": ["apps/web/src/components/Timeline/renderers.tsx"]
+  },
+  "ShortTextOutlined": {
+    "source": "material",
+    "original": "ShortTextOutlined",
+    "files": [
+      "apps/web/src/components/Customer/CustomerPage/CustomerEventsView.tsx"
+    ]
+  },
+  "ShowChartRounded": {
+    "source": "material",
+    "original": "ShowChartRounded",
+    "files": ["apps/web/src/components/Compass/CompassConversation.tsx"]
+  },
+  "SignalCellularAltOutlined": {
+    "source": "material",
+    "original": "SignalCellularAltOutlined",
+    "files": ["apps/web/src/components/Dashboard/navigationProducts.tsx"]
+  },
+  "SpaceDashboardOutlined": {
+    "source": "material",
+    "original": "SpaceDashboardOutlined",
+    "files": [
+      "apps/web/src/components/Dashboard/navigation.tsx",
+      "apps/web/src/components/Dashboard/navigationProducts.tsx",
+      "apps/web/src/components/Navigation/PublicProfileDropdown.tsx"
+    ]
+  },
+  "Support": {
+    "source": "material",
+    "original": "Support",
+    "files": ["apps/web/src/components/Feedback/SupportButton.tsx"]
+  },
+  "TextSnippet": {
+    "source": "material",
+    "original": "TextSnippet",
+    "files": ["apps/web/src/components/CustomFields/CustomFieldTypeIcon.tsx"]
+  },
+  "TollOutlined": {
+    "source": "material",
+    "original": "TollOutlined",
+    "files": ["apps/web/src/components/Payouts/FeeCreditGrantsModal.tsx"]
+  },
+  "TrendingDown": {
+    "source": "material",
+    "original": "TrendingDown",
+    "files": ["apps/web/src/components/Dashboard/navigationProducts.tsx"]
+  },
+  "TrendingDownRounded": {
+    "source": "material",
+    "original": "TrendingDownRounded",
+    "files": ["apps/web/src/components/Compass/CompassConversation.tsx"]
+  },
+  "TrendingUpFilled": {
+    "source": "material",
+    "original": "TrendingUp",
+    "files": ["apps/web/src/components/Dashboard/navigation.tsx"]
+  },
+  "TrendingUpRounded": {
+    "source": "material",
+    "original": "TrendingUpRounded",
+    "files": ["apps/web/src/components/Compass/CompassConversation.tsx"]
+  },
+  "TuneOutlined": {
+    "source": "material",
+    "original": "TuneOutlined",
+    "files": ["apps/web/src/components/Dashboard/navigation.tsx"]
+  },
+  "VideoFileOutlined": {
+    "source": "material",
+    "original": "VideoFileOutlined",
+    "files": [
+      "apps/web/src/components/Benefit/Downloadables/FileList/FileListItem.tsx"
+    ]
+  },
+  "ViewSidebarOutlined": {
+    "source": "material",
+    "original": "ViewSidebarOutlined",
+    "files": ["apps/web/src/components/Layout/DashboardLayout.tsx"]
+  },
+  "VolumeOff": {
+    "source": "material",
+    "original": "VolumeOff",
+    "files": ["apps/web/src/components/Shared/StreamVideo.tsx"]
+  },
+  "VolumeUp": {
+    "source": "material",
+    "original": "VolumeUp",
+    "files": ["apps/web/src/components/Shared/StreamVideo.tsx"]
+  },
+  "WarningAmberRounded": {
+    "source": "material",
+    "original": "WarningAmberRounded",
+    "files": ["apps/web/src/components/Compass/CompassConversation.tsx"]
+  },
+  "XLogo": {
+    "source": "material",
+    "original": "X",
+    "files": [
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  },
+  "YouTube": {
+    "source": "material",
+    "original": "YouTube",
+    "files": [
+      "apps/web/src/components/Settings/OrganizationProfileSettings.tsx"
+    ]
+  }
+}

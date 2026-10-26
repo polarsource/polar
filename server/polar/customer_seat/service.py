@@ -249,10 +249,17 @@ class SeatService:
         billing_customer_id = container.customer_id
         is_subscription = self._is_subscription(container)
 
-        if isinstance(container, Order) and container.status == OrderStatus.pending:
-            raise SeatNotAvailable(
-                source_id, "Order must be paid before assigning seats"
-            )
+        repository = CustomerSeatRepository.from_session(session)
+
+        if isinstance(container, Order):
+            if container.status == OrderStatus.pending:
+                raise SeatNotAvailable(
+                    source_id, "Order must be paid before assigning seats"
+                )
+            if await repository.are_order_benefits_revoked(container.id):
+                raise SeatNotAvailable(
+                    source_id, "Order benefits were revoked by a refund or dispute"
+                )
 
         # Lock the container's `seats` row and re-read it before checking
         # availability. A concurrent subscription seat update (customer-portal
@@ -268,7 +275,6 @@ class SeatService:
             container, attribute_names=["seats"], with_for_update=True
         )
 
-        repository = CustomerSeatRepository.from_session(session)
         available_seats = await repository.get_available_seats_count_for_container(
             container
         )
@@ -694,6 +700,32 @@ class SeatService:
             )
 
         return revoked_count
+
+    async def revoke_all_seats_for_order(
+        self,
+        session: AsyncSession,
+        order: Order,
+    ) -> int:
+        repository = CustomerSeatRepository.from_session(session)
+
+        all_seats = await repository.list_by_order_id(
+            order.id,
+            options=repository.get_eager_options(),
+        )
+
+        active_seats = [seat for seat in all_seats if not seat.is_revoked()]
+
+        for seat in active_seats:
+            await self.revoke_seat(session, seat)
+
+        if active_seats:
+            log.info(
+                "Revoked all seats for order",
+                order_id=order.id,
+                seats_revoked=len(active_seats),
+            )
+
+        return len(active_seats)
 
     async def _get_or_create_member_for_seat(
         self,

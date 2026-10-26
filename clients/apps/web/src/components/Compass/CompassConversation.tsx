@@ -3,15 +3,17 @@
 import { useCompassInsights } from '@/hooks/queries'
 import { AssistantMessage } from '@/hooks/useCompassAssistant'
 import { useStickToBottom } from '@/hooks/useStickToBottom'
-import PercentRounded from '@mui/icons-material/PercentRounded'
-import ShowChartRounded from '@mui/icons-material/ShowChartRounded'
-import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
-import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
-import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
+import {
+  ChevronRight,
+  PercentRounded,
+  ShowChartRounded,
+  TrendingDownRounded,
+  TrendingUpRounded,
+  WarningAmberRounded,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { motion } from 'motion/react'
 import { ComponentType, RefObject, useEffect } from 'react'

@@ -29,7 +29,7 @@ import {
   isOrderInDunning,
   isOrderInDunningLifecycle,
 } from '@/utils/order'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

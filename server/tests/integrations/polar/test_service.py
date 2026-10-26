@@ -219,7 +219,6 @@ def configured(mocker: MockerFixture) -> None:
     settings = mocker.patch("polar.integrations.polar.service.settings")
     settings.POLAR_SELF_ENABLED = True
     settings.POLAR_ORGANIZATION_ID = str(SELF_ORG_ID)
-    settings.POLAR_FREE_PRODUCT_ID = "prod_free"
 
 
 @pytest.fixture

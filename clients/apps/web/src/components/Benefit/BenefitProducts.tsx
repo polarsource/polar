@@ -8,7 +8,7 @@ import { hasLegacyRecurringPrices } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Pill, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Package } from 'lucide-react'
+import { Package } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useState } from 'react'
 

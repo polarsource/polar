@@ -5,7 +5,7 @@ import { useDispute } from '@/hooks/queries/disputes'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Loader2 } from 'lucide-react'
+import { LoaderCircle as Loader2 } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { DisputeRespondView } from './DisputeRespondView'
 

@@ -5,7 +5,7 @@ description: "Query Render Postgres over Tailscale on the private network"
 
 Query Render Postgres over Tailscale. Do not add a laptop IP under **Access Control** on the database. Engineer access stays on Tailscale. An allowlist entry publishes the database on the public internet.
 
-Sandbox data is a database on the production `db` instance. Test is the separate `db-test` instance. Every instance on the account uses the same private-network suffix.
+Sandbox data is a database on the production `db` instance. Test runs on PlanetScale, not Render Postgres. Every instance on the account uses the same private-network suffix.
 
 <Warning>
   These instances hold live data. Confirm the database name before running anything that writes. Use a read replica when you only need to inspect rows.
@@ -30,7 +30,7 @@ Append `.usr-cgvspcgdh87jokuesjfg.svc.cluster.local` to that id:
 dpg-xxxxxxxx-c.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
 ```
 
-`db-test` and each read replica have their own `dpg-` id. Use that id with the same `.usr-...svc.cluster.local` suffix.
+Each read replica has its own `dpg-` id. Use that id with the same `.usr-...svc.cluster.local` suffix.
 
 ## 3. Connect
 

@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class ActorType(StrEnum):
     AGENT = "agent"
     HUMAN = "human"
+    STRIPE = "stripe"
 
 
 class DecisionType(StrEnum):
@@ -446,7 +447,7 @@ class PriorFeedbackEntry(Schema):
     """A single prior review decision for the organization."""
 
     actor_type: str = Field(
-        description="Who made this decision: 'agent' (automated) or 'human' (backoffice reviewer)"
+        description="Who made this decision: 'agent' (automated), 'human' (backoffice reviewer) or 'stripe' (Stripe risk signal)"
     )
     decision: str = Field(
         description="Action taken by the actor: 'APPROVE', 'DENY', or 'ESCALATE'"

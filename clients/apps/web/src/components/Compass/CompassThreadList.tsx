@@ -2,7 +2,7 @@
 
 import { useCompassThreads, useDeleteCompassThread } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
-import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
+import { DeleteOutlineRounded } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

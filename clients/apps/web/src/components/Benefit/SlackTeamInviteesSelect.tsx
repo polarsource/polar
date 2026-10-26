@@ -1,5 +1,9 @@
 import { useSlackWorkspaceUsers } from '@/hooks/queries'
-import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
+import {
+  Check as CheckIcon,
+  ExpandMoreOutlined,
+  X as XIcon,
+} from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
 import {
   Command,
@@ -14,7 +18,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { CheckIcon, XIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 

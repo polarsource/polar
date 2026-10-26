@@ -5,7 +5,6 @@ from typing import Annotated, Any, Literal, Self
 from annotated_types import Gt
 from pydantic import (
     UUID4,
-    AwareDatetime,
     BaseModel,
     ConfigDict,
     Discriminator,
@@ -17,28 +16,17 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
-from polar.discount.schemas import (
-    Amounts,
-    BasisPoints,
-    Code,
-    Duration,
-    DurationInMonthsOptional,
-    MaxRedemptions,
-    MaxRedemptionsPerCustomer,
-    Name,
-)
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
-from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
-from polar.kit.trial import TrialConfigurationInputMixin
+from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
-from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
+from polar.meter.schemas import MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType, BenefitVisibility
-from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
@@ -50,8 +38,9 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
+    UnitLabel,
 )
-from polar.product.tiers import TiersInput
+from polar.product.tiers import TiersInput, TierType
 from polar.webhook.schemas import (
     AvailableAPIVersion,
     EndpointEvents,
@@ -62,7 +51,6 @@ from polar.webhook.schemas import (
 MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
-MAXIMUM_DISCOUNTS = 100
 MAXIMUM_WEBHOOK_ENDPOINTS = 25
 
 
@@ -311,76 +299,6 @@ class ConfigProduct(
         return self
 
 
-class ConfigDiscountBase(MetadataInputMixin, Schema):
-    model_config = ConfigDict(extra="forbid")
-
-    external_id: str = Field(
-        ...,
-        min_length=1,
-        description="Your identifier for the discount, used to match it.",
-    )
-    name: Name
-    code: Code = None
-    duration: Duration
-    duration_in_months: DurationInMonthsOptional = None
-    starts_at: AwareDatetime | None = Field(
-        default=None,
-        description="Optional timestamp after which the discount is redeemable.",
-    )
-    ends_at: AwareDatetime | None = Field(
-        default=None,
-        description=(
-            "Optional timestamp after which the discount is no longer redeemable."
-        ),
-    )
-    max_redemptions: MaxRedemptions = None
-    max_redemptions_per_customer: MaxRedemptionsPerCustomer = None
-    products: list[ProductReference] = Field(
-        default_factory=list,
-        description=(
-            "The products the discount applies to. "
-            "Leave it empty to apply the discount to every product."
-        ),
-    )
-
-    @model_validator(mode="after")
-    def validate_discount(self) -> Self:
-        repeating = self.duration == DiscountDuration.repeating
-        if repeating and self.duration_in_months is None:
-            raise ValueError(
-                "`duration_in_months` is required when `duration` is `repeating`."
-            )
-        if not repeating and self.duration_in_months is not None:
-            raise ValueError(
-                "`duration_in_months` must be omitted when "
-                "`duration` is not `repeating`."
-            )
-        if (
-            self.starts_at is not None
-            and self.ends_at is not None
-            and self.starts_at >= self.ends_at
-        ):
-            raise ValueError("starts_at must be before ends_at")
-        return self
-
-
-class ConfigDiscountPercentage(ConfigDiscountBase):
-    type: Literal[DiscountType.percentage]
-    basis_points: BasisPoints
-
-
-class ConfigDiscountFixed(ConfigDiscountBase):
-    type: Literal[DiscountType.fixed]
-    amounts: Amounts
-
-
-ConfigDiscount = Annotated[
-    ConfigDiscountPercentage | ConfigDiscountFixed,
-    Discriminator("type"),
-    SetSchemaReference("ConfigDiscount"),
-]
-
-
 class ConfigWebhookEndpoint(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -461,14 +379,6 @@ class Config(Schema):
             "Existing products that aren't listed are left untouched."
         ),
     )
-    discounts: list[ConfigDiscount] = Field(
-        default_factory=list,
-        max_length=MAXIMUM_DISCOUNTS,
-        description=(
-            "Discounts to create or update, matched by `external_id`. "
-            "Existing discounts that aren't listed are left untouched."
-        ),
-    )
     webhooks: list[ConfigWebhookEndpoint] = Field(
         default_factory=list,
         max_length=MAXIMUM_WEBHOOK_ENDPOINTS,
@@ -494,10 +404,7 @@ class ConfigIssueSeverity(StrEnum):
 class ConfigIssueType(StrEnum):
     currency_changed = "currency_changed"
     deprecated_reference = "deprecated_reference"
-    discount_locked = "discount_locked"
-    duplicate_code = "duplicate_code"
     duplicate_external_id = "duplicate_external_id"
-    duration_changed = "duration_changed"
     interval_changed = "interval_changed"
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
@@ -529,7 +436,6 @@ class ConfigResource(StrEnum):
     meter = "meter"
     benefit = "benefit"
     product = "product"
-    discount = "discount"
     webhook = "webhook"
 
 
@@ -598,7 +504,7 @@ class ConfigPruneEntry(Schema):
     in_use: bool = Field(description="Whether a customer still uses the resource.")
     referenced_by: list[str] = Field(
         description=(
-            "External IDs of the products, benefits and discounts staying in the config "
+            "External IDs of the products and benefits staying in the config "
             "that reference the resource."
         )
     )
@@ -613,24 +519,143 @@ class ConfigPrune(Schema):
     )
 
 
-class ConfigExportMeter(Schema, MetadataOutputMixin):
-    external_id: str = Field(description="Your identifier for the meter.")
-    name: str = Field(description=NAME_DESCRIPTION)
-    unit: MeterUnit = Field(description="The unit of the meter.")
-    custom_label: str | None = Field(description="The label for the custom unit.")
-    custom_multiplier: int | None = Field(
-        description="The multiplier to convert from base unit to display scale."
-    )
-    filter: Filter = Field(
-        description="The filter applied on events to calculate the meter."
-    )
-    aggregation: Aggregation = Field(
-        description="The aggregation applied on the filtered events."
-    )
+# Same schema in both modes, or `Decimal` fields split into `-Input`/`-Output`.
+class _ConfigRead(Schema):
+    model_config = ConfigDict(extra="forbid", json_schema_mode_override="serialization")
 
 
-class ConfigExportDocument(Schema):
-    meters: list[ConfigExportMeter]
+class ConfigMeterRead(_ConfigRead):
+    external_id: str
+    name: str
+    unit: MeterUnit
+    custom_label: str | None
+    custom_multiplier: int | None
+    filter: Filter
+    aggregation: Aggregation
+    metadata: MetadataOutputType
+
+
+class ConfigBenefitFeatureFlagRead(_ConfigRead):
+    type: Literal[BenefitType.feature_flag]
+    external_id: str
+    description: str
+    visibility: BenefitVisibility
+    metadata: MetadataOutputType
+
+
+class ConfigBenefitMeterCreditPropertiesRead(_ConfigRead):
+    meter: str
+    units: Int32
+    rollover: bool
+
+
+class ConfigBenefitMeterCreditRead(_ConfigRead):
+    type: Literal[BenefitType.meter_credit]
+    external_id: str
+    description: str
+    visibility: BenefitVisibility
+    metadata: MetadataOutputType
+    properties: ConfigBenefitMeterCreditPropertiesRead
+
+
+ConfigBenefitRead = Annotated[
+    ConfigBenefitFeatureFlagRead | ConfigBenefitMeterCreditRead,
+    Discriminator("type"),
+    SetSchemaReference("ConfigBenefitRead"),
+]
+
+
+class ConfigTierRead(_ConfigRead):
+    bound: int | None
+    unit_amount: Decimal
+
+
+class ConfigTiersRead(_ConfigRead):
+    type: TierType
+    tiers: list[ConfigTierRead]
+
+
+class ConfigProductPriceFixedRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.fixed]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    price_amount: Int32
+
+
+class ConfigProductPriceMeteredUnitRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.metered_unit]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    meter: str
+    unit_amount: Decimal
+    cap_amount: Int32 | None
+
+
+class ConfigProductPriceSeatBasedRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.seat_based]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    tiers: ConfigTiersRead
+    minimum_units: int
+
+
+class ConfigProductPriceMeteredTiersRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.metered_tiers]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    meter: str
+    tiers: ConfigTiersRead
+    cap_amount: Int32 | None
+
+
+class ConfigProductPriceUnitBasedRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.unit_based]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    tiers: ConfigTiersRead
+    minimum_units: int
+    unit_label: UnitLabel | None
+
+
+ConfigProductPriceRead = Annotated[
+    ConfigProductPriceFixedRead
+    | ConfigProductPriceMeteredUnitRead
+    | ConfigProductPriceSeatBasedRead
+    | ConfigProductPriceMeteredTiersRead
+    | ConfigProductPriceUnitBasedRead,
+    Discriminator("amount_type"),
+    SetSchemaReference("ConfigProductPriceRead"),
+]
+
+
+class ConfigProductRead(_ConfigRead):
+    external_id: str
+    name: str
+    description: str | None
+    visibility: ProductVisibility
+    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval_count: int | None
+    trial_interval: TrialInterval | None
+    trial_interval_count: int | None
+    prices: list[ConfigProductPriceRead]
+    benefits: list[str]
+    metadata: MetadataOutputType
+
+
+class ConfigSettingsPaymentsRead(_ConfigRead):
+    currency: PresentmentCurrency
+    tax: TaxBehaviorOption
+
+
+class ConfigSettingsRead(_ConfigRead):
+    payments: ConfigSettingsPaymentsRead
+
+
+class ConfigExportDocument(_ConfigRead):
+    settings: ConfigSettingsRead
+    meters: list[ConfigMeterRead]
+    benefits: list[ConfigBenefitRead]
+    products: list[ConfigProductRead]
 
 
 class ConfigSkippedReason(StrEnum):
@@ -640,19 +665,25 @@ class ConfigSkippedReason(StrEnum):
     over_limit = "over_limit"
 
 
-class ConfigSkippedMeter(Schema):
+class ConfigSkippedResource(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    id: UUID4 = Field(description="The meter ID.")
-    name: str = Field(description="The meter name.")
+    id: UUID4 = Field(description="The resource ID.")
+    name: str = Field(description="The resource name.")
     reason: ConfigSkippedReason = Field(
-        description="Why the meter isn't in the exported config."
+        description="Why the resource isn't in the exported config."
     )
 
 
 class ConfigExport(Schema):
     config: ConfigExportDocument = Field(
-        description="The current config, in the same shape plan and apply accept."
+        description=(
+            "The current config, in the shape plan and apply accept, "
+            "without `organization_id`."
+        )
     )
-    skipped: list[ConfigSkippedMeter] = Field(
-        description="Meters left out of the exported config."
+    skipped: list[ConfigSkippedResource] = Field(
+        description=(
+            "Resources left out of the exported config. "
+            "At most the section's config limit is listed."
+        )
     )

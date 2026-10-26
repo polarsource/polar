@@ -67,6 +67,71 @@ def test_rollup_100_events(
     )
 
 
+# One event per customer: every ingest updates one Redis bucket and enqueues one sync job per
+# customer.
+def test_rollup_100_customers(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    redis: Redis,
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    async def seed() -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+
+    run(seed())
+    now = datetime.now(UTC)
+    events = [
+        Event(
+            name=METER_TEST_EVENT,
+            timestamp=now,
+            organization_id=organization.id,
+            external_customer_id=f"customer-{index}",
+            user_metadata={"tokens": index},
+        )
+        for index in range(100)
+    ]
+    contributed = run(reducer_service.rollup(session, redis, organization.id, events))
+    assert contributed == 100
+    benchmark(
+        lambda: run(reducer_service.rollup(session, redis, organization.id, events))
+    )
+
+
+# Late events: each closed bucket is locked, read and written in the database.
+def test_rollup_100_events_into_closed_buckets(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    redis: Redis,
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    async def seed() -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+
+    run(seed())
+    closed = get_reducer_bucket_start(utc_now()) - 2 * REDUCER_BUCKET_SIZE
+    events = [
+        Event(
+            name=METER_TEST_EVENT,
+            timestamp=closed,
+            organization_id=organization.id,
+            external_customer_id=f"customer-{index % 10}",
+            user_metadata={"tokens": index},
+        )
+        for index in range(100)
+    ]
+    contributed = run(reducer_service.rollup(session, redis, organization.id, events))
+    assert contributed == 10
+    benchmark(
+        lambda: run(reducer_service.rollup(session, redis, organization.id, events))
+    )
+
+
 def test_sync_bucket_1000_events(
     benchmark: BenchmarkFixture,
     run: Run[typing.Any],

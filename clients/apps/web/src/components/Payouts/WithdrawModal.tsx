@@ -2,9 +2,10 @@ import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { extractApiErrorMessage } from '@/utils/api/errors'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { permissionDeniedMessage } from '@/utils/permissions'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button, Modal, Spinner as SpinnerNoMargin } from '@polar-sh/orbit'
@@ -47,14 +48,15 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     [organization.capabilities.payouts],
   )
 
-  const { data: latestPayouts, isPending } = usePayouts(
-    canManageFinance ? account.id : undefined,
-    {
-      limit: 1,
-      sorting: ['-created_at'],
-      status: COOLDOWN_PAYOUT_STATUSES,
-    },
-  )
+  const {
+    data: latestPayouts,
+    isPending,
+    isFetching,
+  } = usePayouts(canManageFinance ? account.id : undefined, {
+    limit: 1,
+    sorting: ['-created_at'],
+    status: COOLDOWN_PAYOUT_STATUSES,
+  })
 
   const nextPayoutAt = useMemo(() => {
     const latest = latestPayouts?.items?.[0]
@@ -72,6 +74,9 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   )
 
   const getPayoutEstimate = useCallback(async () => {
+    setPayoutEstimate(null)
+    setErrorMessage(null)
+
     if (!canManageFinance || !canWithdraw || isPayoutIntervalLimited) {
       return
     }
@@ -98,10 +103,10 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
 
   /* oxlint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
   useEffect(() => {
-    if (isShown) {
+    if (isShown && !isFetching) {
       getPayoutEstimate()
     }
-  }, [isShown, getPayoutEstimate])
+  }, [isShown, isFetching, getPayoutEstimate])
   /* oxlint-enable react-hooks/set-state-in-effect */
 
   const [loading, setLoading] = useState(false)
@@ -126,6 +131,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     })
 
     onSuccess?.(data.id)
+    getQueryClient().invalidateQueries({ queryKey: ['payouts'] })
   }, [organization, onSuccess])
 
   return (
@@ -204,7 +210,7 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                 </div>
               </div>
             )}
-            {payoutEstimate && (
+            {payoutEstimate && !isPayoutIntervalLimited && (
               <div className="flex flex-col gap-8">
                 <div className="flex flex-col gap-8">
                   <div className="flex flex-col gap-2">

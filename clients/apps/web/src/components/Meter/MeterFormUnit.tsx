@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
-import { InfoIcon } from 'lucide-react'
+import { Info as InfoIcon } from '@polar-sh/orbit/icons'
 import { useFormContext } from 'react-hook-form'
 
 const MeterFormUnit = () => {

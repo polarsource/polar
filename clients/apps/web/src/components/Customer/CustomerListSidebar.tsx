@@ -8,13 +8,15 @@ import { useCustomers } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import { getServerURL } from '@/utils/api'
 
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
-import ArrowUpward from '@mui/icons-material/ArrowUpward'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import FilterList from '@mui/icons-material/FilterList'
-import MoreVert from '@mui/icons-material/MoreVert'
-import Search from '@mui/icons-material/Search'
+import {
+  AddOutlined,
+  ArrowDownward,
+  ArrowUpward,
+  CheckOutlined,
+  FilterList,
+  MoreVert,
+  SearchFilled as Search,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
@@ -94,7 +96,7 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
       window.location.origin,
     )
 
-    window.open(url, '_blank')
+    window.open(url, '_blank', 'noopener,noreferrer')
   }, [organization.id])
 
   const selectedCustomerId = useMemo(() => {

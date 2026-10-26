@@ -120,9 +120,9 @@ class MerchantMigration(RecordModel):
         Completed and closed migrations count as connected: reaching either step
         deletes the key.
         """
-        return bool(self.source_credentials.get("api_key_encrypted")) or self.step in (
-            MerchantMigrationStep.completed,
-            MerchantMigrationStep.closed,
+        return (
+            bool(self.source_credentials.get("api_key_encrypted"))
+            or self.step in MERCHANT_MIGRATION_FINISHED_STEPS
         )
 
     @property

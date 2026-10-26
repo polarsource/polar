@@ -1258,8 +1258,11 @@ class MerchantMigrationService:
                 await self._advance_checklist(session, migration, steps)
         if not self._cutover_reachable(migration):
             raise CutoverNotStarted()
-        # Completing or closing the migration deleted the key the switch needs.
-        if not migration.source_credentials.get("api_key_encrypted"):
+        # The switch needs the key, which finishing the migration deletes.
+        if (
+            migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
+            or not migration.source_credentials.get("api_key_encrypted")
+        ):
             raise SourceNotConnected()
 
         selection = self._build_selection(record_ids, exclude_record_ids)

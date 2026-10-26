@@ -248,16 +248,6 @@ class OrganizationFeatureSettings(Schema):
             "provider (e.g. Stripe) to Polar."
         ),
     )
-    agentic_payments_enabled: Annotated[
-        bool,
-        Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "If this organization accepts payments from AI agents "
-                "through Stripe shared payment tokens."
-            ),
-        ),
-    ] = False
     staged_events_ingest_enabled: Annotated[
         bool,
         Version(starting_from=V2027_01),

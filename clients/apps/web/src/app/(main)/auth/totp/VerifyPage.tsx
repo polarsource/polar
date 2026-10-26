@@ -42,7 +42,7 @@ const VerifyPage = () => {
         }
         return
       }
-      window.location.href = `${CONFIG.FRONTEND_BASE_URL}/auth`
+      window.location.assign(`${CONFIG.FRONTEND_BASE_URL}/auth`)
     } catch {
       setError('code', {
         message: 'An unexpected error occurred. Please try again.',

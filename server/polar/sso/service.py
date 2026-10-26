@@ -5,12 +5,10 @@ from uuid import UUID
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Organization, OrganizationDomain, OrganizationSSOConnection
+from polar.organization_domain.repository import OrganizationDomainRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .repository import (
-    OrganizationDomainRepository,
-    OrganizationSSOConnectionRepository,
-)
+from .repository import OrganizationSSOConnectionRepository
 from .schemas import (
     OrganizationSSOConnectionCreate,
     OrganizationSSOConnectionUpdate,

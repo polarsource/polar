@@ -47,6 +47,8 @@ class MerchantMigrationStep(StrEnum):
     activate_subscriptions = "activate_subscriptions"
     cleanup = "cleanup"
     completed = "completed"
+    # Closed by Polar after the retention period without activity.
+    closed = "closed"
 
 
 class MerchantMigration(RecordModel):
@@ -104,11 +106,11 @@ class MerchantMigration(RecordModel):
     def source_connected(self) -> bool:
         """Whether the source provider has been connected (credentials stored).
 
-        A completed migration counts as connected: closing it deletes the key.
+        A closed migration counts as connected: closing it deletes the key.
         """
         return (
             bool(self.source_credentials.get("api_key_encrypted"))
-            or self.step == MerchantMigrationStep.completed
+            or self.step == MerchantMigrationStep.closed
         )
 
     @property

@@ -229,7 +229,7 @@ class TestCloseIdle:
 
         await worker_session.flush()
         await worker_session.refresh(idle_migration)
-        assert idle_migration.step == MerchantMigrationStep.completed
+        assert idle_migration.step == MerchantMigrationStep.closed
         assert idle_migration.source_credentials == {
             key: value
             for key, value in credentials.items()
@@ -263,7 +263,7 @@ class TestCloseIdle:
         await worker_session.flush()
         await worker_session.refresh(idle_migration)
         closed_at = idle_migration.modified_at
-        assert idle_migration.step == MerchantMigrationStep.completed
+        assert idle_migration.step == MerchantMigrationStep.closed
         assert "api_key_encrypted" not in idle_migration.source_credentials
 
         await merchant_migration_close_idle()
@@ -287,6 +287,7 @@ class TestCloseIdle:
                 id="active_operation",
             ),
             pytest.param(MerchantMigrationStep.completed, IDLE, False, id="completed"),
+            pytest.param(MerchantMigrationStep.closed, IDLE, False, id="closed"),
         ],
     )
     async def test_skips(

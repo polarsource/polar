@@ -194,6 +194,13 @@ function StepContent({
           <SwitchPanel migrationId={migration.id} />
         </Box>
       )
+    case 'closed':
+      return (
+        <Text variant="caption" color="muted">
+          This migration was closed after 90 days without activity. To move
+          subscriptions still on Stripe, start a new migration.
+        </Text>
+      )
   }
 
   return (

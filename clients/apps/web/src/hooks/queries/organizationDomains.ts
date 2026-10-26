@@ -49,3 +49,15 @@ export const useVerifyOrganizationDomain = (organizationId: string) =>
       invalidateOrganizationDomainsQueries(organizationId)
     },
   })
+
+export const useDeleteOrganizationDomain = (organizationId: string) =>
+  useMutation({
+    mutationFn: (domainId: string) =>
+      api.DELETE('/v1/organizations/{id}/domains/{domain_id}', {
+        params: { path: { id: organizationId, domain_id: domainId } },
+      }),
+    onSuccess: ({ error }) => {
+      if (error) return
+      invalidateOrganizationDomainsQueries(organizationId)
+    },
+  })

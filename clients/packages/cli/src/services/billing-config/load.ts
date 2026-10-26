@@ -68,7 +68,7 @@ const evaluateInProcess = async (url: string) => {
 const RESULT_MARKER = '__polar_config_result__'
 
 const childScript = (url: string) => `
-const marker = ${JSON.stringify(RESULT_MARKER)}
+const marker = '\\n' + ${JSON.stringify(RESULT_MARKER)}
 try {
   const module = await import(${JSON.stringify(url)})
   const value = typeof module.default === 'function' ? await module.default() : module.default

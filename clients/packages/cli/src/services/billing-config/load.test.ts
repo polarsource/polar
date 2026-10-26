@@ -180,6 +180,11 @@ describe('evaluateInSubprocess', () => {
     expect(
       await evaluate("console.log('hello')\nexport default { meters: [] }"),
     ).toEqual({ meters: [] })
+    expect(
+      await evaluate(
+        "process.stdout.write('hello')\nexport default { meters: [] }",
+      ),
+    ).toEqual({ meters: [] })
   })
 
   test('returns undefined without a default export', async () => {

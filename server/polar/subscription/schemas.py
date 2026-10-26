@@ -715,3 +715,48 @@ SubscriptionChangePreview = Annotated[
     | SubscriptionChangePreviewUnits,
     SetSchemaReference("SubscriptionChangePreview"),
 ]
+
+
+SubscriptionBulkUpdateID = Annotated[
+    UUID4, Path(description="The subscription bulk update ID.")
+]
+
+
+class SubscriptionBulkUpdateCreate(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    product_external_id: str = Field(
+        min_length=1,
+        description=(
+            "`external_id` of the product whose subscriptions move, in any version."
+        ),
+    )
+    target_product_id: UUID4 = Field(
+        description="ID of the product to move to. Must be a current version.",
+        examples=[PRODUCT_ID_EXAMPLE],
+    )
+    proration_behavior: Literal[SubscriptionProrationBehavior.next_period] = Field(
+        default=SubscriptionProrationBehavior.next_period,
+        description="When each subscription moves. Each one moves at its own renewal.",
+    )
+
+
+class SubscriptionBulkUpdate(IDSchema, TimestampedSchema):
+    organization_id: UUID4 = Field(description="The organization ID.")
+    product_external_id: str = Field(
+        validation_alias="source_external_id",
+        description="`external_id` of the product whose subscriptions move.",
+    )
+    target_product_id: UUID4 = Field(description="ID of the product to move to.")
+    proration_behavior: SubscriptionProrationBehavior = Field(
+        description="When each subscription moves."
+    )
+    subscriptions_count: int = Field(
+        description="Subscriptions scheduled to move at their renewal so far."
+    )
+    skipped_count: int = Field(
+        description="Subscriptions that couldn't move, for example on a currency mismatch."
+    )
+    completed_at: datetime | None = Field(
+        description="When every subscription was handled. `None` while running."
+    )

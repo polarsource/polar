@@ -88,7 +88,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                 },
               }),
         )
-        window.open(link.url, '_blank')
+        window.open(link.url, '_blank', 'noopener,noreferrer')
       } catch {
         toast({
           title: payoutAccount.is_payout_ready

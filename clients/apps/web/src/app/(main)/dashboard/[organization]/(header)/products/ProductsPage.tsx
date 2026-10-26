@@ -8,6 +8,7 @@ import {
   BulkArchiveProductsModal,
 } from '@/components/Products/BulkArchiveProductsModal'
 import { ProductListItem } from '@/components/Products/ProductListItem'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useProducts } from '@/hooks/queries/products'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useSelection } from '@/hooks/useSelection'
@@ -34,7 +35,7 @@ import { ShadowBoxOnMd } from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs'
-import { useCallback, useMemo, useState } from 'react'
+import { type MouseEvent, useCallback, useMemo, useState } from 'react'
 
 const showValues = ['all', 'active', 'archived'] as const
 type ShowValue = (typeof showValues)[number]
@@ -57,6 +58,7 @@ export default function ClientPage({
   const [{ query, show }, setFilters] = useQueryStates(filterParsers)
 
   const searchParams = useSearchParams()
+  const managedAsCode = useIsManagedAsCode(org.id)
 
   const onPageChange = useCallback(
     (page: number) =>
@@ -129,6 +131,10 @@ export default function ClientPage({
 
   const isMixedSelection =
     activeSelected.length > 0 && archivedSelected.length > 0
+
+  const toggleProduct =
+    (product: schemas['Product']) => (_: boolean, event: MouseEvent) =>
+      selection.toggle(product, { shiftKey: event.shiftKey })
 
   return (
     <DashboardBody>
@@ -219,19 +225,21 @@ export default function ClientPage({
                 </Select>
               )}
             </div>
-            <Link
-              href={`/dashboard/${org.slug}/products/new`}
-              className="w-full md:w-fit"
-            >
-              <Button
-                role="link"
-                wrapperClassNames="gap-x-2 md:w-fit"
-                className="w-full"
+            {!managedAsCode && (
+              <Link
+                href={`/dashboard/${org.slug}/products/new`}
+                className="w-full md:w-fit"
               >
-                <AddOutlined className="h-4 w-4" />
-                <span>New Product</span>
-              </Button>
-            </Link>
+                <Button
+                  role="link"
+                  wrapperClassNames="gap-x-2 md:w-fit"
+                  className="w-full"
+                >
+                  <AddOutlined className="h-4 w-4" />
+                  <span>New Product</span>
+                </Button>
+              </Link>
+            )}
           </div>
         )}
         {items.length > 0 ? (
@@ -250,8 +258,8 @@ export default function ClientPage({
                   product={product}
                   currency={org.default_presentment_currency}
                   checked={selection.isSelected(product)}
-                  onCheckedChange={(_, event) =>
-                    selection.toggle(product, { shiftKey: event.shiftKey })
+                  onCheckedChange={
+                    managedAsCode ? undefined : toggleProduct(product)
                   }
                   checkboxVisible={selection.count > 0}
                 />
@@ -271,11 +279,13 @@ export default function ClientPage({
                   Start selling digital products today
                 </p>
               </div>
-              <Link href={`/dashboard/${org.slug}/products/new`}>
-                <Button role="link" variant="secondary">
-                  <span>Create Product</span>
-                </Button>
-              </Link>
+              {!managedAsCode && (
+                <Link href={`/dashboard/${org.slug}/products/new`}>
+                  <Button role="link" variant="secondary">
+                    <span>Create Product</span>
+                  </Button>
+                </Link>
+              )}
             </div>
           </ShadowBoxOnMd>
         )}

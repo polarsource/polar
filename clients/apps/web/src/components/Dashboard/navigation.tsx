@@ -1,5 +1,6 @@
 import { AppealCaseUnreadBadge } from '@/components/Organization/HumanReviewCase/AppealCaseUnreadBadge'
 import { PolarHog, usePostHog } from '@/hooks/posthog'
+import { ManagedAsCodeNavIndicator } from './ManagedAsCodeNavIndicator'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
@@ -41,6 +42,7 @@ export type Route = {
   readonly selectedMatchFallback?: boolean
   readonly checkIsActive?: (currentPath: string) => boolean
   readonly extra?: React.ReactNode
+  readonly trailing?: React.ReactNode
 }
 
 export type SubRouteWithActive = SubRoute & { readonly isActive: boolean }
@@ -190,6 +192,9 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org?.slug}/products`)
     },
     if: true,
+    trailing: org?.feature_settings?.config_as_code_enabled ? (
+      <ManagedAsCodeNavIndicator />
+    ) : undefined,
     subs: [
       {
         title: 'Catalogue',

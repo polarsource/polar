@@ -800,7 +800,6 @@ class DeclarativeConfigService:
                             product_ids,
                         ),
                         auth_subject,
-                        declarative_config=True,
                     )
                 elif change.update_dict:
                     await discount_service.update(
@@ -808,7 +807,6 @@ class DeclarativeConfigService:
                         change.existing,
                         discounts.discount_update(change, product_ids),
                         auth_subject,
-                        declarative_config=True,
                     )
             except PolarRequestValidationError as e:
                 raise discounts.discount_error(e, change.index, external_ids) from e

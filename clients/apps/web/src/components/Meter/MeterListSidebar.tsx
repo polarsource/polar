@@ -1,6 +1,7 @@
 'use client'
 
 import { Spinner } from '@polar-sh/orbit'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useMetersInfinite } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
 import {
@@ -36,6 +37,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
   organization,
 }) => {
   const pathname = usePathname()
+  const managedAsCode = useIsManagedAsCode(organization.id)
   const searchParams = useSearchParams()
 
   const [sorting, setSorting] = useQueryState(
@@ -144,11 +146,15 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
               <ArrowDownward fontSize="small" />
             )}
           </Button>
-          <Link href={`/dashboard/${organization.slug}/products/meters/create`}>
-            <Button size="icon" className="h-6 w-6">
-              <AddOutlined fontSize="small" />
-            </Button>
-          </Link>
+          {!managedAsCode && (
+            <Link
+              href={`/dashboard/${organization.slug}/products/meters/create`}
+            >
+              <Button size="icon" className="h-6 w-6">
+                <AddOutlined fontSize="small" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
       <div className="flex flex-row items-center gap-3 px-4 py-2">

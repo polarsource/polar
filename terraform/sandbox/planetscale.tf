@@ -10,7 +10,12 @@ module "planetscale" {
 
   bouncers = {
     app = {
-      parameters = { pgbouncer = { default_pool_size = "12" } }
+      parameters = {
+        pgbouncer = {
+          default_pool_size      = "12"
+          track_extra_parameters = "IntervalStyle,statement_timeout"
+        }
+      }
     }
   }
 }

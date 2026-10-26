@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useReducedMotion, type Variants } from 'motion/react'
+import { m, useReducedMotion, type Variants } from 'motion/react'
 import { useId } from 'react'
 import {
   LOGO_ICON_VIEWBOX,
@@ -57,7 +57,7 @@ const LogoReveal = ({
   const reducedMotion = useReducedMotion()
 
   return (
-    <motion.svg
+    <m.svg
       width={size}
       height={variant === 'icon' ? size : undefined}
       viewBox={variant === 'icon' ? LOGO_ICON_VIEWBOX : LOGO_TYPE_VIEWBOX}
@@ -71,7 +71,7 @@ const LogoReveal = ({
       viewport={{ once: true, amount: 0.6 }}
     >
       <mask id={`${id}-rays`}>
-        <motion.circle
+        <m.circle
           cx={LOGO_MARK_HUB.cx}
           cy={LOGO_MARK_HUB.cy}
           fill="white"
@@ -80,7 +80,7 @@ const LogoReveal = ({
       </mask>
       <mask id={`${id}-arc`}>
         {LOGO_MARK_ARC_STROKES.map((d) => (
-          <motion.path
+          <m.path
             key={d}
             d={d}
             stroke="white"
@@ -100,13 +100,13 @@ const LogoReveal = ({
         mask={`url(#${id}-arc)`}
       />
       {variant === 'logotype' ? (
-        <motion.path
+        <m.path
           d={LOGO_WORDMARK_PATH}
           fill="currentColor"
           variants={wordmark}
         />
       ) : null}
-    </motion.svg>
+    </m.svg>
   )
 }
 

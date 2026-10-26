@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -124,7 +124,7 @@ export const DashboardSidebar = ({
             }
           />
         </div>
-        <motion.div
+        <m.div
           className="flex flex-row items-center gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -139,7 +139,7 @@ export const DashboardSidebar = ({
           >
             <Search fontSize="small" aria-hidden="true" />
           </Button>
-        </motion.div>
+        </m.div>
       </SidebarHeader>
 
       <SidebarContent className="gap-4 px-2 py-2">
@@ -150,7 +150,7 @@ export const DashboardSidebar = ({
             organization={organization}
           />
         )}
-        <motion.div
+        <m.div
           className="flex flex-col items-center gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -160,7 +160,7 @@ export const DashboardSidebar = ({
           {type === 'organization' && organization && (
             <OrganizationNavigation organization={organization} />
           )}
-        </motion.div>
+        </m.div>
       </SidebarContent>
       <SidebarFooter>
         {isOnFreePlan && (

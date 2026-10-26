@@ -51,7 +51,6 @@ class SLOReport:
     # Per-endpoint status
     endpoints: list[EndpointSLOStatus]
 
-    # Names of metrics whose Prometheus query failed
     failed_queries: list[str] = field(default_factory=list)
 
     @property

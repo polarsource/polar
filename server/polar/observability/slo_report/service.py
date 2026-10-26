@@ -191,14 +191,17 @@ class SLOReportService:
             range_duration=range_duration,
         )
 
+        queried: list[str] = []
         failures: list[str] = []
 
         async def scalar(query: str, name: str) -> float | None:
+            queried.append(name)
             return await self._query_scalar(
                 self._substitute_query(query, env, range_duration), name, failures
             )
 
         async def by_endpoint(query: str, name: str) -> dict[tuple[str, ...], float]:
+            queried.append(name)
             return await self._query_by_labels(
                 self._substitute_query(query, env, range_duration),
                 ["endpoint", "method"],
@@ -223,6 +226,9 @@ class SLOReportService:
         errors_by_endpoint = await by_endpoint(
             ENDPOINT_ERROR_COUNT_QUERY, "Endpoint error count"
         )
+
+        if failures == queried:
+            raise GrafanaCloudAPIError("All SLO report queries failed")
 
         endpoints: list[EndpointSLOStatus] = []
         for endpoint, method, p99_target, availability_target in CRITICAL_ENDPOINTS:

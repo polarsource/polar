@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Index, Uuid, text
+from sqlalchemy import TIMESTAMP, ForeignKey, Index, String, Uuid, text
 from sqlalchemy.dialects.postgresql import CITEXT
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -44,4 +44,7 @@ class OrganizationDomain(RecordModel):
     domain: Mapped[str] = mapped_column(CITEXT, nullable=False)
     verified_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    verification_token: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
     )

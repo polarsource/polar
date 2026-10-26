@@ -89,15 +89,22 @@ def format_slo_report_slack_payload(report: SLOReport) -> SlackPayload:
 
     blocks.append({"type": "divider"})
 
+    incomplete_reason: str | None = None
     if report.failed_queries:
+        incomplete_reason = f"failed to fetch {', '.join(report.failed_queries)}."
+    elif report.endpoints_without_data:
+        endpoints = ", ".join(
+            f"`{e.method} {e.endpoint}`" for e in report.endpoints_without_data
+        )
+        incomplete_reason = f"no data for {endpoints}."
+    if incomplete_reason is not None:
         blocks.append(
             {
                 "type": "section",
                 "text": {
                     "type": "mrkdwn",
                     "text": (
-                        ":warning: *Incomplete report:* failed to fetch "
-                        f"{', '.join(report.failed_queries)}. "
+                        f":warning: *Incomplete report:* {incomplete_reason} "
                         "Missing values are shown as N/A and not evaluated."
                     ),
                 },

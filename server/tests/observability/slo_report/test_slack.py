@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from polar.observability.slo_report.schemas import SLOReport
+from polar.observability.slo_report.schemas import EndpointSLOStatus, SLOReport
 from polar.observability.slo_report.slack import format_slo_report_slack_payload
 
 
@@ -28,3 +28,32 @@ class TestFormatSLOReportSlackPayload:
             for t in texts
         )
         assert any("*Global Availability:* N/A" in t for t in texts)
+
+    def test_endpoint_without_data(self) -> None:
+        report = SLOReport(
+            period_start=datetime(2026, 10, 19, tzinfo=UTC),
+            period_end=datetime(2026, 10, 26, tzinfo=UTC),
+            environment="production",
+            global_availability=100.0,
+            error_budget_remaining=100.0,
+            total_requests=100,
+            total_errors=0,
+            endpoints=[
+                EndpointSLOStatus(
+                    endpoint="/v1/checkouts/{id}",
+                    method="GET",
+                    p99_target=0.3,
+                    p99_actual=None,
+                    availability_target=99.95,
+                    availability_actual=None,
+                    request_count=0,
+                    error_count=0,
+                )
+            ],
+        )
+
+        payload = format_slo_report_slack_payload(report)
+
+        assert report.overall_status == "incomplete"
+        texts = [b["text"]["text"] for b in payload["blocks"] if "text" in b]
+        assert any("no data for `GET /v1/checkouts/{id}`" in t for t in texts)

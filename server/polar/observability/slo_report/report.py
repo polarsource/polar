@@ -33,6 +33,10 @@ class EndpointSLOStatus:
     def is_passing(self) -> bool:
         return self.p99_passing and self.availability_passing
 
+    @property
+    def has_data(self) -> bool:
+        return self.p99_actual is not None and self.availability_actual is not None
+
 
 @dataclass
 class SLOReport:
@@ -62,9 +66,15 @@ class SLOReport:
         return len(self.endpoints) - self.endpoints_passing
 
     @property
+    def endpoints_without_data(self) -> list[EndpointSLOStatus]:
+        return [e for e in self.endpoints if not e.has_data]
+
+    @property
     def overall_status(self) -> str:
         if self.endpoints_failing == 0:
-            return "incomplete" if self.failed_queries else "healthy"
+            if self.failed_queries or self.endpoints_without_data:
+                return "incomplete"
+            return "healthy"
         elif self.endpoints_failing <= 1:
             return "degraded"
         else:

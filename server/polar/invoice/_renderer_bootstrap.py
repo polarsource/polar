@@ -13,3 +13,4 @@ os.chdir(Path(__file__).resolve().parents[2])
 
 import_module("polar.invoice.render")
 import_module("polar.receipt.render")
+import_module("polar.credit_note.render")

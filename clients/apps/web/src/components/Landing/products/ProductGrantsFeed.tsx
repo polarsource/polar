@@ -2,7 +2,7 @@
 
 import { Switch } from '@polar-sh/orbit'
 import { AnimatePresence, m } from 'motion/react'
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 
 // ── Plan definitions ────────────────────────────────────────────────────────
 const PLANS = [
@@ -99,34 +99,27 @@ export const ProductGrantsFeed = () => {
     user: string
   }>({ plan: PLANS[0], user: USERS[0] })
   const [grantedKeys, setGrantedKeys] = useState<Record<string, boolean>>({})
-  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
-    // Clear any in-flight grant timeouts
-    timeoutsRef.current.forEach(clearTimeout)
-    timeoutsRef.current = []
-
     // Grant flags one by one with a stagger
-    sub.plan.flagKeys.forEach((key, i) => {
-      const t = setTimeout(
+    const grantTimeouts = sub.plan.flagKeys.map((key, i) =>
+      setTimeout(
         () => {
           setGrantedKeys((prev) => ({ ...prev, [key]: true }))
         },
         300 + i * 220,
-      )
-      timeoutsRef.current.push(t)
-    })
+      ),
+    )
 
     // Reset all granted keys with a short delay so the toggle reset doesn't
     // happen on the same frame as the subscription event change
     const revoke = setTimeout(() => {
       setGrantedKeys({})
     }, 150)
-    timeoutsRef.current.push(revoke)
 
     return () => {
-      timeoutsRef.current.forEach(clearTimeout)
-      timeoutsRef.current = []
+      grantTimeouts.forEach(clearTimeout)
+      clearTimeout(revoke)
     }
   }, [sub])
 

@@ -1708,6 +1708,8 @@ class MerchantMigrationService:
                 if operation.is_stalled()
                 else MigrationOperationInProgress()
             )
+        # Record edits are activity too, so the idle close leaves the migration be.
+        migration.set_modified_at()
         updated = await MerchantMigrationRecordRepository.from_session(
             session
         ).set_subscription_tax_behavior(migration.id, update.tax_behavior)
@@ -1721,13 +1723,17 @@ class MerchantMigrationService:
         record_id: UUID,
         update: MerchantMigrationRecordUpdate,
     ) -> MerchantMigrationRecordUpdate:
-        migration = await self._get_manageable(session, auth_subject, migration_id)
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
         repository = MerchantMigrationRecordRepository.from_session(session)
         record = await repository.get_by_id(record_id, for_update=True)
         if record is None or record.merchant_migration_id != migration.id:
             raise MerchantMigrationRecordNotFound()
         if record.type != MerchantMigrationRecordType.subscription:
             raise RecordNotSubscription()
+        # Record edits are activity too, so the idle close leaves the migration be.
+        migration.set_modified_at()
         if isinstance(update, MerchantMigrationRecordTaxUpdate):
             if record.cutover_status == MerchantMigrationCutoverStatus.moved:
                 raise RecordTaxLocked()

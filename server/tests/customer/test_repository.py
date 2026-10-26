@@ -44,10 +44,7 @@ class TestIncrementCreditNoteNextNumber:
         repository: CustomerRepository,
         customer: Customer,
         customer_organization_second: Customer,
-        save_fixture: SaveFixture,
     ) -> None:
-        customer.credit_note_next_number = None
-        await save_fixture(customer)
         assert await repository.increment_credit_note_next_number(customer.id) == 1
         assert await repository.increment_credit_note_next_number(customer.id) == 2
         assert (

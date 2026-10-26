@@ -612,14 +612,8 @@ class CustomerRepository(
         statement = (
             update(Customer)
             .where(Customer.id == customer_id)
-            .values(
-                credit_note_next_number=func.coalesce(
-                    Customer.credit_note_next_number, 1
-                )
-                + 1
-            )
+            .values(credit_note_next_number=Customer.credit_note_next_number + 1)
             .returning(Customer.credit_note_next_number)
         )
         next_number = (await self.session.execute(statement)).scalar_one()
-        assert next_number is not None
         return next_number - 1

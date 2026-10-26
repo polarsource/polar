@@ -66,11 +66,11 @@ cancel_deployment() {
   fi
 }
 
-cancel() {
-  local exit_code=$1 record pid
+cleanup() {
+  local record pid
   trap '' INT TERM
   set +e
-  echo "🛑 Deployment canceled; stopping local work and canceling owned Render deployments"
+  echo "🛑 Deployment stopped; stopping local work and canceling owned Render deployments"
   # Let an in-flight create finish recording its ID; stop polling immediately.
   if [[ "$CREATING" != true ]]; then
     for pid in $(jobs -pr); do
@@ -84,10 +84,20 @@ cancel() {
     cancel_deployment "$record" &
   done
   wait
+}
+
+finish() {
+  local exit_code=$?
+  trap - EXIT
+  if [[ "$exit_code" -ne 0 ]]; then
+    cleanup
+  fi
+  rm -rf "$STATE_DIR"
   exit "$exit_code"
 }
-trap 'cancel 130' INT
-trap 'cancel 143' TERM
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 # Wait on background commands so Bash handles signals immediately, including during curl.
 request() {

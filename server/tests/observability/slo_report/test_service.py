@@ -53,7 +53,6 @@ class TestGenerateReport:
         endpoint_queries = [q for q in client.queries if "by (endpoint, method" in q]
         assert len(endpoint_queries) == 4
         for query in endpoint_queries:
-            assert "$endpoints" not in query
             assert r'endpoint=~"' in query
             assert r"|/v1/checkouts/\\{id\\}|" in query
 

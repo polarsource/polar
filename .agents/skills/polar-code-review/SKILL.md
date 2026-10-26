@@ -38,7 +38,7 @@ Run the first four always. Add the rest only when the trigger matches.
 | `adr-check` | always |
 | `reuse-check` | always |
 | `slop-check` | always |
-| `api-surface-review` | `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`, `sdk/`, `clients/packages/client/` |
+| `api-surface-review` | `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`, `sdk/`, `clients/packages/client/`; or a change to a list query in `**/service.py` or `**/repository.py` |
 | `ship-safety` | `migrations/versions/`, `**/tasks.py`, `polar/models/`, `server/scripts/`; an endpoint is removed; or the diff spans `server/` and `clients/` with a dependency between them |
 | `billing-review` | the billing paths listed in that skill's Scope section |
 

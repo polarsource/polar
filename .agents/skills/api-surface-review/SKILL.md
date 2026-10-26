@@ -19,7 +19,9 @@ SDKs under `sdk/`, and out to merchants who already wrote code against it.
 ## Scope
 
 Diffs touching `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`,
-`sdk/`, `clients/packages/client/`.
+`sdk/`, `clients/packages/client/`. Also changes to a list query in `**/service.py` or
+`**/repository.py`, because that is where list endpoints filter. For those, only the
+list-endpoint check under *Route shape* applies.
 
 **CI already does part of this job.** The `OpenAPI Diff` workflow posts the schema delta as a
 PR comment, and `OpenAPI Client Regeneration Check` fails if the client is stale. Do not

@@ -61,4 +61,9 @@ variable "bouncers" {
     parameters        = optional(map(map(string)), {})
   }))
   default = {}
+
+  validation {
+    condition     = alltrue([for name in keys(var.bouncers) : length(name) <= 12])
+    error_message = "Bouncer names must be at most 12 characters."
+  }
 }

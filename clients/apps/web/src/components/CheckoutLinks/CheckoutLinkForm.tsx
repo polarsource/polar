@@ -17,7 +17,7 @@ import {
   metadataToEntries,
 } from '@/components/Metadata/utils'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import { Input } from '@polar-sh/orbit'
 import { Switch } from '@polar-sh/orbit'
@@ -33,7 +33,7 @@ import {
 import { X as XIcon } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { SubmitHandler, useForm } from 'react-hook-form'
+import { type FieldPath, SubmitHandler, useForm } from 'react-hook-form'
 import ProductSelect from '../Products/ProductSelect'
 import { toast } from '../Toast/use-toast'
 import { TrialConfigurationForm } from '../TrialConfiguration/TrialConfigurationForm'
@@ -110,7 +110,15 @@ export const CheckoutLinkForm = ({
     defaultValues,
   })
 
-  const { control, handleSubmit, setError, reset, watch } = form
+  const {
+    control,
+    handleSubmit,
+    setError,
+    clearErrors,
+    reset,
+    watch,
+    formState: { errors },
+  } = form
   // Watch for selected product IDs to determine if we should show trial configuration
   // oxlint-disable-next-line react-hooks/incompatible-library
   const selectedProductIds = watch('products') || []
@@ -132,20 +140,21 @@ export const CheckoutLinkForm = ({
     useUpdateCheckoutLink()
 
   const handleValidationError = useCallback(
-    (data: CheckoutLinkCreateForm, errors: schemas['ValidationError'][]) => {
+    (
+      data: CheckoutLinkCreateForm,
+      validationErrors: schemas['ValidationError'][],
+    ) => {
       const discriminators = [
         'CheckoutLinkCreateProducts',
         'RequestValidationError',
       ]
 
-      const normalizedErrors = normalizeValidationErrors(errors)
-      const filteredErrors = checkoutLink
-        ? normalizedErrors
-        : normalizedErrors.filter((error) =>
-            discriminators.includes(error.loc[1] as string),
-          )
-      setValidationErrors(filteredErrors, setError, 1, discriminators)
-      filteredErrors.forEach((error) => {
+      const normalizedErrors = normalizeValidationErrors(validationErrors)
+      clearErrors()
+      setValidationErrors(normalizedErrors, setError, 1, discriminators)
+
+      let fieldErrorSet = false
+      normalizedErrors.forEach((error) => {
         let loc = error.loc.slice(1)
         if (loc.length > 0 && discriminators.includes(loc[0] as string)) {
           loc = loc.slice(1)
@@ -160,11 +169,28 @@ export const CheckoutLinkForm = ({
             setError(`metadata.${metadataIndex}.${field}`, {
               message: error.msg,
             })
+            fieldErrorSet = true
           }
+          return
         }
+
+        if (!(loc[0] in data)) {
+          return
+        }
+
+        if (typeof loc[1] === 'number') {
+          setError(loc[0] as FieldPath<CheckoutLinkCreateForm>, {
+            message: error.msg,
+          })
+        }
+        fieldErrorSet = true
       })
+
+      if (!fieldErrorSet && normalizedErrors[0]) {
+        setError('root', { message: normalizedErrors[0].msg })
+      }
     },
-    [checkoutLink, setError],
+    [clearErrors, setError],
   )
 
   const onSubmit: SubmitHandler<CheckoutLinkCreateForm> = useCallback(
@@ -435,6 +461,9 @@ export const CheckoutLinkForm = ({
 
         <MetadataForm label="Metadata" />
 
+        {errors.root?.message ? (
+          <Text color="error">{errors.root.message}</Text>
+        ) : null}
         <div className="flex flex-row gap-x-4">
           <Button
             className="self-start"

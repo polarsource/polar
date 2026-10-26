@@ -14,12 +14,14 @@ from polar.agent.identity_assertion import (
 )
 from polar.agent.repository import AgentRepository
 from polar.agent.service import CLAIM_TOKEN_TTL, CLAIM_TTL
+from polar.agent.words import WORDS
 from polar.auth.models import AuthSubject
 from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
+from polar.kit.email import mask_email
 from polar.kit.utils import utc_now
-from polar.models import Agent, OAuth2Token, Organization, User
+from polar.models import Agent, OAuth2Token, Organization, Product, User
 from polar.models.agent import AgentStatus
 from polar.models.user_organization import OrganizationRole
 from polar.oauth2.constants import CLAIM_GRANT_TYPE
@@ -34,7 +36,7 @@ from tests.fixtures.random_objects import create_agent
 
 CLAIM_TOKEN = "polar_act_claim"
 LINK_TOKEN = "polar_acl_link"
-CODE = "123456"
+CODE = "amber-river-lemon"
 
 
 @pytest.fixture
@@ -216,6 +218,9 @@ class TestStartClaim:
         assert agent.claim_email == user.email
         assert agent.claim_link_token_hash == get_token_hash(link_token)
         assert agent.claim_code_hash == get_token_hash(claim_attempt["user_code"])
+        words = claim_attempt["user_code"].split("-")
+        assert len(words) == 3
+        assert all(word in WORDS for word in words)
         assert agent.claim_expires_at == datetime.fromisoformat(json["expires_at"])
         assert agent.claim_token_expires_at == claim_token_expires_at
 
@@ -227,6 +232,39 @@ class TestStartClaim:
 
 @pytest.mark.anyio
 @pytest.mark.usefixtures("agent_sign_up_enabled")
+class TestPreviewClaim:
+    async def test_anonymous(
+        self, client: AsyncClient, claim_agent: Agent, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/agent/claim/{LINK_TOKEN}/preview")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert claim_agent.claim_email is not None
+        assert json["agent_name"] == claim_agent.name
+        assert json["email"] == mask_email(claim_agent.claim_email)
+        assert json["email"] != claim_agent.claim_email
+        assert json["organization"]["slug"] == organization.slug
+
+    async def test_unknown_link(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/agent/claim/polar_acl_unknown/preview")
+
+        assert response.status_code == 404
+
+    async def test_expired(
+        self, save_fixture: SaveFixture, client: AsyncClient, claim_agent: Agent
+    ) -> None:
+        claim_agent.claim_expires_at = utc_now() - timedelta(seconds=1)
+        await save_fixture(claim_agent)
+
+        response = await client.get(f"/v1/agent/claim/{LINK_TOKEN}/preview")
+
+        assert response.status_code == 410
+        assert response.json()["error"] == "AgentClaimExpired"
+
+
+@pytest.mark.anyio
+@pytest.mark.usefixtures("agent_sign_up_enabled")
 class TestGetClaim:
     @pytest.mark.auth
     async def test_valid(
@@ -234,6 +272,7 @@ class TestGetClaim:
         client: AsyncClient,
         claim_agent: Agent,
         organization: Organization,
+        product: Product,
     ) -> None:
         response = await client.get(f"/v1/agent/claim/{LINK_TOKEN}")
 
@@ -247,6 +286,11 @@ class TestGetClaim:
             "slug": organization.slug,
             "avatar_url": organization.avatar_url,
         }
+        assert [item["name"] for item in json["products"]] == [product.name]
+        assert json["products"][0]["recurring_interval"] == "month"
+        assert [price["amount_type"] for price in json["products"][0]["prices"]] == [
+            price.amount_type for price in product.prices
+        ]
 
 
 @pytest.mark.anyio
@@ -317,11 +361,26 @@ class TestConfirmClaim:
         enqueue_job_mock.assert_not_called()
 
     @pytest.mark.auth
+    async def test_code_spelling_is_forgiven(
+        self, session: AsyncSession, client: AsyncClient, claim_agent: Agent
+    ) -> None:
+        response = await client.post(
+            "/v1/agent/claim",
+            json={"link_token": LINK_TOKEN, "code": "  Amber  River LEMON "},
+        )
+
+        assert response.status_code == 204
+        agent = await AgentRepository.from_session(session).get_by_id(claim_agent.id)
+        assert agent is not None
+        assert agent.status == AgentStatus.claimed
+
+    @pytest.mark.auth
     async def test_wrong_code(
         self, session: AsyncSession, client: AsyncClient, claim_agent: Agent
     ) -> None:
         response = await client.post(
-            "/v1/agent/claim", json={"link_token": LINK_TOKEN, "code": "654321"}
+            "/v1/agent/claim",
+            json={"link_token": LINK_TOKEN, "code": "wrong-wrong-wrong"},
         )
 
         assert response.status_code == 400

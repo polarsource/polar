@@ -3,6 +3,7 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import { CONFIG } from '@/utils/config'
+import { redactClaimTokens } from '@/utils/telemetry'
 import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
@@ -14,4 +15,10 @@ Sentry.init({
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
+
+  beforeSend: (event) => redactClaimTokens(event),
+
+  beforeSendTransaction: (event) => redactClaimTokens(event),
+
+  beforeBreadcrumb: (breadcrumb) => redactClaimTokens(breadcrumb),
 })

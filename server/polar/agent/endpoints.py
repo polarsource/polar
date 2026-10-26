@@ -21,6 +21,7 @@ from .schemas import (
     AgentClaim,
     AgentClaimCeremony,
     AgentClaimConfirm,
+    AgentClaimPreview,
     AgentClaimStart,
     AgentClaimStarted,
     AgentIdentity,
@@ -81,6 +82,24 @@ async def start_claim(
             interval=CLAIM_POLL_INTERVAL,
         ),
     )
+
+
+@router.get(
+    "/claim/{link_token}/preview",
+    summary="Preview Agent Claim",
+    response_model=AgentClaimPreview,
+    tags=[APITag.private],
+    responses={
+        404: {"model": ResourceNotFound.schema()},
+        410: {"model": AgentClaimExpired.schema()},
+    },
+)
+async def preview_claim(
+    link_token: str,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> AgentClaimPreview:
+    """What a claim is about, shown to the human before they sign in."""
+    return await agent_service.preview_claim(session, link_token)
 
 
 @router.get(

@@ -199,7 +199,7 @@ if meter is not None:
 
 ### Local reduction with Outpost
 
-Outpost is our local reduction engine. It can reduce events locally and share a state across all your clients via Redis. It's enabled automatically when you set the `REDIS_URL` environment variable.
+Outpost is our local reduction engine. It can reduce events locally and share a state across all your clients via Redis. Pass `outpost=True` to `polar.metering()` to enable it; it then uses the Redis at the `REDIS_URL` environment variable.
 
 In high throughput scenarios, Outpost can return you accurate meter reads only milliseconds after the event is ingested.
 
@@ -207,7 +207,7 @@ Outpost needs an `external_id` on every event; `track()` rejects an event withou
 
 An event counts locally until Polar confirms it stored it, or until the buffer gives it up, so a meter read never loses an event Polar is still ingesting.
 
-To disable it, pass `outpost=False` to `polar.metering()`. You can also configure it explicitly with a dictionary.
+Pass a dictionary instead of `True` to configure it.
 
 ### Delivery
 

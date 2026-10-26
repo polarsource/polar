@@ -31607,6 +31607,7 @@ export interface components {
       | 'identity.stripe_identity_verification'
       | 'product_description'
       | 'product_url'
+      | 'product_url.domain_verification'
       | 'payout_account'
       | 'product_configuration'
       | 'setup_readiness'
@@ -74643,6 +74644,7 @@ export const organizationReviewCheckKeyValues: ReadonlyArray<
   'identity.stripe_identity_verification',
   'product_description',
   'product_url',
+  'product_url.domain_verification',
   'payout_account',
   'product_configuration',
   'setup_readiness',

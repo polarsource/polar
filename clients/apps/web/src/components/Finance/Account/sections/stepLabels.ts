@@ -9,6 +9,7 @@ export const STEP_LABELS: Record<
   'identity.stripe_identity_verification': 'Verify your identity',
   product_description: 'Describe what you sell',
   product_url: 'Add your product website',
+  'product_url.domain_verification': 'Verify your website domain',
   payout_account: 'Connect a payout account',
   product_configuration: 'Create your first product',
   setup_readiness: 'Set up checkout',
@@ -24,6 +25,8 @@ export const STEP_DESCRIPTIONS: Record<
     'Unlocks payouts. Takes ~5 min with a photo ID',
   product_description: 'What you sell, who it’s for, and your pricing',
   product_url: 'The website where customers find your product',
+  'product_url.domain_verification':
+    'A DNS record that proves you own your website',
   payout_account: 'Where we send your revenue',
   product_configuration: 'Something for customers to buy',
   setup_readiness: 'A checkout link or API integration so you can get paid',
@@ -50,7 +53,7 @@ export const STEP_ACTION_LABELS: Partial<
 
 export const OPTIONAL_STEP_KEYS: ReadonlySet<
   schemas['OrganizationReviewCheckKey']
-> = new Set(['identity.social_links'])
+> = new Set(['identity.social_links', 'product_url.domain_verification'])
 
 export const isRequiredStep = (
   step: schemas['OrganizationReviewCheck'],

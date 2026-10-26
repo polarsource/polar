@@ -1617,6 +1617,7 @@ class TestGetReview:
             "payout_account",
             "product_description",
             "product_url",
+            "product_url.domain_verification",
             "identity.email",
             "identity.social_links",
         ]

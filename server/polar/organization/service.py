@@ -81,6 +81,11 @@ from polar.oauth2.service.oauth2_token import (
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
+from polar.organization_domain.repository import OrganizationDomainRepository
+from polar.organization_domain.service import (
+    WebsiteDomainStatus,
+    get_website_domain_status,
+)
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
 )
@@ -2146,12 +2151,16 @@ class OrganizationService:
             self._build_payout_account_check(payout_account),
             self._build_product_description_check(organization),
             await product_url_task,
+            await self._build_domain_verification_check(session, organization),
             self._build_email_check(organization),
             self._build_socials_check(organization),
         ]
 
         submitted_at = organization.details_submitted_at
-        optional_keys = {OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS}
+        optional_keys = {
+            OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS,
+            OrganizationReviewCheckKey.PRODUCT_URL_DOMAIN_VERIFICATION,
+        }
         is_blocked = any(
             step.status
             in (
@@ -2255,6 +2264,35 @@ class OrganizationService:
             status=OrganizationReviewCheckStatus.PASSED,
             value=organization.website,
         )
+
+    async def _build_domain_verification_check(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> OrganizationReviewCheck:
+        key = OrganizationReviewCheckKey.PRODUCT_URL_DOMAIN_VERIFICATION
+        if not organization.website:
+            return self._not_started_check(key)
+
+        repository = OrganizationDomainRepository.from_session(session)
+        organization_domains = await repository.get_all(
+            repository.get_statement_by_organization(organization.id)
+        )
+        match get_website_domain_status(organization.website, organization_domains):
+            case WebsiteDomainStatus.verified:
+                return self._passed_check(key)
+            case WebsiteDomainStatus.pending:
+                return OrganizationReviewCheck(
+                    key=key,
+                    status=OrganizationReviewCheckStatus.PENDING,
+                    reasons=[OrganizationReviewCheckReason.IN_PROGRESS],
+                    value=_website_domain(organization.website),
+                )
+            case WebsiteDomainStatus.not_verified:
+                return OrganizationReviewCheck(
+                    key=key,
+                    status=OrganizationReviewCheckStatus.PENDING,
+                    reasons=[OrganizationReviewCheckReason.NOT_STARTED],
+                    value=_website_domain(organization.website),
+                )
 
     def _build_socials_check(
         self, organization: Organization

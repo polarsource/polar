@@ -24,10 +24,12 @@ from polar.integrations.stripe.account_risk import (
     WebsiteRiskSignal,
 )
 from polar.kit.http import UrlReachability
+from polar.kit.utils import utc_now
 from polar.models import (
     Agent,
     Customer,
     Organization,
+    OrganizationDomain,
     OrganizationRiskSignal,
     PayoutAccount,
     Product,
@@ -2344,6 +2346,11 @@ async def _setup_passing_org(
         "product_description": "Subscription SaaS for software teams and agencies."
     }
     await save_fixture(organization)
+    await save_fixture(
+        OrganizationDomain(
+            organization=organization, domain="example.com", verified_at=utc_now()
+        )
+    )
 
     user.identity_verification_status = IdentityVerificationStatus.verified
     await save_fixture(user)
@@ -2403,6 +2410,63 @@ class TestGetReviewState:
             "polar.organization.service.check_url_reachable",
             new=AsyncMock(return_value=UrlReachability(reachable=True, status=200)),
         )
+
+    async def test_domain_verification_not_verified(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_URL_DOMAIN_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [OrganizationReviewCheckReason.NOT_STARTED]
+        assert step.value == "acme.com"
+
+    async def test_domain_verification_pending(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_token="TOKEN",
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_URL_DOMAIN_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [OrganizationReviewCheckReason.IN_PROGRESS]
+
+    async def test_domain_verification_verified(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_URL_DOMAIN_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PASSED
 
     async def test_empty_org_blocks_submission(
         self,

@@ -17,6 +17,7 @@ import {
   OPTIONAL_STEP_KEYS,
   STEP_ACTION_LABELS,
   STEP_DESCRIPTIONS,
+  STEP_LABELS,
 } from './sections/stepLabels'
 
 interface Props {
@@ -76,7 +77,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
 
   const stepConfig = STEP_CONFIG[step.key]
   const renderSection = stepConfig?.render
-  const label = stepConfig?.label ?? step.key
+  const label = stepConfig?.label ?? STEP_LABELS[step.key]
   const isOptional = OPTIONAL_STEP_KEYS.has(step.key)
   const reasonItems = (step.reasons ?? [])
     .map(

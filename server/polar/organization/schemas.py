@@ -856,6 +856,7 @@ class OrganizationReviewCheckKey(StrEnum):
     IDENTITY_STRIPE_VERIFICATION = "identity.stripe_identity_verification"
     PRODUCT_DESCRIPTION = "product_description"
     PRODUCT_URL = "product_url"
+    PRODUCT_URL_DOMAIN_VERIFICATION = "product_url.domain_verification"
     PAYOUT_ACCOUNT = "payout_account"
     PRODUCT_CONFIGURATION = "product_configuration"
     SETUP_READINESS = "setup_readiness"

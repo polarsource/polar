@@ -26,9 +26,10 @@ import { toast } from '../Toast/use-toast'
 const AccessToken = (props: schemas['PersonalAccessToken']) => {
   const deleteToken = useDeletePersonalAccessToken()
   const [now] = useState(() => Date.now())
+  const { id, comment } = props
 
   const onDelete = useCallback(async () => {
-    deleteToken.mutateAsync({ id: props.id }).then(({ error }) => {
+    deleteToken.mutateAsync({ id }).then(({ error }) => {
       if (error) {
         toast({
           title: 'Access Token Deletion Failed',
@@ -38,10 +39,10 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
       }
       toast({
         title: 'Access Token Deleted',
-        description: `Access Token ${props.comment} was deleted successfully`,
+        description: `Access Token ${comment} was deleted successfully`,
       })
     })
-  }, [deleteToken, props])
+  }, [deleteToken, id, comment])
 
   return (
     <div className="flex flex-col gap-y-4">

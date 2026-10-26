@@ -141,7 +141,7 @@ describe('ClaimAgentPage', () => {
   it('shows the organization and claims it with the code', async () => {
     const confirmations = serveClaim()
     const assign = stubLocationAssign()
-    renderPage()
+    const { posthog } = renderPage()
 
     expect(
       await screen.findByText(
@@ -159,6 +159,19 @@ describe('ClaimAgentPage', () => {
       { link_token: LINK_TOKEN, code: 'amber-river-lemon' },
     ])
     expect(screen.getByText('Transferring ownership…')).toBeInTheDocument()
+    expect(posthog.events.map(({ event }) => event)).toEqual([
+      'dashboard:agent:claim:view',
+      'dashboard:agent:code:submit',
+      'dashboard:agent:claim:complete',
+    ])
+    expect(posthog.events[0]?.properties).toEqual({
+      signed_in: true,
+      has_organization: true,
+    })
+    expect(posthog.events[2]?.properties).toEqual({
+      organization_id: 'org_1',
+      products: 1,
+    })
   })
 
   it('falls back to a generic name for an unnamed agent', async () => {
@@ -186,12 +199,16 @@ describe('ClaimAgentPage', () => {
     serveClaim(undefined, () =>
       apiError(400, 'AgentClaimInvalidCode', 'This code is wrong.'),
     )
-    renderPage()
+    const { posthog } = renderPage()
 
     await enterCode('wrong-wrong-wrong')
 
     expect(await screen.findByText(/This code is wrong/)).toBeInTheDocument()
     expect(screen.getByLabelText('Claim code')).toBeInTheDocument()
+    expect(posthog.events.at(-1)).toEqual({
+      event: 'dashboard:agent:code:fail',
+      properties: { reason: 'AgentClaimInvalidCode' },
+    })
   })
 
   it('keeps the form when rate limited', async () => {
@@ -211,10 +228,16 @@ describe('ClaimAgentPage', () => {
     [410, 'AgentClaimExpired', 'This claim has expired'],
   ])('explains a %i %s', async (status, error, title) => {
     serveClaim(() => apiError(status, error))
-    renderPage()
+    const { posthog } = renderPage()
 
     expect(await screen.findByText(title)).toBeInTheDocument()
     expect(screen.queryByLabelText('Claim code')).not.toBeInTheDocument()
+    expect(posthog.events).toEqual([
+      {
+        event: 'dashboard:agent:claim:fail',
+        properties: { signed_in: true, reason: error },
+      },
+    ])
   })
 
   it('tells which account to use when the email does not match', async () => {

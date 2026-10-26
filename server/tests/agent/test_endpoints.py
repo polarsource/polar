@@ -307,6 +307,7 @@ class TestConfirmClaim:
         organization: Organization,
         auth_subject: AuthSubject[User],
     ) -> None:
+        posthog_mock = mocker.patch("polar.agent.service.posthog")
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
         create_customer_mock = mocker.patch(
             "polar.organization.service.polar_self_service.enqueue_create_customer"
@@ -359,6 +360,15 @@ class TestConfirmClaim:
             owner_name=user.full_name or user.email.split("@", 1)[0],
         )
         enqueue_job_mock.assert_not_called()
+
+        posthog_mock.agent_event.assert_called_once()
+        assert posthog_mock.agent_event.call_args.args[1:3] == ("claim", "done")
+        posthog_mock.user_event.assert_called_once()
+        assert posthog_mock.user_event.call_args.args[1:4] == (
+            "agent",
+            "claim",
+            "done",
+        )
 
     @pytest.mark.auth
     async def test_code_spelling_is_forgiven(

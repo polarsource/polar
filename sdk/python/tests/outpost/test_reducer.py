@@ -106,6 +106,14 @@ def test_nested_configuration_and_metadata() -> None:
     assert not matcher(Event("call", "customer", TIMESTAMP))
 
 
+@pytest.mark.parametrize("conjunction", ["and", "or"])
+def test_empty_conjunction_matches_every_event(
+    conjunction: typing.Literal["and", "or"],
+) -> None:
+    matcher = get_matcher({"conjunction": conjunction, "clauses": []})
+    assert matcher(Event("call", "customer", TIMESTAMP))
+
+
 @pytest.mark.parametrize("operator", ["eq", "ne"])
 @pytest.mark.parametrize(
     ("actual", "expected", "equal"),

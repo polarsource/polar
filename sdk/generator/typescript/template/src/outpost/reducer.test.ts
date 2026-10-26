@@ -114,6 +114,13 @@ describe("reduction", () => {
     expect(getPropertyReader("timestamp")(event)).toBe(event.timestamp / 1_000_000);
   });
 
+  it.each(["and", "or"] as const)(
+    "matches every event with an empty %s, like Polar",
+    (conjunction) => {
+      expect(getMatcher({ conjunction, clauses: [] })(event)).toBe(true);
+    },
+  );
+
   it.each([
     [true, 1, true],
     [1, true, true],

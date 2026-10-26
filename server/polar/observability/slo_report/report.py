@@ -66,13 +66,24 @@ class SLOReport:
         return sum(1 for e in self.endpoints if not e.is_passing)
 
     @property
-    def endpoints_without_data(self) -> list[EndpointSLOStatus]:
-        return [e for e in self.endpoints if not e.has_data]
+    def missing_data(self) -> list[str]:
+        missing = [
+            name
+            for name, value in (
+                ("global availability", self.global_availability),
+                ("error budget", self.error_budget_remaining),
+            )
+            if value is None
+        ]
+        missing.extend(
+            f"`{e.method} {e.endpoint}`" for e in self.endpoints if not e.has_data
+        )
+        return missing
 
     @property
     def overall_status(self) -> str:
         if self.endpoints_failing == 0:
-            if self.failed_queries or self.endpoints_without_data:
+            if self.failed_queries or self.missing_data:
                 return "incomplete"
             return "healthy"
         elif self.endpoints_failing <= 1:

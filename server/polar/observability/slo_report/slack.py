@@ -92,11 +92,8 @@ def format_slo_report_slack_payload(report: SLOReport) -> SlackPayload:
     incomplete_reason: str | None = None
     if report.failed_queries:
         incomplete_reason = f"failed to fetch {', '.join(report.failed_queries)}."
-    elif report.endpoints_without_data:
-        endpoints = ", ".join(
-            f"`{e.method} {e.endpoint}`" for e in report.endpoints_without_data
-        )
-        incomplete_reason = f"no data for {endpoints}."
+    elif report.missing_data:
+        incomplete_reason = f"no data for {', '.join(report.missing_data)}."
     if incomplete_reason is not None:
         blocks.append(
             {

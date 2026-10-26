@@ -95,5 +95,5 @@ def _format_api_error(response: httpx.Response) -> str:
     except ValueError:
         return message
     if isinstance(body, dict) and body.get("error"):
-        message += f" ({body.get('errorType', 'unknown')}: {body['error']})"
+        message += f" ({body.get('errorType', 'unknown')}: {str(body['error'])[:500]})"
     return message

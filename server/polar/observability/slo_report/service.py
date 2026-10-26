@@ -10,7 +10,7 @@ from datetime import timedelta
 
 import structlog
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.observability.slo import CRITICAL_ENDPOINTS
@@ -174,7 +174,7 @@ class SLOReportService:
         """
         Generate SLO report for the last 7 days.
         """
-        env = environment or settings.ENV.value
+        env = Environment(environment).value if environment else settings.ENV.value
 
         period_end = utc_now()
         period_start = period_end - timedelta(days=7)

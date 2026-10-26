@@ -72,3 +72,7 @@ class TestGenerateReport:
 
         with pytest.raises(GrafanaCloudAPIError):
             await service.generate_report(environment="production")
+
+    async def test_invalid_environment(self, service: SLOReportService) -> None:
+        with pytest.raises(ValueError, match="is not a valid Environment"):
+            await service.generate_report(environment='production", env=~".*')

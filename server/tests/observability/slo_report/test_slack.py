@@ -63,3 +63,21 @@ class TestFormatSLOReportSlackPayload:
             for t in texts
         )
         assert not any(t.startswith("*Healthy Endpoints:*") for t in texts)
+
+    def test_missing_global_metrics(self) -> None:
+        report = SLOReport(
+            period_start=datetime(2026, 10, 19, tzinfo=UTC),
+            period_end=datetime(2026, 10, 26, tzinfo=UTC),
+            environment="production",
+            global_availability=None,
+            error_budget_remaining=None,
+            total_requests=0,
+            total_errors=0,
+            endpoints=[],
+        )
+
+        payload = format_slo_report_slack_payload(report)
+
+        assert report.overall_status == "incomplete"
+        texts = [b["text"]["text"] for b in payload["blocks"] if "text" in b]
+        assert any("no data for global availability, error budget." in t for t in texts)

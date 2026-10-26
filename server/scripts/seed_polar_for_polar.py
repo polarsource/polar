@@ -19,6 +19,11 @@ If you use a user (not organization) access token, pass --organization-id.
 The ``BENEFITS`` and ``PRODUCTS`` lists below are the source of truth for the
 Polar self-billing plan catalog and are also imported by the dev seed loader
 (``scripts.seeds_load``) to materialize the same catalog directly in the DB.
+
+``EXTERNAL_BENEFITS`` lists benefits that products reference but that this
+script never creates, because they depend on environment-specific resources
+(e.g. a Slack integration). They are attached when they exist and skipped
+otherwise.
 """
 
 import asyncio
@@ -109,6 +114,10 @@ BENEFITS: list[dict[str, object]] = [
     },
 ]
 
+# Referenced by products but never created here: they depend on resources that
+# only exist in production (e.g. the Slack integration). Matched by description.
+EXTERNAL_BENEFITS: frozenset[str] = frozenset({"Slack Channel"})
+
 MONTHLY_PRODUCTS: list[dict[str, object]] = [
     {
         "name": "Pro",
@@ -135,7 +144,7 @@ MONTHLY_PRODUCTS: list[dict[str, object]] = [
             "order": 3,
             "highlight": True,
             "description": "For scaling startups.",
-            "features": "All features on Pro, Prioritized Support",
+            "features": "All features on Pro, Preview access to new features, Prioritized Support",
         },
         "benefits": [
             "Transaction Fee (Tier 3)",
@@ -151,13 +160,17 @@ MONTHLY_PRODUCTS: list[dict[str, object]] = [
             "custom": False,
             "order": 4,
             "description": "For fast growing businesses.",
-            "features": "All features on Growth, Slack Channel, P1 Support, Single Sign-On",
+            "features": (
+                "All features on Growth, Preview access to new features, "
+                "Slack Channel, P1 Support, Single Sign-On"
+            ),
         },
         "benefits": [
             "Transaction Fee (Tier 4)",
             "Support (Tier 4)",
             "Preview access to new features",
             "Single Sign-On",
+            "Slack Channel",
         ],
     },
 ]
@@ -311,6 +324,12 @@ async def _seed_products(
             assert isinstance(description, str)
             benefit = benefits_by_description.get(description)
             if benefit is None:
+                if description in EXTERNAL_BENEFITS:
+                    typer.echo(
+                        f"  skip   {name!r} benefit {description!r} "
+                        "(external benefit not found)"
+                    )
+                    continue
                 if dry_run:
                     desired_benefit_ids.append(f"<missing:{description}>")
                     continue

@@ -132,6 +132,9 @@ from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
 )
 from scripts.seed_polar_for_polar import (
+    EXTERNAL_BENEFITS as POLAR_SELF_EXTERNAL_BENEFITS,
+)
+from scripts.seed_polar_for_polar import (
     MONTHLY_PRODUCTS as POLAR_SELF_MONTHLY_PRODUCTS,
 )
 from scripts.seed_polar_for_polar import (
@@ -1133,7 +1136,11 @@ async def _seed_polar_self_billing_catalog(
             ProductBenefit(
                 benefit=benefits_by_description[benefit_description], order=order
             )
-            for order, benefit_description in enumerate(benefit_descriptions)
+            for order, benefit_description in enumerate(
+                description
+                for description in benefit_descriptions
+                if description not in POLAR_SELF_EXTERNAL_BENEFITS
+            )
         ]
 
 

@@ -246,7 +246,9 @@ class RefundService:
         if order.refunds_blocked or not order.organization.can_refund:
             raise RefundsBlocked(order)
 
-        if order.refunded:
+        if order.refunded and (
+            amount != 0 or not 0 < tax_amount <= order.refundable_tax_amount
+        ):
             raise RefundedAlready(order)
 
         is_subscription = order.subscription_id is not None

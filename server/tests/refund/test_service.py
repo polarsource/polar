@@ -434,6 +434,7 @@ class TestCreate(StripeRefund):
         assert updated_order.refunded_amount == expected_refunded_amount
         assert updated_order.refunded_tax_amount == expected_refunded_tax_amount
 
+    @pytest.mark.parametrize("net_already_refunded", [False, True])
     async def test_valid_tax_only_refund(
         self,
         session: AsyncSession,
@@ -441,6 +442,7 @@ class TestCreate(StripeRefund):
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        net_already_refunded: bool,
     ) -> None:
         order, payment, _transaction = await create_order_and_payment(
             save_fixture,
@@ -452,6 +454,9 @@ class TestCreate(StripeRefund):
         stripe_service_mock.create_refund.return_value = build_stripe_refund(
             amount=20_00, charge_id=payment.processor_id
         )
+        if net_already_refunded:
+            order.update_refunds(order.net_amount, 0)
+            await save_fixture(order)
 
         refund = await refund_service.create(
             session,
@@ -469,7 +474,7 @@ class TestCreate(StripeRefund):
         order_repository = OrderRepository.from_session(session)
         updated_order = await order_repository.get_by_id(order.id)
         assert updated_order is not None
-        assert updated_order.refunded_amount == 0
+        assert updated_order.refunded_amount == (100_00 if net_already_refunded else 0)
         assert updated_order.refunded_tax_amount == 20_00
 
     async def test_valid_refunded_tax(

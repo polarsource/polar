@@ -28,7 +28,7 @@ Merchants who bill by usage check a balance before they serve a request. Polar's
 
 | Component | Where | Role |
 |---|---|---|
-| `Outpost` client | `sdk/typescript/src/outpost`, `sdk/python/polar/outpost` | Reduces events into Redis, serves reads, applies snapshots, relays telemetry. `polar.metering()` returns a `Metering`, which batches events for ingestion; it starts one `Outpost`, which holds the Redis connections and the WebSocket for every event and read that go through that `Metering`. |
+| `Outpost` client | `sdk/typescript/src/outpost`, `sdk/python/polar/outpost` | Reduces events into Redis, serves reads, applies snapshots, relays telemetry. `polar.metering()` returns a `Metering`, which batches events for ingestion; with `outpost` set, it starts one `Outpost`, which holds the Redis connections and the WebSocket for every event and read that go through that `Metering`. |
 | Lua scripts | `sdk/generator/outpost/*.lua`, copied byte for byte into both SDKs | `READ_STATE`, `WRITE_BUCKET`, `CONFIRM`, `APPLY_SNAPSHOT`. Every change to the state is one script call. |
 | Merchant's Redis | The merchant's own | Holds one hash per customer and reducer, one pending hash per bucket, one pub/sub channel. |
 | Reducers | `server/polar/reducer` | Polar's own 5-minute buckets per meter and customer: hot in Polar's Redis, synced to `reducer_buckets` in Postgres at bucket close, sealed before billing. |

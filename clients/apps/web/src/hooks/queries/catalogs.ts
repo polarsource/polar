@@ -1,33 +1,24 @@
 import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { unwrap } from '@polar-sh/client'
 import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const useCatalogs = (organizationId: string, enabled: boolean) =>
+export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
   useQuery({
-    queryKey: ['catalogs', { organizationId }],
+    queryKey: ['catalogs', 'live', { organizationId }],
     queryFn: async () => {
-      const catalogs: schemas['Catalog'][] = []
-      let page = 1
-      while (true) {
-        const data = await unwrap(
-          api.GET('/v1/catalogs/', {
-            params: {
-              query: {
-                organization_id: organizationId,
-                status: ['live', 'archived'],
-                page,
-                limit: 100,
-              },
+      const data = await unwrap(
+        api.GET('/v1/catalogs/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              status: 'live',
+              limit: 1,
             },
-          }),
-        )
-        catalogs.push(...data.items)
-        if (page >= data.pagination.max_page) {
-          return catalogs
-        }
-        page++
-      }
+          },
+        }),
+      )
+      return data.items[0] ?? null
     },
     retry: defaultRetry,
     enabled,

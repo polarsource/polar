@@ -8,7 +8,6 @@ import {
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import Link from 'next/link'
-import { CatalogVersionSelector } from '../../Catalog/CatalogVersionSelector'
 import {
   useAccountRoutes,
   useGeneralRoutes,
@@ -19,6 +18,7 @@ import {
   useInsightsRoutes,
   useProductNavigationEnabled,
 } from '../../Dashboard/navigationProducts'
+import { CatalogNavigation } from './CatalogNavigation'
 import { NavList } from './NavList'
 
 export const OrganizationNavigation = ({
@@ -28,15 +28,14 @@ export const OrganizationNavigation = ({
 }) => {
   const productNavEnabled = useProductNavigationEnabled(organization)
 
-  return (
-    <>
-      <CatalogVersionSelector organization={organization} />
-      {productNavEnabled ? (
-        <ProductNavigation organization={organization} />
-      ) : (
-        <LegacyOrganizationNavigation organization={organization} />
-      )}
-    </>
+  if (organization.feature_settings?.config_as_code_enabled) {
+    return <CatalogNavigation organization={organization} />
+  }
+
+  return productNavEnabled ? (
+    <ProductNavigation organization={organization} />
+  ) : (
+    <LegacyOrganizationNavigation organization={organization} />
   )
 }
 

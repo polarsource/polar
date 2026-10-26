@@ -46,3 +46,8 @@ output "host" {
   description = "Connection host."
   value       = planetscale_postgres_redacted_branch_role.app.access_host_url
 }
+
+output "bouncer_usernames" {
+  description = "App role username for each dedicated PgBouncer, keyed by bouncer name. Connect on port 6432."
+  value       = { for name, _ in planetscale_postgres_bouncer.this : name => "${planetscale_postgres_redacted_branch_role.app.username}|${name}" }
+}

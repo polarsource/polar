@@ -7,6 +7,12 @@ module "planetscale" {
   app_role_name     = "polar_sandbox"
   region            = "aws-us-east-2"
   cluster_size      = "PS_80_AWS_ARM"
+
+  bouncers = {
+    primary = {
+      parameters = { pgbouncer = { default_pool_size = "12" } }
+    }
+  }
 }
 
 module "planetscale_migration" {

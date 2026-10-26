@@ -4,7 +4,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem } from 'effect'
-import { loadFailure, loader } from '@/services/billing-config/load'
+import { pathToFileURL } from 'node:url'
+import {
+  evaluateInSubprocess,
+  loadFailure,
+  loader,
+} from '@/services/billing-config/load'
 
 const source = [
   '{',
@@ -154,6 +159,55 @@ describe('load', () => {
     expect(error.message).toContain('Could not load')
     expect(error.hint).toBe(
       'It imports @polar-sh/nope, which is not installed. Run npm install @polar-sh/nope.',
+    )
+  })
+})
+
+describe('evaluateInSubprocess', () => {
+  const evaluate = async (content: string, name = 'polar.config.ts') =>
+    evaluateInSubprocess(
+      pathToFileURL(await write(content, name)).href,
+      process.execPath,
+      {},
+    )
+
+  test('returns the default export, calling it when it is a function', async () => {
+    expect(
+      await evaluate("export default { meters: ['object'] }", 'object.ts'),
+    ).toEqual({ meters: ['object'] })
+    expect(
+      await evaluate(
+        "export default async () => ({ meters: ['async'] })",
+        'async.ts',
+      ),
+    ).toEqual({ meters: ['async'] })
+  })
+
+  test('ignores what the config prints', async () => {
+    expect(
+      await evaluate("console.log('hello')\nexport default { meters: [] }"),
+    ).toEqual({ meters: [] })
+  })
+
+  test('returns undefined without a default export', async () => {
+    expect(await evaluate('export const config = {}')).toBeUndefined()
+  })
+
+  test('keeps the missing package in the error', async () => {
+    const error = await evaluate(
+      "import { defineConfig } from '@polar-sh/nope'\nexport default defineConfig({})",
+    ).catch((error: unknown) => error)
+    expect(loadFailure('polar.config.ts', error).hint).toBe(
+      'It imports @polar-sh/nope, which is not installed. Run npm install @polar-sh/nope.',
+    )
+  })
+
+  test('keeps the position of a syntax error', async () => {
+    const error = await evaluate('export default {\n  meters: (\n').catch(
+      (error: unknown) => error,
+    )
+    expect(loadFailure('broken.ts', error).message).toMatch(
+      /^Could not parse broken\.ts:\d+:\d+$/,
     )
   })
 })

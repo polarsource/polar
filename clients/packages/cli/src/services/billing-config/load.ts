@@ -6,6 +6,8 @@ import {
   DEFAULT_CONFIG_FILES,
   type LoadedConfig,
 } from '@/schemas/BillingConfig'
+import { Environment } from '@/services/api'
+import { isCompiledBinary } from '@/services/telemetry'
 
 const SCRIPT_EXTENSIONS = new Set([
   '.ts',
@@ -56,6 +58,76 @@ export const loadFailure = (file: string, error: unknown) => {
   })
 }
 
+const evaluateInProcess = async (url: string) => {
+  const module = (await import(url)) as { default?: unknown }
+  return typeof module.default === 'function'
+    ? ((await module.default()) as unknown)
+    : module.default
+}
+
+const RESULT_MARKER = '__polar_config_result__'
+
+const childScript = (url: string) => `
+const marker = ${JSON.stringify(RESULT_MARKER)}
+try {
+  const module = await import(${JSON.stringify(url)})
+  const value = typeof module.default === 'function' ? await module.default() : module.default
+  console.log(marker + JSON.stringify({ json: JSON.stringify(value) ?? null }))
+} catch (error) {
+  const position = error?.position
+  console.log(marker + JSON.stringify({
+    error: {
+      message: error instanceof Error ? error.message : String(error),
+      position: position ? { line: position.line, column: position.column } : null,
+    },
+  }))
+}
+`
+
+interface ChildResult {
+  readonly json?: string | null
+  readonly error?: {
+    readonly message: string
+    readonly position: Position | null
+  }
+}
+
+// Runs `executable` as plain Bun, which resolves the config's imports from
+// its node_modules like `bun polar.config.ts` would.
+export const evaluateInSubprocess = async (
+  url: string,
+  executable: string,
+  env: Record<string, string | undefined>,
+) => {
+  const child = Bun.spawn([executable, '-e', childScript(url)], {
+    env: { ...env, BUN_BE_BUN: '1' },
+    stdout: 'pipe',
+    stderr: 'pipe',
+  })
+  const [stdout, stderr] = await Promise.all([
+    new Response(child.stdout).text(),
+    new Response(child.stderr).text(),
+    child.exited,
+  ])
+  const line = stdout
+    .split('\n')
+    .reverse()
+    .find((candidate) => candidate.startsWith(RESULT_MARKER))
+  if (line === undefined) {
+    throw new Error(
+      stderr.trim() || `Evaluating the config exited with ${child.exitCode}`,
+    )
+  }
+  const result = JSON.parse(line.slice(RESULT_MARKER.length)) as ChildResult
+  if (result.error !== undefined) {
+    const { message, position } = result.error
+    throw Object.assign(new Error(message), position ? { position } : {})
+  }
+  return typeof result.json === 'string'
+    ? (JSON.parse(result.json) as unknown)
+    : undefined
+}
+
 const loadScript = (fs: FileSystem.FileSystem, file: string) =>
   Effect.gen(function* () {
     const source = yield* fs
@@ -65,15 +137,15 @@ const loadScript = (fs: FileSystem.FileSystem, file: string) =>
           () => new BillingConfigError({ message: `Could not read ${file}` }),
         ),
       )
+    const env = yield* Environment
+    const url = pathToFileURL(resolve(file)).href
     const exported = yield* Effect.tryPromise({
-      try: async () => {
-        const module = (await import(pathToFileURL(resolve(file)).href)) as {
-          default?: unknown
-        }
-        return typeof module.default === 'function'
-          ? ((await module.default()) as unknown)
-          : module.default
-      },
+      // A compiled binary can't resolve packages whose entry file sits in a
+      // subdirectory (e.g. dist/index.js), which is nearly all of them.
+      try: () =>
+        isCompiledBinary()
+          ? evaluateInSubprocess(url, process.execPath, env)
+          : evaluateInProcess(url),
       catch: (error) => loadFailure(file, error),
     })
     const json = JSON.stringify(exported) as string | undefined

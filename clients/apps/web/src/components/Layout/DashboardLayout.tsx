@@ -21,7 +21,6 @@ import {
   type JSX,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
@@ -43,7 +42,7 @@ const DashboardLayout = (
   }, [organization])
 
   return (
-    <DashboardProvider organization={organization}>
+    <>
       {props.type !== 'account' && organization && (
         <CompassIntroModal organization={organization} />
       )}
@@ -69,7 +68,7 @@ const DashboardLayout = (
           </main>
         </div>
       </div>
-    </DashboardProvider>
+    </>
   )
 }
 

@@ -25,6 +25,7 @@ class TestFormatSLOReportSlackPayload:
         assert any(
             "Incomplete report" in t
             and "Global availability, Endpoint P99 latency" in t
+            and "no data for global availability." in t
             for t in texts
         )
         assert any("*Global Availability:* N/A" in t for t in texts)

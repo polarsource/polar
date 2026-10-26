@@ -18,13 +18,13 @@ from polar.benefit.strategies.base.schemas import (
 )
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
-from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
+from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import Int32, Schema, SetSchemaReference
-from polar.kit.trial import TrialConfigurationInputMixin
+from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
-from polar.meter.schemas import NAME_DESCRIPTION, MeterCreateBase
+from polar.meter.schemas import MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.product import ProductVisibility
@@ -38,8 +38,9 @@ from polar.product.schemas import (
     ProductPriceFixedCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
+    UnitLabel,
 )
-from polar.product.tiers import TiersInput
+from polar.product.tiers import TiersInput, TierType
 from polar.webhook.schemas import (
     AvailableAPIVersion,
     EndpointEvents,
@@ -505,24 +506,143 @@ class ConfigPrune(Schema):
     )
 
 
-class ConfigExportMeter(Schema, MetadataOutputMixin):
-    external_id: str = Field(description="Your identifier for the meter.")
-    name: str = Field(description=NAME_DESCRIPTION)
-    unit: MeterUnit = Field(description="The unit of the meter.")
-    custom_label: str | None = Field(description="The label for the custom unit.")
-    custom_multiplier: int | None = Field(
-        description="The multiplier to convert from base unit to display scale."
-    )
-    filter: Filter = Field(
-        description="The filter applied on events to calculate the meter."
-    )
-    aggregation: Aggregation = Field(
-        description="The aggregation applied on the filtered events."
-    )
+# Same schema in both modes, or `Decimal` fields split into `-Input`/`-Output`.
+class _ConfigRead(Schema):
+    model_config = ConfigDict(extra="forbid", json_schema_mode_override="serialization")
 
 
-class ConfigExportDocument(Schema):
-    meters: list[ConfigExportMeter]
+class ConfigMeterRead(_ConfigRead):
+    external_id: str
+    name: str
+    unit: MeterUnit
+    custom_label: str | None
+    custom_multiplier: int | None
+    filter: Filter
+    aggregation: Aggregation
+    metadata: MetadataOutputType
+
+
+class ConfigBenefitFeatureFlagRead(_ConfigRead):
+    type: Literal[BenefitType.feature_flag]
+    external_id: str
+    description: str
+    visibility: BenefitVisibility
+    metadata: MetadataOutputType
+
+
+class ConfigBenefitMeterCreditPropertiesRead(_ConfigRead):
+    meter: str
+    units: Int32
+    rollover: bool
+
+
+class ConfigBenefitMeterCreditRead(_ConfigRead):
+    type: Literal[BenefitType.meter_credit]
+    external_id: str
+    description: str
+    visibility: BenefitVisibility
+    metadata: MetadataOutputType
+    properties: ConfigBenefitMeterCreditPropertiesRead
+
+
+ConfigBenefitRead = Annotated[
+    ConfigBenefitFeatureFlagRead | ConfigBenefitMeterCreditRead,
+    Discriminator("type"),
+    SetSchemaReference("ConfigBenefitRead"),
+]
+
+
+class ConfigTierRead(_ConfigRead):
+    bound: int | None
+    unit_amount: Decimal
+
+
+class ConfigTiersRead(_ConfigRead):
+    type: TierType
+    tiers: list[ConfigTierRead]
+
+
+class ConfigProductPriceFixedRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.fixed]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    price_amount: Int32
+
+
+class ConfigProductPriceMeteredUnitRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.metered_unit]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    meter: str
+    unit_amount: Decimal
+    cap_amount: Int32 | None
+
+
+class ConfigProductPriceSeatBasedRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.seat_based]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    tiers: ConfigTiersRead
+    minimum_units: int
+
+
+class ConfigProductPriceMeteredTiersRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.metered_tiers]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    meter: str
+    tiers: ConfigTiersRead
+    cap_amount: Int32 | None
+
+
+class ConfigProductPriceUnitBasedRead(_ConfigRead):
+    amount_type: Literal[ProductPriceAmountType.unit_based]
+    price_currency: PresentmentCurrency
+    tax_behavior: TaxBehaviorOption | None
+    tiers: ConfigTiersRead
+    minimum_units: int
+    unit_label: UnitLabel | None
+
+
+ConfigProductPriceRead = Annotated[
+    ConfigProductPriceFixedRead
+    | ConfigProductPriceMeteredUnitRead
+    | ConfigProductPriceSeatBasedRead
+    | ConfigProductPriceMeteredTiersRead
+    | ConfigProductPriceUnitBasedRead,
+    Discriminator("amount_type"),
+    SetSchemaReference("ConfigProductPriceRead"),
+]
+
+
+class ConfigProductRead(_ConfigRead):
+    external_id: str
+    name: str
+    description: str | None
+    visibility: ProductVisibility
+    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval_count: int | None
+    trial_interval: TrialInterval | None
+    trial_interval_count: int | None
+    prices: list[ConfigProductPriceRead]
+    benefits: list[str]
+    metadata: MetadataOutputType
+
+
+class ConfigSettingsPaymentsRead(_ConfigRead):
+    currency: PresentmentCurrency
+    tax: TaxBehaviorOption
+
+
+class ConfigSettingsRead(_ConfigRead):
+    payments: ConfigSettingsPaymentsRead
+
+
+class ConfigExportDocument(_ConfigRead):
+    settings: ConfigSettingsRead
+    meters: list[ConfigMeterRead]
+    benefits: list[ConfigBenefitRead]
+    products: list[ConfigProductRead]
 
 
 class ConfigSkippedReason(StrEnum):
@@ -532,19 +652,25 @@ class ConfigSkippedReason(StrEnum):
     over_limit = "over_limit"
 
 
-class ConfigSkippedMeter(Schema):
+class ConfigSkippedResource(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    id: UUID4 = Field(description="The meter ID.")
-    name: str = Field(description="The meter name.")
+    id: UUID4 = Field(description="The resource ID.")
+    name: str = Field(description="The resource name.")
     reason: ConfigSkippedReason = Field(
-        description="Why the meter isn't in the exported config."
+        description="Why the resource isn't in the exported config."
     )
 
 
 class ConfigExport(Schema):
     config: ConfigExportDocument = Field(
-        description="The current config, in the same shape plan and apply accept."
+        description=(
+            "The current config, in the shape plan and apply accept, "
+            "without `organization_id`."
+        )
     )
-    skipped: list[ConfigSkippedMeter] = Field(
-        description="Meters left out of the exported config."
+    skipped: list[ConfigSkippedResource] = Field(
+        description=(
+            "Resources left out of the exported config. "
+            "At most the section's config limit is listed."
+        )
     )

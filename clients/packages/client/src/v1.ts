@@ -6136,11 +6136,14 @@ export interface paths {
      *
      *     `config` has the shape plan and apply accept, without `organization_id`:
      *     planning it for the same organization without edits reports no changes.
-     *     Meters without an `external_id`, archived meters, meters that wouldn't pass
-     *     config validation, and meters beyond the config limit are listed in
-     *     `skipped`.
+     *     Resources without an `external_id`, archived ones, ones config can't express
+     *     (or that reference a skipped resource), and ones beyond the config limit are
+     *     listed in `skipped`, up to the config limit per section. Webhook endpoints
+     *     are not exported.
      *
-     *     **Scopes**: `meters:read` `meters:write`
+     *     Requires the read or write scope of every exported section.
+     *
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     get: operations['config:export']
     put?: never
@@ -16377,6 +16380,20 @@ export interface components {
        */
       type: 'feature_flag'
     }
+    /** ConfigBenefitFeatureFlagRead */
+    ConfigBenefitFeatureFlagRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'feature_flag'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+    }
     /** ConfigBenefitMeterCredit */
     ConfigBenefitMeterCredit: {
       /**
@@ -16443,6 +16460,33 @@ export interface components {
        */
       rollover: boolean
     }
+    /** ConfigBenefitMeterCreditPropertiesRead */
+    ConfigBenefitMeterCreditPropertiesRead: {
+      /** Meter */
+      meter: string
+      /** Units */
+      units: number
+      /** Rollover */
+      rollover: boolean
+    }
+    /** ConfigBenefitMeterCreditRead */
+    ConfigBenefitMeterCreditRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'meter_credit'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+      properties: components['schemas']['ConfigBenefitMeterCreditPropertiesRead']
+    }
+    ConfigBenefitRead:
+      | components['schemas']['ConfigBenefitFeatureFlagRead']
+      | components['schemas']['ConfigBenefitMeterCreditRead']
     /** ConfigChange */
     ConfigChange: {
       /** @description The type of resource. */
@@ -16462,54 +16506,23 @@ export interface components {
     }
     /** ConfigExport */
     ConfigExport: {
-      /** @description The current config, in the same shape plan and apply accept. */
+      /** @description The current config, in the shape plan and apply accept, without `organization_id`. */
       config: components['schemas']['ConfigExportDocument']
       /**
        * Skipped
-       * @description Meters left out of the exported config.
+       * @description Resources left out of the exported config. At most the section's config limit is listed.
        */
-      skipped: components['schemas']['ConfigSkippedMeter'][]
+      skipped: components['schemas']['ConfigSkippedResource'][]
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
+      settings: components['schemas']['ConfigSettingsRead']
       /** Meters */
-      meters: components['schemas']['ConfigExportMeter'][]
-    }
-    /** ConfigExportMeter */
-    ConfigExportMeter: {
-      metadata: components['schemas']['MetadataOutputType']
-      /**
-       * External Id
-       * @description Your identifier for the meter.
-       */
-      external_id: string
-      /**
-       * Name
-       * @description The name of the meter. Will be shown on customer's invoices and usage.
-       */
-      name: string
-      /** @description The unit of the meter. */
-      unit: components['schemas']['MeterUnit']
-      /**
-       * Custom Label
-       * @description The label for the custom unit.
-       */
-      custom_label: string | null
-      /**
-       * Custom Multiplier
-       * @description The multiplier to convert from base unit to display scale.
-       */
-      custom_multiplier: number | null
-      /** @description The filter applied on events to calculate the meter. */
-      filter: components['schemas']['Filter']
-      /**
-       * Aggregation
-       * @description The aggregation applied on the filtered events.
-       */
-      aggregation:
-        | components['schemas']['CountAggregation']
-        | components['schemas']['PropertyAggregation']
-        | components['schemas']['UniqueAggregation']
+      meters: components['schemas']['ConfigMeterRead'][]
+      /** Benefits */
+      benefits: components['schemas']['ConfigBenefitRead'][]
+      /** Products */
+      products: components['schemas']['ConfigProductRead'][]
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16654,6 +16667,26 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ConfigMeterRead */
+    ConfigMeterRead: {
+      /** External Id */
+      external_id: string
+      /** Name */
+      name: string
+      unit: components['schemas']['MeterUnit']
+      /** Custom Label */
+      custom_label: string | null
+      /** Custom Multiplier */
+      custom_multiplier: number | null
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /** Aggregation */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      metadata: components['schemas']['MetadataOutputType']
+    }
     /** ConfigPlan */
     ConfigPlan: {
       /** Changes */
@@ -16770,6 +16803,18 @@ export interface components {
        */
       price_amount: number
     }
+    /** ConfigProductPriceFixedRead */
+    ConfigProductPriceFixedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'fixed'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Price Amount */
+      price_amount: number
+    }
     /** ConfigProductPriceMeteredTiers */
     ConfigProductPriceMeteredTiers: {
       /**
@@ -16795,6 +16840,21 @@ export interface components {
        * @description Optional maximum charge in cents.
        */
       cap_amount?: number | null
+    }
+    /** ConfigProductPriceMeteredTiersRead */
+    ConfigProductPriceMeteredTiersRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Meter */
+      meter: string
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Cap Amount */
+      cap_amount: number | null
     }
     /** ConfigProductPriceMeteredUnit */
     ConfigProductPriceMeteredUnit: {
@@ -16826,6 +16886,28 @@ export interface components {
        */
       cap_amount?: number | null
     }
+    /** ConfigProductPriceMeteredUnitRead */
+    ConfigProductPriceMeteredUnitRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_unit'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Meter */
+      meter: string
+      /** Unit Amount */
+      unit_amount: string
+      /** Cap Amount */
+      cap_amount: number | null
+    }
+    ConfigProductPriceRead:
+      | components['schemas']['ConfigProductPriceFixedRead']
+      | components['schemas']['ConfigProductPriceMeteredUnitRead']
+      | components['schemas']['ConfigProductPriceSeatBasedRead']
+      | components['schemas']['ConfigProductPriceMeteredTiersRead']
+      | components['schemas']['ConfigProductPriceUnitBasedRead']
     /** ConfigProductPriceSeatBased */
     ConfigProductPriceSeatBased: {
       /**
@@ -16847,6 +16929,19 @@ export interface components {
        * @description The minimum purchasable seat quantity (inclusive).
        * @default 1
        */
+      minimum_units: number
+    }
+    /** ConfigProductPriceSeatBasedRead */
+    ConfigProductPriceSeatBasedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Minimum Units */
       minimum_units: number
     }
     /** ConfigProductPriceUnitBased */
@@ -16880,6 +16975,46 @@ export interface components {
           [key: string]: string
         }
       } | null
+    }
+    /** ConfigProductPriceUnitBasedRead */
+    ConfigProductPriceUnitBasedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Minimum Units */
+      minimum_units: number
+      /** Unit Label */
+      unit_label: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+    }
+    /** ConfigProductRead */
+    ConfigProductRead: {
+      /** External Id */
+      external_id: string
+      /** Name */
+      name: string
+      /** Description */
+      description: string | null
+      visibility: components['schemas']['ProductVisibility']
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /** Recurring Interval Count */
+      recurring_interval_count: number | null
+      trial_interval: components['schemas']['TrialInterval'] | null
+      /** Trial Interval Count */
+      trial_interval_count: number | null
+      /** Prices */
+      prices: components['schemas']['ConfigProductPriceRead'][]
+      /** Benefits */
+      benefits: string[]
+      metadata: components['schemas']['MetadataOutputType']
     }
     /** ConfigPrune */
     ConfigPrune: {
@@ -16948,28 +17083,19 @@ export interface components {
       /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
       tax?: components['schemas']['TaxBehaviorOption'] | null
     }
+    /** ConfigSettingsPaymentsRead */
+    ConfigSettingsPaymentsRead: {
+      currency: components['schemas']['PresentmentCurrency']
+      tax: components['schemas']['TaxBehaviorOption']
+    }
+    /** ConfigSettingsRead */
+    ConfigSettingsRead: {
+      payments: components['schemas']['ConfigSettingsPaymentsRead']
+    }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
-    }
-    /** ConfigSkippedMeter */
-    ConfigSkippedMeter: {
-      /** @description The type of resource. */
-      resource: components['schemas']['ConfigResource']
-      /**
-       * Id
-       * Format: uuid4
-       * @description The meter ID.
-       */
-      id: string
-      /**
-       * Name
-       * @description The meter name.
-       */
-      name: string
-      /** @description Why the meter isn't in the exported config. */
-      reason: components['schemas']['ConfigSkippedReason']
     }
     /**
      * ConfigSkippedReason
@@ -16980,6 +17106,37 @@ export interface components {
       | 'archived'
       | 'invalid'
       | 'over_limit'
+    /** ConfigSkippedResource */
+    ConfigSkippedResource: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * Id
+       * Format: uuid4
+       * @description The resource ID.
+       */
+      id: string
+      /**
+       * Name
+       * @description The resource name.
+       */
+      name: string
+      /** @description Why the resource isn't in the exported config. */
+      reason: components['schemas']['ConfigSkippedReason']
+    }
+    /** ConfigTierRead */
+    ConfigTierRead: {
+      /** Bound */
+      bound: number | null
+      /** Unit Amount */
+      unit_amount: string
+    }
+    /** ConfigTiersRead */
+    ConfigTiersRead: {
+      type: components['schemas']['TierType']
+      /** Tiers */
+      tiers: components['schemas']['ConfigTierRead'][]
+    }
     /** ConfigWebhookConflict */
     ConfigWebhookConflict: {
       /**
@@ -63137,7 +63294,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -72261,8 +72418,14 @@ export const configActionValues: ReadonlyArray<
 export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlag']['type']
 > = ['feature_flag']
+export const configBenefitFeatureFlagReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlagRead']['type']
+> = ['feature_flag']
 export const configBenefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCredit']['type']
+> = ['meter_credit']
+export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
 > = ['meter_credit']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
@@ -72284,17 +72447,32 @@ export const configIssueTypeValues: ReadonlyArray<
 export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
 > = ['fixed']
+export const configProductPriceFixedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixedRead']['amount_type']
+> = ['fixed']
 export const configProductPriceMeteredTiersAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers']['amount_type']
+> = ['metered_tiers']
+export const configProductPriceMeteredTiersReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiersRead']['amount_type']
 > = ['metered_tiers']
 export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
+export const configProductPriceMeteredUnitReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnitRead']['amount_type']
+> = ['metered_unit']
 export const configProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased']['amount_type']
 > = ['seat_based']
+export const configProductPriceSeatBasedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBasedRead']['amount_type']
+> = ['seat_based']
 export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased']['amount_type']
+> = ['unit_based']
+export const configProductPriceUnitBasedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBasedRead']['amount_type']
 > = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']

@@ -60,6 +60,11 @@ Use the output format the skill defines. High-confidence findings only. If you a
 whether something is a defect, put it under Question instead of asserting it.
 ```
 
+Pass the diff and nothing else. Do not add the author's reasoning ("drafts are excluded
+because the design doc says so", "the 401 is declared like the other endpoints"). A lens that
+is told why a choice was made stops checking it, and the rule it should have caught goes
+unreported. If a lens needs context, it reads the code, `AGENTS.md` and the handbook itself.
+
 Each skill declares what it does **not** own, so the lenses do not overlap by construction.
 
 `adr-check` predates this skill and has its own terser format: either `No violations`, or a

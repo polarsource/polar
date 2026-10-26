@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { Check, X } from '@polar-sh/orbit/icons'
 import React from 'react'
 import { BUBBLE_SPRING, ROW_FADE } from '@/components/Chat/ChatBubble'
@@ -17,7 +17,7 @@ export const DecisionMessage = ({ message, organization }: Props) => {
   const approved = message.type === 'appeal_approved'
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={ROW_FADE}
@@ -31,7 +31,7 @@ export const DecisionMessage = ({ message, organization }: Props) => {
       >
         <div className="flex w-full items-end gap-2">
           <MessageAvatar organization={organization} fromMerchant={false} />
-          <motion.div
+          <m.div
             className="max-w-[80%]"
             initial={{ scale: 0.8, y: 10 }}
             animate={{ scale: 1, y: 0 }}
@@ -51,7 +51,7 @@ export const DecisionMessage = ({ message, organization }: Props) => {
               </Box>
               {message.body && <Text>{message.body}</Text>}
             </div>
-          </motion.div>
+          </m.div>
         </div>
         <div className="ml-9" title={exactTime(message.created_at)}>
           <Text variant="caption" color="muted">
@@ -59,6 +59,6 @@ export const DecisionMessage = ({ message, organization }: Props) => {
           </Text>
         </div>
       </Box>
-    </motion.div>
+    </m.div>
   )
 }

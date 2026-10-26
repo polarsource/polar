@@ -1,6 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import React, { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { MessageAttachments } from './MessageAttachments'
@@ -40,7 +40,7 @@ export const ChatBubble = ({
   const isSelf = message.sender === 'self'
 
   return (
-    <motion.div
+    <m.div
       initial={showEntrance ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
       transition={ROW_FADE}
@@ -58,7 +58,7 @@ export const ChatBubble = ({
           }`}
         >
           {isLastInGroup ? avatar : <div className="w-7 shrink-0" />}
-          <motion.div
+          <m.div
             className="max-w-[80%]"
             initial={showEntrance ? { scale: 0.8, y: 10 } : false}
             animate={{ scale: 1, y: 0 }}
@@ -90,7 +90,7 @@ export const ChatBubble = ({
               )}
               <MessageAttachments attachments={attachments} inverse={isSelf} />
             </div>
-          </motion.div>
+          </m.div>
         </div>
         {isLastInGroup && (
           <div
@@ -103,6 +103,6 @@ export const ChatBubble = ({
           </div>
         )}
       </Box>
-    </motion.div>
+    </m.div>
   )
 }

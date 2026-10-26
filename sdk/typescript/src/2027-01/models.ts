@@ -19571,10 +19571,6 @@ export interface OrganizationFeatureSettings {
    */
   merchant_migration_enabled?: boolean;
   /**
-   * If this organization accepts payments from AI agents through Stripe shared payment tokens.
-   */
-  agentic_payments_enabled?: boolean;
-  /**
    * If this organization can manage its configuration from a declarative config document.
    */
   config_as_code_enabled?: boolean;

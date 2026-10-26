@@ -54,10 +54,15 @@ def create_async_engine(
     pool_pre_ping: bool = False,
     command_timeout: float | None = None,
     connect_timeout: float | None = None,
+    statement_cache_size: int = 100,
+    prepared_statement_cache_size: int = 0,
     debug: bool = False,
     ssl: str | None = None,
 ) -> AsyncEngine:
-    connect_args: dict[str, Any] = {"prepared_statement_cache_size": 0}
+    connect_args: dict[str, Any] = {
+        "statement_cache_size": statement_cache_size,
+        "prepared_statement_cache_size": prepared_statement_cache_size,
+    }
     if application_name is not None:
         connect_args["server_settings"] = {"application_name": application_name}
     if command_timeout is not None:

@@ -4,7 +4,7 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { BrickWallShieldIcon } from 'lucide-react'
+import { BrickWallShield as BrickWallShieldIcon } from '@polar-sh/orbit/icons'
 import { PropsWithChildren, useContext } from 'react'
 import { WidgetContainer } from './WidgetContainer'
 

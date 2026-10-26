@@ -209,6 +209,8 @@ In high throughput scenarios, Outpost can return you accurate meter reads only m
 
 Outpost needs an `external_id` on every event; `track()` rejects an event without one.
 
+An event counts locally until Polar confirms it stored it, or until the buffer gives it up, so a meter read never loses an event Polar is still ingesting.
+
 To disable it, pass `outpost=False` to `polar.metering()`. You can also configure it explicitly with a dictionary.
 
 ### Delivery
@@ -247,6 +249,7 @@ The metering helper buffers events in memory and sends them in batches to Polar.
 | `batch_interval`   | `1.0`   | Seconds to collect a batch, starting with its first event. |
 | `shutdown_timeout` | `5.0`   | Seconds allowed to drain on context exit.                  |
 | `max_attempts`     | `3`     | Total attempts per batch, including the first.             |
+| `on_delivered`     | `None`  | Async callback receiving the events Polar accepted.        |
 | `on_dropped`       | `None`  | Async callback receiving the dropped events and reason.    |
 
 #### Outpost

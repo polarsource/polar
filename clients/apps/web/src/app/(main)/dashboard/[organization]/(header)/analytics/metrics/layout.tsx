@@ -1,12 +1,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { DashboardsListSidebar } from '@/components/Metrics/dashboards/DashboardsListSidebar'
-import {
-  DashboardViewActions,
-  DashboardViewTitle,
-} from '@/components/Metrics/dashboards/DashboardViewHeader'
+import { DashboardViewActions } from '@/components/Metrics/dashboards/DashboardViewHeader'
 import { MetricsHeader } from '@/components/Metrics/dashboards/MetricsHeader'
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { METRIC_GROUPS } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { unwrap } from '@polar-sh/client'
 
@@ -21,37 +16,12 @@ export default async function Layout(props: {
     params.organization,
   )
 
-  const [products, limits] = await Promise.all([
-    unwrap(
-      api.GET('/v1/products/', {
-        params: {
-          query: {
-            organization_id: organization.id,
-            limit: 100,
-            is_archived: null,
-          },
-        },
-      }),
-    ),
-    unwrap(api.GET('/v1/metrics/limits')),
-  ])
-
-  const hasRecurringProducts = products.items.some((p) => p.is_recurring)
-
-  const defaultDashboards = METRIC_GROUPS.map((g) => ({
-    slug: g.category.toLowerCase().replace(/\s+/g, '-'),
-    title: g.category,
-  })).filter(({ slug }) => {
-    if (slug === 'subscriptions' || slug === 'cancellations') {
-      return hasRecurringProducts
-    }
-    return true
-  })
+  const limits = await unwrap(api.GET('/v1/metrics/limits'))
 
   return (
     <DashboardBody
       wide
-      title={<DashboardViewTitle organization={organization} />}
+      title="Metrics"
       titleActions={
         <DashboardViewActions
           organization={organization}
@@ -71,15 +41,6 @@ export default async function Layout(props: {
           />
         </div>
       }
-      contextView={
-        <DashboardsListSidebar
-          organization={organization}
-          defaultDashboards={defaultDashboards}
-        />
-      }
-      contextViewPlacement="left"
-      contextViewTitle="Dashboards"
-      contextViewClassName="md:max-w-[300px] xl:max-w-[320px]"
     >
       {props.children}
     </DashboardBody>

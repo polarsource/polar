@@ -10,7 +10,7 @@ import { startRedisServer, type RedisServer } from "./testing";
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 
 const identityOf = (buckets: number) => `external:alice:tokens-${buckets}`;
-const keyOf = (buckets: number) => `outpost:state:${identityOf(buckets)}`;
+const keyOf = (buckets: number) => `outpost:v1:state:${identityOf(buckets)}`;
 
 let redisServer: RedisServer;
 let redis: Redis;

@@ -5,7 +5,7 @@ import ExportTransactionsModal from '@/components/Transactions/ExportTransaction
 import { useOrganizationAccount } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import { FileDownloadOutlined } from '@polar-sh/orbit/icons'
 import { twMerge } from 'tailwind-merge'
 
 export function IncomePageHeader({

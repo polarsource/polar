@@ -1200,7 +1200,7 @@ class EventService:
 
         if meter_event_rows:
             await session.execute(
-                insert(MeterEvent).values(meter_event_rows).on_conflict_do_nothing()
+                insert(MeterEvent).on_conflict_do_nothing(), meter_event_rows
             )
 
     def _event_matches_meter(self, event: Event, meter: Meter) -> bool:

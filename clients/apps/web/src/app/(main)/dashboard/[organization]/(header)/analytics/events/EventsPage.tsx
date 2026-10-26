@@ -11,9 +11,11 @@ import { useModal } from '@/components/Modal/useModal'
 import Pagination from '@/components/Pagination/Pagination'
 import { useEventNames, useEvents } from '@/hooks/queries/events'
 import useDebounce from '@/utils/useDebounce'
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
-import Search from '@mui/icons-material/Search'
+import {
+  AddOutlined,
+  RefreshOutlined,
+  SearchFilled as Search,
+} from '@polar-sh/orbit/icons'
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'

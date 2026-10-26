@@ -13,13 +13,14 @@ import {
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
 import { errors, unchanged } from '@/utils/billing-config/review'
+import { shownDiff } from '@/utils/billing-config/sentences'
+import { documents } from '@/utils/billing-config/tree'
 
 const HEADINGS: Record<string, string> = {
   settings: 'Settings',
   meters: 'Meters',
   benefits: 'Benefits',
   products: 'Products',
-  discounts: 'Discounts',
 }
 
 const heading = (section: string) => {
@@ -57,9 +58,12 @@ const valueRows = (
     : [`${mark}   ${field}`, ...lines.map((line) => `${mark}     ${line}`)]
 }
 
-const entryLines = ({ section, id, action, diff }: AppliedEntry) => {
+const entryLines = (
+  { section, id, action, diff }: AppliedEntry,
+  document: unknown,
+) => {
   const created = action === 'created'
-  const changes = fieldChanges(diff, section)
+  const changes = fieldChanges(shownDiff(section, diff, document), section)
   const width = Math.max(
     0,
     ...changes
@@ -132,6 +136,7 @@ export const planMarkdown = (
             ...result.entries.map(({ section }) => section),
           ]),
         ].flatMap((section) => {
+          const webhooks = documents(config.input, 'webhooks')
           const changed = result.entries.filter(
             (entry) =>
               entry.section === section && entry.action !== 'unchanged',
@@ -141,7 +146,13 @@ export const planMarkdown = (
             : [
                 `#### ${escape(heading(section))}`,
                 codeBlock(
-                  plain(changed.flatMap(entryLines).join('\n')),
+                  plain(
+                    changed
+                      .flatMap((entry) =>
+                        entryLines(entry, webhooks.get(name(entry.id))),
+                      )
+                      .join('\n'),
+                  ),
                   'diff',
                 ),
               ]

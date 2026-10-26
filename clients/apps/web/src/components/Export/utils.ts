@@ -53,5 +53,5 @@ export function downloadCsvExport<T extends string>(
   for (const column of selection.columns) {
     url.searchParams.append('columns', column)
   }
-  window.open(url, '_blank')
+  window.open(url, '_blank', 'noopener,noreferrer')
 }

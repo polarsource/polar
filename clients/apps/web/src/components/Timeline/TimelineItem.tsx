@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined'
+import { ChevronRightOutlined } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 import { resolveTimelineEventHref } from './links'

@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.11"
 
 [options]
@@ -417,7 +417,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "adaptix", specifier = "==3.0.0b12" },
-    { name = "anyio", marker = "extra == 'outpost'", specifier = ">=4.0.0" },
+    { name = "anyio", marker = "extra == 'outpost'", specifier = ">=4.5.0" },
     { name = "certifi", specifier = ">=2026.10.19" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "httpx-ws", marker = "extra == 'outpost'", specifier = ">=0.9.0" },

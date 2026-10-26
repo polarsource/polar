@@ -2,7 +2,7 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
-import { AlertTriangleIcon } from 'lucide-react'
+import { TriangleAlert as AlertTriangleIcon } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 
 interface OffboardingBannerProps {

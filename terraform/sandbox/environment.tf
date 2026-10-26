@@ -1,5 +1,7 @@
 locals {
   backend_config = {
+    database_statement_cache_size             = 0
+    database_prepared_statement_cache_size    = 0
     linear_team_id                            = var.linear_team_id
     linear_payout_amount_mismatch_template_id = var.linear_payout_amount_mismatch_template_id
 
@@ -101,7 +103,6 @@ locals {
     access_token     = var.polar_access_token
     webhook_secret   = var.polar_webhook_secret
     organization_id  = var.polar_organization_id
-    free_product_id  = var.polar_free_product_id
     scale_product_id = var.polar_scale_product_id
     api_url          = "https://sandbox-api.polar.sh"
   }
@@ -146,4 +147,9 @@ module "backend_environment" {
   prometheus_config = local.prometheus_config
   polar_self_config = local.polar_self_config
   tinybird_config   = local.tinybird_config
+
+  # Token only: without POLAR_SLACK_CHANNEL, invariant failures don't post to Slack.
+  slo_report_config = var.slo_report_slack_bot_token != "" ? {
+    slack_bot_token = var.slo_report_slack_bot_token
+  } : null
 }

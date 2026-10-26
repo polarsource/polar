@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { XIcon } from 'lucide-react'
+import { X as XIcon } from '@polar-sh/orbit/icons'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'

@@ -3,7 +3,7 @@ import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/ho
 import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
-import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
+import { RefreshOutlined } from '@polar-sh/orbit/icons'
 import { enums, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'

@@ -135,14 +135,25 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
         return ordering_matcher
 
     child_matchers = [get_matcher(child) for child in clause["clauses"]]
-    conjunction_operator = all if clause["conjunction"] == "and" else any
+    if len(child_matchers) == 1:
+        return child_matchers[0]
+    if clause["conjunction"] == "and":
 
-    def matcher(event: Event) -> bool:
-        return conjunction_operator(
-            child_matcher(event) for child_matcher in child_matchers
-        )
+        def all_matcher(event: Event) -> bool:
+            for child_matcher in child_matchers:
+                if not child_matcher(event):
+                    return False
+            return True
 
-    return matcher
+        return all_matcher
+
+    def any_matcher(event: Event) -> bool:
+        for child_matcher in child_matchers:
+            if child_matcher(event):
+                return True
+        return False
+
+    return any_matcher
 
 
 def with_matchers(

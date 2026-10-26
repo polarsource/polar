@@ -27,8 +27,12 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import { ExternalLink, Plus, Trash2 } from 'lucide-react'
+import {
+  ExternalLink,
+  MoreVertOutlined,
+  Plus,
+  Trash2,
+} from '@polar-sh/orbit/icons'
 import React, { useCallback, useState } from 'react'
 import { useOrganization } from '@/hooks/queries'
 
@@ -84,7 +88,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                 },
               }),
         )
-        window.open(link.url, '_blank')
+        window.open(link.url, '_blank', 'noopener,noreferrer')
       } catch {
         toast({
           title: payoutAccount.is_payout_ready

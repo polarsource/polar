@@ -1,8 +1,10 @@
 import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
-import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
-import RemoveOutlined from '@mui/icons-material/RemoveOutlined'
+import {
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  RemoveOutlined,
+} from '@polar-sh/orbit/icons'
 import { formatCurrency } from '@polar-sh/currency'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'

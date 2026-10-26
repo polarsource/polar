@@ -1,7 +1,6 @@
 'use client'
 
-import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
-import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import { AutorenewOutlined, ClearOutlined } from '@polar-sh/orbit/icons'
 import { SegmentedControl } from '@polar-sh/orbit'
 import {
   Accordion,

@@ -29,7 +29,6 @@ const NOUNS = [
   ['meters', 'meter'],
   ['benefits', 'benefit'],
   ['products', 'product'],
-  ['discounts', 'discount'],
   ['webhooks', 'webhook'],
 ] as const
 

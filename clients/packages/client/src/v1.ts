@@ -6210,11 +6210,14 @@ export interface paths {
      *
      *     `config` has the shape plan and apply accept, without `organization_id`:
      *     planning it for the same organization without edits reports no changes.
-     *     Meters without an `external_id`, archived meters, meters that wouldn't pass
-     *     config validation, and meters beyond the config limit are listed in
-     *     `skipped`.
+     *     Resources without an `external_id`, archived ones, ones config can't express
+     *     (or that reference a skipped resource), and ones beyond the config limit are
+     *     listed in `skipped`, up to the config limit per section. Webhook endpoints
+     *     are not exported.
      *
-     *     **Scopes**: `meters:read` `meters:write`
+     *     Requires the read or write scope of every exported section.
+     *
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     get: operations['config:export']
     put?: never
@@ -6238,7 +6241,7 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters, benefits, products, discounts and webhook endpoints are matched by
+     *     Meters, benefits, products and webhook endpoints are matched by
      *     `external_id`: missing ones are created, changed ones are updated, and ones
      *     not listed are left untouched.
      *     `settings` are applied first, so products can be priced in a new
@@ -6248,7 +6251,7 @@ export interface paths {
      *
      *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
+     *     **Scopes**: `benefits:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6275,7 +6278,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:plan']
     delete?: never
@@ -6302,7 +6305,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:prune']
     delete?: never
@@ -6790,6 +6793,66 @@ export interface paths {
     put?: never
     /** Submit */
     post: operations['feedbacks:submit']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim/{link_token}/preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Agent Claim
+     * @description What a claim is about, shown to the human before they sign in.
+     */
+    get: operations['agent:preview_claim']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim/{link_token}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Agent Claim
+     * @description Get what an agent built, for the human it asked to claim it.
+     */
+    get: operations['agent:get_claim']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm Agent Claim
+     * @description Claim an agent and its organization with the code the agent gave.
+     */
+    post: operations['agent:confirm_claim']
     delete?: never
     options?: never
     head?: never
@@ -8518,6 +8581,134 @@ export interface components {
        * @description ISO currency code of the amounts.
        */
       currency: string
+    }
+    /**
+     * AgentClaim
+     * @description What the human reviews before claiming the agent.
+     */
+    AgentClaim: {
+      /**
+       * Agent Name
+       * @description What the agent calls itself.
+       */
+      agent_name: string | null
+      /**
+       * Email
+       * @description The email the agent started the claim for.
+       */
+      email: string
+      /**
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+      /** @description The organization the agent built, if any. */
+      organization: components['schemas']['AgentClaimOrganization'] | null
+      /**
+       * Products
+       * @description The products the agent created in that organization.
+       */
+      products: components['schemas']['AgentClaimProduct'][]
+    }
+    /** AgentClaimConfirm */
+    AgentClaimConfirm: {
+      /** Link Token */
+      link_token: string
+      /**
+       * Code
+       * @description The three words the agent gave, separated by hyphens.
+       */
+      code: string
+    }
+    /** AgentClaimEmailMismatch */
+    AgentClaimEmailMismatch: {
+      /**
+       * Error
+       * @example AgentClaimEmailMismatch
+       * @constant
+       */
+      error: 'AgentClaimEmailMismatch'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimExpired */
+    AgentClaimExpired: {
+      /**
+       * Error
+       * @example AgentClaimExpired
+       * @constant
+       */
+      error: 'AgentClaimExpired'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimInvalidCode */
+    AgentClaimInvalidCode: {
+      /**
+       * Error
+       * @example AgentClaimInvalidCode
+       * @constant
+       */
+      error: 'AgentClaimInvalidCode'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimOrganization */
+    AgentClaimOrganization: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Name */
+      name: string
+      /** Slug */
+      slug: string
+      /** Avatar Url */
+      avatar_url: string | null
+    }
+    /**
+     * AgentClaimPreview
+     * @description What a claim is about, for the human before they sign in.
+     */
+    AgentClaimPreview: {
+      /**
+       * Agent Name
+       * @description What the agent calls itself.
+       */
+      agent_name: string | null
+      /**
+       * Email
+       * @description The masked email the agent started the claim for.
+       */
+      email: string
+      /**
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+      /** @description The organization the agent created, if any. */
+      organization: components['schemas']['AgentClaimOrganization'] | null
+    }
+    /** AgentClaimProduct */
+    AgentClaimProduct: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Name */
+      name: string
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /** Recurring Interval Count */
+      recurring_interval_count: number | null
+      /** Prices */
+      prices: (
+        | components['schemas']['LegacyRecurringProductPrice']
+        | components['schemas']['ProductPrice']
+      )[]
     }
     AggregateField: string
     /**
@@ -16170,11 +16361,6 @@ export interface components {
        */
       products?: components['schemas']['ConfigProduct'][]
       /**
-       * Discounts
-       * @description Discounts to create or update, matched by `external_id`. Existing discounts that aren't listed are left untouched.
-       */
-      discounts?: components['schemas']['ConfigDiscount'][]
-      /**
        * Webhooks
        * @description Webhook endpoints to create or update, matched by `external_id`. Existing endpoints that aren't listed are left untouched.
        */
@@ -16270,6 +16456,20 @@ export interface components {
        */
       type: 'feature_flag'
     }
+    /** ConfigBenefitFeatureFlagRead */
+    ConfigBenefitFeatureFlagRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'feature_flag'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+    }
     /** ConfigBenefitMeterCredit */
     ConfigBenefitMeterCredit: {
       /**
@@ -16336,6 +16536,33 @@ export interface components {
        */
       rollover: boolean
     }
+    /** ConfigBenefitMeterCreditPropertiesRead */
+    ConfigBenefitMeterCreditPropertiesRead: {
+      /** Meter */
+      meter: string
+      /** Units */
+      units: number
+      /** Rollover */
+      rollover: boolean
+    }
+    /** ConfigBenefitMeterCreditRead */
+    ConfigBenefitMeterCreditRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'meter_credit'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+      properties: components['schemas']['ConfigBenefitMeterCreditPropertiesRead']
+    }
+    ConfigBenefitRead:
+      | components['schemas']['ConfigBenefitFeatureFlagRead']
+      | components['schemas']['ConfigBenefitMeterCreditRead']
     /** ConfigCatalogChange */
     ConfigCatalogChange: {
       /**
@@ -16366,228 +16593,25 @@ export interface components {
        */
       diff: components['schemas']['ConfigFieldChange'][]
     }
-    ConfigDiscount:
-      | components['schemas']['ConfigDiscountPercentage']
-      | components['schemas']['ConfigDiscountFixed']
-    /** ConfigDiscountFixed */
-    ConfigDiscountFixed: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description Your identifier for the discount, used to match it.
-       */
-      external_id: string
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
-      duration: components['schemas']['DiscountDuration']
-      /**
-       * Duration In Months
-       * @description Number of months the discount should be applied.
-       *
-       *     Required when `duration` is `repeating`. Must be omitted otherwise.
-       *
-       *     For this to work on yearly pricing, you should multiply this by 12.
-       *     For example, to apply the discount for 2 years, set this to 24.
-       */
-      duration_in_months?: number | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /**
-       * Max Redemptions Per Customer
-       * @description Optional maximum number of times the discount can be redeemed by a single customer.
-       */
-      max_redemptions_per_customer?: number | null
-      /**
-       * Products
-       * @description The products the discount applies to. Leave it empty to apply the discount to every product.
-       */
-      products?: string[]
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'fixed'
-      /**
-       * Amounts
-       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
-       */
-      amounts: {
-        [key: string]: number
-      }
-    }
-    /** ConfigDiscountPercentage */
-    ConfigDiscountPercentage: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description Your identifier for the discount, used to match it.
-       */
-      external_id: string
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
-      duration: components['schemas']['DiscountDuration']
-      /**
-       * Duration In Months
-       * @description Number of months the discount should be applied.
-       *
-       *     Required when `duration` is `repeating`. Must be omitted otherwise.
-       *
-       *     For this to work on yearly pricing, you should multiply this by 12.
-       *     For example, to apply the discount for 2 years, set this to 24.
-       */
-      duration_in_months?: number | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /**
-       * Max Redemptions Per Customer
-       * @description Optional maximum number of times the discount can be redeemed by a single customer.
-       */
-      max_redemptions_per_customer?: number | null
-      /**
-       * Products
-       * @description The products the discount applies to. Leave it empty to apply the discount to every product.
-       */
-      products?: string[]
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'percentage'
-      /**
-       * Basis Points
-       * @description Discount percentage in basis points.
-       *
-       *     A basis point is 1/100th of a percent.
-       *     For example, to create a 25.5% discount, set this to 2550.
-       */
-      basis_points: number
-    }
     /** ConfigExport */
     ConfigExport: {
-      /** @description The current config, in the same shape plan and apply accept. */
+      /** @description The current config, in the shape plan and apply accept, without `organization_id`. */
       config: components['schemas']['ConfigExportDocument']
       /**
        * Skipped
-       * @description Meters left out of the exported config.
+       * @description Resources left out of the exported config. At most the section's config limit is listed.
        */
-      skipped: components['schemas']['ConfigSkippedMeter'][]
+      skipped: components['schemas']['ConfigSkippedResource'][]
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
+      settings: components['schemas']['ConfigSettingsRead']
       /** Meters */
-      meters: components['schemas']['ConfigExportMeter'][]
-    }
-    /** ConfigExportMeter */
-    ConfigExportMeter: {
-      metadata: components['schemas']['MetadataOutputType']
-      /**
-       * External Id
-       * @description Your identifier for the meter.
-       */
-      external_id: string
-      /**
-       * Name
-       * @description The name of the meter. Will be shown on customer's invoices and usage.
-       */
-      name: string
-      /** @description The unit of the meter. */
-      unit: components['schemas']['MeterUnit']
-      /**
-       * Custom Label
-       * @description The label for the custom unit.
-       */
-      custom_label: string | null
-      /**
-       * Custom Multiplier
-       * @description The multiplier to convert from base unit to display scale.
-       */
-      custom_multiplier: number | null
-      /** @description The filter applied on events to calculate the meter. */
-      filter: components['schemas']['Filter']
-      /**
-       * Aggregation
-       * @description The aggregation applied on the filtered events.
-       */
-      aggregation:
-        | components['schemas']['CountAggregation']
-        | components['schemas']['PropertyAggregation']
-        | components['schemas']['UniqueAggregation']
+      meters: components['schemas']['ConfigMeterRead'][]
+      /** Benefits */
+      benefits: components['schemas']['ConfigBenefitRead'][]
+      /** Products */
+      products: components['schemas']['ConfigProductRead'][]
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16652,10 +16676,7 @@ export interface components {
     ConfigIssueType:
       | 'currency_changed'
       | 'deprecated_reference'
-      | 'discount_locked'
-      | 'duplicate_code'
       | 'duplicate_external_id'
-      | 'duration_changed'
       | 'interval_changed'
       | 'meter_locked'
       | 'missing_currency'
@@ -16734,6 +16755,26 @@ export interface components {
       error: 'ConfigMeterConflict'
       /** Detail */
       detail: string
+    }
+    /** ConfigMeterRead */
+    ConfigMeterRead: {
+      /** External Id */
+      external_id: string
+      /** Name */
+      name: string
+      unit: components['schemas']['MeterUnit']
+      /** Custom Label */
+      custom_label: string | null
+      /** Custom Multiplier */
+      custom_multiplier: number | null
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /** Aggregation */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      metadata: components['schemas']['MetadataOutputType']
     }
     /** ConfigPlan */
     ConfigPlan: {
@@ -16853,6 +16894,18 @@ export interface components {
        */
       price_amount: number
     }
+    /** ConfigProductPriceFixedRead */
+    ConfigProductPriceFixedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'fixed'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Price Amount */
+      price_amount: number
+    }
     /** ConfigProductPriceMeteredTiers */
     ConfigProductPriceMeteredTiers: {
       /**
@@ -16878,6 +16931,21 @@ export interface components {
        * @description Optional maximum charge in cents.
        */
       cap_amount?: number | null
+    }
+    /** ConfigProductPriceMeteredTiersRead */
+    ConfigProductPriceMeteredTiersRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Meter */
+      meter: string
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Cap Amount */
+      cap_amount: number | null
     }
     /** ConfigProductPriceMeteredUnit */
     ConfigProductPriceMeteredUnit: {
@@ -16909,6 +16977,28 @@ export interface components {
        */
       cap_amount?: number | null
     }
+    /** ConfigProductPriceMeteredUnitRead */
+    ConfigProductPriceMeteredUnitRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_unit'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Meter */
+      meter: string
+      /** Unit Amount */
+      unit_amount: string
+      /** Cap Amount */
+      cap_amount: number | null
+    }
+    ConfigProductPriceRead:
+      | components['schemas']['ConfigProductPriceFixedRead']
+      | components['schemas']['ConfigProductPriceMeteredUnitRead']
+      | components['schemas']['ConfigProductPriceSeatBasedRead']
+      | components['schemas']['ConfigProductPriceMeteredTiersRead']
+      | components['schemas']['ConfigProductPriceUnitBasedRead']
     /** ConfigProductPriceSeatBased */
     ConfigProductPriceSeatBased: {
       /**
@@ -16930,6 +17020,19 @@ export interface components {
        * @description The minimum purchasable seat quantity (inclusive).
        * @default 1
        */
+      minimum_units: number
+    }
+    /** ConfigProductPriceSeatBasedRead */
+    ConfigProductPriceSeatBasedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Minimum Units */
       minimum_units: number
     }
     /** ConfigProductPriceUnitBased */
@@ -16964,6 +17067,46 @@ export interface components {
         }
       } | null
     }
+    /** ConfigProductPriceUnitBasedRead */
+    ConfigProductPriceUnitBasedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Minimum Units */
+      minimum_units: number
+      /** Unit Label */
+      unit_label: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+    }
+    /** ConfigProductRead */
+    ConfigProductRead: {
+      /** External Id */
+      external_id: string
+      /** Name */
+      name: string
+      /** Description */
+      description: string | null
+      visibility: components['schemas']['ProductVisibility']
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /** Recurring Interval Count */
+      recurring_interval_count: number | null
+      trial_interval: components['schemas']['TrialInterval'] | null
+      /** Trial Interval Count */
+      trial_interval_count: number | null
+      /** Prices */
+      prices: components['schemas']['ConfigProductPriceRead'][]
+      /** Benefits */
+      benefits: string[]
+      metadata: components['schemas']['MetadataOutputType']
+    }
     /** ConfigPrune */
     ConfigPrune: {
       /**
@@ -16988,7 +17131,7 @@ export interface components {
       in_use: boolean
       /**
        * Referenced By
-       * @description External IDs of the products, benefits and discounts staying in the config that reference the resource.
+       * @description External IDs of the products and benefits staying in the config that reference the resource.
        */
       referenced_by: string[]
     }
@@ -16996,7 +17139,7 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product' | 'discount' | 'webhook'
+    ConfigResource: 'meter' | 'benefit' | 'product' | 'webhook'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
@@ -17031,28 +17174,19 @@ export interface components {
       /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
       tax?: components['schemas']['TaxBehaviorOption'] | null
     }
+    /** ConfigSettingsPaymentsRead */
+    ConfigSettingsPaymentsRead: {
+      currency: components['schemas']['PresentmentCurrency']
+      tax: components['schemas']['TaxBehaviorOption']
+    }
+    /** ConfigSettingsRead */
+    ConfigSettingsRead: {
+      payments: components['schemas']['ConfigSettingsPaymentsRead']
+    }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
-    }
-    /** ConfigSkippedMeter */
-    ConfigSkippedMeter: {
-      /** @description The type of resource. */
-      resource: components['schemas']['ConfigResource']
-      /**
-       * Id
-       * Format: uuid4
-       * @description The meter ID.
-       */
-      id: string
-      /**
-       * Name
-       * @description The meter name.
-       */
-      name: string
-      /** @description Why the meter isn't in the exported config. */
-      reason: components['schemas']['ConfigSkippedReason']
     }
     /**
      * ConfigSkippedReason
@@ -17063,6 +17197,37 @@ export interface components {
       | 'archived'
       | 'invalid'
       | 'over_limit'
+    /** ConfigSkippedResource */
+    ConfigSkippedResource: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * Id
+       * Format: uuid4
+       * @description The resource ID.
+       */
+      id: string
+      /**
+       * Name
+       * @description The resource name.
+       */
+      name: string
+      /** @description Why the resource isn't in the exported config. */
+      reason: components['schemas']['ConfigSkippedReason']
+    }
+    /** ConfigTierRead */
+    ConfigTierRead: {
+      /** Bound */
+      bound: number | null
+      /** Unit Amount */
+      unit_amount: string
+    }
+    /** ConfigTiersRead */
+    ConfigTiersRead: {
+      type: components['schemas']['TierType']
+      /** Tiers */
+      tiers: components['schemas']['ConfigTierRead'][]
+    }
     /** ConfigWebhookConflict */
     ConfigWebhookConflict: {
       /**
@@ -30956,12 +31121,6 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
-       * Agentic Payments Enabled
-       * @description If this organization accepts payments from AI agents through Stripe shared payment tokens.
-       * @default false
-       */
-      agentic_payments_enabled: boolean
-      /**
        * Staged Events Ingest Enabled
        * @description If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
        * @default false
@@ -31579,6 +31738,11 @@ export interface components {
       product_id?: string | null
       /** Name */
       name: string
+      /**
+       * Tier
+       * @description Plan tier shared by the monthly and annual variants of the same plan. Read from the product's `tier` metadata, falling back to its name.
+       */
+      tier: string
       /** Description */
       description?: string | null
       /** Recurring Interval */
@@ -63438,7 +63602,7 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -64754,6 +64918,182 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Feedback']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:preview_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        link_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimPreview']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:get_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        link_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaim']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimEmailMismatch']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:confirm_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AgentClaimConfirm']
+      }
+    }
+    responses: {
+      /** @description The agent and its organization are now the user's. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimInvalidCode']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SessionNotFreshError']
+            | components['schemas']['AgentClaimEmailMismatch']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
         }
       }
       /** @description Validation Error */
@@ -72386,15 +72726,15 @@ export const configActionValues: ReadonlyArray<
 export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlag']['type']
 > = ['feature_flag']
+export const configBenefitFeatureFlagReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlagRead']['type']
+> = ['feature_flag']
 export const configBenefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCredit']['type']
 > = ['meter_credit']
-export const configDiscountFixedTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigDiscountFixed']['type']
-> = ['fixed']
-export const configDiscountPercentageTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigDiscountPercentage']['type']
-> = ['percentage']
+export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
+> = ['meter_credit']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
@@ -72403,10 +72743,7 @@ export const configIssueTypeValues: ReadonlyArray<
 > = [
   'currency_changed',
   'deprecated_reference',
-  'discount_locked',
-  'duplicate_code',
   'duplicate_external_id',
-  'duration_changed',
   'interval_changed',
   'meter_locked',
   'missing_currency',
@@ -72418,21 +72755,36 @@ export const configIssueTypeValues: ReadonlyArray<
 export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
 > = ['fixed']
+export const configProductPriceFixedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixedRead']['amount_type']
+> = ['fixed']
 export const configProductPriceMeteredTiersAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers']['amount_type']
+> = ['metered_tiers']
+export const configProductPriceMeteredTiersReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiersRead']['amount_type']
 > = ['metered_tiers']
 export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
+export const configProductPriceMeteredUnitReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnitRead']['amount_type']
+> = ['metered_unit']
 export const configProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased']['amount_type']
+> = ['seat_based']
+export const configProductPriceSeatBasedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBasedRead']['amount_type']
 > = ['seat_based']
 export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased']['amount_type']
 > = ['unit_based']
+export const configProductPriceUnitBasedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBasedRead']['amount_type']
+> = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product', 'discount', 'webhook']
+> = ['meter', 'benefit', 'product', 'webhook']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']

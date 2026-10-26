@@ -1,4 +1,5 @@
 import collections.abc
+import itertools
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
@@ -20,7 +21,7 @@ REDUCERS = ["tokens", "calls", "cost"]
 
 
 def state_key(identity: str) -> str:
-    return f"outpost:state:{identity}"
+    return f"outpost:v1:state:{identity}"
 
 
 def identity_of(buckets: int) -> str:
@@ -31,9 +32,27 @@ def key_of(buckets: int) -> str:
     return state_key(identity_of(buckets))
 
 
-# An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count.
+# An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count. Each
+# call brings a new external_id, as events do; the same one would be a duplicate and write nothing.
+_ids = itertools.count(1)
+
+
 def write_args(identity: str, bucket_start: int) -> list[str | int]:
-    return [state_key(identity), identity, CHANNEL, EPOCH, bucket_start, 1, 7, 7, 7]
+    pending_key = f"outpost:v1:pending:{identity}:{bucket_start}"
+    return [
+        state_key(identity),
+        pending_key,
+        identity,
+        CHANNEL,
+        EPOCH,
+        bucket_start,
+    ] + [
+        1,
+        7,
+        7,
+        7,
+        f"event-{next(_ids)}",
+    ]
 
 
 def seed_state(redis: Redis, identity: str, buckets: int) -> None:
@@ -60,9 +79,12 @@ def test_write_bucket_one_event(
     newest_bucket_start = COLD_UNTIL + (buckets - 1) * BUCKET_SIZE
     # The client loads each script once and calls it by hash.
     sha = redis.script_load(WRITE_BUCKET_SCRIPT)
-    benchmark(
-        redis.evalsha, sha, 1, *write_args(identity_of(buckets), newest_bucket_start)
-    )
+    identity = identity_of(buckets)
+
+    def write() -> None:
+        redis.evalsha(sha, 2, *write_args(identity, newest_bucket_start))
+
+    benchmark(write)
 
 
 def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) -> None:
@@ -72,7 +94,7 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
         pipeline = redis.pipeline(transaction=False)
         for reducer in REDUCERS:
             identity = f"external:alice:{reducer}"
-            pipeline.evalsha(sha, 1, *write_args(identity, COLD_UNTIL))
+            pipeline.evalsha(sha, 2, *write_args(identity, COLD_UNTIL))
         pipeline.execute()
 
     benchmark(write)

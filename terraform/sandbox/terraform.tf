@@ -7,6 +7,11 @@ terraform {
   }
 
   required_providers {
+    planetscale = {
+      source  = "planetscale/planetscale"
+      version = "~> 1.14"
+    }
+
     aws = {
       source  = "hashicorp/aws"
       version = ">= 6.69.1, < 7.0.0"

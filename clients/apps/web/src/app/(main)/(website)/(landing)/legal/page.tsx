@@ -4,7 +4,7 @@ import {
 } from '@/components/Landing/features/FeatureChapter'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight } from '@polar-sh/orbit/icons'
 import { Metadata } from 'next'
 import Link from 'next/link'
 

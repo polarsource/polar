@@ -57,7 +57,6 @@ from polar.models.order import Order, OrderStatus
 from polar.models.organization import (
     CAPABILITY_METADATA,
     CAPABILITY_NAMES,
-    CapabilityName,
     OrganizationStatus,
     SnoozeType,
 )
@@ -92,6 +91,7 @@ from polar.organization_review.repository import (
 )
 from polar.organization_review.schemas import (
     AUP_SECTION_LABELS,
+    ActorType,
     AUPSection,
     DecisionType,
     ReviewAgentReport,
@@ -2514,6 +2514,7 @@ async def under_review_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Set organization under review dialog and action."""
     repository = OrganizationRepository(session)
@@ -2524,7 +2525,11 @@ async def under_review_dialog(
 
     if request.method == "POST":
         await organization_service.set_organization_under_review(
-            session, organization, enqueue_review=False
+            session,
+            organization,
+            actor_type=ActorType.HUMAN,
+            reviewer_id=user_session.user.id,
+            enqueue_review=False,
         )
 
         return HXRedirectResponse(
@@ -5056,14 +5061,13 @@ async def set_capability(
     """Render the capability override modal (GET) or apply it (POST)."""
     if capability not in CAPABILITY_NAMES:
         raise HTTPException(status_code=404, detail="Unknown capability")
-    capability_name = cast(CapabilityName, capability)
 
     repository = OrganizationRepository(session)
     organization = await repository.get_by_id(organization_id, include_blocked=True)
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    current_value = organization.capabilities[capability_name]
+    current_value = organization.capabilities[capability]
 
     settings_url = str(
         request.url_for(
@@ -5075,12 +5079,12 @@ async def set_capability(
         state = "enabled" if value else "disabled"
         await add_toast(
             request,
-            f"Capability '{capability_name}' is already {state}.",
+            f"Capability '{capability}' is already {state}.",
             "error",
         )
         return HXRedirectResponse(request, settings_url, 303)
 
-    label, _ = CAPABILITY_METADATA[capability_name]
+    label, _ = CAPABILITY_METADATA[capability]
     validation_error: ValidationError | None = None
 
     if request.method == "POST":
@@ -5090,7 +5094,7 @@ async def set_capability(
             await organization_service.set_capability(
                 session,
                 organization,
-                capability_name,
+                capability,
                 value,
                 reason=form.reason,
                 admin_email=user_session.user.email,
@@ -5110,12 +5114,12 @@ async def set_capability(
         request.url_for(
             "organizations:set_capability",
             organization_id=organization_id,
-            capability=capability_name,
+            capability=capability,
         ).include_query_params(value="true" if value else "false")
     )
     modal_view = SetCapabilityModal(
         organization,
-        capability_name,
+        capability,
         label,
         value,
         form_action,

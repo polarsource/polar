@@ -1,5 +1,5 @@
 import { Text } from '@polar-sh/orbit'
-import { X } from 'lucide-react'
+import { X } from '@polar-sh/orbit/icons'
 import { motion } from 'motion/react'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'

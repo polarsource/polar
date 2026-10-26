@@ -71,13 +71,6 @@
 }
 
 @font-face {
-  font-family: 'Louize';
-  font-style: italic;
-  font-display: swap;
-  src: url('/fonts/Louize-Italic-205TF.otf') format('opentype');
-}
-
-@font-face {
   font-family: 'GeistMono';
   font-style: normal;
   font-display: swap;

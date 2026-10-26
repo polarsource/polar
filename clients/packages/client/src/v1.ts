@@ -16509,19 +16509,6 @@ export interface components {
        */
       rollover: boolean
     }
-    /** ConfigCatalogChange */
-    ConfigCatalogChange: {
-      /**
-       * Before
-       * @description Version hash of the live catalog before applying.
-       */
-      before: string | null
-      /**
-       * After
-       * @description Version hash of the live catalog after applying.
-       */
-      after: string
-    }
     /** ConfigBenefitMeterCreditPropertiesRead */
     ConfigBenefitMeterCreditPropertiesRead: {
       /** Meter */
@@ -16549,6 +16536,19 @@ export interface components {
     ConfigBenefitRead:
       | components['schemas']['ConfigBenefitFeatureFlagRead']
       | components['schemas']['ConfigBenefitMeterCreditRead']
+    /** ConfigCatalogChange */
+    ConfigCatalogChange: {
+      /**
+       * Before
+       * @description Version hash of the live catalog before applying.
+       */
+      before: string | null
+      /**
+       * After
+       * @description Version hash of the live catalog after applying.
+       */
+      after: string
+    }
     /** ConfigChange */
     ConfigChange: {
       /** @description The type of resource. */

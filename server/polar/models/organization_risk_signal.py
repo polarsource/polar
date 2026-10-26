@@ -23,10 +23,12 @@ class OrganizationRiskSignal(RecordModel):
 
     class Source(StrEnum):
         STRIPE = "stripe"
+        POLAR = "polar"
 
     class Type(StrEnum):
         FRAUDULENT_WEBSITE = "fraudulent_website"
         FRAUDULENT_MERCHANT = "fraudulent_merchant"
+        DOMAIN_VERIFICATION_LOST = "domain_verification_lost"
 
     # risk_level is a free-form string so future sources can use their own
     # vocabulary; this is the one value all consumers treat as most severe.

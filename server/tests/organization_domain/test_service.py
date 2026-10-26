@@ -2,10 +2,11 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.kit.utils import utc_now
-from polar.models import Organization, OrganizationDomain
+from polar.models import Organization, OrganizationDomain, OrganizationRiskSignal
 from polar.organization_domain.service import (
     organization_domain as organization_domain_service,
 )
+from polar.organization_review.repository import OrganizationRiskSignalRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
@@ -76,6 +77,14 @@ class TestReverify:
         await organization_domain_service.reverify(session, organization)
 
         assert domain.verified_at is None
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.get_all(
+            repository.get_base_statement().where(
+                OrganizationRiskSignal.organization_id == organization.id
+            )
+        )
+        assert signal.type == OrganizationRiskSignal.Type.DOMAIN_VERIFICATION_LOST
+        assert signal.payload == {"domain": "acme.com"}
 
     async def test_pending_record_added(
         self,

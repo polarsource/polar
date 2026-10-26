@@ -12,7 +12,8 @@ from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.logging import Logger
-from polar.models import Organization, OrganizationDomain
+from polar.models import Organization, OrganizationDomain, OrganizationRiskSignal
+from polar.organization_review.risk_signal import risk_signal as risk_signal_service
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import OrganizationDomainRepository
@@ -153,6 +154,17 @@ class OrganizationDomainService:
                 )
                 await repository.update(
                     organization_domain, update_dict={"verified_at": None}
+                )
+                await risk_signal_service.record(
+                    session,
+                    organization,
+                    source=OrganizationRiskSignal.Source.POLAR,
+                    type=OrganizationRiskSignal.Type.DOMAIN_VERIFICATION_LOST,
+                    risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+                    description=(
+                        f"TXT record for {organization_domain.domain} no longer found."
+                    ),
+                    payload={"domain": organization_domain.domain},
                 )
         return organization_domains
 

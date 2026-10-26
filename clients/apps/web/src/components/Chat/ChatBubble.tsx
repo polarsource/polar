@@ -7,6 +7,8 @@ import { MessageAttachments } from './MessageAttachments'
 import { exactTime, relativeTime } from './time'
 import { type ChatAttachment, type ChatMessage } from './types'
 
+const EMPTY_ATTACHMENTS: ChatAttachment[] = []
+
 export const BUBBLE_SPRING = {
   type: 'spring',
   stiffness: 300,
@@ -27,7 +29,7 @@ interface Props {
 
 export const ChatBubble = ({
   message,
-  attachments = [],
+  attachments = EMPTY_ATTACHMENTS,
   avatar,
   animate,
   isFirstInGroup,

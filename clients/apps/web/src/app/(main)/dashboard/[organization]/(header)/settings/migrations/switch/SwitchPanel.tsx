@@ -28,7 +28,13 @@ const initialSwitchSelection: SelectionState = {
 const errorMessage = (error: unknown, fallback: string) =>
   error instanceof Error && error.message ? error.message : fallback
 
-export function SwitchPanel({ migrationId }: { migrationId: string }) {
+export function SwitchPanel({
+  migrationId,
+  readOnly = false,
+}: {
+  migrationId: string
+  readOnly?: boolean
+}) {
   const [filter, setFilter] = useState<SwitchFilter>('all')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
@@ -104,6 +110,7 @@ export function SwitchPanel({ migrationId }: { migrationId: string }) {
   return (
     <SwitchPanelView
       migrationId={migrationId}
+      readOnly={readOnly}
       report={report}
       filter={filter}
       onFilterChange={onFilterChange}

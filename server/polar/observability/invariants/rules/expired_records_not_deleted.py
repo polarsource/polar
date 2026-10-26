@@ -21,13 +21,13 @@ from polar.models import (
     ExternalEvent,
     MemberSession,
     MerchantMigration,
-    MerchantMigrationStep,
     OAuth2State,
     OAuth2Token,
     UserSession,
     WebhookDelivery,
     WebhookEvent,
 )
+from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
 
 from .base import Invariant, InvariantError
 
@@ -129,9 +129,7 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         MerchantMigration,
         lambda cutoff: and_(
             MerchantMigration.deleted_at.is_(None),
-            MerchantMigration.step.not_in(
-                (MerchantMigrationStep.completed, MerchantMigrationStep.closed)
-            ),
+            MerchantMigration.step.not_in(MERCHANT_MIGRATION_FINISHED_STEPS),
             func.coalesce(MerchantMigration.modified_at, MerchantMigration.created_at)
             < cutoff - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
         ),

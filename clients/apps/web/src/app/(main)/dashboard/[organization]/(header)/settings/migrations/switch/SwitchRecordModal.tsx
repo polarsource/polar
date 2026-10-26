@@ -12,10 +12,12 @@ import { needsAttention, SwitchRow } from './switchRows'
 export function SwitchRecordModal({
   row,
   migrationId,
+  readOnly = false,
   onClose,
 }: {
   row: SwitchRow
   migrationId: string
+  readOnly?: boolean
   onClose: () => void
 }) {
   const facts = assessmentFacts(row)
@@ -81,7 +83,9 @@ export function SwitchRecordModal({
               />
             </Box>
           ) : null}
-          <TaxAfterSwitchField row={row} migrationId={migrationId} />
+          {!readOnly && (
+            <TaxAfterSwitchField row={row} migrationId={migrationId} />
+          )}
         </Box>
 
         {showCustomer ? (

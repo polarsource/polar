@@ -69,8 +69,8 @@ export const OWNER_LABELS: Record<StepOwner, string | null> = {
   stripe: 'Stripe',
 }
 
-// Where the merchant is. `cleanup` and `completed` map to no visible step, so
-// they get their own case rather than being clamped onto the last one.
+// Where the merchant is. `completed` maps to no visible step, so it gets its
+// own case rather than being clamped onto the last one.
 export type MigrationPosition =
   | { kind: 'step'; index: number }
   | { kind: 'completed' }
@@ -93,8 +93,8 @@ export function visibleMigrationStep(
 // Backend steps map to a visible step through `MIGRATION_STEPS`, with two
 // exceptions: `source_setup`, where connecting completes Connect even though
 // the backend still reads it, so once connected we surface Assessment; and the
-// trailing steps (`cleanup`, `completed`) that no visible step covers, which
-// fall through to `completed` below.
+// trailing steps that no visible step covers, which fall through to `completed`
+// below.
 export function currentPosition(
   migration: schemas['MerchantMigration'],
   panCurrentStepKey?: string | null,

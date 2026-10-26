@@ -222,8 +222,7 @@ const CustomerSubscriptionDetails = ({
       <div className="flex flex-row gap-4">
         {isCanceled &&
           subscription.cancel_at_period_end &&
-          subscription.current_period_end &&
-          new Date(subscription.current_period_end) > new Date() && (
+          !subscription.ended_at && (
             <UncancelSubscriptionButton
               api={api}
               subscription={subscription}

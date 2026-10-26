@@ -27,7 +27,10 @@ const StackedMeterChart = ({
   const config = useMemo(
     () =>
       series.reduce(
-        (acc, s) => ({ ...acc, [s.key]: { label: s.label, color: s.color } }),
+        (acc, s) => {
+          acc[s.key] = { label: s.label, color: s.color }
+          return acc
+        },
         {} as Record<string, { label: string; color: string }>,
       ),
     [series],

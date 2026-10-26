@@ -137,8 +137,9 @@ const loadScript = (fs: FileSystem.FileSystem, file: string) =>
     const env = yield* Environment
     const url = pathToFileURL(resolve(file)).href
     const exported = yield* Effect.tryPromise({
-      // A compiled binary can't resolve packages whose entry file sits in a
-      // subdirectory (e.g. dist/index.js), which is nearly all of them.
+      // A compiled binary ignores package.json when resolving imports of a
+      // file loaded at runtime, so only packages with a root index.js load.
+      // https://github.com/oven-sh/bun/issues/46412
       try: () =>
         isCompiledBinary()
           ? evaluateInSubprocess(url, env)

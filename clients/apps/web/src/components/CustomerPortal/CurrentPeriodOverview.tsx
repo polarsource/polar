@@ -6,6 +6,7 @@ import {
   isUnitBasedPrice,
 } from '@/utils/product'
 import { billsUsageOnMeterCycle } from '@/utils/subscription'
+import { keyByContent } from '@/utils/keys'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
@@ -204,8 +205,8 @@ export const CurrentPeriodOverview = ({
         <>
           <span className="font-medium">Prorations</span>
 
-          {prorations.map((proration, index) => (
-            <div key={index} className="flex items-center justify-between">
+          {keyByContent(prorations).map(({ item: proration, key }) => (
+            <div key={key} className="flex items-center justify-between">
               <span className="dark:text-polar-400 text-gray-600">
                 {proration.label}
               </span>

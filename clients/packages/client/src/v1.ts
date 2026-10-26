@@ -1692,6 +1692,53 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/subscriptions/bulk-update': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Bulk Update Subscriptions
+     * @description Move the active subscriptions of a product, in any version, to another product.
+     *
+     *     Subscriptions move in the background, each one at its own renewal. Subscriptions
+     *     that are canceling or already have a pending change are left alone.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['subscriptions:bulk_update']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/subscriptions/bulk-update/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Subscription Bulk Update
+     * @description Get the progress of a subscription bulk update.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_bulk_update']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/transactions/search': {
     parameters: {
       query?: never
@@ -3652,6 +3699,28 @@ export interface paths {
      *     **Scopes**: `checkout_links:write`
      */
     patch: operations['checkout-links:update']
+    trace?: never
+  }
+  '/v1/catalogs/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Catalogs
+     * @description List the catalogs of organizations using config as code, newest first.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['catalogs:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/v1/custom-fields/': {
@@ -13617,6 +13686,54 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * Catalog
+     * @description A version of an organization's product catalog.
+     */
+    Catalog: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Name
+       * @description Optional name given when it was published.
+       */
+      name: string | null
+      /**
+       * Version Hash
+       * @description Hash identifying this version of the catalog.
+       */
+      version_hash: string | null
+      /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
+      status: components['schemas']['CatalogStatus']
+      /**
+       * Published At
+       * @description When the catalog was published. Null for drafts.
+       */
+      published_at: string | null
+    }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
       /**
@@ -13639,6 +13756,11 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * CatalogStatus
+     * @enum {string}
+     */
+    CatalogStatus: 'draft' | 'live' | 'archived'
     /** ChannelNamePreviewRequest */
     ChannelNamePreviewRequest: {
       /** Organization Id */
@@ -16272,6 +16394,11 @@ export interface components {
       /** @description Organization settings to update. Left untouched when omitted. */
       settings?: components['schemas']['ConfigSettings'] | null
       /**
+       * Catalog Name
+       * @description Name of the catalog version this apply publishes, if it publishes one. It doesn't change the version hash.
+       */
+      catalog_name?: string | null
+      /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
        */
@@ -16306,6 +16433,8 @@ export interface components {
     ConfigApplyResult: {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
+      /** @description The published catalog, if applying published a new one. */
+      catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Result for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsResult'] | null
     }
@@ -16487,6 +16616,19 @@ export interface components {
     ConfigBenefitRead:
       | components['schemas']['ConfigBenefitFeatureFlagRead']
       | components['schemas']['ConfigBenefitMeterCreditRead']
+    /** ConfigCatalogChange */
+    ConfigCatalogChange: {
+      /**
+       * Before
+       * @description Version hash of the live catalog before applying.
+       */
+      before: string | null
+      /**
+       * After
+       * @description Version hash of the live catalog after applying.
+       */
+      after: string
+    }
     /** ConfigChange */
     ConfigChange: {
       /** @description The type of resource. */
@@ -16691,6 +16833,8 @@ export interface components {
     ConfigPlan: {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
+      /** @description The catalog that applying publishes, if any. */
+      catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Change for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsChange'] | null
       /** Issues */
@@ -25925,6 +26069,12 @@ export interface components {
     ListResource_Benefit_: {
       /** Items */
       items: components['schemas']['Benefit'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[Catalog] */
+    ListResource_Catalog_: {
+      /** Items */
+      items: components['schemas']['Catalog'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[CheckoutLink] */
@@ -37160,6 +37310,83 @@ export interface components {
       /** New Period End */
       new_period_end: string
     }
+    /** SubscriptionBulkUpdate */
+    SubscriptionBulkUpdate: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       */
+      organization_id: string
+      /**
+       * Product External Id
+       * @description `external_id` of the product whose subscriptions move.
+       */
+      product_external_id: string
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product to move to.
+       */
+      target_product_id: string
+      /** @description When each subscription moves. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Subscriptions Count
+       * @description Subscriptions scheduled to move at their renewal so far.
+       */
+      subscriptions_count: number
+      /**
+       * Skipped Count
+       * @description Subscriptions that couldn't move, for example on a currency mismatch.
+       */
+      skipped_count: number
+      /**
+       * Completed At
+       * @description When every subscription was handled. `None` while running.
+       */
+      completed_at: string | null
+    }
+    /** SubscriptionBulkUpdateCreate */
+    SubscriptionBulkUpdateCreate: {
+      /**
+       * Product External Id
+       * @description `external_id` of the product whose subscriptions move, in any version.
+       */
+      product_external_id: string
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product to move to. Must be a current version.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      target_product_id: string
+      /**
+       * Proration Behavior
+       * @description When each subscription moves. Each one moves at its own renewal.
+       * @default next_period
+       * @constant
+       */
+      proration_behavior: 'next_period'
+    }
     /** SubscriptionCancel */
     SubscriptionCancel: {
       /**
@@ -46358,6 +46585,89 @@ export interface operations {
       }
     }
   }
+  'subscriptions:bulk_update': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubscriptionBulkUpdateCreate']
+      }
+    }
+    responses: {
+      /** @description Bulk update started. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionBulkUpdate']
+        }
+      }
+      /** @description You don't have the permission to update subscriptions, or the organization doesn't use catalog versioning. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_bulk_update': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription bulk update ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionBulkUpdate']
+        }
+      }
+      /** @description Subscription bulk update not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'transactions:search_transactions': {
     parameters: {
       query?: {
@@ -53635,6 +53945,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:list': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by catalog status. */
+        status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Catalog_']
         }
       }
       /** @description Validation Error */
@@ -72378,6 +72729,9 @@ export const canonicalPaymentMethodTypeValues: ReadonlyArray<
   'link',
   'other',
 ]
+export const catalogStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CatalogStatus']
+> = ['draft', 'live', 'archived']
 export const checkoutCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutCreatedEvent']['name']
 > = ['checkout.created']

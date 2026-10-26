@@ -15,6 +15,7 @@ from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
     ConfigBenefit,
+    ConfigCatalogChange,
     ConfigExportDocument,
     ConfigIssueSeverity,
     ConfigIssueType,
@@ -2705,6 +2706,42 @@ MONTHLY_PRO_25 = {
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 @pytest.mark.usefixtures("config_as_code_enabled")
 class TestCatalogVersioning:
+    async def test_catalog_name(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        unnamed = Config.model_validate({"products": [MONTHLY_PRO]})
+        name_only = Config.model_validate(
+            {"products": [MONTHLY_PRO], "catalog_name": "Ignored"}
+        )
+        updated = Config.model_validate({"products": [MONTHLY_PRO_25]})
+        named = Config.model_validate(
+            {"products": [MONTHLY_PRO_25], "catalog_name": "Spring pricing"}
+        )
+        catalogs_repo = CatalogRepository.from_session(session)
+
+        await declarative_config_service.apply(session, redis, auth_subject, unnamed)
+        first = await catalogs_repo.get_live(organization.id)
+        assert first is not None
+        assert first.name is None
+
+        await declarative_config_service.apply(session, redis, auth_subject, name_only)
+        assert await catalogs_repo.get_live(organization.id) == first
+        assert first.name is None
+
+        plan = await declarative_config_service.plan(session, auth_subject, updated)
+        expected_hash = plan.changes[0].diff[-1].after
+
+        await declarative_config_service.apply(session, redis, auth_subject, named)
+        live = await catalogs_repo.get_live(organization.id)
+        assert live is not None
+        assert live.id != first.id
+        assert live.name == "Spring pricing"
+        assert live.version_hash == expected_hash
+
     async def test_lifecycle(
         self,
         save_fixture: SaveFixture,
@@ -2726,7 +2763,7 @@ class TestCatalogVersioning:
         created_catalog = create_plan.changes[0].diff[-1]
         assert (created_catalog.field, created_catalog.before) == ("catalog", None)
 
-        await declarative_config_service.apply(
+        created = await declarative_config_service.apply(
             session, redis, auth_subject, initial_config
         )
         [old_product] = await products_repo.get_all_by_external_ids(
@@ -2744,6 +2781,9 @@ class TestCatalogVersioning:
             created_catalog.after,
             first.id,
         )
+        assert created.catalog == ConfigCatalogChange(
+            before=None, after=first.version_hash
+        )
         assert [
             m.product_id for m in await members_repo.get_all_by_catalog(first.id)
         ] == [old_product.id]
@@ -2752,6 +2792,7 @@ class TestCatalogVersioning:
             session, redis, auth_subject, initial_config
         )
         assert unchanged.changes[0].action == ConfigAction.unchanged
+        assert unchanged.catalog is None
         assert (await catalogs_repo.get_live(organization.id)) == first
 
         subscription = await create_active_subscription(
@@ -2775,10 +2816,16 @@ class TestCatalogVersioning:
             "catalog",
             first.version_hash,
         )
+        assert update_plan.catalog is not None
+        assert (update_plan.catalog.before, update_plan.catalog.after) == (
+            first.version_hash,
+            catalog_diff.after,
+        )
 
-        await declarative_config_service.apply(
+        updated = await declarative_config_service.apply(
             session, redis, auth_subject, updated_config
         )
+        assert updated.catalog == update_plan.catalog
         [new_product] = await products_repo.get_all_by_external_ids(
             organization.id, ["pro"]
         )
@@ -2979,6 +3026,7 @@ class TestExport:
         assert set(ConfigExportDocument.model_fields) == set(Config.model_fields) - {
             "organization_id",
             "webhooks",
+            "catalog_name",
         }
         assert {type(benefit) for benefit in config.benefits} == set(
             get_args(get_args(ConfigBenefit)[0])

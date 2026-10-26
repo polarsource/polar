@@ -78,6 +78,7 @@ class TestApply:
                     "action": "created",
                 }
             ],
+            "catalog": None,
             "settings": None,
         }
 
@@ -290,7 +291,12 @@ class TestPlan:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"changes": [], "settings": None, "issues": []}
+        assert response.json() == {
+            "changes": [],
+            "catalog": None,
+            "settings": None,
+            "issues": [],
+        }
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

@@ -8,7 +8,7 @@ import { schemas } from '@polar-sh/client'
 import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useSearchParams } from 'next/navigation'
 import { useContext, useEffect, useState } from 'react'
 import { StatusIcon } from './StatusIcon'
@@ -130,7 +130,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
       {renderSection && (
         <AnimatePresence initial={false}>
           {showExpanded && (
-            <motion.div
+            <m.div
               key="divider"
               initial={{
                 marginLeft: -16,
@@ -154,10 +154,10 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
                 borderStyle="solid"
                 borderColor="border-primary"
               />
-            </motion.div>
+            </m.div>
           )}
           {showExpanded && (
-            <motion.div
+            <m.div
               key="content"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
@@ -168,7 +168,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               <Box display="block" paddingTop="m">
                 {renderSection({ organization, step, reasonItems })}
               </Box>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       )}

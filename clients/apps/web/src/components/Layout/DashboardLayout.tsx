@@ -11,7 +11,7 @@ import { setLastVisitedEnv, setLastVisitedOrg } from '@/utils/cookies'
 import { ViewSidebarOutlined } from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
 import { SidebarTrigger } from '@polar-sh/ui/components/atoms/Sidebar'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { usePathname } from 'next/navigation'
 import {
   PropsWithChildren,
@@ -21,7 +21,6 @@ import {
   type JSX,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
@@ -43,7 +42,7 @@ const DashboardLayout = (
   }, [organization])
 
   return (
-    <DashboardProvider organization={organization}>
+    <>
       {props.type !== 'account' && organization && (
         <CompassIntroModal organization={organization} />
       )}
@@ -69,7 +68,7 @@ const DashboardLayout = (
           </main>
         </div>
       </div>
-    </DashboardProvider>
+    </>
   )
 }
 
@@ -151,7 +150,7 @@ export const DashboardBody = ({
   }, [pathname, hideContext])
 
   return (
-    <motion.div
+    <m.div
       className={twMerge(
         'flex h-full w-full flex-row gap-x-2',
         contextViewPlacement === 'left' ? 'flex-row-reverse' : '',
@@ -206,7 +205,7 @@ export const DashboardBody = ({
             </div>
           )}
 
-          <motion.div
+          <m.div
             className={twMerge('flex w-full flex-col pb-8', className)}
             variants={{
               initial: { opacity: 0 },
@@ -215,11 +214,11 @@ export const DashboardBody = ({
             }}
           >
             {children}
-          </motion.div>
+          </m.div>
         </div>
       </div>
       {contextView ? (
-        <motion.div
+        <m.div
           variants={{
             initial: { opacity: 0 },
             animate: { opacity: 1, transition: { duration: 0.3 } },
@@ -231,7 +230,7 @@ export const DashboardBody = ({
           )}
         >
           {contextView}
-        </motion.div>
+        </m.div>
       ) : null}
       {contextView && (
         <Modal
@@ -241,6 +240,6 @@ export const DashboardBody = ({
           modalContent={<div>{contextView}</div>}
         />
       )}
-    </motion.div>
+    </m.div>
   )
 }

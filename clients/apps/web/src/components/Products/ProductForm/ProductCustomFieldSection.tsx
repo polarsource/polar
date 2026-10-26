@@ -53,10 +53,7 @@ export const ProductCustomFieldSection = ({
             ({ id }) => id === field.custom_field_id,
           )
           if (customField) {
-            return {
-              ...acc,
-              [field.custom_field_id]: customField,
-            }
+            acc[field.custom_field_id] = customField
           }
           return acc
         },

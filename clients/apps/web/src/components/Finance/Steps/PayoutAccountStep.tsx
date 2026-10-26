@@ -78,7 +78,7 @@ export default function PayoutAccountStep({
           params: { path: { id: payoutAccount.id } },
         }),
       )
-      window.open(link.url, '_blank')
+      window.open(link.url, '_blank', 'noopener,noreferrer')
     } finally {
       setIsLoadingDashboard(false)
     }

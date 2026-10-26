@@ -130,16 +130,15 @@ const BenefitGrantOAuth = ({
       return
     }
 
-    setRetryCountdown(seconds)
+    let remaining = seconds
+    setRetryCountdown(remaining)
 
     countdownRef.current = setInterval(() => {
-      setRetryCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownRef.current!)
-          return 0
-        }
-        return prev - 1
-      })
+      remaining -= 1
+      setRetryCountdown(remaining)
+      if (remaining <= 0) {
+        bail()
+      }
     }, 1000)
 
     return bail

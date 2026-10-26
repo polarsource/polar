@@ -1,5 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { withOffsets } from '@/utils/lines'
 
 const isComment = (line: string) => /^\s*(\/\/|#)/.test(line)
 
@@ -35,8 +36,8 @@ export const CodePanel = ({ caption, lines }: CodePanelProps) => (
       {caption}
     </Text>
     <Box flexDirection="column">
-      {lines.map((line, index) => (
-        <CodeLine key={index} line={line} />
+      {withOffsets(lines).map(({ line, offset }) => (
+        <CodeLine key={offset} line={line} />
       ))}
     </Box>
   </Box>

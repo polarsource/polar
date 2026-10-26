@@ -1,6 +1,6 @@
 'use client'
 
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { useSelectedLayoutSegment } from 'next/navigation'
 import { twMerge } from 'tailwind-merge'
 
@@ -18,7 +18,7 @@ export const MasterDetailLayout = ({
   const isIndexPage = !useSelectedLayoutSegment()
 
   return (
-    <motion.div
+    <m.div
       className={twMerge(
         'flex h-full w-full flex-row gap-x-2',
         placement === 'right' ? 'flex-row-reverse' : '',
@@ -28,7 +28,7 @@ export const MasterDetailLayout = ({
       exit="exit"
     >
       {listView ? (
-        <motion.div
+        <m.div
           variants={{
             initial: { opacity: 0 },
             animate: { opacity: 1, transition: { duration: 0.3 } },
@@ -40,7 +40,7 @@ export const MasterDetailLayout = ({
           )}
         >
           {listView}
-        </motion.div>
+        </m.div>
       ) : null}
 
       <div
@@ -49,7 +49,7 @@ export const MasterDetailLayout = ({
           isIndexPage && 'hidden md:flex',
         )}
       >
-        <motion.div
+        <m.div
           className={twMerge(
             'flex h-full w-full max-w-(--breakpoint-xl) flex-col',
             wrapperClassName,
@@ -61,9 +61,9 @@ export const MasterDetailLayout = ({
           }}
         >
           {children}
-        </motion.div>
+        </m.div>
       </div>
-    </motion.div>
+    </m.div>
   )
 }
 

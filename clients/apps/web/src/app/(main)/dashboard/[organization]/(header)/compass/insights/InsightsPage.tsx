@@ -4,7 +4,7 @@ import { CompassTabs } from '@/components/Compass/CompassTabs'
 import { CompassWidget } from '@/components/Compass/CompassWidget'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { schemas } from '@polar-sh/client'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 
 interface InsightsPageProps {
   organization: schemas['Organization']
@@ -17,7 +17,7 @@ export default function InsightsPage({ organization }: InsightsPageProps) {
       header={<CompassTabs organization={organization} active="insights" />}
       wrapperClassName="max-w-3xl!"
     >
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -28,7 +28,7 @@ export default function InsightsPage({ organization }: InsightsPageProps) {
           layout="column"
           groupBySeverity
         />
-      </motion.div>
+      </m.div>
     </DashboardBody>
   )
 }

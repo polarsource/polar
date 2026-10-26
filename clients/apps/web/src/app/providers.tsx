@@ -6,6 +6,7 @@ import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
 import { redactClaimTokens } from '@/utils/telemetry'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { domAnimation, LazyMotion } from 'motion/react'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
@@ -98,4 +99,8 @@ export function PolarQueryClientProvider({
 
 export function PolarNuqsProvider({ children }: PropsWithChildren) {
   return <NuqsAdapter>{children}</NuqsAdapter>
+}
+
+export function PolarMotionProvider({ children }: PropsWithChildren) {
+  return <LazyMotion features={domAnimation}>{children}</LazyMotion>
 }

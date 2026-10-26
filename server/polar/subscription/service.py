@@ -1883,6 +1883,18 @@ class SubscriptionService:
                 ]
             )
 
+        if not product.is_current:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is no longer sold. Use the current version.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
         if product.visibility not in allowed_visibilities:
             raise PolarRequestValidationError(
                 [

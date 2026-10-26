@@ -1,7 +1,7 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import React from 'react'
 import { useAppealCaseUnreadCount } from './appealCaseUnread'
 
@@ -15,7 +15,7 @@ export const AppealCaseUnreadBadge = ({
   if (unread === 0) return null
 
   return (
-    <motion.span
+    <m.span
       initial={{ scale: 0.5, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}

@@ -8,7 +8,7 @@ import { usePostHog } from '@/hooks/posthog'
 import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
 import { Button, Grid, Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
@@ -166,7 +166,7 @@ const NavMenuPanel = ({
     paddingBottom="3xl"
     paddingHorizontal="3xl"
   >
-    <motion.div
+    <m.div
       style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
@@ -215,7 +215,7 @@ const NavMenuPanel = ({
           ))}
         </Grid>
       </Grid>
-    </motion.div>
+    </m.div>
   </Box>
 )
 

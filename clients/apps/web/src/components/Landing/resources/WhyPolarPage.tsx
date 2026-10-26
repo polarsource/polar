@@ -317,9 +317,9 @@ export const WhyPolarPage = () => {
             </p>
           </div>
           <div className="dark:border-polar-700 dark:divide-polar-700 grid grid-cols-3 items-center divide-x divide-gray-200 border border-gray-200">
-            {logos.map(({ logo, href }, index) => (
+            {logos.map(({ logo, href }) => (
               <Link
-                key={index}
+                key={href}
                 className="dark:hover:bg-polar-800 flex h-full items-center justify-center p-4 hover:bg-gray-100"
                 href={href}
                 target="_blank"

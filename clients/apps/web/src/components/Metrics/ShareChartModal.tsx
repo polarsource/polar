@@ -77,10 +77,12 @@ export const ShareChartModal = ({
     domtoimage.toBlob(chartRef.current, params).then((blob) => {
       if (!blob) return
 
+      const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = URL.createObjectURL(blob)
+      link.href = objectUrl
       link.download = 'polar-chart.png'
       link.click()
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
 
       toast({
         title: 'Downloaded Image',

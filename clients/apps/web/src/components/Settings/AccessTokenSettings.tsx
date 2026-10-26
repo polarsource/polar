@@ -20,14 +20,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@polar-sh/ui/components/ui/alert-dialog'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from '../Toast/use-toast'
 
 const AccessToken = (props: schemas['PersonalAccessToken']) => {
   const deleteToken = useDeletePersonalAccessToken()
+  const [now] = useState(() => Date.now())
+  const { id, comment } = props
 
   const onDelete = useCallback(async () => {
-    deleteToken.mutateAsync({ id: props.id }).then(({ error }) => {
+    deleteToken.mutateAsync({ id }).then(({ error }) => {
       if (error) {
         toast({
           title: 'Access Token Deletion Failed',
@@ -37,10 +39,10 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
       }
       toast({
         title: 'Access Token Deleted',
-        description: `Access Token ${props.comment} was deleted successfully`,
+        description: `Access Token ${comment} was deleted successfully`,
       })
     })
-  }, [deleteToken, props])
+  }, [deleteToken, id, comment])
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -50,7 +52,7 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
             <h3 className="text-md truncate">{props.comment}</h3>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               {props.expires_at ? (
-                new Date(props.expires_at) < new Date() ? (
+                new Date(props.expires_at).getTime() < now ? (
                   <span className="text-red-500 dark:text-red-400">
                     Expired on{' '}
                     <FormattedDateTime

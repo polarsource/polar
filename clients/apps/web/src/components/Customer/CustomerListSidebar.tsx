@@ -96,7 +96,7 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
       window.location.origin,
     )
 
-    window.open(url, '_blank')
+    window.open(url, '_blank', 'noopener,noreferrer')
   }, [organization.id])
 
   const selectedCustomerId = useMemo(() => {

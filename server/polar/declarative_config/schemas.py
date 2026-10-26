@@ -351,6 +351,15 @@ class Config(Schema):
         default=None,
         description="Organization settings to update. Left untouched when omitted.",
     )
+    catalog_name: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=256,
+        description=(
+            "Name of the catalog version this apply publishes, if it publishes one. "
+            "It doesn't change the version hash."
+        ),
+    )
 
     meters: list[ConfigMeter] = Field(
         default_factory=list,
@@ -449,8 +458,18 @@ class ConfigSettingsResult(Schema):
     action: ConfigAction = Field(description="What applying the config does.")
 
 
+class ConfigCatalogChange(Schema):
+    before: str | None = Field(
+        description="Version hash of the live catalog before applying."
+    )
+    after: str = Field(description="Version hash of the live catalog after applying.")
+
+
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
+    catalog: ConfigCatalogChange | None = Field(
+        description="The published catalog, if applying published a new one."
+    )
     settings: ConfigSettingsResult | None = Field(
         description="Result for `settings`, if in the config."
     )
@@ -479,6 +498,9 @@ class ConfigSettingsChange(ConfigSettingsResult):
 
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
+    catalog: ConfigCatalogChange | None = Field(
+        description="The catalog that applying publishes, if any."
+    )
     settings: ConfigSettingsChange | None = Field(
         description="Change for `settings`, if in the config."
     )

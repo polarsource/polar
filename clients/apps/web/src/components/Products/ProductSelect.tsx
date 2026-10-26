@@ -154,10 +154,8 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
     >(
       (acc, product) => {
         const type = product.is_recurring ? 'recurring' : 'one_time'
-        return {
-          ...acc,
-          [type]: [...acc[type], product],
-        }
+        acc[type].push(product)
+        return acc
       },
       {
         one_time: [],

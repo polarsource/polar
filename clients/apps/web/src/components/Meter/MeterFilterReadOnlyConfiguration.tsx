@@ -1,5 +1,6 @@
 'use client'
 
+import { keyByContent } from '@/utils/keys'
 import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 
@@ -100,11 +101,11 @@ const FilterGroupDisplay = ({
         </div>
       )}
       <ShadowBox className="flex flex-col gap-3 rounded-2xl! p-4">
-        {filter.clauses.map((clause, index) => {
+        {keyByContent(filter.clauses).map(({ item: clause, key }, index) => {
           if (isFilterClause(clause)) {
             return (
               <FilterClauseDisplay
-                key={index}
+                key={key}
                 clause={clause}
                 showConjunction={index > 0}
                 conjunction={filter.conjunction}
@@ -113,7 +114,7 @@ const FilterGroupDisplay = ({
           } else {
             return (
               <FilterGroupDisplay
-                key={index}
+                key={key}
                 filter={clause}
                 showConjunction={index > 0}
                 conjunction={filter.conjunction}
@@ -148,31 +149,33 @@ const MeterFilterReadOnlyConfiguration = ({
         <div className="flex flex-col gap-3">
           <h3 className="text-sm font-medium">Filters</h3>
           <div className="flex flex-col gap-3">
-            {filter.clauses.map((clause, index) => {
-              if (isFilterClause(clause)) {
-                return (
-                  <ShadowBox
-                    className="flex flex-col gap-3 rounded-2xl! p-4"
-                    key={index}
-                  >
-                    <FilterClauseDisplay
-                      clause={clause}
+            {keyByContent(filter.clauses).map(
+              ({ item: clause, key }, index) => {
+                if (isFilterClause(clause)) {
+                  return (
+                    <ShadowBox
+                      className="flex flex-col gap-3 rounded-2xl! p-4"
+                      key={key}
+                    >
+                      <FilterClauseDisplay
+                        clause={clause}
+                        showConjunction={index > 0}
+                        conjunction={filter.conjunction}
+                      />
+                    </ShadowBox>
+                  )
+                } else {
+                  return (
+                    <FilterGroupDisplay
+                      key={key}
+                      filter={clause}
                       showConjunction={index > 0}
                       conjunction={filter.conjunction}
                     />
-                  </ShadowBox>
-                )
-              } else {
-                return (
-                  <FilterGroupDisplay
-                    key={index}
-                    filter={clause}
-                    showConjunction={index > 0}
-                    conjunction={filter.conjunction}
-                  />
-                )
-              }
-            })}
+                  )
+                }
+              },
+            )}
           </div>
         </div>
       )}

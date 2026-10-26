@@ -4,7 +4,6 @@ import {
   useOrganizationAppeal,
   useOrganizationReviewStatus,
 } from '@/hooks/queries/org'
-import { getQueryClient } from '@/utils/api/query'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Textarea } from '@polar-sh/orbit/ui/textarea'
@@ -60,9 +59,6 @@ const AppealForm: React.FC<AppealFormProps> = ({
 
     try {
       await appealMutation.mutateAsync({ reason: appealReason })
-      getQueryClient().invalidateQueries({
-        queryKey: ['organizationReviewStatus', organization.id],
-      })
     } catch (error) {
       console.error('Failed to submit appeal:', error)
     }

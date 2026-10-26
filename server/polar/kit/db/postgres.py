@@ -63,14 +63,10 @@ def create_async_engine(
         "statement_cache_size": statement_cache_size,
         "prepared_statement_cache_size": prepared_statement_cache_size,
     }
-    server_settings: dict[str, str] = {}
     if application_name is not None:
-        server_settings["application_name"] = application_name
+        connect_args["server_settings"] = {"application_name": application_name}
     if command_timeout is not None:
         connect_args["command_timeout"] = command_timeout
-        server_settings["statement_timeout"] = str(int(command_timeout * 1000))
-    if server_settings:
-        connect_args["server_settings"] = server_settings
     if connect_timeout is not None:
         connect_args["timeout"] = connect_timeout
     if ssl is not None:

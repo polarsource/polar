@@ -51,6 +51,9 @@ const RECONNECT_DELAY = 500;
 const MAX_RECONNECT_DELAY = 30_000;
 const REDIS_RECONNECT_DELAY = 100;
 const MAX_REDIS_RECONNECT_DELAY = 2_000;
+// Every key and the channel carry the layout version. A new layout takes a new version, starts
+// cold from Polar's snapshot and never reads the previous keys.
+const KEY_VERSION = "outpost:v1";
 const BUCKET_PREFIX = "bucket:";
 const PENDING_PREFIX = "pending:";
 const COLD_PREFIX = "cold:";
@@ -264,21 +267,30 @@ const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): v
   for (let index = 0; index < replaced.length; index += 2)
     fields[replaced[index]] = replaced[index + 1];
   if (fields.cold_until === undefined) return;
+  const previous = Number(fields.cold_until);
   const local = emptyStatistics();
   const buckets = new Map<string, BucketStatistics>();
+  const pending = new Map<string, BucketStatistics>();
   for (const [field, value] of Object.entries(fields)) {
     if (field.startsWith(COLD_PREFIX)) {
       local[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(value);
-    } else if (field.startsWith("bucket:")) {
-      const [, start, statistic] = field.split(":");
-      const bucket = buckets.get(start) ?? emptyStatistics();
-      bucket[statistic as keyof BucketStatistics] = number(value);
-      buckets.set(start, bucket);
+      continue;
     }
+    const [kind, start, statistic] = field.split(":");
+    if (kind !== "bucket" && kind !== "pending") continue;
+    const group = kind === "bucket" ? buckets : pending;
+    const statistics = group.get(start) ?? emptyStatistics();
+    statistics[statistic as keyof BucketStatistics] = number(value);
+    group.set(start, statistics);
   }
-  for (const bucket of buckets.values()) addStatistics(local, bucket);
+  // A bucket already cold before this snapshot was read by its pending part only.
+  for (const [start, bucket] of buckets)
+    addStatistics(
+      local,
+      Number(start) < previous ? (pending.get(start) ?? emptyStatistics()) : bucket,
+    );
   span.setAttributes({
-    "outpost.local.cold_until": Number(fields.cold_until),
+    "outpost.local.cold_until": previous,
     "outpost.local.count": local.count,
     "outpost.local.sum": local.sum,
     "outpost.snapshot.count": snapshot.count,
@@ -442,7 +454,7 @@ export class Outpost {
       ).catch((error: unknown) => {
         throw redisUnavailable(error);
       });
-      this.channel = `outpost:${this.redis.options.db}:updates`;
+      this.channel = `${KEY_VERSION}:${this.redis.options.db}:updates`;
       this.subscriber = this.redis.duplicate({ lazyConnect: true, autoResubscribe: false });
       const subscriber = this.subscriber;
       this.subscriber.on("error", () => {});
@@ -553,8 +565,8 @@ export class Outpost {
         const identity = `${update.customer}:${update.reducer}`;
         const statistics = update.statistics;
         pipeline.outpostWriteBucket(
-          `outpost:state:${identity}`,
-          `outpost:pending:${identity}:${update.bucketStart}`,
+          `${KEY_VERSION}:state:${identity}`,
+          `${KEY_VERSION}:pending:${identity}:${update.bucketStart}`,
           identity,
           this.channel,
           generateEpoch(),
@@ -629,8 +641,8 @@ export class Outpost {
     const pipeline = redis.pipeline() as OutpostPipeline;
     for (const { identity, bucketStart, ids } of confirmations)
       pipeline.outpostConfirm(
-        `outpost:state:${identity}`,
-        `outpost:pending:${identity}:${bucketStart}`,
+        `${KEY_VERSION}:state:${identity}`,
+        `${KEY_VERSION}:pending:${identity}:${bucketStart}`,
         identity,
         this.channel,
         generateEpoch(),
@@ -873,7 +885,7 @@ export class Outpost {
     const epoch = generateEpoch();
     return decodeState(
       await this.requireRedis()
-        .outpostReadState(`outpost:state:${customer}`, epoch)
+        .outpostReadState(`${KEY_VERSION}:state:${customer}`, epoch)
         .catch((error: unknown) => {
           throw redisUnavailable(error);
         }),
@@ -1133,7 +1145,7 @@ export class Outpost {
     const redis = this.requireRedis();
     const reducerId = identity.slice(customer.length + 1);
     for (const bucketStart of sealed) {
-      const ids = await redis.hkeys(`outpost:pending:${identity}:${bucketStart}`);
+      const ids = await redis.hkeys(`${KEY_VERSION}:pending:${identity}:${bucketStart}`);
       for (let offset = 0; offset < ids.length; offset += CONFIRM_BATCH) {
         const batch = ids.slice(offset, offset + CONFIRM_BATCH);
         try {
@@ -1186,7 +1198,7 @@ export class Outpost {
     confirmation?: Confirmation,
     answered = false,
   ): Promise<void> {
-    const key = `outpost:state:${identity}`;
+    const key = `${KEY_VERSION}:state:${identity}`;
     const snapshotArguments: (string | number)[] = [
       identity,
       this.channel,
@@ -1211,7 +1223,7 @@ export class Outpost {
           for (const [bucketStart, ids] of confirmed)
             transaction.outpostConfirm(
               key,
-              `outpost:pending:${identity}:${bucketStart}`,
+              `${KEY_VERSION}:pending:${identity}:${bucketStart}`,
               identity,
               this.channel,
               generateEpoch(),

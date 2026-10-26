@@ -45,9 +45,10 @@ class SetCapabilityModal:
                 with tag.div(classes="alert"):
                     with tag.span(classes="text-sm"):
                         text(
-                            "Overrides persist until the next status transition, "
-                            "at which point the capability resets to the status "
-                            "default."
+                            "Status changes keep this override, unless it "
+                            "matches the default of the status being left: e.g. "
+                            "checkout disabled on a blocked or denied "
+                            "organization comes back on when it is reactivated."
                         )
 
                 def _state(v: bool) -> str:

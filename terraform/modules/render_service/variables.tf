@@ -210,7 +210,7 @@ variable "environment_groups" {
     })
     slo_report = object({
       POLAR_SLACK_BOT_TOKEN = string
-      POLAR_SLACK_CHANNEL   = string
+      POLAR_SLACK_CHANNEL   = optional(string)
     })
     tinybird = object({
       POLAR_TINYBIRD_API_URL             = string
@@ -225,7 +225,6 @@ variable "environment_groups" {
       POLAR_POLAR_ACCESS_TOKEN     = string
       POLAR_POLAR_WEBHOOK_SECRET   = string
       POLAR_POLAR_ORGANIZATION_ID  = string
-      POLAR_POLAR_FREE_PRODUCT_ID  = string
       POLAR_POLAR_API_URL          = string
       POLAR_POLAR_SCALE_PRODUCT_ID = string
     })

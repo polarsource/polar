@@ -3,10 +3,10 @@ output "planetscale" {
   value       = module.planetscale
 }
 
-# output "planetscale_migration" {
-#   description = "Sandbox pgcopydb migration instance."
-#   value       = module.planetscale_migration
-# }
+output "planetscale_migration" {
+  description = "Sandbox pgcopydb migration instance."
+  value       = module.planetscale_migration
+}
 
 output "lambda_worker_ecr_repository_url" {
   description = "ECR repository URL for the sandbox Lambda worker image."

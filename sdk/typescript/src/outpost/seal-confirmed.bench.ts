@@ -46,9 +46,9 @@ describe("CONFIRM then APPLY_SNAPSHOT", () => {
   for (const buckets of BUCKET_COUNTS) {
     for (const pending of PENDING_COUNTS) {
       const identity = identityOf(buckets, pending);
-      const stateKey = `outpost:state:${identity}`;
+      const stateKey = `outpost:v1:state:${identity}`;
       const newestBucketStart = COLD_UNTIL + (buckets - 1) * BUCKET_SIZE;
-      const pendingKey = `outpost:pending:${identity}:${newestBucketStart}`;
+      const pendingKey = `outpost:v1:pending:${identity}:${newestBucketStart}`;
       const ids = pendingIds(pending);
       const fields = [...encodeState(buckets), ...encodePending(newestBucketStart, pending)];
       const entries = pendingEntries(ids);

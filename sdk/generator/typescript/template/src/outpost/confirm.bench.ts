@@ -18,8 +18,8 @@ import { startRedisServer, type RedisServer } from "./testing";
 const OPTIONS = { warmupTime: 500, time: 2_000 };
 
 const identityOf = (pending: number) => `external:alice:tokens-${pending}`;
-const stateKeyOf = (pending: number) => `outpost:state:${identityOf(pending)}`;
-const pendingKeyOf = (pending: number) => `outpost:pending:${identityOf(pending)}:${COLD_UNTIL}`;
+const stateKeyOf = (pending: number) => `outpost:v1:state:${identityOf(pending)}`;
+const pendingKeyOf = (pending: number) => `outpost:v1:pending:${identityOf(pending)}:${COLD_UNTIL}`;
 
 let redisServer: RedisServer;
 let redis: Redis;

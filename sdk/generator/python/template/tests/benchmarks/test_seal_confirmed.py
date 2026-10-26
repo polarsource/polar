@@ -40,9 +40,9 @@ def test_apply_snapshot_after_confirm(
     confirm_sha = redis.script_load(CONFIRM_SCRIPT)
     apply_snapshot_sha = redis.script_load(APPLY_SNAPSHOT_SCRIPT)
     identity = f"external:alice:tokens-{buckets}-{pending}"
-    state_key = f"outpost:state:{identity}"
+    state_key = f"outpost:v1:state:{identity}"
     newest_bucket_start = COLD_UNTIL + (buckets - 1) * BUCKET_SIZE
-    pending_key = f"outpost:pending:{identity}:{newest_bucket_start}"
+    pending_key = f"outpost:v1:pending:{identity}:{newest_bucket_start}"
     ids = pending_ids(pending)
     fields = encode_state(buckets) + encode_pending(newest_bucket_start, pending)
     entries = pending_entries(ids)

@@ -254,11 +254,6 @@ variable "polar_organization_id" {
   type        = string
 }
 
-variable "polar_free_product_id" {
-  description = "Polar free-tier product ID"
-  type        = string
-}
-
 variable "polar_scale_product_id" {
   description = "Polar Scale-tier product ID"
   type        = string
@@ -498,5 +493,12 @@ variable "linear_team_id" {
 variable "linear_payout_amount_mismatch_template_id" {
   description = "Linear payout amount mismatch issue template ID"
   type        = string
+  default     = ""
+}
+
+variable "slo_report_slack_bot_token" {
+  description = "Slack Bot Token, shared with production"
+  type        = string
+  sensitive   = true
   default     = ""
 }

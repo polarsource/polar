@@ -3,6 +3,7 @@ import { useModal } from '@/components/Modal/useModal'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDeleteProduct, useMetrics, useUpdateProduct } from '@/hooks/queries'
 import { apiErrorToast, extractApiErrorMessage } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
@@ -82,6 +83,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
 
   const updateProduct = useUpdateProduct(organization)
   const deleteProduct = useDeleteProduct(organization)
+  const managedAsCode = useIsManagedAsCode(organization.id)
   const router = useRouter()
 
   const {
@@ -195,7 +197,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
         }
         header={
           <div className="flex flex-row items-center justify-between gap-2">
-            {product.is_archived ? null : (
+            {product.is_archived || managedAsCode ? null : (
               <div>
                 <Button
                   variant="secondary"
@@ -245,23 +247,30 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                       >
                         Integrate Checkout
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => {
-                          router.push(
-                            `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
-                          )
-                        }}
-                      >
-                        Duplicate Product
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem destructive onClick={showArchiveModal}>
-                        Archive Product
-                      </DropdownMenuItem>
+                      {!managedAsCode && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              router.push(
+                                `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                              )
+                            }}
+                          >
+                            Duplicate Product
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            destructive
+                            onClick={showArchiveModal}
+                          >
+                            Archive Product
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </>
                   )}
-                  {product.is_archived && (
+                  {product.is_archived && !managedAsCode && (
                     <>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={showUnarchiveModal}>

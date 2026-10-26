@@ -38,8 +38,8 @@ def test_confirm_pending_events(
 ) -> None:
     sha = redis.script_load(CONFIRM_SCRIPT)
     identity = identity_of(pending)
-    state_key = f"outpost:state:{identity}"
-    pending_key = f"outpost:pending:{identity}:{COLD_UNTIL}"
+    state_key = f"outpost:v1:state:{identity}"
+    pending_key = f"outpost:v1:pending:{identity}:{COLD_UNTIL}"
     ids = pending_ids(pending)
     fields = encode_state(1) + encode_pending(COLD_UNTIL, pending)
     entries = pending_entries(ids)

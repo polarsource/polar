@@ -181,7 +181,7 @@ variable "prometheus_config" {
 variable "slo_report_config" {
   type = object({
     slack_bot_token = string
-    slack_channel   = string
+    slack_channel   = optional(string)
   })
   default   = null
   sensitive = true
@@ -192,7 +192,6 @@ variable "polar_self_config" {
     access_token     = string
     webhook_secret   = string
     organization_id  = string
-    free_product_id  = string
     scale_product_id = string
     api_url          = string
   })

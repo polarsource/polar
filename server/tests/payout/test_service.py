@@ -22,7 +22,11 @@ from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Account, Organization, Payout, Transaction, User
-from polar.models.organization import OrganizationStatus, PayoutAccountNotReady
+from polar.models.organization import (
+    STATUS_CAPABILITIES,
+    OrganizationStatus,
+    PayoutAccountNotReady,
+)
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.transaction import Processor, TransactionType
@@ -178,7 +182,7 @@ class TestCreate:
     ) -> None:
         # Bypass set_status's transition validation to seed any starting status.
         organization.status = status
-        organization.set_status(status)
+        organization.capabilities = {**STATUS_CAPABILITIES[status]}
         await save_fixture(organization)
 
         payout_account = await create_payout_account(save_fixture, organization, user)
@@ -221,7 +225,7 @@ class TestCreate:
         enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
 
         organization.status = status
-        organization.set_status(status)
+        organization.capabilities = {**STATUS_CAPABILITIES[status]}
         await save_fixture(organization)
 
         await create_payout_account(save_fixture, organization, user)

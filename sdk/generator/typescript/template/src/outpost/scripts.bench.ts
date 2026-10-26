@@ -12,7 +12,7 @@ const OPTIONS = { warmupTime: 500, time: 2_000 };
 // One event usually matches several reducers; ingest sends their WRITE_BUCKET calls in one pipeline.
 const REDUCERS = ["tokens", "calls", "cost"];
 
-const stateKey = (identity: string) => `outpost:state:${identity}`;
+const stateKey = (identity: string) => `outpost:v1:state:${identity}`;
 const identityOf = (buckets: number) => `external:alice:tokens-${buckets}`;
 const keyOf = (buckets: number) => stateKey(identityOf(buckets));
 // An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count.

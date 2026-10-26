@@ -96,21 +96,28 @@ def _report_local_value(
     fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
     if "cold_until" not in fields:
         return
+    previous = int(fields["cold_until"])
     local = BucketStatistics()
     buckets: dict[str, BucketStatistics] = {}
+    pending: dict[str, BucketStatistics] = {}
     for field, value in fields.items():
         if field.startswith("cold:"):
             setattr(local, field.removeprefix("cold:"), _number(value))
-        elif field.startswith("bucket:"):
-            _, start, statistic = field.split(":")
-            setattr(
-                buckets.setdefault(start, BucketStatistics()), statistic, _number(value)
-            )
-    for bucket in buckets.values():
-        local.add(bucket)
+            continue
+        kind, _, rest = field.partition(":")
+        if kind not in ("bucket", "pending"):
+            continue
+        start, _, statistic = rest.partition(":")
+        group = buckets if kind == "bucket" else pending
+        setattr(group.setdefault(start, BucketStatistics()), statistic, _number(value))
+    # A bucket already cold before this snapshot was read by its pending part only.
+    for start, bucket in buckets.items():
+        local.add(
+            pending.get(start, BucketStatistics()) if int(start) < previous else bucket
+        )
     span.set_attributes(
         {
-            "outpost.local.cold_until": int(fields["cold_until"]),
+            "outpost.local.cold_until": previous,
             "outpost.local.count": local.count,
             "outpost.local.sum": local.sum,
             "outpost.snapshot.count": snapshot["count"],
@@ -208,6 +215,9 @@ async def connect_websocket(
         yield websocket
 
 
+# Every key and the channel carry the layout version. A new layout takes a new version, starts
+# cold from Polar's snapshot and never reads the previous keys.
+KEY_VERSION = "outpost:v1"
 CACHE_SIZE = 1024
 REDIS_TIMEOUT = 5.0
 REDIS_RECONNECT_DELAY = 0.1
@@ -224,6 +234,7 @@ READ_STATE_SCRIPT = """
 if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[1], 'revision', '0')
 end
+redis.call('EXPIRE', KEYS[1], 86400)
 return redis.call('HGETALL', KEYS[1])
 """
 
@@ -280,13 +291,16 @@ for _, prefix in ipairs({bucket, pending}) do
         end
     end
 end
--- Events nobody confirms are forgotten an hour after the last write to their bucket.
+-- Events nobody confirms are forgotten an hour after the last write to their bucket. A state
+-- nobody reads, writes or snapshots for a day is forgotten too: the next read rebuilds it from
+-- Polar's snapshot.
 redis.call('EXPIRE', KEYS[2], 3900)
 
 if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
+redis.call('EXPIRE', KEYS[1], 86400)
 local update = reply()
 redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], bucket = update}))
 return update
@@ -375,6 +389,7 @@ if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
+redis.call('EXPIRE', KEYS[1], 86400)
 -- A confirmation can drop a bucket, which a bucket update cannot express: send the whole state.
 local state = redis.call('HGETALL', KEYS[1])
 redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
@@ -398,8 +413,9 @@ local previous = fields['snapshot_version']
 if not previous or version >= tonumber(previous) then
     if current then replaced = {'cold_until', current} end
     -- Polar's totals now cover the buckets before the cutoff. The local copy of each is
-    -- reported, and kept while events Polar has not confirmed remain pending in it, for an
-    -- hour at most: its pending part is what the local read adds on top of Polar's totals.
+    -- reported with its pending part, and kept while events Polar has not confirmed remain
+    -- pending in it, for an hour at most: that pending part is what the local read adds on
+    -- top of Polar's totals.
     local function sealed(start)
         local pending = fields['pending:' .. start .. ':count']
         return not pending or tonumber(pending) <= 0 or tonumber(start) + 3600000000 < cutoff
@@ -413,10 +429,8 @@ if not previous or version >= tonumber(previous) then
         else
             local kind, start = string.match(field, '^(%a+):(%-?%d+):')
             if (kind == 'bucket' or kind == 'pending') and tonumber(start) < cutoff then
-                if kind == 'bucket' then
-                    table.insert(replaced, field)
-                    table.insert(replaced, value)
-                end
+                table.insert(replaced, field)
+                table.insert(replaced, value)
                 if sealed(start) then table.insert(dropped, field) end
             end
         end
@@ -439,6 +453,7 @@ if not fields['epoch'] then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
+redis.call('EXPIRE', KEYS[1], 86400)
 state = redis.call('HGETALL', KEYS[1])
 redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
 return {state, replaced}
@@ -508,21 +523,31 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
 # Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
 # them, and every local event in the buckets Polar has not sealed yet.
 def consumed_units(state: ReducerState, func: str) -> int | float:
-    assert state.cold_until is not None
-    combined = dataclasses.replace(state.cold)
-    for bucket_start, statistics in state.pending.items():
-        if bucket_start < state.cold_until:
-            combined.add(statistics)
-    for bucket_start, statistics in state.buckets.items():
-        if bucket_start >= state.cold_until:
-            combined.add(statistics)
-    return combined.quantity(func)
+    cold_until = state.cold_until
+    assert cold_until is not None
+    cold = state.cold
+    count, total, low, high = cold.count, cold.sum, cold.min, cold.max
+    parts = [s for start, s in state.pending.items() if start < cold_until]
+    parts += [s for start, s in state.buckets.items() if start >= cold_until]
+    for statistics in parts:
+        count += statistics.count
+        total += statistics.sum
+        if statistics.min is not None and (low is None or statistics.min < low):
+            low = statistics.min
+        if statistics.max is not None and (high is None or statistics.max > high):
+            high = statistics.max
+    if isinstance(total, float) and not math.isfinite(total):
+        raise ValueError("Aggregation values must be finite")
+    return BucketStatistics(count, total, low, high).quantity(func)
 
 
 @dataclasses.dataclass
 class LocalState:
     state: ReducerState | None = None
-    lock: anyio.Lock = dataclasses.field(default_factory=anyio.Lock)
+    # Uncontended, the lock is taken without yielding to the event loop.
+    lock: anyio.Lock = dataclasses.field(
+        default_factory=functools.partial(anyio.Lock, fast_acquire=True)
+    )
     missing: bool = False
     changed: anyio.Event = dataclasses.field(default_factory=anyio.Event)
 
@@ -651,7 +676,7 @@ class Outpost:
                 self._redis = await self._stack.enter_async_context(
                     connect_redis(self.redis_url)
                 )
-            self._channel = f"outpost:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
+            self._channel = f"{KEY_VERSION}:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
             self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
             self._confirm_script = self._redis.register_script(CONFIRM_SCRIPT)
@@ -755,25 +780,36 @@ class Outpost:
             await self._warm_actor(parsed.external_customer_id)
             assert self._redis is not None
             writes: list[tuple[str, list[str | int | float]]] = []
-            async with self._redis.pipeline(transaction=False) as pipeline:
-                for (customer, reducer_id, bucket_start), statistics in updates.items():
-                    identity = f"{customer}:{reducer_id}"
-                    arguments: list[str | int | float] = [
-                        f"outpost:state:{identity}",
-                        f"outpost:pending:{identity}:{bucket_start}",
-                        identity,
-                        self._channel,
-                        _generate_epoch(),
-                        bucket_start,
-                        statistics.count,
-                        statistics.sum,
-                        statistics.min if statistics.min is not None else "",
-                        statistics.max if statistics.max is not None else "",
-                        typing.cast(str, event["external_id"]),
+            for (customer, reducer_id, bucket_start), statistics in updates.items():
+                identity = f"{customer}:{reducer_id}"
+                arguments: list[str | int | float] = [
+                    f"{KEY_VERSION}:state:{identity}",
+                    f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
+                    identity,
+                    self._channel,
+                    _generate_epoch(),
+                    bucket_start,
+                    statistics.count,
+                    statistics.sum,
+                    statistics.min if statistics.min is not None else "",
+                    statistics.max if statistics.max is not None else "",
+                    typing.cast(str, event["external_id"]),
+                ]
+                writes.append((identity, arguments))
+            # Most events match one reducer: one EVALSHA writes its bucket. A pipeline only
+            # pays off for several writes, and closing it costs two extra event-loop turns.
+            if len(writes) == 1:
+                try:
+                    states = [
+                        await self._redis.evalsha(WRITE_BUCKET_SHA, 2, *writes[0][1])
                     ]
-                    writes.append((identity, arguments))
-                    pipeline.evalsha(WRITE_BUCKET_SHA, 2, *arguments)
-                states = await pipeline.execute(raise_on_error=False)
+                except NoScriptError as error:
+                    states = [error]
+            else:
+                async with self._redis.pipeline(transaction=False) as pipeline:
+                    for _, arguments in writes:
+                        pipeline.evalsha(WRITE_BUCKET_SHA, 2, *arguments)
+                    states = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for (identity, arguments), state in zip(writes, states, strict=True):
                 # Redis caches the script with the first EVAL, so this happens once per server.
@@ -843,8 +879,8 @@ class Outpost:
         async with self._redis.pipeline(transaction=False) as pipeline:
             for (identity, bucket_start), ids in groups.items():
                 arguments: list[str | int] = [
-                    f"outpost:state:{identity}",
-                    f"outpost:pending:{identity}:{bucket_start}",
+                    f"{KEY_VERSION}:state:{identity}",
+                    f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
                     identity,
                     self._channel,
                     _generate_epoch(),
@@ -1120,7 +1156,7 @@ class Outpost:
         assert self._read_state is not None
         epoch = _generate_epoch()
         state = await self._read_state(
-            keys=[f"outpost:state:{customer}"],
+            keys=[f"{KEY_VERSION}:state:{customer}"],
             args=[epoch],
         )
         return decode_state(state)
@@ -1380,7 +1416,9 @@ class Outpost:
         reducer_id = identity[len(customer) + 1 :]
         assert self._redis is not None
         for bucket_start in sealed:
-            ids = await self._redis.hkeys(f"outpost:pending:{identity}:{bucket_start}")
+            ids = await self._redis.hkeys(
+                f"{KEY_VERSION}:pending:{identity}:{bucket_start}"
+            )
             for offset in range(0, len(ids), CONFIRM_BATCH):
                 batch = [
                     external_id.decode()
@@ -1451,7 +1489,7 @@ class Outpost:
         assert self._redis is not None
         assert self._apply_snapshot is not None
         assert self._confirm_script is not None
-        key = f"outpost:state:{identity}"
+        key = f"{KEY_VERSION}:state:{identity}"
         snapshot_arguments: list[str | int | float] = [
             identity,
             self._channel,
@@ -1484,7 +1522,10 @@ class Outpost:
                 async with self._redis.pipeline(transaction=True) as pipeline:
                     for bucket_start, ids in confirmed.items():
                         await self._confirm_script(
-                            keys=[key, f"outpost:pending:{identity}:{bucket_start}"],
+                            keys=[
+                                key,
+                                f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
+                            ],
                             args=[
                                 identity,
                                 self._channel,

@@ -911,6 +911,54 @@ class TestUpdateCustomerMeter:
         assert customer_meter.consumed_units == Decimal(80)
         assert updated is True
 
+    async def test_nested_property_aggregation_with_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer_with_external_id: Customer,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            name="Max Tokens",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="type", operator=FilterOperator.eq, value="llm"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="_llm.total_tokens"
+            ),
+            organization=organization,
+        )
+
+        timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={"type": "llm", "_llm": {"total_tokens": 200}},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=organization,
+            external_customer_id=customer_with_external_id.external_id,
+            metadata={"type": "llm", "_llm": {"total_tokens": 100}},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, customer_with_external_id, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(200)
+        assert updated is True
+
     async def test_notifies_outpost_of_the_reducer(
         self,
         mocker: MockerFixture,

@@ -143,6 +143,7 @@ class DiscountService(ResourceServiceReader[Discount]):
             organization.id,
             OrganizationPermission.products_manage,
         )
+
         repository = DiscountRepository.from_session(session)
 
         if discount_create.code is not None:

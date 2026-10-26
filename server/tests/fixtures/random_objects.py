@@ -9,8 +9,9 @@ from decimal import Decimal
 from typing import Any, Literal, TypeIs, Unpack
 
 import pytest
+from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
 
-from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
+from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
 from polar.enums import (
     EmailSender,
     PaymentProcessor,
@@ -147,6 +148,7 @@ from polar.models.user_organization import OrganizationRole
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
+from polar.oauth2.constants import CLAIM_GRANT_TYPE
 from polar.product.price_set import PriceSet
 from polar.product.tiers import SeatTierType, Tiers, TierType
 from polar.tax.calculation import TaxBreakdownItem
@@ -253,7 +255,15 @@ async def create_agent(
             "client_name": "Test Agent",
             "token_endpoint_auth_method": "none",
             "redirect_uris": [],
-            "scope": " ".join(sorted(UNCLAIMED_AGENT_SCOPES)),
+            "grant_types": [JWT_BEARER_GRANT_TYPE, CLAIM_GRANT_TYPE],
+            "response_types": [],
+            "scope": " ".join(
+                sorted(
+                    CLAIMED_AGENT_SCOPES
+                    if status == AgentStatus.claimed
+                    else UNCLAIMED_AGENT_SCOPES
+                )
+            ),
         }
     )
     agent = Agent(

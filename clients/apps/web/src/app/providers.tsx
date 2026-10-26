@@ -4,6 +4,7 @@ import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
+import { redactClaimTokens } from '@/utils/telemetry'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
@@ -25,6 +26,7 @@ if (typeof window !== 'undefined' && CONFIG.POSTHOG_TOKEN) {
     persistence: cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory',
     bootstrap: distinctId ? { distinctID: distinctId } : undefined,
     disable_surveys: true,
+    before_send: (event) => redactClaimTokens(event),
   })
 }
 

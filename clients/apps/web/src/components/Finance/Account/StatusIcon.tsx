@@ -8,14 +8,13 @@ import type {
 } from '@polar-sh/orbit/theme'
 import { AnimatePresence, motion } from 'motion/react'
 import {
-  CheckIcon,
-  CircleDashedIcon,
-  ClockIcon,
-  MinusIcon,
-  XIcon,
+  Check as CheckIcon,
+  CircleDashed as CircleDashedIcon,
+  Clock as ClockIcon,
   type LucideIcon,
-} from 'lucide-react'
-
+  Minus as MinusIcon,
+  X as XIcon,
+} from '@polar-sh/orbit/icons'
 const WAITING_REASONS: ReadonlySet<schemas['OrganizationReviewCheckReason']> =
   new Set(['external_pending', 'not_authorized'])
 

@@ -13,10 +13,12 @@ import { OrderStatusDisplayTitle } from '@/components/Orders/OrderStatus'
 import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { useProducts, useSelectedProducts } from '@/hooks/queries'
-import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
-import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import HiveOutlined from '@mui/icons-material/HiveOutlined'
+import {
+  CalendarMonthOutlined,
+  DonutLargeOutlined,
+  FileDownloadOutlined,
+  HiveOutlined,
+} from '@polar-sh/orbit/icons'
 import { enums, schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

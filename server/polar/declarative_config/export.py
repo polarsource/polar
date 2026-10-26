@@ -8,30 +8,24 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
-from polar.discount.repository import DiscountRepository
 from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
-    Discount,
     Meter,
     Organization,
     Product,
     ProductPriceMeteredTiers,
 )
 from polar.models.benefit import BenefitType
-from polar.models.discount import DiscountFixed, DiscountPercentage
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
 
 from .schemas import (
     MAXIMUM_BENEFITS,
-    MAXIMUM_DISCOUNTS,
     MAXIMUM_METERS,
     MAXIMUM_PRODUCTS,
     ConfigBenefit,
     ConfigBenefitRead,
-    ConfigDiscount,
-    ConfigDiscountRead,
     ConfigExport,
     ConfigExportDocument,
     ConfigMeter,
@@ -48,12 +42,10 @@ from .validation import benefit_properties, price_config
 
 # Webhook endpoints stay out: they need a permission and scope that
 # unclaimed agents don't have. Apply leaves unlisted endpoints untouched.
-EXPORTED_SECTIONS = ("settings", "meters", "benefits", "products", "discounts")
+EXPORTED_SECTIONS = ("settings", "meters", "benefits", "products")
 
 _config_benefit = TypeAdapter[ConfigBenefit](ConfigBenefit)
 _benefit_read = TypeAdapter[ConfigBenefitRead](ConfigBenefitRead)
-_config_discount = TypeAdapter[ConfigDiscount](ConfigDiscount)
-_discount_read = TypeAdapter[ConfigDiscountRead](ConfigDiscountRead)
 
 
 class _Exportable(Protocol):
@@ -183,36 +175,6 @@ def _product_entry(
     return ConfigProductRead.model_validate(_dump(config))
 
 
-def _discount_entry(
-    discount: Discount, product_external_ids: dict[str, str]
-) -> ConfigDiscountRead | None:
-    products = [
-        product_external_ids.get(str(product.id)) for product in discount.products
-    ]
-    if None in products:
-        return None
-    data: dict[str, Any] = {
-        "type": discount.type,
-        "external_id": discount.external_id,
-        "name": discount.name,
-        "code": discount.code,
-        "duration": discount.duration,
-        "duration_in_months": discount.duration_in_months,
-        "starts_at": discount.starts_at,
-        "ends_at": discount.ends_at,
-        "max_redemptions": discount.max_redemptions,
-        "max_redemptions_per_customer": discount.max_redemptions_per_customer,
-        "products": products,
-        "metadata": discount.user_metadata,
-    }
-    if isinstance(discount, DiscountFixed):
-        data["amounts"] = discount.amounts
-    elif isinstance(discount, DiscountPercentage):
-        data["basis_points"] = discount.basis_points
-    config = _config_discount.validate_python(data)
-    return _discount_read.validate_python(_dump(config))
-
-
 def _settings(organization: Organization) -> ConfigSettingsRead:
     settings = ConfigSettings.model_validate(
         {
@@ -258,7 +220,7 @@ async def export_config(
     )
 
     product_repository = ProductRepository.from_session(session)
-    products, product_external_ids = await _export_section(
+    products, _ = await _export_section(
         ConfigResource.product,
         product_repository.stream(
             product_repository.get_organization_statement(organization.id)
@@ -272,27 +234,12 @@ async def export_config(
         ),
     )
 
-    discount_repository = DiscountRepository.from_session(session)
-    discounts: list[ConfigDiscountRead]
-    discounts, _ = await _export_section(
-        ConfigResource.discount,
-        discount_repository.stream(
-            discount_repository.get_organization_statement(organization.id)
-        ),
-        MAXIMUM_DISCOUNTS,
-        skipped,
-        name=lambda discount: discount.name,
-        archived=lambda discount: False,
-        entry=lambda discount: _discount_entry(discount, product_external_ids),
-    )
-
     return ConfigExport(
         config=ConfigExportDocument(
             settings=_settings(organization),
             meters=meters,
             benefits=benefits,
             products=products,
-            discounts=discounts,
         ),
         skipped=skipped,
     )

@@ -5,11 +5,7 @@ import {
   name,
   priceGroups,
 } from '@/utils/billing-config/describe'
-import {
-  discountDuration,
-  discountValue,
-  recurrence,
-} from '@/utils/billing-config/sentences'
+import { recurrence } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
 type Action = AppliedEntry['action']
@@ -149,68 +145,6 @@ const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
   )
 }
 
-const isSet = (value: unknown) => value !== null && value !== undefined
-
-const merge = (
-  diff: ReadonlyArray<Change>,
-  fields: ReadonlyArray<string>,
-  field: string,
-  render: (values: Record<string, unknown>) => string | undefined,
-): Change[] => {
-  const parts = diff.filter((change) => fields.includes(change.field))
-  if (parts.length === 0) return [...diff]
-  const side = (key: 'before' | 'after') => {
-    const text = render(
-      Object.fromEntries(parts.map((change) => [change.field, change[key]])),
-    )
-    return text === undefined ? null : new Rendered(text)
-  }
-  const merged: Change = { field, before: side('before'), after: side('after') }
-  return diff.flatMap((change) =>
-    change === parts[0] ? [merged] : parts.includes(change) ? [] : [change],
-  )
-}
-
-const discountOff = (values: Record<string, unknown>) =>
-  isSet(values['amounts'])
-    ? discountValue({ type: 'fixed', amounts: values['amounts'] })
-    : isSet(values['basis_points'])
-      ? discountValue({ basis_points: values['basis_points'] })
-      : undefined
-
-const discountLength = (values: Record<string, unknown>) =>
-  isSet(values['duration_in_months'])
-    ? discountDuration({
-        duration: 'repeating',
-        duration_in_months: values['duration_in_months'],
-      })
-    : isSet(values['duration'])
-      ? discountDuration({ duration: values['duration'] })
-      : undefined
-
-const allProducts = (value: unknown) =>
-  Array.isArray(value) && value.length === 0
-    ? new Rendered('all products')
-    : value
-
-const mergeDiscount = (diff: ReadonlyArray<Change>) =>
-  merge(
-    diff.some(({ field }) => field === 'basis_points' || field === 'amounts')
-      ? merge(diff, ['type', 'basis_points', 'amounts'], 'value', discountOff)
-      : [...diff],
-    ['duration', 'duration_in_months'],
-    'duration',
-    discountLength,
-  ).map((change) =>
-    change.field === 'products'
-      ? {
-          ...change,
-          before: allProducts(change.before),
-          after: allProducts(change.after),
-        }
-      : change,
-  )
-
 const SETTING_VALUES: Record<string, (value: string) => string> = {
   currency: (value) => value.toUpperCase(),
   tax: (value) => value,
@@ -228,7 +162,7 @@ const renderSetting = (change: Change): Change => ({
 })
 
 export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
-  mergeDiscount(mergeRecurrence(diff))
+  mergeRecurrence(diff)
     .map((change) => (section === 'settings' ? renderSetting(change) : change))
     .flatMap(expand)
     .map((change) => ({ ...change, field: name(change.field) }))

@@ -564,6 +564,7 @@ test('active products and benefits cannot use a deprecated meter', () => {
     defineConfig({
       meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
       products: ({ product, meter }) => ({
+        // @ts-expect-error pro is active, so it cannot price by apples
         pro: product()
           .prices(meter('apples').flat().amount(usd(0.01)))
           .recurring('monthly'),
@@ -576,10 +577,55 @@ test('active products and benefits cannot use a deprecated meter', () => {
     defineConfig({
       meters: ({ meter }) => ({ apples: meter().deprecated().count() }),
       benefits: ({ credits }) => ({
+        // @ts-expect-error included is active, so it cannot use apples
         included: credits('Included apples').meter('apples').units(10),
       }),
     }),
   ).toThrow('Benefit "included" uses meter "apples", which is deprecated.')
+})
+
+test('deprecating a meter anywhere in its chain marks it deprecated', () => {
+  const events = { call: z.object({ ok: z.boolean() }) }
+  expect(() =>
+    defineConfig({
+      events,
+      meters: ({ meter, events }) => ({
+        apples: meter().deprecated().on(events.call).unit('token').count(),
+      }),
+      benefits: ({ credits }) => [
+        // @ts-expect-error included is active, so it cannot use apples
+        ['included', credits('Apples').meter('apples').units(10)],
+      ],
+    }),
+  ).toThrow('Benefit "included" uses meter "apples", which is deprecated.')
+  expect(() =>
+    defineConfig({
+      events,
+      meters: ({ meter, events }) => ({
+        pears: meter()
+          .on(events.call)
+          .where(eq('ok', true))
+          .deprecated()
+          .count(),
+      }),
+      benefits: ({ credits }) => ({
+        // @ts-expect-error included is active, so it cannot use pears
+        included: credits('Pears').meter('pears').units(10),
+      }),
+    }),
+  ).toThrow('Benefit "included" uses meter "pears", which is deprecated.')
+  expect(() =>
+    defineConfig({
+      events,
+      meters: ({ meter, events }) => ({
+        plums: meter().on(events.call).count().deprecated(),
+      }),
+      benefits: ({ credits }) => ({
+        // @ts-expect-error included is active, so it cannot use plums
+        included: credits('Plums').meter('plums').units(10),
+      }),
+    }),
+  ).toThrow('Benefit "included" uses meter "plums", which is deprecated.')
 })
 
 test('deprecated benefits stay in the config', () => {
@@ -632,18 +678,98 @@ test('deprecated products can use deprecated meters and benefits', () => {
   expect(pro).not.toHaveProperty('deprecated')
 })
 
+test('a product deprecated anywhere in its chain can price by a deprecated meter', () => {
+  defineConfig({
+    meters: ({ meter }) => ({
+      apples: meter().deprecated().count(),
+      pears: meter().count(),
+    }),
+    products: ({ product, fixed, meter }) => ({
+      legacy: product()
+        .deprecated()
+        .prices(
+          fixed().amount(usd(10)),
+          meter('pears').flat().amount(usd(0.01)),
+          meter('apples').flat().amount(usd(0.02)),
+        )
+        .recurring('monthly'),
+      pro: product()
+        .prices(
+          fixed().amount(usd(10)),
+          meter('pears').flat().amount(usd(0.01)),
+        )
+        .recurring('monthly'),
+    }),
+  })
+  expect(() =>
+    defineConfig({
+      meters: ({ meter }) => ({
+        apples: meter().deprecated().count(),
+        pears: meter().count(),
+      }),
+      products: ({ product, fixed, meter }) => [
+        [
+          'pro',
+          // @ts-expect-error pro is active, so it cannot price by apples
+          product()
+            .prices(
+              fixed().amount(usd(10)),
+              meter('pears').flat().amount(usd(0.01)),
+              meter('apples').flat().amount(usd(0.02)),
+            )
+            .recurring('monthly'),
+        ],
+      ],
+    }),
+  ).toThrow('Product "pro" uses meter "apples", which is deprecated.')
+})
+
 test('active products cannot grant a deprecated benefit', () => {
   expect(() =>
     defineConfig({
       meters: ({ meter }) => ({ calls: meter().count() }),
       benefits: ({ flag }) => ({ beta: flag('Beta').deprecated() }),
       products: ({ product, free }) => ({
+        // @ts-expect-error pro is active, so it cannot grant beta
         pro: product().prices(free()).recurring('monthly').grants(['beta']),
       }),
     }),
   ).toThrow(
     'Product "pro" uses benefit "beta", which is deprecated. Undeprecate the benefit or create a new one.',
   )
+})
+
+test('deprecating a product after or before grants() allows deprecated benefits', () => {
+  defineConfig({
+    meters: () => ({}),
+    benefits: ({ flag }) => ({
+      beta: flag('Beta').deprecated(),
+      support: flag('Support'),
+    }),
+    products: ({ product, free }) => ({
+      legacy: product()
+        .prices(free())
+        .recurring('monthly')
+        .grants(['beta'])
+        .deprecated(),
+      older: product()
+        .deprecated()
+        .prices(free())
+        .recurring('monthly')
+        .grants(['beta', 'support']),
+      pro: product().prices(free()).recurring('monthly').grants(['support']),
+    }),
+  })
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      benefits: ({ flag }) => [['beta', flag('Beta').deprecated()]],
+      products: ({ product, free }) => [
+        // @ts-expect-error pro is active, so it cannot grant beta
+        ['pro', product().prices(free()).recurring('monthly').grants(['beta'])],
+      ],
+    }),
+  ).toThrow('Product "pro" uses benefit "beta", which is deprecated.')
 })
 
 test('product names must be between 3 and 64 characters', () => {
@@ -828,139 +954,4 @@ test('metadata follows the API limits', () => {
       ),
     ).toJSON().meters[0]?.metadata,
   ).toHaveProperty('key49', 49)
-})
-
-test('discounts serialize after products and link products by key', () => {
-  const config = defineConfig({
-    meters: () => ({}),
-    products: ({ product, fixed }) => ({
-      pro: product('Pro')
-        .prices(fixed().amount(usd(20)))
-        .recurring('monthly'),
-      team: product('Team')
-        .prices(fixed().amount(usd(50)))
-        .recurring('yearly'),
-    }),
-    discounts: ({ discount }) => ({
-      launch: discount('Launch 20%')
-        .percent(20)
-        .repeating(3, 'months')
-        .code('LAUNCH20')
-        .products('pro', 'team')
-        .maxRedemptions(500)
-        .ends('2026-12-31'),
-      welcome: discount('Welcome $10')
-        .amount(usd(10), eur(9))
-        .once()
-        .perCustomer(1),
-      loyal: discount().percent(15).repeating(2, 'years'),
-    }),
-  })
-  const json = config.toJSON()
-  expect(Object.keys(json)).toEqual(['meters', 'products', 'discounts'])
-  expect(json.discounts).toEqual([
-    {
-      external_id: 'launch',
-      name: 'Launch 20%',
-      type: 'percentage',
-      basis_points: 2000,
-      duration: 'repeating',
-      duration_in_months: 3,
-      code: 'LAUNCH20',
-      ends_at: '2026-12-31T00:00:00Z',
-      max_redemptions: 500,
-      products: ['pro', 'team'],
-    },
-    {
-      external_id: 'welcome',
-      name: 'Welcome $10',
-      type: 'fixed',
-      amounts: { usd: 1000, eur: 900 },
-      duration: 'once',
-      max_redemptions_per_customer: 1,
-    },
-    {
-      external_id: 'loyal',
-      name: 'loyal',
-      type: 'percentage',
-      basis_points: 1500,
-      duration: 'repeating',
-      duration_in_months: 24,
-    },
-  ])
-})
-
-test('discounts only reference declared products', () => {
-  expect(() =>
-    defineConfig({
-      meters: () => ({}),
-      products: ({ product, free }) => ({
-        pro: product().prices(free()).recurring('monthly'),
-      }),
-      discounts: ({ discount }) => ({
-        // @ts-expect-error unknown product key
-        launch: discount().percent(10).once().products('unknown'),
-      }),
-    }),
-  ).toThrow('Discount "launch" references unknown product "unknown"')
-  expect(() =>
-    defineConfig({
-      meters: () => ({}),
-      discounts: ({ discount }) => ({
-        // @ts-expect-error no products are declared
-        launch: discount().percent(10).once().products('pro'),
-      }),
-    }),
-  ).toThrow('Discount "launch" references unknown product "pro"')
-})
-
-test('discounts need a value and a duration', () => {
-  const typeOnly = () => [
-    defineConfig({
-      meters: () => ({}),
-      // @ts-expect-error missing duration
-      discounts: ({ discount }) => ({ launch: discount().percent(10) }),
-    }),
-    defineConfig({
-      meters: () => ({}),
-      // @ts-expect-error missing value
-      discounts: ({ discount }) => ({ launch: discount().forever() }),
-    }),
-  ]
-  expectTypeOf(typeOnly).toBeFunction()
-})
-
-test('discount codes from unset environment variables are rejected', () => {
-  expect(() =>
-    defineConfig({
-      meters: () => ({}),
-      discounts: ({ discount }) => ({
-        partner: discount('Partner')
-          .percent(15)
-          .forever()
-          .code(undefined as unknown as string),
-      }),
-    }),
-  ).toThrow('Discount "partner" needs a string code, got undefined.')
-})
-
-test('defineConfig rejects invalid discount values', () => {
-  for (const count of [0, 1.5]) {
-    expect(() =>
-      defineConfig({
-        meters: () => ({}),
-        discounts: ({ discount }) => ({
-          launch: discount().percent(10).once().maxRedemptions(count),
-        }),
-      }),
-    ).toThrow()
-  }
-  expect(() =>
-    defineConfig({
-      meters: () => ({}),
-      discounts: ({ discount }) => ({
-        '': discount('Launch').percent(10).once(),
-      }),
-    }),
-  ).toThrow()
 })

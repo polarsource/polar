@@ -165,6 +165,90 @@ async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.anyio
+async def test_factory_confirms_accepted_and_dropped_events_in_outpost(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in ("__aexit__", "track"):
+        monkeypatch.setattr(Outpost, name, AsyncMock(return_value=None))
+
+    async def enter(outpost: Outpost) -> Outpost:
+        return outpost
+
+    monkeypatch.setattr(Outpost, "__aenter__", enter)
+    acknowledge = AsyncMock()
+    confirm = AsyncMock()
+    monkeypatch.setattr(Outpost, "acknowledge", acknowledge)
+    monkeypatch.setattr(Outpost, "confirm", confirm)
+    accepted: EventInput = {
+        "name": "usage",
+        "external_customer_id": "customer",
+        "external_id": "accepted",
+        "timestamp": "2026-10-22T08:00:00Z",
+    }
+    dropped: EventInput = {**accepted, "external_id": "dropped"}
+    on_delivered = AsyncMock()
+    on_dropped = AsyncMock()
+
+    async def ingest(*, events: list[EventInput]) -> None:
+        if events[0]["external_id"] == "dropped":
+            raise PolarError("rejected")
+
+    async with PolarAsync("token") as polar:
+        monkeypatch.setattr(polar.events, "ingest", ingest)
+        async with polar.metering(
+            buffered=BufferedMeteringOptions(
+                batch_size=1,
+                max_attempts=1,
+                on_delivered=on_delivered,
+                on_dropped=on_dropped,
+            ),
+            outpost=MeteringOutpostOptions(
+                redis_url="redis://localhost:6379", telemetry=False
+            ),
+        ) as metering:
+            await metering.track(**accepted)
+            await metering.track(**dropped)
+            await metering.flush()
+    # Received events settle where their bucket is hot; dropped ones settle everywhere.
+    acknowledge.assert_awaited_once_with([accepted])
+    confirm.assert_awaited_once_with([dropped])
+    on_delivered.assert_awaited_once_with([accepted])
+    on_dropped.assert_awaited_once_with([dropped], "permanent_error")
+
+
+@pytest.mark.anyio
+async def test_factory_drains_the_buffer_into_outpost_before_closing_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    async def enter(outpost: Outpost) -> Outpost:
+        return outpost
+
+    async def exit(outpost: Outpost, *exc_info: object) -> None:
+        calls.append("close")
+
+    async def acknowledge(outpost: Outpost, events: list[EventInput]) -> None:
+        calls.append("acknowledge")
+
+    monkeypatch.setattr(Outpost, "__aenter__", enter)
+    monkeypatch.setattr(Outpost, "__aexit__", exit)
+    monkeypatch.setattr(Outpost, "track", AsyncMock(return_value=None))
+    monkeypatch.setattr(Outpost, "acknowledge", acknowledge)
+    async with PolarAsync("token") as polar:
+        monkeypatch.setattr(polar.events, "ingest", AsyncMock())
+        async with polar.metering(
+            outpost=MeteringOutpostOptions(
+                redis_url="redis://localhost:6379", telemetry=False
+            )
+        ) as metering:
+            await metering.track(
+                name="usage", external_customer_id="customer", external_id="last"
+            )
+    assert calls == ["acknowledge", "close"]
+
+
+@pytest.mark.anyio
 async def test_factory_outpost_options_and_startup_failure(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

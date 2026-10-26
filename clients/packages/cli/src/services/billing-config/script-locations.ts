@@ -60,7 +60,6 @@ const SECTIONS = [
   'meters',
   'benefits',
   'products',
-  'discounts',
   'webhooks',
 ]
 

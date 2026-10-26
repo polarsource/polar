@@ -1,6 +1,7 @@
 import { expect, expectTypeOf, test } from 'vitest'
 import { z } from 'zod'
 import { createEventReferences } from './event'
+import { metadataKey } from './metadata'
 import { and, eq, gt, gte, like, lt, meter, ne, notLike, or } from './meter'
 
 test('meter builders can be reused without sharing mutable data', () => {
@@ -208,6 +209,13 @@ test('metadata is kept through every meter step, in any order', () => {
     .metadata({ team: 'search' })
     .where(eq('region', 'eu'))
     .count()
+  const last = meter<typeof definitions>('Calls')
+    .on(events.tool_call)
+    .where(eq('region', 'eu'))
+    .unit('token')
+    .count()
+    .metadata({ team: 'search' })
   expect(before).toEqual(after)
-  expect(before.metadata).toEqual({ team: 'search' })
+  expect(before).toEqual(last)
+  expect(before[metadataKey]).toEqual({ team: 'search' })
 })

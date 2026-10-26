@@ -1,7 +1,7 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { AnimatePresence, motion } from 'motion/react'
-import { Loader2, Paperclip, Send } from 'lucide-react'
+import { LoaderCircle as Loader2, Paperclip, Send } from '@polar-sh/orbit/icons'
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { AttachmentChips } from './AttachmentChips'
 import { type ChatUploader } from './types'

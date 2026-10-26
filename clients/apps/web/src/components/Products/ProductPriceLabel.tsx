@@ -12,7 +12,10 @@ import { getMeterUnitFormat } from '@polar-sh/ui/lib/meterUnit'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
-  product: schemas['Product'] | schemas['CheckoutProduct']
+  product: Pick<
+    schemas['Product'] | schemas['CheckoutProduct'],
+    'prices' | 'recurring_interval' | 'recurring_interval_count'
+  >
   currency: string
 }
 

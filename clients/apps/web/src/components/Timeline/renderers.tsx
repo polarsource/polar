@@ -1,11 +1,13 @@
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
-import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
-import BoltOutlined from '@mui/icons-material/BoltOutlined'
-import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
-import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
-import PersonOutlineOutlined from '@mui/icons-material/PersonOutlineOutlined'
-import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
-import ShoppingCartOutlined from '@mui/icons-material/ShoppingCartOutlined'
+import {
+  AllInclusiveOutlined,
+  AttachMoneyOutlined,
+  BoltOutlined,
+  DiamondOutlined,
+  DonutLargeOutlined,
+  PersonOutlineOutlined,
+  ShoppingBagOutlined,
+  ShoppingCartOutlined,
+} from '@polar-sh/orbit/icons'
 import { benefitsDisplayNames } from '@/components/Benefit/utils'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'

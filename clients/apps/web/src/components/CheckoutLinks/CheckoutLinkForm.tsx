@@ -30,7 +30,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { XIcon } from 'lucide-react'
+import { X as XIcon } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'

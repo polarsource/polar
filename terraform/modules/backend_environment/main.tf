@@ -176,7 +176,7 @@ locals {
     } : {},
   ) : {}
 
-  slo_report_environment_variables = var.slo_report_config != null ? {
+  slo_report_environment_variables = try(var.slo_report_config.slack_channel, null) != null ? {
     POLAR_SLACK_CHANNEL = var.slo_report_config.slack_channel
   } : {}
 
@@ -199,7 +199,6 @@ locals {
 
   polar_self_environment_variables = var.polar_self_config != null ? {
     POLAR_POLAR_ORGANIZATION_ID  = var.polar_self_config.organization_id
-    POLAR_POLAR_FREE_PRODUCT_ID  = var.polar_self_config.free_product_id
     POLAR_POLAR_API_URL          = var.polar_self_config.api_url
     POLAR_POLAR_SCALE_PRODUCT_ID = var.polar_self_config.scale_product_id
   } : {}

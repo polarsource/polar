@@ -178,6 +178,11 @@ SCOPES_SUPPORTED = [
         Scope.organization_access_tokens_write,
     }
 ]
+
+# What a claimed agent's tokens carry: it acts for the user who claimed it
+# (ADR-0014), with everything an OAuth app can be granted, like our MCP client.
+CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in SCOPES_SUPPORTED}
+
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
     Scope.profile: "Read your profile",

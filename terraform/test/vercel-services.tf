@@ -345,10 +345,6 @@ locals {
       value     = var.polar_organization_id
       sensitive = false
     }
-    POLAR_POLAR_FREE_PRODUCT_ID = {
-      value     = var.polar_free_product_id
-      sensitive = false
-    }
     POLAR_POLAR_SCALE_PRODUCT_ID = {
       value     = var.polar_scale_product_id
       sensitive = false

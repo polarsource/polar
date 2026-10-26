@@ -3,7 +3,7 @@
 import { useInView } from '@/hooks/useInView'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, Circle, LoaderCircle } from 'lucide-react'
+import { Check, Circle, LoaderCircle } from '@polar-sh/orbit/icons'
 import { useEffect, useState } from 'react'
 import { Shimmer } from './Shimmer'
 import { Sheet, Window } from './story/Frame'

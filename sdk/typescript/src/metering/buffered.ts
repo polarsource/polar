@@ -41,6 +41,10 @@ export interface BufferedMeteringOptions {
    */
   maxAttempts?: number;
   /**
+   * Callback for events Polar accepted; may be async.
+   */
+  onDelivered?: (events: EventInput[]) => void | Promise<void>;
+  /**
    * Callback for undelivered events and their DropReason; may be async.
    * Defaults to undefined; drops are always logged.
    */
@@ -60,8 +64,8 @@ class FlushRequest {
  * Batch events in memory and deliver them through Polar's HTTP API.
  */
 export class BufferedMeteringStrategy {
-  private readonly options: Required<Omit<BufferedMeteringOptions, "onDropped">> &
-    Pick<BufferedMeteringOptions, "onDropped">;
+  private readonly options: Required<Omit<BufferedMeteringOptions, "onDelivered" | "onDropped">> &
+    Pick<BufferedMeteringOptions, "onDelivered" | "onDropped">;
   private readonly queue: (EventInput | FlushRequest)[] = [];
   private readonly abort = new AbortController();
   private worker?: Promise<void>;
@@ -85,6 +89,7 @@ export class BufferedMeteringStrategy {
       batchIntervalMs: options.batchIntervalMs ?? 1_000,
       shutdownTimeoutMs: options.shutdownTimeoutMs ?? 5_000,
       maxAttempts: options.maxAttempts ?? 3,
+      onDelivered: options.onDelivered,
       onDropped: options.onDropped,
     };
     for (const value of [this.options.batchSize, this.options.maxAttempts]) {
@@ -220,7 +225,7 @@ export class BufferedMeteringStrategy {
     for (;;) {
       try {
         await this.polar.events.ingest({ events: batch }, { signal: this.abort.signal });
-        return;
+        break;
       } catch (error) {
         this.abort.signal.throwIfAborted();
         if (
@@ -254,6 +259,7 @@ export class BufferedMeteringStrategy {
         }
       }
     }
+    await this.options.onDelivered?.(batch);
   }
 
   private async onDropped(events: EventInput[], reason: DropReason): Promise<void> {

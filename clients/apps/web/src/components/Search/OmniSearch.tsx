@@ -15,7 +15,7 @@ import {
   CommandList,
 } from '@polar-sh/ui/components/ui/command'
 import * as Dialog from '@radix-ui/react-dialog'
-import { Loader2 } from 'lucide-react'
+import { LoaderCircle as Loader2 } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'

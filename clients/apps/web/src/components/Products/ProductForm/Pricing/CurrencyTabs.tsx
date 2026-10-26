@@ -1,6 +1,6 @@
 'use client'
 
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import { CloseOutlined } from '@polar-sh/orbit/icons'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import React from 'react'
 import { CurrencySelector } from '../../../CurrencySelector'

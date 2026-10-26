@@ -3,7 +3,7 @@ import { useDraggable } from '@/hooks/draggable'
 import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 import { Button } from '@polar-sh/orbit'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 import { DraggableFileListItem, FileListItem } from './FileListItem'
 

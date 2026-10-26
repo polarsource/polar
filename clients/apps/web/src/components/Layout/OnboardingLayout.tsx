@@ -13,7 +13,7 @@ interface OnboardingLayoutProps<StepId extends string> {
   onStepSelect?: (step: StepId) => void
   stepDescriptions?: Partial<Record<StepId, ReactNode>>
   title?: string
-  subtitle?: string
+  subtitle?: ReactNode
   actions?: ReactNode
   actionsContainerRef?: Ref<HTMLElement>
   children?: ReactNode

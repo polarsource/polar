@@ -534,6 +534,7 @@ const BaseCheckoutForm = ({
                           render={({ field }) => (
                             <>
                               <CountryStatePicker
+                                name={field.name}
                                 autoComplete="billing address-level1"
                                 data-testid="billing-state"
                                 country={country}
@@ -575,6 +576,7 @@ const BaseCheckoutForm = ({
                                 allowedCountries={
                                   enums.addressInputCountryValues
                                 }
+                                name={field.name}
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}

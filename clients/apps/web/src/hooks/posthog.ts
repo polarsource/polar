@@ -23,6 +23,7 @@ type Surface =
   | 'global'
 
 type Category =
+  | 'agent'
   | 'benefits'
   | 'checkout'
   | 'subscriptions'

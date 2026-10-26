@@ -28,8 +28,7 @@ import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import { duplicateProductMedia } from './duplicateMedia'
 import ProductForm from './ProductForm/ProductForm'
-import { Wand2Icon } from 'lucide-react'
-
+import { WandSparkles as Wand2Icon } from '@polar-sh/orbit/icons'
 export interface CreateProductPageProps {
   organization: schemas['Organization']
   sourceProduct?: schemas['Product']

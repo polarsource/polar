@@ -10,7 +10,7 @@ import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { addDays, isPast, min, parseISO } from 'date-fns'
-import { ExternalLinkIcon } from 'lucide-react'
+import { ExternalLink as ExternalLinkIcon } from '@polar-sh/orbit/icons'
 import { Children, type ReactNode } from 'react'
 
 const DUNNING_TOTAL_RETRY_DAYS = 21

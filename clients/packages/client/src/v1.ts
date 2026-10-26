@@ -6143,7 +6143,7 @@ export interface paths {
      *
      *     Requires the read or write scope of every exported section.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     get: operations['config:export']
     put?: never
@@ -6167,7 +6167,7 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters, benefits, products, discounts and webhook endpoints are matched by
+     *     Meters, benefits, products and webhook endpoints are matched by
      *     `external_id`: missing ones are created, changed ones are updated, and ones
      *     not listed are left untouched.
      *     `settings` are applied first, so products can be priced in a new
@@ -6177,7 +6177,7 @@ export interface paths {
      *
      *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
+     *     **Scopes**: `benefits:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6204,7 +6204,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:plan']
     delete?: never
@@ -6231,7 +6231,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:prune']
     delete?: never
@@ -6719,6 +6719,66 @@ export interface paths {
     put?: never
     /** Submit */
     post: operations['feedbacks:submit']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim/{link_token}/preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Agent Claim
+     * @description What a claim is about, shown to the human before they sign in.
+     */
+    get: operations['agent:preview_claim']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim/{link_token}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Agent Claim
+     * @description Get what an agent built, for the human it asked to claim it.
+     */
+    get: operations['agent:get_claim']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm Agent Claim
+     * @description Claim an agent and its organization with the code the agent gave.
+     */
+    post: operations['agent:confirm_claim']
     delete?: never
     options?: never
     head?: never
@@ -8447,6 +8507,134 @@ export interface components {
        * @description ISO currency code of the amounts.
        */
       currency: string
+    }
+    /**
+     * AgentClaim
+     * @description What the human reviews before claiming the agent.
+     */
+    AgentClaim: {
+      /**
+       * Agent Name
+       * @description What the agent calls itself.
+       */
+      agent_name: string | null
+      /**
+       * Email
+       * @description The email the agent started the claim for.
+       */
+      email: string
+      /**
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+      /** @description The organization the agent built, if any. */
+      organization: components['schemas']['AgentClaimOrganization'] | null
+      /**
+       * Products
+       * @description The products the agent created in that organization.
+       */
+      products: components['schemas']['AgentClaimProduct'][]
+    }
+    /** AgentClaimConfirm */
+    AgentClaimConfirm: {
+      /** Link Token */
+      link_token: string
+      /**
+       * Code
+       * @description The three words the agent gave, separated by hyphens.
+       */
+      code: string
+    }
+    /** AgentClaimEmailMismatch */
+    AgentClaimEmailMismatch: {
+      /**
+       * Error
+       * @example AgentClaimEmailMismatch
+       * @constant
+       */
+      error: 'AgentClaimEmailMismatch'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimExpired */
+    AgentClaimExpired: {
+      /**
+       * Error
+       * @example AgentClaimExpired
+       * @constant
+       */
+      error: 'AgentClaimExpired'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimInvalidCode */
+    AgentClaimInvalidCode: {
+      /**
+       * Error
+       * @example AgentClaimInvalidCode
+       * @constant
+       */
+      error: 'AgentClaimInvalidCode'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimOrganization */
+    AgentClaimOrganization: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Name */
+      name: string
+      /** Slug */
+      slug: string
+      /** Avatar Url */
+      avatar_url: string | null
+    }
+    /**
+     * AgentClaimPreview
+     * @description What a claim is about, for the human before they sign in.
+     */
+    AgentClaimPreview: {
+      /**
+       * Agent Name
+       * @description What the agent calls itself.
+       */
+      agent_name: string | null
+      /**
+       * Email
+       * @description The masked email the agent started the claim for.
+       */
+      email: string
+      /**
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+      /** @description The organization the agent created, if any. */
+      organization: components['schemas']['AgentClaimOrganization'] | null
+    }
+    /** AgentClaimProduct */
+    AgentClaimProduct: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Name */
+      name: string
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /** Recurring Interval Count */
+      recurring_interval_count: number | null
+      /** Prices */
+      prices: (
+        | components['schemas']['LegacyRecurringProductPrice']
+        | components['schemas']['ProductPrice']
+      )[]
     }
     AggregateField: string
     /**
@@ -16099,11 +16287,6 @@ export interface components {
        */
       products?: components['schemas']['ConfigProduct'][]
       /**
-       * Discounts
-       * @description Discounts to create or update, matched by `external_id`. Existing discounts that aren't listed are left untouched.
-       */
-      discounts?: components['schemas']['ConfigDiscount'][]
-      /**
        * Webhooks
        * @description Webhook endpoints to create or update, matched by `external_id`. Existing endpoints that aren't listed are left untouched.
        */
@@ -16321,243 +16504,6 @@ export interface components {
        */
       diff: components['schemas']['ConfigFieldChange'][]
     }
-    ConfigDiscount:
-      | components['schemas']['ConfigDiscountPercentage']
-      | components['schemas']['ConfigDiscountFixed']
-    /** ConfigDiscountFixed */
-    ConfigDiscountFixed: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description Your identifier for the discount, used to match it.
-       */
-      external_id: string
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
-      duration: components['schemas']['DiscountDuration']
-      /**
-       * Duration In Months
-       * @description Number of months the discount should be applied.
-       *
-       *     Required when `duration` is `repeating`. Must be omitted otherwise.
-       *
-       *     For this to work on yearly pricing, you should multiply this by 12.
-       *     For example, to apply the discount for 2 years, set this to 24.
-       */
-      duration_in_months?: number | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /**
-       * Max Redemptions Per Customer
-       * @description Optional maximum number of times the discount can be redeemed by a single customer.
-       */
-      max_redemptions_per_customer?: number | null
-      /**
-       * Products
-       * @description The products the discount applies to. Leave it empty to apply the discount to every product.
-       */
-      products?: string[]
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'fixed'
-      /**
-       * Amounts
-       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
-       */
-      amounts: {
-        [key: string]: number
-      }
-    }
-    /** ConfigDiscountFixedRead */
-    ConfigDiscountFixedRead: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'fixed'
-      /** External Id */
-      external_id: string
-      /** Name */
-      name: string
-      /** Code */
-      code: string | null
-      duration: components['schemas']['DiscountDuration']
-      /** Duration In Months */
-      duration_in_months: number | null
-      /** Starts At */
-      starts_at: string | null
-      /** Ends At */
-      ends_at: string | null
-      /** Max Redemptions */
-      max_redemptions: number | null
-      /** Max Redemptions Per Customer */
-      max_redemptions_per_customer: number | null
-      /** Products */
-      products: string[]
-      metadata: components['schemas']['MetadataOutputType']
-      /** Amounts */
-      amounts: {
-        [key: string]: number
-      }
-    }
-    /** ConfigDiscountPercentage */
-    ConfigDiscountPercentage: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description Your identifier for the discount, used to match it.
-       */
-      external_id: string
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
-      duration: components['schemas']['DiscountDuration']
-      /**
-       * Duration In Months
-       * @description Number of months the discount should be applied.
-       *
-       *     Required when `duration` is `repeating`. Must be omitted otherwise.
-       *
-       *     For this to work on yearly pricing, you should multiply this by 12.
-       *     For example, to apply the discount for 2 years, set this to 24.
-       */
-      duration_in_months?: number | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /**
-       * Max Redemptions Per Customer
-       * @description Optional maximum number of times the discount can be redeemed by a single customer.
-       */
-      max_redemptions_per_customer?: number | null
-      /**
-       * Products
-       * @description The products the discount applies to. Leave it empty to apply the discount to every product.
-       */
-      products?: string[]
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'percentage'
-      /**
-       * Basis Points
-       * @description Discount percentage in basis points.
-       *
-       *     A basis point is 1/100th of a percent.
-       *     For example, to create a 25.5% discount, set this to 2550.
-       */
-      basis_points: number
-    }
-    /** ConfigDiscountPercentageRead */
-    ConfigDiscountPercentageRead: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'percentage'
-      /** External Id */
-      external_id: string
-      /** Name */
-      name: string
-      /** Code */
-      code: string | null
-      duration: components['schemas']['DiscountDuration']
-      /** Duration In Months */
-      duration_in_months: number | null
-      /** Starts At */
-      starts_at: string | null
-      /** Ends At */
-      ends_at: string | null
-      /** Max Redemptions */
-      max_redemptions: number | null
-      /** Max Redemptions Per Customer */
-      max_redemptions_per_customer: number | null
-      /** Products */
-      products: string[]
-      metadata: components['schemas']['MetadataOutputType']
-      /** Basis Points */
-      basis_points: number
-    }
-    ConfigDiscountRead:
-      | components['schemas']['ConfigDiscountPercentageRead']
-      | components['schemas']['ConfigDiscountFixedRead']
     /** ConfigExport */
     ConfigExport: {
       /** @description The current config, in the shape plan and apply accept, without `organization_id`. */
@@ -16577,8 +16523,6 @@ export interface components {
       benefits: components['schemas']['ConfigBenefitRead'][]
       /** Products */
       products: components['schemas']['ConfigProductRead'][]
-      /** Discounts */
-      discounts: components['schemas']['ConfigDiscountRead'][]
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16643,10 +16587,7 @@ export interface components {
     ConfigIssueType:
       | 'currency_changed'
       | 'deprecated_reference'
-      | 'discount_locked'
-      | 'duplicate_code'
       | 'duplicate_external_id'
-      | 'duration_changed'
       | 'interval_changed'
       | 'meter_locked'
       | 'missing_currency'
@@ -17099,7 +17040,7 @@ export interface components {
       in_use: boolean
       /**
        * Referenced By
-       * @description External IDs of the products, benefits and discounts staying in the config that reference the resource.
+       * @description External IDs of the products and benefits staying in the config that reference the resource.
        */
       referenced_by: string[]
     }
@@ -17107,7 +17048,7 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product' | 'discount' | 'webhook'
+    ConfigResource: 'meter' | 'benefit' | 'product' | 'webhook'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
@@ -31073,12 +31014,6 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
-      /**
-       * Agentic Payments Enabled
-       * @description If this organization accepts payments from AI agents through Stripe shared payment tokens.
-       * @default false
-       */
-      agentic_payments_enabled: boolean
       /**
        * Staged Events Ingest Enabled
        * @description If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
@@ -64683,6 +64618,182 @@ export interface operations {
       }
     }
   }
+  'agent:preview_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        link_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimPreview']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:get_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        link_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaim']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimEmailMismatch']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:confirm_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AgentClaimConfirm']
+      }
+    }
+    responses: {
+      /** @description The agent and its organization are now the user's. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimInvalidCode']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SessionNotFreshError']
+            | components['schemas']['AgentClaimEmailMismatch']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointcheckout_created_post: {
     parameters: {
       query?: never
@@ -72311,18 +72422,6 @@ export const configBenefitMeterCreditTypeValues: ReadonlyArray<
 export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
 > = ['meter_credit']
-export const configDiscountFixedTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigDiscountFixed']['type']
-> = ['fixed']
-export const configDiscountFixedReadTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigDiscountFixedRead']['type']
-> = ['fixed']
-export const configDiscountPercentageTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigDiscountPercentage']['type']
-> = ['percentage']
-export const configDiscountPercentageReadTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigDiscountPercentageRead']['type']
-> = ['percentage']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
@@ -72331,10 +72430,7 @@ export const configIssueTypeValues: ReadonlyArray<
 > = [
   'currency_changed',
   'deprecated_reference',
-  'discount_locked',
-  'duplicate_code',
   'duplicate_external_id',
-  'duration_changed',
   'interval_changed',
   'meter_locked',
   'missing_currency',
@@ -72375,7 +72471,7 @@ export const configProductPriceUnitBasedReadAmount_typeValues: ReadonlyArray<
 > = ['unit_based']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product', 'discount', 'webhook']
+> = ['meter', 'benefit', 'product', 'webhook']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']

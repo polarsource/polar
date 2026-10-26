@@ -293,3 +293,18 @@ class Refund(MetadataMixin, RecordModel):
             processor_receipt_number=stripe_refund.receipt_number,
             processor_balance_transaction_id=balance_transaction_id,
         )
+
+    def apply_stripe(self, stripe_refund: stripe_lib.Refund) -> None:
+        self.status = RefundStatus(stripe_refund.status or "pending")
+        failure_reason = getattr(stripe_refund, "failure_reason", None)
+        self.failure_reason = RefundFailureReason.from_stripe(failure_reason)
+        self.destination_details = getattr(stripe_refund, "destination_details", {})
+        self.processor_id = stripe_refund.id
+        self.processor_reason = (
+            stripe_refund.reason if stripe_refund.reason else "other"
+        )
+        self.processor_receipt_number = stripe_refund.receipt_number
+        if stripe_refund.balance_transaction:
+            self.processor_balance_transaction_id = str(
+                stripe_refund.balance_transaction
+            )

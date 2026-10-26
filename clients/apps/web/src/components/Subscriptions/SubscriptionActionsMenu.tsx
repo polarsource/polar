@@ -11,7 +11,7 @@ import {
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getPauseAction } from '@/utils/subscription'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal } from '@polar-sh/orbit'
 import {

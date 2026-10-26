@@ -10,8 +10,7 @@ import MetersPage from './MetersPage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string; meterId: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const organization = await getOrganizationBySlug(api, params.organization)
 
   if (!organization) {
@@ -40,18 +39,15 @@ export async function generateMetadata(props: {
 export default async function Page(props: {
   params: Promise<{ organization: string; meterId: string }>
 }) {
-  const params = await props.params
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-
-  const { data: meter } = await api.GET('/v1/meters/{id}', {
-    params: {
-      path: { id: params.meterId },
-    },
-  })
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
+  const [organization, { data: meter }] = await Promise.all([
+    getOrganizationBySlugOrNotFound(api, params.organization),
+    api.GET('/v1/meters/{id}', {
+      params: {
+        path: { id: params.meterId },
+      },
+    }),
+  ])
 
   if (!meter || meter.organization_id !== organization.id) {
     notFound()

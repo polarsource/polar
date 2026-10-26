@@ -8,8 +8,7 @@ import WalletPage from './WalletPage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
@@ -60,22 +59,16 @@ export default async function Page(props: {
   const params = await props.params
   const token = customer_session_token ?? member_session_token
   const api = await getServerSideAPI(token)
-  const { organization } = await getOrganizationOrNotFound(
-    api,
-    params.organization,
-    searchParams,
-  )
-
-  const {
-    data: wallets,
-    error,
-    response,
-  } = await api.GET('/v1/customer-portal/wallets/', {
-    cache: 'no-cache',
-    next: {
-      tags: [`customer_portal`],
-    },
-  })
+  const [{ organization }, { data: wallets, error, response }] =
+    await Promise.all([
+      getOrganizationOrNotFound(api, params.organization, searchParams),
+      api.GET('/v1/customer-portal/wallets/', {
+        cache: 'no-cache',
+        next: {
+          tags: [`customer_portal`],
+        },
+      }),
+    ])
 
   if (response.status === 401) {
     redirect(`/${organization.slug}/portal/request`)

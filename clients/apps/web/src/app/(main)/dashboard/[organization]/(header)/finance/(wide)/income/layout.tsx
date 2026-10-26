@@ -7,8 +7,7 @@ export default async function Layout(props: {
   children: React.ReactNode
   params: Promise<{ organization: string }>
 }) {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,

@@ -6,8 +6,7 @@ import AuthenticatePage from './AuthenticatePage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
@@ -49,8 +48,10 @@ export default async function Page(props: {
   searchParams: Promise<{ customer_session_token?: string }>
 }) {
   const { customer_session_token, ...searchParams } = await props.searchParams
-  const params = await props.params
-  const api = await getServerSideAPI(customer_session_token)
+  const [params, api] = await Promise.all([
+    props.params,
+    getServerSideAPI(customer_session_token),
+  ])
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,

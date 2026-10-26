@@ -12,8 +12,7 @@ import { notFound, redirect } from 'next/navigation'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   // Non-throwing: access is enforced in the layout, so metadata must not 404 a
   // member who needs to re-authenticate through SSO.
   const organization = await getOrganizationBySlug(api, params.organization)

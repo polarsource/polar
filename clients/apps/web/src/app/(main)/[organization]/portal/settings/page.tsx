@@ -8,8 +8,7 @@ import { CustomerPortalPage } from '../CustomerPortalPage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
@@ -61,16 +60,10 @@ export default async function Page(props: {
   const token = customer_session_token ?? member_session_token
   const api = await getServerSideAPI(token)
 
-  const { organization } = await getOrganizationOrNotFound(
-    api,
-    params.organization,
-    searchParams,
-  )
-
-  const { response: customerResponse } = await api.GET(
-    '/v1/customer-portal/customers/me',
-    { cache: 'no-store' },
-  )
+  const [{ organization }, { response: customerResponse }] = await Promise.all([
+    getOrganizationOrNotFound(api, params.organization, searchParams),
+    api.GET('/v1/customer-portal/customers/me', { cache: 'no-store' }),
+  ])
 
   if (customerResponse.status === 401) {
     redirect(

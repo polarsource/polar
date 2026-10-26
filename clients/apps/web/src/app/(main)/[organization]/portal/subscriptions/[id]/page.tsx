@@ -8,8 +8,7 @@ import SubscriptionsPage from './SubscriptionsPage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
@@ -60,27 +59,21 @@ export default async function Page(props: {
   const params = await props.params
   const token = customer_session_token ?? member_session_token
   const api = await getServerSideAPI(token)
-  const { organization, products } = await getOrganizationOrNotFound(
-    api,
-    params.organization,
-    searchParams,
-  )
-
-  const {
-    data: subscription,
-    error,
-    response,
-  } = await api.GET('/v1/customer-portal/subscriptions/{id}', {
-    params: {
-      path: {
-        id: params.id,
-      },
-    },
-    cache: 'no-cache',
-    next: {
-      tags: [`customer_portal`],
-    },
-  })
+  const [{ organization, products }, { data: subscription, error, response }] =
+    await Promise.all([
+      getOrganizationOrNotFound(api, params.organization, searchParams),
+      api.GET('/v1/customer-portal/subscriptions/{id}', {
+        params: {
+          path: {
+            id: params.id,
+          },
+        },
+        cache: 'no-cache',
+        next: {
+          tags: [`customer_portal`],
+        },
+      }),
+    ])
 
   if (response.status === 401) {
     redirect(`/${organization.slug}/portal/request`)

@@ -10,8 +10,7 @@ import CheckoutLinksPage from './CheckoutLinksPage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string; checkoutLinkId: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const organization = await getOrganizationBySlug(api, params.organization)
 
   if (!organization) {
@@ -42,18 +41,15 @@ export async function generateMetadata(props: {
 export default async function Page(props: {
   params: Promise<{ organization: string; checkoutLinkId: string }>
 }) {
-  const params = await props.params
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-
-  const { data: checkoutLink } = await api.GET('/v1/checkout-links/{id}', {
-    params: {
-      path: { id: params.checkoutLinkId },
-    },
-  })
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
+  const [organization, { data: checkoutLink }] = await Promise.all([
+    getOrganizationBySlugOrNotFound(api, params.organization),
+    api.GET('/v1/checkout-links/{id}', {
+      params: {
+        path: { id: params.checkoutLinkId },
+      },
+    }),
+  ])
 
   if (!checkoutLink || checkoutLink.organization_id !== organization.id) {
     notFound()

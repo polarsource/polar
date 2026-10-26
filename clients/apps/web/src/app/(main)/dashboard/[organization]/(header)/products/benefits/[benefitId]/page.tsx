@@ -10,8 +10,7 @@ import BenefitPage from './BenefitPage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string; benefitId: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const organization = await getOrganizationBySlug(api, params.organization)
 
   if (!organization) {
@@ -42,18 +41,15 @@ export async function generateMetadata(props: {
 export default async function Page(props: {
   params: Promise<{ organization: string; benefitId: string }>
 }) {
-  const params = await props.params
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-
-  const { data: benefit } = await api.GET('/v1/benefits/{id}', {
-    params: {
-      path: { id: params.benefitId },
-    },
-  })
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
+  const [organization, { data: benefit }] = await Promise.all([
+    getOrganizationBySlugOrNotFound(api, params.organization),
+    api.GET('/v1/benefits/{id}', {
+      params: {
+        path: { id: params.benefitId },
+      },
+    }),
+  ])
 
   if (!benefit || benefit.organization_id !== organization.id) {
     notFound()

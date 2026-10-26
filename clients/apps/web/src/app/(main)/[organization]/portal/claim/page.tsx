@@ -6,8 +6,7 @@ import ClaimPage from './ClaimPage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,
@@ -22,11 +21,12 @@ export default async function Page(props: {
   params: Promise<{ organization: string }>
   searchParams: Promise<{ token?: string }>
 }) {
-  const params = await props.params
-  const { token, ...searchParams } = await props.searchParams
-
   // Get organization without requiring authentication (like /request page)
-  const api = await getServerSideAPI()
+  const [params, { token, ...searchParams }, api] = await Promise.all([
+    props.params,
+    props.searchParams,
+    getServerSideAPI(),
+  ])
   const { organization } = await getOrganizationOrNotFound(
     api,
     params.organization,

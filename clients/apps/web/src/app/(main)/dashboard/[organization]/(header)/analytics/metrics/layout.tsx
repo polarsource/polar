@@ -9,14 +9,11 @@ export default async function Layout(props: {
   params: Promise<{ organization: string }>
   children: React.ReactNode
 }) {
-  const params = await props.params
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-
-  const limits = await unwrap(api.GET('/v1/metrics/limits'))
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
+  const [organization, limits] = await Promise.all([
+    getOrganizationBySlugOrNotFound(api, params.organization),
+    unwrap(api.GET('/v1/metrics/limits')),
+  ])
 
   return (
     <DashboardBody

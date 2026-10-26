@@ -7,8 +7,7 @@ import ProductsPage from './ProductsPage'
 export async function generateMetadata(props: {
   params: Promise<{ organization: string; id: string }>
 }): Promise<Metadata> {
-  const params = await props.params
-  const api = await getServerSideAPI()
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
   const product = await getProductById(api, params.id)
   return {
     title: product.name, // " | Polar is added by the template"
@@ -18,13 +17,11 @@ export async function generateMetadata(props: {
 export default async function Page(props: {
   params: Promise<{ organization: string; id: string }>
 }) {
-  const params = await props.params
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-  const product = await getProductById(api, params.id)
+  const [params, api] = await Promise.all([props.params, getServerSideAPI()])
+  const [organization, product] = await Promise.all([
+    getOrganizationBySlugOrNotFound(api, params.organization),
+    getProductById(api, params.id),
+  ])
 
   return <ProductsPage organization={organization} product={product} />
 }

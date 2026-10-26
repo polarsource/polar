@@ -15,16 +15,14 @@ export const getOrganizationAndCustomerOrNotFound = async (
   params: CustomerPageParams,
 ) => {
   const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-
-  const { data: customer } = await api.GET('/v1/customers/{id}', {
-    params: {
-      path: { id: params.customerId },
-    },
-  })
+  const [organization, { data: customer }] = await Promise.all([
+    getOrganizationBySlugOrNotFound(api, params.organization),
+    api.GET('/v1/customers/{id}', {
+      params: {
+        path: { id: params.customerId },
+      },
+    }),
+  ])
 
   if (!customer || customer.organization_id !== organization.id) {
     notFound()

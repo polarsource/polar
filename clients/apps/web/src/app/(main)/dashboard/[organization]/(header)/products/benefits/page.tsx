@@ -15,9 +15,11 @@ export default async function Page(props: {
   params: Promise<{ organization: string }>
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const params = await props.params
-  const searchParams = await props.searchParams
-  const api = await getServerSideAPI()
+  const [params, searchParams, api] = await Promise.all([
+    props.params,
+    props.searchParams,
+    getServerSideAPI(),
+  ])
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     params.organization,

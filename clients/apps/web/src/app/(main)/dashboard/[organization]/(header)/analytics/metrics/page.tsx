@@ -22,10 +22,8 @@ export default async function Page(props: {
     product_id?: string | string[]
   }>
 }) {
-  const { organization: organizationSlug } = await props.params
-  const searchParams = await props.searchParams
-
-  const api = await getServerSideAPI()
+  const [{ organization: organizationSlug }, searchParams, api] =
+    await Promise.all([props.params, props.searchParams, getServerSideAPI()])
   const organization = await getOrganizationBySlugOrNotFound(
     api,
     organizationSlug,

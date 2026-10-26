@@ -1,7 +1,7 @@
 """Add credit notes and credit note items
 
 Revision ID: 08de7c939c47
-Revises: 387e0ff257d4
+Revises: 9c3e7a1d5b24
 Create Date: 2026-10-21 16:32:49.129446
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "08de7c939c47"
-down_revision = "387e0ff257d4"
+down_revision = "9c3e7a1d5b24"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

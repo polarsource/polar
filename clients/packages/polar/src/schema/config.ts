@@ -16,8 +16,6 @@ import {
   type EventSchemas,
   type ValidEvents,
 } from './event'
-import { discount, DiscountConfig, discountConfig } from './discount'
-import type { DiscountDefinition, DiscountHelpers } from './discount'
 import { meter, MeterConfig } from './meter'
 import { Currency } from './money'
 import type { MeterDefinition } from './meter'
@@ -51,7 +49,6 @@ export const PolarConfig = Schema.Struct({
   meters: Schema.Array(MeterConfig),
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
-  discounts: Schema.optionalKey(Schema.Array(DiscountConfig)),
   webhooks: Schema.optionalKey(Schema.Array(WebhookEndpointConfig)),
 })
 
@@ -286,12 +283,6 @@ type ProductKey<Products extends ProductEntries> =
     ? Key & string
     : keyof Products & string
 
-type DiscountEntries<Product extends string = string> =
-  | Readonly<Record<string, DiscountDefinition<Product>>>
-  | ReadonlyArray<
-      readonly [externalId: string, discount: DiscountDefinition<Product>]
-    >
-
 type ConnectedConfig<
   Meters extends MeterEntries,
   Benefits extends BenefitEntries,
@@ -374,7 +365,6 @@ export const defineConfig = <
     MeterKey<Meters>,
     BenefitKey<Benefits>
   > = never,
-  const Discounts extends DiscountEntries<ProductKey<Products>> = never,
   Events extends EventDefinitions | undefined = undefined,
   const Webhooks extends WebhookEntries = Record<never, never>,
 >(
@@ -388,9 +378,6 @@ export const defineConfig = <
     }) => Meters
     readonly benefits?: BenefitsInput<Meters, Benefits>
     readonly products?: ProductsInput<Meters, Benefits, Products>
-    readonly discounts?: (
-      helpers: DiscountHelpers<ProductKey<Products>>,
-    ) => Discounts
     readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
   } & Present<
     Benefits,
@@ -434,8 +421,6 @@ export const defineConfig = <
   })
   const productEntries =
     products === undefined ? [] : toEntries<ProductDefinition>(products)
-  const productIds = new Set(productEntries.map(([external_id]) => external_id))
-  const discounts = input.discounts?.({ discount })
   const webhooks = input.webhooks?.({ endpoint, slack, discord })
   const webhookEntries = Object.entries(webhooks ?? {})
   const secretEnvs = webhookEntries.flatMap(([, webhook]) =>
@@ -559,19 +544,6 @@ export const defineConfig = <
           ...(deprecated && { deprecated: true as const }),
         }
       }),
-    }),
-    ...(discounts !== undefined && {
-      discounts: toEntries<DiscountDefinition>(discounts).map(
-        ([external_id, definition]) => {
-          assertKnown(
-            `Discount "${external_id}"`,
-            'product',
-            productIds,
-            definition.limits.products ?? [],
-          )
-          return discountConfig(external_id, definition)
-        },
-      ),
     }),
     ...(webhooks !== undefined && {
       webhooks: webhookEntries.map(

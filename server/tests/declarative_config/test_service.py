@@ -2706,6 +2706,42 @@ MONTHLY_PRO_25 = {
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 @pytest.mark.usefixtures("config_as_code_enabled")
 class TestCatalogVersioning:
+    async def test_catalog_name(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        unnamed = Config.model_validate({"products": [MONTHLY_PRO]})
+        name_only = Config.model_validate(
+            {"products": [MONTHLY_PRO], "catalog_name": "Ignored"}
+        )
+        updated = Config.model_validate({"products": [MONTHLY_PRO_25]})
+        named = Config.model_validate(
+            {"products": [MONTHLY_PRO_25], "catalog_name": "Spring pricing"}
+        )
+        catalogs_repo = CatalogRepository.from_session(session)
+
+        await declarative_config_service.apply(session, redis, auth_subject, unnamed)
+        first = await catalogs_repo.get_live(organization.id)
+        assert first is not None
+        assert first.name is None
+
+        await declarative_config_service.apply(session, redis, auth_subject, name_only)
+        assert await catalogs_repo.get_live(organization.id) == first
+        assert first.name is None
+
+        plan = await declarative_config_service.plan(session, auth_subject, updated)
+        expected_hash = plan.changes[0].diff[-1].after
+
+        await declarative_config_service.apply(session, redis, auth_subject, named)
+        live = await catalogs_repo.get_live(organization.id)
+        assert live is not None
+        assert live.id != first.id
+        assert live.name == "Spring pricing"
+        assert live.version_hash == expected_hash
+
     async def test_lifecycle(
         self,
         save_fixture: SaveFixture,
@@ -2990,6 +3026,7 @@ class TestExport:
         assert set(ConfigExportDocument.model_fields) == set(Config.model_fields) - {
             "organization_id",
             "webhooks",
+            "catalog_name",
         }
         assert {type(benefit) for benefit in config.benefits} == set(
             get_args(get_args(ConfigBenefit)[0])

@@ -355,7 +355,7 @@ async def run(
         stack.callback(proxy_tasks.cancel_scope.cancel)
         await proxy_tasks.start(proxy.serve)
         keys = [
-            f"outpost:state:{customer}:{reducer['id']}"
+            f"outpost:v1:state:{customer}:{reducer['id']}"
             for customer in customers
             for reducer in scenario.configuration["reducers"]
         ]

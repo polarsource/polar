@@ -81,10 +81,13 @@ async def run_organization_review(
         context=context.value,
     )
 
-    await organization_domain_service.reverify(session, organization)
+    organization_domains = await organization_domain_service.reverify(
+        session, organization
+    )
+    verified_domains = [d.domain for d in organization_domains if d.verified_at]
 
     try:
-        snapshot = await _collect_data(organization, context)
+        snapshot = await _collect_data(organization, context, verified_domains)
         appeal_updates: dict[str, str] = {}
         if appeal_reason is not None:
             appeal_updates["appeal_reason"] = appeal_reason
@@ -441,6 +444,7 @@ async def _collect_risk_signals(organization_id: UUID) -> RiskSignalData:
 async def _collect_data(
     organization: Organization,
     context: ReviewContext,
+    verified_domains: list[str],
 ) -> DataSnapshot:
     # Organization data — pure transformation, no I/O
     org_data = collect_organization_data(organization)
@@ -508,5 +512,6 @@ async def _collect_data(
         website=website_data,
         prior_feedback=prior_feedback_data,
         risk_signals=risk_signal_data,
+        verified_domains=verified_domains,
         collected_at=datetime.now(UTC),
     )

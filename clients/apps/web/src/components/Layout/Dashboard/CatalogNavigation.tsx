@@ -5,7 +5,6 @@ import { schemas } from '@polar-sh/client'
 import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { LockOutlined } from '@polar-sh/orbit/icons'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { useSidebar } from '@polar-sh/ui/components/atoms/Sidebar'
 import {
@@ -16,35 +15,27 @@ import {
   useCatalogRoutes,
   useDiscountRoutes,
 } from '../../Dashboard/navigationProducts'
+import { useEffect, useRef, useState } from 'react'
 import { NavList } from './NavList'
 
 const LiveCatalogDetails = ({ catalog }: { catalog: schemas['Catalog'] }) => (
-  <Box flexDirection="column" minWidth={0}>
-    <Box flexDirection="column" rowGap="xs" padding="m" minWidth={0}>
-      <Text variant="label" truncate>
-        {catalog.name ?? 'Untitled'}
-      </Text>
-      <Text variant="caption" color="muted">
-        <Text as="span" variant="caption" color="inherit" monospace>
-          {catalog.version_hash?.slice(0, 7)}
-        </Text>
-        {' · '}
-        <FormattedDateTime
-          datetime={catalog.published_at ?? catalog.created_at}
-          resolution="time"
-        />
-      </Text>
-    </Box>
-    <Box
-      alignItems="center"
-      columnGap="xs"
-      paddingHorizontal="m"
-      paddingVertical="s"
-      borderTopWidth={1}
-      borderStyle="solid"
-      borderColor="border-secondary"
-      color="text-secondary"
-    >
+  <Box
+    flexDirection="column"
+    rowGap="xs"
+    padding="m"
+    maxWidth={240}
+    minWidth={0}
+  >
+    <Text variant="label" truncate>
+      {catalog.name ?? 'Untitled'}
+    </Text>
+    <Text variant="caption" color="muted">
+      Published{' '}
+      <PolarTimeAgo
+        date={new Date(catalog.published_at ?? catalog.created_at)}
+      />
+    </Text>
+    <Box alignItems="center" columnGap="xs" color="text-tertiary">
       <LockOutlined fontSize="inherit" />
       <Text as="span" variant="caption" color="inherit">
         Managed in code
@@ -53,47 +44,82 @@ const LiveCatalogDetails = ({ catalog }: { catalog: schemas['Catalog'] }) => (
   </Box>
 )
 
-const CatalogLabel = ({
-  catalog,
-}: {
-  catalog: schemas['Catalog'] | null | undefined
-}) => {
-  const label = (
-    <Box
-      alignItems="center"
-      justifyContent="between"
-      columnGap="s"
-      paddingHorizontal="s"
-      color="text-tertiary"
-      cursor="default"
-      userSelect="none"
-      minWidth={0}
-      tabIndex={catalog ? 0 : undefined}
-    >
-      <Text as="span" variant="label" color="inherit">
-        Catalog
-      </Text>
-      {catalog ? (
-        <Text as="span" variant="caption" color="inherit" truncate>
-          <PolarTimeAgo
-            date={new Date(catalog.published_at ?? catalog.created_at)}
-          />
-        </Text>
-      ) : null}
-    </Box>
-  )
+const CatalogVersionChip = ({ catalog }: { catalog: schemas['Catalog'] }) => {
+  const [copied, setCopied] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
-  if (!catalog) return label
+  useEffect(() => {
+    if (!copied) return
+    const timeout = setTimeout(() => setCopied(false), 1200)
+    return () => clearTimeout(timeout)
+  }, [copied])
 
   return (
-    <Tooltip delayDuration={300}>
-      <TooltipTrigger asChild>{label}</TooltipTrigger>
-      <TooltipContent side="right" align="start" sideOffset={8} className="p-0">
+    <Tooltip delayDuration={150}>
+      <TooltipTrigger
+        ref={triggerRef}
+        aria-label="Copy live catalog version hash"
+        className="flex"
+        // Radix closes the tooltip on press; keep it open so the copy is visible
+        onPointerDown={(event) => event.preventDefault()}
+        onClick={(event) => {
+          event.preventDefault()
+          if (!catalog.version_hash) return
+          navigator.clipboard
+            .writeText(catalog.version_hash)
+            .then(() => setCopied(true))
+        }}
+      >
+        <Box
+          as="span"
+          display="flex"
+          color={{ base: 'text-tertiary', hover: 'text-primary' }}
+          transitionProperty="colors"
+          transitionDuration="fast"
+          cursor="default"
+        >
+          <Text as="span" variant="caption" color="inherit" monospace>
+            {copied ? 'Copied' : catalog.version_hash?.slice(0, 7)}
+          </Text>
+        </Box>
+      </TooltipTrigger>
+      <TooltipContent
+        side="right"
+        align="start"
+        sideOffset={8}
+        className="p-0"
+        onPointerDownOutside={(event) => {
+          if (triggerRef.current?.contains(event.target as Node)) {
+            event.preventDefault()
+          }
+        }}
+      >
         <LiveCatalogDetails catalog={catalog} />
       </TooltipContent>
     </Tooltip>
   )
 }
+
+const CatalogLabel = ({
+  catalog,
+}: {
+  catalog: schemas['Catalog'] | null | undefined
+}) => (
+  <Box
+    alignItems="center"
+    justifyContent="between"
+    columnGap="s"
+    paddingHorizontal="s"
+    color="text-tertiary"
+    userSelect="none"
+    minWidth={0}
+  >
+    <Text as="span" variant="label" color="inherit">
+      Catalog
+    </Text>
+    {catalog ? <CatalogVersionChip catalog={catalog} /> : null}
+  </Box>
+)
 
 export const CatalogNavigation = ({
   organization,

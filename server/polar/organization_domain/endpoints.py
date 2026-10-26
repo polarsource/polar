@@ -17,7 +17,11 @@ from polar.routing import APIRouter
 
 from .schemas import OrganizationDomain as OrganizationDomainSchema
 from .schemas import OrganizationDomainCreate
-from .service import OrganizationDomainAlreadyExists
+from .service import (
+    OrganizationDomainAlreadyExists,
+    OrganizationDomainVerificationFailed,
+    OrganizationDomainVerifiedElsewhere,
+)
 from .service import organization_domain as organization_domain_service
 
 router = APIRouter(
@@ -101,3 +105,33 @@ async def delete_organization_domain(
     if organization_domain is None:
         raise ResourceNotFound()
     await organization_domain_service.delete(session, organization_domain)
+
+
+@router.post(
+    "/{domain_id}/verify",
+    summary="Verify Organization Domain",
+    response_model=OrganizationDomainSchema,
+    responses={
+        400: {
+            "description": "The DNS TXT record was not found.",
+            "model": OrganizationDomainVerificationFailed.schema(),
+        },
+        403: NotPermittedResponse,
+        404: OrganizationDomainNotFound,
+        409: {
+            "description": "Another organization already verified the domain.",
+            "model": OrganizationDomainVerifiedElsewhere.schema(),
+        },
+    },
+)
+async def verify_organization_domain(
+    domain_id: UUID,
+    authz: AuthorizeOrgManageUser,
+    session: AsyncSession = Depends(get_db_session),
+) -> OrganizationDomain:
+    organization_domain = await organization_domain_service.get(
+        session, authz.organization, domain_id
+    )
+    if organization_domain is None:
+        raise ResourceNotFound()
+    return await organization_domain_service.verify(session, organization_domain)

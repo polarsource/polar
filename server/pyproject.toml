@@ -74,6 +74,7 @@ dependencies = [
   "tld>=0.13.2",
   "joserfc>=1.7.4",
   "py-svg-hush>=0.3.0",
+  "dnspython>=2.8.0",
 ]
 
 [dependency-groups]

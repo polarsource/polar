@@ -1,0 +1,19 @@
+clients/packages/cli/src/services/billing-config/load.test.ts
+  s_8c30bf18103b94::t_723fc358dd61d4 170,173,175,178-179,182,186,189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "590a1322ab84fe9c74062745368a95e35cf086e1",
+  "prompts": {},
+  "sessions": {
+    "s_8c30bf18103b94": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "263c7947-f84c-4273-bad9-01494c2b6500",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

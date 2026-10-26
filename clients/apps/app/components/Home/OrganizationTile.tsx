@@ -9,11 +9,13 @@ import { Tile } from './Tile'
 export interface OrganizationTileProps {
   onPress: () => void
   loading?: boolean
+  square?: boolean
 }
 
 export const OrganizationTile = ({
   onPress,
   loading,
+  square,
 }: OrganizationTileProps) => {
   const { organization } = useContext(OrganizationContext)
   const theme = useTheme()
@@ -23,7 +25,7 @@ export const OrganizationTile = ({
   }
 
   return (
-    <Tile onPress={onPress}>
+    <Tile onPress={onPress} square={square}>
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Avatar
           name={organization.name}

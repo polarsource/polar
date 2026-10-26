@@ -15,9 +15,10 @@ import { Tile } from './Tile'
 
 export interface FinanceTileProps {
   loading?: boolean
+  square?: boolean
 }
 
-export const FinanceTile = ({ loading }: FinanceTileProps) => {
+export const FinanceTile = ({ loading, square }: FinanceTileProps) => {
   const { organization } = useContext(OrganizationContext)
   const { data: account } = useOrganizationAccount(organization?.id)
   const { data: payoutAccount } = usePayoutAccount(
@@ -39,7 +40,7 @@ export const FinanceTile = ({ loading }: FinanceTileProps) => {
   )
 
   return (
-    <Tile href="/finance">
+    <Tile href="/finance" square={square}>
       <Box flex={1} flexDirection="column" justifyContent="space-between">
         <Box flexDirection="column" gap="spacing-4">
           <Text variant="body" color="subtext">

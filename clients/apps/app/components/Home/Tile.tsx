@@ -11,38 +11,34 @@ export type TileWithOnPressProps = PropsWithChildren & {
   onPress: () => void
 }
 
-export type TileProps = TileWithLinkProps | TileWithOnPressProps
+export type TileProps = (TileWithLinkProps | TileWithOnPressProps) & {
+  square?: boolean
+}
 
-export const Tile = ({ children, ...props }: TileProps) => {
+export const Tile = ({ children, square = true, ...props }: TileProps) => {
+  const content = (
+    <Box
+      backgroundColor="card"
+      padding="spacing-20"
+      borderRadius="border-radius-24"
+      flex={1}
+      style={{ aspectRatio: square ? 1 : undefined }}
+    >
+      {children}
+    </Box>
+  )
+
   if ('href' in props) {
     return (
       <Link href={props.href} asChild>
-        <Touchable>
-          <Box
-            backgroundColor="card"
-            padding="spacing-20"
-            borderRadius="border-radius-24"
-            flex={1}
-            style={{ aspectRatio: 1 }}
-          >
-            {children}
-          </Box>
-        </Touchable>
+        <Touchable style={{ flex: 1 }}>{content}</Touchable>
       </Link>
     )
   }
 
   return (
-    <Touchable onPress={props.onPress}>
-      <Box
-        backgroundColor="card"
-        padding="spacing-20"
-        borderRadius="border-radius-24"
-        flex={1}
-        style={{ aspectRatio: 1 }}
-      >
-        {children}
-      </Box>
+    <Touchable style={{ flex: 1 }} onPress={props.onPress}>
+      {content}
     </Touchable>
   )
 }

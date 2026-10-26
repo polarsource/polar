@@ -1,4 +1,4 @@
-import LockOutlined from '@mui/icons-material/LockOutlined'
+import { LockOutlined } from '@polar-sh/orbit/icons'
 import { Pill } from '@polar-sh/orbit'
 
 export const ManagedAsCodeBadge = () => (

@@ -9,6 +9,7 @@ import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useMultipleMeterQuantities } from '@/hooks/queries/meters'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
@@ -19,12 +20,13 @@ import {
   InlineModal,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import FormattedUnits from '../../Meter/FormattedUnits'
-import StackedMeterChart from '../../Meter/StackedMeterChart'
 import { EmptyState } from '../../Shared/EmptyState'
 import { CircleGauge as GaugeCircleIcon } from '@polar-sh/orbit/icons'
 import { useCustomerMetricsParams } from './useCustomerMetricsParams'
+
+const StackedMeterChart = dynamic(() => import('../../Meter/StackedMeterChart'))
 
 const METER_COLORS = [
   '#2563eb',
@@ -164,12 +166,14 @@ export const CustomerUsageView = ({
     <Box flexDirection="column" rowGap="2xl">
       <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-4 p-2">
         <div className="dark:bg-polar-900 rounded-3xl bg-white p-4">
-          <StackedMeterChart
-            data={chartData}
-            series={series}
-            interval={interval}
-            height={250}
-          />
+          <Suspense fallback={<div style={{ height: 250 }} />}>
+            <StackedMeterChart
+              data={chartData}
+              series={series}
+              interval={interval}
+              height={250}
+            />
+          </Suspense>
         </div>
       </ShadowBox>
       <DataTable

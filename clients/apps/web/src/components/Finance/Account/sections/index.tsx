@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { DomainVerificationSection } from './DomainVerificationSection'
 import { EmailSection } from './EmailSection'
 import { IdentityVerificationSection } from './IdentityVerificationSection'
 import { PayoutAccountSection } from './PayoutAccountSection'
@@ -84,6 +85,12 @@ export const STEP_CONFIG: Partial<
         step={step}
         reasonItems={reasonItems}
       />
+    ),
+  },
+  'product_url.domain_verification': {
+    label: STEP_LABELS['product_url.domain_verification'],
+    render: ({ organization, step }) => (
+      <DomainVerificationSection organization={organization} step={step} />
     ),
   },
   payout_account: {

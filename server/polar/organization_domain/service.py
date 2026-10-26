@@ -1,19 +1,24 @@
+import contextlib
 import secrets
 from collections.abc import Sequence
 from uuid import UUID
 
 import dns.asyncresolver
 import dns.exception
+import structlog
 from sqlalchemy.exc import IntegrityError
 
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import Organization, OrganizationDomain
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import OrganizationDomainRepository
 from .schemas import OrganizationDomainCreate
+
+log: Logger = structlog.get_logger()
 
 
 class OrganizationDomainAlreadyExists(PolarError):
@@ -121,6 +126,35 @@ class OrganizationDomainService:
         except IntegrityError as e:
             await session.refresh(organization_domain)
             raise OrganizationDomainVerifiedElsewhere(organization_domain.domain) from e
+
+    async def reverify(
+        self, session: AsyncSession, organization: Organization
+    ) -> Sequence[OrganizationDomain]:
+        repository = OrganizationDomainRepository.from_session(session)
+        organization_domains = await repository.get_all(
+            repository.get_statement_by_organization(organization.id)
+        )
+        for organization_domain in organization_domains:
+            if organization_domain.verification_token is None:
+                continue
+            if organization_domain.verified_at is None:
+                with contextlib.suppress(
+                    OrganizationDomainVerificationFailed,
+                    OrganizationDomainVerifiedElsewhere,
+                ):
+                    await self.verify(session, organization_domain)
+            elif organization_domain.verification_token not in await _lookup_txt(
+                organization_domain.verification_record_name
+            ):
+                log.info(
+                    "organization_domain.reverify.lost",
+                    organization_id=str(organization.id),
+                    domain=organization_domain.domain,
+                )
+                await repository.update(
+                    organization_domain, update_dict={"verified_at": None}
+                )
+        return organization_domains
 
 
 organization_domain = OrganizationDomainService()

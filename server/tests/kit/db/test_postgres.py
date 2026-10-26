@@ -5,7 +5,29 @@ from pytest_mock import MockerFixture
 from sqlalchemy import create_engine as sqlalchemy_create_engine
 from sqlalchemy import text
 
-from polar.kit.db.postgres import create_sync_engine
+from polar.kit.db.postgres import create_async_engine, create_sync_engine
+from tests.fixtures.database import get_database_url
+
+
+@pytest.mark.anyio
+class TestCreateAsyncEngine:
+    @pytest.mark.parametrize(
+        ("command_timeout", "expected"), [(None, "0"), (1.25, "1250ms"), (30.0, "30s")]
+    )
+    async def test_statement_timeout(
+        self, worker_id: str, command_timeout: float | None, expected: str
+    ) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            pool_size=1,
+            pool_recycle=-1,
+            command_timeout=command_timeout,
+        )
+        for _ in range(2):
+            async with engine.connect() as connection:
+                result = await connection.execute(text("SHOW statement_timeout"))
+                assert result.scalar_one() == expected
+        await engine.dispose()
 
 
 class TestCreateSyncEngine:

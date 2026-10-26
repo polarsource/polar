@@ -242,8 +242,8 @@ const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
           startDate: dates.allTimeStart,
           endDate: dates.allTimeEnd,
         },
-      ].map((card, i) => (
-        <Card key={i} className="rounded-3xl">
+      ].map((card) => (
+        <Card key={card.title} className="rounded-3xl">
           <CardHeader className="flex flex-col gap-y-0">
             <h3 className="text-lg">{card.title}</h3>
             <span className="dark:text-polar-500 text-gray-500">

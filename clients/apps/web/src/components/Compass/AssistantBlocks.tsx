@@ -78,12 +78,15 @@ const MetricChartView = ({
  * own Text node with consistent spacing.
  */
 const ParagraphsText = ({ text }: { text: string }) => {
-  const paragraphs = text.split(/\n+/).filter((p) => p.trim().length > 0)
+  // Keyed by offset in the text, which stays put as the stream appends to it.
+  const paragraphs = Array.from(text.matchAll(/[^\n]+/g)).filter(
+    ([p]) => p.trim().length > 0,
+  )
   return (
     <Box display="flex" flexDirection="column" rowGap="m">
-      {paragraphs.map((paragraph, i) => (
-        <Text key={i} variant="body">
-          {paragraph}
+      {paragraphs.map((paragraph) => (
+        <Text key={paragraph.index} variant="body">
+          {paragraph[0]}
         </Text>
       ))}
     </Box>

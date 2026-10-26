@@ -204,8 +204,11 @@ export const CurrentPeriodOverview = ({
         <>
           <span className="font-medium">Prorations</span>
 
-          {prorations.map((proration, index) => (
-            <div key={index} className="flex items-center justify-between">
+          {prorations.map((proration) => (
+            <div
+              key={`${proration.label}-${proration.amount}`}
+              className="flex items-center justify-between"
+            >
               <span className="dark:text-polar-400 text-gray-600">
                 {proration.label}
               </span>

@@ -101,8 +101,8 @@ export const EntityListView = ({
         </Text>
       ) : null}
       <List size="small">
-        {block.rows.map((row, i) => (
-          <ListItem key={i} size="small">
+        {block.rows.map((row) => (
+          <ListItem key={JSON.stringify(row)} size="small">
             <Box
               width="100%"
               display="flex"

@@ -106,8 +106,8 @@ function figure() {
           />
         </g>
       ))}
-      {EVENTS.map(([m], i) => (
-        <Anchor key={i} at={[at(m), LANE]} size={2.6} />
+      {EVENTS.map(([m]) => (
+        <Anchor key={m} at={[at(m), LANE]} size={2.6} />
       ))}
       <text
         x={X0 - 12}

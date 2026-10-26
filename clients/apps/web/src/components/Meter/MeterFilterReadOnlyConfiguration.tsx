@@ -104,7 +104,7 @@ const FilterGroupDisplay = ({
           if (isFilterClause(clause)) {
             return (
               <FilterClauseDisplay
-                key={index}
+                key={JSON.stringify(clause)}
                 clause={clause}
                 showConjunction={index > 0}
                 conjunction={filter.conjunction}
@@ -113,7 +113,7 @@ const FilterGroupDisplay = ({
           } else {
             return (
               <FilterGroupDisplay
-                key={index}
+                key={JSON.stringify(clause)}
                 filter={clause}
                 showConjunction={index > 0}
                 conjunction={filter.conjunction}
@@ -153,7 +153,7 @@ const MeterFilterReadOnlyConfiguration = ({
                 return (
                   <ShadowBox
                     className="flex flex-col gap-3 rounded-2xl! p-4"
-                    key={index}
+                    key={JSON.stringify(clause)}
                   >
                     <FilterClauseDisplay
                       clause={clause}
@@ -165,7 +165,7 @@ const MeterFilterReadOnlyConfiguration = ({
               } else {
                 return (
                   <FilterGroupDisplay
-                    key={index}
+                    key={JSON.stringify(clause)}
                     filter={clause}
                     showConjunction={index > 0}
                     conjunction={filter.conjunction}

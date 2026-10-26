@@ -20,11 +20,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@polar-sh/ui/components/ui/alert-dialog'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from '../Toast/use-toast'
 
 const AccessToken = (props: schemas['PersonalAccessToken']) => {
   const deleteToken = useDeletePersonalAccessToken()
+  const [now] = useState(() => Date.now())
 
   const onDelete = useCallback(async () => {
     deleteToken.mutateAsync({ id: props.id }).then(({ error }) => {
@@ -50,7 +51,7 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
             <h3 className="text-md truncate">{props.comment}</h3>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               {props.expires_at ? (
-                new Date(props.expires_at) < new Date() ? (
+                new Date(props.expires_at).getTime() < now ? (
                   <span className="text-red-500 dark:text-red-400">
                     Expired on{' '}
                     <FormattedDateTime

@@ -25,12 +25,13 @@ const STATUS: Record<
   schemas['Catalog']['status'],
   { label: string; color: StatusColor }
 > = {
+  draft: { label: 'Draft', color: 'blue' },
   live: { label: 'Live', color: 'green' },
   archived: { label: 'Archived', color: 'gray' },
 }
 
 const shortHash = (catalog: schemas['Catalog']) =>
-  catalog.version_hash.slice(0, 7)
+  catalog.version_hash?.slice(0, 7)
 
 const CatalogVersionRow = ({ catalog }: { catalog: schemas['Catalog'] }) => {
   const status = STATUS[catalog.status]
@@ -41,7 +42,9 @@ const CatalogVersionRow = ({ catalog }: { catalog: schemas['Catalog'] }) => {
           {shortHash(catalog)}
         </Text>
         <Text variant="caption" color="muted" truncate>
-          <PolarTimeAgo date={new Date(catalog.published_at)} />
+          <PolarTimeAgo
+            date={new Date(catalog.published_at ?? catalog.created_at)}
+          />
         </Text>
       </Box>
       <Box marginLeft="auto">

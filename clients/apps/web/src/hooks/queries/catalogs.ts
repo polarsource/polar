@@ -13,7 +13,12 @@ export const useCatalogs = (organizationId: string, enabled: boolean) =>
         const data = await unwrap(
           api.GET('/v1/catalogs/', {
             params: {
-              query: { organization_id: organizationId, page, limit: 100 },
+              query: {
+                organization_id: organizationId,
+                status: ['live', 'archived'],
+                page,
+                limit: 100,
+              },
             },
           }),
         )

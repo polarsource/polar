@@ -47,6 +47,7 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     AccountCredit,
     Organization,
+    OrganizationRiskSignal,
     PayoutAccount,
     User,
     UserOrganization,
@@ -79,6 +80,7 @@ from polar.organization.service import (
     OrganizationError,
 )
 from polar.organization.service import organization as organization_service
+from polar.organization_domain.repository import OrganizationDomainRepository
 from polar.organization_review.appeal_case import (
     AppealCaseError,
 )
@@ -1249,11 +1251,20 @@ async def overview_setup_checklist(
     orders_count, unrefunded_orders_count = await count_test_sales(
         session, organization_id
     )
+    domain_repository = OrganizationDomainRepository.from_session(session)
+    risk_signal_repository = OrganizationRiskSignalRepository.from_session(session)
+    domain_lost = await risk_signal_repository.get_latest_by_type(
+        organization_id, OrganizationRiskSignal.Type.DOMAIN_VERIFICATION_LOST
+    )
     overview = OverviewSection(
         organization,
         orders_count=orders_count,
         unrefunded_orders_count=unrefunded_orders_count,
         shared_organizations=await _get_shared_organizations(session, organization),
+        organization_domains=await domain_repository.get_all(
+            domain_repository.get_statement_by_organization(organization_id)
+        ),
+        domain_lost_at=domain_lost.created_at if domain_lost else None,
     )
     with overview.setup_checklist_card(request, setup_data):
         pass

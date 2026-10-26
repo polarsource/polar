@@ -547,6 +547,20 @@ class OrganizationRiskSignalRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().all())
 
+    async def get_latest_by_type(
+        self, organization_id: UUID, type: OrganizationRiskSignal.Type
+    ) -> OrganizationRiskSignal | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationRiskSignal.organization_id == organization_id,
+                OrganizationRiskSignal.type == type,
+            )
+            .order_by(OrganizationRiskSignal.created_at.desc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_by_account_evaluation(
         self, evaluation_id: str
     ) -> OrganizationRiskSignal | None:

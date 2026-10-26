@@ -4,13 +4,19 @@ import contextlib
 import json
 from collections.abc import Generator, Sequence
 from datetime import datetime
+from urllib.parse import urlparse
 
 from fastapi import Request
 from tagflow import tag, text
 
 from polar.enums import PayoutAccountStatus
-from polar.models import Organization, OrganizationReviewFeedback
+from polar.models import (
+    Organization,
+    OrganizationDomain,
+    OrganizationReviewFeedback,
+)
 from polar.models.organization_risk_signal import OrganizationRiskSignal
+from polar.organization_review.collectors.setup import is_on_verified_domain
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
 from polar.organization_review.thresholds import (
@@ -56,6 +62,8 @@ class OverviewSection(ChecklistMixin):
         has_open_appeal_case: bool = False,
         risk_signals: Sequence[OrganizationRiskSignal] = (),
         shared_organizations: Sequence[Organization] = (),
+        organization_domains: Sequence[OrganizationDomain] = (),
+        domain_lost_at: datetime | None = None,
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
@@ -66,6 +74,8 @@ class OverviewSection(ChecklistMixin):
         self.has_open_appeal_case = has_open_appeal_case
         self.risk_signals = risk_signals
         self.shared_organizations = shared_organizations
+        self.organization_domains = organization_domains
+        self.domain_lost_at = domain_lost_at
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -738,6 +748,8 @@ class OverviewSection(ChecklistMixin):
                     self.org.website if self.has_website else None,
                 )
 
+                self._render_website_domain_row()
+
                 if self.has_socials:
                     social_count = len(self.org.socials)
                     render_checklist_row(
@@ -784,6 +796,25 @@ class OverviewSection(ChecklistMixin):
 
                 self._render_payout_account_row()
                 self._render_shared_payout_account_row(request)
+
+    def _render_website_domain_row(self) -> None:
+        host = urlparse(self.org.website or "").hostname or ""
+        verified = [d.domain for d in self.organization_domains if d.verified_at]
+        pending = [d.domain for d in self.organization_domains if not d.verified_at]
+
+        if is_on_verified_domain(host, pending):
+            missing = "Pending verification"
+        elif self.domain_lost_at is not None:
+            missing = f"Lost on {self.domain_lost_at.strftime('%Y-%m-%d')}"
+        else:
+            missing = "Not verified"
+
+        render_checklist_row(
+            "Website Domain",
+            is_on_verified_domain(host, verified),
+            ", ".join(verified),
+            missing,
+        )
 
     def _render_payout_account_row(self) -> None:
         """Payout status with Stripe's raw `disabled_reason`.

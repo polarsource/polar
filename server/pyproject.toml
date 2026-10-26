@@ -204,7 +204,7 @@ warn_required_dynamic_aliases = false
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false }
+exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false }
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

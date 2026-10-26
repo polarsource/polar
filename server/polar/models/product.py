@@ -125,9 +125,8 @@ class Product(
         nullable=True,
         default=None,
     )
-    # Nullable during the expand phase (ADR-0006); NOT NULL is enforced in #15750.
     is_current: Mapped[bool] = mapped_column(
-        Boolean, nullable=True, default=True, server_default=text("true")
+        Boolean, nullable=False, default=True, server_default=text("true")
     )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),

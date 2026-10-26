@@ -343,10 +343,11 @@ it("creates buffered metering using the configured HTTP client", async () => {
   });
 });
 
-it.each<[string | undefined, false | MeteringOutpostOptions | undefined, string | undefined]>([
+it.each<[string | undefined, boolean | MeteringOutpostOptions | undefined, string | undefined]>([
   [undefined, undefined, undefined],
   ["", undefined, undefined],
-  ["redis://environment:6379", undefined, "redis://environment:6379"],
+  ["redis://environment:6379", undefined, undefined],
+  ["redis://environment:6379", true, "redis://environment:6379"],
   ["redis://environment:6379", {}, "redis://environment:6379"],
   ["redis://environment:6379", false, undefined],
   [undefined, { redisUrl: "redis://explicit:6379" }, "redis://explicit:6379"],
@@ -374,11 +375,14 @@ it.each<[string | undefined, false | MeteringOutpostOptions | undefined, string 
   }
 });
 
-it.each([{}, { redisUrl: "" }])("rejects Outpost without a Redis URL: %j", (outpost) => {
-  expect(() => createPolar({ accessToken: "token" }).metering({ outpost })).toThrow(
-    "Outpost requires redisUrl or REDIS_URL",
-  );
-});
+it.each<true | MeteringOutpostOptions>([true, {}, { redisUrl: "" }])(
+  "rejects Outpost without a Redis URL: %j",
+  (outpost) => {
+    expect(() => createPolar({ accessToken: "token" }).metering({ outpost })).toThrow(
+      "Outpost requires redisUrl or REDIS_URL",
+    );
+  },
+);
 
 it.each([{ buffered: {} }, { outpost: false as const }])(
   "rejects combining strategies with built-in options: %j",
@@ -502,9 +506,9 @@ it("propagates Outpost startup failures and closes the buffer", async () => {
   const { Outpost } = await import("../outpost/client");
   vi.spyOn(Outpost.prototype, "start").mockRejectedValue(new Error("Redis unavailable"));
   const close = vi.spyOn(BufferedMeteringStrategy.prototype, "close");
-  await expect(createPolar({ accessToken: "token" }).metering().start()).rejects.toThrow(
-    "Redis unavailable",
-  );
+  await expect(
+    createPolar({ accessToken: "token" }).metering({ outpost: true }).start(),
+  ).rejects.toThrow("Redis unavailable");
   expect(close).toHaveBeenCalledOnce();
 });
 

@@ -8,7 +8,8 @@ from pytest_mock import MockerFixture
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
-from polar.models import PayoutAccount
+from polar.kit.utils import utc_now
+from polar.models import OrganizationDomain, PayoutAccount
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.user import User
@@ -644,6 +645,108 @@ class TestOverviewLazyCards:
         assert "Checkout Links" in response.text
         assert "Payout Account" in response.text
         assert "<html" not in response.text
+
+    async def test_setup_checklist_website_domain_not_verified(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Website Domain" in response.text
+        assert "Not verified" in response.text
+
+    async def test_setup_checklist_website_domain_verified(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Website Domain" in response.text
+        assert "Not verified" not in response.text
+
+    async def test_setup_checklist_website_domain_other_verified(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="other.com", verified_at=utc_now()
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Not verified" in response.text
+
+    async def test_setup_checklist_website_domain_pending(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Pending verification" in response.text
+
+    async def test_setup_checklist_website_domain_lost(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+                verification_lost_at=datetime(2026, 10, 1, tzinfo=UTC),
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Lost on 2026-10-01" in response.text
 
 
 @pytest.mark.anyio

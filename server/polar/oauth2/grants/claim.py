@@ -12,7 +12,7 @@ from authlib.oauth2.rfc8628 import (
 
 from polar.agent.identity_assertion import create_identity_assertion
 from polar.auth.scope import CLAIMED_AGENT_SCOPES
-from polar.kit.crypto import get_token_hash_candidates
+from polar.kit.crypto import get_current_secret_id, get_token_hash_candidates
 from polar.kit.utils import utc_now
 from polar.models import Agent
 from polar.models.agent import AgentStatus
@@ -99,4 +99,10 @@ class ClaimGrant(AgentGrant):
             .with_for_update(of=Agent)
         )
         result = self.server.session.execute(statement)
-        return result.unique().scalar_one_or_none()
+        agent = result.unique().scalar_one_or_none()
+        if agent is None:
+            return None
+        current = candidates[get_current_secret_id()]
+        if agent.claim_token_hash != current:
+            agent.claim_token_hash = current
+        return agent

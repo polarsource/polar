@@ -411,10 +411,11 @@ class RepositoryTokenHashMixin[M]:
         self: RepositoryTokenHashProtocol[M],
         object: M,
         candidates: dict[str | None, str],
+        *,
+        attribute: str | None = None,
     ) -> M:
+        attribute = attribute or self.token_hash_attribute
         current = candidates[get_current_secret_id()]
-        if getattr(object, self.token_hash_attribute) == current:
+        if getattr(object, attribute) == current:
             return object
-        return await self.update(
-            object, update_dict={self.token_hash_attribute: current}
-        )
+        return await self.update(object, update_dict={attribute: current})

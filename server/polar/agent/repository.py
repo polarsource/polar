@@ -41,21 +41,26 @@ class AgentRepository(
         return result.scalar_one_or_none()
 
     async def get_by_claim_token(self, claim_token: str) -> Agent | None:
+        candidates = get_token_hash_candidates(claim_token)
         statement = (
             self.get_base_statement()
-            .where(self.token_hash_clause(get_token_hash_candidates(claim_token)))
+            .where(self.token_hash_clause(candidates))
             .with_for_update()
         )
-        return await self.get_one_or_none(statement)
+        agent = await self.get_one_or_none(statement)
+        if agent is None:
+            return None
+        return await self.rehash_token(agent, candidates)
 
     async def get_by_claim_link_token(
         self, link_token: str, *, for_update: bool = False
     ) -> Agent | None:
+        candidates = get_token_hash_candidates(link_token)
         statement = (
             self.get_base_statement()
             .where(
                 self.token_hash_clause(
-                    get_token_hash_candidates(link_token),
+                    candidates,
                     attribute="claim_link_token_hash",
                 )
             )
@@ -63,4 +68,9 @@ class AgentRepository(
         )
         if for_update:
             statement = statement.with_for_update(of=Agent)
-        return await self.get_one_or_none(statement)
+        agent = await self.get_one_or_none(statement)
+        if agent is None:
+            return None
+        return await self.rehash_token(
+            agent, candidates, attribute="claim_link_token_hash"
+        )

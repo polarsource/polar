@@ -7,12 +7,7 @@ from polar.config import settings
 from polar.exceptions import ResourceNotFound
 from polar.oauth2.constants import CLAIM_POLL_INTERVAL
 from polar.openapi import APITag
-from polar.postgres import (
-    AsyncReadSession,
-    AsyncSession,
-    get_db_read_session,
-    get_db_session,
-)
+from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from .auth_md import render_auth_md
@@ -96,7 +91,7 @@ async def start_claim(
 )
 async def preview_claim(
     link_token: str,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    session: AsyncSession = Depends(get_db_session),
 ) -> AgentClaimPreview:
     """What a claim is about, shown to the human before they sign in."""
     return await agent_service.preview_claim(session, link_token)
@@ -116,7 +111,7 @@ async def preview_claim(
 async def get_claim(
     link_token: str,
     auth_subject: AuthorizeWebUserRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    session: AsyncSession = Depends(get_db_session),
 ) -> AgentClaim:
     """Get what an agent built, for the human it asked to claim it."""
     return await agent_service.get_claim(session, auth_subject.subject, link_token)

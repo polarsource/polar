@@ -24,7 +24,7 @@ from polar.models.agent import AgentStatus
 from polar.oauth2.constants import CLAIM_GRANT_TYPE, CLIENT_ID_PREFIX
 from polar.oauth2.repository import OAuth2TokenRepository
 from polar.organization.service import organization as organization_service
-from polar.postgres import AsyncReadSession, AsyncSession
+from polar.postgres import AsyncSession
 from polar.posthog import posthog
 from polar.product.repository import ProductRepository
 
@@ -206,7 +206,7 @@ class AgentService:
         )
 
     async def preview_claim(
-        self, session: AsyncReadSession, link_token: str
+        self, session: AsyncSession, link_token: str
     ) -> AgentClaimPreview:
         repository = AgentRepository.from_session(session)
         agent = self._validate_claim_link(
@@ -222,7 +222,7 @@ class AgentService:
         )
 
     async def get_claim(
-        self, session: AsyncReadSession, user: User, link_token: str
+        self, session: AsyncSession, user: User, link_token: str
     ) -> AgentClaim:
         repository = AgentRepository.from_session(session)
         agent = self._validate_claim(

@@ -350,6 +350,12 @@ export const useOrganizationAppeal = (id: string) =>
       })
     },
     retry: defaultRetry,
+    onSuccess: async (result) => {
+      if (result.error) return
+      await getQueryClient().invalidateQueries({
+        queryKey: ['organizationReviewStatus', id],
+      })
+    },
   })
 
 export const useOrganizationReviewState = (

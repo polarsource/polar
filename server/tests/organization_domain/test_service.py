@@ -76,6 +76,7 @@ class TestReverify:
         await organization_domain_service.reverify(session, organization)
 
         assert domain.verified_at is None
+        assert domain.verification_lost_at is not None
 
     async def test_pending_record_added(
         self,
@@ -88,13 +89,17 @@ class TestReverify:
             "polar.organization_domain.service._lookup_txt", return_value={"TOKEN"}
         )
         domain = OrganizationDomain(
-            organization=organization, domain="acme.com", verification_token="TOKEN"
+            organization=organization,
+            domain="acme.com",
+            verification_token="TOKEN",
+            verification_lost_at=utc_now(),
         )
         await save_fixture(domain)
 
         await organization_domain_service.reverify(session, organization)
 
         assert domain.verified_at is not None
+        assert domain.verification_lost_at is None
 
     async def test_pending_verified_elsewhere(
         self,

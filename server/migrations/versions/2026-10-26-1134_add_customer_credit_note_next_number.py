@@ -24,9 +24,7 @@ def upgrade() -> None:
     op.execute("SET LOCAL lock_timeout = '5s'")
     op.add_column(
         "customers",
-        sa.Column(
-            "credit_note_next_number", sa.Integer(), server_default="1", nullable=True
-        ),
+        sa.Column("credit_note_next_number", sa.Integer(), nullable=True),
     )
 
 

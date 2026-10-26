@@ -47,7 +47,11 @@ from .constants import (
 )
 from .grants import AuthorizationCodeGrant, CodeChallenge, register_grants
 from .metadata import get_server_metadata
-from .requests import StarletteJsonRequest, StarletteOAuth2Request
+from .requests import (
+    ClientConfigurationCredential,
+    StarletteJsonRequest,
+    StarletteOAuth2Request,
+)
 from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
 
 logger: Logger = structlog.get_logger(__name__)
@@ -185,9 +189,11 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
 
         return status, body, headers
 
-    def authenticate_token(self, request: StarletteJsonRequest) -> User | str | None:
+    def authenticate_token(
+        self, request: StarletteJsonRequest
+    ) -> ClientConfigurationCredential | None:
         if request.user is not None:
-            return request.user
+            return ClientConfigurationCredential(request.user)
 
         authorization = request.headers.get("Authorization")
         if authorization is None:
@@ -195,7 +201,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
 
         scheme, _, token = authorization.partition(" ")
         if scheme.lower() == "bearer" and token != "":
-            return token
+            return ClientConfigurationCredential(token)
 
         return None
 
@@ -214,14 +220,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             return None
 
         credential = request.credential
-        if (
-            credential is None
-            or (
-                isinstance(credential, str)
-                and not client.check_registration_access_token(credential)
-            )
-            or (isinstance(credential, User) and client.user_id != credential.id)
-        ):
+        if credential is None or not credential.check_client(client):
             return None
 
         return client

@@ -2094,7 +2094,7 @@ async def test_state_lives_a_day_refreshed_by_reads_writes_and_confirmations(
 ) -> None:
     url, redis = redis_connection
     snapshots["external:alice"] = ALICE_SNAPSHOT
-    key = "outpost:state:external:alice:tokens"
+    key = "outpost:v1:state:external:alice:tokens"
     written = datetime.datetime.fromisoformat("2026-10-12T12:10:00Z")
     event: EventInput = {
         "name": "call",
@@ -2111,7 +2111,7 @@ async def test_state_lives_a_day_refreshed_by_reads_writes_and_confirmations(
         await redis.expire(key, 60)
         await outpost.track(event)
         assert await redis.ttl(key) > 60
-        pending = f"outpost:pending:external:alice:tokens:{get_bucket_start(written)}"
+        pending = f"outpost:v1:pending:external:alice:tokens:{get_bucket_start(written)}"
         assert 0 < await redis.ttl(pending) <= 3_900
         await redis.expire(key, 60)
         await outpost.confirm([event])

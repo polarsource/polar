@@ -1221,7 +1221,7 @@ it("gives the state a day to live, refreshed by each read, write and confirmatio
   const settled = usage(eventId(), 3);
   await outpost.track(settled);
   expect(await redis.ttl(key)).toBeGreaterThan(60);
-  const pending = await redis.ttl(`outpost:pending:external:alice:tokens:${bucket}`);
+  const pending = await redis.ttl(`outpost:v1:pending:external:alice:tokens:${bucket}`);
   expect(pending).toBeGreaterThan(0);
   expect(pending).toBeLessThanOrEqual(3_900);
   await redis.expire(key, 60);

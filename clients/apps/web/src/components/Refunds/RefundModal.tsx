@@ -183,7 +183,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                           <SelectValue placeholder="Select Reason" />
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.values(enums.refundReasonValues).map(
+                          {Object.values(enums.refundCreateReasonValues).map(
                             (reason) => (
                               <SelectItem key={reason} value={reason}>
                                 {RefundReasonDisplay[reason]}

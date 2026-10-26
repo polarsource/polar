@@ -1,7 +1,7 @@
 import { extname, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Effect, type FileSystem } from 'effect'
-import { lint } from '@/linters/lint'
+import { evaluateChecked } from '@/linters/lint'
 import {
   BillingConfigError,
   DEFAULT_CONFIG_FILES,
@@ -70,21 +70,30 @@ const loadScript = (
           () => new BillingConfigError({ message: `Could not read ${file}` }),
         ),
       )
-    const issues = checked ? lint(file, source) : []
+    const evaluate = async () => {
+      const module = (await import(pathToFileURL(resolve(file)).href)) as {
+        default?: unknown
+      }
+      return typeof module.default === 'function'
+        ? ((await module.default()) as unknown)
+        : module.default
+    }
+    const { value, failure, issues } = checked
+      ? yield* Effect.promise(() => evaluateChecked(file, evaluate))
+      : yield* Effect.promise(async () => {
+          try {
+            return { value: await evaluate(), failure: undefined, issues: [] }
+          } catch (failure) {
+            return { value: undefined, failure, issues: [] }
+          }
+        })
     if (issues.some((issue) => issue.severity === 'error')) {
       return { file, source, input: undefined, generated: true, issues }
     }
-    const exported = yield* Effect.tryPromise({
-      try: async () => {
-        const module = (await import(pathToFileURL(resolve(file)).href)) as {
-          default?: unknown
-        }
-        return typeof module.default === 'function'
-          ? ((await module.default()) as unknown)
-          : module.default
-      },
-      catch: (error) => loadFailure(file, error),
-    })
+    if (failure !== undefined) {
+      return yield* loadFailure(file, failure)
+    }
+    const exported = value
     const json = JSON.stringify(exported) as string | undefined
     if (json === undefined || !json.startsWith('{')) {
       return yield* new BillingConfigError({

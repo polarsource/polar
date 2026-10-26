@@ -1,98 +1,45 @@
-export type LanguageId = 'typescript'
-
 export type Severity = 'error' | 'warning'
 
 /**
- * What a rule flags, written like the code it matches:
+ * Roots are paths on `globalThis` that are intercepted while the config is
+ * evaluated. Every library that reads the clock, draws a random number or
+ * talks to the network ends up calling one of them.
  *
- * - `Date.now(...)`  a call with any arguments
- * - `Date()`         a call with no arguments, with or without `new`
- * - `process.env`    a bare reference
+ * - `Date.now`   any call of this function
+ * - `Date()`     a call or `new` with no arguments only
+ * - `process.env` any property read on this object
  *
- * Matches are whole identifiers: `Date.now(...)` does not match `updateDate.now(...)`.
+ * `block` roots throw instead of running, so a config can never make the
+ * request while being planned.
  */
-export type Example = string
-
 export interface Rule {
   readonly severity: Severity
   readonly message: string
-  readonly code: Readonly<Partial<Record<LanguageId, ReadonlyArray<Example>>>>
+  readonly roots: ReadonlyArray<string>
+  readonly block?: boolean
 }
 
 export const RULES = {
   reads_clock: {
     severity: 'error',
     message: 'Reads the clock',
-    code: {
-      typescript: [
-        'Date.now(...)',
-        'Date()',
-        'performance.now(...)',
-        'process.hrtime',
-        'Temporal.Now',
-      ],
-    },
+    roots: ['Date()', 'Date.now', 'performance.now', 'process.hrtime'],
   },
   reads_random: {
     severity: 'error',
     message: 'Uses a random value',
-    code: {
-      typescript: [
-        'Math.random(...)',
-        'randomUUID(...)',
-        'randomBytes(...)',
-        'getRandomValues(...)',
-        'nanoid(...)',
-        'uuid(...)',
-      ],
-    },
+    roots: ['Math.random', 'crypto.randomUUID', 'crypto.getRandomValues'],
   },
   reads_network: {
     severity: 'error',
     message: 'Makes a network request',
-    code: {
-      typescript: [
-        'fetch(...)',
-        'XMLHttpRequest',
-        'WebSocket',
-        'Bun.connect(...)',
-        'axios.',
-        'got(...)',
-        'ky(...)',
-      ],
-    },
+    roots: ['fetch', 'WebSocket', 'XMLHttpRequest'],
+    block: true,
   },
   reads_environment: {
     severity: 'warning',
     message: 'Reads an environment variable',
-    code: {
-      typescript: [
-        'process.env',
-        'process.argv',
-        'Bun.env',
-        'import.meta.env',
-        'os.hostname(...)',
-        'os.userInfo(...)',
-        'Intl.DateTimeFormat(...)',
-      ],
-    },
-  },
-  reads_filesystem: {
-    severity: 'warning',
-    message: 'Reads a file',
-    code: {
-      typescript: [
-        'readFile(...)',
-        'readFileSync(...)',
-        'readdir(...)',
-        'readdirSync(...)',
-        'existsSync(...)',
-        'Bun.file(...)',
-        'spawn(...)',
-        'spawnSync(...)',
-        'execSync(...)',
-      ],
-    },
+    roots: ['process.env'],
   },
 } as const satisfies Record<string, Rule>
 

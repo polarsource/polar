@@ -117,13 +117,6 @@ module "sandbox" {
       num_instances      = 2
       dramatiq_prom_port = "10001"
     }
-    worker-sandbox-drain = {
-      start_command  = "uv run dramatiq polar.worker.run -p 2 -t 8"
-      custom_domains = [{ name = "worker-sandbox-drain.polar.sh" }]
-      redis_host     = render_redis.redis_sandbox.id
-      redis_port     = "6379"
-      redis_db       = "1"
-    }
   }
 
   environment_groups = module.backend_environment.environment_groups

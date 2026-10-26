@@ -8,7 +8,7 @@ import { FileObject } from '@/components/FileUpload'
 import { toast } from '@/components/Toast/use-toast'
 import { ClearOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 type ProductMediaFileObject = FileObject<schemas['ProductMediaFileRead']>
 
@@ -44,14 +44,22 @@ export const FileListItem = ({
 
   const isUploading = useMemo(() => file.isUploading, [file])
 
-  const imageURL = useMemo(() => {
-    if (file.public_url) {
-      return file.public_url
-    } else if (file.file) {
-      return URL.createObjectURL(file.file)
-    }
-    return undefined
-  }, [file])
+  const imageRef = useRef<HTMLImageElement | null>(null)
+  const setDraggableNodeRef = sortable?.setDraggableNodeRef
+  const setImageRef = useCallback(
+    (node: HTMLImageElement | null) => {
+      imageRef.current = node
+      setDraggableNodeRef?.(node)
+    },
+    [setDraggableNodeRef],
+  )
+
+  useEffect(() => {
+    if (file.public_url || !file.file || !imageRef.current) return
+    const objectURL = URL.createObjectURL(file.file)
+    imageRef.current.src = objectURL
+    return () => URL.revokeObjectURL(objectURL)
+  }, [file.public_url, file.file])
 
   return (
     <div
@@ -68,10 +76,10 @@ export const FileListItem = ({
     >
       {/* oxlint-disable-next-line @next/next/no-img-element */}
       <img
-        src={imageURL}
+        src={file.public_url || undefined}
         alt={file.name}
         className="relative aspect-square w-full cursor-grab rounded-2xl object-cover"
-        ref={sortable ? sortable.setDraggableNodeRef : undefined}
+        ref={setImageRef}
         {...sortable?.attributes}
         {...sortable?.listeners}
       />

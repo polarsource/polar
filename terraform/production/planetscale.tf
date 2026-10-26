@@ -6,7 +6,7 @@ module "planetscale" {
   app_database_name = "polar_production"
   app_role_name     = "polar_production"
   region            = "aws-us-east-2"
-  cluster_size      = "M8-640-AWS-ARM-D-METAL-1875"
+  cluster_size      = "M8_640_AWS_ARM_D_METAL_1875"
 
   bouncers = {
     app = {}

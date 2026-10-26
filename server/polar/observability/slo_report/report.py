@@ -59,11 +59,11 @@ class SLOReport:
 
     @property
     def endpoints_passing(self) -> int:
-        return sum(1 for e in self.endpoints if e.is_passing)
+        return sum(1 for e in self.endpoints if e.is_passing and e.has_data)
 
     @property
     def endpoints_failing(self) -> int:
-        return len(self.endpoints) - self.endpoints_passing
+        return sum(1 for e in self.endpoints if not e.is_passing)
 
     @property
     def endpoints_without_data(self) -> list[EndpointSLOStatus]:

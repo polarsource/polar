@@ -182,7 +182,7 @@ def format_slo_report_slack_payload(report: SLOReport) -> SlackPayload:
         blocks.append({"type": "divider"})
 
     # Passing endpoints (compact summary)
-    passing_endpoints = [e for e in report.endpoints if e.is_passing]
+    passing_endpoints = [e for e in report.endpoints if e.is_passing and e.has_data]
     if passing_endpoints:
         passing_list = "\n".join(
             f":white_check_mark: `{e.method} {e.endpoint}` "
@@ -197,6 +197,25 @@ def format_slo_report_slack_payload(report: SLOReport) -> SlackPayload:
                 "text": {
                     "type": "mrkdwn",
                     "text": f"*Healthy Endpoints:*\n{passing_list}",
+                },
+            }
+        )
+
+    no_data_endpoints = [e for e in report.endpoints if e.is_passing and not e.has_data]
+    if no_data_endpoints:
+        no_data_list = "\n".join(
+            f":grey_question: `{e.method} {e.endpoint}` "
+            f"- P99: {_format_duration(e.p99_actual)}, "
+            f"Avail: {_format_percentage(e.availability_actual)}"
+            for e in no_data_endpoints
+        )
+
+        blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Endpoints Without Data:*\n{no_data_list}",
                 },
             }
         )

@@ -57,3 +57,9 @@ class TestFormatSLOReportSlackPayload:
         assert report.overall_status == "incomplete"
         texts = [b["text"]["text"] for b in payload["blocks"] if "text" in b]
         assert any("no data for `GET /v1/checkouts/{id}`" in t for t in texts)
+        assert any("*Critical Endpoints:* 0/1 passing" == t for t in texts)
+        assert any(
+            t.startswith("*Endpoints Without Data:*\n:grey_question: `GET")
+            for t in texts
+        )
+        assert not any(t.startswith("*Healthy Endpoints:*") for t in texts)

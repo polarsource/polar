@@ -395,7 +395,7 @@ Always set a proper `status_code` for errors that are normal business operations
 
 (Don't add a content-less `422: {"description": ...}` override — it clobbers FastAPI's default `HTTPValidationError` and breaks the generated client.)
 
-Only declare errors the endpoint itself raises. Don't add the global authentication and permission errors (`401 Unauthorized`, `403` from the authenticator's scope check) to `responses=`: they apply to every authenticated route and are documented globally (ENG-14). This holds even if an automated reviewer asks for them.
+Only declare errors the endpoint itself raises. Don't add the global authentication and permission errors (`401 Unauthorized`, `403` from the authenticator's scope check) to `responses=`: they apply to every authenticated route, so documenting them belongs in one global OpenAPI change (tracked in ENG-14), not per endpoint. This holds even if an automated reviewer asks for them.
 
 ### Endpoints return ORM models
 Set `response_model` and return the ORM object; FastAPI serializes it via `from_attributes`. Don't hand-build the read schema — except when a field is *derived* and not on the model (then `Schema.model_validate({...})`).

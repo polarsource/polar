@@ -51,3 +51,19 @@ variable "parameters" {
   type        = map(map(string))
   default     = {}
 }
+
+variable "bouncers" {
+  description = "Dedicated PgBouncers keyed by name (at most 12 characters). Clients connect on port 6432 as <app_role_username>|<name>."
+  type = map(object({
+    target            = optional(string, "primary")
+    size              = optional(string, "PGB_5")
+    replicas_per_cell = optional(number, 1)
+    parameters        = optional(map(map(string)), {})
+  }))
+  default = {}
+
+  validation {
+    condition     = alltrue([for name in keys(var.bouncers) : length(name) <= 12])
+    error_message = "Bouncer names must be at most 12 characters."
+  }
+}

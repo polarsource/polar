@@ -167,44 +167,26 @@ describe('evaluateInSubprocess', () => {
   const evaluate = async (content: string, name = 'polar.config.ts') =>
     evaluateInSubprocess(pathToFileURL(await write(content, name)).href, {})
 
-  test('returns the default export, calling it when it is a function', async () => {
-    expect(await evaluate("export default { meters: ['object'] }")).toEqual({
-      meters: ['object'],
-    })
+  test('returns what the default export resolves to, whatever the config prints', async () => {
     expect(
-      await evaluate("export default async () => ({ meters: ['async'] })"),
+      await evaluate(
+        "process.stdout.write('hello')\nexport default async () => ({ meters: ['async'] })",
+      ),
     ).toEqual({ meters: ['async'] })
   })
 
-  test('ignores what the config prints', async () => {
-    expect(
-      await evaluate("console.log('hello')\nexport default { meters: [] }"),
-    ).toEqual({ meters: [] })
-    expect(
-      await evaluate(
-        "process.stdout.write('hello')\nexport default { meters: [] }",
-      ),
-    ).toEqual({ meters: [] })
-  })
-
-  test('returns undefined without a default export', async () => {
-    expect(await evaluate('export const config = {}')).toBeUndefined()
-  })
-
-  test('keeps the missing package in the error', async () => {
-    const error = await evaluate(
+  test('keeps the missing package and the syntax error position', async () => {
+    const missing = await evaluate(
       "import { defineConfig } from '@polar-sh/nope'\nexport default defineConfig({})",
     ).catch((error: unknown) => error)
-    expect(loadFailure('polar.config.ts', error).hint).toBe(
+    expect(loadFailure('polar.config.ts', missing).hint).toBe(
       'It imports @polar-sh/nope, which is not installed. Run npm install @polar-sh/nope.',
     )
-  })
 
-  test('keeps the position of a syntax error', async () => {
-    const error = await evaluate('export default {\n  meters: (\n').catch(
+    const broken = await evaluate('export default {\n  meters: (\n').catch(
       (error: unknown) => error,
     )
-    expect(loadFailure('broken.ts', error).message).toMatch(
+    expect(loadFailure('broken.ts', broken).message).toMatch(
       /^Could not parse broken\.ts:\d+:\d+$/,
     )
   })

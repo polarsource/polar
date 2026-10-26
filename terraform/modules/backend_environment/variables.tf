@@ -25,6 +25,8 @@ variable "pydantic_ai_gateway_secrets" {
 variable "backend_config" {
   type = object({
     environment                                      = optional(string, null)
+    database_statement_cache_size                    = optional(number, null)
+    database_prepared_statement_cache_size           = optional(number, null)
     base_url                                         = string
     backoffice_host                                  = optional(string, null)
     checkout_link_host                               = optional(string, null)

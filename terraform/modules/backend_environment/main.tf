@@ -33,6 +33,10 @@ locals {
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
     },
+    { for name, value in {
+      POLAR_DATABASE_STATEMENT_CACHE_SIZE          = var.backend_config.database_statement_cache_size
+      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE = var.backend_config.database_prepared_statement_cache_size
+    } : name => tostring(value) if value != null },
     var.backend_config.backoffice_host != null ? {
       POLAR_BACKOFFICE_HOST = var.backend_config.backoffice_host
     } : {},

@@ -21,6 +21,7 @@ def _overall_status_emoji(status: str) -> str:
     """Return overall status emoji based on report status."""
     return {
         "healthy": ":large_green_circle:",
+        "incomplete": ":warning:",
         "degraded": ":large_yellow_circle:",
         "critical": ":red_circle:",
     }.get(status, ":grey_question:")
@@ -87,6 +88,21 @@ def format_slo_report_slack_payload(report: SLOReport) -> SlackPayload:
     )
 
     blocks.append({"type": "divider"})
+
+    if report.failed_queries:
+        blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        ":warning: *Incomplete report:* failed to fetch "
+                        f"{', '.join(report.failed_queries)}. "
+                        "Missing values are shown as N/A and not evaluated."
+                    ),
+                },
+            }
+        )
 
     # Summary section
     summary_text = (

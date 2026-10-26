@@ -1,6 +1,6 @@
 """Data models for SLO report."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 
@@ -43,13 +43,16 @@ class SLOReport:
     environment: str
 
     # Global metrics
-    global_availability: float  # percentage
-    error_budget_remaining: float  # percentage (0-100)
+    global_availability: float | None  # percentage, None if no data
+    error_budget_remaining: float | None  # percentage (0-100), None if no data
     total_requests: int
     total_errors: int
 
     # Per-endpoint status
     endpoints: list[EndpointSLOStatus]
+
+    # Names of metrics whose Prometheus query failed
+    failed_queries: list[str] = field(default_factory=list)
 
     @property
     def endpoints_passing(self) -> int:
@@ -62,7 +65,7 @@ class SLOReport:
     @property
     def overall_status(self) -> str:
         if self.endpoints_failing == 0:
-            return "healthy"
+            return "incomplete" if self.failed_queries else "healthy"
         elif self.endpoints_failing <= 1:
             return "degraded"
         else:

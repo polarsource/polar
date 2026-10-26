@@ -60,6 +60,7 @@ async def slo_report_send_weekly() -> None:
             error_budget_remaining=report.error_budget_remaining,
             endpoints_passing=report.endpoints_passing,
             endpoints_failing=report.endpoints_failing,
+            failed_queries=report.failed_queries,
         )
 
         payload = format_slo_report_slack_payload(report)

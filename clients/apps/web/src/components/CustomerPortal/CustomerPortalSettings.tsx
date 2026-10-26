@@ -6,14 +6,13 @@ import {
   useCustomerPaymentMethods,
   useCustomerPortalCustomer,
 } from '@/hooks/queries/customerPortal'
+import { usePaymentMethodEmbed } from '@/hooks/usePaymentMethodEmbed'
 import { createClientSideAPI } from '@/utils/client'
-import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
@@ -33,7 +32,7 @@ export const CustomerPortalSettings = ({
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
   const router = useRouter()
-  const theme = useTheme()
+  const openPaymentMethodEmbed = usePaymentMethodEmbed()
   const queryClient = useQueryClient()
 
   const { data: customer } = useCustomerPortalCustomer()
@@ -62,11 +61,7 @@ export const CustomerPortalSettings = ({
 
   const onAddPaymentMethod = async () => {
     if (!customerSessionToken) return
-    const embed = await PolarEmbedPaymentMethod.create({
-      sessionToken: customerSessionToken,
-      theme: theme.resolvedTheme === 'dark' ? 'dark' : 'light',
-    })
-    embed.addEventListener('success', onPaymentMethodAdded)
+    await openPaymentMethodEmbed(customerSessionToken, onPaymentMethodAdded)
   }
 
   const handleExportData = useCallback(async () => {

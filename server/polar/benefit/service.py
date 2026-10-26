@@ -212,12 +212,16 @@ class BenefitService:
             )
 
         visibility = create_schema.type.resolve_visibility(create_schema.visibility)
+        grant_target = getattr(
+            create_schema, "grant_target", create_schema.type.default_grant_target()
+        )
 
         benefit = Benefit(
             organization=organization,
             is_tax_applicable=is_tax_applicable,
             properties=properties,
             visibility=visibility,
+            grant_target=grant_target,
             **create_schema.model_dump(
                 by_alias=True,
                 exclude={
@@ -225,6 +229,7 @@ class BenefitService:
                     "is_tax_applicable",
                     "properties",
                     "visibility",
+                    "grant_target",
                 },
             ),
         )

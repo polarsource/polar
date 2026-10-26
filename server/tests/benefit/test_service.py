@@ -425,6 +425,7 @@ class TestUserCreate:
         assert benefit.organization_id == organization.id
         assert benefit.type == BenefitType.slack_shared_channel
         assert dict(benefit.properties)["slack_integration_id"] == str(integration.id)
+        assert benefit.grant_target == BenefitGrantTarget.customer
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_set_organization_id(

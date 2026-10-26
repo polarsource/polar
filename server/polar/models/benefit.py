@@ -32,6 +32,11 @@ class TaxApplicationMustBeSpecified(PolarError):
 BenefitVisibility = Annotated[Visibility, SetSchemaReference("BenefitVisibility")]
 
 
+class BenefitGrantTarget(StrEnum):
+    member = "member"
+    customer = "customer"
+
+
 class BenefitType(StrEnum):
     custom = "custom"
     discord = "discord"
@@ -80,17 +85,19 @@ class BenefitType(StrEnum):
             case _:
                 return Visibility.public
 
+    def default_grant_target(self) -> BenefitGrantTarget:
+        match self:
+            case BenefitType.slack_shared_channel:
+                return BenefitGrantTarget.customer
+            case _:
+                return BenefitGrantTarget.member
+
     def resolve_visibility(self, visibility: Visibility | None) -> Visibility:
         if not self.is_visibility_configurable():
             # Benefits requiring customer action in the portal (e.g. Discord,
             # GitHub, downloads) must stay visible.
             return Visibility.public
         return visibility if visibility is not None else self.default_visibility()
-
-
-class BenefitGrantTarget(StrEnum):
-    member = "member"
-    customer = "customer"
 
 
 VISIBILITY_CONFIGURABLE_BENEFIT_TYPES: frozenset[BenefitType] = frozenset(

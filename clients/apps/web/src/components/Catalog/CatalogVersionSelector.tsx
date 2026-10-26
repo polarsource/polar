@@ -2,7 +2,7 @@
 
 import { useCatalogs } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
-import { Status, StatusColor, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   SignalCellularAltOutlined,
@@ -21,38 +21,47 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 
-const STATUS: Record<
-  schemas['Catalog']['status'],
-  { label: string; color: StatusColor }
-> = {
-  draft: { label: 'Draft', color: 'blue' },
-  live: { label: 'Live', color: 'green' },
-  archived: { label: 'Archived', color: 'gray' },
+const STATUS_LABEL: Record<schemas['Catalog']['status'], string> = {
+  draft: 'Draft',
+  live: 'Live',
+  archived: 'Archived',
 }
 
-const shortHash = (catalog: schemas['Catalog']) =>
-  catalog.version_hash?.slice(0, 7)
-
-const CatalogVersionRow = ({ catalog }: { catalog: schemas['Catalog'] }) => {
-  const status = STATUS[catalog.status]
-  return (
-    <Box alignItems="center" columnGap="s" width="100%">
-      <Box flexDirection="column" minWidth={0}>
-        <Text monospace truncate>
-          {shortHash(catalog)}
+const CatalogVersionRow = ({ catalog }: { catalog: schemas['Catalog'] }) => (
+  <Box flexDirection="column" rowGap="xs" minWidth={0} width="100%">
+    <Text color={catalog.name ? 'default' : 'muted'} truncate>
+      {catalog.name ?? 'Untitled'}
+    </Text>
+    <Box alignItems="center" columnGap="s">
+      <Text variant="caption" color="muted" truncate>
+        <Text as="span" variant="caption" color="muted" monospace>
+          {catalog.version_hash?.slice(0, 7)}
         </Text>
-        <Text variant="caption" color="muted" truncate>
-          <PolarTimeAgo
-            date={new Date(catalog.published_at ?? catalog.created_at)}
-          />
+        {' · '}
+        <PolarTimeAgo
+          date={new Date(catalog.published_at ?? catalog.created_at)}
+        />
+      </Text>
+      <Box
+        as="span"
+        flexShrink={0}
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        borderRadius="s"
+        paddingHorizontal="xs"
+      >
+        <Text
+          as="span"
+          variant="caption"
+          color={catalog.status === 'live' ? 'default' : 'muted'}
+        >
+          {STATUS_LABEL[catalog.status]}
         </Text>
-      </Box>
-      <Box marginLeft="auto">
-        <Status status={status.label} color={status.color} size="small" />
       </Box>
     </Box>
-  )
-}
+  </Box>
+)
 
 export const CatalogVersionSelector = ({
   organization,

@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Annotated, Any, Literal
 
 from pydantic import (
@@ -161,8 +160,3 @@ class OrganizationSSOConnectionUpdate(Schema):
     enabled: bool | None = Field(
         default=None, description="Whether the connection can be used to sign in."
     )
-
-
-class OrganizationSSODomain(IDSchema, TimestampedSchema):
-    domain: str = Field(description="Email domain routed to the organization's SSO.")
-    verified_at: datetime = Field(description="When Polar verified the domain.")

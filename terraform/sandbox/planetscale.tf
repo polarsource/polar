@@ -9,7 +9,7 @@ module "planetscale" {
   cluster_size      = "PS_80_AWS_ARM"
 
   bouncers = {
-    primary = {
+    app = {
       parameters = { pgbouncer = { default_pool_size = "12" } }
     }
   }

@@ -12,14 +12,35 @@ import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Check as CheckIcon } from '@polar-sh/orbit/icons'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import type { ComponentProps } from 'react'
 import { SectionLayout } from './SectionLayout'
 
 interface Props {
   organization: schemas['Organization']
   step: schemas['OrganizationReviewCheck']
+  centered?: boolean
 }
 
-export const DomainVerificationSection = ({ organization, step }: Props) => {
+const CenteredLayout = ({
+  description,
+  children,
+  footerEnd,
+}: ComponentProps<typeof SectionLayout>) => (
+  <>
+    <p className="dark:text-polar-400 mx-auto max-w-sm text-sm text-balance text-gray-600">
+      {description}
+    </p>
+    {children && <div className="mt-6">{children}</div>}
+    {footerEnd && <div className="mt-6">{footerEnd}</div>}
+  </>
+)
+
+export const DomainVerificationSection = ({
+  organization,
+  step,
+  centered = false,
+}: Props) => {
+  const Layout = centered ? CenteredLayout : SectionLayout
   const { data: domains } = useOrganizationDomains(organization.id)
   const createDomain = useCreateOrganizationDomain(organization.id)
   const verifyDomain = useVerifyOrganizationDomain(organization.id)
@@ -41,9 +62,9 @@ export const DomainVerificationSection = ({ organization, step }: Props) => {
   const domainName = step.value
   if (!domainName) {
     return (
-      <SectionLayout description="Add your product website first, then verify its domain.">
+      <Layout description="Add your product website first, then verify its domain.">
         {null}
-      </SectionLayout>
+      </Layout>
     )
   }
 
@@ -71,7 +92,7 @@ export const DomainVerificationSection = ({ organization, step }: Props) => {
 
   if (!domain) {
     return (
-      <SectionLayout
+      <Layout
         description={`Prove you own ${domainName} by adding a DNS TXT record.`}
         footerEnd={
           <Button
@@ -85,12 +106,12 @@ export const DomainVerificationSection = ({ organization, step }: Props) => {
         }
       >
         {null}
-      </SectionLayout>
+      </Layout>
     )
   }
 
   return (
-    <SectionLayout
+    <Layout
       description={`Add this TXT record to the DNS of ${domainName}. Keep it in place: Polar checks it again during reviews.`}
       footerEnd={
         <Button
@@ -117,6 +138,6 @@ export const DomainVerificationSection = ({ organization, step }: Props) => {
           variant="mono"
         />
       </Box>
-    </SectionLayout>
+    </Layout>
   )
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import { DomainVerificationSection } from '@/components/Finance/Account/sections/DomainVerificationSection'
 import IdentityStep from '@/components/Finance/Steps/IdentityStep'
 import PayoutAccountStep from '@/components/Finance/Steps/PayoutAccountStep'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -7,7 +8,10 @@ import { Section, SectionDescription } from '@/components/Settings/Section'
 import { toast } from '@/components/Toast/use-toast'
 import { isTerminalStatus } from '@/hooks/identityVerification'
 import { useAuth } from '@/hooks'
-import { useCreateIdentityVerification } from '@/hooks/queries'
+import {
+  useCreateIdentityVerification,
+  useOrganizationReviewState,
+} from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Check as CheckIcon } from '@polar-sh/orbit/icons'
@@ -22,6 +26,11 @@ export const AccountPageApproved = ({ organization }: Props) => {
   const { currentUser, reloadUser } = useAuth()
   const identityVerificationStatus = currentUser?.identity_verification_status
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const { data: reviewState } = useOrganizationReviewState(organization.id)
+  const domainVerificationStep = reviewState?.preliminary_steps?.find(
+    (step) => step.key === 'product_url.domain_verification',
+  )
 
   const stripePromise = loadPolarStripe()
   const createIdentityVerification = useCreateIdentityVerification()
@@ -144,6 +153,22 @@ export const AccountPageApproved = ({ organization }: Props) => {
             onStartIdentityVerification={startIdentityVerification}
           />
         </Section>
+
+        {domainVerificationStep && (
+          <Section>
+            <SectionDescription
+              title="Domain Verification"
+              description="Prove you own your website domain with a DNS record."
+            />
+            <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
+              <DomainVerificationSection
+                organization={organization}
+                step={domainVerificationStep}
+                centered
+              />
+            </div>
+          </Section>
+        )}
       </div>
     </DashboardBody>
   )

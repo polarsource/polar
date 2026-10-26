@@ -9,7 +9,7 @@ from polar.config import settings
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.observability.baggage import organization_baggage
 
-from .collectors.setup import is_on_verified_domain
+from .collectors.setup import is_same_or_subdomain
 from .known_domains import known_domains_for_prompt, match_known_domain
 from .policy import fetch_policy_content
 from .schemas import (
@@ -661,7 +661,7 @@ def _annotate_domains(domains: list[str], verified_domains: list[str]) -> str:
     for d in domains:
         if match_known_domain(d) is not None:
             parts.append(f"{d} (known service)")
-        elif is_on_verified_domain(d, verified_domains):
+        elif any(is_same_or_subdomain(d, v) for v in verified_domains):
             parts.append(f"{d} {_VERIFIED_DOMAIN_TAG}")
         else:
             parts.append(d)
@@ -791,9 +791,8 @@ class ReviewAnalyzer:
         parts.append(f"Name: {org.name}")
         parts.append(f"Slug: {org.slug}")
         if org.website:
-            if is_on_verified_domain(
-                urlparse(org.website).hostname or "", snapshot.verified_domains
-            ):
+            host = urlparse(org.website).hostname or ""
+            if any(is_same_or_subdomain(host, v) for v in snapshot.verified_domains):
                 parts.append(f"Website: {org.website} {_VERIFIED_DOMAIN_TAG}")
             else:
                 parts.append(f"Website: {org.website}")

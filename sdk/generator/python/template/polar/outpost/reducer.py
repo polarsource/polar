@@ -135,6 +135,8 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
         return ordering_matcher
 
     child_matchers = [get_matcher(child) for child in clause["clauses"]]
+    if not child_matchers:
+        return lambda event: True
     if len(child_matchers) == 1:
         return child_matchers[0]
     if clause["conjunction"] == "and":

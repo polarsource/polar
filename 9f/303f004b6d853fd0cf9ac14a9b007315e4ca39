@@ -1,0 +1,26 @@
+clients/.changeset/cli-load-ts-config-binary.md
+  s_8c30bf18103b94::t_ccac3073002dbe 1-5
+clients/packages/cli/src/services/billing-config/load.ts
+  s_8c30bf18103b94::t_a3eada31cb6696 9-10
+  s_8c30bf18103b94::t_b71ceacf076dd9 61-130,140-141,143-145
+  s_8c30bf18103b94::t_44cac6f53a6982 146-148
+clients/packages/cli/src/services/billing-config/load.test.ts
+  s_8c30bf18103b94::t_c3e56cc5e3096f 166-214
+  s_8c30bf18103b94::t_2d77bb3c7c8cd4 7-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f303f004b6d853fd0cf9ac14a9b007315e4ca39",
+  "prompts": {},
+  "sessions": {
+    "s_8c30bf18103b94": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "263c7947-f84c-4273-bad9-01494c2b6500",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

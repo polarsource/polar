@@ -3,7 +3,7 @@
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import React, { useCallback } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 import { MeteredTierCard } from './MeteredTierCard'
 
@@ -28,14 +28,13 @@ export const MeteredTierEditor: React.FC<MeteredTierEditorProps> = ({
   index,
   currency,
 }) => {
-  const { control, setValue, watch, getValues } =
-    useFormContext<ProductFormType>()
+  const { control, setValue, getValues } = useFormContext<ProductFormType>()
   const { fields, append, remove } = useFieldArray({
     control,
     name: `prices.${index}.tiers.tiers` as const,
   })
 
-  const tiers = watch(`prices.${index}.tiers.tiers`)
+  const tiers = useWatch({ control, name: `prices.${index}.tiers.tiers` })
   const hasSingleTier = fields.length === 1
 
   const forceLastTierUnbounded = useCallback(() => {

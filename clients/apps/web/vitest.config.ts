@@ -2,6 +2,8 @@ import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
+const reactCompilerBabelPlugin = ['babel-plugin-react-compiler', {}]
+
 const stylexBabelPlugin = [
   '@stylexjs/babel-plugin',
   {
@@ -21,7 +23,9 @@ const CHECKOUT_FILES = [
 export default defineConfig({
   plugins: [
     tsconfigPaths({ projects: ['tsconfig.json'] }),
-    react({ babel: { plugins: [stylexBabelPlugin] } }),
+    react({
+      babel: { plugins: [reactCompilerBabelPlugin, stylexBabelPlugin] },
+    }),
   ],
   test: {
     environment: 'jsdom',

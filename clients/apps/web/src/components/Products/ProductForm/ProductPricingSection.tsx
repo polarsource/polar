@@ -25,7 +25,7 @@ import {
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Section } from '../../Layout/Section'
 import { CurrencyTabs } from './Pricing/CurrencyTabs'
@@ -57,8 +57,7 @@ export const ProductPricingSection = ({
   compact,
   hasMeterCreditBenefit,
 }: ProductPricingSectionProps) => {
-  const { control, setValue, watch, getValues } =
-    useFormContext<ProductFormType>()
+  const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
   const pricesFieldArray = useFieldArray({
     control,
@@ -86,8 +85,11 @@ export const ProductPricingSection = ({
 
   useAutoSwitchToErroredPriceTab(setSelectedCurrency)
 
-  const recurringInterval = watch('recurring_interval')
-  const recurringIntervalCount = watch('recurring_interval_count')
+  const recurringInterval = useWatch({ control, name: 'recurring_interval' })
+  const recurringIntervalCount = useWatch({
+    control,
+    name: 'recurring_interval_count',
+  })
 
   useEffect(() => {
     if (recurringInterval !== null) {
@@ -149,8 +151,8 @@ export const ProductPricingSection = ({
     [pricesByCurrency, validatedSelectedCurrency],
   )
 
-  const watchedPrices = watch('prices')
-  const meterInterval = watch('meter_interval')
+  const watchedPrices = useWatch({ control, name: 'prices' })
+  const meterInterval = useWatch({ control, name: 'meter_interval' })
 
   const showMeterCycle = shouldShowMeterCycle({
     isRecurring: productType === 'recurring',

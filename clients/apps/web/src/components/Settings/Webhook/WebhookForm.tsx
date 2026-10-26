@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useEffect } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { TreeMultiSelect } from '../TreeMultiSelect'
 
 type CreateOrUpdate =
@@ -120,9 +120,9 @@ export const FieldUrl = () => {
 }
 
 export const FieldFormat = () => {
-  const { control, watch, setValue } = useFormContext<CreateOrUpdate>()
+  const { control, setValue } = useFormContext<CreateOrUpdate>()
 
-  const url = watch('url')
+  const url = useWatch({ control, name: 'url' })
   useEffect(() => {
     if (!url) {
       return

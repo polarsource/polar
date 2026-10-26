@@ -34,7 +34,12 @@ import {
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { UseFormReturn, WatchObserver } from 'react-hook-form'
+import {
+  UseFormReturn,
+  WatchObserver,
+  useWatch,
+  useFormState,
+} from 'react-hook-form'
 import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
@@ -101,14 +106,8 @@ const BaseCheckoutForm = ({
   const interval = hasProductCheckout(checkout)
     ? checkout.product.recurring_interval
     : null
-  const {
-    control,
-    handleSubmit,
-    watch,
-    clearErrors,
-    resetField,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, watch, clearErrors, resetField } = form
+  const { errors } = useFormState({ control })
 
   const { trialUnavailable } = useCheckoutForm()
 
@@ -121,7 +120,10 @@ const BaseCheckoutForm = ({
 
   const t = useTranslations(locale)
 
-  const country = watch('customer_billing_address.country')
+  const country = useWatch({
+    control,
+    name: 'customer_billing_address.country',
+  })
   const watcher: WatchObserver<schemas['CheckoutUpdatePublic']> = useCallback(
     async (value, { name }) => {
       if (!name) {
@@ -202,7 +204,7 @@ const BaseCheckoutForm = ({
     [checkout, update, clearErrors],
   )
 
-  const discountCode = watch('discount_code')
+  const discountCode = useWatch({ control, name: 'discount_code' })
 
   useEffect(() => {
     if (!discountCode && !checkout.discount) {
@@ -226,7 +228,7 @@ const BaseCheckoutForm = ({
     return () => subscription.unsubscribe()
   }, [watch, debouncedWatcher])
 
-  const taxId = watch('customer_tax_id')
+  const taxId = useWatch({ control, name: 'customer_tax_id' })
   const addTaxID = useCallback(async () => {
     if (!taxId) {
       return

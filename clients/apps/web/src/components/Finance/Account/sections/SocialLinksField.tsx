@@ -6,7 +6,7 @@ import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { FormField } from '@polar-sh/ui/components/ui/form'
 import { useListKeys } from '@/hooks/useListKeys'
-import { useFormContext, useWatch } from 'react-hook-form'
+import { useFormContext, useWatch, useFormState } from 'react-hook-form'
 
 const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
   'x.com': 'x',
@@ -58,7 +58,8 @@ interface Props {
 }
 
 export const SocialLinksField = ({ required }: Props) => {
-  const { control, formState } = useFormContext<schemas['OrganizationUpdate']>()
+  const { control } = useFormContext<schemas['OrganizationUpdate']>()
+  const formState = useFormState({ control })
   // An empty list still renders one blank row to type into.
   const rowKeys = useListKeys(
     Math.max(1, useWatch({ control, name: 'socials' })?.length ?? 0),

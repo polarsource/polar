@@ -31,7 +31,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React, { useCallback, useMemo } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { CurrencySelector } from '../CurrencySelector'
 import ProductSelect from '../Products/ProductSelect'
 
@@ -55,14 +55,17 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
   update,
   redemptionsCount,
 }) => {
-  const { control, watch, setValue } = useFormContext<DiscountFormValues>()
+  const { control, setValue } = useFormContext<DiscountFormValues>()
 
-  const type = watch('type') as schemas['DiscountType']
-  const duration = watch('duration') as schemas['DiscountDuration']
+  const type = useWatch({ control, name: 'type' }) as schemas['DiscountType']
+  const duration = useWatch({
+    control,
+    name: 'duration',
+  }) as schemas['DiscountDuration']
 
   const now = useMemo(() => new Date(), [])
-  const startsAt = watch('starts_at')
-  const endsAt = watch('ends_at')
+  const startsAt = useWatch({ control, name: 'starts_at' })
+  const endsAt = useWatch({ control, name: 'ends_at' })
 
   const canUpdateAmount =
     redemptionsCount === undefined || redemptionsCount === 0

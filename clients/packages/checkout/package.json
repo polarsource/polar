@@ -93,6 +93,7 @@
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
     "@vitest/coverage-v8": "catalog:",
     "jsdom": "catalog:",
     "react": "^19.3.0",

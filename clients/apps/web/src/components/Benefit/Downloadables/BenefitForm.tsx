@@ -7,7 +7,7 @@ import { useFiles } from '@/hooks/queries/files'
 import { FileUploadOutlined as FileUploadIcon } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { ReactElement, useCallback, useEffect, useRef, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useFormState } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileList } from './FileList'
 
@@ -58,13 +58,9 @@ const DownloadablesForm = ({
   initialArchivedFiles,
   onUploadingChange,
 }: DownloadablesFormProps) => {
-  const {
-    setValue,
-    register,
-    clearErrors,
-    formState: { errors },
-    trigger,
-  } = useFormContext<schemas['BenefitDownloadablesCreate']>()
+  const { control, setValue, register, clearErrors, trigger } =
+    useFormContext<schemas['BenefitDownloadablesCreate']>()
+  const { errors } = useFormState({ control })
 
   register('properties.files', {
     minLength: 1,

@@ -21,7 +21,7 @@ import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 
 interface MetricItem {
@@ -156,13 +156,10 @@ export const MetricDashboardEditorContent = ({
     ? selected.find((m) => m.id === activeId)
     : null
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<{ name: string }>({
+  const { control, register, handleSubmit } = useForm<{ name: string }>({
     defaultValues: { name: initialName ?? '' },
   })
+  const { errors } = useFormState({ control })
 
   const onSubmit = useCallback(
     async (data: { name: string }) => {

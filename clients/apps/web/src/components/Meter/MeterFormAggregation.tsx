@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 
 type AggregationFunction =
   | (typeof enums.countAggregationFuncValues)[number]
@@ -43,8 +43,8 @@ const ALL_AGGREGATION_FUNCTIONS: AggregationFunction[] = [
 ]
 
 const MeterFormAggregation = () => {
-  const { control, watch } = useFormContext<schemas['MeterCreate']>()
-  const func = watch('aggregation.func')
+  const { control } = useFormContext<schemas['MeterCreate']>()
+  const func = useWatch({ control, name: 'aggregation.func' })
   const needsProperty = func && func !== 'count'
 
   return (

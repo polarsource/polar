@@ -35957,6 +35957,8 @@ export interface components {
       | 'service_disruption'
       | 'satisfaction_guarantee'
       | 'dispute_prevention'
+      | 'tax_refund'
+      | 'vat_reverse_charge_correction'
       | 'other'
     /**
      * RefundSortProperty
@@ -75640,6 +75642,8 @@ export const refundReasonValues: ReadonlyArray<
   'service_disruption',
   'satisfaction_guarantee',
   'dispute_prevention',
+  'tax_refund',
+  'vat_reverse_charge_correction',
   'other',
 ]
 export const refundSortPropertyValues: ReadonlyArray<

@@ -169,7 +169,7 @@ The UI should treat this as leave-and-return background work (poll while `pendin
 
 ## Data retention
 
-A daily job closes every migration with no activity for 90 days (`modified_at`), at any step, unless it is already `completed` or has an operation running. Closing deletes the records that were never imported (`pending`) in batches, then deletes the stored Stripe restricted key and sets `step = completed` in one transaction, so a migration never loses its key without being completed. An interrupted close is picked up by the next run. Imported, skipped and failed records stay, including card details (last4, brand, expiry), because they map Stripe objects to Polar ones and help with debugging. Stripe has no API to revoke a restricted key, so the merchant deletes it in their Stripe dashboard.
+A daily job closes every migration with no activity for 90 days (`modified_at`), at any step, unless it is already `completed` or `closed`, or has an operation running. Closing deletes the records that were never imported (`pending`) in batches, then deletes the stored Stripe restricted key and sets `step = closed` in one transaction, so a migration never loses its key without being closed. `closed` is kept apart from `completed`, which means the merchant finished. An interrupted close is picked up by the next run. Imported, skipped and failed records stay, including card details (last4, brand, expiry), because they map Stripe objects to Polar ones and help with debugging. Stripe has no API to revoke a restricted key, so the merchant deletes it in their Stripe dashboard.
 
 ## Testing and rollout
 

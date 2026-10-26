@@ -136,6 +136,39 @@ describe("reduction", () => {
     expect(getMatcher({ property: "value", operator: "ne", value: expected })(sample)).toBe(!equal);
   });
 
+  it.each([
+    ["gpt-4o-mini", "4o", true],
+    ["gpt-4o-mini", "claude", false],
+    ["gpt-4o-mini", "GPT", false],
+    ["100%_done", "%_", true],
+  ] as const)("checks whether %s contains %s like Polar", (actual, expected, contained) => {
+    const sample = { ...event, metadata: { value: actual } };
+    expect(getMatcher({ property: "value", operator: "like", value: expected })(sample)).toBe(
+      contained,
+    );
+    expect(getMatcher({ property: "value", operator: "not_like", value: expected })(sample)).toBe(
+      !contained,
+    );
+  });
+
+  it.each([
+    [1234, "23"],
+    [true, "true"],
+    ["1234", 23],
+    ["true", true],
+  ] as const)(
+    "matches neither like nor not_like when %s or %s is not a string",
+    (actual, expected) => {
+      const sample = { ...event, metadata: { value: actual } };
+      for (const operator of ["like", "not_like"] as const)
+        expect(getMatcher({ property: "value", operator, value: expected })(sample)).toBe(false);
+    },
+  );
+
+  it.each(["like", "not_like"] as const)("ignores missing properties for %s", (operator) => {
+    expect(getMatcher({ property: "missing", operator, value: "a" })(event)).toBe(false);
+  });
+
   it("rejects ambiguous customers, timezone-free timestamps, and non-finite reductions", () => {
     expect(() =>
       parseEvent({ name: "api", external_customer_id: "a", timestamp: "2026-10-12T12:00:00" }),

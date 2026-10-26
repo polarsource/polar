@@ -2,7 +2,7 @@ import { getPropertyReader, type Event, type PropertyReader } from "./event";
 
 export interface FilterClause {
   property: string;
-  operator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte";
+  operator: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like" | "not_like";
   value: string | number | boolean;
 }
 export interface Filter {
@@ -82,6 +82,16 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
       const actual = read(event);
       if (actual === undefined || actual === null) return false;
       return ((typeof actual === "boolean" ? Number(actual) : actual) === expected) === equal;
+    };
+  }
+  if (filter.operator === "like" || filter.operator === "not_like") {
+    // Polar compares strings; a number or boolean on either side matches nothing.
+    const expected = filter.value;
+    if (typeof expected !== "string") return () => false;
+    const contains = filter.operator === "like";
+    return (event) => {
+      const actual = read(event);
+      return typeof actual === "string" && actual.includes(expected) === contains;
     };
   }
   const expected = filter.value;

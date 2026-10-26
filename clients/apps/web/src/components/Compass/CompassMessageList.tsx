@@ -115,9 +115,9 @@ export const CompassMessageList = ({
                     borderRadius="l"
                     backgroundColor="background-card"
                   >
-                    {message.parts.map((part, i) => (
+                    {message.parts.map((part) => (
                       <AssistantPartView
-                        key={i}
+                        key={part.id}
                         part={part}
                         organization={organization}
                       />
@@ -138,9 +138,9 @@ export const CompassMessageList = ({
                         Thinking...
                       </span>
                     ) : (
-                      message.parts.map((part, i) => (
+                      message.parts.map((part) => (
                         <AssistantPartView
-                          key={i}
+                          key={part.id}
                           part={part}
                           organization={organization}
                           answeredAt={message.answeredAt}

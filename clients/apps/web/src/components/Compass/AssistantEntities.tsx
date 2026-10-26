@@ -6,6 +6,7 @@ import {
   DataTableColumn,
   DataTableRow,
 } from '@/hooks/useCompassAssistant'
+import { keyByContent } from '@/utils/keys'
 import { Avatar, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTable, DataTableColumnDef, List, ListItem } from '@polar-sh/orbit'
@@ -101,8 +102,8 @@ export const EntityListView = ({
         </Text>
       ) : null}
       <List size="small">
-        {block.rows.map((row, i) => (
-          <ListItem key={i} size="small">
+        {keyByContent(block.rows).map(({ item: row, key }) => (
+          <ListItem key={key} size="small">
             <Box
               width="100%"
               display="flex"

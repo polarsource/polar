@@ -51,7 +51,7 @@ export function PanTransferStepBody({
       {copy.guidance && (
         <Box as="ol" flexDirection="column" rowGap="xs">
           {copy.guidance.map((line, index) => (
-            <Box as="li" key={index} display="flex" columnGap="s">
+            <Box as="li" key={line} display="flex" columnGap="s">
               {/* The list marker is reset away, so spell the order out. */}
               <Text variant="caption" color="muted" tabularNums>
                 {index + 1}.

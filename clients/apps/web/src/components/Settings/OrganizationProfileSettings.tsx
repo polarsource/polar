@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { useListKeys } from '@/hooks/useListKeys'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
 import { containsBlockedWord } from '@/utils/blocked-words'
@@ -69,6 +70,9 @@ const OrganizationSocialLinks = ({
   readOnly,
 }: OrganizationSocialLinksProps) => {
   const { control } = useFormContext<schemas['OrganizationUpdate']>()
+  const socialKeys = useListKeys(
+    useWatch({ control, name: 'socials' })?.length ?? 0,
+  )
 
   const getIcon = (platform: string, className: string) => {
     switch (platform) {
@@ -134,7 +138,10 @@ const OrganizationSocialLinks = ({
         return (
           <div className="space-y-3">
             {socials.map((social, index) => (
-              <div key={index} className="flex items-center gap-3">
+              <div
+                key={socialKeys.keys[index]}
+                className="flex items-center gap-3"
+              >
                 <div className="flex w-5 justify-center">
                   {getIcon(social.platform, 'text-gray-400 h-4 w-4')}
                 </div>
@@ -160,6 +167,7 @@ const OrganizationSocialLinks = ({
                     size="icon"
                     disabled={readOnly}
                     onClick={() => {
+                      socialKeys.remove(index)
                       field.onChange(socials.filter((_, i) => i !== index))
                     }}
                     className="dark:text-polar-400 text-gray-400 hover:text-gray-600"

@@ -3026,6 +3026,7 @@ class TestExport:
         assert set(ConfigExportDocument.model_fields) == set(Config.model_fields) - {
             "organization_id",
             "webhooks",
+            "catalog_name",
         }
         assert {type(benefit) for benefit in config.benefits} == set(
             get_args(get_args(ConfigBenefit)[0])

@@ -286,7 +286,6 @@ class TestCloseIdle:
                 True,
                 id="active_operation",
             ),
-            pytest.param(MerchantMigrationStep.cleanup, IDLE, False, id="cleanup"),
             pytest.param(MerchantMigrationStep.completed, IDLE, False, id="completed"),
             pytest.param(MerchantMigrationStep.closed, IDLE, False, id="closed"),
         ],

@@ -196,14 +196,14 @@ class TestList:
         assert response.status_code == 200
         assert "No migrations in this view." in response.text
 
-    async def test_completed_view_includes_cleanup(
+    async def test_completed_view_lists_finished_migrations(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -217,14 +217,14 @@ class TestList:
         assert "No migrations in this view." not in response.text
         assert "close the migration out" not in response.text
 
-    async def test_active_view_excludes_cleanup(
+    async def test_active_view_excludes_finished(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -234,14 +234,14 @@ class TestList:
         assert response.status_code == 200
         assert "No migrations in this view." in response.text
 
-    async def test_needs_ops_view_excludes_cleanup(
+    async def test_needs_ops_view_excludes_finished(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -471,14 +471,14 @@ class TestDetail:
 
         assert response.status_code == 404
 
-    async def test_cleanup_detail_reads_as_completed(
+    async def test_completed_detail_reads_as_done(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         migration = await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(f"/merchant-migrations/{migration.id}")

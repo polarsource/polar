@@ -67,7 +67,6 @@ from .status import (
     progress,
     step_inputs,
     step_position,
-    visible_step,
 )
 
 router = BackofficeRouter()
@@ -394,7 +393,7 @@ async def get_migration(
                 with metric_card(
                     "Step",
                     f"{position}/{total}",
-                    subtitle=STEP_LABELS[visible_step(migration.step)],
+                    subtitle=STEP_LABELS[migration.step],
                 ):
                     pass
                 with metric_card(

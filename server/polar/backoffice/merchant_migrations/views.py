@@ -26,7 +26,6 @@ from .status import (
     RecordProgress,
     is_ops_actionable,
     step_position,
-    visible_step,
 )
 
 # Colour is reserved for the two levels that mean "an operator has to do
@@ -80,10 +79,9 @@ def source_cell(migration: MerchantMigration) -> None:
 
 
 def step_cell(migration: MerchantMigration) -> None:
-    step = visible_step(migration.step)
     position, total = step_position(migration.step)
     with tag.div(classes="flex flex-col"):
-        text(STEP_LABELS[step])
+        text(STEP_LABELS[migration.step])
         with tag.div(classes="text-xs text-base-content/60"):
             text(f"Step {position} of {total}")
 

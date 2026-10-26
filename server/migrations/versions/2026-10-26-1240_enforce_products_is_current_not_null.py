@@ -1,7 +1,7 @@
 """enforce products.is_current NOT NULL
 
 Revision ID: 9c7e4a1f2b38
-Revises: 4f8a2c6e1b90
+Revises: 9c3e7a1d5b24
 Create Date: 2026-10-21 09:30:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9c7e4a1f2b38"
-down_revision = "4f8a2c6e1b90"
+down_revision = "9c3e7a1d5b24"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

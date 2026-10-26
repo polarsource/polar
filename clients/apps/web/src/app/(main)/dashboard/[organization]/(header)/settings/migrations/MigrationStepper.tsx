@@ -15,6 +15,9 @@ export function MigrationStepper({
   migration: schemas['MerchantMigration']
   panCurrentStepKey?: string | null
 }) {
+  if (migration.step === 'closed') {
+    return null
+  }
   const position = currentPosition(migration, panCurrentStepKey)
   // A completed migration has every step behind it.
   const current =

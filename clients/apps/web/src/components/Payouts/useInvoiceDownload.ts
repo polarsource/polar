@@ -61,7 +61,7 @@ export const useInvoiceDownload = ({
       setLoading(false)
       return
     }
-    window.open(response.data.url, '_blank')
+    window.open(response.data.url, '_blank', 'noopener,noreferrer')
     setLoading(false)
     onClose()
   }, [payout, onClose])

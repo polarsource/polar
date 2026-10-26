@@ -35,6 +35,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@typescript/native": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
     "tailwindcss": "catalog:",
     "ts-morph": "^25.0.1",
     "typescript": "catalog:"

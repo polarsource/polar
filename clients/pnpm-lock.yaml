@@ -848,6 +848,9 @@ importers:
       '@typescript/native':
         specifier: 'catalog:'
         version: typescript@7.0.2
+      babel-plugin-react-compiler:
+        specifier: 1.0.0
+        version: 1.0.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.3.3
@@ -1119,6 +1122,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.3(vitest@5.0.3)
+      babel-plugin-react-compiler:
+        specifier: 1.0.0
+        version: 1.0.0
       jsdom:
         specifier: 'catalog:'
         version: 27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2)

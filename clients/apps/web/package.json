@@ -108,6 +108,7 @@
     "@typescript/native": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
     "jsdom": "catalog:",
     "msw": "^2.15.0",
     "playwright": "1.63.0",

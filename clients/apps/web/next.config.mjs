@@ -28,6 +28,7 @@ const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
 const nextConfig = {
   allowedDevOrigins: ['127.0.0.1', '*.taildbff7b.ts.net'],
   reactStrictMode: true,
+  reactCompiler: true,
   experimental: {
     useTypeScriptCli: false,
     optimizePackageImports: ['@polar-sh/orbit/icons'],

@@ -176,7 +176,7 @@ class Metering:
 
     Create with polar.metering() and use as an async context manager. By
     default, events are buffered for HTTP delivery, with Outpost added when
-    a Redis URL is configured. Accepting an event does not confirm delivery.
+    outpost is set. Accepting an event does not confirm delivery.
     """
 
     def __init__(

@@ -114,7 +114,7 @@ export type MeteringOptions =
  *
  * Create with polar.metering(), then await start() before use and close() on
  * shutdown. By default, events are buffered for HTTP delivery, with Outpost added
- * when a Redis URL is configured. Accepting an event does not confirm delivery.
+ * when the outpost option is set. Accepting an event does not confirm delivery.
  */
 export class Metering {
   readonly strategies: readonly MeteringStrategy[];

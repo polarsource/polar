@@ -14,12 +14,12 @@ import {
 import { AlternateEmailOutlined, GitHub, Google } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { ListGroup } from '@polar-sh/orbit'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
 import { toast } from '../Toast/use-toast'
 import { twMerge } from 'tailwind-merge'
+import { SettingsGroup, SettingsGroupRow } from './SettingsGroup'
 
 const AuthenticationMethod = ({
   icon,
@@ -244,8 +244,8 @@ const AuthenticationSettings = () => {
 
   return (
     <div ref={listGroupRef}>
-      <ListGroup>
-        <ListGroup.Item>
+      <SettingsGroup>
+        <SettingsGroupRow>
           <GitHubAuthenticationMethod
             oauthAccount={githubAccount}
             returnTo={pathname || '/start'}
@@ -257,9 +257,9 @@ const AuthenticationSettings = () => {
                 : undefined
             }
           />
-        </ListGroup.Item>
+        </SettingsGroupRow>
 
-        <ListGroup.Item>
+        <SettingsGroupRow>
           <GoogleAuthenticationMethod
             oauthAccount={googleAccount}
             returnTo={pathname || '/start'}
@@ -271,9 +271,9 @@ const AuthenticationSettings = () => {
                 : undefined
             }
           />
-        </ListGroup.Item>
+        </SettingsGroupRow>
 
-        <ListGroup.Item>
+        <SettingsGroupRow>
           <AuthenticationMethod
             icon={<AlternateEmailOutlined />}
             title={currentUser?.email}
@@ -281,8 +281,8 @@ const AuthenticationSettings = () => {
             action={updateEmailContent[updateEmailStage]}
             hideTitle={updateEmailStage !== 'off'}
           />
-        </ListGroup.Item>
-      </ListGroup>
+        </SettingsGroupRow>
+      </SettingsGroup>
     </div>
   )
 }

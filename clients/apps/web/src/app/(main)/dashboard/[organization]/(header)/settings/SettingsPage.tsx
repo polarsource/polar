@@ -191,10 +191,6 @@ export default function ClientPage({
         </Section>
 
         <Section id="danger">
-          <SectionDescription
-            title="Danger Zone"
-            description="Irreversible actions for this organization"
-          />
           {canManageOrganization === false ? (
             <AccessRestricted message="You don't have permission to delete this organization." />
           ) : (

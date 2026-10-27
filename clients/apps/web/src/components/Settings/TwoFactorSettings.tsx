@@ -8,7 +8,6 @@ import {
 } from '@/hooks'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Button } from '@polar-sh/orbit'
-import { ListGroup } from '@polar-sh/orbit'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useState } from 'react'
@@ -20,6 +19,7 @@ import {
   KeyRound as KeyRoundIcon,
   ShieldCheck as ShieldCheckIcon,
 } from '@polar-sh/orbit/icons'
+import { SettingsGroup, SettingsGroupRow } from './SettingsGroup'
 const AuthenticationMethod = ({
   icon,
   title,
@@ -95,8 +95,8 @@ const TwoFactorSettings = () => {
 
   return (
     <div>
-      <ListGroup>
-        <ListGroup.Item>
+      <SettingsGroup>
+        <SettingsGroupRow>
           <AuthenticationMethod
             icon={<ShieldCheckIcon />}
             title="Authenticator App"
@@ -119,10 +119,10 @@ const TwoFactorSettings = () => {
               )
             }
           />
-        </ListGroup.Item>
+        </SettingsGroupRow>
 
         {totpStatus.data?.enabled && (
-          <ListGroup.Item>
+          <SettingsGroupRow>
             <AuthenticationMethod
               icon={<KeyRoundIcon />}
               title="Backup Codes"
@@ -166,9 +166,9 @@ const TwoFactorSettings = () => {
                 )
               }
             />
-          </ListGroup.Item>
+          </SettingsGroupRow>
         )}
-      </ListGroup>
+      </SettingsGroup>
 
       <TOTPSetupModal
         isShown={isTOTPModalShown}

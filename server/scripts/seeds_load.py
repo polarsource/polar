@@ -7,7 +7,7 @@ from enum import StrEnum
 from pathlib import Path
 from time import monotonic
 from typing import Any, Literal, NotRequired, TypedDict
-from uuid import NAMESPACE_URL, UUID, uuid5
+from uuid import UUID, uuid4
 
 import dramatiq
 import typer
@@ -2394,10 +2394,7 @@ def _namespace_simple_complement_events(
 ) -> None:
     id_mapping: dict[UUID, UUID] = {}
     for index, event in enumerate(events):
-        event_id = uuid5(
-            NAMESPACE_URL,
-            f"{SIMPLE_COMPLEMENT_EVENT_PREFIX}{organization.slug}:{customer.id}:{index}",
-        )
+        event_id = uuid4()
         previous_id = event.get("id")
         if isinstance(previous_id, UUID):
             id_mapping[previous_id] = event_id

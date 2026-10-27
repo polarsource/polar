@@ -403,7 +403,8 @@ class TestSeedsLoad:
         assert postgres_events
         assert successful_ingestion == postgres_events
         assert Counter(successful_external_ids) == Counter(postgres_events.keys())
-        assert first_attempt_events.items() <= successful_ingestion.items()
+        assert first_attempt_events.keys() <= successful_ingestion.keys()
+        assert all(event_id.version == 4 for event_id in postgres_events.values())
         assert all(
             len(call.args[0]) <= 2500 for call in ingest_events_mock.await_args_list
         )

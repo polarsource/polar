@@ -4857,6 +4857,57 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/customer-session/start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Start */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.start']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/email-otp/request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Email Otp Request */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.email_otp_request']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/email-otp/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Email Otp Verify */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.email_otp_verify']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/downloadables/': {
     parameters: {
       query?: never
@@ -20844,6 +20895,14 @@ export interface components {
       customer_id: string
       customer: components['schemas']['Customer']
     }
+    /** CustomerSessionAuthenticationStart */
+    CustomerSessionAuthenticationStart: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+    }
     /** CustomerSessionCodeAuthenticateRequest */
     CustomerSessionCodeAuthenticateRequest: {
       /** Code */
@@ -20937,6 +20996,24 @@ export interface components {
        * @description ID of the customer to create a session for.
        */
       customer_id: string
+    }
+    /** CustomerSessionEmailOTPRequest */
+    CustomerSessionEmailOTPRequest: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string
+      /**
+       * Customer Id
+       * @description Optional customer ID for disambiguation when multiple customers share the same email.
+       */
+      customer_id?: string | null
+    }
+    /** CustomerSessionEmailOTPVerify */
+    CustomerSessionEmailOTPVerify: {
+      /** Code */
+      code: string
     }
     /**
      * CustomerSortProperty
@@ -56772,6 +56849,123 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['PortalAuthenticatedUser']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionAuthenticationStart']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.email_otp_request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionEmailOTPRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Multiple customers found for this email. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.email_otp_verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionEmailOTPVerify']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
+        }
+      }
+      /** @description Invalid or expired verification code. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSessionCodeInvalidOrExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }

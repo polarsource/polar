@@ -2,6 +2,8 @@ import secrets
 from collections.abc import Sequence
 from uuid import UUID
 
+from sqlalchemy.exc import IntegrityError
+
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Organization, OrganizationDomain
@@ -49,18 +51,18 @@ class OrganizationDomainService:
         create: OrganizationDomainCreate,
     ) -> OrganizationDomain:
         repository = OrganizationDomainRepository.from_session(session)
-        if await repository.get_by_organization_and_domain(
-            organization.id, create.domain
-        ):
-            raise OrganizationDomainAlreadyExists(create.domain)
-        return await repository.create(
-            OrganizationDomain(
-                organization=organization,
-                domain=create.domain,
-                verification_token=secrets.token_urlsafe(32),
-            ),
-            flush=True,
-        )
+        try:
+            async with session.begin_nested():
+                return await repository.create(
+                    OrganizationDomain(
+                        organization=organization,
+                        domain=create.domain,
+                        verification_token=secrets.token_urlsafe(32),
+                    ),
+                    flush=True,
+                )
+        except IntegrityError as e:
+            raise OrganizationDomainAlreadyExists(create.domain) from e
 
     async def delete(
         self, session: AsyncSession, organization_domain: OrganizationDomain

@@ -3,7 +3,14 @@
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { Button, Status, Text, Truncated } from '@polar-sh/orbit'
+import {
+  Alert,
+  Button,
+  SpinnerNoMargin,
+  Status,
+  Text,
+  Truncated,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from '@polar-sh/orbit/icons'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -27,42 +34,52 @@ const WebhookSettings = ({
     page: 1,
   })
 
-  if (!endpoints.data) return null
-
   return (
     <Box flexDirection="column" rowGap="l">
       <WebhookSignatureNotice organizationCreatedAt={org.created_at} />
-      <SettingsGroup>
-        {endpoints.data.items.length > 0 ? (
-          endpoints.data.items.map((endpoint) => (
-            <Endpoint
-              key={endpoint.id}
-              organization={org}
-              endpoint={endpoint}
-            />
-          ))
-        ) : (
-          <Box
-            flexDirection="column"
-            alignItems="center"
-            rowGap="l"
-            paddingVertical="3xl"
-            paddingHorizontal="xl"
-          >
-            <Box flexDirection="column" alignItems="center" rowGap="xs">
-              <Text variant="title">No webhook endpoints</Text>
-              <Text color="muted" align="center">
-                Get notified when orders, subscriptions and customers change.
-              </Text>
+      {endpoints.isError ? (
+        <Alert
+          variant="danger"
+          title="We couldn't load your webhook endpoints"
+          description="Refresh the page to try again."
+        />
+      ) : (
+        <SettingsGroup>
+          {!endpoints.data ? (
+            <Box justifyContent="center" paddingVertical="3xl">
+              <SpinnerNoMargin />
             </Box>
-            {!managedAsCode && (
-              <Button variant="secondary" onClick={onAddEndpoint}>
-                Add Endpoint
-              </Button>
-            )}
-          </Box>
-        )}
-      </SettingsGroup>
+          ) : endpoints.data.items.length > 0 ? (
+            endpoints.data.items.map((endpoint) => (
+              <Endpoint
+                key={endpoint.id}
+                organization={org}
+                endpoint={endpoint}
+              />
+            ))
+          ) : (
+            <Box
+              flexDirection="column"
+              alignItems="center"
+              rowGap="l"
+              paddingVertical="3xl"
+              paddingHorizontal="xl"
+            >
+              <Box flexDirection="column" alignItems="center" rowGap="xs">
+                <Text variant="title">No webhook endpoints</Text>
+                <Text color="muted" align="center">
+                  Get notified when orders, subscriptions and customers change.
+                </Text>
+              </Box>
+              {!managedAsCode && (
+                <Button variant="secondary" onClick={onAddEndpoint}>
+                  Add Endpoint
+                </Button>
+              )}
+            </Box>
+          )}
+        </SettingsGroup>
+      )}
     </Box>
   )
 }

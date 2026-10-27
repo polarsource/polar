@@ -58,9 +58,7 @@ class GrafanaCloudPrometheusClient:
             response = await self.client.post("/api/v1/query", data=params)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            raise GrafanaCloudAPIError(
-                f"Grafana API error: {e.response.status_code}"
-            ) from None
+            raise GrafanaCloudAPIError(_format_api_error(e.response)) from None
         return response.json()
 
     async def query_range(
@@ -83,10 +81,19 @@ class GrafanaCloudPrometheusClient:
             response = await self.client.post("/api/v1/query_range", data=params)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
-            raise GrafanaCloudAPIError(
-                f"Grafana API error: {e.response.status_code}"
-            ) from None
+            raise GrafanaCloudAPIError(_format_api_error(e.response)) from None
         return response.json()
 
     async def close(self) -> None:
         await self.client.aclose()
+
+
+def _format_api_error(response: httpx.Response) -> str:
+    message = f"Grafana API error: {response.status_code}"
+    try:
+        body = response.json()
+    except ValueError:
+        return message
+    if isinstance(body, dict) and body.get("error"):
+        message += f" ({body.get('errorType', 'unknown')}: {str(body['error'])[:500]})"
+    return message

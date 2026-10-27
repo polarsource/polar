@@ -100,7 +100,7 @@ export type MeteringOutpostOptions = Omit<OutpostOptions, "client"> & {
 export type MeteringOptions =
   | {
       buffered?: BufferedMeteringOptions;
-      outpost?: false | MeteringOutpostOptions;
+      outpost?: boolean | MeteringOutpostOptions;
       strategies?: never;
     }
   | {
@@ -114,7 +114,7 @@ export type MeteringOptions =
  *
  * Create with polar.metering(), then await start() before use and close() on
  * shutdown. By default, events are buffered for HTTP delivery, with Outpost added
- * when a Redis URL is configured. Accepting an event does not confirm delivery.
+ * when the outpost option is set. Accepting an event does not confirm delivery.
  */
 export class Metering {
   readonly strategies: readonly MeteringStrategy[];
@@ -335,8 +335,8 @@ const validateActor = (input: {
  * @param polar Polar client used for event delivery.
  * @param client Authenticated HTTP client used for meter reads.
  * @param options.buffered Buffer options; omitted fields use BufferedMeteringOptions defaults.
- * @param options.outpost Outpost options. Defaults to enabling Outpost when REDIS_URL
- * is set. false disables it; explicit options require a Redis URL.
+ * @param options.outpost true or Outpost options to enable Outpost, which then requires
+ * redisUrl or REDIS_URL. Disabled by default.
  * @param options.strategies Replace all default strategies. Cannot be combined with
  * buffered or outpost options.
  * @returns A helper to start before use.
@@ -353,14 +353,15 @@ export const createMetering = (
     }
     return new Metering({ strategies: options.strategies, client });
   }
-  const { redisUrl: configuredRedisUrl, ...outpostOptions } = options.outpost || {};
+  const { redisUrl: configuredRedisUrl, ...outpostOptions } =
+    options.outpost === true ? {} : options.outpost || {};
   const redisUrl = configuredRedisUrl ?? process.env.REDIS_URL;
-  if (options.outpost !== undefined && options.outpost !== false && !redisUrl) {
+  if (options.outpost && !redisUrl) {
     throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
   }
   let buffered = options.buffered;
   const strategies: MeteringStrategy[] = [];
-  if (options.outpost !== false && redisUrl) {
+  if (options.outpost && redisUrl) {
     let outpost: import("../outpost/client").Outpost | undefined;
 
     // Polar received the delivered events: they settle where their bucket is hot. It will

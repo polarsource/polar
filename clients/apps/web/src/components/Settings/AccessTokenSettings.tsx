@@ -8,7 +8,6 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ListGroup } from '@polar-sh/orbit'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +21,7 @@ import {
 } from '@polar-sh/ui/components/ui/alert-dialog'
 import { useCallback, useState } from 'react'
 import { toast } from '../Toast/use-toast'
+import { SettingsGroup, SettingsGroupRow } from './SettingsGroup'
 
 const AccessToken = (props: schemas['PersonalAccessToken']) => {
   const deleteToken = useDeletePersonalAccessToken()
@@ -129,7 +129,7 @@ const AccessTokensSettings = () => {
         </h3>
         <p>
           Personal access tokens can no longer be created. Going forward, use{' '}
-          <strong className="text-gray-700 dark:text-white">
+          <strong className="font-medium text-gray-700 dark:text-white">
             Organization access tokens
           </strong>
           . They work the same, but are scoped to a single organization, so{' '}
@@ -137,21 +137,21 @@ const AccessTokensSettings = () => {
           API calls.
         </p>
       </div>
-      <ListGroup>
+      <SettingsGroup>
         {tokens.data?.items && tokens.data.items.length > 0 ? (
           tokens.data?.items.map((token) => (
-            <ListGroup.Item key={token.id}>
+            <SettingsGroupRow key={token.id}>
               <AccessToken {...token} />
-            </ListGroup.Item>
+            </SettingsGroupRow>
           ))
         ) : (
-          <ListGroup.Item>
+          <SettingsGroupRow>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               You don&apos;t have any active Personal Access Tokens.
             </p>
-          </ListGroup.Item>
+          </SettingsGroupRow>
         )}
-      </ListGroup>
+      </SettingsGroup>
     </div>
   )
 }

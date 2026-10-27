@@ -3,85 +3,84 @@
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
+import {
+  Alert,
+  Button,
+  SpinnerNoMargin,
+  Status,
+  Text,
+  Truncated,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
+import { ChevronRight } from '@polar-sh/orbit/icons'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ListGroup } from '@polar-sh/orbit'
-import { ArrowUpRight as ArrowUpRightIcon } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
-import { InlineModal } from '@polar-sh/orbit'
-import { useModal } from '../../Modal/useModal'
-import NewWebhookModal from './NewWebhookModal'
+import { SettingsGroup } from '../SettingsGroup'
 import { WebhookSignatureNotice } from './WebhookSignatureNotice'
 import { WebhookSigningSchemeStatus } from './WebhookSigningSchemeStatus'
 
-const WebhookSettings = (props: { org: schemas['Organization'] }) => {
-  const {
-    isShown: isNewWebhookModalShown,
-    show: showNewWebhookModal,
-    hide: hideNewWebhookModal,
-  } = useModal()
-  const managedAsCode = useIsManagedAsCode(props.org.id)
+const WebhookSettings = ({
+  org,
+  onAddEndpoint,
+}: {
+  org: schemas['Organization']
+  onAddEndpoint: () => void
+}) => {
+  const managedAsCode = useIsManagedAsCode(org.id)
 
   const endpoints = useListWebhooksEndpoints({
-    organizationId: props.org.id,
+    organizationId: org.id,
     limit: 100,
     page: 1,
   })
 
   return (
-    <>
-      <Box flexDirection="column" gap="l">
-        <WebhookSignatureNotice organizationCreatedAt={props.org.created_at} />
-        <ListGroup>
-          {endpoints.data?.items && endpoints.data.items.length > 0 ? (
-            endpoints.data?.items.map((e) => {
-              return (
-                <ListGroup.Item key={e.id}>
-                  <Endpoint organization={props.org} endpoint={e} />
-                </ListGroup.Item>
-              )
-            })
+    <Box flexDirection="column" rowGap="l">
+      <WebhookSignatureNotice organizationCreatedAt={org.created_at} />
+      {endpoints.isError ? (
+        <Alert
+          variant="danger"
+          title="We couldn't load your webhook endpoints"
+          description="Refresh the page to try again."
+        />
+      ) : (
+        <SettingsGroup>
+          {!endpoints.data ? (
+            <Box justifyContent="center" paddingVertical="3xl">
+              <SpinnerNoMargin />
+            </Box>
+          ) : endpoints.data.items.length > 0 ? (
+            endpoints.data.items.map((endpoint) => (
+              <Endpoint
+                key={endpoint.id}
+                organization={org}
+                endpoint={endpoint}
+              />
+            ))
           ) : (
-            <ListGroup.Item>
-              <p className="dark:text-polar-400 text-sm text-gray-500">
-                {`${props.org.name} doesn't have any webhooks yet`}
-              </p>
-            </ListGroup.Item>
-          )}
-          <ListGroup.Item>
-            <div className="flex flex-row items-center gap-x-4">
+            <Box
+              flexDirection="column"
+              alignItems="center"
+              rowGap="l"
+              paddingVertical="3xl"
+              paddingHorizontal="xl"
+            >
+              <Box flexDirection="column" alignItems="center" rowGap="xs">
+                <Text variant="title">No webhook endpoints</Text>
+                <Text color="muted" align="center">
+                  Get notified when orders, subscriptions and customers change.
+                </Text>
+              </Box>
               {!managedAsCode && (
-                <Button asChild onClick={showNewWebhookModal}>
+                <Button variant="secondary" onClick={onAddEndpoint}>
                   Add Endpoint
                 </Button>
               )}
-              <a
-                href="https://polar.sh/docs/integrate/webhooks/endpoints"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0"
-              >
-                <Button className="gap-x-2" asChild variant="ghost">
-                  <span>Documentation</span>
-                  <ArrowUpRightIcon className="h-4 w-4" />
-                </Button>
-              </a>
-            </div>
-          </ListGroup.Item>
-        </ListGroup>
-      </Box>
-      <InlineModal
-        isShown={isNewWebhookModalShown}
-        hide={hideNewWebhookModal}
-        modalContent={
-          <NewWebhookModal
-            hide={hideNewWebhookModal}
-            organization={props.org}
-          />
-        }
-      />
-    </>
+            </Box>
+          )}
+        </SettingsGroup>
+      )}
+    </Box>
   )
 }
 
@@ -94,52 +93,58 @@ const Endpoint = ({
   organization: schemas['Organization']
   endpoint: schemas['WebhookEndpoint']
 }) => {
-  const hasName = endpoint.name && endpoint.name.length > 0
+  const hasName = !!endpoint.name
 
   return (
-    <div className="flex items-center justify-between overflow-hidden">
-      <div className="flex w-2/3 flex-col gap-y-1">
-        <div className="flex items-center gap-x-2 pl-0.5">
-          <span
-            className={`inline-block h-2 w-2 shrink-0 rounded-full ${
-              endpoint.enabled
-                ? 'bg-emerald-500 ring-2 ring-emerald-100'
-                : 'dark:bg-polar-600 bg-gray-300'
-            }`}
-            title={endpoint.enabled ? 'Enabled' : 'Disabled'}
-          />
-          {hasName ? (
-            <p className="truncate text-sm font-medium">{endpoint.name}</p>
-          ) : (
-            <p className="truncate font-mono text-sm">{endpoint.url}</p>
+    <Link
+      href={`/dashboard/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}`}
+    >
+      <Box
+        alignItems="center"
+        columnGap="xl"
+        paddingHorizontal="xl"
+        paddingVertical="l"
+        backgroundColor={{ hover: 'background-card' }}
+        transitionProperty="colors"
+        transitionDuration="fast"
+      >
+        <Box flexDirection="column" rowGap="xs" flex={1} minWidth={0}>
+          <Truncated>
+            <Text variant="title">
+              {hasName ? endpoint.name : endpoint.url}
+            </Text>
+          </Truncated>
+          {hasName && (
+            <Truncated>
+              <Text color="muted">{endpoint.url}</Text>
+            </Truncated>
           )}
-        </div>
-        {hasName && (
-          <p className="dark:text-polar-400 truncate pl-4 font-mono text-xs text-gray-500">
-            {endpoint.url}
-          </p>
-        )}
-        <p className="dark:text-polar-400 pl-4 text-sm text-gray-500">
-          Added on{' '}
-          <FormattedDateTime datetime={endpoint.created_at} dateStyle="long" />
-          {' · '}API version {endpoint.api_version}
-        </p>
-        <WebhookSigningSchemeStatus
-          organizationCreatedAt={organization.created_at}
-          usesStandardWebhookSignature={
-            endpoint.uses_standard_webhook_signature
-          }
-        />
-      </div>
-      <div className="dark:text-polar-400 text-gray-500">
-        <Link
-          href={`/dashboard/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}`}
-        >
-          <Button asChild variant="secondary">
-            Details
-          </Button>
-        </Link>
-      </div>
-    </div>
+          <Text variant="caption" color="muted">
+            Added{' '}
+            <FormattedDateTime
+              datetime={endpoint.created_at}
+              dateStyle="medium"
+            />
+            {' · '}API version {endpoint.api_version}
+          </Text>
+        </Box>
+        <Box alignItems="center" columnGap="s" flexShrink={0}>
+          <WebhookSigningSchemeStatus
+            organizationCreatedAt={organization.created_at}
+            usesStandardWebhookSignature={
+              endpoint.uses_standard_webhook_signature
+            }
+          />
+          <Status
+            size="small"
+            color={endpoint.enabled ? 'green' : 'gray'}
+            status={endpoint.enabled ? 'Enabled' : 'Disabled'}
+          />
+          <Text color="muted">
+            <ChevronRight size={16} aria-hidden="true" />
+          </Text>
+        </Box>
+      </Box>
+    </Link>
   )
 }

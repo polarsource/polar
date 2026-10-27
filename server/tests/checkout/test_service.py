@@ -13,6 +13,7 @@ from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, AuthSubject
+from polar.checkout import legacy_schemas
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
@@ -619,49 +620,6 @@ class TestCreate:
                     CheckoutPriceCreate(product_price_id=price.id),
                     auth_subject,
                 )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_legacy_price_of_legacy_product(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        price = product_recurring_monthly_and_yearly.prices[0]
-        checkout = await checkout_service.create(
-            session, CheckoutPriceCreate(product_price_id=price.id), auth_subject
-        )
-
-        assert checkout.product_price == price
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_legacy_price_of_product_with_seat_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        legacy_price = product_recurring_monthly_and_yearly.prices[0]
-        seat_price = await create_product_price_seat_unit(
-            save_fixture, product=product_recurring_monthly_and_yearly
-        )
-        product_recurring_monthly_and_yearly.prices.append(seat_price)
-
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.create(
-                session,
-                CheckoutPriceCreate(product_price_id=legacy_price.id),
-                auth_subject,
-            )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -3272,7 +3230,7 @@ class TestUpdate:
                 await checkout_service.update(
                     session,
                     checkout,
-                    CheckoutUpdate(
+                    legacy_schemas.CheckoutUpdate(
                         product_id=product_fixed_seat.id, product_price_id=price.id
                     ),
                 )

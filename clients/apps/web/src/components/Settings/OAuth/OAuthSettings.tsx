@@ -8,10 +8,10 @@ import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ListGroup } from '@polar-sh/orbit'
 import { useState } from 'react'
 import { EditOAuthClientModal } from './EditOAuthClientModal'
 import { NewOAuthClientModal } from './NewOAuthClientModal'
+import { SettingsGroup, SettingsGroupRow } from '../SettingsGroup'
 
 const OAuthSettings = () => {
   const oauthClients = useOAuth2Clients()
@@ -50,30 +50,32 @@ const OAuthSettings = () => {
   }
 
   return (
-    <ListGroup>
-      {oauthClients.data?.items && oauthClients.data.items.length > 0 ? (
-        oauthClients.data?.items.map((client) => {
-          return (
-            <ListGroup.Item key={client.client_id}>
-              <OAuthClientDetails client={client} onClick={onOpen} />
-            </ListGroup.Item>
-          )
-        })
-      ) : (
-        <ListGroup.Item>
-          <p className="dark:text-polar-400 text-sm text-gray-500">
-            You haven&rsquo;t created any OAuth applications yet. Create one to
-            get started.
-          </p>
-        </ListGroup.Item>
-      )}
-      <ListGroup.Item>
-        <div className="flex flex-row items-center gap-x-4">
-          <Button asChild onClick={showNewOAuthClientModal}>
-            Create OAuth App
-          </Button>
-        </div>
-      </ListGroup.Item>
+    <>
+      <SettingsGroup>
+        {oauthClients.data?.items && oauthClients.data.items.length > 0 ? (
+          oauthClients.data?.items.map((client) => {
+            return (
+              <SettingsGroupRow key={client.client_id}>
+                <OAuthClientDetails client={client} onClick={onOpen} />
+              </SettingsGroupRow>
+            )
+          })
+        ) : (
+          <SettingsGroupRow>
+            <p className="dark:text-polar-400 text-sm text-gray-500">
+              You haven&rsquo;t created any OAuth applications yet. Create one
+              to get started.
+            </p>
+          </SettingsGroupRow>
+        )}
+        <SettingsGroupRow>
+          <div className="flex flex-row items-center gap-x-4">
+            <Button asChild onClick={showNewOAuthClientModal}>
+              Create OAuth App
+            </Button>
+          </div>
+        </SettingsGroupRow>
+      </SettingsGroup>
       <InlineModal
         isShown={isNewOAuthClientModalShown}
         hide={hideNewOAuthClientModal}
@@ -98,7 +100,7 @@ const OAuthSettings = () => {
           }
         />
       )}
-    </ListGroup>
+    </>
   )
 }
 

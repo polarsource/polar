@@ -176,7 +176,7 @@ class Metering:
 
     Create with polar.metering() and use as an async context manager. By
     default, events are buffered for HTTP delivery, with Outpost added when
-    a Redis URL is configured. Accepting an event does not confirm delivery.
+    outpost is set. Accepting an event does not confirm delivery.
     """
 
     def __init__(
@@ -394,7 +394,7 @@ class Metering:
         polar: PolarClient,
         *,
         buffered: BufferedMeteringOptions | None = None,
-        outpost: MeteringOutpostOptions | typing.Literal[False] | None = None,
+        outpost: MeteringOutpostOptions | bool | None = None,
         strategies: list[MeteringStrategyProtocol] | None = None,
     ) -> typing.Self:
         """Create an unstarted helper, usually via polar.metering().
@@ -402,8 +402,8 @@ class Metering:
         Args:
             polar: Async Polar client used for event delivery and meter reads.
             buffered: Buffer options; omitted fields use BufferedMeteringOptions defaults.
-            outpost: Outpost options. Defaults to enabling Outpost when REDIS_URL
-                is set. False disables it; explicit options require a Redis URL.
+            outpost: True or Outpost options to enable Outpost, which then requires
+                redis_url or REDIS_URL. Disabled by default.
             strategies: Replace all default strategies. Cannot be combined with
                 buffered or outpost options.
 
@@ -421,21 +421,18 @@ class Metering:
             return cls(strategies=strategies, client=polar._client)
         buffered = buffered or BufferedMeteringOptions()
         strategies = []
-        if outpost is not False:
-            outpost_options = (
-                outpost if outpost is not None else MeteringOutpostOptions()
-            )
+        if outpost is not None and outpost is not False:
+            outpost_options = MeteringOutpostOptions() if outpost is True else outpost
             redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
-            if outpost is not None and not redis_url:
+            if not redis_url:
                 raise MeteringError("Outpost requires redis_url or REDIS_URL")
-            if redis_url:
-                from polar.outpost import Outpost
+            from polar.outpost import Outpost
 
-                outpost_strategy = Outpost.create(
-                    polar, redis_url, telemetry=outpost_options.get("telemetry", True)
-                )
-                strategies.append(outpost_strategy)
-                buffered = _confirming(buffered, outpost_strategy)
+            outpost_strategy = Outpost.create(
+                polar, redis_url, telemetry=outpost_options.get("telemetry", True)
+            )
+            strategies.append(outpost_strategy)
+            buffered = _confirming(buffered, outpost_strategy)
         return cls(
             strategies=[BufferedMeteringStrategy(polar, **buffered), *strategies],
             client=polar._client,

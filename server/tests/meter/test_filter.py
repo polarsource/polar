@@ -1,4 +1,4 @@
-from datetime import UTC, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
@@ -173,53 +173,22 @@ class TestFilter:
         assert len(matching_events) == 1
         assert matching_events[0].id == events[0].id
 
-    async def test_timestamp_not_like_integer_value(
+    @pytest.mark.parametrize(
+        ("operator", "value", "matching"),
+        [
+            (FilterOperator.like, "1", ["1"]),
+            (FilterOperator.not_like, "1", ["True", "other"]),
+            (FilterOperator.like, 1, []),
+            (FilterOperator.not_like, 1, []),
+            (FilterOperator.like, True, []),
+            (FilterOperator.not_like, True, []),
+        ],
+    )
+    async def test_like_matches_strings_only(
         self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        from datetime import datetime
-
-        timestamp_with_345 = datetime.fromtimestamp(1234567890, tz=UTC)
-        timestamp_without_345 = datetime.fromtimestamp(1600000000, tz=UTC)
-        events = [
-            await create_event(
-                save_fixture,
-                organization=organization,
-                external_customer_id="customer_1",
-                timestamp=timestamp_with_345,
-            ),
-            await create_event(
-                save_fixture,
-                organization=organization,
-                external_customer_id="customer_1",
-                timestamp=timestamp_without_345,
-            ),
-        ]
-
-        filter = Filter(
-            conjunction=FilterConjunction.and_,
-            clauses=[
-                FilterClause(
-                    property="timestamp",
-                    operator=FilterOperator.not_like,
-                    value=345,
-                )
-            ],
-        )
-
-        repository = EventRepository.from_session(session)
-        statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
-        matching_events = await repository.get_all(statement)
-
-        assert len(matching_events) == 1
-        assert matching_events[0].id == events[1].id
-
-    @pytest.mark.parametrize("value", [1, True])
-    async def test_like_clause_non_string_value(
-        self,
-        value: int | bool,
+        operator: FilterOperator,
+        value: str | int | bool,
+        matching: list[str],
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -229,35 +198,54 @@ class TestFilter:
                 save_fixture,
                 organization=organization,
                 external_customer_id="customer_1",
-                metadata={"value": value},
-            ),
-            await create_event(
-                save_fixture,
-                organization=organization,
-                external_customer_id="customer_1",
-                metadata={"value": str(value)},
-            ),
-            await create_event(
-                save_fixture,
-                organization=organization,
-                external_customer_id="customer_1",
-                metadata={"value": "other_value"},
-            ),
+                metadata={"value": metadata_value},
+            )
+            for metadata_value in (1, True, "1", "True", "other")
         ]
-        filter = Filter(
-            conjunction=FilterConjunction.and_,
-            clauses=[
-                FilterClause(
-                    property="value", operator=FilterOperator.like, value=value
-                )
-            ],
-        )
+        clause = FilterClause(property="value", operator=operator, value=value)
 
         repository = EventRepository.from_session(session)
-        statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
+        statement = repository.get_base_statement().where(clause.get_sql_clause(Event))
         matching_events = await repository.get_all(statement)
 
-        assert len(matching_events) == 2
+        assert (
+            sorted(str(event.user_metadata["value"]) for event in matching_events)
+            == matching
+        )
+        assert (
+            sorted(
+                str(event.user_metadata["value"])
+                for event in events
+                if clause.matches(event)
+            )
+            == matching
+        )
+
+    @pytest.mark.parametrize(
+        ("operator", "value"),
+        [(FilterOperator.like, 345), (FilterOperator.not_like, 999)],
+    )
+    async def test_like_on_timestamp_matches_nothing(
+        self,
+        operator: FilterOperator,
+        value: int,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="customer_1",
+            timestamp=datetime.fromtimestamp(1234567890, tz=UTC),
+        )
+        clause = FilterClause(property="timestamp", operator=operator, value=value)
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(clause.get_sql_clause(Event))
+
+        assert await repository.get_all(statement) == []
+        assert clause.matches(event) is False
 
     async def test_boolean_clause_number_value(
         self,

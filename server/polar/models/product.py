@@ -19,8 +19,6 @@ from sqlalchemy import (
     column,
     event,
     exists,
-    or_,
-    select,
     table,
     text,
 )
@@ -44,7 +42,7 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.schemas import SetSchemaReference
 from polar.kit.trial import TrialConfigurationMixin
 from polar.kit.visibility import Visibility, VisibilityMixin
-from polar.models.product_price import ProductPriceAmountType, ProductPriceType
+from polar.models.product_price import ProductPriceAmountType
 from polar.tax.calculation import TaxCode
 
 from .product_price import ProductPrice
@@ -281,10 +279,6 @@ class Product(
         return None
 
     @property
-    def is_legacy_recurring_price(self) -> bool:
-        return any(price.is_recurring for price in self.prices)
-
-    @property
     def has_seat_based_price(self) -> bool:
         return any(
             price.amount_type == ProductPriceAmountType.seat_based
@@ -300,25 +294,12 @@ class Product(
 
     @hybrid_property
     def is_recurring(self) -> bool:
-        if self.recurring_interval is not None:
-            return True
-
-        # Check for Products that have legacy prices where recurring interval was set on them
-        return all(price.is_recurring for price in self.prices)
+        return self.recurring_interval is not None
 
     @is_recurring.inplace.expression
     @classmethod
     def _is_recurring_expression(cls) -> ColumnElement[bool]:
-        return or_(
-            cls.recurring_interval.is_not(None),
-            # Check for Products that have legacy prices where recurring interval was set on them
-            cls.id.in_(
-                select(ProductPrice.product_id).where(
-                    ProductPrice.type == ProductPriceType.recurring,
-                    ~ProductPrice.is_archived,
-                )
-            ),
-        )
+        return cls.recurring_interval.is_not(None)
 
     @hybrid_property
     def billing_type(self) -> ProductBillingType:

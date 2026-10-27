@@ -50,7 +50,7 @@ export function createPolar(options: PolarOptions) {
      *
      * @param options.buffered Batch and retry options; defaults to 100 events, a 1000-ms
      * collection interval, a 5000-ms shutdown timeout, and 3 attempts.
-     * @param options.outpost Outpost options, enabled automatically when REDIS_URL is set.
+     * @param options.outpost true or Outpost options to enable Outpost. Disabled by default.
      * Pass false to disable; explicit options require a Redis URL.
      * @param options.strategies Replace all defaults with custom strategies. Cannot be
      * combined with buffered or outpost.

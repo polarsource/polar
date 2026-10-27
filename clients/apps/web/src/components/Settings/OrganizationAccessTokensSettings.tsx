@@ -12,7 +12,8 @@ import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Input } from '@polar-sh/orbit'
-import { ListGroup } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ import { useForm, useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast, useToast } from '../Toast/use-toast'
 import { CreateAccessTokenModal } from './CreateAccessTokenModal'
+import { SettingsGroup } from './SettingsGroup'
 import { TreeMultiSelect } from './TreeMultiSelect'
 import { useResumeOrganizationAccessTokenCreation } from './useResumeOrganizationAccessTokenCreation'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -438,52 +440,50 @@ const OrganizationAccessTokensSettings = ({
   }
 
   return (
-    <div className="flex w-full flex-col">
-      <ListGroup>
+    <>
+      <SettingsGroup>
         {hasExistingTokens ? (
           displayedTokens.map((token) => {
             const isNewToken =
               token.id === createdToken?.organization_access_token.id
 
             return (
-              <ListGroup.Item key={token.id}>
+              <Box key={token.id} paddingHorizontal="xl" paddingVertical="l">
                 <AccessTokenItem
                   token={token}
                   rawToken={isNewToken ? createdToken?.token : undefined}
                   rootRef={isNewToken ? createdTokenRef : undefined}
                 />
-              </ListGroup.Item>
+              </Box>
             )
           })
         ) : (
-          <ListGroup.Item>
-            <p className="dark:text-polar-400 text-sm text-gray-500">
+          <Box paddingHorizontal="xl" paddingVertical="l">
+            <Text color="muted">
               You don&rsquo;t have any active organization access tokens.
-            </p>
-          </ListGroup.Item>
+            </Text>
+          </Box>
         )}
         {showNewTokenButton && (
-          <ListGroup.Item>
-            <div className="flex flex-row items-center gap-x-4">
-              <Button asChild onClick={showCreateModal} size="sm">
-                Create token
-              </Button>
-            </div>
-          </ListGroup.Item>
+          <Box paddingHorizontal="xl" paddingVertical="l">
+            <Button onClick={showCreateModal} size="sm">
+              Create token
+            </Button>
+          </Box>
         )}
-        <InlineModal
-          isShown={createModalShown}
-          hide={hideCreateModal}
-          modalContent={
-            <CreateAccessTokenModal
-              organization={organization}
-              onSuccess={onCreate}
-              onHide={hideCreateModal}
-            />
-          }
-        />
-      </ListGroup>
-    </div>
+      </SettingsGroup>
+      <InlineModal
+        isShown={createModalShown}
+        hide={hideCreateModal}
+        modalContent={
+          <CreateAccessTokenModal
+            organization={organization}
+            onSuccess={onCreate}
+            onHide={hideCreateModal}
+          />
+        }
+      />
+    </>
   )
 }
 

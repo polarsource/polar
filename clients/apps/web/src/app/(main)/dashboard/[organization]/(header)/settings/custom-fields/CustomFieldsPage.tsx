@@ -10,7 +10,7 @@ import { useCustomFields, useDeleteCustomField } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getAPIParams } from '@/utils/datatable'
-import { AddOutlined, MoreVertOutlined } from '@polar-sh/orbit/icons'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { enums, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
@@ -161,17 +161,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
   return (
     <DashboardBody
+      wrapperClassName="max-w-(--breakpoint-md)!"
+      title="Custom Fields"
       header={
-        <Button
-          wrapperClassNames="flex flex-row gap-x-2"
-          type="button"
-          onClick={() => setShowNewModal(true)}
-        >
-          <AddOutlined className="h-4 w-4" />
-          <span>New Custom Field</span>
+        <Button type="button" onClick={() => setShowNewModal(true)}>
+          New
         </Button>
       }
-      wide
     >
       <div className="flex flex-col gap-8">
         {customFields && pageCount !== undefined && (

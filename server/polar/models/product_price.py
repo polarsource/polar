@@ -12,10 +12,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Uuid,
-    case,
     event,
-    func,
-    type_coerce,
 )
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -71,20 +68,8 @@ class ProductPriceSource(StrEnum):
     ad_hoc = "ad_hoc"
 
 
-LEGACY_IDENTITY_PREFIX = "legacy_"
-
-
 class ProductPrice(RecordModel):
     __tablename__ = "product_prices"
-
-    # Legacy: recurring is now set on product
-    type: Mapped[Any] = mapped_column(String, nullable=True, index=True, default=None)
-    recurring_interval: Mapped[Any] = mapped_column(
-        StringEnum(SubscriptionRecurringInterval),
-        nullable=True,
-        index=True,
-        default=None,
-    )
 
     source = mapped_column(
         StringEnum(ProductPriceSource),
@@ -129,15 +114,6 @@ class ProductPrice(RecordModel):
         return relationship(
             "CheckoutProduct", lazy="raise_on_sql", back_populates="ad_hoc_prices"
         )
-
-    @hybrid_property
-    def is_recurring(self) -> bool:
-        return self.type == ProductPriceType.recurring
-
-    @is_recurring.inplace.expression
-    @classmethod
-    def _is_recurring_expression(cls) -> ColumnElement[bool]:
-        return type_coerce(cls.type == ProductPriceType.recurring, Boolean)
 
     @hybrid_property
     def is_static(self) -> bool:
@@ -191,47 +167,10 @@ class ProductPrice(RecordModel):
     def is_free(self) -> bool:
         return False
 
-    __mapper_args__ = {
-        "polymorphic_on": case(
-            (type.is_(None), amount_type),
-            else_=func.concat(LEGACY_IDENTITY_PREFIX, amount_type),
-        )
-    }
+    __mapper_args__ = {"polymorphic_on": amount_type}
 
 
-class LegacyRecurringProductPrice:
-    __abstract__ = True
-
-    type: Mapped[ProductPriceType] = mapped_column(
-        use_existing_column=True, nullable=True
-    )
-    recurring_interval: Mapped[SubscriptionRecurringInterval] = mapped_column(
-        use_existing_column=True, nullable=True
-    )
-
-    __mapper_args__ = {
-        "polymorphic_abstract": True,
-        "polymorphic_load": "inline",
-    }
-
-
-class NewProductPrice:
-    __abstract__ = True
-
-    type: Mapped[None] = mapped_column(
-        use_existing_column=True, nullable=True, default=None
-    )
-    recurring_interval: Mapped[None] = mapped_column(
-        use_existing_column=True, nullable=True, default=None
-    )
-
-    __mapper_args__ = {
-        "polymorphic_abstract": True,
-        "polymorphic_load": "inline",
-    }
-
-
-class _ProductPriceFixed(ProductPrice):
+class ProductPriceFixed(ProductPrice):
     price_amount: Mapped[int] = mapped_column(
         "price_amount_v2", BigInteger, nullable=True
     )
@@ -244,26 +183,12 @@ class _ProductPriceFixed(ProductPrice):
         return self.price_amount == 0
 
     __mapper_args__ = {
-        "polymorphic_abstract": True,
-        "polymorphic_load": "inline",
-    }
-
-
-class ProductPriceFixed(NewProductPrice, _ProductPriceFixed):
-    __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.fixed,
         "polymorphic_load": "inline",
     }
 
 
-class LegacyRecurringProductPriceFixed(LegacyRecurringProductPrice, _ProductPriceFixed):
-    __mapper_args__ = {
-        "polymorphic_identity": f"{LEGACY_IDENTITY_PREFIX}{ProductPriceAmountType.fixed}",
-        "polymorphic_load": "inline",
-    }
-
-
-class _ProductPriceCustom(ProductPrice):
+class ProductPriceCustom(ProductPrice):
     amount_type: Mapped[Literal[ProductPriceAmountType.custom]] = mapped_column(
         use_existing_column=True, default=ProductPriceAmountType.custom
     )
@@ -278,23 +203,7 @@ class _ProductPriceCustom(ProductPrice):
     )
 
     __mapper_args__ = {
-        "polymorphic_abstract": True,
-        "polymorphic_load": "inline",
-    }
-
-
-class ProductPriceCustom(NewProductPrice, _ProductPriceCustom):
-    __mapper_args__ = {
         "polymorphic_identity": ProductPriceAmountType.custom,
-        "polymorphic_load": "inline",
-    }
-
-
-class LegacyRecurringProductPriceCustom(
-    LegacyRecurringProductPrice, _ProductPriceCustom
-):
-    __mapper_args__ = {
-        "polymorphic_identity": f"{LEGACY_IDENTITY_PREFIX}{ProductPriceAmountType.custom}",
         "polymorphic_load": "inline",
     }
 
@@ -348,7 +257,7 @@ class MeteredPrice:
         return amount, label
 
 
-class ProductPriceMeteredUnit(MeteredPrice, ProductPrice, NewProductPrice):
+class ProductPriceMeteredUnit(MeteredPrice, ProductPrice):
     """Metered price charging a flat rate per consumed unit."""
 
     amount_type: Mapped[Literal[ProductPriceAmountType.metered_unit]] = mapped_column(
@@ -428,9 +337,7 @@ class TieredPrice:
         return self.tiers.last_bound
 
 
-class ProductPriceMeteredTiers(
-    TieredPrice, MeteredPrice, ProductPrice, NewProductPrice
-):
+class ProductPriceMeteredTiers(TieredPrice, MeteredPrice, ProductPrice):
     """Metered price charging consumed units from a list of tiers."""
 
     amount_type: Mapped[Literal[ProductPriceAmountType.metered_tiers]] = mapped_column(
@@ -457,7 +364,7 @@ class ProductPriceMeteredTiers(
     }
 
 
-class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
+class ProductPriceSeatUnit(TieredPrice, ProductPrice):
     """Seat-based price billed from the shared `tiers` columns.
 
     The public `seat_tiers` attribute is the HTTP payload reconstructed
@@ -504,7 +411,7 @@ class ProductPriceSeatUnit(TieredPrice, NewProductPrice, ProductPrice):
     }
 
 
-class ProductPriceUnit(TieredPrice, NewProductPrice, ProductPrice):
+class ProductPriceUnit(TieredPrice, ProductPrice):
     """A price for a quantity of units the buyer declares up-front.
 
     Priced exactly like a seat price, the buyer pays for the declared
@@ -565,11 +472,5 @@ def set_identity(instance: ProductPrice, *arg: Any, **kw: Any) -> None:
 
     if identity is None:
         return
-
-    if identity.startswith(LEGACY_IDENTITY_PREFIX):
-        identity = identity[len(LEGACY_IDENTITY_PREFIX) :]
-    else:
-        instance.type = None
-        instance.recurring_interval = None
 
     instance.amount_type = ProductPriceAmountType(identity)

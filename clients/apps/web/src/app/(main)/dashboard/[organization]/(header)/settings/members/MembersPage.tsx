@@ -225,6 +225,7 @@ export default function ClientPage({
   return (
     <DashboardBody
       wrapperClassName="max-w-(--breakpoint-md)!"
+      title="Members"
       className="flex flex-col gap-y-8"
       header={
         canManageMembers ? (

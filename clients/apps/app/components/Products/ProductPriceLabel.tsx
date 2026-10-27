@@ -1,4 +1,3 @@
-import { isLegacyRecurringPrice } from '@/utils/price'
 import { schemas } from '@polar-sh/client'
 import { Text } from '../Shared/Text'
 import AmountLabel from './AmountLabel'
@@ -29,11 +28,7 @@ export const ProductPriceLabel = ({
         amount={staticPrice.price_amount}
         currency={staticPrice.price_currency}
         loading={loading}
-        interval={
-          isLegacyRecurringPrice(staticPrice)
-            ? staticPrice.recurring_interval
-            : product?.recurring_interval || undefined
-        }
+        interval={product?.recurring_interval || undefined}
       />
     )
   } else if (staticPrice.amount_type === 'custom') {

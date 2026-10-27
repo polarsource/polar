@@ -38841,20 +38841,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -39035,6 +39021,20 @@
             ],
             "title": "Confirmation Token Id",
             "description": "ID of the Stripe confirmation token. Required for fixed prices and custom prices."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -43705,20 +43705,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -44054,6 +44040,20 @@
             ],
             "title": "Embed Origin",
             "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -44102,20 +44102,6 @@
             ],
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
-          },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
           },
           "amount": {
             "anyOf": [
@@ -44285,6 +44271,20 @@
             ],
             "title": "Allow Trial",
             "description": "Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",

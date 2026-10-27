@@ -54,6 +54,7 @@ from polar.organization.endpoints import router as organization_router
 from polar.organization_access_token.endpoints import (
     router as organization_access_token_router,
 )
+from polar.organization_domain.endpoints import router as organization_domain_router
 from polar.outpost.endpoints import router as outpost_router
 from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
@@ -62,7 +63,6 @@ from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.search.endpoints import router as search_router
-from polar.sso.endpoints import domain_router as sso_domain_router
 from polar.sso.endpoints import router as sso_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.support_case.endpoints import router as support_case_router
@@ -98,8 +98,8 @@ router.include_router(stream_router)
 router.include_router(organization_router)
 # /organizations/{id}/sso-connections
 router.include_router(sso_router)
-# /organizations/{id}/sso-domains
-router.include_router(sso_domain_router)
+# /organizations/{id}/domains
+router.include_router(organization_domain_router)
 # /subscriptions
 router.include_router(subscription_router)
 # /transactions

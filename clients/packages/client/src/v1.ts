@@ -1475,7 +1475,7 @@ export interface paths {
     patch: operations['sso:update_sso_connection']
     trace?: never
   }
-  '/v1/organizations/{id}/sso-domains/': {
+  '/v1/organizations/{id}/domains/': {
     parameters: {
       query?: never
       header?: never
@@ -1483,12 +1483,56 @@ export interface paths {
       cookie?: never
     }
     /**
-     * List SSO Domains
+     * List Organization Domains
      * @description **Scopes**: `organizations:read` `organizations:write`
      */
-    get: operations['sso:list_sso_domains']
+    get: operations['organization_domains:list_organization_domains']
+    put?: never
+    /**
+     * Create Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_domains:create_organization_domain']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/domains/{domain_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
     put?: never
     post?: never
+    /**
+     * Delete Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    delete: operations['organization_domains:delete_organization_domain']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/domains/{domain_id}/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Verify Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_domains:verify_organization_domain']
     delete?: never
     options?: never
     head?: never
@@ -2582,6 +2626,26 @@ export interface paths {
      *     **Scopes**: `products:write`
      */
     patch: operations['products:update']
+    trace?: never
+  }
+  '/v1/products/name-check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Check Product Name
+     * @description Warn when a product name suggests a use case the Acceptable Use Policy forbids.
+     */
+    post: operations['products:name_check']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/v1/products/{id}/benefits': {
@@ -8700,10 +8764,7 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count: number | null
       /** Prices */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
     }
     AggregateField: string
     /**
@@ -13961,12 +14022,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -14068,21 +14123,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -14135,12 +14182,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -14204,12 +14245,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -14562,180 +14597,6 @@ export interface components {
       /** Url */
       readonly url: string
     }
-    CheckoutLinkCreate:
-      | components['schemas']['CheckoutLinkCreateProductPrice']
-      | components['schemas']['CheckoutLinkCreateProduct']
-      | components['schemas']['CheckoutLinkCreateProducts']
-    /**
-     * CheckoutLinkCreateProduct
-     * @description Schema to create a new checkout link from a a single product.
-     *
-     *     **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
-     */
-    CheckoutLinkCreateProduct: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Payment Processor
-       * @description Payment processor to use. Currently only Stripe is supported.
-       * @constant
-       */
-      payment_processor: 'stripe'
-      /**
-       * Label
-       * @description Optional label to distinguish links internally
-       */
-      label?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
-       * @default false
-       */
-      require_billing_address: boolean
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-       */
-      discount_id?: string | null
-      /**
-       * Seats
-       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      seats?: number | null
-      /**
-       * Units
-       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      units?: number | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Product Id
-       * Format: uuid4
-       */
-      product_id: string
-    }
-    /**
-     * CheckoutLinkCreateProductPrice
-     * @description Schema to create a new checkout link from a a single product price.
-     *
-     *     **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
-     */
-    CheckoutLinkCreateProductPrice: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Payment Processor
-       * @description Payment processor to use. Currently only Stripe is supported.
-       * @constant
-       */
-      payment_processor: 'stripe'
-      /**
-       * Label
-       * @description Optional label to distinguish links internally
-       */
-      label?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
-       * @default false
-       */
-      require_billing_address: boolean
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-       */
-      discount_id?: string | null
-      /**
-       * Seats
-       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      seats?: number | null
-      /**
-       * Units
-       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      units?: number | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Product Price Id
-       * Format: uuid4
-       */
-      product_price_id: string
-    }
     /**
      * CheckoutLinkCreateProducts
      * @description Schema to create a new checkout link.
@@ -14896,10 +14757,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -15129,10 +14987,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -15674,12 +15529,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -15768,21 +15617,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -15962,12 +15803,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -16056,21 +15891,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -16122,12 +15949,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -16250,12 +16071,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -20122,10 +19937,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -20794,10 +20606,7 @@ export interface components {
        * Prices
        * @description List of available prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -21868,10 +21677,7 @@ export interface components {
        * Prices
        * @description List of enabled prices for the subscription.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Meters
        * @description List of meters associated with the subscription.
@@ -22101,10 +21907,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -25378,157 +25181,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    LegacyRecurringProductPrice:
-      | components['schemas']['LegacyRecurringProductPriceFixed']
-      | components['schemas']['LegacyRecurringProductPriceCustom']
-    /**
-     * LegacyRecurringProductPriceCustom
-     * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
-     *
-     *     **Deprecated**: The recurring interval should be set on the product itself.
-     */
-    LegacyRecurringProductPriceCustom: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'custom'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-      /**
-       * Type
-       * @description The type of the price.
-       * @constant
-       */
-      type: 'recurring'
-      /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['RecurringInterval']
-      /**
-       * Minimum Amount
-       * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'.
-       */
-      minimum_amount: number
-      /**
-       * Maximum Amount
-       * @description The maximum amount the customer can pay.
-       */
-      maximum_amount: number | null
-      /**
-       * Preset Amount
-       * @description The initial amount shown to the customer.
-       */
-      preset_amount: number | null
-      /**
-       * Legacy
-       * @constant
-       */
-      readonly legacy: true
-    }
-    /**
-     * LegacyRecurringProductPriceFixed
-     * @description A recurring price for a product, i.e. a subscription.
-     *
-     *     **Deprecated**: The recurring interval should be set on the product itself.
-     */
-    LegacyRecurringProductPriceFixed: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'fixed'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-      /**
-       * Type
-       * @description The type of the price.
-       * @constant
-       */
-      type: 'recurring'
-      /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['RecurringInterval']
-      /**
-       * Price Amount
-       * @description The price in cents.
-       */
-      price_amount: number
-      /**
-       * Legacy
-       * @constant
-       */
-      readonly legacy: true
-    }
     /** LicenseKeyActivate */
     LicenseKeyActivate: {
       /** Key */
@@ -26263,6 +25915,12 @@ export interface components {
       items: components['schemas']['OrganizationBenefitGrant'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationDomain] */
+    ListResource_OrganizationDomain_: {
+      /** Items */
+      items: components['schemas']['OrganizationDomain'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[OrganizationMember] */
     ListResource_OrganizationMember_: {
       /** Items */
@@ -26279,12 +25937,6 @@ export interface components {
     ListResource_OrganizationSSOConnection_: {
       /** Items */
       items: components['schemas']['OrganizationSSOConnection'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[OrganizationSSODomain] */
-    ListResource_OrganizationSSODomain_: {
-      /** Items */
-      items: components['schemas']['OrganizationSSODomain'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Organization] */
@@ -31072,6 +30724,89 @@ export interface components {
        */
       auto_accept_below_amount?: number | null
     }
+    /** OrganizationDomain */
+    OrganizationDomain: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Domain
+       * @description Domain name.
+       */
+      domain: string
+      /**
+       * Verified At
+       * @description When Polar verified the domain. `null` while pending.
+       */
+      verified_at: string | null
+      /**
+       * Verification Record Name
+       * @description Name of the DNS TXT record that proves ownership.
+       */
+      verification_record_name: string
+      /**
+       * Verification Record Value
+       * @description Value of the DNS TXT record that proves ownership.
+       */
+      verification_record_value: string | null
+    }
+    /** OrganizationDomainAlreadyExists */
+    OrganizationDomainAlreadyExists: {
+      /**
+       * Error
+       * @example OrganizationDomainAlreadyExists
+       * @constant
+       */
+      error: 'OrganizationDomainAlreadyExists'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationDomainCreate */
+    OrganizationDomainCreate: {
+      /**
+       * Domain
+       * @description Domain name, without scheme or path.
+       * @example example.com
+       */
+      domain: string
+    }
+    /** OrganizationDomainVerificationFailed */
+    OrganizationDomainVerificationFailed: {
+      /**
+       * Error
+       * @example OrganizationDomainVerificationFailed
+       * @constant
+       */
+      error: 'OrganizationDomainVerificationFailed'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationDomainVerifiedElsewhere */
+    OrganizationDomainVerifiedElsewhere: {
+      /**
+       * Error
+       * @example OrganizationDomainVerifiedElsewhere
+       * @constant
+       */
+      error: 'OrganizationDomainVerifiedElsewhere'
+      /** Detail */
+      detail: string
+    }
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
       /**
@@ -32098,39 +31833,6 @@ export interface components {
        * @description Whether the connection can be used to sign in.
        */
       enabled?: boolean | null
-    }
-    /** OrganizationSSODomain */
-    OrganizationSSODomain: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Domain
-       * @description Email domain routed to the organization's SSO.
-       */
-      domain: string
-      /**
-       * Verified At
-       * Format: date-time
-       * @description When Polar verified the domain.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      verified_at: string
     }
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
@@ -34271,10 +33973,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -34561,6 +34260,24 @@ export interface components {
       readonly size_readable: string
       /** Public Url */
       readonly public_url: string
+    }
+    /** ProductNameCheck */
+    ProductNameCheck: {
+      /**
+       * Category
+       * @description Acceptable Use Policy category the name suggests, if any.
+       */
+      category: string | null
+      /**
+       * Phrase
+       * @description The exact phrase that matched, when a word-list rule flagged it.
+       */
+      phrase: string | null
+    }
+    /** ProductNameCheckRequest */
+    ProductNameCheckRequest: {
+      /** Name */
+      name: string
     }
     /** ProductNotDeletable */
     ProductNotDeletable: {
@@ -35470,11 +35187,6 @@ export interface components {
      */
     ProductPriceSource: 'catalog' | 'ad_hoc'
     /**
-     * ProductPriceType
-     * @enum {string}
-     */
-    ProductPriceType: 'one_time' | 'recurring'
-    /**
      * ProductPriceUnitBased
      * @description A unit-based price for a product: the buyer picks a quantity of units,
      *     pays for it up-front. On subscriptions, quantity changes are prorated.
@@ -35957,6 +35669,8 @@ export interface components {
       | 'service_disruption'
       | 'satisfaction_guarantee'
       | 'dispute_prevention'
+      | 'tax_refund'
+      | 'vat_reverse_charge_correction'
       | 'other'
     /**
      * RefundSortProperty
@@ -37213,10 +36927,7 @@ export interface components {
        * Prices
        * @description List of enabled prices for the subscription.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Meters
        * @description List of meters associated with the subscription.
@@ -46015,7 +45726,7 @@ export interface operations {
       }
     }
   }
-  'sso:list_sso_domains': {
+  'organization_domains:list_organization_domains': {
     parameters: {
       query?: {
         /** @description Page number, defaults to 1. */
@@ -46037,7 +45748,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_OrganizationSSODomain_']
+          'application/json': components['schemas']['ListResource_OrganizationDomain_']
         }
       }
       /** @description The user doesn't have the permission to manage the organization. */
@@ -46056,6 +45767,184 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:create_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationDomainCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomain']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The domain is already added to this organization. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainAlreadyExists']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:delete_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        domain_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or domain not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:verify_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        domain_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomain']
+        }
+      }
+      /** @description The DNS TXT record was not found. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainVerificationFailed']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or domain not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Another organization already verified the domain. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainVerifiedElsewhere']
         }
       }
       /** @description Validation Error */
@@ -49244,6 +49133,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'products:name_check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProductNameCheckRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductNameCheck']
         }
       }
       /** @description Validation Error */
@@ -53809,7 +53731,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CheckoutLinkCreate']
+        'application/json': components['schemas']['CheckoutLinkCreateProducts']
       }
     }
     responses: {
@@ -73710,12 +73632,6 @@ export const insightSeverityValues: ReadonlyArray<
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
-export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
-> = ['custom']
-export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFixed']['amount_type']
-> = ['fixed']
 export const licenseKeyStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
@@ -75591,9 +75507,6 @@ export const productPriceSeatBasedCreateAmount_typeValues: ReadonlyArray<
 export const productPriceSourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceSource']
 > = ['catalog', 'ad_hoc']
-export const productPriceTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ProductPriceType']
-> = ['one_time', 'recurring']
 export const productPriceUnitBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceUnitBased']['amount_type']
 > = ['unit_based']
@@ -75640,6 +75553,8 @@ export const refundReasonValues: ReadonlyArray<
   'service_disruption',
   'satisfaction_guarantee',
   'dispute_prevention',
+  'tax_refund',
+  'vat_reverse_charge_correction',
   'other',
 ]
 export const refundSortPropertyValues: ReadonlyArray<

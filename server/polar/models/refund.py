@@ -22,6 +22,7 @@ from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
     from polar.models import (
+        CreditNote,
         Customer,
         Dispute,
         Order,
@@ -50,6 +51,8 @@ class RefundReason(StrEnum):
     service_disruption = "service_disruption"
     satisfaction_guarantee = "satisfaction_guarantee"
     dispute_prevention = "dispute_prevention"
+    tax_refund = "tax_refund"
+    vat_reverse_charge_correction = "vat_reverse_charge_correction"
     other = "other"
 
     @classmethod
@@ -159,6 +162,14 @@ class Refund(MetadataMixin, RecordModel):
     @declared_attr
     def order(cls) -> Mapped["Order | None"]:
         return relationship("Order", lazy="raise")
+
+    credit_note_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("credit_notes.id"), nullable=True, index=True, default=None
+    )
+
+    @declared_attr
+    def credit_note(cls) -> Mapped["CreditNote | None"]:
+        return relationship("CreditNote", lazy="raise", back_populates="refunds")
 
     subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("subscriptions.id"), nullable=True, index=True

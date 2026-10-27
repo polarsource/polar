@@ -7,7 +7,6 @@ import { formatDate } from '@polar-sh/i18n/formatters/date'
 import { cn } from '@polar-sh/ui/lib/utils'
 import type { ProductCheckoutPublic } from '../guards'
 import { isTemporaryDiscount } from '../utils/discount'
-import { isLegacyRecurringPrice } from '../utils/product'
 
 export interface CheckoutTrialHeroPriceProps {
   checkout: ProductCheckoutPublic
@@ -37,9 +36,7 @@ const CheckoutTrialHeroPrice = ({
   const effectiveLocale = locale ?? DEFAULT_LOCALE
   const t = useTranslations(effectiveLocale)
 
-  const interval = isLegacyRecurringPrice(product_price)
-    ? product_price.recurring_interval
-    : product.recurring_interval
+  const interval = product.recurring_interval
 
   const trialUnit =
     checkout.active_trial_interval === 'week'

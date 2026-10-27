@@ -26,34 +26,8 @@ locals {
 }
 
 # =============================================================================
-# PostgreSQL Database
+# Redis
 # =============================================================================
-
-resource "render_postgres" "db" {
-  environment_id = local.environment_id
-  name           = "db-test"
-  database_name  = "polar_cpit"
-  plan           = "pro_4gb"
-  region         = "ohio"
-  version        = "15"
-  disk_size_gb   = 100
-
-  high_availability_enabled = true
-
-  read_replicas = [
-    { name = "polar-read-test" },
-  ]
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes = [
-      ip_allow_list,
-      database_name,
-    ]
-  }
-
-  depends_on = [render_registry_credential.ghcr]
-}
 
 resource "render_redis" "redis" {
   count             = local.test_enabled ? 1 : 0

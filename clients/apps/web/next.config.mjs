@@ -315,7 +315,7 @@ const nextConfig = {
       // Access tokens redirect
       {
         source: '/settings/tokens',
-        destination: '/account/developer',
+        destination: '/dashboard/account/developer',
         permanent: false,
       },
 

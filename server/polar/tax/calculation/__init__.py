@@ -111,7 +111,7 @@ class TaxCalculationService:
         Raises:
             TaxCalculationTechnicalError: If all tax processors fail to calculate tax.
         """
-        for processor in settings.TAX_PROCESSORS:
+        for processor in settings.tax_processors:
             log.debug("Attempting tax calculation with processor", processor=processor)
             tax_processor_service = _get_tax_service(processor)
             try:
@@ -178,12 +178,13 @@ class TaxCalculationService:
             The recorded transaction ID and its processor. Transactions recorded
             from explicit amounts have a ``backfill_``-prefixed ID.
         """
-        tax_processor_service = _get_tax_service(settings.TAX_RECORD_PROCESSOR)
-        if calculation_processor != settings.TAX_RECORD_PROCESSOR:
+        record_processor = settings.tax_record_processor
+        tax_processor_service = _get_tax_service(record_processor)
+        if calculation_processor != record_processor:
             log.info(
                 "Recording tax calculation with a different processor than the one used for calculation",
                 calculation_processor=calculation_processor,
-                record_processor=settings.TAX_RECORD_PROCESSOR,
+                record_processor=record_processor,
                 calculation_id=processor_id,
             )
             return await self.record_amounts(
@@ -199,7 +200,7 @@ class TaxCalculationService:
         assert processor_id is not None
         return await tax_processor_service.record(
             processor_id, reference
-        ), settings.TAX_RECORD_PROCESSOR
+        ), record_processor
 
     async def record_amounts(
         self,
@@ -227,7 +228,8 @@ class TaxCalculationService:
             A ``backfill_``-prefixed record ID and the recording processor.
             Returning an ID does not verify completion of asynchronous processing.
         """
-        tax_processor_service = _get_tax_service(settings.TAX_RECORD_PROCESSOR)
+        record_processor = settings.tax_record_processor
+        tax_processor_service = _get_tax_service(record_processor)
         backfill_reference = await tax_processor_service.backfill(
             amount,
             tax_amount,
@@ -239,7 +241,7 @@ class TaxCalculationService:
         )
         return (
             f"{_BACKFILL_REFERENCE_PREFIX}{backfill_reference}",
-            settings.TAX_RECORD_PROCESSOR,
+            record_processor,
         )
 
     async def revert(

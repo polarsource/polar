@@ -1,6 +1,6 @@
 """Data models for SLO report."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 
@@ -33,6 +33,10 @@ class EndpointSLOStatus:
     def is_passing(self) -> bool:
         return self.p99_passing and self.availability_passing
 
+    @property
+    def has_data(self) -> bool:
+        return self.p99_actual is not None and self.availability_actual is not None
+
 
 @dataclass
 class SLOReport:
@@ -43,25 +47,44 @@ class SLOReport:
     environment: str
 
     # Global metrics
-    global_availability: float  # percentage
-    error_budget_remaining: float  # percentage (0-100)
+    global_availability: float | None  # percentage, None if no data
+    error_budget_remaining: float | None  # percentage (0-100), None if no data
     total_requests: int
     total_errors: int
 
     # Per-endpoint status
     endpoints: list[EndpointSLOStatus]
 
+    failed_queries: list[str] = field(default_factory=list)
+
     @property
     def endpoints_passing(self) -> int:
-        return sum(1 for e in self.endpoints if e.is_passing)
+        return sum(1 for e in self.endpoints if e.is_passing and e.has_data)
 
     @property
     def endpoints_failing(self) -> int:
-        return len(self.endpoints) - self.endpoints_passing
+        return sum(1 for e in self.endpoints if not e.is_passing)
+
+    @property
+    def missing_data(self) -> list[str]:
+        missing = [
+            name
+            for name, value in (
+                ("global availability", self.global_availability),
+                ("error budget", self.error_budget_remaining),
+            )
+            if value is None
+        ]
+        missing.extend(
+            f"`{e.method} {e.endpoint}`" for e in self.endpoints if not e.has_data
+        )
+        return missing
 
     @property
     def overall_status(self) -> str:
         if self.endpoints_failing == 0:
+            if self.failed_queries or self.missing_data:
+                return "incomplete"
             return "healthy"
         elif self.endpoints_failing <= 1:
             return "degraded"

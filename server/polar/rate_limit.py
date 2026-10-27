@@ -33,6 +33,20 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/auth/email-otp": [
         Rule(minute=6, hour=12, block_time=900, zone="auth-email-otp"),
     ],
+    (
+        "^/v1/(organizations/[^/]+/members/invite|"
+        "(customer-seats|customer-portal/seats)(/[^/]+/resend)?)/?$"
+    ): [
+        Rule(
+            group=group,
+            method="POST",
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="invitations",
+        )
+        for group in RateLimitGroup
+    ],
     "^/v1/auth/totp": [
         Rule(minute=6, hour=12, block_time=900, zone="auth-totp"),
     ],
@@ -66,22 +80,11 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
     ],
     # Caps refund creation well below the catch-all. Elevated is omitted so it
     # falls through to `^/v1`. POST-only so GET listing is unaffected.
+    # No `block_time`: the library blocks the user on every path, not just this one.
     "^/v1/refunds": [
-        Rule(method="POST", hour=10, block_time=3600, zone="refunds"),
-        Rule(
-            group=RateLimitGroup.web,
-            method="POST",
-            hour=10,
-            block_time=3600,
-            zone="refunds",
-        ),
-        Rule(
-            group=RateLimitGroup.restricted,
-            method="POST",
-            hour=10,
-            block_time=3600,
-            zone="refunds",
-        ),
+        Rule(method="POST", hour=10, zone="refunds"),
+        Rule(group=RateLimitGroup.web, method="POST", hour=10, zone="refunds"),
+        Rule(group=RateLimitGroup.restricted, method="POST", hour=10, zone="refunds"),
     ],
     # Each call is a live Stripe API read, so it's capped well below the `web` group's
     # catch-all allowance.
@@ -92,6 +95,17 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             minute=10,
             hour=60,
             zone="payout-account-sync",
+        ),
+    ],
+    # Each call is a live DNS lookup on a domain the caller chose, and resolvers
+    # cache negative answers, so retrying quickly doesn't help.
+    "^/v1/organizations/[^/]+/domains/[^/]+/verify": [
+        Rule(minute=10, hour=60, zone="organization-domain-verify"),
+        Rule(
+            group=RateLimitGroup.web,
+            minute=10,
+            hour=60,
+            zone="organization-domain-verify",
         ),
     ],
     "^/v1/feedbacks/": [
@@ -110,6 +124,23 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             minute=60,
             hour=500,
             zone="compass-assistant",
+        ),
+    ],
+    # Product name check validation in the dashboard product creation flow
+    "^/v1/products/name-check": [
+        Rule(minute=60, hour=500, zone="product-name-check"),
+        Rule(group=RateLimitGroup.web, minute=60, hour=500, zone="product-name-check"),
+        Rule(
+            group=RateLimitGroup.elevated,
+            minute=60,
+            hour=500,
+            zone="product-name-check",
+        ),
+        Rule(
+            group=RateLimitGroup.restricted,
+            minute=60,
+            hour=500,
+            zone="product-name-check",
         ),
     ],
     # Each sign-up creates an OAuth client and an agent.

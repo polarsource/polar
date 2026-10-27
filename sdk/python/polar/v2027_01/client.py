@@ -167,7 +167,7 @@ class PolarAsync:
         self,
         *,
         buffered: BufferedMeteringOptions | None = None,
-        outpost: MeteringOutpostOptions | typing.Literal[False] | None = None,
+        outpost: MeteringOutpostOptions | bool | None = None,
     ) -> Metering: ...
 
     @typing.overload
@@ -177,7 +177,7 @@ class PolarAsync:
         self,
         *,
         buffered: BufferedMeteringOptions | None = None,
-        outpost: MeteringOutpostOptions | typing.Literal[False] | None = None,
+        outpost: MeteringOutpostOptions | bool | None = None,
         strategies: list[MeteringStrategyProtocol] | None = None,
     ) -> Metering:
         """Create a helper for buffered event delivery and customer meter reads.
@@ -185,7 +185,7 @@ class PolarAsync:
         Args:
             buffered: Batch and retry options; defaults to 100 events, a 1-second
                 collection interval, a 5-second shutdown timeout, and 3 attempts.
-            outpost: Outpost options, enabled automatically when REDIS_URL is set.
+            outpost: True or Outpost options to enable Outpost. Disabled by default.
                 Pass False to disable; explicit options require a Redis URL.
             strategies: Replace all defaults with custom strategies. Cannot be
                 combined with buffered or outpost.

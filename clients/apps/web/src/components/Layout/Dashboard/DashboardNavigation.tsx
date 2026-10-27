@@ -3,11 +3,13 @@
 import { ArrowBack } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
+  SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   useAccountRoutes,
   useGeneralRoutes,
@@ -18,8 +20,27 @@ import {
   useInsightsRoutes,
   useProductNavigationEnabled,
 } from '../../Dashboard/navigationProducts'
+import { useSettingsRouteGroups } from '../../Dashboard/navigationSettings'
 import { CatalogNavigation } from './CatalogNavigation'
 import { NavList } from './NavList'
+
+export const useIsSettingsPath = (organization?: schemas['Organization']) => {
+  const pathname = usePathname()
+  return (
+    !!organization &&
+    pathname.startsWith(`/dashboard/${organization.slug}/settings`)
+  )
+}
+
+export const SettingsNavigationHeader = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => (
+  <SidebarMenu>
+    <BackLink href={`/dashboard/${organization.slug}`} title="Settings" />
+  </SidebarMenu>
+)
 
 export const OrganizationNavigation = ({
   organization,
@@ -27,6 +48,10 @@ export const OrganizationNavigation = ({
   organization: schemas['Organization']
 }) => {
   const productNavEnabled = useProductNavigationEnabled(organization)
+
+  if (useIsSettingsPath(organization)) {
+    return <SettingsNavigation organization={organization} />
+  }
 
   if (organization.feature_settings?.config_as_code_enabled) {
     return <CatalogNavigation organization={organization} />
@@ -78,32 +103,60 @@ const ProductNavigation = ({
   )
 }
 
+const BackLink = ({ href, title }: { href: string; title: string }) => {
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  return (
+    <SidebarMenuItem className="mb-4 flex flex-row items-center gap-2">
+      <SidebarMenuButton tooltip="Back to Dashboard" asChild>
+        <Link
+          href={href}
+          className="flex flex-row items-center gap-4 border border-transparent text-black dark:text-white"
+          onClick={() => {
+            if (isMobile) setOpenMobile(false)
+          }}
+        >
+          <span className="flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]">
+            <ArrowBack fontSize="inherit" />
+          </span>
+          <span>{title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
+const SettingsNavigation = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
+  const groups = useSettingsRouteGroups(organization)
+
+  return (
+    <div className="flex w-full flex-col gap-6">
+      {groups.map((group, index) => (
+        <div key={group.title} className="flex w-full flex-col gap-2">
+          {index > 0 && (
+            <span className="dark:text-polar-500 px-2 text-xs font-medium text-gray-400">
+              {group.title}
+            </span>
+          )}
+          <NavList routes={group.routes} navType="organization" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export const AccountNavigation = () => {
   const routes = useAccountRoutes()
-  const { isMobile, setOpenMobile } = useSidebar()
 
   return (
     <NavList
       routes={routes}
       navType="account"
-      header={
-        <SidebarMenuItem className="mb-4 flex flex-row items-center gap-2">
-          <SidebarMenuButton tooltip="Back to Dashboard" asChild>
-            <Link
-              href="/dashboard"
-              className="flex flex-row items-center gap-4 border border-transparent text-black dark:text-white"
-              onClick={() => {
-                if (isMobile) setOpenMobile(false)
-              }}
-            >
-              <span className="flex flex-col items-center justify-center overflow-visible rounded-full bg-transparent text-[15px]">
-                <ArrowBack fontSize="inherit" />
-              </span>
-              <span>User Settings</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      }
+      header={<BackLink href="/dashboard" title="Account Settings" />}
     />
   )
 }

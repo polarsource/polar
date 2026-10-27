@@ -101,10 +101,11 @@ An organization is considered ready to sell if ANY of these conditions is met:
 If NONE of these conditions is met, the org has no delivery mechanism — customers pay \
 but receive nothing. This is a red flag.
 
-Additionally, validate domain consistency: checkout return URL domains and webhook \
-domains should match the organization's website domain. If they don't match (and are \
-not known service domains), this is a MEDIUM risk concern — it suggests the integration \
-may point to an unrelated or suspicious destination.
+Additionally, validate domain consistency: checkout success URL domains, checkout return \
+URL domains and webhook domains should match the organization's website domain. If they \
+don't match (and are not known service domains), this is a MEDIUM risk concern — it \
+suggests the integration may point to an unrelated or suspicious destination, such as a \
+different business than the one declared.
 
 **Redirect detection (CRITICAL):** We follow redirects on checkout success and return \
 URLs. If any URL redirects to a DIFFERENT domain than the original, this is a HIGH risk \
@@ -495,10 +496,10 @@ Important information to check (assess under SETUP_READINESS):
   2. API keys are configured AND checkout return URLs exist (programmatic integration).
   3. API keys are configured AND at least one webhook is enabled (working).
   If none of these conditions is met, it's a red flag — customers pay but receive nothing.
-- **Domain consistency**: Checkout return URL domains and webhook domains should match \
-the organization's website domain. If they don't match (and are not known service domains), \
-this is a MEDIUM risk concern. Domains marked '(known service)' are legitimate third-party \
-integration platforms and should NOT be flagged.
+- **Domain consistency**: Checkout success URL domains, checkout return URL domains and \
+webhook domains should match the organization's website domain. If they don't match (and \
+are not known service domains), this is a MEDIUM risk concern. Domains marked \
+'(known service)' are legitimate third-party integration platforms and should NOT be flagged.
 - **Redirect detection (CRITICAL)**: If any checkout success or return URL redirects to a \
 different domain, this is a HIGH risk signal. Scammers use their own API endpoints that \
 302-redirect users to prohibited content. Any cross-domain redirect is a strong red flag.
@@ -556,10 +557,10 @@ organizations. Re-creating an organization after denial is grounds for automatic
     2. API keys are configured AND checkout return URLs exist (programmatic integration).
     3. API keys are configured AND at least one webhook is enabled (working).
     If none of these conditions is met, it's a red flag — customers pay but receive nothing.
-  - **Domain consistency**: Checkout return URL domains and webhook domains should match \
-the organization's website domain. If they don't match (and are not known service domains), \
-this is a MEDIUM risk concern. Domains marked '(known service)' are legitimate third-party \
-integration platforms and should NOT be flagged.
+  - **Domain consistency**: Checkout success URL domains, checkout return URL domains and \
+webhook domains should match the organization's website domain. If they don't match (and \
+are not known service domains), this is a MEDIUM risk concern. Domains marked \
+'(known service)' are legitimate third-party integration platforms and should NOT be flagged.
   - **Redirect detection (CRITICAL)**: If any checkout success or return URL redirects to a \
 different domain, this is a HIGH risk signal. Scammers use their own API endpoints that \
 302-redirect users to prohibited content. Any cross-domain redirect is a strong red flag.
@@ -841,7 +842,7 @@ class ReviewAnalyzer:
             for url in setup.checkout_success_urls.unique_urls:
                 parts.append(f"  - {url}")
             parts.append(
-                f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
+                f"Success URL Domains: {_annotate_domains(setup.checkout_success_urls.domains)}"
             )
             if setup.checkout_success_urls.redirect_results:
                 redirected = [
@@ -866,7 +867,7 @@ class ReviewAnalyzer:
             for url in setup.checkout_return_urls.unique_urls:
                 parts.append(f"  - {url}")
             parts.append(
-                f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
+                f"Return URL Domains: {_annotate_domains(setup.checkout_return_urls.domains)}"
             )
             if setup.checkout_return_urls.redirect_results:
                 redirected = [

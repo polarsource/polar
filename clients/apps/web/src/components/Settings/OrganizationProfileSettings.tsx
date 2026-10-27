@@ -39,6 +39,7 @@ import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
+import { Box } from '@polar-sh/orbit/Box'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
@@ -548,46 +549,50 @@ const OrganizationProfileSettings: React.FC<
           e.preventDefault()
         }}
       >
-        <SettingsGroup>
-          <SettingsGroupItem
-            title="Identifier"
-            description="Unique identifier for your organization"
-          >
-            <FormControl>
-              <CopyToClipboardInput
-                value={organization.id}
-                onCopy={() => {
-                  toast({
-                    title: 'Copied To Clipboard',
-                    description: `Organization ID was copied to clipboard`,
-                  })
-                }}
+        <Box flexDirection="column" rowGap="2xl">
+          <SettingsGroup title="Identifiers">
+            <SettingsGroupItem
+              title="Organization ID"
+              description="Unique identifier for your organization"
+            >
+              <FormControl>
+                <CopyToClipboardInput
+                  value={organization.id}
+                  onCopy={() => {
+                    toast({
+                      title: 'Copied To Clipboard',
+                      description: `Organization ID was copied to clipboard`,
+                    })
+                  }}
+                />
+              </FormControl>
+            </SettingsGroupItem>
+            <SettingsGroupItem
+              title="Organization Slug"
+              description="Used for Customer Portal, Transaction Statements, etc."
+            >
+              <FormControl>
+                <CopyToClipboardInput
+                  value={organization.slug}
+                  onCopy={() => {
+                    toast({
+                      title: 'Copied To Clipboard',
+                      description: `Organization Slug was copied to clipboard`,
+                    })
+                  }}
+                />
+              </FormControl>
+            </SettingsGroupItem>
+          </SettingsGroup>
+          <SettingsGroup title="Profile">
+            <Box flexDirection="column" padding="xl">
+              <OrganizationDetailsForm
+                organization={organization}
+                readOnly={readOnly}
               />
-            </FormControl>
-          </SettingsGroupItem>
-          <SettingsGroupItem
-            title="Organization Slug"
-            description="Used for Customer Portal, Transaction Statements, etc."
-          >
-            <FormControl>
-              <CopyToClipboardInput
-                value={organization.slug}
-                onCopy={() => {
-                  toast({
-                    title: 'Copied To Clipboard',
-                    description: `Organization Slug was copied to clipboard`,
-                  })
-                }}
-              />
-            </FormControl>
-          </SettingsGroupItem>
-          <div className="flex flex-col gap-y-4 p-4">
-            <OrganizationDetailsForm
-              organization={organization}
-              readOnly={readOnly}
-            />
-          </div>
-        </SettingsGroup>
+            </Box>
+          </SettingsGroup>
+        </Box>
       </form>
     </Form>
   )

@@ -9,7 +9,6 @@ from polar.kit.address import AddressInput
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import Schema
 from polar.v2026_04.outputs import (
-    LegacyRecurringProductPriceFixed,
     PaymentMethodCard,
     ProductPriceFixed,
 )
@@ -109,11 +108,7 @@ class OrganizationPlan(Schema):
     def from_sdk(cls, product: "Product") -> "OrganizationPlan":
         metadata = product.metadata or {}
         fixed_price = next(
-            (
-                p
-                for p in product.prices
-                if isinstance(p, ProductPriceFixed | LegacyRecurringProductPriceFixed)
-            ),
+            (p for p in product.prices if isinstance(p, ProductPriceFixed)),
             None,
         )
         fee_benefit = next(

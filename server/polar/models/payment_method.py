@@ -14,6 +14,9 @@ if TYPE_CHECKING:
     from .customer import Customer
 
 
+SHARED_PAYMENT_TOKEN_TYPE = "shared_payment_token"
+
+
 def card_expiration(year: int, month: int) -> datetime:
     """Cards stay valid through the end of their expiration month."""
     return datetime(year + month // 12, month % 12 + 1, 1, tzinfo=UTC)
@@ -47,6 +50,10 @@ class PaymentMethod(RecordModel):
             back_populates="payment_methods",
             foreign_keys=[cls.customer_id],  # type: ignore
         )
+
+    @property
+    def is_shared_payment_token(self) -> bool:
+        return self.type == SHARED_PAYMENT_TOKEN_TYPE
 
     @property
     def fingerprint(self) -> str | None:

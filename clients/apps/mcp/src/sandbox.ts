@@ -153,7 +153,7 @@ export default class Sandbox extends WorkerEntrypoint {
               log.scriptError = errorName
             }
             if (recordScriptErrors && ENGINE_ERRORS.has(errorName ?? '')) {
-              log.errorMessage = error
+              log.scriptErrorMessage = error
             }
             return yield* new ToolError({ message: error, kind: 'script' })
           }

@@ -70,7 +70,10 @@ export const captureToolCall = (entry: RequestLogEntry) => {
       $mcp_is_error: entry.isError ?? true,
       $mcp_error_type: errorType(entry),
       $mcp_error_status: entry.apiStatus,
-      $mcp_error_message: entry.errorMessage?.slice(0, MAX_ERROR_MESSAGE_CHARS),
+      $mcp_error_message: entry.scriptErrorMessage?.slice(
+        0,
+        MAX_ERROR_MESSAGE_CHARS,
+      ),
       api_error_fields: entry.apiErrorFields,
       $mcp_duration_ms: entry.durationMs,
       $mcp_client_name: entry.client?.name ?? product?.[1],

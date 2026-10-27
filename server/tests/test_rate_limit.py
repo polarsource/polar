@@ -77,6 +77,40 @@ class TestAuthenticate:
 
 @pytest.mark.anyio
 class TestMiddleware:
+    @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+    @pytest.mark.parametrize("group", list(RateLimitGroup))
+    async def test_invitations_share_limit_across_routes(
+        self, rules: dict[str, Sequence[Rule]], group: RateLimitGroup
+    ) -> None:
+        async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+            await Response(status_code=204)(scope, receive, send)
+
+        async def authenticate(scope: Scope) -> tuple[str, str]:
+            return "inviter", group
+
+        limiter = RateLimitMiddleware(
+            endpoint,
+            authenticate,
+            RedisBackend(FakeAsyncRedis(decode_responses=True)),
+            rules,
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=limiter), base_url="http://test"
+        ) as client:
+            statuses = []
+            for path in (
+                "/v1/organizations/org-1/members/invite",
+                "/v1/organizations/org-2/members/invite",
+                "/v1/customer-seats",
+                "/v1/customer-seats/seat-1/resend",
+                "/v1/customer-portal/seats",
+                "/v1/customer-portal/seats/seat-2/resend",
+                "/v1/customer-seats/seat-3/resend",
+            ):
+                response = await client.post(path)
+                statuses.append(response.status_code)
+        assert statuses == [204] * 6 + [429]
+
     @pytest.mark.parametrize(
         ("header", "prefix"),
         [
@@ -228,6 +262,7 @@ _SENSITIVE_PATHS: list[tuple[str, str]] = [
     ("/v1/customer-seats/claim/abc-123/stream", "seat-claim-stream"),
     ("/v1/checkouts/xyz-789/confirm", "checkout-confirm"),
     ("/v1/feedbacks/", "feedback-submit"),
+    ("/v1/organizations/abc-123/domains/xyz-789/verify", "organization-domain-verify"),
 ]
 
 
@@ -291,6 +326,46 @@ class TestEmailUpdateZone:
         rule = _select_rule(rules, path, group)
         assert rule is not None
         assert rule.zone == "email-update"
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize("suffix", ["", "/"])
+@pytest.mark.parametrize("group", list(RateLimitGroup))
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/v1/organizations/org-id/members/invite",
+        "/v1/customer-seats",
+        "/v1/customer-seats/seat-id/resend",
+        "/v1/customer-portal/seats",
+        "/v1/customer-portal/seats/seat-id/resend",
+    ],
+)
+class TestInvitationZone:
+    def test_matches_email_otp_limits(
+        self,
+        rules: dict[str, Sequence[Rule]],
+        suffix: str,
+        group: RateLimitGroup,
+        path: str,
+    ) -> None:
+        rule = _select_rule(
+            rules,
+            f"{path}{suffix}",
+            group,
+            method="POST",
+        )
+        otp_rule = _select_rule(
+            rules, "/v1/auth/email-otp/request", RateLimitGroup.default
+        )
+        assert rule is not None
+        assert otp_rule is not None
+        assert rule.zone == "invitations"
+        assert (rule.minute, rule.hour, rule.block_time) == (
+            otp_rule.minute,
+            otp_rule.hour,
+            otp_rule.block_time,
+        )
 
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])

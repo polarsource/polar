@@ -2,6 +2,8 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -359,6 +361,9 @@ async def update(
     if member is None:
         raise ResourceNotFound("Member not found")
 
+    await assert_resource_permission(
+        session, auth_subject, member, OrganizationPermission.customers_manage
+    )
     updated_member = await member_service.update(
         session,
         member,
@@ -399,6 +404,9 @@ async def update_external(
     if member is None:
         raise ResourceNotFound("Member not found")
 
+    await assert_resource_permission(
+        session, auth_subject, member, OrganizationPermission.customers_manage
+    )
     updated_member = await member_service.update(
         session,
         member,
@@ -431,6 +439,9 @@ async def delete(
     if member is None:
         raise ResourceNotFound("Member not found")
 
+    await assert_resource_permission(
+        session, auth_subject, member, OrganizationPermission.customers_manage
+    )
     await member_service.delete(session, member)
 
 
@@ -460,6 +471,9 @@ async def delete_external(
     if member is None:
         raise ResourceNotFound("Member not found")
 
+    await assert_resource_permission(
+        session, auth_subject, member, OrganizationPermission.customers_manage
+    )
     await member_service.delete(session, member)
 
 
@@ -599,6 +613,9 @@ async def update_member(
     if member is None:
         raise ResourceNotFound("Member not found")
 
+    await assert_resource_permission(
+        session, auth_subject, member, OrganizationPermission.customers_manage
+    )
     updated_member = await member_service.update(
         session,
         member,
@@ -646,6 +663,9 @@ async def update_member_by_external_id(
     if member is None:
         raise ResourceNotFound("Member not found")
 
+    await assert_resource_permission(
+        session, auth_subject, member, OrganizationPermission.customers_manage
+    )
     updated_member = await member_service.update(
         session,
         member,
@@ -684,6 +704,9 @@ async def delete_member(
     if member is None:
         raise ResourceNotFound("Member not found")
 
+    await assert_resource_permission(
+        session, auth_subject, member, OrganizationPermission.customers_manage
+    )
     await member_service.delete(session, member)
 
 
@@ -721,4 +744,7 @@ async def delete_member_by_external_id(
     if member is None:
         raise ResourceNotFound("Member not found")
 
+    await assert_resource_permission(
+        session, auth_subject, member, OrganizationPermission.customers_manage
+    )
     await member_service.delete(session, member)

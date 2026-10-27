@@ -3,8 +3,9 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-from polar.models import Account, Member, Organization, User, UserOrganization
+from polar.models import Account, Customer, Member, Organization, User, UserOrganization
 from polar.models.customer import CustomerType
+from polar.models.user_organization import OrganizationRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -2217,3 +2218,120 @@ class TestDeleteCustomerMember:
             f"/v1/customers/{other_customer.id}/members/{member.id}"
         )
         assert response.status_code == 404
+
+
+@pytest.mark.anyio
+@pytest.mark.auth
+@pytest.mark.parametrize("role", list(OrganizationRole))
+class TestOrganizationPermissions:
+    @pytest.fixture(autouse=True)
+    async def prepare_customer(
+        self,
+        role: OrganizationRole,
+        user_organization: UserOrganization,
+        customer: Customer,
+        member_owner: Member,
+        member_second: Member,
+        save_fixture: SaveFixture,
+    ) -> None:
+        user_organization.role = role
+        customer.type = CustomerType.team
+        customer.external_id = "permission-customer"
+        member_second.external_id = "permission-member"
+        await save_fixture(user_organization)
+        await save_fixture(customer)
+        await save_fixture(member_second)
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/v1/members/",
+            "/v1/customers/{customer_id}/members",
+            "/v1/customers/external/permission-customer/members",
+            "/v1/members/{member_id}",
+            "/v1/members/external/permission-member?external_customer_id=permission-customer",
+            "/v1/customers/{customer_id}/members/{member_id}",
+            "/v1/customers/external/permission-customer/members/permission-member",
+        ],
+    )
+    async def test_read(
+        self, client: AsyncClient, customer: Customer, member_second: Member, path: str
+    ) -> None:
+        response = await client.get(
+            path.format(customer_id=customer.id, member_id=member_second.id)
+        )
+        assert response.status_code == 200
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/v1/members/",
+            "/v1/customers/{customer_id}/members",
+            "/v1/customers/external/permission-customer/members",
+        ],
+    )
+    async def test_create(
+        self, client: AsyncClient, customer: Customer, role: OrganizationRole, path: str
+    ) -> None:
+        body = {"email": "new-member@example.com", "role": "member"}
+        if path == "/v1/members/":
+            body["customer_id"] = str(customer.id)
+        response = await client.post(path.format(customer_id=customer.id), json=body)
+        assert response.status_code == (
+            403 if role == OrganizationRole.finance else 201
+        )
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/v1/members/{member_id}",
+            "/v1/members/external/permission-member?external_customer_id=permission-customer",
+            "/v1/customers/{customer_id}/members/{member_id}",
+            "/v1/customers/external/permission-customer/members/permission-member",
+        ],
+    )
+    @pytest.mark.parametrize(
+        "body", [{"email": "changed@example.com"}, {"role": "owner"}]
+    )
+    async def test_update(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+        member_second: Member,
+        role: OrganizationRole,
+        path: str,
+        body: dict[str, str],
+    ) -> None:
+        response = await client.patch(
+            path.format(customer_id=customer.id, member_id=member_second.id), json=body
+        )
+        assert response.status_code == (
+            403 if role == OrganizationRole.finance else 200
+        )
+        if role != OrganizationRole.finance:
+            for field, value in body.items():
+                assert response.json()[field] == value
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/v1/members/{member_id}",
+            "/v1/members/external/permission-member?external_customer_id=permission-customer",
+            "/v1/customers/{customer_id}/members/{member_id}",
+            "/v1/customers/external/permission-customer/members/permission-member",
+        ],
+    )
+    async def test_delete(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+        member_second: Member,
+        role: OrganizationRole,
+        path: str,
+    ) -> None:
+        response = await client.delete(
+            path.format(customer_id=customer.id, member_id=member_second.id)
+        )
+        assert response.status_code == (
+            403 if role == OrganizationRole.finance else 204
+        )

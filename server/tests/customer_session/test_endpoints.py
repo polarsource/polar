@@ -7,6 +7,7 @@ from polar.models import Customer, Member, Organization, User, UserOrganization
 from polar.models.customer import CustomerType
 from polar.models.member import MemberRole
 from polar.models.member_session import MEMBER_SESSION_TOKEN_PREFIX
+from polar.models.user_organization import OrganizationRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -482,3 +483,40 @@ class TestCreate:
             json={"external_customer_id": "cus_dup"},
         )
         assert response.status_code == 409
+
+
+@pytest.mark.anyio
+@pytest.mark.auth
+@pytest.mark.parametrize("role", list(OrganizationRole))
+@pytest.mark.parametrize("customer_type", list(CustomerType))
+@pytest.mark.parametrize("id_field", ["customer_id", "external_customer_id"])
+class TestOrganizationPermissions:
+    async def test_create(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+        member_owner: Member,
+        save_fixture: SaveFixture,
+        role: OrganizationRole,
+        customer_type: CustomerType,
+        id_field: str,
+    ) -> None:
+        user_organization.role = role
+        customer.type = customer_type
+        customer.external_id = "permission-customer"
+        await save_fixture(user_organization)
+        await save_fixture(customer)
+
+        body = {
+            id_field: str(customer.id)
+            if id_field == "customer_id"
+            else customer.external_id,
+            "member_id": str(member_owner.id),
+        }
+        response = await client.post("/v1/customer-sessions/", json=body)
+        assert response.status_code == (
+            403 if role == OrganizationRole.finance else 201
+        )
+        if role != OrganizationRole.finance:
+            assert response.json()["token"].startswith(MEMBER_SESSION_TOKEN_PREFIX)

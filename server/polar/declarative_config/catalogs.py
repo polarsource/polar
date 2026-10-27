@@ -2,10 +2,14 @@ import hashlib
 import json
 from collections.abc import Mapping, Sequence
 
+from pydantic import BaseModel
+
+from polar.catalog.service import benefit_entry_key
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.repository import DiscountRepository
-from polar.models import Product
+from polar.models import Organization, Product
 from polar.postgres import AsyncSession
+from polar.product.repository import ProductRepository
 
 from .schemas import (
     ConfigChange,
@@ -23,30 +27,87 @@ def _publishes_new_row(change: ProductChange) -> bool:
     )
 
 
-def product_definitions(changes: ConfigChanges) -> dict[str, str]:
-    """Fingerprint the products this apply publishes as new rows, by external_id."""
+def _fingerprint(config: BaseModel) -> str:
+    return hashlib.sha256(
+        json.dumps(config.model_dump(mode="json"), sort_keys=True).encode()
+    ).hexdigest()
+
+
+def definitions(changes: ConfigChanges) -> dict[str, str]:
+    """Fingerprint the products and benefits this apply publishes as new rows."""
     return {
-        change.config.external_id: hashlib.sha256(
-            json.dumps(change.config.model_dump(mode="json"), sort_keys=True).encode()
-        ).hexdigest()
-        for change in changes.products
-        if _publishes_new_row(change)
+        **{
+            change.config.external_id: _fingerprint(change.config)
+            for change in changes.products
+            if _publishes_new_row(change)
+        },
+        **{
+            benefit_entry_key(change.config.external_id): _fingerprint(change.config)
+            for change in changes.benefits
+            if change.existing is None or change.update_dict
+        },
     }
 
 
-def benefit_issues(changes: ConfigChanges) -> list[ConfigIssue]:
-    """Benefits aren't versioned yet, so their definitions can't change."""
-    return [
-        ConfigIssue(
-            severity=ConfigIssueSeverity.error,
-            type=ConfigIssueType.not_supported,
-            loc=["body", "benefits", change.index],
-            msg="Benefits can't be changed yet.",
-            input=change.config.external_id,
-        )
+async def cascade_benefit_changes(
+    session: AsyncSession, organization: Organization, changes: ConfigChanges
+) -> list[ConfigIssue]:
+    """A changed benefit gets a new row, and so does every product granting it:
+    the benefit links are part of the product.
+
+    A current product left out of the config can't get its new row, so it's an
+    error, instead of a live product granting a previous benefit version.
+    """
+    changed = {
+        change.config.external_id: change
         for change in changes.benefits
         if change.existing is not None and change.update_dict
-    ]
+    }
+    if not changed:
+        return []
+
+    for change in changes.products:
+        if change.existing is None:
+            continue
+        granted = [
+            external_id
+            for external_id in change.config.benefits
+            if external_id in changed and external_id in change.before["benefits"]
+        ]
+        if granted:
+            change.update_dict["changed_benefits"] = granted
+            change.before["changed_benefits"] = []
+
+    listed = {change.config.external_id for change in changes.products}
+    benefit_external_ids = {
+        change.existing.id: external_id
+        for external_id, change in changed.items()
+        if change.existing is not None
+    }
+    issues: list[ConfigIssue] = []
+    for product in await ProductRepository.from_session(
+        session
+    ).get_current_by_benefits(organization.id, list(benefit_external_ids)):
+        if product.external_id in listed:
+            continue
+        for benefit in product.benefits:
+            external_id = benefit_external_ids.get(benefit.id)
+            if external_id is None:
+                continue
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.not_supported,
+                    loc=["body", "benefits", changed[external_id].index],
+                    msg=(
+                        f"The product {product.external_id or product.name!r} "
+                        "grants this benefit but isn't in the config. Add it, "
+                        "so it gets the new version of the benefit."
+                    ),
+                    input=external_id,
+                )
+            )
+    return issues
 
 
 def add_catalog_diffs(

@@ -713,8 +713,7 @@ class TestEnqueueBenefitsGrants:
         )
         grant.set_granted()
         await save_fixture(grant)
-        # Live benefits can't share an external_id until benefits are versioned.
-        previous.set_deleted_at()
+        previous.is_current = False
         await save_fixture(previous)
         current = await create_benefit(
             save_fixture, organization=organization, external_id="license"
@@ -788,7 +787,7 @@ class TestEnqueueBenefitsGrants:
             )
             grant.set_granted()
             await save_fixture(grant)
-            previous.set_deleted_at()
+            previous.is_current = False
             await save_fixture(previous)
             records.append(record)
             benefits.append(
@@ -837,7 +836,7 @@ class TestEnqueueBenefitsGrants:
         )
         grant.set_granted()
         await save_fixture(grant)
-        previous.set_deleted_at()
+        previous.is_current = False
         await save_fixture(previous)
         current = await create_benefit(
             save_fixture,

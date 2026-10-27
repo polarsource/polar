@@ -18,7 +18,7 @@ from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Organization, Product, User
+from polar.models import Agent, Benefit, Organization, Product, User
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -206,7 +206,9 @@ class DeclarativeConfigService:
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
-        issues.extend(catalogs.benefit_issues(changes))
+        issues.extend(
+            await catalogs.cascade_benefit_changes(session, organization, changes)
+        )
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
@@ -215,7 +217,7 @@ class DeclarativeConfigService:
 
         live = await catalog_service.get_or_create_live(session, organization)
         catalog_before, version_hash = await catalog_service.get_next_version_hash(
-            session, organization, catalogs.product_definitions(changes)
+            session, organization, catalogs.definitions(changes)
         )
         settings_result = await self._apply_settings(
             session, organization, changes.settings
@@ -226,7 +228,7 @@ class DeclarativeConfigService:
         meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
         )
-        benefit_results, benefit_ids = await self._apply_benefits(
+        benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
             session, redis, auth_subject, organization, changes.benefits, meter_ids
         )
         product_results, new_products = await self._apply_products(
@@ -237,13 +239,15 @@ class DeclarativeConfigService:
             meter_ids,
             benefit_ids,
         )
-        if new_products:
+        published = bool(new_products or new_benefits)
+        if published:
             assert version_hash is not None
             await catalog_service.publish(
                 session,
                 organization,
                 live,
                 new_products,
+                new_benefits,
                 version_hash,
                 name=config.catalog_name,
             )
@@ -268,7 +272,7 @@ class DeclarativeConfigService:
                 *product_results,
             ],
             catalog=ConfigCatalogChange(before=catalog_before, after=version_hash)
-            if new_products and version_hash is not None
+            if published and version_hash is not None
             else None,
             settings=settings_result,
         )
@@ -287,9 +291,11 @@ class DeclarativeConfigService:
         changes, issues = await validation.check(
             session, organization, config, for_update=False
         )
-        issues.extend(catalogs.benefit_issues(changes))
+        issues.extend(
+            await catalogs.cascade_benefit_changes(session, organization, changes)
+        )
         catalog_before, catalog_after = await catalog_service.get_next_version_hash(
-            session, organization, catalogs.product_definitions(changes)
+            session, organization, catalogs.definitions(changes)
         )
         product_changes = self._plan_changes(ConfigResource.product, changes.products)
         catalog: ConfigCatalogChange | None = None
@@ -620,15 +626,20 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Benefit]]:
         repository = BenefitRepository.from_session(session)
         results: list[ConfigResult] = []
         benefit_ids: dict[str, UUID] = {}
+        new_benefits: dict[str, Benefit] = {}
         for change in changes:
             benefit = change.existing
-            if benefit is None:
+            if benefit is None or change.update_dict:
                 try:
                     async with session.begin_nested():
+                        if benefit is not None:
+                            await repository.update(
+                                benefit, update_dict={"is_current": False}, flush=True
+                            )
                         benefit = await benefit_service.user_create(
                             session,
                             redis,
@@ -642,23 +653,19 @@ class DeclarativeConfigService:
                             auth_subject,
                             declarative_config=True,
                         )
-                        await repository.update(
-                            benefit,
-                            update_dict={"external_id": change.config.external_id},
-                        )
+                        update_dict: dict[str, Any] = {
+                            "external_id": change.config.external_id
+                        }
+                        if change.existing is not None:
+                            update_dict["is_tax_applicable"] = (
+                                change.existing.is_tax_applicable
+                            )
+                        await repository.update(benefit, update_dict=update_dict)
                 except IntegrityError as e:
                     if _constraint_name(e) != _BENEFIT_EXTERNAL_ID_INDEX:
                         raise
                     raise ConfigBenefitConflict() from e
-            elif change.update_dict:
-                await benefit_service.update(
-                    session,
-                    redis,
-                    benefit,
-                    benefits.benefit_update(change, meter_ids),
-                    auth_subject,
-                    declarative_config=True,
-                )
+                new_benefits[change.config.external_id] = benefit
             benefit_ids[change.config.external_id] = benefit.id
             results.append(
                 ConfigResult(
@@ -667,7 +674,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, benefit_ids
+        return results, benefit_ids, new_benefits
 
     async def _apply_products(
         self,

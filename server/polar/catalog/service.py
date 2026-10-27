@@ -5,10 +5,13 @@ from collections.abc import Mapping, Sequence
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.benefit.repository import BenefitRepository
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
+    Benefit,
     Catalog,
+    CatalogBenefit,
     CatalogProduct,
     Organization,
     Product,
@@ -20,7 +23,16 @@ from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 
-from .repository import CatalogProductRepository, CatalogRepository
+from .repository import (
+    CatalogBenefitRepository,
+    CatalogProductRepository,
+    CatalogRepository,
+)
+
+
+def benefit_entry_key(external_id: str) -> str:
+    """Benefits and products have separate `external_id` namespaces."""
+    return f"benefit:{external_id}"
 
 
 def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) -> str:
@@ -62,28 +74,60 @@ class CatalogService:
             page=pagination.page,
         )
 
+    async def _get_live_benefits(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        live: Catalog | None,
+    ) -> dict[str, Benefit]:
+        """Benefits of the live catalog. Catalogs published before benefits were
+        versioned have no benefit members, so they have the current benefits."""
+        if live is not None:
+            members = await CatalogBenefitRepository.from_session(
+                session
+            ).get_all_by_catalog(live.id)
+            if members:
+                return {member.external_id: member.benefit for member in members}
+        return {
+            benefit.external_id: benefit
+            for benefit in await BenefitRepository.from_session(
+                session
+            ).get_catalog_baseline(organization.id)
+            if benefit.external_id is not None
+        }
+
     async def get_live_entries(
         self, session: AsyncReadSession, organization: Organization
     ) -> tuple[str | None, dict[str, str]]:
         """Return the live catalog's version hash and contents.
 
         Before the first publish, that's the catalog apply creates from the
-        existing products.
+        existing products and benefits.
         """
         live = await CatalogRepository.from_session(session).get_live(organization.id)
+        benefit_entries = {
+            benefit_entry_key(external_id): str(benefit.id)
+            for external_id, benefit in (
+                await self._get_live_benefits(session, organization, live)
+            ).items()
+        }
         if live is not None:
             members = await CatalogProductRepository.from_session(
                 session
             ).get_all_by_catalog(live.id)
             return live.version_hash, {
-                member.external_id: str(member.product_id) for member in members
+                **{member.external_id: str(member.product_id) for member in members},
+                **benefit_entries,
             }
         entries = {
-            product.external_id: str(product.id)
-            for product in await ProductRepository.from_session(
-                session
-            ).get_catalog_baseline(organization.id)
-            if product.external_id is not None
+            **{
+                product.external_id: str(product.id)
+                for product in await ProductRepository.from_session(
+                    session
+                ).get_catalog_baseline(organization.id)
+                if product.external_id is not None
+            },
+            **benefit_entries,
         }
         if not entries:
             return None, {}
@@ -96,7 +140,7 @@ class CatalogService:
         definitions: Mapping[str, str],
     ) -> tuple[str | None, str | None]:
         """Return the live version hash, and the version hash of the catalog these
-        new product definitions would publish."""
+        new product and benefit definitions would publish."""
         before, entries = await self.get_live_entries(session, organization)
         if not definitions:
             return before, before
@@ -110,37 +154,33 @@ class CatalogService:
         if live is not None:
             return live
 
+        version_hash, entries = await self.get_live_entries(session, organization)
+        if version_hash is None:
+            return None
         products = await ProductRepository.from_session(session).get_catalog_baseline(
             organization.id
         )
-        if not products:
-            return None
+        benefits = await self._get_live_benefits(session, organization, None)
 
         catalog = await repository.create(
             Catalog(
                 organization=organization,
-                version_hash=compute_version_hash(
-                    None,
-                    {
-                        product.external_id: str(product.id)
-                        for product in products
-                        if product.external_id is not None
-                    },
-                ),
+                version_hash=version_hash,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
             ),
             flush=True,
         )
-        catalog_product_repository = CatalogProductRepository.from_session(session)
-        for product in products:
-            assert product.external_id is not None
-            product.catalog = catalog
-            await catalog_product_repository.create(
-                CatalogProduct(
-                    catalog=catalog, product=product, external_id=product.external_id
-                )
-            )
+        await self._add_members(
+            session,
+            catalog,
+            {
+                product.external_id: product
+                for product in products
+                if product.external_id is not None
+            },
+            benefits,
+        )
         return catalog
 
     async def publish(
@@ -149,22 +189,22 @@ class CatalogService:
         organization: Organization,
         live: Catalog | None,
         new_products: Mapping[str, Product],
+        new_benefits: Mapping[str, Benefit],
         version_hash: str,
         name: str | None = None,
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
-        catalog_product_repository = CatalogProductRepository.from_session(session)
-
-        members = (
+        products = (
             {}
             if live is None
             else {
                 member.external_id: member.product
-                for member in await catalog_product_repository.get_all_by_catalog(
-                    live.id
-                )
+                for member in await CatalogProductRepository.from_session(
+                    session
+                ).get_all_by_catalog(live.id)
             }
         )
+        benefits = await self._get_live_benefits(session, organization, live)
         if live is not None:
             await repository.update(
                 live, update_dict={"status": CatalogStatus.archived}, flush=True
@@ -179,21 +219,39 @@ class CatalogService:
             ),
             flush=True,
         )
-        for external_id, product in new_products.items():
-            product.catalog = catalog
-            members.pop(external_id, None)
-            await catalog_product_repository.create(
-                CatalogProduct(
-                    catalog=catalog, product=product, external_id=external_id
-                )
-            )
-        for external_id, product in members.items():
-            await catalog_product_repository.create(
-                CatalogProduct(
-                    catalog=catalog, product=product, external_id=external_id
-                )
-            )
+        await self._add_members(
+            session,
+            catalog,
+            {**products, **new_products},
+            {**benefits, **new_benefits},
+        )
         return catalog
+
+    async def _add_members(
+        self,
+        session: AsyncSession,
+        catalog: Catalog,
+        products: Mapping[str, Product],
+        benefits: Mapping[str, Benefit],
+    ) -> None:
+        catalog_product_repository = CatalogProductRepository.from_session(session)
+        for external_id, product in products.items():
+            if product.catalog_id is None:
+                product.catalog = catalog
+            await catalog_product_repository.create(
+                CatalogProduct(
+                    catalog=catalog, product=product, external_id=external_id
+                )
+            )
+        catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
+        for external_id, benefit in benefits.items():
+            if benefit.catalog_id is None:
+                benefit.catalog = catalog
+            await catalog_benefit_repository.create(
+                CatalogBenefit(
+                    catalog=catalog, benefit=benefit, external_id=external_id
+                )
+            )
 
     def copy_product_settings(self, product: Product, new_product: Product) -> None:
         """Copy what config doesn't describe onto a product's new version."""

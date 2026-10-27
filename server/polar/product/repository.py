@@ -20,6 +20,7 @@ from polar.kit.repository import (
 from polar.models import (
     CheckoutProduct,
     Product,
+    ProductBenefit,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -76,6 +77,22 @@ class ProductRepository(
     async def get_catalog_baseline(self, organization_id: UUID) -> Sequence[Product]:
         statement = self.get_catalog_baseline_statement(organization_id).options(
             undefer(Product.external_id)
+        )
+        return await self.get_all(statement)
+
+    async def get_current_by_benefits(
+        self, organization_id: UUID, benefit_ids: Sequence[UUID]
+    ) -> Sequence[Product]:
+        statement = (
+            self.get_base_statement()
+            .join(ProductBenefit, ProductBenefit.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                ProductBenefit.benefit_id.in_(benefit_ids),
+                Product.is_current,
+                ~Product.is_archived,
+            )
+            .options(undefer(Product.external_id))
         )
         return await self.get_all(statement)
 

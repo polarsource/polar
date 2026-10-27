@@ -70,6 +70,7 @@ class BenefitRepository(
             .where(
                 Benefit.organization_id == organization_id,
                 Benefit.external_id.in_(external_ids),
+                Benefit.is_current,
             )
             .options(undefer(Benefit.external_id), *self.get_eager_options())
         )
@@ -82,9 +83,31 @@ class BenefitRepository(
     ) -> Select[tuple[Benefit]]:
         return (
             self.get_base_statement()
-            .where(Benefit.organization_id == organization_id)
+            .where(Benefit.organization_id == organization_id, Benefit.is_current)
             .order_by(Benefit.created_at, Benefit.id)
         )
+
+    async def get_by_external_id_and_organization(
+        self, external_id: str, organization_id: UUID
+    ) -> Benefit | None:
+        statement = self.get_base_statement().where(
+            Benefit.external_id == external_id,
+            Benefit.organization_id == organization_id,
+            Benefit.is_current,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_catalog_baseline(self, organization_id: UUID) -> Sequence[Benefit]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.external_id.is_not(None),
+                Benefit.is_current,
+            )
+            .options(undefer(Benefit.external_id))
+        )
+        return await self.get_all(statement)
 
     async def get_all_versions_by_ids(self, ids: Sequence[UUID]) -> Sequence[Benefit]:
         """Benefits by ID, including previous versions that were deleted."""

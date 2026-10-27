@@ -19,7 +19,7 @@ export const useOrganizationDomains = (organizationId: string) =>
     queryFn: () =>
       unwrap(
         api.GET('/v1/organizations/{id}/domains/', {
-          params: { path: { id: organizationId } },
+          params: { path: { id: organizationId }, query: { limit: 100 } },
         }),
       ),
     retry: defaultRetry,

@@ -9,6 +9,12 @@ module "planetscale" {
   cluster_size      = "M8_640_AWS_ARM_D_METAL_1875"
 
   bouncers = {
-    app = {}
+    app = {
+      parameters = {
+        pgbouncer = {
+          track_extra_parameters = "IntervalStyle,statement_timeout"
+        }
+      }
+    }
   }
 }

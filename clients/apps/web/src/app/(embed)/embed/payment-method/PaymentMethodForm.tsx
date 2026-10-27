@@ -97,7 +97,7 @@ export const PaymentMethodForm = ({
     [],
   )
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(!!redirectStatus)
+  const [loading, setLoading] = useState(false)
 
   const reportError = useCallback(
     (message: string) => {

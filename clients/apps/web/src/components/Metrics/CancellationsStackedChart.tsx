@@ -31,8 +31,6 @@ interface CancellationsStackedChartProps {
   interval: schemas['TimeInterval']
   height?: number
   organizationId: string
-  startDate: Date
-  endDate: Date
   productId?: string[]
 }
 
@@ -59,8 +57,6 @@ export default function CancellationsStackedChart({
   interval,
   height = 300,
   organizationId,
-  startDate,
-  endDate,
   productId,
 }: CancellationsStackedChartProps) {
   const { resolvedTheme } = useTheme()
@@ -104,11 +100,12 @@ export default function CancellationsStackedChart({
     )
   }, [chartData])
 
-  const [selectedReason, setSelectedReason] =
-    useState<CancellationReason | null>(null)
-  const [modalStartDate, setModalStartDate] = useState<Date>(startDate)
-  const [modalEndDate, setModalEndDate] = useState<Date>(endDate)
-  const [modalTotalCount, setModalTotalCount] = useState(0)
+  const [selection, setSelection] = useState<{
+    reason: CancellationReason
+    startDate: Date
+    endDate: Date
+    totalCount: number
+  } | null>(null)
 
   const handleBarClick = useCallback(
     (reason: CancellationReason) =>
@@ -116,10 +113,12 @@ export default function CancellationsStackedChart({
       (data: any) => {
         if (!data?.payload?.timestamp) return
         const timestamp = new Date(data.payload.timestamp)
-        setSelectedReason(reason)
-        setModalStartDate(timestamp)
-        setModalEndDate(getPeriodEnd(timestamp, interval))
-        setModalTotalCount(Number(data.payload[reason]) || 0)
+        setSelection({
+          reason,
+          startDate: timestamp,
+          endDate: getPeriodEnd(timestamp, interval),
+          totalCount: Number(data.payload[reason]) || 0,
+        })
       },
     [interval],
   )
@@ -182,15 +181,15 @@ export default function CancellationsStackedChart({
         </BarChart>
       </ChartContainer>
 
-      {selectedReason && (
+      {selection && (
         <CancellationReasonModal
-          onOpenChange={() => setSelectedReason(null)}
-          reason={selectedReason}
+          onOpenChange={() => setSelection(null)}
+          reason={selection.reason}
           organizationId={organizationId}
-          startDate={modalStartDate}
-          endDate={modalEndDate}
+          startDate={selection.startDate}
+          endDate={selection.endDate}
           productId={productId}
-          totalCount={modalTotalCount}
+          totalCount={selection.totalCount}
         />
       )}
     </div>

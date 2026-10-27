@@ -1,7 +1,7 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { m } from 'motion/react'
-import React, { useState } from 'react'
+import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { MessageAttachments } from './MessageAttachments'
 import { exactTime, relativeTime } from './time'
@@ -35,13 +35,11 @@ export const ChatBubble = ({
   isFirstInGroup,
   isLastInGroup,
 }: Props) => {
-  const [showEntrance] = useState(animate)
-
   const isSelf = message.sender === 'self'
 
   return (
     <m.div
-      initial={showEntrance ? { opacity: 0 } : false}
+      initial={animate ? { opacity: 0 } : false}
       animate={{ opacity: 1 }}
       transition={ROW_FADE}
     >
@@ -60,7 +58,7 @@ export const ChatBubble = ({
           {isLastInGroup ? avatar : <div className="w-7 shrink-0" />}
           <m.div
             className="max-w-[80%]"
-            initial={showEntrance ? { scale: 0.8, y: 10 } : false}
+            initial={animate ? { scale: 0.8, y: 10 } : false}
             animate={{ scale: 1, y: 0 }}
             transition={BUBBLE_SPRING}
             style={{

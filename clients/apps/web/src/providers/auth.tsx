@@ -22,6 +22,40 @@ export const AuthContext = React.createContext<AuthContextValue>(
   stub,
 )
 
+const useServerSeededState = <T,>(
+  serverValue: T,
+): [T, React.Dispatch<React.SetStateAction<T>>] => {
+  const [override, setOverride] = React.useState<{
+    serverValue: T
+    value: T
+  } | null>(null)
+
+  const value =
+    override !== null && override.serverValue === serverValue
+      ? override.value
+      : serverValue
+
+  const setValue = React.useCallback<React.Dispatch<React.SetStateAction<T>>>(
+    (action) =>
+      setOverride((previous) => {
+        const current =
+          previous !== null && previous.serverValue === serverValue
+            ? previous.value
+            : serverValue
+        return {
+          serverValue,
+          value:
+            typeof action === 'function'
+              ? (action as (previous: T) => T)(current)
+              : action,
+        }
+      }),
+    [serverValue],
+  )
+
+  return [value, setValue]
+}
+
 export const UserContextProvider = ({
   user: _user,
   userOrganizations: _userOrganizations,
@@ -31,9 +65,9 @@ export const UserContextProvider = ({
   userOrganizations: schemas['OrganizationWithRole'][]
   children: React.ReactNode
 }) => {
-  const [user, setUser] = React.useState<schemas['UserRead'] | undefined>(_user)
+  const [user, setUser] = useServerSeededState(_user)
   const [userOrganizations, setUserOrganizations] =
-    React.useState<schemas['OrganizationWithRole'][]>(_userOrganizations)
+    useServerSeededState(_userOrganizations)
 
   const contextValue = React.useMemo(
     () => ({

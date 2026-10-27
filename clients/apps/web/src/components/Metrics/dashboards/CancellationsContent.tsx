@@ -34,8 +34,6 @@ export function CancellationsContent({
               interval={interval}
               height={400}
               organizationId={organizationId}
-              startDate={startDate}
-              endDate={endDate}
               productId={productId}
             />
           </div>

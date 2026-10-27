@@ -48,3 +48,19 @@ export const getPauseAction = (
 
   return subscription.pause_at_period_end ? 'cancel_scheduled_pause' : 'pause'
 }
+
+export type MeterCycleSubscription = Pick<
+  schemas['Subscription'],
+  'status' | 'current_period_end' | 'current_meter_period_end'
+> & { meters: unknown[] }
+
+// Mirrors `bills_usage_on_meter_cycle` on the backend: usage is settled on its
+// own order when the meter period ends before the next subscription invoice.
+export const billsUsageOnMeterCycle = (
+  subscription: MeterCycleSubscription,
+): boolean =>
+  (subscription.status === 'active' || subscription.status === 'trialing') &&
+  subscription.meters.length > 0 &&
+  subscription.current_meter_period_end != null &&
+  new Date(subscription.current_meter_period_end) <
+    new Date(subscription.current_period_end)

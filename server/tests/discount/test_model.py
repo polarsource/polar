@@ -67,6 +67,12 @@ class TestDiscountFixedAllocateDiscountAmounts:
         assert sum(allocated) == discount.get_discount_amount(sum(amounts), "usd")
 
 
+class TestDiscountPercentageGetDiscountAmount:
+    def test_half_cent_rounds_up(self) -> None:
+        # 50 * 0.29 is 14.499999999999998 in floating point
+        assert _percentage(2900).get_discount_amount(50, "usd") == 15
+
+
 class TestDiscountPercentageAllocateDiscountAmounts:
     def test_independent_distribution(self) -> None:
         # Each amount is discounted independently; for percentage this already

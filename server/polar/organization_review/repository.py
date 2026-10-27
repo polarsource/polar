@@ -13,7 +13,7 @@ from polar.kit.utils import utc_now
 from polar.models.checkout import Checkout
 from polar.models.checkout_link import CheckoutLink
 from polar.models.checkout_link_product import CheckoutLinkProduct
-from polar.models.dispute import Dispute
+from polar.models.dispute import Dispute, DisputeStatus
 from polar.models.organization import Organization
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_agent_review import OrganizationAgentReview
@@ -63,6 +63,7 @@ class OrganizationReviewRepository(
             reviewed_at=reviewed_at,
         )
         self.session.add(agent_review)
+        await self.session.flush()
         return agent_review
 
     async def get_latest_agent_review(
@@ -199,7 +200,28 @@ class OrganizationReviewRepository(
         return row[0], row[1]
 
     async def get_dispute_stats(self, organization_id: UUID) -> tuple[int, int]:
-        """Returns (dispute_count, dispute_amount_cents)."""
+        """Returns (dispute_count, dispute_amount_cents).
+
+        Only counts actual disputes. ChargebackStop alerts (``prevented`` and
+        ``early_warning``) are reported separately by `get_chargeback_stop_stats`.
+        """
+        return await self._get_dispute_stats(
+            organization_id, DisputeStatus.actual_statuses()
+        )
+
+    async def get_chargeback_stop_stats(self, organization_id: UUID) -> tuple[int, int]:
+        """Returns (chargeback_stop_count, chargeback_stop_amount_cents).
+
+        Disputes that never became real: prevented by ChargebackStop or still
+        an early warning.
+        """
+        return await self._get_dispute_stats(
+            organization_id, DisputeStatus.chargeback_stop_statuses()
+        )
+
+    async def _get_dispute_stats(
+        self, organization_id: UUID, statuses: set[DisputeStatus]
+    ) -> tuple[int, int]:
         statement = select(
             func.count(Dispute.id),
             func.coalesce(func.sum(Dispute.amount), 0),
@@ -210,6 +232,7 @@ class OrganizationReviewRepository(
                     ~Payment.is_deleted,
                 )
             ),
+            Dispute.status.in_(statuses),
             ~Dispute.is_deleted,
         )
         result = await self.session.execute(statement)

@@ -65,6 +65,21 @@ class OAuth2TokenRepository(
         )
         await self.session.execute(statement)
 
+    async def revoke_by_agent(self, agent_id: UUID) -> None:
+        now = int(time.time())
+        statement = (
+            update(OAuth2Token)
+            .where(
+                OAuth2Token.agent_id == agent_id,
+                or_(
+                    OAuth2Token.access_token_revoked_at == 0,
+                    OAuth2Token.refresh_token_revoked_at == 0,
+                ),
+            )
+            .values(access_token_revoked_at=now, refresh_token_revoked_at=now)
+        )
+        await self.session.execute(statement)
+
     async def delete_expired(self) -> None:
         now = int(time.time())
         statement = delete(OAuth2Token).where(

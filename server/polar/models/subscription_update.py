@@ -167,12 +167,17 @@ class SubscriptionUpdate(RecordModel):
         elif self.discount is not None:
             subscription.discount = self.discount
 
-        # A product change is a reset: re-anchor the meter clock to the (possibly
-        # new) billing period so the two-clock scheduler wakes on the new cadence.
-        if self.product is not None:
-            subscription.initialize_meter_period(subscription.current_period_start)
-
         self.applied_at = utc_now()
+
+        # A product change or a cycle reset re-anchors the meter clock to the
+        # (possibly new) billing period so the two-clock scheduler wakes on the
+        # new cadence. A trial keeps its clock empty until conversion.
+        if self.product is not None or (
+            self.new_cycle_start is not None and not subscription.trialing
+        ):
+            subscription.initialize_meter_period(
+                subscription.current_period_start, containing=self.applied_at
+            )
 
         return subscription
 

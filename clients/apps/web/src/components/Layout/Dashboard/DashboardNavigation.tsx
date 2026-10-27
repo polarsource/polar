@@ -1,6 +1,6 @@
 'use client'
 
-import ArrowBack from '@mui/icons-material/ArrowBack'
+import { ArrowBack } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
   SidebarMenuButton,
@@ -8,6 +8,7 @@ import {
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import Link from 'next/link'
+import { CatalogVersionSelector } from '../../Catalog/CatalogVersionSelector'
 import {
   useAccountRoutes,
   useGeneralRoutes,
@@ -27,10 +28,15 @@ export const OrganizationNavigation = ({
 }) => {
   const productNavEnabled = useProductNavigationEnabled(organization)
 
-  return productNavEnabled ? (
-    <ProductNavigation organization={organization} />
-  ) : (
-    <LegacyOrganizationNavigation organization={organization} />
+  return (
+    <>
+      <CatalogVersionSelector organization={organization} />
+      {productNavEnabled ? (
+        <ProductNavigation organization={organization} />
+      ) : (
+        <LegacyOrganizationNavigation organization={organization} />
+      )}
+    </>
   )
 }
 

@@ -1,13 +1,14 @@
 'use client'
 
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { CheckOutlined } from '@polar-sh/orbit/icons'
 import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { Chapter } from './Chapter'
+import { Sheet, Window } from './story/Frame'
 
-type Tier = {
+export type Tier = {
   name: string
   desc: string
   free?: boolean
@@ -21,7 +22,7 @@ export const TIERS: Tier[] = [
   {
     name: 'Starter',
     free: true,
-    desc: 'Free to start validating ideas.',
+    desc: 'For validating ideas.',
     fees: ['5.00% + 50¢ per transaction'],
     features: ['All features to sell', 'Standard support'],
   },
@@ -73,92 +74,84 @@ export const Pricing = () => (
         </>
       }
     >
-      <Grid
-        templateColumns={{
-          base: '1fr',
-          sm: 'repeat(2, 1fr)',
-          xl: 'repeat(4, 1fr)',
-        }}
-        gap="l"
-      >
-        {TIERS.map((tier) => (
-          <TierCard key={tier.name} tier={tier} />
-        ))}
-      </Grid>
+      <Window flow={2} bare aside="Start free, upgrade as you grow">
+        <Grid
+          templateColumns={{
+            base: '1fr',
+            md: 'repeat(2, 1fr)',
+            xl: 'repeat(4, 1fr)',
+          }}
+          gap="xs"
+        >
+          {TIERS.map((tier) => (
+            <TierSheet key={tier.name} tier={tier} />
+          ))}
+        </Grid>
+      </Window>
     </Chapter>
   </>
 )
 
-const TierCard = ({ tier }: { tier: Tier }) => (
-  <Box
-    flexDirection="column"
-    justifyContent="between"
-    backgroundColor="background-secondary"
-  >
-    <Box flexDirection="column" rowGap="xl" padding="xl">
-      <Box flexDirection="column" rowGap="xl">
-        <Box flexDirection="column" rowGap="s">
-          <Text variant="heading-xs" as="h3">
-            {tier.name}
-          </Text>
-          <Box display="block">
-            <Text variant="heading-xxs" color="muted">
-              {tier.desc}
-            </Text>
-          </Box>
-        </Box>
-        <Box alignItems="baseline" columnGap="m">
-          <Text variant="heading-s" as="span">
-            {tier.free ? 'Free' : tier.price}
-          </Text>
-          {tier.period && (
-            <Text as="span" variant="body" color="muted">
-              {tier.period}
-            </Text>
-          )}
-        </Box>
-      </Box>
-      <CardSection items={tier.fees} />
-      <CardSection items={tier.features} check />
-    </Box>
-  </Box>
-)
-
-export const CardSection = ({
-  label,
-  items,
-  check,
-}: {
-  label?: string
-  items: string[]
-  check?: boolean
-}) => (
-  <Box
-    flexDirection="column"
-    rowGap="s"
-    paddingTop="xl"
-    borderTopWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-  >
-    {label ? (
-      <Text variant="body" color="muted">
-        {label}
+/** A tier as a sheet in the Polar window: price and fee as lines, its features anchored at the bottom. */
+export const TierSheet = ({ tier }: { tier: Tier }) => (
+  <Sheet
+    large
+    title={tier.name}
+    aside={
+      <Text variant="default" color="muted">
+        {tier.desc.replace(/\.$/, '')}
       </Text>
-    ) : null}
-    <Box as="ul" flexDirection="column" rowGap="s">
-      {items.map((item) => (
+    }
+  >
+    <Box alignItems="baseline" columnGap="s">
+      <Text variant="heading-s" tabularNums>
+        {tier.free ? 'Free' : tier.price}
+      </Text>
+      {tier.period ? (
+        <Text variant="body" color="muted">
+          {tier.period}
+        </Text>
+      ) : null}
+    </Box>
+    <Box flexDirection="column" rowGap="s">
+      {tier.fees.map((fee) => (
         <Box
-          as="li"
-          display="flex"
-          key={item}
-          alignItems="center"
-          columnGap="s"
+          key={fee}
+          justifyContent="between"
+          alignItems="baseline"
+          columnGap="l"
         >
-          {check ? <CheckOutlined fontSize="inherit" /> : null}
-          <Text variant="body">{item}</Text>
+          <Text variant="body" color="muted">
+            Transaction fee
+          </Text>
+          <Text variant="body" tabularNums>
+            {fee.replace(' per transaction', '')}
+          </Text>
         </Box>
       ))}
     </Box>
-  </Box>
+    <div className="mt-auto pt-8" />
+    <Box
+      as="ul"
+      paddingTop="l"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      flexDirection="column"
+      rowGap="s"
+    >
+      {tier.features.map((feature) => (
+        <Box
+          as="li"
+          key={feature}
+          display="flex"
+          alignItems="center"
+          columnGap="s"
+        >
+          <CheckOutlined fontSize="inherit" />
+          <Text variant="body">{feature}</Text>
+        </Box>
+      ))}
+    </Box>
+  </Sheet>
 )

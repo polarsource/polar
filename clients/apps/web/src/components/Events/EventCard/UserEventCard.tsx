@@ -7,9 +7,12 @@ export const useMetadata = (event: schemas['Event']) => {
     const metadata = { ...event.metadata }
     const metadataWithoutPrivateFields = Object.entries(metadata).reduce(
       (acc, [key, value]) => {
-        return key.startsWith('_') ? acc : { ...acc, [key]: value }
+        if (!key.startsWith('_')) {
+          acc[key] = value
+        }
+        return acc
       },
-      {},
+      {} as Record<string, unknown>,
     )
 
     return Object.keys(metadataWithoutPrivateFields).length > 0

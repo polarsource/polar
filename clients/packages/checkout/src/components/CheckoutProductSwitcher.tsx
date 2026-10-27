@@ -14,8 +14,6 @@ import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { cn } from '@polar-sh/ui/lib/utils'
 import { useCallback, useMemo } from 'react'
 import type { ProductCheckoutPublic } from '../guards'
-import { isLegacyRecurringProductPrice } from '../guards'
-import { hasLegacyRecurringPrices } from '../utils/product'
 import { capitalize, decapitalize } from '../utils/string'
 import {
   getBasePricePerUnit,
@@ -28,7 +26,7 @@ import ProductPriceLabel from './ProductPriceLabel'
 export interface CheckoutProductSwitcherItemPriceProps {
   isSelected: boolean
   product: ProductCheckoutPublic['product']
-  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice']
+  price: schemas['ProductPrice']
   checkout: ProductCheckoutPublic
   locale?: AcceptedLocale
 }
@@ -280,36 +278,21 @@ const CheckoutProductSwitcher = ({
 
   const selectProduct = useCallback(
     (value: string) => {
-      const [productId, priceId] = value.split(':')
+      const [productId] = value.split(':')
       const product = products.find((product) => product.id === productId)
       if (product) {
-        if (hasLegacyRecurringPrices(prices[product.id])) {
-          update?.({
-            product_id: product.id,
-            product_price_id: priceId,
-          })
-        } else {
-          update?.({ product_id: product.id })
-        }
+        update?.({ product_id: product.id })
       }
     },
-    [update, products, prices],
+    [update, products],
   )
 
-  if (
-    products.length === 1 &&
-    !hasLegacyRecurringPrices(prices[products[0].id])
-  ) {
+  if (products.length === 1) {
     return null
   }
 
-  const getDescription = (
-    product: ProductCheckoutPublic['product'],
-    price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
-  ) => {
-    const interval = isLegacyRecurringProductPrice(price)
-      ? price.recurring_interval
-      : product.recurring_interval
+  const getDescription = (product: ProductCheckoutPublic['product']) => {
+    const interval = product.recurring_interval
     const count = product.recurring_interval_count ?? 1
 
     if (interval) {
@@ -337,31 +320,18 @@ const CheckoutProductSwitcher = ({
     value: string
     productName: string
     product: ProductCheckoutPublic['product']
-    price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice']
+    price: schemas['ProductPrice']
     isSelected: boolean
   }[] = []
   for (const product of products) {
-    if (hasLegacyRecurringPrices(prices[product.id])) {
-      for (const price of prices[product.id]) {
-        items.push({
-          key: price.id,
-          value: `${product.id}:${price.id}`,
-          productName: product.name,
-          product,
-          price,
-          isSelected: price.id === selectedPrice.id,
-        })
-      }
-    } else {
-      items.push({
-        key: product.id,
-        value: `${product.id}:${prices[product.id][0].id}`,
-        productName: product.name,
-        product,
-        price: prices[product.id][0],
-        isSelected: product.id === selectedProduct.id,
-      })
-    }
+    items.push({
+      key: product.id,
+      value: `${product.id}:${prices[product.id][0].id}`,
+      productName: product.name,
+      product,
+      price: prices[product.id][0],
+      isSelected: product.id === selectedProduct.id,
+    })
   }
 
   return (
@@ -385,7 +355,7 @@ const CheckoutProductSwitcher = ({
           <div className="min-w-0 flex-1">
             <span className="line-clamp-2 text-sm">{item.productName}</span>
             <span className="dark:text-polar-500 block text-xs text-gray-500">
-              {getDescription(item.product, item.price)}
+              {getDescription(item.product)}
             </span>
           </div>
           <span className="dark:text-polar-400 shrink-0 text-sm text-gray-500">

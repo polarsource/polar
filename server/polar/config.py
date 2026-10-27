@@ -2,7 +2,7 @@ import functools
 import json
 import os
 import tempfile
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -17,6 +17,7 @@ from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
+from polar.kit.utils import utc_now
 
 # A token hash reads `<secret_id>$<digest>`. The digest is 64 characters
 HASH_SEPARATOR = "$"
@@ -134,6 +135,10 @@ class Settings(BaseSettings):
     LOCAL_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
 
+    # Self-service sign-up for AI agents (ADR-0014): the sign-up endpoint, the
+    # JWT-bearer grant and the discovery documents that point agents to them.
+    AGENT_SIGN_UP_ENABLED: bool = False
+
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []
 
@@ -219,6 +224,8 @@ class Settings(BaseSettings):
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
     DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
     DATABASE_CONNECT_TIMEOUT_SECONDS: float = 10.0
+    DATABASE_STATEMENT_CACHE_SIZE: int = 100
+    DATABASE_PREPARED_STATEMENT_CACHE_SIZE: int = 0
     DATABASE_STREAM_YIELD_PER: int = 100
 
     POSTGRES_READ_USER: str | None = None
@@ -467,7 +474,6 @@ class Settings(BaseSettings):
     POLAR_ACCESS_TOKEN: str = ""
     POLAR_WEBHOOK_SECRET: str = ""
     POLAR_ORGANIZATION_ID: str = ""
-    POLAR_FREE_PRODUCT_ID: str = ""
     # Scale plan product, used by the Startup Program to grant a 100% discount
     POLAR_SCALE_PRODUCT_ID: str = ""
     POLAR_API_URL: str = "https://api.polar.sh"
@@ -478,7 +484,6 @@ class Settings(BaseSettings):
             [
                 self.POLAR_ACCESS_TOKEN,
                 self.POLAR_ORGANIZATION_ID,
-                self.POLAR_FREE_PRODUCT_ID,
             ]
         )
 
@@ -649,6 +654,19 @@ class Settings(BaseSettings):
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
     TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
+
+    # shortcut: remove after November 1, 2026, once production Terraform uses Numeral.
+    @property
+    def tax_processors(self) -> list[TaxProcessor]:
+        if self.is_production() and utc_now() >= datetime(2026, 11, 1, tzinfo=UTC):
+            return [TaxProcessor.numeral, TaxProcessor.stripe]
+        return self.TAX_PROCESSORS
+
+    @property
+    def tax_record_processor(self) -> TaxProcessor:
+        if self.is_production() and utc_now() >= datetime(2026, 11, 1, tzinfo=UTC):
+            return TaxProcessor.numeral
+        return self.TAX_RECORD_PROCESSOR
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

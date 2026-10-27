@@ -8,23 +8,23 @@ import { CodePanel } from './CodePanel'
 const SDK_DOCS = '/docs/integrate/sdk/introduction'
 
 const TYPESCRIPT = [
-  "import { createPolar } from '@polar-sh/sdk/2026-04'",
+  "import { createPolar } from '@polar-sh/sdk/2026-10'",
   '',
   'const polar = createPolar({',
   '  accessToken: process.env.POLAR_ACCESS_TOKEN,',
   '})',
   '',
   '// every entitlement and balance, one call',
-  "const state = await polar.customers.getStateExternal('lumen')",
+  "const state = await polar.customers.getStateExternal('acme')",
 ]
 
 const PYTHON = [
-  'from polar.v2026_04 import Polar',
+  'from polar.v2026_10 import Polar',
   '',
   'polar = Polar(os.environ["POLAR_ACCESS_TOKEN"])',
   '',
   '# every entitlement and balance, one call',
-  'state = polar.customers.get_state_external("lumen")',
+  'state = polar.customers.get_state_external("acme")',
 ]
 
 interface Client {
@@ -75,8 +75,7 @@ const Lead = ({
 export const Sdk = () => (
   <Chapter
     id="sdk"
-    index="02"
-    name="SDK"
+    name="02 SDK"
     title="Built for your framework"
     subtitle="Typed clients underneath"
     description="Start with an adapter for your framework. Underneath sit the typed TypeScript and Python clients for everything else."
@@ -114,6 +113,7 @@ export const Sdk = () => (
                 alignSelf="start"
                 paddingVertical="s"
                 paddingHorizontal="m"
+                borderRadius="s"
                 backgroundColor="background-secondary"
               >
                 <Text variant="default" monospace>

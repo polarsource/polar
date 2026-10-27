@@ -1,6 +1,11 @@
 import { onTestFinished, vi, type Mock } from 'vitest'
 
-export const stubLocationReload = (): Mock<() => void> => {
+interface LocationStub {
+  assign: Mock<(url: string | URL) => void>
+  reload: Mock<() => void>
+}
+
+const stubLocation = (): LocationStub => {
   const original = window.location
   const descriptor = Object.getOwnPropertyDescriptor(window, 'location')
   if (!descriptor) {
@@ -8,7 +13,7 @@ export const stubLocationReload = (): Mock<() => void> => {
       'window.location is not an own property in this environment',
     )
   }
-  const reload = vi.fn()
+  const stub: LocationStub = { assign: vi.fn(), reload: vi.fn() }
   Object.defineProperty(window, 'location', {
     configurable: true,
     value: {
@@ -21,14 +26,19 @@ export const stubLocationReload = (): Mock<() => void> => {
       pathname: original.pathname,
       search: original.search,
       hash: original.hash,
-      assign: vi.fn(),
+      assign: stub.assign,
       replace: vi.fn(),
-      reload,
+      reload: stub.reload,
       toString: () => original.href,
     },
   })
   onTestFinished(() => {
     Object.defineProperty(window, 'location', descriptor)
   })
-  return reload
+  return stub
 }
+
+export const stubLocationReload = (): Mock<() => void> => stubLocation().reload
+
+export const stubLocationAssign = (): Mock<(url: string | URL) => void> =>
+  stubLocation().assign

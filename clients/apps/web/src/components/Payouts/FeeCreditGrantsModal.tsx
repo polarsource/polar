@@ -5,8 +5,7 @@ import { List, ListItem } from '@polar-sh/orbit'
 import { useContext } from 'react'
 import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { EmptyState } from '../Shared/EmptyState'
-import TollOutlined from '@mui/icons-material/TollOutlined'
-
+import { TollOutlined } from '@polar-sh/orbit/icons'
 export const FeeCreditGrantsModal = ({
   isShown,
   hide,

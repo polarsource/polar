@@ -40,7 +40,7 @@ const CLIENTS: Snippet[] = [
     name: 'Coding agents',
     caption: 'zsh',
     lines: [
-      'npx skills add https://github.com/polarsource/skills \\',
+      'npx skills add https://github.com/polarsource/agent-toolkit \\',
       '  --skill polar-integration',
     ],
   },

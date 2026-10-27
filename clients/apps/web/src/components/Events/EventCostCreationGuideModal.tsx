@@ -1,4 +1,4 @@
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
 import { Well } from '../Shared/Well'
 import {

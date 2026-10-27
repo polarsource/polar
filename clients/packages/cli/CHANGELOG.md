@@ -1,5 +1,15 @@
 # @polar-sh/cli
 
+## 3.0.0
+
+### Major Changes
+
+- dd16120: `polar listen` and `polar trigger` are now `polar webhook listen` and `polar webhook trigger`. Add `polar auth token` to create an organization access token through the dashboard. Add `--json` to every command and `--fields` to trim API command output. Destructive API commands ask for confirmation, or `--confirm` without a terminal.
+
+### Patch Changes
+
+- cc6f9f5: Mark `polar webhooks reset_webhook_endpoint_secret` as destructive so it requires user confirmation.
+
 ## 2.0.2
 
 ### Patch Changes

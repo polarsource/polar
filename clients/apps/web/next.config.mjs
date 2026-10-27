@@ -4,6 +4,8 @@ import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 import { docsCSP, ENVIRONMENT, nonEmbeddedCSP, oauth2CSP } from './src/csp.mjs'
 
+const TYPE_CHECKED_IN_CI = process.env.VERCEL === '1'
+
 // Vercel services deployments: deployment URLs change with
 // every deployment, so derive base from the deployment's own URL
 const VERCEL_SERVICES =
@@ -28,9 +30,14 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     useTypeScriptCli: false,
+    optimizePackageImports: ['@polar-sh/orbit/icons'],
   },
   transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
+
+  ...(TYPE_CHECKED_IN_CI && {
+    typescript: { ignoreBuildErrors: true },
+  }),
 
   outputFileTracingIncludes: {
     '/onboarding/validate-description': [
@@ -81,20 +88,32 @@ const nextConfig = {
   },
 
   async rewrites() {
-    return [
-      {
-        source: '/ingest/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
-      },
-      {
-        source: '/ingest/:path*',
-        destination: 'https://us.i.posthog.com/:path*',
-      },
-      {
-        source: '/ingest/decide',
-        destination: 'https://us.i.posthog.com/decide',
-      },
-    ]
+    return {
+      beforeFiles: [
+        {
+          source: '/perspectives',
+          destination: 'https://polar.shadowdocument.com/perspectives',
+        },
+        {
+          source: '/perspectives/:path*',
+          destination: 'https://polar.shadowdocument.com/perspectives/:path*',
+        },
+      ],
+      afterFiles: [
+        {
+          source: '/ingest/static/:path*',
+          destination: 'https://us-assets.i.posthog.com/static/:path*',
+        },
+        {
+          source: '/ingest/:path*',
+          destination: 'https://us.i.posthog.com/:path*',
+        },
+        {
+          source: '/ingest/decide',
+          destination: 'https://us.i.posthog.com/decide',
+        },
+      ],
+    }
   },
 
   async redirects() {
@@ -373,7 +392,7 @@ const nextConfig = {
 
     return [
       {
-        source: '/((?!checkout|embed|oauth2|docs).*)',
+        source: '/((?!checkout|embed|oauth2|docs|perspectives).*)',
         headers: baseHeaders,
       },
       {

@@ -76,12 +76,14 @@ class InvoiceHeadingItem(BaseModel):
 
 class InvoiceTotalsItem(BaseModel):
     label: str
-    amount: int
+    amount: int | float
     currency: str
     emphasized: bool = False
 
 
 class Invoice(BaseModel):
+    total_label: ClassVar[str] = "Total"
+
     number: str
     date: datetime
     seller_name: str
@@ -210,7 +212,7 @@ class Invoice(BaseModel):
         total = self.net_amount + self.tax_amount
         items.append(
             InvoiceTotalsItem(
-                label="Total",
+                label=self.total_label,
                 amount=total,
                 currency=self.currency,
                 emphasized=True,
@@ -681,7 +683,7 @@ class InvoiceGenerator(FPDF):
         self.set_y(self.get_y() + self.elements_y_margin)
 
     def _render_heading_items(self) -> None:
-        label_width = 30
+        label_width = 35
         self.set_font(size=self.base_font_size)
         for heading_item in self.data.heading_items:
             self._render_label(heading_item.label, w=label_width, align=Align.L)

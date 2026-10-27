@@ -32,6 +32,7 @@ from polar.kit.schemas import (
     TimestampedSchema,
     empty_str_to_none,
 )
+from polar.kit.versioning import Version
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
@@ -40,6 +41,7 @@ from polar.models.order import (
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase, ProductPrice
 from polar.subscription.schemas import SubscriptionBase
+from polar.version import V2026_10
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]
 
@@ -126,7 +128,9 @@ class OrderBase(TimestampedSchema, IDSchema):
 
     customer_id: UUID4
     product_id: UUID4 | None
-    product_price_id: SkipJsonSchema[UUID4 | None] = Field(
+    product_price_id: Annotated[
+        SkipJsonSchema[UUID4 | None], Version(up_to=V2026_10)
+    ] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -147,6 +151,7 @@ class OrderBase(TimestampedSchema, IDSchema):
     )
 
     @computed_field(
+        exclude_if=Version(up_to=V2026_10).exclude_if,
         description="Amount in cents, after discounts but before taxes.",
         deprecated=(
             "Use `net_amount`. "
@@ -156,7 +161,10 @@ class OrderBase(TimestampedSchema, IDSchema):
     def amount(self) -> SkipJsonSchema[int]:
         return self.net_amount
 
-    @computed_field(deprecated="Use `applied_balance_amount`.")
+    @computed_field(
+        exclude_if=Version(up_to=V2026_10).exclude_if,
+        deprecated="Use `applied_balance_amount`.",
+    )
     def from_balance_amount(self) -> SkipJsonSchema[int]:
         return self.applied_balance_amount
 
@@ -221,7 +229,7 @@ OrderDiscount = Annotated[DiscountMinimal, MergeJSONSchema({"title": "OrderDisco
 
 
 class OrderSubscription(SubscriptionBase, MetadataOutputMixin):
-    user_id: SkipJsonSchema[UUID4] = Field(
+    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -264,7 +272,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         description="Currency of the platform fee.", examples=["usd"]
     )
     customer: OrderCustomer
-    user_id: SkipJsonSchema[UUID4] = Field(
+    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -273,7 +281,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         ),
         deprecated="Use `customer_id`.",
     )
-    user: SkipJsonSchema[OrderUser] = Field(
+    user: Annotated[SkipJsonSchema[OrderUser], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -283,7 +291,9 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         deprecated="Use `customer`.",
     )
     product: OrderProduct | None
-    product_price: SkipJsonSchema[ProductPrice | None] = Field(
+    product_price: Annotated[
+        SkipJsonSchema[ProductPrice | None], Version(up_to=V2026_10)
+    ] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload

@@ -7,6 +7,7 @@ from polar.models.organization import (
     OrganizationSubscriptionSettings,
     resolve_default_customer_email_settings,
 )
+from polar.organization import legacy_schemas
 from polar.organization.schemas import OrganizationCreate, OrganizationUpdate
 
 
@@ -144,3 +145,47 @@ class TestResolveCustomerEmailSettings:
         )
 
         assert resolved["order_confirmation"] is True
+
+
+@pytest.mark.parametrize("schema", [OrganizationCreate, OrganizationUpdate])
+def test_retired_onboarding_inputs_are_ignored(
+    schema: type[OrganizationCreate | OrganizationUpdate],
+) -> None:
+    model = schema.model_validate(
+        {
+            "name": "Test Org",
+            "slug": "test-org",
+            "details": {
+                "product_description": "Current description",
+                "about": "Removed",
+                "intended_use": "Removed",
+                "customer_acquisition": ["Removed"],
+                "future_annual_revenue": -1,
+                "previous_annual_revenue": -1,
+            },
+        }
+    )
+    assert model.details is not None
+    assert model.details.model_dump() == {
+        "product_description": "Current description",
+        "selling_categories": [],
+        "pricing_models": [],
+        "switching": False,
+        "switching_from": None,
+    }
+
+
+def test_legacy_onboarding_create_keeps_deprecated_fields() -> None:
+    model = legacy_schemas.OrganizationCreate.model_validate(
+        {
+            "name": "Test Org",
+            "slug": "test-org",
+            "details": {
+                "about": "Legacy description",
+                "previous_annual_revenue": 1000,
+            },
+        }
+    )
+    assert model.details is not None
+    assert model.details.about == "Legacy description"
+    assert model.details.previous_annual_revenue == 1000

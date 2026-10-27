@@ -1,6 +1,6 @@
 # Polar CLI commands prototype
 
-Private package generated from Polar's `2026-10` OpenAPI snapshot.
+Private package generated from Polar's `2026-10` and `2027-01` OpenAPI snapshots.
 It is not published to npm. The CLI consumes it through a local `file:` dependency,
 imports TypeScript directly, and bundles it.
 
@@ -23,6 +23,13 @@ const main = Command.make('polar').pipe(
   Command.withSubcommands([auth, listen, update, ...commands]),
 )
 ```
+
+## API versions
+
+Commands come from Current. Operations that exist only in Next are added too,
+call the Next SDK, and are labelled `(preview, API 2027-01)` since Next can still
+change. At each rotation, update the specs in `pnpm generate` and the version map
+in `clients/packages/cli/src/services/polar.ts`.
 
 The generator lives in `sdk/generator/cli_commands/`. Change the emitter or its
 runtime/input templates, not generated files. The package never imports the CLI.
@@ -160,7 +167,7 @@ Protected inputs include:
 - No dry-run, response-header output, automatic pagination, or custom help renderer.
 - Generation is explicit (`pnpm generate`), not yet enforced in every release path.
   CI path filters and generated-package cache invalidation still need hardening.
-- Uses SDK `1.0.1`. `pnpm generate` and `just generate-cli` pin the matching `2026-10` spec.
+- Uses SDK `1.0.3-alpha.4`. `pnpm generate` and `just generate-cli` pin the `2026-10` and `2027-01` specs.
 
 ## Checks and builds
 

@@ -11,6 +11,7 @@ from polar.exceptions import NotPermitted, Unauthorized
 from polar.oauth2.exceptions import InsufficientScopeError
 
 from .models import (
+    Agent,
     Anonymous,
     AuthSubject,
     Customer,
@@ -78,7 +79,11 @@ def _get_auth_subject_factory(
             annotation=Request,
         )
     ]
-    if User in allowed_subjects or Organization in allowed_subjects:
+    if (
+        User in allowed_subjects
+        or Organization in allowed_subjects
+        or Agent in allowed_subjects
+    ):
         parameters += [
             Parameter(
                 name="oauth2_credentials",

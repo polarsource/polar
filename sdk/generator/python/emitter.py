@@ -25,6 +25,7 @@ from python.utils import format_default_value, format_default_value_dataclass
 from typescript.types import collect_enum_names
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
+BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
 
 
 def _collect_type_ref_names(
@@ -128,9 +129,41 @@ class PythonEmitter(EmitterBase):
             ("polar", "base.py"),
             ("polar", "py.typed"),
             ("polar", "webhooks.py"),
+            ("polar", "logging.py"),
+            ("polar", "metering", "__init__.py"),
+            ("polar", "metering", "events.py"),
+            ("polar", "metering", "meter.py"),
+            ("polar", "metering", "client.py"),
+            ("polar", "metering", "buffered.py"),
+            ("polar", "outpost", "__init__.py"),
+            ("polar", "outpost", "event.py"),
+            ("polar", "outpost", "reducer.py"),
+            ("polar", "outpost", "client.py"),
+            ("polar", "outpost", "telemetry.py"),
             ("tests", "__init__.py"),
             ("tests", "test_base.py"),
+            ("tests", "metering", "__init__.py"),
+            ("tests", "metering", "conftest.py"),
+            ("tests", "metering", "test_metering.py"),
+            ("tests", "metering", "test_buffered.py"),
             ("tests", "test_webhooks.py"),
+            ("tests", "outpost", "__init__.py"),
+            ("tests", "outpost", "conftest.py"),
+            ("tests", "outpost", "test_client.py"),
+            ("tests", "outpost", "test_event.py"),
+            ("tests", "outpost", "test_reducer.py"),
+            ("tests", "outpost", "test_telemetry.py"),
+            ("tests", "benchmarks", "__init__.py"),
+            ("tests", "benchmarks", "conftest.py"),
+            ("tests", "benchmarks", "test_reducer.py"),
+            ("tests", "benchmarks", "test_client.py"),
+            ("tests", "benchmarks", "test_scripts.py"),
+            ("tests", "benchmarks", "test_ingest.py"),
+            ("tests", "benchmarks", "test_read.py"),
+            ("tests", "benchmarks", "test_read_buckets.py"),
+            ("tests", "benchmarks", "test_seal.py"),
+            ("tests", "benchmarks", "test_confirm.py"),
+            ("tests", "benchmarks", "test_seal_confirmed.py"),
             (".python-version",),
             ("justfile",),
             ("LICENSE",),
@@ -142,6 +175,9 @@ class PythonEmitter(EmitterBase):
                 root_directory.joinpath(*file),
                 self.get_context(),
             )
+        self.copy_file(
+            BENCHMARK_DATA, root_directory / "tests" / "benchmarks" / "benchmark.json"
+        )
 
         for api in self.ir.versions:
             version_dir = root_directory / "polar" / self.get_version_string(api)
@@ -237,6 +273,7 @@ class PythonEmitter(EmitterBase):
         self.env.filters["service_name"] = service_name
         self.env.filters["format_default"] = format_default_value
         self.env.filters["format_default_dataclass"] = format_default_value_dataclass
+        self.env.filters["format_version"] = self.get_version_string
 
     def _emit_service(
         self, service: Service, api: APIVersion, output_path: pathlib.Path

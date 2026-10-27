@@ -15,9 +15,9 @@ import {
   CommandList,
 } from '@polar-sh/ui/components/ui/command'
 import * as Dialog from '@radix-ui/react-dialog'
-import { Loader2 } from 'lucide-react'
+import { LoaderCircle as Loader2 } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Result } from './components/Result'
 import { getQuickActions } from './quickActions'
@@ -94,7 +94,7 @@ export const OmniSearch = ({
     return pages.slice(0, 5)
   }, [query, allRoutes])
 
-  const performSearch = useCallback(
+  const performSearch = useEffectEvent(
     async (searchQuery: string, signal: AbortSignal) => {
       if (!searchQuery.trim()) {
         setResults([])
@@ -136,7 +136,6 @@ export const OmniSearch = ({
         setLoading(false)
       }
     },
-    [organization.id],
   )
 
   const combinedResults = useMemo(() => {
@@ -153,7 +152,7 @@ export const OmniSearch = ({
       clearTimeout(debounce)
       controller.abort()
     }
-  }, [query, performSearch])
+  }, [query, organization.id])
 
   const handleSelect = (result: SearchResult) => {
     let path = ''

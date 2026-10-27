@@ -19,6 +19,7 @@ from polar.models import (
 )
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
+from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -114,6 +115,21 @@ class TestGetCheckoutLink:
         assert str(public_benefit.id) in benefit_ids
         assert str(private_benefit.id) not in benefit_ids
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_no_single_product_fields_2027_01(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        checkout_link: CheckoutLink,
+    ) -> None:
+        response = await client.get(f"/v1/checkout-links/{checkout_link.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        for field in ("product_id", "product_price_id", "product", "product_price"):
+            assert field not in json
+
 
 @pytest.mark.anyio
 class TestCreateCheckoutLink:
@@ -140,7 +156,10 @@ class TestCreateCheckoutLink:
 
         assert response.status_code == 403
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.checkout_links_write}),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_valid(
         self, client: AsyncClient, product: Product, user_organization: UserOrganization
     ) -> None:
@@ -196,6 +215,28 @@ class TestCreateCheckoutLink:
 
         assert response.status_code == 422
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    @pytest.mark.parametrize("field", ["product_id", "product_price_id"])
+    async def test_single_product_or_price_2027_01(
+        self,
+        field: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        value = product.id if field == "product_id" else product.prices[0].id
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={"payment_processor": "stripe", field: str(value)},
+        )
+
+        assert response.status_code == 422
+        assert any(
+            error["type"] == "missing" and error["loc"][-1] == "products"
+            for error in response.json()["detail"]
+        )
+
 
 @pytest.mark.anyio
 class TestUpdateCheckoutLink:
@@ -235,6 +276,21 @@ class TestUpdateCheckoutLink:
     ) -> None:
         response = await client.patch(
             f"/v1/checkout-links/{checkout_link.id}",
+            json={
+                "metadata": {"test": "test"},
+            },
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_cannot_update_another_organizations_checkout_link(
+        self,
+        client: AsyncClient,
+        checkout_link_organization_second: CheckoutLink,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/checkout-links/{checkout_link_organization_second.id}",
             json={
                 "metadata": {"test": "test"},
             },

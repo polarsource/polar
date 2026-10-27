@@ -127,12 +127,14 @@ class RefundTransactionService(BaseTransactionService):
         session.add(refund_transaction)
 
         # Create reversal balances if it was already balanced
-        await self._create_reversal_balances(
-            session,
-            payment_transaction=payment_transaction,
-            refund=refund,
-            refund_amount=settlement_amount - settlement_tax_amount,
-        )
+        refund_amount = settlement_amount - settlement_tax_amount
+        if refund_amount < 0:
+            await self._create_reversal_balances(
+                session,
+                payment_transaction=payment_transaction,
+                refund=refund,
+                refund_amount=refund_amount,
+            )
 
         try:
             customer = payment_transaction.payment_customer

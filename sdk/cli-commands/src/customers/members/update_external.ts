@@ -3,7 +3,13 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime } from '../../runtime'
-import { fields, data, mergeInput, nullableStringFlag } from '../../inputs'
+import {
+  confirm,
+  fields,
+  data,
+  mergeInput,
+  nullableStringFlag,
+} from '../../inputs'
 
 type Body = NonNullable<
   Parameters<Polar['customers']['members']['updateExternal']>[2]
@@ -12,6 +18,7 @@ type Body = NonNullable<
 export const command = Command.make(
   'update_external',
   {
+    confirm,
     fields,
     path: {
       external_id: Argument.String('external_id'),
@@ -44,9 +51,23 @@ export const command = Command.make(
       yield* api.execute({
         operationId: 'customers:members:update_external',
         method: 'PATCH',
-        requiresConfirmation: false,
-        confirm: false,
+        requiresConfirmation: true,
+        confirm: config.confirm,
         fields: config.fields,
+        preview: {
+          fields: [
+            { key: 'id', label: 'ID' },
+            { key: 'name', label: 'Name' },
+            { key: 'email', label: 'Email' },
+            { key: 'external_id', label: 'External ID' },
+            { key: 'role', label: 'Role' },
+          ],
+          invoke: (client) =>
+            client.customers.members.getExternal(
+              config.path.external_id,
+              config.path.member_external_id,
+            ),
+        },
         invoke: (client) =>
           client.customers.members.updateExternal(
             config.path.external_id,

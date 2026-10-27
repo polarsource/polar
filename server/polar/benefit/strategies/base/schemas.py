@@ -6,10 +6,12 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.versioning import Version
 from polar.kit.visibility import Visibility
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.benefit_grant import BenefitGrantError
 from polar.organization.schemas import OrganizationID, OrganizationPublicBase
+from polar.version import V2026_10
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
@@ -136,7 +138,9 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
         description="The error information if the benefit grant failed with an unrecoverable error.",
     )
 
-    @computed_field(deprecated="Use `customer_id`.")
+    @computed_field(
+        exclude_if=Version(up_to=V2026_10).exclude_if, deprecated="Use `customer_id`."
+    )
     def user_id(self) -> SkipJsonSchema[UUID4]:
         return self.customer_id
 

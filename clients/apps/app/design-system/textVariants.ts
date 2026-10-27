@@ -58,10 +58,9 @@ export const textVariants = {
     lineHeight: 48,
   },
   display: {
-    fontSize: 58,
-    lineHeight: 64,
+    fontSize: 44,
+    lineHeight: 50,
     fontWeight: '500',
-    fontFamily: 'InstrumentSerif_400Regular',
   },
 } satisfies Record<string, TextVariant>
 

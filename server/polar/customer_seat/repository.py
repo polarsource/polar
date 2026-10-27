@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, exists, func, or_, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -9,11 +9,15 @@ from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
 from polar.models import (
     CustomerSeat,
+    Dispute,
     Order,
     Product,
+    Refund,
     Subscription,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.dispute import DisputeStatus
+from polar.models.refund import RefundStatus
 from polar.order.repository import OrderRepository
 from polar.subscription.repository import SubscriptionRepository
 
@@ -287,6 +291,21 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
             .limit(1)
         )
         return await self.get_one_or_none(statement)
+
+    async def are_order_benefits_revoked(self, order_id: UUID) -> bool:
+        revoking_refund = exists().where(
+            Refund.order_id == order_id,
+            Refund.revoke_benefits.is_(True),
+            Refund.status.in_([RefundStatus.pending, RefundStatus.succeeded]),
+        )
+        revoking_dispute = exists().where(
+            Dispute.order_id == order_id,
+            Dispute.status.in_(DisputeStatus.closed_statuses()),
+        )
+        result = await self.session.execute(
+            select(or_(revoking_refund, revoking_dispute))
+        )
+        return result.scalar_one()
 
     async def get_revoked_seat_by_order(
         self,

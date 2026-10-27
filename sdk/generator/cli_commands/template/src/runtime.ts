@@ -1,8 +1,23 @@
-import type { Environment, Polar, PolarCore } from '@polar-sh/sdk/{{ api.version }}'
+{% for version in apis %}
+import type * as {{ version.version | sdk_namespace }} from '@polar-sh/sdk/{{ version.version }}'
+{% endfor %}
 import { Context, Data, type Effect, type Option, type Stdio } from 'effect'
 import type { Prompt } from 'effect/cli'
 
 export type { Environment } from '@polar-sh/sdk/{{ api.version }}'
+
+export interface ApiClients {
+{% for version in apis %}
+  {{ version.version | quote }}: {
+    client: {{ version.version | sdk_namespace }}.Polar
+    core: {{ version.version | sdk_namespace }}.PolarCore
+  }
+{% endfor %}
+}
+
+export type ApiVersion = keyof ApiClients
+
+export const CURRENT_API_VERSION = {{ api.version | quote }}
 
 export class ApiCommandError extends Data.TaggedError('ApiCommandError')<{
   message: string
@@ -15,26 +30,30 @@ export interface PreviewField {
   label: string
 }
 
-export interface ApiPreview {
+export interface ApiPreview<V extends ApiVersion = ApiVersion> {
   fields: ReadonlyArray<PreviewField>
-  invoke: (client: Polar) => Promise<unknown>
+  invoke: (client: ApiClients[V]['client']) => Promise<unknown>
 }
 
-export interface ApiOperation<A> {
+export interface ApiOperation<A, V extends ApiVersion = ApiVersion> {
   operationId: string
+  apiVersion?: V
   method: string
   requiresConfirmation: boolean
   confirm: boolean
   requiresAuthentication?: boolean
-  environment?: Environment
+  environment?: {{ api.version | sdk_namespace }}.Environment
   organizationId?: string | ReadonlyArray<string> | null | undefined
   fields?: Option.Option<string>
-  preview?: ApiPreview
-  invoke: (client: Polar, core: PolarCore) => Promise<A>
+  preview?: ApiPreview<V>
+  invoke: (
+    client: ApiClients[V]['client'],
+    core: ApiClients[V]['core'],
+  ) => Promise<A>
 }
 
 export const executeRequest = async (
-  core: PolarCore,
+  core: ApiClients[ApiVersion]['core'],
   [url, init]: [string, RequestInit],
   responseType: 'json' | 'text' | 'none',
   options: { anonymous?: boolean; pendingResponse?: string },
@@ -54,8 +73,8 @@ export const executeRequest = async (
 export class ApiRuntime extends Context.Service<
   ApiRuntime,
   {
-    execute: <A>(
-      operation: ApiOperation<A>,
+    execute: <A, V extends ApiVersion = typeof CURRENT_API_VERSION>(
+      operation: ApiOperation<A, V>,
     ) => Effect.Effect<void, ApiCommandError, Stdio.Stdio | Prompt.Environment>
   }
 >()('@polar-sh/cli-commands/ApiRuntime') {}

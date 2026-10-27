@@ -46,6 +46,7 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
+    SubscriptionBulkUpdate,
     SubscriptionMeter,
     SubscriptionProductPrice,
     SubscriptionUpdate,
@@ -83,6 +84,36 @@ class SubscriptionRepository(
     RepositoryBase[Subscription],
 ):
     model = Subscription
+
+    def get_bulk_update_statement(
+        self,
+        organization_id: UUID,
+        product_external_id: str,
+        *,
+        exclude_product_id: UUID,
+        after_id: UUID | None = None,
+    ) -> Select[tuple[Subscription]]:
+        """Active subscriptions of any version of a product that a bulk update can
+        move: not canceling, and without a pending change."""
+        statement = (
+            self.get_base_statement()
+            .join(Product, Product.id == Subscription.product_id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id == product_external_id,
+                Subscription.product_id != exclude_product_id,
+                Subscription.active,
+                ~Subscription.cancel_at_period_end,
+                ~sa.exists().where(
+                    SubscriptionUpdate.subscription_id == Subscription.id,
+                    SubscriptionUpdate.applied_at.is_(None),
+                    SubscriptionUpdate.deleted_at.is_(None),
+                ),
+            )
+        )
+        if after_id is not None:
+            statement = statement.where(Subscription.id > after_id)
+        return statement
 
     async def release_scheduler_lock(self, subscription: Subscription) -> Subscription:
         statement = (
@@ -300,6 +331,35 @@ class SubscriptionRepository(
             statement = statement.limit(limit)
         result = await self.session.execute(statement)
         return result.scalars().all()
+
+    async def exists_billable_by_product(self, product_id: UUID) -> bool:
+        statement = (
+            select(Subscription.id)
+            .where(
+                Subscription.product_id == product_id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                ~Subscription.is_deleted,
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.first() is not None
+
+    async def exists_billable_by_meter(self, meter_id: UUID) -> bool:
+        statement = (
+            select(Subscription.id)
+            .join(
+                SubscriptionMeter, SubscriptionMeter.subscription_id == Subscription.id
+            )
+            .where(
+                SubscriptionMeter.meter_id == meter_id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                ~Subscription.is_deleted,
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.first() is not None
 
     async def get_by_id_and_organization(
         self,
@@ -886,3 +946,29 @@ class SubscriptionUpdateRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+
+class SubscriptionBulkUpdateRepository(
+    RepositorySoftDeletionIDMixin[SubscriptionBulkUpdate, UUID],
+    RepositorySoftDeletionMixin[SubscriptionBulkUpdate],
+    RepositoryBase[SubscriptionBulkUpdate],
+):
+    model = SubscriptionBulkUpdate
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[tuple[SubscriptionBulkUpdate]]:
+        statement = self.get_base_statement()
+        if is_user(auth_subject):
+            statement = statement.where(
+                SubscriptionBulkUpdate.organization_id.in_(
+                    select_accessible_org_ids(
+                        auth_subject, permission=OrganizationPermission.sales_read
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                SubscriptionBulkUpdate.organization_id == auth_subject.subject.id
+            )
+        return statement

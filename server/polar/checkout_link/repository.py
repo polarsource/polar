@@ -2,7 +2,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -134,6 +134,14 @@ class CheckoutLinkRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none() is not None
+
+    async def replace_product(self, product_id: UUID, new_product_id: UUID) -> None:
+        statement = (
+            update(CheckoutLinkProduct)
+            .where(CheckoutLinkProduct.product_id == product_id)
+            .values(product_id=new_product_id)
+        )
+        await self.session.execute(statement)
 
     async def archive_product(self, product_id: UUID) -> None:
         statement = (

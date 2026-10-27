@@ -1,12 +1,15 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { Data, Predicate } from 'effect'
-import { getCustomerMeter } from '../internal/api/customer-meters'
+import {
+  creditCustomerMeter,
+  getCustomerMeter,
+} from '../internal/api/customer-meters'
 import { ingestEvents } from '../internal/api/events'
 import {
   assertBenefitDeployed,
   findBenefitGrant,
 } from '../internal/api/benefits'
-import { assertMeterDeployed } from '../internal/api/meters'
+import { getDeployedMeter } from '../internal/api/meters'
 import { matchesMeter } from '../internal/meter'
 import type {
   CustomerIdentifier,
@@ -22,11 +25,21 @@ export type MeterBalance = {
   pristine: boolean
 }
 
+const MAX_GRANT_UNITS = 1_000_000_000
+
+export type GrantOptions = {
+  // Defaults to false, like the API. True carries unused credits over to the
+  // next meter period.
+  rollover?: boolean
+  // Retrying with the same key doesn't grant the credits twice
+  idempotencyKey?: string
+}
+
 export type BenefitAccess<Values = models.MetadataOutputType> =
   | { granted: true; metadata: Values }
   | { granted: false }
 
-type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
+export type BenefitName<Config extends RuntimeSDKConfig> = keyof NonNullable<
   Config['benefits']
 > &
   string
@@ -110,6 +123,12 @@ export type Actor<Config extends RuntimeSDKConfig> = (
     name: Name,
   ) => Promise<BenefitAccess<BenefitMetadata<Config, Name>>>
   balance: (name: MeterName<Config>) => Promise<MeterBalance>
+  // Credits always go to the customer, even on an actor with a member
+  grant: (
+    name: MeterName<Config>,
+    units: number,
+    options?: GrantOptions,
+  ) => Promise<void>
   track: {
     // Ingests all events in a single request
     (events: readonly TrackedEvent<Config>[]): Promise<void>
@@ -145,12 +164,33 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   // and meter. The server processes events asynchronously, so a customer meter
   // last modified before this timestamp doesn't reflect that event yet.
   const latestIngestedAt = new Map<string, Date>()
-  const deployedMeters = new Set<string>()
+  // Polar meter ID per deployed meter external ID
+  const deployedMeters = new Map<string, string>()
   const deployedBenefits = new Set<string>()
   const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${externalMeterId}`
       : `external_customer:${identifier.externalCustomerId}:${externalMeterId}`
+  const getDeployedMeterId = async (externalMeterId: string) => {
+    const cached = deployedMeters.get(externalMeterId)
+    if (cached !== undefined) return cached
+
+    const { id } = await getDeployedMeter(sdk, externalMeterId)
+    deployedMeters.set(externalMeterId, id)
+    return id
+  }
+  const markIngested = (
+    identifier: ActorIdentifier,
+    externalMeterId: string,
+    timestamp: Date,
+  ) => {
+    const key = cacheKey(identifier, externalMeterId)
+    const current = latestIngestedAt.get(key)
+
+    if (current === undefined || timestamp > current) {
+      latestIngestedAt.set(key, timestamp)
+    }
+  }
 
   const validateEvent = async (
     name: string,
@@ -202,12 +242,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
             matchesMeter(meter, { name, timestamp, metadata: metadata ?? {} }),
           )
         ) {
-          const key = cacheKey(identifier, externalId)
-          const current = latestIngestedAt.get(key)
-
-          if (current === undefined || timestamp > current) {
-            latestIngestedAt.set(key, timestamp)
-          }
+          markIngested(identifier, externalId, timestamp)
         }
       }
     }
@@ -263,10 +298,9 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         toCustomerIdentifier(identifier),
         name,
       )
-      if (customerMeter === undefined && !deployedMeters.has(name)) {
-        await assertMeterDeployed(sdk, name)
+      if (customerMeter === undefined) {
+        await getDeployedMeterId(name)
       }
-      deployedMeters.add(name)
 
       const key = cacheKey(identifier, name)
       const ingestedAt = latestIngestedAt.get(key)
@@ -286,6 +320,25 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         balance: customerMeter?.balance ?? 0,
         pristine,
       }
+    },
+
+    async grant(name, units, { rollover = false, idempotencyKey } = {}) {
+      if (config.meters?.[name] === undefined) {
+        throw new Error(`Unknown meter: ${name}`)
+      }
+      if (!Number.isInteger(units) || units < 1 || units > MAX_GRANT_UNITS) {
+        throw new Error(
+          `Units must be a whole number from 1 to ${MAX_GRANT_UNITS}, got ${units}`,
+        )
+      }
+
+      const event = await creditCustomerMeter(
+        sdk,
+        toCustomerIdentifier(identifier),
+        { id: await getDeployedMeterId(name), externalId: name },
+        { units, rollover, externalId: idempotencyKey },
+      )
+      markIngested(identifier, name, new Date(event.timestamp))
     },
 
     track: ((

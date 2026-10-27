@@ -14,6 +14,7 @@ import { schemas } from '@polar-sh/client'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Viewport } from 'next/types'
 import {
+  PolarMotionProvider,
   PolarNuqsProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
@@ -65,18 +66,7 @@ export default async function RootLayout({
         {CONFIG.ENVIRONMENT === 'development' ? (
           <link href="/favicon-dev.png" rel="icon" />
         ) : (
-          <>
-            <link
-              href="/favicon.png"
-              rel="icon"
-              media="(prefers-color-scheme: dark)"
-            />
-            <link
-              href="/favicon-dark.png"
-              rel="icon"
-              media="(prefers-color-scheme: light)"
-            />
-          </>
+          <link href="/favicon.png" rel="icon" />
         )}
       </head>
       <body style={{ textRendering: 'optimizeLegibility' }}>
@@ -88,9 +78,11 @@ export default async function RootLayout({
             <PolarPostHogProvider>
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
-                  {CONFIG.IS_SANDBOX && <SandboxBanner />}
-                  <SessionRefreshModal />
-                  {children}
+                  <PolarMotionProvider>
+                    {CONFIG.IS_SANDBOX && <SandboxBanner />}
+                    <SessionRefreshModal />
+                    {children}
+                  </PolarMotionProvider>
                 </PolarNuqsProvider>
               </PolarQueryClientProvider>
             </PolarPostHogProvider>

@@ -1,3 +1,5 @@
+import { Box } from '@polar-sh/orbit/Box'
+
 export const Section = ({
   id,
   children,
@@ -15,13 +17,18 @@ export const Section = ({
 export const SectionDescription = ({
   title,
   description,
+  badge,
 }: {
   title: string
   description?: string
+  badge?: React.ReactNode
 }) => {
   return (
     <div className="flex w-full flex-col gap-1">
-      <h2 className="text-lg font-medium">{title}</h2>
+      <Box alignItems="center" columnGap="s">
+        <h2 className="text-lg font-medium">{title}</h2>
+        {badge}
+      </Box>
       {description && (
         <p className="dark:text-polar-500 text-balance text-gray-500">
           {description}

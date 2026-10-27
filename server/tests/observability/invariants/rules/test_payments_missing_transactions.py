@@ -43,11 +43,6 @@ class TestCheck:
             payment = await create_payment(save_fixture, organization)
             payment.created_at = utc_now() - timedelta(minutes=10)
             await save_fixture(payment)
-            await create_payment_transaction(
-                save_fixture,
-                charge_id=payment.processor_id,
-                created_at=utc_now() - timedelta(days=31),
-            )
             await create_transaction(
                 save_fixture,
                 type=TransactionType.refund,

@@ -1,3 +1,4 @@
+import copy
 import pathlib
 import re
 import typing
@@ -763,3 +764,81 @@ def test_inputs_named_fields_are_fine_without_the_fields_flag(
     update = (tmp_path / "src/widgets/update.ts").read_text()
     assert "fields: config.input.fields," in update
     assert "fields: config.fields," not in update
+
+
+def _next_spec(cli_spec: dict) -> dict:
+    spec = copy.deepcopy(cli_spec)
+    spec["info"]["version"] = "2027-01"
+    get = copy.deepcopy(spec["paths"]["/widgets/{id}"]["get"])
+    get["operationId"] = "widgets:get_external"
+    get["parameters"] = [{**get["parameters"][0], "name": "external_id"}]
+    spec["paths"]["/widgets/external/{external_id}"] = {"get": get}
+    return spec
+
+
+def _emit_versions(specs: list[dict], tmp_path: pathlib.Path) -> None:
+    CLICommandsEmitter(
+        generate_ir(
+            *(op.OpenAPI.model_validate(spec) for spec in specs),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
+
+
+def test_next_only_operations_join_the_current_commands(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit_versions([_next_spec(cli_spec), cli_spec], tmp_path)
+
+    current = (tmp_path / "src/widgets/get.ts").read_text()
+    assert "apiVersion" not in current
+    assert "preview, API" not in current
+
+    upcoming = (tmp_path / "src/widgets/get_external.ts").read_text()
+    assert 'apiVersion: "2027-01",' in upcoming
+    assert "(preview, API 2027-01)" in upcoming
+
+    service = (tmp_path / "src/widgets/index.ts").read_text()
+    assert "./get_external'" in service
+
+    runtime = (tmp_path / "src/runtime.ts").read_text()
+    assert "from '@polar-sh/sdk/2027-01'" in runtime
+    assert 'export const CURRENT_API_VERSION = "2026-10"' in runtime
+
+
+def test_operations_in_both_versions_stay_on_current(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    upcoming = _next_spec(cli_spec)
+    upcoming["paths"]["/widgets/{id}"]["get"]["description"] = "Changed in Next."
+    _emit_versions([cli_spec, upcoming], tmp_path)
+
+    current = (tmp_path / "src/widgets/get.ts").read_text()
+    assert "apiVersion" not in current
+    assert "Changed in Next." not in current
+
+
+def test_renamed_path_parameter_in_next_stays_on_current(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    upcoming = _next_spec(cli_spec)
+    get = upcoming["paths"].pop("/widgets/{id}")["get"]
+    get["parameters"] = [{**get["parameters"][0], "name": "widget_id"}]
+    upcoming["paths"]["/widgets/{widget_id}"] = {"get": get}
+    _emit_versions([cli_spec, upcoming], tmp_path)
+
+    current = (tmp_path / "src/widgets/get.ts").read_text()
+    assert "apiVersion" not in current
+
+
+def test_next_only_operation_cannot_reuse_a_current_command_name(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    upcoming = _next_spec(cli_spec)
+    upcoming["paths"]["/widgets/{id}"]["get"]["operationId"] = "widgets:fetch"
+    upcoming["paths"]["/widgets/external/{external_id}"]["get"]["operationId"] = (
+        "widgets:get"
+    )
+    with pytest.raises(ValueError, match="Next adds get to Widgets"):
+        _emit_versions([cli_spec, upcoming], tmp_path)

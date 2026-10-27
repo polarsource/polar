@@ -138,4 +138,4 @@ def release_sdk(
 
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise SystemExit(1) from e

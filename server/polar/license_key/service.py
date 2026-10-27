@@ -12,6 +12,7 @@ from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies import BenefitGrantProperties
 from polar.benefit.strategies.license_keys.properties import (
+    BenefitLicenseKeyExpirationProperties,
     BenefitLicenseKeysProperties,
 )
 from polar.exceptions import BadRequest, NotPermitted, PolarError, ResourceNotFound
@@ -507,6 +508,7 @@ class LicenseKeyService:
                 session,
                 create_schema=create_schema,
                 license_key_id=license_key_id,
+                expires=expires,
                 member_id=member_id,
                 regrant=regrant,
             )
@@ -523,6 +525,7 @@ class LicenseKeyService:
         *,
         license_key_id: UUID,
         create_schema: LicenseKeyCreate,
+        expires: BenefitLicenseKeyExpirationProperties | None = None,
         member_id: UUID | None = None,
         regrant: bool = False,
     ) -> LicenseKey:
@@ -539,6 +542,11 @@ class LicenseKeyService:
 
         if member_id is not None and key.member_id is None:
             key.member_id = member_id
+
+        if not regrant and expires and create_schema.expires_at is not None:
+            create_schema.expires_at = LicenseKeyCreate.generate_expiration_dt(
+                expires["ttl"], expires["timeframe"], start=key.created_at
+            )
 
         update_attrs = [
             "expires_at",

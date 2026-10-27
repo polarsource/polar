@@ -9,7 +9,7 @@ from typing import Any
 
 from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
 
-from .schemas import SLOReport
+from .report import SLOReport
 
 
 def _status_emoji(passing: bool) -> str:
@@ -21,6 +21,7 @@ def _overall_status_emoji(status: str) -> str:
     """Return overall status emoji based on report status."""
     return {
         "healthy": ":large_green_circle:",
+        "incomplete": ":warning:",
         "degraded": ":large_yellow_circle:",
         "critical": ":red_circle:",
     }.get(status, ":grey_question:")
@@ -87,6 +88,27 @@ def format_slo_report_slack_payload(report: SLOReport) -> SlackPayload:
     )
 
     blocks.append({"type": "divider"})
+
+    incomplete_reasons: list[str] = []
+    if report.failed_queries:
+        incomplete_reasons.append(
+            f"failed to fetch {', '.join(report.failed_queries)}."
+        )
+    if report.missing_data:
+        incomplete_reasons.append(f"no data for {', '.join(report.missing_data)}.")
+    if incomplete_reasons:
+        blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": (
+                        f":warning: *Incomplete report:* {' '.join(incomplete_reasons)} "
+                        "Missing values are shown as N/A and not evaluated."
+                    ),
+                },
+            }
+        )
 
     # Summary section
     summary_text = (
@@ -159,7 +181,7 @@ def format_slo_report_slack_payload(report: SLOReport) -> SlackPayload:
         blocks.append({"type": "divider"})
 
     # Passing endpoints (compact summary)
-    passing_endpoints = [e for e in report.endpoints if e.is_passing]
+    passing_endpoints = [e for e in report.endpoints if e.is_passing and e.has_data]
     if passing_endpoints:
         passing_list = "\n".join(
             f":white_check_mark: `{e.method} {e.endpoint}` "
@@ -174,6 +196,25 @@ def format_slo_report_slack_payload(report: SLOReport) -> SlackPayload:
                 "text": {
                     "type": "mrkdwn",
                     "text": f"*Healthy Endpoints:*\n{passing_list}",
+                },
+            }
+        )
+
+    no_data_endpoints = [e for e in report.endpoints if e.is_passing and not e.has_data]
+    if no_data_endpoints:
+        no_data_list = "\n".join(
+            f":grey_question: `{e.method} {e.endpoint}` "
+            f"- P99: {_format_duration(e.p99_actual)}, "
+            f"Avail: {_format_percentage(e.availability_actual)}"
+            for e in no_data_endpoints
+        )
+
+        blocks.append(
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Endpoints Without Data:*\n{no_data_list}",
                 },
             }
         )

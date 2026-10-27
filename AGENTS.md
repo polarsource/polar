@@ -298,3 +298,27 @@ is the conventional test account.
 **Onboarding gotcha.** The org-creation wizard's "Launch Dashboard" button only submits once the
 Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing
 model). The AUP AI check auto-APPROVEs when `PYDANTIC_AI_GATEWAY_API_KEY` is unset.
+
+## Temporary eMudhra CA mitigations — recheck October 23, 2026
+
+On or after **2026-10-23**, recheck the [upstream disclosure](https://emudhra.we-have-a-problem.com/)
+and the certificate stores shipped by our actual base images, runtimes and Stripe SDK.
+If upstream fixes cover every affected path, remove the manual mitigations consistently:
+the `sed` root exclusions and `trust extract` blocklists in Dockerfiles under `server/`,
+`dev/docker/` and `infra/`, the EC2 host mitigations in `terraform/modules/`
+(e.g. `ec2_tailscale/tailscale-init.sh` and `planetscale_migration/user-data.sh`),
+plus the Stripe workaround that sets
+`stripe_lib.ca_bundle_path = certifi.where()` in `polar.integrations.stripe` before platform
+and merchant migration HTTP clients are constructed. Remove that override only after
+Stripe's own bundle is verified safe for both client paths. Keep patched dependency
+versions and security minimums.
+
+Before removing a mitigation, verify the replacement without that workaround rejects all
+twelve compromised test chains from the disclosure while legitimate, credential-free HTTPS
+connections still succeed. Check build stages, API/workers, Lambda, merchant migration clients,
+Node and EC2 hosts separately; one updated trust store does not establish protection
+for the others.
+If upstream coverage is incomplete, retain the necessary workarounds and update this note
+with the remaining gaps and a new review date. Update regression tests alongside any cleanup.
+Once every workaround has been safely removed, delete this entire temporary section from
+`AGENTS.md` as well.

@@ -1,5 +1,6 @@
 import typing
 from collections import defaultdict
+from dataclasses import dataclass
 
 from authlib.oauth2.rfc6749 import (
     JsonPayload,
@@ -11,7 +12,17 @@ from starlette.datastructures import URL, ImmutableMultiDict, UploadFile
 from starlette.requests import Request
 
 from polar.auth.models import AuthSubject
-from polar.models import User
+from polar.models import OAuth2Client, User
+
+
+@dataclass
+class ClientConfigurationCredential:
+    value: User | str
+
+    def check_client(self, client: OAuth2Client) -> bool:
+        if isinstance(self.value, User):
+            return client.user_id == self.value.id
+        return client.check_registration_access_token(self.value)
 
 
 class RequestPathParamsMixin:
@@ -86,7 +97,7 @@ class StarletteJsonPayload(JsonPayload):
 
 
 class StarletteJsonRequest(RequestPathParamsMixin, JsonRequest):
-    credential: str | None = None
+    credential: ClientConfigurationCredential | None = None
 
     def __init__(self, request: Request):
         super().__init__(request.method, str(request.url), request.headers)

@@ -10,6 +10,15 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+### Added
+
+- Add metering helper with buffering and local reduction for low-latency event ingestion.
+- Send a `User-Agent` header with the SDK language and version, such as `polar-sdk-python/1.0.3` or `polar-sdk-typescript/1.0.3`.
+
+### Changed
+
+- Rename the metering helper, actor, and strategy event method from `ingest()` to `track()` in both SDKs. The HTTP API remains `polar.events.ingest()`.
+
 ### Fixed
 
 - Return `undefined` (`None` in Python) instead of throwing on empty-body success responses, such as the `202` returned by order receipt endpoints while the receipt is being generated.

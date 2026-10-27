@@ -117,6 +117,7 @@ export interface ClientOptions {
 }
 
 export interface RequestOptions {
+  signal?: AbortSignal;
   /** Request timeout override, in seconds. */
   timeout?: number;
   /** Access token override for this request. */
@@ -168,6 +169,7 @@ export class ClientBase {
       "Content-Type": "application/json",
       "Polar-Version": this.options.version,
       Authorization: `Bearer ${this.options.accessToken}`,
+      "User-Agent": "polar-sdk-typescript/{{ version }}",
     });
     if (this.options.organizationId !== undefined) {
       headers.set("Polar-Organization", this.options.organizationId);
@@ -193,7 +195,9 @@ export class ClientBase {
       headers = new Headers(headers);
       headers.set("Authorization", `Bearer ${requestOptions.accessToken}`);
     }
-    let signal = requestInit.signal;
+    let signal = requestOptions?.signal && requestInit.signal
+      ? AbortSignal.any([requestOptions.signal, requestInit.signal])
+      : requestOptions?.signal ?? requestInit.signal;
     if (timeout !== undefined) {
       const timeoutMilliseconds = Math.ceil(timeout * 1000);
       if (

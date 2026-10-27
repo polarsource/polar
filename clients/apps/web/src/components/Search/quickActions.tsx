@@ -1,5 +1,4 @@
-import HiveOutlined from '@mui/icons-material/HiveOutlined'
-
+import { HiveOutlined } from '@polar-sh/orbit/icons'
 export const getQuickActions = (organizationSlug: string) => [
   {
     id: 'create-product',

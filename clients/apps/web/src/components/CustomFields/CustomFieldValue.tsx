@@ -1,5 +1,4 @@
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import { CheckOutlined, CloseOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { TextArea } from '@polar-sh/orbit'

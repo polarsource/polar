@@ -36,7 +36,7 @@ export default function App() {
 
       <KenBurns>
         <Image
-          source={require('@/assets/images/login-background.jpg')}
+          source={require('@/assets/images/splash.jpg')}
           style={{ width: '100%', height: '100%' }}
         />
       </KenBurns>

@@ -4,6 +4,7 @@
 
 import { CONFIG } from '@/utils/config'
 import { isInjectedScriptError } from '@/utils/sentry'
+import { redactClaimTokens } from '@/utils/telemetry'
 import * as Sentry from '@sentry/nextjs'
 
 Sentry.init({
@@ -54,7 +55,9 @@ Sentry.init({
 
   denyUrls: [/extensions\//i, /^chrome:\/\//i, /^moz-extension:\/\//i],
 
-  beforeSend: (event) => {
+  beforeSend: (rawEvent) => {
+    const event = redactClaimTokens(rawEvent)
+
     if (isInjectedScriptError(event)) {
       return null
     }
@@ -81,6 +84,10 @@ Sentry.init({
 
     return event
   },
+
+  beforeSendTransaction: (event) => redactClaimTokens(event),
+
+  beforeBreadcrumb: (breadcrumb) => redactClaimTokens(breadcrumb),
 })
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart

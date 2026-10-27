@@ -116,6 +116,13 @@ class AmbiguousExternalMeterID:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class AmbiguousExternalWebhookEndpointID:
+    error: typing.Literal["AmbiguousExternalWebhookEndpointID"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class AttachedCustomField:
     """Schema of a custom field attached to a resource."""
 
@@ -1228,7 +1235,6 @@ class BenefitFeatureFlagProperties:
     """Properties for a benefit of type `feature_flag`."""
 
 
-
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitFeatureFlagPublic:
     id: str
@@ -1294,7 +1300,6 @@ class BenefitFeatureFlagSubscriber:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitFeatureFlagSubscriberProperties:
     """Properties available to subscribers for a benefit of type `feature_flag`."""
-
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -4400,6 +4405,20 @@ class CustomerMeter:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CustomerMeterCreditExternalIDConflict:
+    error: typing.Literal["CustomerMeterCreditExternalIDConflict"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class CustomerMeterCreditNotReversible:
+    error: typing.Literal["CustomerMeterCreditNotReversible"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerNotReady:
     error: typing.Literal["CustomerNotReady"]
 
@@ -5201,7 +5220,7 @@ class CustomerStateSubscription:
 
     metadata: MetadataOutputType
 
-    status: Status
+    status: typing.Literal["active", "trialing"]
 
     amount: int
     """The amount of the subscription."""
@@ -5726,6 +5745,9 @@ class DiscountFixedOnceForeverDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5776,6 +5798,9 @@ class DiscountFixedOnceForeverDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -5831,6 +5856,9 @@ class DiscountFixedRepeatDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5884,6 +5912,9 @@ class DiscountFixedRepeatDurationBase:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5931,6 +5962,9 @@ class DiscountPercentageOnceForeverDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -5977,6 +6011,9 @@ class DiscountPercentageOnceForeverDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -6028,6 +6065,9 @@ class DiscountPercentageRepeatDuration:
     id: str
     """The ID of the object."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: MetadataOutputType
 
     name: str
@@ -6076,6 +6116,9 @@ class DiscountPercentageRepeatDurationBase:
 
     id: str
     """The ID of the object."""
+
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: MetadataOutputType
 
@@ -7475,6 +7518,8 @@ class MeterCreditedMetadata:
 
     rollover: bool
 
+    reason: typing.Literal["benefit", "manual"] = "benefit"
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class MeterQuantities:
@@ -8869,9 +8914,6 @@ class OrganizationFeatureSettings:
     off_session_charges_enabled: bool = False
     """If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method)."""
 
-    meter_cycling_enabled: bool = False
-    """If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval)."""
-
     slack_benefit_enabled: bool = False
     """Enables the slack shared channel benefit"""
 
@@ -9747,6 +9789,13 @@ class SeatsList:
 
     total_seats: int
     """Total number of seats for the subscription"""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SharedPaymentTokenError:
+    error: typing.Literal["SharedPaymentTokenError"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -11277,6 +11326,9 @@ class WebhookDelivery:
 class WebhookEndpoint:
     """A webhook endpoint."""
 
+    external_id: str | None
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -11396,6 +11448,8 @@ CheckoutForbiddenError: typing.TypeAlias = (
     | TrialAlreadyRedeemed
     | DiscountRedemptionLimitReached
 )
+
+CheckoutPaymentError: typing.TypeAlias = PaymentError | SharedPaymentTokenError
 
 CustomField: typing.TypeAlias = (
     CustomFieldText

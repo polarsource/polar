@@ -11,9 +11,7 @@ import {
   getGitHubAuthorizeLinkURL,
   getGoogleAuthorizeLinkURL,
 } from '@/utils/auth'
-import AlternateEmailOutlined from '@mui/icons-material/AlternateEmailOutlined'
-import GitHub from '@mui/icons-material/GitHub'
-import Google from '@mui/icons-material/Google'
+import { AlternateEmailOutlined, GitHub, Google } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { ListGroup } from '@polar-sh/orbit'
@@ -187,7 +185,7 @@ const AuthenticationSettings = () => {
   const searchParams = useSearchParams()
   const [updateEmailStage, setUpdateEmailStage] = useState<
     'off' | 'form' | 'request' | 'verified'
-  >((searchParams.get('update_email') as 'verified' | null) || 'off')
+  >(() => (searchParams.get('update_email') as 'verified' | null) || 'off')
   const userReloaded = useRef(false)
 
   const oauthLinkError =

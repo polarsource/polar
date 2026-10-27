@@ -1,6 +1,5 @@
 import {
   getUnitLabels,
-  isLegacyRecurringPrice,
   isMeteredPrice,
   MeteredPrice,
   isSeatBasedPrice,
@@ -12,7 +11,10 @@ import { getMeterUnitFormat } from '@polar-sh/ui/lib/meterUnit'
 import AmountLabel from '../Shared/AmountLabel'
 
 interface ProductPriceLabelProps {
-  product: schemas['Product'] | schemas['CheckoutProduct']
+  product: Pick<
+    schemas['Product'] | schemas['CheckoutProduct'],
+    'prices' | 'recurring_interval' | 'recurring_interval_count'
+  >
   currency: string
 }
 
@@ -31,11 +33,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       <AmountLabel
         amount={staticPrice.price_amount}
         currency={staticPrice.price_currency}
-        interval={
-          isLegacyRecurringPrice(staticPrice)
-            ? staticPrice.recurring_interval
-            : product.recurring_interval || undefined
-        }
+        interval={product.recurring_interval || undefined}
         intervalCount={product.recurring_interval_count}
       />
     )

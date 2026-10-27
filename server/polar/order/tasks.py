@@ -141,6 +141,11 @@ async def create_subscription_order(
             ):
                 return
 
+        # The cancel order is the final settlement: also bill usage of the
+        # ended period that synced after the period end.
+        if order_reason == OrderBillingReasonInternal.subscription_cancel:
+            billing_cutoff = None
+
         try:
             await order_service.create_subscription_order(
                 session, subscription, order_reason, cutoff=billing_cutoff
@@ -151,7 +156,12 @@ async def create_subscription_order(
             pass
 
 
-@actor(actor_name="order.create_meter_cycle_order", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.create_meter_cycle_order",
+    priority=TaskPriority.LOW,
+    # Linking a whole meter period of pending billing entries doesn't fit the default 60s.
+    time_limit=600_000,
+)
 async def create_meter_cycle_order(
     subscription_id: Annotated[uuid.UUID, LoggableField],
     cutoff: Annotated[str, LoggableField],

@@ -1,224 +1,228 @@
 'use client'
 
-import { Avatar, Text } from '@polar-sh/orbit'
+import { useInView } from '@/hooks/useInView'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { Check, Circle, LoaderCircle } from '@polar-sh/orbit/icons'
+import { useEffect, useState } from 'react'
+import { Shimmer } from './Shimmer'
+import { Sheet, Window } from './story/Frame'
 
-interface Aspect {
-  title: string
-  desc: string
-  href: string
+interface Market {
+  city: string
+  country: string
+  plan: string
+  taxLabel: string
+  tax: string
+  total: string
+  payout: string
 }
 
-const ASPECTS: Aspect[] = [
+/** One order per loop, each in a different market, all settling to the same bank account in dollars. */
+const MARKETS: Market[] = [
   {
-    title: 'Customer invoiced automatically',
-    desc: 'Usage rolls straight into invoices and charges, with no manual billing runs.',
-    href: '/docs/features/orders',
+    city: 'Berlin',
+    country: 'Germany',
+    plan: '€2,299.00',
+    taxLabel: 'VAT 19%',
+    tax: '€436.81',
+    total: '€2,735.81',
+    payout: '$2,412.60',
   },
   {
-    title: 'LLM Usage Breakdown',
-    desc: 'Every model call metered token by token, per customer, across all of your providers.',
-    href: '/docs/features/usage-based-billing/ingestion-strategies/llm-strategy',
+    city: 'London',
+    country: 'the UK',
+    plan: '£1,999.00',
+    taxLabel: 'VAT 20%',
+    tax: '£399.80',
+    total: '£2,398.80',
+    payout: '$2,447.15',
   },
   {
-    title: 'Margins, Profits & Cashflow Metrics',
-    desc: 'Revenue minus cost in real time, per customer and across your whole business.',
-    href: '/docs/features/analytics',
+    city: 'Austin',
+    country: 'Texas',
+    plan: '$2,499.00',
+    taxLabel: 'Sales tax 6.25%',
+    tax: '$156.19',
+    total: '$2,655.19',
+    payout: '$2,374.05',
   },
   {
-    title: 'Cost Anomalies & Insights',
-    desc: 'Spot runaway spend and unprofitable customers the moment costs spike, not at month end.',
-    href: '/docs/features/cost-insights/introduction',
-  },
-  {
-    title: 'Tax Collection & Remittance',
-    desc: 'Sales tax, VAT, and GST calculated, collected, and filed for you as merchant of record.',
-    href: '/docs/merchant-of-record/introduction',
-  },
-  {
-    title: 'Payment Processing',
-    desc: 'Cards, wallets, and bank debits captured and settled across 100+ markets.',
-    href: '/docs/features/checkout/session',
-  },
-  {
-    title: 'Refunds & Chargebacks',
-    desc: 'Disputes, refunds, and usage reconciliation handled end to end.',
-    href: '/docs/features/refunds',
-  },
-  {
-    title: 'Risk Analysis & Fraud',
-    desc: 'Every transaction screened for fraud before it ever hits your books.',
-    href: '/docs/merchant-of-record/account-reviews',
+    city: 'Tokyo',
+    country: 'Japan',
+    plan: '¥379,000',
+    taxLabel: 'JCT 10%',
+    tax: '¥37,900',
+    total: '¥416,900',
+    payout: '$2,396.80',
   },
 ]
 
-const GROUPS = [ASPECTS.slice(0, 4), ASPECTS.slice(4)]
+const steps = (m: Market) => [
+  { id: 'capture', label: 'Payment captured' },
+  { id: 'screen', label: 'Screened for fraud' },
+  { id: 'calculate', label: `${m.taxLabel} calculated` },
+  { id: 'remit', label: `Tax remitted in ${m.country}` },
+  { id: 'payout', label: 'Paid out to SEB •••• 9128' },
+]
 
-const CheckIcon = ({ active }: { active: boolean }) => (
+const STEP_MS = 850
+const HOLD_MS = 2600
+
+/** Advances through the steps of one order, holds on the settled state, then moves to the next market. */
+const useOrder = () => {
+  const { ref, inView } = useInView()
+  const [market, setMarket] = useState(0)
+  const [step, setStep] = useState(0)
+  const count = steps(MARKETS[0]).length
+
+  useEffect(() => {
+    if (!inView) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const still = window.setTimeout(() => setStep(count), 0)
+      return () => clearTimeout(still)
+    }
+    const timer = window.setTimeout(
+      () => {
+        if (step < count) {
+          setStep(step + 1)
+        } else {
+          setStep(0)
+          setMarket((m) => (m + 1) % MARKETS.length)
+        }
+      },
+      step < count ? STEP_MS : HOLD_MS,
+    )
+    return () => clearTimeout(timer)
+  }, [inView, step, count])
+
+  return { ref, market: MARKETS[market], marketIndex: market, step }
+}
+
+const StepIcon = ({ state }: { state: 'done' | 'active' | 'pending' }) => (
   <Box
-    width="1.5rem"
-    height="1.5rem"
-    borderRadius="full"
-    backgroundColor="background-success"
-    color="text-success"
+    width={14}
+    height={14}
     alignItems="center"
     justifyContent="center"
     flexShrink={0}
-    opacity={active ? 1 : 0.4}
   >
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={3}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
+    {state === 'done' ? (
+      <Check size={12} />
+    ) : state === 'active' ? (
+      <LoaderCircle size={12} className="animate-spin" />
+    ) : (
+      <Circle size={4} fill="currentColor" />
+    )}
   </Box>
 )
 
-const ArrowDown = () => (
-  <Box justifyContent="center" color="text-tertiary" paddingVertical="m">
-    <svg
-      width="20"
-      height="30"
-      viewBox="0 0 20 30"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.25}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <line x1="10" y1="2" x2="10" y2="26" />
-      <polyline points="3 19 10 26 17 19" />
-    </svg>
+const Line = ({ label, value }: { label: string; value: string }) => (
+  <Box justifyContent="between" columnGap="l">
+    <Text variant="default" color="muted">
+      {label}
+    </Text>
+    <Text variant="default" color="muted" tabularNums>
+      {value}
+    </Text>
   </Box>
 )
 
+/** An order placed in a local currency, handled by Polar step by step until the payout lands. */
 export const Pipeline = () => {
+  const { ref, market, marketIndex, step } = useOrder()
+  const list = steps(market)
+  const settled = step >= list.length
+
   return (
-    <Box
-      display="grid"
-      gridTemplateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
-      gap="2xl"
-    >
-      {/* Flow */}
-      <Box borderStyle="solid" borderColor="border-primary" borderWidth={1}>
-        <Box
-          width="100%"
-          maxWidth={{ base: '100%', lg: '28rem' }}
-          marginHorizontal="auto"
-          flexDirection="column"
-          paddingVertical={{ base: '2xl', md: '4xl' }}
-          paddingHorizontal={{ base: '2xl', md: '4xl' }}
-          rowGap="xl"
+    <Window flow={2} narrow innerRef={ref} aside="Merchant of record">
+      <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap="xs">
+        <Sheet
+          title="Order"
+          aside={
+            <Text variant="caption" color="muted">
+              Acme Inc in {market.city}
+            </Text>
+          }
         >
-          {/* Customer */}
-          <Box
-            alignItems="center"
-            columnGap="m"
-            backgroundColor="background-secondary"
-            padding="l"
+          <div
+            key={marketIndex}
+            className="flex flex-1 [animation:appear_360ms_cubic-bezier(0.2,0.8,0.2,1)_both] flex-col gap-6"
           >
-            <Avatar
-              name="John Doe"
-              avatar_url="/assets/team/emil.png"
-              className="h-10 w-10 text-sm"
-            />
-            <Box flexDirection="column">
-              <Text>John Doe</Text>
-              <Text color="muted">Consumed 23,820 tokens</Text>
+            <Text variant="heading-xs" tabularNums>
+              {market.total}
+            </Text>
+            <Box flexDirection="column" rowGap="s">
+              <Line label="Business plan" value={market.plan} />
+              <Line label={market.taxLabel} value={market.tax} />
             </Box>
-          </Box>
-
-          <ArrowDown />
-
-          {/* Polar */}
-          <Box flexDirection="column" rowGap="s">
-            <Box
-              paddingVertical="m"
-              justifyContent="center"
-              backgroundColor="background-secondary"
+          </div>
+          <Box
+            justifyContent="between"
+            alignItems="baseline"
+            paddingTop="m"
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          >
+            <Text variant="default" color="muted">
+              Your payout
+            </Text>
+            <Text
+              variant="heading-xxs"
+              color={settled ? 'default' : 'muted'}
+              tabularNums
             >
-              <Text variant="body">Polar</Text>
-            </Box>
-            {GROUPS.map((group, groupIndex) => (
-              <Box
-                key={groupIndex}
-                flexDirection="column"
-                backgroundColor="background-secondary"
-                padding="s"
-              >
-                {group.map((aspect) => {
-                  return (
-                    <Box
-                      key={aspect.title}
-                      alignItems="center"
-                      columnGap="l"
-                      paddingVertical="s"
-                      paddingHorizontal="s"
-                      cursor="pointer"
-                    >
-                      <CheckIcon active={true} />
-                      <Text variant="body">{aspect.title}</Text>
-                    </Box>
-                  )
-                })}
-              </Box>
-            ))}
+              {market.payout}
+            </Text>
           </Box>
-
-          <ArrowDown />
-
-          {/* Payout */}
-          <Box
-            alignItems="center"
-            columnGap="l"
-            backgroundColor="background-secondary"
-            padding="xl"
-          >
-            <Box flexDirection="column" rowGap="xs">
-              <Box alignItems="baseline" columnGap="s">
-                <Text>Merchant Payout</Text>
-                <Text color="muted">Acme Inc</Text>
-              </Box>
-              <Box alignItems="baseline" columnGap="s">
-                <Text color="success">$9,311</Text>
-                <Text color="muted">SEB **** 9128</Text>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      </Box>
-      <Box
-        display={{ base: 'none', lg: 'flex' }}
-        position="relative"
-        alignItems="center"
-        justifyContent="center"
-        overflow="hidden"
-        paddingHorizontal="2xl"
-        backgroundColor="background-secondary"
-      >
-        <Box
-          display="block"
-          position="relative"
-          maxWidth="32rem"
-          padding="3xl"
-          boxShadow="l"
+        </Sheet>
+        <Sheet
+          title="Polar"
+          aside={
+            <Text variant="caption" color="muted">
+              100+ markets
+            </Text>
+          }
         >
-          <Text variant="heading-xs" wrap="pretty">
-            Your customer consumes usage.
-            <br />
-            Polar bills, collects and complies.
-            <br />
-            You get paid.
-          </Text>
-        </Box>
-      </Box>
-    </Box>
+          <Box flexDirection="column" rowGap="m">
+            {list.map(({ id, label }, i) => {
+              const state =
+                i < step ? 'done' : i === step ? 'active' : 'pending'
+              return (
+                <Box
+                  key={id}
+                  alignItems="center"
+                  columnGap="s"
+                  color={
+                    state === 'done'
+                      ? 'text-primary'
+                      : state === 'active'
+                        ? 'text-secondary'
+                        : 'text-tertiary'
+                  }
+                  transitionProperty="colors"
+                  transitionDuration="base"
+                >
+                  <StepIcon state={state} />
+                  <Text variant="default" color="inherit">
+                    {state === 'active' ? (
+                      <Shimmer active>{label}</Shimmer>
+                    ) : (
+                      label
+                    )}
+                  </Text>
+                </Box>
+              )
+            })}
+          </Box>
+          <Box marginTop="auto" paddingTop="l">
+            <Text variant="caption" color="muted">
+              We take on tax, fraud, refunds and chargebacks
+            </Text>
+          </Box>
+        </Sheet>
+      </Grid>
+    </Window>
   )
 }

@@ -1,14 +1,8 @@
-import ClientPage from '@/components/Metrics/dashboards/ClientPage'
-import DashboardDetailClientPage from '@/components/Metrics/dashboards/DashboardDetailClientPage'
-import { getServerSideAPI } from '@/utils/client/serverside'
-import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { schemas, unwrap } from '@polar-sh/client'
-import { endOfDay, max, subMonths } from 'date-fns'
+import { METRIC_GROUPS, metricGroupSlug } from '@/utils/metrics'
 import { notFound, redirect, RedirectType } from 'next/navigation'
 
 const METRIC_GROUP_SLUGS = new Set(
-  METRIC_GROUPS.map((g) => g.category.toLowerCase().replace(/\s+/g, '-')),
+  METRIC_GROUPS.map((g) => metricGroupSlug(g.category)),
 )
 
 const UUID_REGEX =
@@ -16,128 +10,27 @@ const UUID_REGEX =
 
 export default async function Page(props: {
   params: Promise<{ organization: string; metric: string }>
-  searchParams: Promise<{
-    start_date?: string
-    end_date?: string
-    interval?: schemas['TimeInterval']
-    product_id?: string | string[]
-  }>
+  searchParams: Promise<Record<string, string | string[]>>
 }) {
-  const { organization: organizationSlug, metric } = await props.params
+  const { organization, metric } = await props.params
   const searchParams = await props.searchParams
 
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    organizationSlug,
-  )
-
-  // Handle custom user-created dashboards (UUID slugs)
-  if (UUID_REGEX.test(metric)) {
-    const result = await api.GET('/v1/metrics/dashboards/{id}', {
-      params: { path: { id: metric } },
-    })
-    if (result.error || !result.data) {
-      notFound()
-    }
-    return (
-      <DashboardDetailClientPage
-        organization={organization}
-        dashboard={result.data}
-      />
-    )
-  }
-
-  if (!METRIC_GROUP_SLUGS.has(metric)) {
+  if (!METRIC_GROUP_SLUGS.has(metric) && !UUID_REGEX.test(metric)) {
     notFound()
   }
 
-  const redirectPath = `/dashboard/${organizationSlug}/analytics/metrics/${metric}`
-
-  const defaultInterval = 'day'
-  const today = new Date()
-  const defaultStartDate = subMonths(today, 1)
-  const defaultEndDate = today
-
-  const interval = searchParams.interval || defaultInterval
-
-  const { product_id, ...restSearchParams } = searchParams
-  const productId = product_id
-    ? Array.isArray(product_id)
-      ? product_id
-      : [product_id]
-    : undefined
-
-  if (!['year', 'month', 'week', 'day', 'hour'].includes(interval)) {
-    const urlSearchParams = new URLSearchParams({
-      ...restSearchParams,
-      interval: defaultInterval,
-    })
-    productId?.forEach((id) => urlSearchParams.append('product_id', id))
-    redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
-  }
-
-  const startDateISOString = searchParams.start_date ?? undefined
-  const endDateISOString = searchParams.end_date ?? undefined
-
-  const startDate = startDateISOString
-    ? fromISODate(startDateISOString)
-    : defaultStartDate
-  const endDate = endDateISOString
-    ? endOfDay(fromISODate(endDateISOString))
-    : defaultEndDate
-
-  const limits = await unwrap(api.GET('/v1/metrics/limits'))
-  const minDate = fromISODate(limits.min_date)
-
-  const findValidInterval = (
-    start: Date,
-    end: Date,
-    currentInterval: schemas['TimeInterval'],
-  ): schemas['TimeInterval'] => {
-    const daysDifference = Math.floor(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    )
-    if (
-      daysDifference >= limits.intervals[currentInterval].min_days &&
-      daysDifference <= limits.intervals[currentInterval].max_days
-    ) {
-      return currentInterval
+  const urlSearchParams = new URLSearchParams()
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (Array.isArray(value)) {
+      value.forEach((v) => urlSearchParams.append(key, v))
+    } else {
+      urlSearchParams.append(key, value)
     }
+  })
 
-    const intervals: schemas['TimeInterval'][] = [
-      'year',
-      'month',
-      'week',
-      'day',
-      'hour',
-    ]
-
-    if (daysDifference > limits.intervals[currentInterval].max_days) {
-      intervals.reverse()
-    }
-
-    return (
-      intervals.find(
-        (i) =>
-          daysDifference >= limits.intervals[i].min_days &&
-          daysDifference <= limits.intervals[i].max_days,
-      ) || 'day'
-    )
-  }
-
-  const validInterval = findValidInterval(startDate, endDate, interval)
-
-  if (startDate < minDate || validInterval !== interval) {
-    const urlSearchParams = new URLSearchParams({
-      ...restSearchParams,
-      start_date: toISODate(max([minDate, startDate])),
-      end_date: toISODate(endDate),
-      interval: validInterval,
-    })
-    productId?.forEach((id) => urlSearchParams.append('product_id', id))
-    redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
-  }
-
-  return <ClientPage metric={metric} organization={organization} />
+  urlSearchParams.set('section', metric)
+  redirect(
+    `/dashboard/${organization}/analytics/metrics?${urlSearchParams}`,
+    RedirectType.replace,
+  )
 }

@@ -15,6 +15,7 @@ from pytest_mock import MockerFixture
 from polar.config import settings
 from polar.organization_review.analyzer import ReviewAnalyzer, _render_scraped_site
 from polar.organization_review.schemas import (
+    CheckoutSuccessUrlData,
     DataSnapshot,
     HistoryData,
     OrganizationData,
@@ -24,6 +25,8 @@ from polar.organization_review.schemas import (
     ReviewContext,
     RiskSignalData,
     RiskSignalEntry,
+    SetupData,
+    UrlRedirectInfo,
     WebsiteData,
     WebsitePage,
 )
@@ -229,6 +232,64 @@ class TestBuildPromptRiskSignals:
         # The old 'highest' signal survives the cap because severity sorts first.
         assert "fraudulent_merchant (risk level: highest)" in prompt
         assert "(5 more signal(s) omitted)" in prompt
+
+
+class TestBuildPromptRedirects:
+    def test_renders_intermediate_hops(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "setup": SetupData(
+                    checkout_success_urls=CheckoutSuccessUrlData(
+                        unique_urls=["https://api.shop.com/success"],
+                        domains=["api.shop.com"],
+                        redirect_results=[
+                            UrlRedirectInfo(
+                                original_url="https://api.shop.com/success",
+                                final_url="https://shop.com/",
+                                final_domain="shop.com",
+                                hops=["https://bad-site.com/"],
+                                redirected=True,
+                            )
+                        ],
+                    )
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert "SUCCESS URL REDIRECT DETECTED" in prompt
+        assert (
+            "  - https://api.shop.com/success → https://bad-site.com/ → "
+            "REDIRECTS TO: https://shop.com/ (domain: shop.com)"
+        ) in prompt
+
+
+class TestBuildPromptCheckoutUrlHosts:
+    def test_no_section_without_hosts(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(_minimal_snapshot())
+        assert "## Checkout URL Host Content" not in prompt
+
+    def test_renders_each_host(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "setup": SetupData(
+                    checkout_url_hosts=[
+                        _make_website_data(summary="sells streaming subscriptions"),
+                        WebsiteData(
+                            base_url="https://other.com/", scrape_error="timeout"
+                        ),
+                    ]
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert "## Checkout URL Host Content" in prompt
+        assert "sells streaming subscriptions" in prompt
+        assert "Source: https://other.com/ (0 page(s) scraped)" in prompt
+        assert "Scrape error: timeout" in prompt
 
 
 @pytest.mark.anyio

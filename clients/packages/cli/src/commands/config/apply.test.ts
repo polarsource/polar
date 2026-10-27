@@ -169,11 +169,11 @@ const message = (exit: Exit.Exit<unknown, unknown>) =>
     : undefined
 
 describe('polar config apply', () => {
-  test('applies with --yes and reports what was applied', async () => {
+  test('applies with --confirm and reports what was applied', async () => {
     const { output, failed, applied } = await run(
       { entries: [created, kept], issues: [] },
       { status: 'applied', entries: [created, kept] },
-      ['--yes'],
+      ['--confirm'],
     )
     expect(failed).toBe(false)
     expect(applied).toBe(1)
@@ -188,7 +188,7 @@ describe('polar config apply', () => {
     )
   })
 
-  test.each(['-y', '--aladåb'])(
+  test.each(['-c', '--aladåb'])(
     'also skips the question with %s',
     async (flag) => {
       const { failed, applied } = await run(
@@ -226,7 +226,7 @@ describe('polar config apply', () => {
     expect(output).toContain('polar.json applied to Acme (sandbox): 1 entry')
   })
 
-  test('needs --yes when there is no terminal to ask', async () => {
+  test('needs --confirm when there is no terminal to ask', async () => {
     const { output, terminal, applied, exit } = await run(
       { entries: [created], issues: [] },
       { status: 'applied', entries: [created] },
@@ -268,6 +268,34 @@ describe('polar config apply', () => {
     expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
   })
 
+  test.each([
+    ['nothing changed', [kept], []],
+    ['changes were applied', [created], ['--confirm']],
+  ])(
+    'includes plan warnings in --json output when %s',
+    async (_, entries, args) => {
+      const warning: ConfigIssue = {
+        severity: 'warning',
+        code: 'unknown_event',
+        path: 'meters.0.filter.clauses.0.value',
+        message: 'No events with this name have been received yet.',
+        got: '"tool_call"',
+        location,
+      }
+      const { output, failed } = await run(
+        { entries, issues: [warning] },
+        { status: 'applied', entries },
+        [...args, '--json'],
+      )
+      expect(failed).toBe(false)
+      expect(JSON.parse(output)).toMatchObject({
+        file: 'polar.json',
+        status: 'applied',
+        issues: [{ severity: 'warning', code: 'unknown_event' }],
+      })
+    },
+  )
+
   test('fails and shows the problems when the plan has errors', async () => {
     const issues: ConfigIssue[] = [
       {
@@ -281,7 +309,7 @@ describe('polar config apply', () => {
     const { output, failed, applied } = await run(
       { entries: [created], issues },
       { status: 'rejected', issues },
-      ['--yes'],
+      ['--confirm'],
     )
     expect(failed).toBe(true)
     expect(applied).toBe(0)

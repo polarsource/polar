@@ -32,6 +32,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import BaseRoute, Match
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from starlette.websockets import WebSocketClose
+from typing_extensions import TypeForm
 
 _API_VERSION_PATTERN = re.compile(r"^(\d{4})-(\d{2})$")
 
@@ -159,6 +160,9 @@ class _VersionRange:
 
 
 _original_field_is_required = GenerateJsonSchema.field_is_required
+_original_name_required_computed_fields = (
+    GenerateJsonSchema._name_required_computed_fields
+)
 
 
 def _versioned_field_is_required(
@@ -174,8 +178,27 @@ def _versioned_field_is_required(
     return _original_field_is_required(self, field, total)
 
 
+def _versioned_name_required_computed_fields(
+    computed_fields: list[core_schema.ComputedField],
+) -> list[tuple[str, bool, core_schema.ComputedField]]:
+    return [
+        (
+            name,
+            required
+            or isinstance(field.get("serialization_exclude_if"), _VersionRange),
+            field,
+        )
+        for name, required, field in _original_name_required_computed_fields(
+            computed_fields
+        )
+    ]
+
+
 # Version availability determines presence, not requiredness within that version.
 GenerateJsonSchema.field_is_required = _versioned_field_is_required  # type: ignore[method-assign]
+GenerateJsonSchema._name_required_computed_fields = staticmethod(  # type: ignore[method-assign]
+    _versioned_name_required_computed_fields
+)
 
 
 def Version(
@@ -198,18 +221,42 @@ def _iter_model_classes(
         yield from _iter_model_classes(subclass)
 
 
+def _is_omitted(metadata: Iterable[typing.Any], version: APIVersion) -> bool:
+    return any(
+        isinstance(item, _VersionRange) and not item.includes(version)
+        for value in metadata
+        for item in (value.metadata if isinstance(value, FieldInfo) else [value])
+    )
+
+
+def _iter_omitted_union_members(
+    annotation: typing.Any, version: APIVersion
+) -> Generator[typing.Any]:
+    if typing.get_origin(annotation) is typing.Annotated:
+        member, *metadata = typing.get_args(annotation)
+        if _is_omitted(metadata, version):
+            yield member
+            return
+        annotation = member
+    for arg in typing.get_args(annotation):
+        yield from _iter_omitted_union_members(arg, version)
+
+
 def _get_omitted_schema_names(version: APIVersion) -> set[str]:
-    names: set[str] = set()
+    omitted: list[typing.Any] = []
     for model in _iter_model_classes():
         for field in model.__pydantic_fields__.values():
-            if any(
-                isinstance(metadata, _VersionRange) and not metadata.includes(version)
-                for metadata in field.metadata
-            ):
-                schema = TypeAdapter(
-                    types.GenericAlias(list, (field.annotation,))
-                ).json_schema()
-                names.update(schema.get("$defs", {}))
+            if _is_omitted(field.metadata, version):
+                omitted.append(field.annotation)
+            else:
+                omitted.extend(_iter_omitted_union_members(field.annotation, version))
+
+    names: set[str] = set()
+    for annotation in omitted:
+        schema = TypeAdapter(
+            typing.cast(TypeForm[typing.Any], types.GenericAlias(list, (annotation,)))
+        ).json_schema(mode="serialization")
+        names.update(schema.get("$defs", {}))
     return names
 
 

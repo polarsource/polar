@@ -1,6 +1,6 @@
 import { RowData } from '@tanstack/react-table'
 
-import { MoveDown, MoveUp } from 'lucide-react'
+import { MoveDown, MoveUp } from '../../icons'
 import { twMerge } from 'tailwind-merge'
 import { Button } from '../Button'
 import { DataTableColumn } from './features'

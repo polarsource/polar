@@ -6,6 +6,7 @@ import stripe as stripe_lib
 from httpx import AsyncClient, Response
 from pytest_mock import MockerFixture
 
+from polar.customer_seat.service import SeatService
 from polar.enums import TaxProcessor
 from polar.integrations.stripe.service import StripeService
 from polar.kit.address import Address, CountryAlpha2
@@ -30,7 +31,7 @@ from polar.refund.service import (
     RefundPaymentTransactionNotFound,
 )
 from polar.refund.service import refund as refund_service
-from polar.tax.calculation import TaxCalculationService
+from polar.tax.calculation import TaxCalculationService, tax_calculation
 from polar.tax.calculation.base import AlreadyRevertedError
 from polar.wallet.service import wallet as wallet_service
 from tests.fixtures.database import SaveFixture
@@ -39,6 +40,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_order_and_payment,
     create_payment,
+    create_product,
     create_refund,
     create_wallet_billing,
 )
@@ -225,13 +227,9 @@ class TestCreate(StripeRefund):
             await refund_service.create(
                 session,
                 order,
-                RefundCreate(
-                    order_id=order.id,
-                    reason=RefundReason.service_disruption,
-                    amount=1000,
-                    comment=None,
-                    revoke_benefits=False,
-                ),
+                amount=1000,
+                tax_amount=250,
+                reason=RefundReason.service_disruption,
             )
 
         assert exc_info.value.payment_id == payment.id
@@ -272,13 +270,9 @@ class TestCreate(StripeRefund):
             await refund_service.create(
                 session,
                 order,
-                RefundCreate(
-                    order_id=order.id,
-                    reason=RefundReason.service_disruption,
-                    amount=1000,
-                    comment=None,
-                    revoke_benefits=False,
-                ),
+                amount=1000,
+                tax_amount=250,
+                reason=RefundReason.service_disruption,
             )
 
         order_repository = OrderRepository.from_session(session)
@@ -343,13 +337,9 @@ class TestCreate(StripeRefund):
         await refund_service.create(
             session,
             order,
-            RefundCreate(
-                order_id=order.id,
-                reason=RefundReason.service_disruption,
-                amount=refund_amount,
-                comment=None,
-                revoke_benefits=False,
-            ),
+            amount=refund_amount,
+            tax_amount=refund_tax_amount,
+            reason=RefundReason.service_disruption,
         )
 
         order_repository = OrderRepository.from_session(session)
@@ -433,13 +423,9 @@ class TestCreate(StripeRefund):
         await refund_service.create(
             session,
             order,
-            RefundCreate(
-                order_id=order.id,
-                reason=RefundReason.service_disruption,
-                amount=refund_amount,
-                comment=None,
-                revoke_benefits=False,
-            ),
+            amount=refund_amount,
+            tax_amount=refund_tax_amount,
+            reason=RefundReason.service_disruption,
         )
 
         order_repository = OrderRepository.from_session(session)
@@ -447,6 +433,82 @@ class TestCreate(StripeRefund):
         assert updated_order is not None
         assert updated_order.refunded_amount == expected_refunded_amount
         assert updated_order.refunded_tax_amount == expected_refunded_tax_amount
+
+    async def test_valid_tax_only_refund(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, payment, _transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=100_00,
+            tax_amount=20_00,
+        )
+        stripe_service_mock.create_refund.return_value = build_stripe_refund(
+            amount=20_00, charge_id=payment.processor_id
+        )
+
+        refund = await refund_service.create(
+            session,
+            order,
+            amount=0,
+            tax_amount=20_00,
+            reason=RefundReason.other,
+        )
+
+        assert refund.status == RefundStatus.succeeded
+        assert refund.amount == 0
+        assert refund.tax_amount == 20_00
+        assert stripe_service_mock.create_refund.call_args.kwargs["amount"] == 20_00
+
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.refunded_amount == 0
+        assert updated_order.refunded_tax_amount == 20_00
+
+    async def test_valid_refunded_tax(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, payment, transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=100_00,
+            tax_amount=20_00,
+        )
+        order.update_refunds(refunded_amount=0, refunded_tax_amount=20_00)
+        await save_fixture(order)
+
+        stripe_refund = build_stripe_refund(
+            amount=100_00, charge_id=payment.processor_id
+        )
+        stripe_service_mock.create_refund.return_value = stripe_refund
+
+        await refund_service.create(
+            session,
+            order,
+            amount=100_00,
+            tax_amount=0,
+            reason=RefundReason.service_disruption,
+        )
+
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.refunded_amount == 100_00
+        assert updated_order.refunded_tax_amount == 20_00
+        assert updated_order.status == OrderStatus.refunded
 
     async def test_valid_pending(
         self,
@@ -573,6 +635,40 @@ class TestCreate(StripeRefund):
         assert updated_order.refunded_amount == 600
         assert updated_order.refunded_tax_amount == 150
 
+    async def test_from_stripe_valid_refunded_tax(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, payment, transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=100_00,
+            tax_amount=20_00,
+        )
+        order.update_refunds(refunded_amount=0, refunded_tax_amount=20_00)
+        await save_fixture(order)
+
+        stripe_refund = build_stripe_refund(
+            status="succeeded",
+            amount=100_00,
+            charge_id=payment.processor_id,
+        )
+        refund = await refund_service.create_from_stripe(session, stripe_refund)
+        assert refund.status == RefundStatus.succeeded
+        assert refund.amount == 100_00
+        assert refund.tax_amount == 0
+
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == OrderStatus.refunded
+        assert updated_order.refunded_amount == 100_00
+        assert updated_order.refunded_tax_amount == 20_00
+
     async def test_missing_related_dispute(
         self,
         session: AsyncSession,
@@ -678,6 +774,49 @@ class TestCreateFromDispute:
         assert refund.revoke_benefits is True
 
         assert refund_transaction_service_mock.create.call_count == 1
+
+    async def test_seat_based_order_revokes_seats(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        refund_transaction_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        customer_seat_service_mock = mocker.patch(
+            "polar.refund.service.customer_seat_service", spec=SeatService
+        )
+        benefit_grant_service_mock = mocker.patch(
+            "polar.refund.service.benefit_grant_service"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=0,
+        )
+        order.seats = 3
+        await save_fixture(order)
+        dispute = await create_dispute(save_fixture, order, payment, amount=1000)
+
+        await refund_service.create_from_dispute(
+            session, dispute, "DISPUTE_BALANCE_TRANSACTION_ID"
+        )
+
+        customer_seat_service_mock.revoke_all_seats_for_order.assert_awaited_once()
+        assert (
+            customer_seat_service_mock.revoke_all_seats_for_order.await_args.args[1].id
+            == order.id
+        )
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_not_called()
 
     async def test_valid_exceeding_refund(
         self,
@@ -865,6 +1004,71 @@ class TestUpdatedWebhooks(StripeRefund):
 
 
 @pytest.mark.anyio
+class TestTaxReversals:
+    @pytest.mark.parametrize("processor", [TaxProcessor.stripe, TaxProcessor.numeral])
+    async def test_tax_only_then_remaining_refund(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        processor: TaxProcessor,
+    ) -> None:
+        mocker.patch(
+            "polar.refund.service.tax_calculation_service", new=tax_calculation
+        )
+        provider = mocker.patch(
+            f"polar.tax.calculation.{processor.value}_tax_service.revert",
+            side_effect=["tax_refund_1", "tax_refund_2"],
+        )
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=10000,
+            tax_amount=2000,
+            tax_processor=processor,
+            tax_transaction_processor_id="tax_transaction_123",
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        for status in ("pending", "failed", "succeeded"):
+            ignored = await create_refund(
+                save_fixture,
+                order,
+                payment,
+                amount=0,
+                tax_amount=100,
+                status=status,
+                processor_id=f"ignored_{status}",
+            )
+            if status != "succeeded":
+                ignored.tax_transaction_processor_id = f"tax_refund_{status}"
+
+        refunds = []
+        for index, amount in enumerate((0, 10000)):
+            refund = await create_refund(
+                save_fixture,
+                order,
+                payment,
+                amount=amount,
+                tax_amount=1000,
+                processor_id=f"refund_{index}",
+            )
+            await refund_service._on_succeeded(session, refund)
+            refunds.append(refund)
+
+        assert provider.await_args_list == [
+            mocker.call("tax_transaction_123", str(refunds[0].id), 6000, 1000),
+            mocker.call("tax_transaction_123", str(refunds[1].id), 6000, 1000),
+        ]
+        assert refunds[0].tax_transaction_processor_id == "tax_refund_1"
+        assert refunds[1].tax_transaction_processor_id == "tax_refund_2"
+        assert order.refunded_amount == 10000
+        assert order.refunded_tax_amount == 2000
+
+
+@pytest.mark.anyio
 class TestOrderUpdatedWebhook(StripeRefund):
     """Test that order.updated webhook is sent when refunds are processed."""
 
@@ -1010,18 +1214,17 @@ class TestOrganizationRefundsBlocked:
             status=OrderStatus.paid,
         )
 
-        # Try to create a refund
-        create_schema = RefundCreate(
-            order_id=order.id,
-            amount=100,
-            reason=RefundReason.customer_request,
-        )
-
         from polar.refund.service import RefundsBlocked
 
         # Should raise RefundsBlocked exception
         with pytest.raises(RefundsBlocked) as exc_info:
-            await refund_service.create(session, order, create_schema)
+            await refund_service.create(
+                session,
+                order,
+                amount=100,
+                tax_amount=0,
+                reason=RefundReason.customer_request,
+            )
 
         assert exc_info.value.order.id == order.id
 
@@ -1058,13 +1261,13 @@ class TestOrganizationRefundsBlocked:
         )
 
         # Create a refund (should succeed)
-        create_schema = RefundCreate(
-            order_id=order.id,
+        refund = await refund_service.create(
+            session,
+            order,
             amount=100,
+            tax_amount=0,
             reason=RefundReason.customer_request,
         )
-
-        refund = await refund_service.create(session, order, create_schema)
 
         # Verify refund was created
         assert refund is not None

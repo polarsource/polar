@@ -1,7 +1,7 @@
 import { useAuthSessionStart } from '@/hooks'
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { useToast } from '@/components/Toast/use-toast'
-import GitHub from '@mui/icons-material/GitHub'
+import { GitHub } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, type ButtonProps } from '@polar-sh/orbit'
 import { getGitHubAuthorizeLoginURL } from '@/utils/auth'

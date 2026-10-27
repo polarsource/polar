@@ -12,6 +12,7 @@ from polar.integrations.tinybird.client import TinybirdClient
 from polar.meter.service import meter as meter_service
 from polar.models import Benefit, Customer, Meter, Organization, Product, Subscription
 from polar.models.benefit import BenefitType
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.tiers import Tiers, TierType
 from tests.fixtures.database import SaveFixture
@@ -21,6 +22,7 @@ from tests.fixtures.random_objects import (
     create_event,
     create_product,
     create_product_price_metered_tiers,
+    create_subscription,
 )
 
 
@@ -130,6 +132,49 @@ class TestMeterArchive:
         await save_fixture(price)
 
         # Now archiving the meter should succeed
+        result = await meter_service.archive(session, meter)
+
+        assert result.archived_at is not None
+
+    async def test_archive_with_archived_product_price_and_active_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        product_metered_unit.is_archived = True
+        await save_fixture(product_metered_unit)
+        price = product_metered_unit.prices[0]
+        price.is_archived = True
+        await save_fixture(price)
+
+        with pytest.raises(PolarRequestValidationError) as exc:
+            await meter_service.archive(session, meter)
+        assert (
+            "Cannot archive meter that is still used by active subscriptions"
+            in exc.value.errors()[0]["msg"]
+        )
+
+    async def test_archive_with_archived_product_price_and_canceled_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        product_metered_unit: Product,
+        customer: Customer,
+    ) -> None:
+        await create_subscription(
+            save_fixture,
+            product=product_metered_unit,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+        )
+        price = product_metered_unit.prices[0]
+        price.is_archived = True
+        await save_fixture(price)
+
         result = await meter_service.archive(session, meter)
 
         assert result.archived_at is not None

@@ -3,7 +3,7 @@
 import { CheckoutHeroPrice } from '@polar-sh/checkout/components'
 import { useTranslations } from '@polar-sh/i18n'
 import { cn } from '@polar-sh/ui/lib/utils'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown } from '@polar-sh/orbit/icons'
 import { useId, useState } from 'react'
 import {
   CheckoutOrderSummary,

@@ -3,8 +3,10 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
+import logfire
 import stripe as stripe_lib
 import structlog
+from opentelemetry import trace
 
 from polar.config import settings
 from polar.enums import TaxBehavior
@@ -104,6 +106,16 @@ def _from_stripe_breakdown_item(
 
 
 class StripeTaxService(TaxServiceProtocol):
+    @logfire.instrument(
+        "stripe.calculate",
+        extract_args=[
+            "identifier",
+            "currency",
+            "amount",
+            "tax_behavior",
+            "customer_exempt",
+        ],
+    )
     async def calculate(
         self,
         identifier: uuid.UUID | str,
@@ -115,6 +127,8 @@ class StripeTaxService(TaxServiceProtocol):
         tax_ids: list[TaxID],
         customer_exempt: bool,
     ) -> TaxCalculation:
+        span = trace.get_current_span()
+        span.set_attribute("stripe.api_version", stripe_lib.api_version)
         # Compute an idempotency key based on the input parameters to work as a sort of cache
         address_str = address.model_dump_json()
         tax_ids_str = ",".join(f"{tax_id[0]}:{tax_id[1]}" for tax_id in tax_ids)
@@ -181,6 +195,7 @@ class StripeTaxService(TaxServiceProtocol):
             raise InvalidTaxLocation(e) from e
         else:
             assert calculation.id is not None
+            span.set_attribute("stripe.calculation_id", calculation.id)
             total_amount = (
                 calculation.tax_amount_exclusive + calculation.tax_amount_inclusive
             )
@@ -197,12 +212,25 @@ class StripeTaxService(TaxServiceProtocol):
                 "tax_breakdown": tax_breakdown,
             }
 
+    @logfire.instrument("stripe.record", extract_args=["calculation_id", "reference"])
     async def record(self, calculation_id: str, reference: str) -> str:
+        span = trace.get_current_span()
+        span.set_attribute("stripe.api_version", stripe_lib.api_version)
         transaction = await stripe_service.create_tax_transaction(
             calculation_id, reference
         )
+        span.set_attribute("stripe.transaction_id", transaction.id)
         return transaction.id
 
+    @logfire.instrument(
+        "stripe.revert",
+        extract_args=[
+            "transaction_id",
+            "reference",
+            "reverted_amount",
+            "reverted_tax_amount",
+        ],
+    )
     async def revert(
         self,
         transaction_id: str,
@@ -210,12 +238,16 @@ class StripeTaxService(TaxServiceProtocol):
         reverted_amount: int | None = None,
         reverted_tax_amount: int | None = None,
     ) -> str:
+        span = trace.get_current_span()
+        span.set_attribute("stripe.api_version", stripe_lib.api_version)
         try:
             if reverted_amount is None and reverted_tax_amount is None:
+                span.set_attribute("stripe.refund_type", "full")
                 transaction = await stripe_service.revert_tax_transaction(
                     transaction_id, "full", reference
                 )
             else:
+                span.set_attribute("stripe.refund_type", "partial")
                 assert reverted_amount is not None
                 transaction = await stripe_service.revert_tax_transaction(
                     transaction_id, "partial", reference, -reverted_amount
@@ -233,6 +265,7 @@ class StripeTaxService(TaxServiceProtocol):
                 error=str(e),
             )
             raise TaxRevertError() from e
+        span.set_attribute("stripe.refund_id", transaction.id)
         return transaction.id
 
     async def backfill(

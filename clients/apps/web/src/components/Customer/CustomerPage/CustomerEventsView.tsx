@@ -9,7 +9,7 @@ import { Events } from '../../Events/Events'
 import EventSelect from '../../Events/EventSelect'
 import MeterSelector from '../../Meter/MeterSelector'
 import { EmptyState } from '../../Shared/EmptyState'
-import ShortTextOutlined from '@mui/icons-material/ShortTextOutlined'
+import { ShortTextOutlined } from '@polar-sh/orbit/icons'
 import { useCustomerMetricsParams } from './useCustomerMetricsParams'
 
 export const CustomerEventsView = ({

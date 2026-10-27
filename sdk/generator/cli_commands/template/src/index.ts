@@ -13,5 +13,12 @@ export const commands = [
   {{ service.name | service_name }},
 {% endfor %}
 ]
-export { ApiRuntime, ApiCommandError } from './runtime'
-export type { ApiOperation, ApiPreview, PreviewField, Environment } from './runtime'
+export { ApiRuntime, ApiCommandError, CURRENT_API_VERSION } from './runtime'
+export type {
+  ApiClients,
+  ApiOperation,
+  ApiPreview,
+  ApiVersion,
+  PreviewField,
+  Environment,
+} from './runtime'

@@ -30,7 +30,7 @@ const customerEmails: {
   {
     key: 'subscription_cycled',
     title: 'Subscription cycled',
-    description: 'Sent when a subscription automatically renews',
+    description: 'Sent when a subscription renews or is invoiced for usage',
   },
   {
     key: 'subscription_cycled_after_trial',

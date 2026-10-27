@@ -55,6 +55,7 @@ from polar.kit.trial import (
     TrialConfigurationOutputMixin,
     TrialInterval,
 )
+from polar.kit.versioning import Version
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
@@ -70,6 +71,7 @@ from polar.product.schemas import (
     ProductPriceCreateList,
     ProductPriceList,
 )
+from polar.version import V2026_10
 
 Amount = Annotated[
     int,
@@ -393,10 +395,59 @@ class CheckoutProductsCreate(CheckoutCreateBase):
     )
 
 
+class CheckoutProductsExternalCreate(CheckoutCreateBase):
+    """
+    Create a new checkout session from a list of products,
+    referenced by their external ID.
+    Customers will be able to switch between those products.
+
+    Metadata set on the checkout will be copied
+    to the resulting order and/or subscription.
+    """
+
+    currency: CheckoutCurrency | None = None
+    external_products: list[str] = Field(
+        description=(
+            "List of product external IDs available to select at that checkout. "
+            "The first one will be selected by default."
+        ),
+        min_length=1,
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_products(cls, data: Any) -> Any:
+        if isinstance(data, dict) and "products" in data:
+            raise ValueError("products and external_products are mutually exclusive.")
+        return data
+
+    @field_validator("external_products")
+    @classmethod
+    def external_products_must_be_unique(cls, v: list[str]) -> list[str]:
+        if len(v) != len(set(v)):
+            raise ValueError("Product external IDs must be unique.")
+        return v
+
+    prices: dict[str, ProductPriceCreateList] | None = Field(
+        default=None,
+        description=(
+            "Optional mapping of product external IDs to a list of ad-hoc prices "
+            "to create for that product. "
+            "If not set, catalog prices of the product will be used."
+        ),
+    )
+
+
+def _checkout_create_discriminator(v: Any) -> str:
+    if isinstance(v, dict):
+        return "external" if "external_products" in v else "products"
+    return "external" if isinstance(v, CheckoutProductsExternalCreate) else "products"
+
+
 CheckoutCreate = Annotated[
-    CheckoutProductsCreate
-    | SkipJsonSchema[CheckoutProductCreate]
-    | SkipJsonSchema[CheckoutPriceCreate],
+    Annotated[CheckoutProductsCreate, Tag("products")]
+    | Annotated[CheckoutProductsExternalCreate, Tag("external")],
+    Discriminator(_checkout_create_discriminator),
     SetSchemaReference("CheckoutCreate"),
 ]
 
@@ -407,17 +458,6 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
         description=(
             "ID of the product to checkout. "
             "Must be present in the checkout's product list."
-        ),
-    )
-    product_price_id: UUID4 | None = Field(
-        default=None,
-        description=(
-            "ID of the product price to checkout. "
-            "Must correspond to a price present in the checkout's product list."
-        ),
-        deprecated=(
-            "Use `product_id` unless you have a product with legacy pricing "
-            "including several recurring intervals."
         ),
     )
     amount: Amount | None = None
@@ -499,7 +539,34 @@ class CheckoutConfirmStripe(CheckoutConfirmBase):
     )
 
 
-CheckoutConfirm = CheckoutConfirmStripe
+class CheckoutConfirmSharedPaymentToken(CheckoutConfirmBase):
+    """
+    Confirm a checkout session using a Stripe shared payment token granted by an agent.
+
+    Only supported for one-time payments.
+    """
+
+    shared_payment_token_id: str = Field(
+        pattern=r"^spt_[A-Za-z0-9_]+$",
+        description="ID of the Stripe shared payment token (`spt_...`).",
+    )
+    confirmation_token_id: SkipJsonSchema[None] = None
+
+
+def get_checkout_confirm_discriminator_value(v: Any) -> str:
+    if isinstance(v, dict):
+        shared_payment_token_id = v.get("shared_payment_token_id")
+    else:
+        shared_payment_token_id = getattr(v, "shared_payment_token_id", None)
+    return "shared_payment_token" if shared_payment_token_id is not None else "stripe"
+
+
+CheckoutConfirm = Annotated[
+    Annotated[CheckoutConfirmStripe, Tag("stripe")]
+    | Annotated[CheckoutConfirmSharedPaymentToken, Tag("shared_payment_token")],
+    Discriminator(get_checkout_confirm_discriminator_value),
+    SetSchemaReference("CheckoutConfirm"),
+]
 
 
 class CheckoutOpened(Schema):
@@ -620,7 +687,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description="ID of the organization owning the checkout session."
     )
     product_id: UUID4 | None = Field(description="ID of the product to checkout.")
-    product_price_id: UUID4 | None = Field(
+    product_price_id: Annotated[UUID4 | None, Version(up_to=V2026_10)] = Field(
         description="ID of the product price to checkout.", deprecated=True
     )
     discount_id: UUID4 | None = Field(
@@ -675,8 +742,8 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
 
     payment_processor_metadata: dict[str, str]
 
-    customer_billing_address_fields: SkipJsonSchema[
-        CheckoutCustomerBillingAddressFields
+    customer_billing_address_fields: Annotated[
+        SkipJsonSchema[CheckoutCustomerBillingAddressFields], Version(up_to=V2026_10)
     ] = Field(
         deprecated="Use `billing_address_fields` instead.",
     )
@@ -687,7 +754,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         )
     )
 
-    @computed_field(deprecated="Use `net_amount`.")
+    @computed_field(
+        exclude_if=Version(up_to=V2026_10).exclude_if, deprecated="Use `net_amount`."
+    )
     def subtotal_amount(self) -> SkipJsonSchema[int | None]:
         return self.net_amount
 
@@ -773,7 +842,9 @@ class Checkout(MetadataOutputMixin, TrialConfigurationOutputMixin, CheckoutBase)
         description=_external_customer_id_description,
         validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
     )
-    customer_external_id: SkipJsonSchema[str | None] = Field(
+    customer_external_id: Annotated[
+        SkipJsonSchema[str | None], Version(up_to=V2026_10)
+    ] = Field(
         validation_alias=AliasChoices("external_customer_id", "customer_external_id"),
         deprecated="Use `external_customer_id` instead.",
     )

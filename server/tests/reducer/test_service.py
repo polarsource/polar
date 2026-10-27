@@ -5,8 +5,10 @@ from decimal import Decimal
 from typing import Any, cast
 
 import pytest
+from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 
+from polar.event.system import SystemEvent
 from polar.meter.aggregation import (
     Aggregation,
     AggregationFunction,
@@ -14,7 +16,17 @@ from polar.meter.aggregation import (
     PropertyAggregation,
     UniqueAggregation,
 )
-from polar.models import Customer, Event, Meter, Organization, Reducer, ReducerBucket
+from polar.models import (
+    Customer,
+    CustomerMeter,
+    Event,
+    Meter,
+    Order,
+    Organization,
+    Reducer,
+    ReducerBucket,
+    StagedEvent,
+)
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -31,6 +43,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_event,
     create_meter,
+    create_order,
     create_reducer,
 )
 
@@ -478,6 +491,40 @@ class TestSyncBucket:
         assert bucket.sealed_at is None
         assert bucket.synced_at is not None
 
+    async def test_counts_events_waiting_in_staged_events(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        sum_reducer: Reducer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.reducer.service.enqueue_outpost_event")
+        await create_tokens_event(save_fixture, organization, 3)
+        for external_customer_id, tokens in (("external", 4), ("other", 5)):
+            await save_fixture(
+                StagedEvent(
+                    name=METER_TEST_EVENT,
+                    source=EventSource.user,
+                    timestamp=CLOSED,
+                    organization_id=organization.id,
+                    external_customer_id=external_customer_id,
+                    user_metadata={"tokens": tokens},
+                )
+            )
+
+        await reducer_service.sync_bucket(
+            session, sum_reducer.id, BUCKET_START, None, "external"
+        )
+
+        [bucket] = await get_buckets(session)
+        assert (bucket.count, bucket.sum, bucket.min, bucket.max) == (
+            2,
+            Decimal(7),
+            Decimal(3),
+            Decimal(4),
+        )
+
     async def test_marks_closed_bucket_contributions_synced(
         self,
         save_fixture: SaveFixture,
@@ -606,6 +653,7 @@ async def get_intervals(
             bucket.sealed_at is not None,
         )
         for bucket in await get_buckets(session)
+        if (bucket.customer_id, bucket.external_customer_id) == (None, "external")
     ]
 
 
@@ -646,15 +694,18 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            billable_from=START,
-            cutoff=CUTOFF,
+            until=CUTOFF,
         )
 
         assert await get_intervals(session) == [
             (BUCKET_START, CUTOFF, 1, 3, Decimal(5), True),
             (CUTOFF, NEXT_BUCKET_START, 1, 1, Decimal(3), False),
         ]
-        assert [bucket.synced_at for bucket in await get_buckets(session)] == [
+        assert [
+            bucket.synced_at
+            for bucket in await get_buckets(session)
+            if (bucket.customer_id, bucket.external_customer_id) == (None, "external")
+        ] == [
             BILLED_AT,
             BILLED_AT,
         ]
@@ -695,8 +746,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            billable_from=START,
-            cutoff=NEXT_BUCKET_START,
+            until=NEXT_BUCKET_START,
         )
 
         buckets = sorted(
@@ -736,8 +786,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            billable_from=START,
-            cutoff=CUTOFF,
+            until=CUTOFF,
         )
 
         assert await get_intervals(session) == [
@@ -745,7 +794,7 @@ class TestSealBuckets:
             (CUTOFF, NEXT_BUCKET_START, 1, 0, None, False),
         ]
 
-    async def test_leaves_usage_before_start_open(
+    async def test_persists_boundary_without_usage(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -753,30 +802,24 @@ class TestSealBuckets:
         external_customer: Customer,
         organization: Organization,
     ) -> None:
-        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
-            await create_tokens_event(
-                save_fixture,
-                organization,
-                tokens,
-                timestamp=timestamp,
-                ingested_at=INGESTED_AT,
-            )
-
+        await reducer_service._seal_buckets(
+            session, [max_reducer], external_customer, until=CUTOFF
+        )
+        await create_tokens_event(
+            save_fixture,
+            organization,
+            5,
+            timestamp=CLOSED,
+            ingested_at=BILLED_AT + timedelta(minutes=1),
+        )
         await reducer_service.sync_bucket(
             session, max_reducer.id, BUCKET_START, None, "external"
         )
 
-        await reducer_service._seal_buckets(
-            session,
-            [max_reducer],
-            external_customer,
-            billable_from=CUTOFF,
-            cutoff=NEXT_BUCKET_START,
-        )
-
         assert await get_intervals(session) == [
-            (BUCKET_START, CUTOFF, 1, 1, Decimal(5), False),
-            (CUTOFF, NEXT_BUCKET_START, 1, 1, Decimal(3), True),
+            (BUCKET_START, CUTOFF, 1, 0, None, True),
+            (BUCKET_START, CUTOFF, 2, 1, Decimal(5), False),
+            (CUTOFF, NEXT_BUCKET_START, 1, 0, None, False),
         ]
 
     async def test_skips_split_of_sealed_bucket(
@@ -797,19 +840,13 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            billable_from=START,
-            cutoff=NEXT_BUCKET_START,
+            until=NEXT_BUCKET_START,
         )
 
-        quantities = await reducer_service._seal_buckets(
-            session,
-            [max_reducer],
-            external_customer,
-            billable_from=START,
-            cutoff=CUTOFF,
+        await reducer_service._seal_buckets(
+            session, [max_reducer], external_customer, until=CUTOFF
         )
 
-        assert quantities == {max_reducer.id: Decimal(0)}
         assert await get_intervals(session) == [
             (BUCKET_START, NEXT_BUCKET_START, 1, 1, Decimal(5), True),
         ]
@@ -832,8 +869,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            billable_from=START,
-            cutoff=NEXT_BUCKET_START,
+            until=NEXT_BUCKET_START,
         )
         await create_tokens_event(
             save_fixture,
@@ -846,15 +882,10 @@ class TestSealBuckets:
             session, max_reducer.id, BUCKET_START, None, "external"
         )
 
-        quantities = await reducer_service._seal_buckets(
-            session,
-            [max_reducer],
-            external_customer,
-            billable_from=START,
-            cutoff=CUTOFF,
+        await reducer_service._seal_buckets(
+            session, [max_reducer], external_customer, until=CUTOFF
         )
 
-        assert quantities == {max_reducer.id: Decimal(0)}
         assert await get_intervals(session) == [
             (BUCKET_START, NEXT_BUCKET_START, 1, 1, Decimal(5), True),
             (BUCKET_START, NEXT_BUCKET_START, 2, 1, Decimal(7), False),
@@ -887,8 +918,7 @@ class TestSealBuckets:
                 session,
                 [max_reducer],
                 external_customer,
-                billable_from=START,
-                cutoff=cutoff,
+                until=cutoff,
             )
 
         assert await get_intervals(session) == [
@@ -922,8 +952,7 @@ class TestSealBuckets:
             session,
             [max_reducer],
             external_customer,
-            billable_from=START,
-            cutoff=CUTOFF,
+            until=CUTOFF,
         )
 
         await reducer_service.rollup(
@@ -952,6 +981,147 @@ class TestSealBuckets:
             (CUTOFF, NEXT_BUCKET_START, 1, 2, Decimal(7), False),
         ]
 
+
+@pytest.fixture
+async def order(save_fixture: SaveFixture, external_customer: Customer) -> Order:
+    return await create_order(save_fixture, customer=external_customer)
+
+
+@pytest.mark.anyio
+class TestBillBuckets:
+    @pytest.fixture(autouse=True)
+    def now(self, mocker: MockerFixture) -> None:
+        mocker.patch("polar.reducer.service.utc_now", return_value=BILLED_AT)
+        mocker.patch("polar.reducer.service.enqueue_job")
+
+    async def test_marks_sealed_buckets_billed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+        order: Order,
+    ) -> None:
+        old = datetime(2026, 10, 7, 11, tzinfo=UTC)
+        for timestamp, tokens in ((old, 4), (CLOSED, 5), (NEXT_BUCKET_START, 6)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+            await reducer_service.sync_bucket(
+                session,
+                max_reducer.id,
+                get_reducer_bucket_start(timestamp),
+                None,
+                "external",
+            )
+        await reducer_service._seal_buckets(
+            session, [max_reducer], external_customer, until=NEXT_BUCKET_START
+        )
+
+        quantities = await reducer_service._bill_buckets(
+            session,
+            [max_reducer],
+            external_customer,
+            order_id=order.id,
+            since=START,
+            until=NEXT_BUCKET_START,
+        )
+
+        assert quantities == {max_reducer.id: Decimal(5)}
+        assert [
+            (bucket.bucket_start, bucket.billed_at, bucket.order_id)
+            for bucket in await get_buckets(session)
+        ] == [
+            (old, BILLED_AT, order.id),
+            (BUCKET_START, BILLED_AT, order.id),
+            (NEXT_BUCKET_START, None, None),
+        ]
+
+    async def test_leaves_usage_before_since_unbilled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+        order: Order,
+    ) -> None:
+        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+        await reducer_service.sync_bucket(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+        for at in (CUTOFF, NEXT_BUCKET_START):
+            await reducer_service._seal_buckets(
+                session, [max_reducer], external_customer, until=at
+            )
+
+        quantities = await reducer_service._bill_buckets(
+            session,
+            [max_reducer],
+            external_customer,
+            order_id=order.id,
+            since=CUTOFF,
+            until=NEXT_BUCKET_START,
+        )
+
+        assert quantities == {max_reducer.id: Decimal(3)}
+        assert [
+            bucket.order_id
+            for bucket in await get_buckets(session)
+            if (bucket.customer_id, bucket.external_customer_id) == (None, "external")
+        ] == [
+            None,
+            order.id,
+        ]
+
+    async def test_bills_once(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+        order: Order,
+    ) -> None:
+        await create_tokens_event(
+            save_fixture, organization, 5, ingested_at=INGESTED_AT
+        )
+        await reducer_service.sync_bucket(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+        await reducer_service._seal_buckets(
+            session, [max_reducer], external_customer, until=NEXT_BUCKET_START
+        )
+
+        quantities = [
+            await reducer_service._bill_buckets(
+                session,
+                [max_reducer],
+                external_customer,
+                order_id=order.id,
+                since=START,
+                until=NEXT_BUCKET_START,
+            )
+            for _ in range(2)
+        ]
+
+        assert quantities == [
+            {max_reducer.id: Decimal(5)},
+            {max_reducer.id: Decimal(0)},
+        ]
+
     @pytest.mark.parametrize(
         ("aggregation", "expected"),
         [
@@ -975,7 +1145,7 @@ class TestSealBuckets:
         ],
         ids=["count", "sum", "avg", "min", "max"],
     )
-    async def test_returns_sealed_quantity(
+    async def test_returns_billed_quantity(
         self,
         aggregation: Aggregation,
         expected: Decimal,
@@ -983,6 +1153,7 @@ class TestSealBuckets:
         session: AsyncSession,
         external_customer: Customer,
         organization: Organization,
+        order: Order,
     ) -> None:
         meter = await create_meter(
             save_fixture, organization=organization, aggregation=aggregation
@@ -1006,12 +1177,17 @@ class TestSealBuckets:
                 session, reducer.id, bucket_start, None, "external"
             )
 
-        quantities = await reducer_service._seal_buckets(
+        await reducer_service._seal_buckets(
+            session, [reducer], external_customer, until=NEXT_BUCKET_START
+        )
+
+        quantities = await reducer_service._bill_buckets(
             session,
             [reducer],
             external_customer,
-            billable_from=START,
-            cutoff=NEXT_BUCKET_START,
+            order_id=order.id,
+            since=START,
+            until=NEXT_BUCKET_START,
         )
 
         assert quantities == {reducer.id: expected}
@@ -1019,8 +1195,35 @@ class TestSealBuckets:
 
 
 @pytest.mark.anyio
+class TestEnqueueSeal:
+    @pytest.mark.parametrize(
+        ("now", "delay"),
+        [
+            (CUTOFF + timedelta(minutes=5), 6 * 60 * 1000),
+            (CUTOFF + timedelta(minutes=20), 0),
+        ],
+    )
+    def test_waits_for_the_buckets(
+        self,
+        now: datetime,
+        delay: int,
+        mocker: MockerFixture,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        mocker.patch("polar.reducer.service.utc_now", return_value=now)
+        enqueue_job = mocker.patch("polar.reducer.service.enqueue_job")
+
+        reducer_service.enqueue_seal(customer.id, meter.id, at=CUTOFF)
+
+        enqueue_job.assert_called_once_with(
+            "reducer.seal", customer.id, meter.id, CUTOFF.isoformat(), delay=delay
+        )
+
+
+@pytest.mark.anyio
 class TestSeal:
-    async def test_seals_the_meters_reducers(
+    async def test_seals_the_meters_reducer(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -1032,18 +1235,11 @@ class TestSeal:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        seal = mocker.patch.object(
-            reducer_service, "_seal_buckets", return_value={reducer.id: Decimal(3)}
-        )
+        seal = mocker.patch.object(reducer_service, "_seal_buckets")
 
-        quantities = await reducer_service.seal(
-            session, customer, [meter.id], billable_from=START, cutoff=CUTOFF
-        )
+        await reducer_service.seal(session, customer, meter.id, at=CUTOFF)
 
-        assert quantities == {meter.id: Decimal(3)}
-        seal.assert_called_once_with(
-            session, [reducer], customer, billable_from=START, cutoff=CUTOFF
-        )
+        seal.assert_called_once_with(session, [reducer], customer, until=CUTOFF)
 
     async def test_logs_failures_without_raising(
         self,
@@ -1057,9 +1253,310 @@ class TestSeal:
         await create_reducer(save_fixture, organization=organization, meters=[meter])
         mocker.patch.object(reducer_service, "_seal_buckets", side_effect=RuntimeError)
 
-        quantities = await reducer_service.seal(
-            session, customer, [meter.id], billable_from=START, cutoff=CUTOFF
+        await reducer_service.seal(session, customer, meter.id, at=CUTOFF)
+
+        assert await session.get(Meter, meter.id) is not None
+
+
+@pytest.mark.anyio
+class TestBill:
+    async def test_seals_then_bills_the_meters_reducers(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        seal = mocker.patch.object(reducer_service, "_seal_buckets")
+        bill = mocker.patch.object(
+            reducer_service, "_bill_buckets", return_value={reducer.id: Decimal(3)}
+        )
+        order_id = uuid.uuid4()
+
+        quantities = await reducer_service.bill(
+            session,
+            customer,
+            [meter.id],
+            order_id=order_id,
+            billable_from=START,
+            cutoff=CUTOFF,
+        )
+
+        assert quantities == {meter.id: Decimal(3)}
+        seal.assert_called_once_with(
+            session, [reducer], customer, since=START, until=CUTOFF
+        )
+        bill.assert_called_once_with(
+            session, [reducer], customer, order_id=order_id, since=START, until=CUTOFF
+        )
+
+    async def test_splits_at_billable_from_without_a_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        external_customer: Customer,
+        organization: Organization,
+        order: Order,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="tokens"
+            ),
+        )
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+        await reducer_service.sync_bucket(
+            session, reducer.id, BUCKET_START, None, "external"
+        )
+
+        quantities = await reducer_service.bill(
+            session,
+            external_customer,
+            [meter.id],
+            order_id=order.id,
+            billable_from=CUTOFF,
+            cutoff=NEXT_BUCKET_START,
+        )
+
+        assert quantities == {meter.id: Decimal(3)}
+        assert [
+            (bucket.bucket_start, bucket.bucket_end, bucket.order_id)
+            for bucket in await get_buckets(session)
+            if (bucket.customer_id, bucket.external_customer_id) == (None, "external")
+        ] == [
+            (BUCKET_START, CUTOFF, None),
+            (CUTOFF, NEXT_BUCKET_START, order.id),
+        ]
+
+    async def test_logs_failures_without_raising(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+        mocker.patch.object(reducer_service, "_seal_buckets", side_effect=RuntimeError)
+
+        quantities = await reducer_service.bill(
+            session,
+            customer,
+            [meter.id],
+            order_id=uuid.uuid4(),
+            billable_from=START,
+            cutoff=CUTOFF,
         )
 
         assert quantities == {}
         assert await session.get(Meter, meter.id) is not None
+
+
+SUM_TOKENS = PropertyAggregation(func=AggregationFunction.sum, property="tokens")
+
+
+async def rollup_tokens(
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    redis: Redis,
+    organization: Organization,
+    aggregation: Aggregation,
+) -> Reducer:
+    """Rolls up 2, 3 and 4 tokens into the buckets T-2, T-1 and T."""
+    meter = await create_meter(
+        save_fixture, organization=organization, aggregation=aggregation
+    )
+    reducer = await create_reducer(
+        save_fixture, organization=organization, meters=[meter]
+    )
+    events = [
+        build_event(organization, timestamp=timestamp, metadata={"tokens": tokens})
+        for timestamp, tokens in (
+            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE, 2),
+            (BUCKET_START - REDUCER_BUCKET_SIZE, 3),
+            (BUCKET_START, 4),
+        )
+    ]
+    await reducer_service.rollup(session, redis, organization.id, events)
+    return reducer
+
+
+@pytest.mark.anyio
+class TestGetCustomerValue:
+    @pytest.fixture(autouse=True)
+    def now(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.reducer.service.utc_now",
+            return_value=BUCKET_START + timedelta(minutes=1),
+        )
+        mocker.patch("polar.reducer.service.enqueue_job")
+
+    @pytest.mark.parametrize(
+        ("aggregation", "expected"),
+        [
+            (CountAggregation(), 3),
+            (SUM_TOKENS, 9),
+            (PropertyAggregation(func=AggregationFunction.avg, property="tokens"), 3),
+            (PropertyAggregation(func=AggregationFunction.min, property="tokens"), 2),
+            (PropertyAggregation(func=AggregationFunction.max, property="tokens"), 4),
+        ],
+    )
+    async def test_combines_postgres_and_redis(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        aggregation: Aggregation,
+        expected: int,
+    ) -> None:
+        reducer = await rollup_tokens(
+            save_fixture, session, redis, organization, aggregation
+        )
+
+        value = await reducer_service.get_customer_value(
+            session, redis, reducer, uuid.uuid4(), "external"
+        )
+
+        assert value == expected
+
+    @pytest.mark.parametrize(
+        ("since", "expected"),
+        [
+            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE, 9),
+            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=1), 7),
+            (BUCKET_START - REDUCER_BUCKET_SIZE, 7),
+            (BUCKET_START, 4),
+            (BUCKET_START + timedelta(seconds=1), 0),
+        ],
+    )
+    async def test_since(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        since: datetime,
+        expected: int,
+    ) -> None:
+        reducer = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+
+        value = await reducer_service.get_customer_value(
+            session, redis, reducer, None, "external", since=since
+        )
+
+        assert value == expected
+
+    async def test_other_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        reducer = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+
+        value = await reducer_service.get_customer_value(
+            session, redis, reducer, None, "other"
+        )
+
+        assert value == 0
+
+
+@pytest.fixture
+async def customer_meter(
+    save_fixture: SaveFixture, organization: Organization, customer: Customer
+) -> CustomerMeter:
+    meter = await create_meter(save_fixture, organization=organization)
+    await create_reducer(save_fixture, organization=organization, meters=[meter])
+    customer_meter = CustomerMeter(
+        customer=customer,
+        meter=meter,
+        consumed_units=Decimal(5),
+        credited_units=0,
+        balance=Decimal(-5),
+    )
+    await save_fixture(customer_meter)
+    return customer_meter
+
+
+@pytest.mark.anyio
+class TestLogCustomerMeterComparison:
+    async def test_logs_values_since_latest_reset(
+        self,
+        capfire: CaptureLogfire,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        customer: Customer,
+        customer_meter: CustomerMeter,
+    ) -> None:
+        reset = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(customer_meter.meter_id)},
+        )
+        get_customer_value = mocker.patch.object(
+            reducer_service, "get_customer_value", return_value=Decimal(4)
+        )
+
+        await reducer_service.log_customer_meter_comparison(
+            session, redis, customer_meter
+        )
+
+        assert get_customer_value.call_args.kwargs == {"since": reset.timestamp}
+        [span] = [
+            span
+            for span in capfire.exporter.exported_spans
+            if span.name == "Compare customer meter with reducer"
+            and span.attributes is not None
+            and span.attributes.get("logfire.span_type") == "span"
+        ]
+        assert span.attributes is not None
+        assert span.attributes["legacy"] == "5"
+        assert span.attributes["reducer"] == "4"
+        assert span.attributes["match"] is False
+        assert span.attributes["aggregation"] == "count"
+
+    async def test_swallows_failure(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        customer_meter: CustomerMeter,
+    ) -> None:
+        mocker.patch.object(
+            reducer_service, "get_customer_value", side_effect=RuntimeError
+        )
+
+        await reducer_service.log_customer_meter_comparison(
+            session, redis, customer_meter
+        )
+
+        assert await session.get(CustomerMeter, customer_meter.id) is not None

@@ -5,6 +5,8 @@ import {
   isSeatBasedPrice,
   isUnitBasedPrice,
 } from '@/utils/product'
+import { billsUsageOnMeterCycle } from '@/utils/subscription'
+import { keyByContent } from '@/utils/keys'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
@@ -80,7 +82,9 @@ export const CurrentPeriodOverview = ({
     return null
   }
 
-  const hasMeters = subscription.meters.length > 0
+  // Usage settled on an earlier meter cycle is shown by UpcomingUsageCharge
+  const hasMeters =
+    subscription.meters.length > 0 && !billsUsageOnMeterCycle(subscription)
   const prorations = subscriptionPreview?.prorations ?? []
   const hasProrations = prorations.length > 0
   const hasTaxes = subscriptionPreview && subscriptionPreview.tax_amount > 0
@@ -116,8 +120,12 @@ export const CurrentPeriodOverview = ({
     return null
   }
 
-  // Don't show for free subscriptions with no meters
-  const hasNextInvoice = !isFreeProduct || hasMeters
+  // Don't show for free subscriptions with nothing to bill
+  const hasNextInvoice =
+    !isFreeProduct ||
+    hasMeters ||
+    hasProrations ||
+    (subscriptionPreview?.base_amount ?? 0) > 0
   if (!hasNextInvoice) {
     return null
   }
@@ -129,7 +137,7 @@ export const CurrentPeriodOverview = ({
       : subscription.current_period_end
 
   // Determine header and label based on subscription state
-  let headerTitle = 'Next Charge'
+  let headerTitle = 'Upcoming Renewal'
   let dateLabel = 'Next Invoice'
 
   if (isTrialing) {
@@ -197,8 +205,8 @@ export const CurrentPeriodOverview = ({
         <>
           <span className="font-medium">Prorations</span>
 
-          {prorations.map((proration, index) => (
-            <div key={index} className="flex items-center justify-between">
+          {keyByContent(prorations).map(({ item: proration, key }) => (
+            <div key={key} className="flex items-center justify-between">
               <span className="dark:text-polar-400 text-gray-600">
                 {proration.label}
               </span>

@@ -1,11 +1,11 @@
 import {
   File as FileIcon,
-  FileAudio,
+  FileHeadphone as FileAudio,
   FileImage,
+  FilePlay as FileVideo,
   FileSpreadsheet,
   FileText,
-  FileVideo,
-} from 'lucide-react'
+} from '@polar-sh/orbit/icons'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { getExtension } from './fileUtils'

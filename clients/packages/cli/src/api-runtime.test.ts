@@ -1,4 +1,4 @@
-import { commands, products } from '@polar-sh/cli-commands'
+import { commands, CURRENT_API_VERSION, products } from '@polar-sh/cli-commands'
 import { Effect, Layer } from 'effect'
 import { Command, Prompt } from 'effect/cli'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -272,6 +272,14 @@ describe('generated commands', () => {
       },
     )
 
+    test.each([
+      { args: ['meters', 'get', 'meter-1'], version: CURRENT_API_VERSION },
+      { args: ['meters', 'get_external', 'meter-1'], version: '2027-01' },
+    ])('$args sends Polar-Version $version', async ({ args, version }) => {
+      await run(args).promise
+      expect(requests[0]!.headers.get('Polar-Version')).toBe(version)
+    })
+
     test('nested member creation keeps path and body external IDs separate', async () => {
       await run([
         'customers',
@@ -300,6 +308,7 @@ describe('generated commands', () => {
           '--type=custom',
           '--description=A custom benefit',
           '--properties={}',
+          ...(operation === 'update' ? ['--confirm'] : []),
         ]).promise
         expect(await requests[0]!.json()).toEqual({
           type: 'custom',

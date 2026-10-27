@@ -8,7 +8,7 @@ import { getDiscountDisplay } from '@/utils/discount'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronRight, TicketPercent } from 'lucide-react'
+import { ChevronRight, TicketPercent } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 

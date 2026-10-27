@@ -65,7 +65,7 @@ export function MarketingSection() {
         <Box flexDirection="column" rowGap="l">
           {BOARDS.map((board, index) => (
             <PosterBoard
-              key={index}
+              key={board.sheets.map(({ caption }) => caption).join('|')}
               board={board}
               offset={index * SHEETS_PER_BOARD}
             />

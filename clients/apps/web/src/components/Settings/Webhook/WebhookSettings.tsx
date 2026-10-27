@@ -1,12 +1,13 @@
 'use client'
 
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ListGroup } from '@polar-sh/orbit'
-import { ArrowUpRightIcon } from 'lucide-react'
+import { ArrowUpRight as ArrowUpRightIcon } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../../Modal/useModal'
@@ -20,6 +21,7 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
     show: showNewWebhookModal,
     hide: hideNewWebhookModal,
   } = useModal()
+  const managedAsCode = useIsManagedAsCode(props.org.id)
 
   const endpoints = useListWebhooksEndpoints({
     organizationId: props.org.id,
@@ -49,9 +51,11 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
           )}
           <ListGroup.Item>
             <div className="flex flex-row items-center gap-x-4">
-              <Button asChild onClick={showNewWebhookModal}>
-                Add Endpoint
-              </Button>
+              {!managedAsCode && (
+                <Button asChild onClick={showNewWebhookModal}>
+                  Add Endpoint
+                </Button>
+              )}
               <a
                 href="https://polar.sh/docs/integrate/webhooks/endpoints"
                 target="_blank"

@@ -2851,6 +2851,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"type\": \"custom\"\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "destructive"
         ]
       },
       "delete": {
@@ -3280,7 +3283,7 @@
           }
         },
         "x-tool-name": "benefits_grants",
-        "x-tool-title": "List Benefit Grants",
+        "x-tool-title": "List Grants for a Benefit",
         "x-tool-description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.",
         "x-tool-annotations": [
           "read_only",
@@ -3831,6 +3834,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.createWebhookEndpoint(\n  {\n    \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    \"api_version\": \"2026-10\",\n    \"format\": \"raw\",\n    \"events\": [\n      \"checkout.created\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "open_world"
         ]
       }
     },
@@ -4048,7 +4054,8 @@
         "x-speakeasy-group": "webhooks",
         "x-speakeasy-name-override": "update_webhook_endpoint",
         "x-tool-annotations": [
-          "destructive"
+          "destructive",
+          "open_world"
         ],
         "x-codeSamples": [
           {
@@ -4619,6 +4626,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.redeliverWebhookEvent(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "open_world"
         ]
       }
     },
@@ -5028,6 +5038,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.create(\n  {\n    \"name\": \"string\",\n    \"prices\": [\n      {\n        \"amount_type\": \"fixed\",\n        \"price_amount\": 0\n      }\n    ],\n    \"recurring_interval\": \"day\",\n    \"recurring_interval_count\": 1\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "open_world"
         ]
       }
     },
@@ -5249,7 +5262,8 @@
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "update",
         "x-tool-annotations": [
-          "destructive"
+          "destructive",
+          "open_world"
         ],
         "x-codeSamples": [
           {
@@ -5483,6 +5497,10 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.updateBenefits(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"benefits\": [\n      \"00000000-0000-4000-8000-000000000000\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
         ]
       }
     },
@@ -14936,6 +14954,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"email\": \"customer@example.com\",\n    \"external_id\": \"usr_1337\",\n    \"type\": \"team\"\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "destructive"
         ]
       },
       "delete": {
@@ -15261,6 +15282,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.updateExternal(\n  \"string\",\n  {\n    \"email\": \"customer@example.com\"\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "destructive"
         ]
       },
       "delete": {
@@ -16761,6 +16785,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "destructive"
         ]
       },
       "delete": {
@@ -17133,6 +17160,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.updateExternal(\n  \"string\",\n  \"string\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "destructive"
         ]
       },
       "delete": {
@@ -22081,6 +22111,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.assignSeat(\n  {\n    \"immediate_claim\": false\n  },\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "open_world"
         ]
       },
       "get": {
@@ -22390,6 +22423,9 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-04\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.resendInvitation(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
+        ],
+        "x-tool-annotations": [
+          "open_world"
         ]
       }
     },
@@ -22398,7 +22434,6 @@
         "tags": [
           "customer-seats",
           "public",
-          "mcp",
           "cli"
         ],
         "summary": "Get Claim Info",
@@ -22472,7 +22507,6 @@
         "tags": [
           "customer-seats",
           "public",
-          "mcp",
           "cli"
         ],
         "summary": "Claim Seat",
@@ -38807,20 +38841,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -39001,6 +39021,20 @@
             ],
             "title": "Confirmation Token Id",
             "description": "ID of the Stripe confirmation token. Required for fixed prices and custom prices."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -43671,20 +43705,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -44020,6 +44040,20 @@
             ],
             "title": "Embed Origin",
             "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -44068,20 +44102,6 @@
             ],
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
-          },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
           },
           "amount": {
             "anyOf": [
@@ -44251,6 +44271,20 @@
             ],
             "title": "Allow Trial",
             "description": "Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",

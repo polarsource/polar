@@ -5,10 +5,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from polar.auth.models import Anonymous, AuthSubject, Subject
-from polar.auth.scope import Scope
+from polar.auth.scope import UNCLAIMED_AGENT_SCOPES, Scope
 from polar.config import settings
 from polar.kit.utils import utc_now
-from polar.models import Customer, Member, Organization, User, UserSession
+from polar.models import Agent, Customer, Member, Organization, User, UserSession
 
 
 def make_session_stale(auth_subject: AuthSubject[User]) -> None:
@@ -32,11 +32,12 @@ class AuthSubjectFixture:
             "member_owner",
             "member_billing_manager",
             "member",
+            "agent",
         ] = "user",
         scopes: set[Scope] | None = None,
     ):
         if scopes is None:
-            scopes = set(Scope)
+            scopes = set(UNCLAIMED_AGENT_SCOPES if subject == "agent" else Scope)
         self.subject = subject
         self.scopes = scopes
 
@@ -87,7 +88,9 @@ def auth_subject(
     auth_subject_fixture: AuthSubjectFixture = request.param
 
     # Build subjects map, loading member lazily only when needed
-    subjects_map: dict[str, Anonymous | Customer | Member | User | Organization] = {
+    subjects_map: dict[
+        str, Anonymous | Customer | Member | User | Organization | Agent
+    ] = {
         "anonymous": Anonymous(),
         "user": user,
         "user_second": user_second,
@@ -110,6 +113,9 @@ def auth_subject(
             "member_billing_manager"
         )
         subjects_map["member_billing_manager"] = member_billing_manager
+    elif subject_key == "agent":
+        agent: Agent = request.getfixturevalue("agent")
+        subjects_map["agent"] = agent
 
     subject = subjects_map[subject_key]
 

@@ -1,0 +1,26 @@
+name: Compress images
+
+on:
+  pull_request:
+    paths:
+      - "**.png"
+      - "**.jpg"
+      - "**.jpeg"
+      - "**.webp"
+
+jobs:
+  compress:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    name: calibreapp/image-actions
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7.0.1
+
+      - name: Compress Images
+        uses: calibreapp/image-actions@1.5.0
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          jpegQuality: "60"
+          ignorePaths: "node_modules/**,server/tests/fixtures/**"

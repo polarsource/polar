@@ -52,6 +52,7 @@ from polar.integrations.polar.schemas import (
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable, get_ip_address
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
+from polar.kit.versioning import version
 from polar.models import Account, Organization, UserOrganization, UserSession
 from polar.models.support_case import (
     SupportCase,
@@ -106,8 +107,9 @@ from polar.user_organization.service import (
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.version import V2027_01
 
-from . import auth, sorting
+from . import auth, legacy_schemas, sorting
 from .embed_hosts import is_shared_host
 from .schemas import Organization as OrganizationSchema
 from .schemas import (
@@ -183,7 +185,7 @@ async def list_organizations(
     tags=[APITag.public, APITag.mcp, APITag.cli],
 )
 async def get(
-    authz: AuthorizeOrgAccess,
+    authz: auth.OrganizationsAccess,
 ) -> Organization:
     """Get an organization by ID."""
     return authz.organization
@@ -306,6 +308,28 @@ async def get_embed_status(
     tags=[APITag.public],
 )
 async def create(
+    organization_create: legacy_schemas.OrganizationCreate,
+    auth_subject: auth.OrganizationsCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Create an organization."""
+    return await organization_service.create(session, organization_create, auth_subject)
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=OrganizationSchema,
+    status_code=201,
+    summary="Create Organization",
+    responses={
+        201: {"description": "Organization created."},
+        403: {"model": CannotCreateOrganizationError.schema()},
+    },
+    tags=[APITag.public],
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
     organization_create: OrganizationCreate,
     auth_subject: auth.OrganizationsCreate,
     session: AsyncSession = Depends(get_db_session),
@@ -351,9 +375,50 @@ async def check_slug(
     tags=[APITag.public],
 )
 async def update(
-    authz: AuthorizeOrgManage,
+    authz: auth.OrganizationsManage,
+    organization_update: legacy_schemas.OrganizationUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Update an organization."""
+    return await _update(authz, organization_update, session)
+
+
+@router.patch(
+    "/{id}",
+    name="update",
+    response_model=OrganizationSchema,
+    summary="Update Organization",
+    responses={
+        200: {"description": "Organization updated."},
+        403: {
+            "description": (
+                "You don't have the permission to update this organization, or "
+                "dispute auto-accept isn't enabled for it."
+            ),
+            "model": NotPermitted.schema() | DisputeAutoAcceptNotEnabled.schema(),
+        },
+        404: OrganizationNotFound,
+        409: {
+            "description": "Cannot enforce SSO without an enabled connection.",
+            "model": SSOEnforcementRequiresConnection.schema(),
+        },
+    },
+    tags=[APITag.public],
+)
+@version(starting_from=V2027_01)
+async def update_v2027_01(
+    authz: auth.OrganizationsManage,
     organization_update: OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Update an organization."""
+    return await _update(authz, organization_update, session)
+
+
+async def _update(
+    authz: auth.OrganizationsManage,
+    organization_update: OrganizationUpdate,
+    session: AsyncSession,
 ) -> Organization:
     """Update an organization."""
     if organization_update.sso_enforced:

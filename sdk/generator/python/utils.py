@@ -21,9 +21,7 @@ def format_default_value(default: _typing.Any) -> str:
             return "{}"
         return (
             "{"
-            + ", ".join(
-                f"{repr(k)}: {format_default_value(v)}" for k, v in default.items()
-            )
+            + ", ".join(f"{k!r}: {format_default_value(v)}" for k, v in default.items())
             + "}"
         )
     return repr(default)
@@ -42,7 +40,7 @@ def format_default_value_dataclass(default: _typing.Any) -> str:
         return (
             "dataclasses.field(default_factory=lambda: {"
             + ", ".join(
-                f"{repr(k)}: {format_default_value_dataclass(v)}"
+                f"{k!r}: {format_default_value_dataclass(v)}"
                 for k, v in default.items()
             )
             + "})"

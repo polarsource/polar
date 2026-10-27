@@ -1,7 +1,6 @@
 from fastapi import Depends, Query
 
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.meter.auth import MeterRead, MeterWrite
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
@@ -13,13 +12,15 @@ from polar.postgres import (
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
-from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan
+from .auth import ConfigRead, ConfigWrite
+from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan, ConfigPrune
 from .service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
+    ConfigWebhookConflict,
 )
 from .service import declarative_config as declarative_config_service
 
@@ -36,6 +37,7 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
+                "missing a scope required by one of the sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -43,7 +45,7 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
     },
 )
 async def export(
-    auth_subject: MeterRead,
+    auth_subject: ConfigRead,
     organization_id: OrganizationID | None = Query(
         None,
         description=(
@@ -58,9 +60,12 @@ async def export(
 
     `config` has the shape plan and apply accept, without `organization_id`:
     planning it for the same organization without edits reports no changes.
-    Meters without an `external_id`, archived meters, meters that wouldn't pass
-    config validation, and meters beyond the config limit are listed in
-    `skipped`.
+    Resources without an `external_id`, archived ones, ones config can't express
+    (or that reference a skipped resource), and ones beyond the config limit are
+    listed in `skipped`, up to the config limit per section. Webhook endpoints
+    are not exported.
+
+    Requires the read or write scope of every exported section.
     """
     return await declarative_config_service.export(
         session, auth_subject, organization_id
@@ -77,8 +82,7 @@ async def export(
         403: {
             "description": (
                 "Not allowed to manage this organization, "
-                "missing the `benefits:write`, `products:write` or "
-                "`discounts:write` scope for that section, "
+                "missing a scope required by one of the sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -91,27 +95,29 @@ async def export(
             "model": ConfigInvalid.schema()
             | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
-            | ConfigProductConflict.schema(),
+            | ConfigProductConflict.schema()
+            | ConfigWebhookConflict.schema(),
         },
     },
 )
 async def apply(
     config: Config,
-    auth_subject: MeterWrite,
+    auth_subject: ConfigWrite,
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> ConfigApplyResult:
     """
     Apply a declarative config document to the organization.
 
-    Meters, benefits, products and discounts are matched by `external_id`:
-    missing ones are created, changed ones are updated, and ones not listed are
-    left untouched.
+    Meters, benefits, products and webhook endpoints are matched by
+    `external_id`: missing ones are created, changed ones are updated, and ones
+    not listed are left untouched.
+    `settings` are applied first, so products can be priced in a new
+    `payments.currency` in the same config. Every active product must have a price in
+    the resulting currency, or nothing is applied.
     Everything is applied in one transaction.
 
-    A `benefits` section also requires the `benefits:write` scope, a
-    `products` section the `products:write` scope, and a `discounts` section
-    the `discounts:write` scope.
+    Each section requires the write scope for its resource.
     """
     return await declarative_config_service.apply(session, redis, auth_subject, config)
 
@@ -126,8 +132,7 @@ async def apply(
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
-                "missing a benefits, products or discounts scope "
-                "for those sections, "
+                "missing a scope required by one of the sections, "
                 "or config as code isn't enabled for it."
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
@@ -136,7 +141,7 @@ async def apply(
 )
 async def plan(
     config: Config,
-    auth_subject: MeterRead,
+    auth_subject: ConfigRead,
     session: AsyncSession = Depends(get_db_session),
 ) -> ConfigPlan:
     """
@@ -145,8 +150,39 @@ async def plan(
     Returns the action for each resource, and every issue: `error` issues make
     apply fail, `warning` issues don't.
 
-    A `benefits` section also requires the `benefits:read` or `benefits:write`
-    scope, a `products` section `products:read` or `products:write`, and a
-    `discounts` section `discounts:read` or `discounts:write`.
+    Each section requires the read or write scope for its resource.
     """
     return await declarative_config_service.plan(session, auth_subject, config)
+
+
+@router.post(
+    "/prune",
+    response_model=ConfigPrune,
+    summary="Prune Config",
+    responses={
+        200: {"description": "Deprecated resources checked."},
+        401: {"description": "Not authenticated.", "model": Unauthorized.schema()},
+        403: {
+            "description": (
+                "Not allowed to read this organization's products, "
+                "missing a scope required by one of the sections, "
+                "or config as code isn't enabled for it."
+            ),
+            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+        },
+    },
+)
+async def prune(
+    config: Config,
+    auth_subject: ConfigRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ConfigPrune:
+    """
+    Report which deprecated resources in a declarative config document are still in use.
+
+    A deprecated resource can be removed from the config once no customer uses it
+    and no product or benefit staying in the config references it.
+
+    Each section requires the read or write scope for its resource.
+    """
+    return await declarative_config_service.prune(session, auth_subject, config)

@@ -48,6 +48,19 @@ def test_emit_input_model_with_fields_and_additional_properties(
 
     PythonEmitter(APIIR(versions=[api]), "2026-10").emit(tmp_path)
 
+    for module in ("events", "client", "buffered", "meter"):
+        assert (tmp_path / "polar" / "metering" / f"{module}.py").is_file()
+    assert not (tmp_path / "polar" / "metering" / "alias.py").exists()
+    for module in ("conftest", "test_buffered", "test_metering"):
+        assert (tmp_path / "tests" / "metering" / f"{module}.py").is_file()
+    metering_tests = (tmp_path / "tests" / "metering" / "test_metering.py").read_text()
+    assert "from polar.v2026_04 import PolarAsync" in metering_tests
+    assert "from polar.v2026_10 import PolarAsync" not in metering_tests
+    assert (tmp_path / "polar" / "outpost" / "reducer.py").is_file()
+    assert (tmp_path / "polar" / "outpost" / "client.py").is_file()
+    for module in ("client", "event", "reducer"):
+        assert (tmp_path / "tests" / "outpost" / f"test_{module}.py").is_file()
+
     inputs = (tmp_path / "polar" / "v2026_04" / "inputs.py").read_text()
     assert "import typing_extensions" in inputs
     assert (

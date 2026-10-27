@@ -1,6 +1,5 @@
 import { benefitsDisplayNames } from '@/components/Benefit/utils'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import FilterList from '@mui/icons-material/FilterList'
+import { CheckOutlined, FilterList } from '@polar-sh/orbit/icons'
 import { enums, schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import {

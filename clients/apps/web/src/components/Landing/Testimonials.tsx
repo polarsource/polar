@@ -1,15 +1,7 @@
-'use client'
-
-import { useInView } from '@/hooks/useInView'
 import { Avatar, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { gsap } from 'gsap'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
-import { ReactNode, useEffect, useRef, useState } from 'react'
-import { Chapter } from './Chapter'
-
-const QUOTE_SECONDS = 6
+import { ReactNode } from 'react'
 
 interface Testimonial {
   link: string
@@ -71,182 +63,111 @@ const QuoteLink = ({
   children: ReactNode
 }) =>
   isExternalLink(testimonial.link) ? (
-    <a href={testimonial.link} target="_blank" rel="noopener noreferrer">
+    <a
+      href={testimonial.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex h-full w-full flex-col"
+    >
       {children}
     </a>
   ) : (
-    <Link href={testimonial.link}>{children}</Link>
+    <Link href={testimonial.link} className="flex h-full w-full flex-col">
+      {children}
+    </Link>
   )
 
+const Attribution = ({ testimonial }: { testimonial: Testimonial }) => (
+  <figcaption>
+    <Box alignItems="center" columnGap="m">
+      <Avatar
+        name={testimonial.name}
+        avatar_url={testimonial.avatar}
+        className="h-10 w-10"
+        width={40}
+      />
+      <Box flexDirection="column">
+        <Text variant="body" leading="tight">
+          {testimonial.name}
+        </Text>
+        <Text variant="body" color="muted" leading="tight">
+          {testimonial.company}
+        </Text>
+      </Box>
+    </Box>
+  </figcaption>
+)
+
+/**
+ * Testimonials: one lead quote set large as type on the page, the rest as cards in a row. Everything is
+ * visible at once; each quote links to its source.
+ */
 export const Testimonials = () => {
-  const { ref, inView } = useInView()
-  const reducedMotion = useReducedMotion()
-  const [active, setActive] = useState(0)
-  const progressRefs = useRef<(HTMLElement | null)[]>([])
-  const tweenRef = useRef<gsap.core.Tween | null>(null)
-  const pauseRef = useRef({ hovered: false, focused: false })
-  const testimonial = TESTIMONIALS[active]
-
-  const setPaused = (reason: 'hovered' | 'focused', paused: boolean) => {
-    pauseRef.current[reason] = paused
-    const { hovered, focused } = pauseRef.current
-    if (hovered || focused) tweenRef.current?.pause()
-    else tweenRef.current?.resume()
-  }
-
-  useEffect(() => {
-    const bar = progressRefs.current[active]
-    if (!bar || !inView || reducedMotion) return
-    const tween = gsap.fromTo(
-      bar,
-      { scaleX: 0 },
-      {
-        scaleX: 1,
-        duration: QUOTE_SECONDS,
-        ease: 'none',
-        onComplete: () =>
-          setActive((current) => (current + 1) % TESTIMONIALS.length),
-      },
-    )
-    if (pauseRef.current.hovered || pauseRef.current.focused) tween.pause()
-    tweenRef.current = tween
-    return () => {
-      tween.kill()
-      gsap.set(bar, { scaleX: 0 })
-    }
-  }, [active, inView, reducedMotion])
-
+  const [lead, ...rest] = TESTIMONIALS
   return (
-    <Chapter
-      index="04"
-      name="What people say"
-      title="Noticed by the people building what's next"
-      subtitle="Customers, advisors and peers"
+    <Box
+      as="section"
+      width="100%"
+      flexDirection="column"
+      rowGap={{ base: '3xl', md: '5xl' }}
+      paddingVertical={{ base: '4xl', md: '5xl' }}
+      marginVertical={{ base: 'none', md: '2xl' }}
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
     >
-      <Box
-        ref={ref}
-        width="100%"
-        flexDirection="column"
-        alignItems="center"
-        rowGap={{ base: '3xl', md: '4xl' }}
-        paddingVertical={{ base: '3xl', md: '5xl' }}
-        paddingHorizontal={{ base: 'xl', md: '4xl' }}
-        backgroundColor="background-secondary"
-        onMouseEnter={() => setPaused('hovered', true)}
-        onMouseLeave={() => setPaused('hovered', false)}
-        onFocus={() => setPaused('focused', true)}
-        onBlur={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-            setPaused('focused', false)
-          }
-        }}
+      {/* The chapter grid, with the lead quote where a chapter puts its headline. */}
+      <Grid
+        templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+        gap={{ base: '2xl', lg: 'l' }}
       >
-        <Box width="100%" maxWidth="48rem" minHeight={{ md: '18rem' }}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={testimonial.name}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
-            >
-              <QuoteLink testimonial={testimonial}>
-                <figure>
-                  <Box
-                    flexDirection="column"
-                    alignItems="center"
-                    rowGap="2xl"
-                    textAlign="center"
-                    opacity={{ base: 1, hover: 0.75 }}
-                    transitionProperty="opacity"
-                    transitionDuration="base"
-                  >
-                    <blockquote>
-                      <Box flexDirection="column" rowGap="l">
-                        {testimonial.quote.map((paragraph) => (
-                          <Text key={paragraph} variant="heading-s" as="p">
-                            {paragraph}
-                          </Text>
-                        ))}
-                      </Box>
-                    </blockquote>
-                    <figcaption>
-                      <Text color="muted">
-                        {testimonial.name}, {testimonial.company}
-                      </Text>
-                    </figcaption>
-                  </Box>
-                </figure>
-              </QuoteLink>
-            </motion.div>
-          </AnimatePresence>
+        <Box alignItems="start" display={{ md: 'flex', base: 'none' }}>
+          <Text variant="heading-s">What people say</Text>
         </Box>
-
-        <Grid
-          width="100%"
-          maxWidth="64rem"
-          templateColumns="repeat(4, 1fr)"
-          gap="l"
-        >
-          {TESTIMONIALS.map((person, index) => (
-            <button
-              key={person.name}
-              type="button"
-              aria-pressed={index === active}
-              aria-label={`${person.name}, ${person.company}`}
-              onClick={(event) => {
-                setActive(index)
-                if (event.detail > 0) event.currentTarget.blur()
-              }}
+        <QuoteLink testimonial={lead}>
+          <figure>
+            <Box
+              flexDirection="column"
+              rowGap="2xl"
+              opacity={{ base: 1, hover: 0.75 }}
+              transitionProperty="opacity"
+              transitionDuration="base"
             >
+              <blockquote>
+                <Text variant="heading-s" as="p" wrap="pretty">
+                  “{lead.quote.join(' ')}”
+                </Text>
+              </blockquote>
+              <Attribution testimonial={lead} />
+            </Box>
+          </figure>
+        </QuoteLink>
+      </Grid>
+      <Grid
+        templateColumns={{ base: '1fr', md: `repeat(${rest.length}, 1fr)` }}
+        gap="xs"
+      >
+        {rest.map((testimonial) => (
+          <QuoteLink key={testimonial.name} testimonial={testimonial}>
+            <figure className="dark:bg-polar-900 dark:hover:bg-polar-800 flex h-full flex-col rounded-xl bg-gray-50 transition-colors hover:bg-gray-100">
               <Box
                 flexDirection="column"
-                rowGap="l"
-                opacity={index === active ? 1 : 0.5}
-                transitionProperty="opacity"
-                transitionDuration="slow"
+                rowGap="3xl"
+                flex={1}
+                justifyContent="between"
+                padding="xl"
               >
-                <Box
-                  display="block"
-                  height={1}
-                  backgroundColor="background-card"
-                  overflow="hidden"
-                >
-                  <Box
-                    ref={(element) => {
-                      progressRefs.current[index] = element
-                    }}
-                    height="100%"
-                    backgroundColor="background-inverse"
-                    transformOrigin="left"
-                    transform={
-                      index === active && reducedMotion
-                        ? 'scaleX(1)'
-                        : 'scaleX(0)'
-                    }
-                  />
-                </Box>
-                <Box alignItems="center" columnGap="m" textAlign="left">
-                  <Avatar
-                    avatar_url={person.avatar}
-                    name={person.name}
-                    className="size-8"
-                  />
-                  <Box
-                    display={{ base: 'none', md: 'flex' }}
-                    flexDirection="column"
-                  >
-                    <Text as="span">{person.name}</Text>
-                    <Text as="span" color="muted">
-                      {person.company}
-                    </Text>
-                  </Box>
-                </Box>
+                <blockquote>
+                  <Text variant="heading-xxs" as="p" wrap="pretty">
+                    “{testimonial.quote.join(' ')}”
+                  </Text>
+                </blockquote>
+                <Attribution testimonial={testimonial} />
               </Box>
-            </button>
-          ))}
-        </Grid>
-      </Box>
-    </Chapter>
+            </figure>
+          </QuoteLink>
+        ))}
+      </Grid>
+    </Box>
   )
 }

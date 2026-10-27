@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class ActorType(StrEnum):
     AGENT = "agent"
     HUMAN = "human"
+    STRIPE = "stripe"
 
 
 class DecisionType(StrEnum):
@@ -314,6 +315,8 @@ class PaymentMetrics(Schema):
     refund_amount_cents: int = 0
     dispute_count: int = 0
     dispute_amount_cents: int = 0
+    chargeback_stop_count: int = 0
+    chargeback_stop_amount_cents: int = 0
 
 
 class PriorOrganization(Schema):
@@ -338,6 +341,10 @@ class UrlRedirectInfo(Schema):
     original_url: str
     final_url: str | None = None
     final_domain: str | None = None
+    hops: list[str] = Field(
+        default_factory=list,
+        description="URLs visited between the original and final URL.",
+    )
     redirected: bool = False
     error: str | None = None
 
@@ -396,6 +403,14 @@ class SetupData(Schema):
             "matches the declared host, is a known service, or no webhooks exist."
         ),
     )
+    checkout_url_hosts: list[WebsiteData] = Field(
+        default_factory=list,
+        description=(
+            "Summaries of the public sites on the hosts of checkout success and "
+            "return URLs, and of where they redirect to, when those hosts differ "
+            "from the declared website host and are not known services."
+        ),
+    )
 
 
 class WebsitePage(Schema):
@@ -432,7 +447,7 @@ class PriorFeedbackEntry(Schema):
     """A single prior review decision for the organization."""
 
     actor_type: str = Field(
-        description="Who made this decision: 'agent' (automated) or 'human' (backoffice reviewer)"
+        description="Who made this decision: 'agent' (automated), 'human' (backoffice reviewer) or 'stripe' (Stripe risk signal)"
     )
     decision: str = Field(
         description="Action taken by the actor: 'APPROVE', 'DENY', or 'ESCALATE'"

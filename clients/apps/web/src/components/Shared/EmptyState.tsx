@@ -7,7 +7,7 @@ interface EmptyStateProps {
   icon: ReactNode
   title: string
   description: string
-  actions?: ButtonProps[]
+  actions?: (ButtonProps & { text: string })[]
   /** Grow to fill the parent's remaining space, e.g. to match sibling list heights. */
   fill?: boolean
 }
@@ -41,8 +41,8 @@ export const EmptyState = ({
       </Box>
       {(actions?.length ?? 0) > 0 ? (
         <Box marginTop="l" columnGap="l">
-          {actions?.map((action, index) => (
-            <Button key={index} {...action} />
+          {actions?.map((action) => (
+            <Button key={action.text} {...action} />
           ))}
         </Box>
       ) : null}

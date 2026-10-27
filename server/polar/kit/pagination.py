@@ -9,6 +9,7 @@ from pydantic_core import CoreSchema
 from sqlalchemy import Select, func, literal, select
 from sqlalchemy.sql._typing import _ColumnsClauseArgument
 from sqlalchemy.sql.selectable import Subquery
+from typing_extensions import TypeForm
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel
@@ -148,7 +149,7 @@ class ListResource[T: Any](BaseModel):
         )
 
     @classmethod
-    def model_parametrized_name(cls, params: tuple[type[Any], ...]) -> str:
+    def model_parametrized_name(cls, params: tuple[TypeForm[Any], ...]) -> str:
         """
         Override default model name implementation to detect `ClassName` metadata.
 
@@ -194,7 +195,7 @@ class ListResourceWithCursorPagination[T: Any](BaseModel):
         )
 
     @classmethod
-    def model_parametrized_name(cls, params: tuple[type[Any], ...]) -> str:
+    def model_parametrized_name(cls, params: tuple[TypeForm[Any], ...]) -> str:
         param_names = []
         for param in params:
             if hasattr(param, "__metadata__"):

@@ -44,6 +44,7 @@ export const CustomerSelector = ({
   )
 
   const selectedCustomerQueries = useCustomersByIds(selectedCustomerIds ?? [])
+  const selectedCustomerIdSet = new Set(selectedCustomerIds)
 
   const selectedCustomers = useMemo(() => {
     if (!selectedCustomerIds || selectedCustomerIds.length === 0) {
@@ -121,7 +122,7 @@ export const CustomerSelector = ({
                     key={customer.id}
                     size="small"
                     className="flex flex-row items-center gap-3 p-3"
-                    selected={selectedCustomerIds?.includes(customer.id)}
+                    selected={selectedCustomerIdSet.has(customer.id)}
                     onSelect={(e) => {
                       e.preventDefault()
                       handleToggleCustomer(customer.id)

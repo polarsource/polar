@@ -64,7 +64,9 @@ export function ExportColumns<T extends string>({
       </Box>
 
       {config.groups.map((group) => {
-        const groupValues: T[] = group.columns.map((column) => column.value)
+        const groupValues = new Set<T>(
+          group.columns.map((column) => column.value),
+        )
         return (
           <Box key={group.label} flexDirection="column" rowGap="s">
             <Text variant="label" color="muted">
@@ -72,12 +74,10 @@ export function ExportColumns<T extends string>({
             </Text>
             <ChipSelect
               options={[...group.columns]}
-              selected={selected.filter((column) =>
-                groupValues.includes(column),
-              )}
+              selected={selected.filter((column) => groupValues.has(column))}
               onChange={(next) =>
                 onChange([
-                  ...selected.filter((column) => !groupValues.includes(column)),
+                  ...selected.filter((column) => !groupValues.has(column)),
                   ...(next as T[]),
                 ])
               }

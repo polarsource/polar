@@ -28,7 +28,7 @@ export const BenefitSearchSimple = ({
   isReorderMode,
 }: Props) => {
   const selectedBenefitIds = useMemo(
-    () => selectedBenefits.map((b) => b.id),
+    () => new Set(selectedBenefits.map((b) => b.id)),
     [selectedBenefits],
   )
 
@@ -110,7 +110,7 @@ export const BenefitSearchSimple = ({
           key={benefit.id}
           organization={organization}
           benefit={benefit}
-          selected={selectedBenefitIds.includes(benefit.id)}
+          selected={selectedBenefitIds.has(benefit.id)}
           onToggle={handleToggle}
         />
       ))}

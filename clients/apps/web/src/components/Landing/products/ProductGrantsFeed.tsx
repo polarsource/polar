@@ -130,6 +130,8 @@ export const ProductGrantsFeed = () => {
     return () => clearInterval(interval)
   }, [])
 
+  const planFlagKeys = new Set<string>(sub.plan.flagKeys)
+
   return (
     <m.div
       className="relative flex h-full flex-1 flex-col"
@@ -188,9 +190,7 @@ export const ProductGrantsFeed = () => {
           {/* Feature flag list — no container re-key, each row animates independently */}
           <div className="flex flex-col">
             <AnimatePresence initial={false}>
-              {ALL_FLAGS.filter((f) =>
-                (sub.plan.flagKeys as readonly string[]).includes(f.key),
-              ).map((flag) => (
+              {ALL_FLAGS.filter((f) => planFlagKeys.has(f.key)).map((flag) => (
                 <m.div
                   key={flag.key}
                   initial={{ opacity: 0, height: 0 }}

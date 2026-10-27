@@ -112,6 +112,8 @@ const DownloadablesBenefitGrant = ({
     limit: 100,
   })
 
+  const activeFileIds = new Set(active_files)
+
   const sortedDownloadables = useMemo(() => {
     if (!downloadables) return []
     return downloadables.items.sort((a, b) => {
@@ -143,7 +145,7 @@ const DownloadablesBenefitGrant = ({
           <li key={downloadable.id} className="flex w-full flex-col">
             <DownloadableItem
               downloadable={downloadable}
-              historic={!active_files.includes(downloadable.file.id)}
+              historic={!activeFileIds.has(downloadable.file.id)}
             />
           </li>
         ))}

@@ -82,7 +82,8 @@ const hasNewPricing = (
 ) => {
   const productPriceIds = product.prices.map(({ id }) => id)
   if (productPriceIds.length !== currentPriceIds.length) return true
-  return !productPriceIds.every((id) => currentPriceIds.includes(id))
+  const currentPriceIdSet = new Set(currentPriceIds)
+  return !productPriceIds.every((id) => currentPriceIdSet.has(id))
 }
 
 export const ProductCombobox = ({

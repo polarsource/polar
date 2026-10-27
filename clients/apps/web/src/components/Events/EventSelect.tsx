@@ -38,10 +38,9 @@ const EventsCommandGroup = ({
   onSelectAll: (names: string[]) => void
 }) => {
   const names = useMemo(() => eventNames.map(({ name }) => name), [eventNames])
-  const areAllSelected = useMemo(
-    () => names.length > 0 && names.every((name) => value.includes(name)),
-    [names, value],
-  )
+  const selectedNames = new Set(value)
+  const areAllSelected =
+    names.length > 0 && names.every((name) => selectedNames.has(name))
 
   if (eventNames.length === 0) {
     return null
@@ -70,7 +69,7 @@ const EventsCommandGroup = ({
           <Check
             className={twMerge(
               'ml-auto h-4 w-4',
-              value.includes(eventName.name) ? 'opacity-100' : 'opacity-0',
+              selectedNames.has(eventName.name) ? 'opacity-100' : 'opacity-0',
             )}
           />
         </CommandItem>
@@ -156,11 +155,16 @@ const EventSelect: React.FC<EventSelectProps> = ({
 
   const onSelectAll = useCallback(
     (names: string[]) => {
-      const allSelected = names.every((name) => value.includes(name))
+      const selectedNames = new Set(value)
+      const allSelected = names.every((name) => selectedNames.has(name))
       if (allSelected) {
-        onChange(value.filter((selected) => !names.includes(selected)))
+        const groupNames = new Set(names)
+        onChange(value.filter((selected) => !groupNames.has(selected)))
       } else {
-        onChange([...value, ...names.filter((name) => !value.includes(name))])
+        onChange([
+          ...value,
+          ...names.filter((name) => !selectedNames.has(name)),
+        ])
       }
     },
     [onChange, value],

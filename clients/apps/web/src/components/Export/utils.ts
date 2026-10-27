@@ -22,12 +22,18 @@ export function createExportColumnConfig<T extends string>(
     ),
   ) as Record<T, string>
 
-  const order = (selected: T[]): T[] =>
-    all.filter((column) => selected.includes(column))
+  const order = (selected: T[]): T[] => {
+    const selectedColumns = new Set(selected)
+    return all.filter((column) => selectedColumns.has(column))
+  }
 
-  const isDefault = (selected: T[]): boolean =>
-    selected.length === defaults.length &&
-    defaults.every((column) => selected.includes(column))
+  const isDefault = (selected: T[]): boolean => {
+    const selectedColumns = new Set(selected)
+    return (
+      selected.length === defaults.length &&
+      defaults.every((column) => selectedColumns.has(column))
+    )
+  }
 
   const summarize = (selected: T[]): string => {
     if (selected.length === 0) return 'No fields selected'

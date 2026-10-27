@@ -31,6 +31,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
   const updateOrganization = useUpdateOrganization()
   const { data: embedStatus } = useOrganizationEmbedStatus(organization.id)
   const shared = embedStatus?.shared_hosts ?? NO_SHARED
+  const sharedHosts = new Set(shared)
 
   const save = useCallback(
     async (embed_hosts: string[]) => {
@@ -115,7 +116,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
                 >
                   <Box flexDirection="column">
                     <Text variant="body">{host}</Text>
-                    {shared.includes(host) ? (
+                    {sharedHosts.has(host) ? (
                       <Text variant="caption" color="warning">
                         {`${host.replace('*.', '')} hosts other people's sites. Any of them can embed your checkout.`}
                       </Text>

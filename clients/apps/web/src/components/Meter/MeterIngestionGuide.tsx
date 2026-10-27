@@ -1,6 +1,5 @@
 'use client'
 
-import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import {
@@ -10,8 +9,15 @@ import {
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { Lock } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
-import { useContext } from 'react'
+import { PropsWithChildren, useContext } from 'react'
+
+const Command = ({ children }: PropsWithChildren) => (
+  <Text as="code" variant="caption" color="inherit" monospace wrap="nowrap">
+    {children}
+  </Text>
+)
 
 export const MeterIngestionGuide = () => {
   const { organization } = useContext(OrganizationContext)
@@ -20,7 +26,7 @@ export const MeterIngestionGuide = () => {
   return (
     <SyntaxHighlighterProvider>
       <div className="flex h-full flex-col items-center justify-center gap-6 py-12">
-        <Well className="flex flex-col gap-12 rounded-4xl p-4 md:flex-row">
+        <Well className="flex max-w-full flex-col gap-12 rounded-4xl p-4 md:flex-row">
           <div className="flex w-full flex-col gap-6 p-6 md:max-w-sm">
             <WellHeader>
               <h2 className="text-2xl">Usage Billing with Meters</h2>
@@ -41,27 +47,23 @@ export const MeterIngestionGuide = () => {
               </div>
               {managedAsCode ? (
                 <Box
-                  flexDirection="column"
+                  columnGap="m"
                   alignItems="start"
-                  rowGap="s"
-                  padding="l"
-                  borderRadius="l"
-                  backgroundColor="background-primary"
+                  paddingTop="l"
+                  borderTopWidth={1}
+                  borderStyle="solid"
+                  borderColor="border-primary"
                 >
-                  <ManagedAsCodeBadge />
-                  <Text variant="caption" color="muted">
-                    Add a meter to your config and run{' '}
-                    <Text
-                      as="code"
-                      variant="caption"
-                      color="inherit"
-                      monospace
-                      wrap="nowrap"
-                    >
-                      polar config apply
+                  <Box paddingTop="xs" color="text-tertiary">
+                    <Lock size={14} aria-hidden />
+                  </Box>
+                  <Box flexDirection="column" rowGap="xs">
+                    <Text variant="title">Managed in code</Text>
+                    <Text variant="caption" color="muted" wrap="pretty">
+                      Add meters in <Command>polar.config.ts</Command>, then run{' '}
+                      <Command>polar config apply</Command>.
                     </Text>
-                    .
-                  </Text>
+                  </Box>
                 </Box>
               ) : (
                 <Link

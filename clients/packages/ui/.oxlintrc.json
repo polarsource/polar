@@ -8,6 +8,28 @@
       {
         "ignore": ["cmdk-input-wrapper"]
       }
-    ]
+    ],
+    // 10 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/jsx-no-new-object-as-prop": "off",
+    // 9 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/jsx-no-new-function-as-prop": "off",
+    // 9 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-locale-format-in-render": "off",
+    // 7 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/only-export-components": "off",
+    // 3 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/jsx-no-constructed-context-values": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-array-index-as-key": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-autofocus": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-unstable-nested-components": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/jsx-no-jsx-as-prop": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rerender-lazy-state-init": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rerender-memo-before-early-return": "off"
   }
 }

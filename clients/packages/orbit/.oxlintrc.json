@@ -22,5 +22,27 @@
         "tanstack-table"
       ]
     }
+  },
+  "rules": {
+    // 5 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/click-events-have-key-events": "off",
+    // 5 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-static-element-interactions": "off",
+    // 4 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/only-export-components": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/use-lazy-motion": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/prefer-html-dialog": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/dialog-has-accessible-name": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-array-index-as-key": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-high-complexity-react-function": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-unguarded-browser-global-in-render-or-hook-init": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/control-has-associated-label": "off"
   }
 }

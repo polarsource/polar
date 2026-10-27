@@ -221,21 +221,42 @@ def _iter_model_classes(
         yield from _iter_model_classes(subclass)
 
 
+def _is_omitted(metadata: Iterable[typing.Any], version: APIVersion) -> bool:
+    return any(
+        isinstance(item, _VersionRange) and not item.includes(version)
+        for value in metadata
+        for item in (value.metadata if isinstance(value, FieldInfo) else [value])
+    )
+
+
+def _iter_omitted_union_members(
+    annotation: typing.Any, version: APIVersion
+) -> Generator[typing.Any]:
+    if typing.get_origin(annotation) is typing.Annotated:
+        member, *metadata = typing.get_args(annotation)
+        if _is_omitted(metadata, version):
+            yield member
+            return
+        annotation = member
+    for arg in typing.get_args(annotation):
+        yield from _iter_omitted_union_members(arg, version)
+
+
 def _get_omitted_schema_names(version: APIVersion) -> set[str]:
-    names: set[str] = set()
+    omitted: list[typing.Any] = []
     for model in _iter_model_classes():
         for field in model.__pydantic_fields__.values():
-            if any(
-                isinstance(metadata, _VersionRange) and not metadata.includes(version)
-                for metadata in field.metadata
-            ):
-                schema = TypeAdapter(
-                    typing.cast(
-                        TypeForm[typing.Any],
-                        types.GenericAlias(list, (field.annotation,)),
-                    )
-                ).json_schema(mode="serialization")
-                names.update(schema.get("$defs", {}))
+            if _is_omitted(field.metadata, version):
+                omitted.append(field.annotation)
+            else:
+                omitted.extend(_iter_omitted_union_members(field.annotation, version))
+
+    names: set[str] = set()
+    for annotation in omitted:
+        schema = TypeAdapter(
+            typing.cast(TypeForm[typing.Any], types.GenericAlias(list, (annotation,)))
+        ).json_schema(mode="serialization")
+        names.update(schema.get("$defs", {}))
     return names
 
 

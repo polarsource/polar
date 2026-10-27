@@ -18,7 +18,9 @@ import {
 } from '@polar-sh/ui/components/ui/popover'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import ProductPriceTypeLabel from './ProductPriceTypeLabel'
+import ProductPriceTypeLabel, {
+  type ProductPriceType,
+} from './ProductPriceTypeLabel'
 
 const ProductsCommandGroup = ({
   groupedProducts,
@@ -28,10 +30,10 @@ const ProductsCommandGroup = ({
   selectedProducts,
   className,
 }: {
-  groupedProducts: Record<schemas['ProductPriceType'], schemas['Product'][]>
-  productPriceType: schemas['ProductPriceType']
+  groupedProducts: Record<ProductPriceType, schemas['Product'][]>
+  productPriceType: ProductPriceType
   onSelectProduct: (product: schemas['Product']) => void
-  onSelectProductType: (productPriceType: schemas['ProductPriceType']) => void
+  onSelectProductType: (productPriceType: ProductPriceType) => void
   selectedProducts: schemas['Product'][]
   className?: string
 }) => {
@@ -147,10 +149,10 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
 
   // Group displayed products by product price type
   const groupedProducts = useMemo<
-    Record<schemas['ProductPriceType'], schemas['Product'][]>
+    Record<ProductPriceType, schemas['Product'][]>
   >(() => {
     return displayedProducts.reduce<
-      Record<schemas['ProductPriceType'], schemas['Product'][]>
+      Record<ProductPriceType, schemas['Product'][]>
     >(
       (acc, product) => {
         const type = product.is_recurring ? 'recurring' : 'one_time'
@@ -186,7 +188,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   )
 
   const onSelectProductType = useCallback(
-    (productPriceType: schemas['ProductPriceType']) => {
+    (productPriceType: ProductPriceType) => {
       const products = groupedProducts[productPriceType]
       const allSelected = products.every((product) =>
         value.includes(product.id),

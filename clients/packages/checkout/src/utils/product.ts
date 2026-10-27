@@ -8,7 +8,7 @@ export type MeteredTier =
   schemas['ProductPriceMeteredTiers']['tiers']['tiers'][number]
 
 export const isMeteredPrice = (
-  price: schemas['CheckoutProduct']['prices'][number],
+  price: schemas['ProductPrice'],
 ): price is MeteredPrice =>
   price.amount_type === 'metered_unit' || price.amount_type === 'metered_tiers'
 

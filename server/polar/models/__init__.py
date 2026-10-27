@@ -100,8 +100,6 @@ from .product_benefit import ProductBenefit
 from .product_custom_field import ProductCustomField
 from .product_media import ProductMedia
 from .product_price import (
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -191,8 +189,6 @@ __all__ = [
     "FeedbackType",
     "File",
     "IssueReward",
-    "LegacyRecurringProductPriceCustom",
-    "LegacyRecurringProductPriceFixed",
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",

@@ -11,7 +11,7 @@ import MeteredPriceLabel from './MeteredPriceLabel'
 
 interface ProductPriceLabelProps {
   product: schemas['CheckoutProduct']
-  price: schemas['CheckoutProduct']['prices'][number]
+  price: schemas['ProductPrice']
   locale?: AcceptedLocale
   mode?: 'compact' | 'standard'
 }

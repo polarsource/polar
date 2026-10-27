@@ -11,13 +11,7 @@ import {
   VideoFileOutlined,
 } from '@polar-sh/orbit/icons'
 import { Switch } from '@polar-sh/orbit'
-import {
-  FocusEvent,
-  FormEventHandler,
-  useCallback,
-  useRef,
-  useState,
-} from 'react'
+import { FocusEvent, FormEventHandler, useCallback, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { usePatchFile } from '@/hooks/queries'
@@ -98,7 +92,7 @@ const FilenameEditor = ({
 }) => {
   const paragraphRef = useRef<HTMLParagraphElement>(null)
 
-  const [isDirty, setIsDirty] = useState(false)
+  const isDirtyRef = useRef(false)
 
   // Mimic macOS behavior when editing a filename.
   // Highlighting everything except extension.
@@ -121,28 +115,21 @@ const FilenameEditor = ({
     }
   }
 
-  const update = useCallback(
-    (updated: string) => {
-      if (isDirty) {
-        onUpdate(updated)
-      }
-    },
-    [onUpdate, isDirty],
-  )
-
   const onBlur: FormEventHandler<HTMLParagraphElement> = useCallback(
     (e) => {
       if (!paragraphRef.current) return
-      setIsDirty(false)
-      const updated = (e.target as HTMLParagraphElement).innerText ?? ''
-      update(updated)
+      const wasDirty = isDirtyRef.current
+      isDirtyRef.current = false
+      if (wasDirty) {
+        onUpdate((e.target as HTMLParagraphElement).innerText ?? '')
+      }
     },
-    [update],
+    [onUpdate],
   )
 
   const onEditableChanged: FormEventHandler<HTMLParagraphElement> = () => {
     if (!paragraphRef.current) return
-    setIsDirty(true)
+    isDirtyRef.current = true
   }
 
   return (

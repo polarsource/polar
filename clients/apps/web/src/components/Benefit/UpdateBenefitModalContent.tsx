@@ -9,7 +9,14 @@ import { isValidationError, operations, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useForm } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 import { isBenefitVisibilityConfigurable } from '../Benefit/utils'
@@ -54,9 +61,7 @@ const UpdateBenefitModalContent = ({
   const { setError } = form
 
   const [isUploading, setIsUploading] = useState(false)
-  const [pendingUpdate, setPendingUpdate] = useState<BenefitUpdateForm | null>(
-    null,
-  )
+  const pendingUpdateRef = useRef<BenefitUpdateForm | null>(null)
 
   const { isDirty } = form.formState
   useEffect(() => {
@@ -106,7 +111,7 @@ const UpdateBenefitModalContent = ({
   const onValidSubmit = useCallback(
     (values: BenefitUpdateForm) => {
       if (confirmOnUpdate) {
-        setPendingUpdate(values)
+        pendingUpdateRef.current = values
         showConfirm()
       } else {
         handleUpdateNewBenefit(values)
@@ -116,10 +121,10 @@ const UpdateBenefitModalContent = ({
   )
 
   const handleConfirmUpdate = useCallback(() => {
-    if (pendingUpdate) {
-      handleUpdateNewBenefit(pendingUpdate)
+    if (pendingUpdateRef.current) {
+      handleUpdateNewBenefit(pendingUpdateRef.current)
     }
-  }, [pendingUpdate, handleUpdateNewBenefit])
+  }, [handleUpdateNewBenefit])
 
   const onCancel = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()

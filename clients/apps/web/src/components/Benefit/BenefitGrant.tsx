@@ -171,9 +171,7 @@ const BenefitGrantOAuth = ({
   }, [customer, api, pathname, platform])
 
   const updateBenefitGrant = useCustomerBenefitGrantUpdate(api)
-  const [selectedAccountKey, setSelectedAccountKey] = useState<
-    string | undefined
-  >(undefined)
+  const selectedAccountKeyRef = useRef<string | undefined>(undefined)
 
   const onAccountReset = useCallback(async () => {
     await updateBenefitGrant.mutateAsync({
@@ -189,6 +187,7 @@ const BenefitGrantOAuth = ({
   }, [updateBenefitGrant, benefitGrant.id, benefitType])
 
   const onAccountSubmit = useCallback(async () => {
+    const selectedAccountKey = selectedAccountKeyRef.current
     if (!selectedAccountKey) {
       return
     }
@@ -202,7 +201,7 @@ const BenefitGrantOAuth = ({
       },
     })
     setShowAccountSelector(false)
-  }, [updateBenefitGrant, selectedAccountKey, benefitGrant.id, benefitType])
+  }, [updateBenefitGrant, benefitGrant.id, benefitType])
 
   return (
     <div className="flex flex-col gap-2">
@@ -248,7 +247,7 @@ const BenefitGrantOAuth = ({
                   if (value === 'add') {
                     authorize()
                   } else {
-                    setSelectedAccountKey(value)
+                    selectedAccountKeyRef.current = value
                   }
                 }}
               >

@@ -1,8 +1,8 @@
 """drop product_prices type and recurring_interval indexes
 
 Revision ID: dbdabb804bde
-Revises: 0b6d1f3c9a2e
-Create Date: 2026-10-13 12:01:41.454896
+Revises: a38dbe96722b
+Create Date: 2026-10-27 09:00:41.454896
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "dbdabb804bde"
-down_revision = "0b6d1f3c9a2e"
+down_revision = "a38dbe96722b"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -47,6 +47,7 @@ export {
   Gauge,
   Gift,
   Github,
+  Globe,
   GripVertical,
   Info,
   Key,

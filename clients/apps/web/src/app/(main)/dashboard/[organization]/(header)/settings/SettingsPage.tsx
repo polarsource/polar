@@ -1,203 +1,49 @@
 'use client'
 
-import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import FeatureSettings from '@/components/Settings/FeatureSettings'
-import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
-import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
-import OrganizationCustomerPortalSettings from '@/components/Settings/OrganizationCustomerPortalSettings'
-import OrganizationDisputeSettings from '@/components/Settings/OrganizationDisputeSettings'
-import OrganizationDomainsSettings from '@/components/Settings/OrganizationDomainsSettings'
-import OrganizationEmbedSettings from '@/components/Settings/OrganizationEmbedSettings'
 import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
-import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
-import OrganizationPaymentSettings from '@/components/Settings/OrganizationPaymentSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
-import OrganizationSubscriptionSettings from '@/components/Settings/OrganizationSubscriptionSettings'
-import { Section, SectionDescription } from '@/components/Settings/Section'
-import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
-import { useUserOrganizationNotificationSettings } from '@/hooks/queries/user_organizations'
-import { CONFIG } from '@/utils/config'
+import {
+  getSettingsSection,
+  LEGACY_SETTINGS_HASHES,
+} from '@/components/Settings/settingsSections'
+import { useHasPermission } from '@/hooks/permissions'
 import { schemas } from '@polar-sh/client'
-import { Alert } from '@polar-sh/orbit'
-import Link from 'next/link'
+import { Box } from '@polar-sh/orbit/Box'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function ClientPage({
   organization: org,
 }: {
   organization: schemas['Organization']
 }) {
+  const router = useRouter()
   const canManageOrganization = useHasPermission(org.id, 'organization:manage')
-  const managedAsCode = useIsManagedAsCode(org.id)
-  const { data: userNotificationSettings } =
-    useUserOrganizationNotificationSettings(org.id)
+
+  useEffect(() => {
+    const section = LEGACY_SETTINGS_HASHES[window.location.hash.slice(1)]
+    if (section && getSettingsSection(section, org)) {
+      router.replace(`/dashboard/${org.slug}/settings/${section}`)
+    }
+  }, [router, org])
 
   return (
-    <DashboardBody
-      wrapperClassName="max-w-(--breakpoint-sm)!"
-      title="Preferences"
-    >
-      <div className="flex flex-col gap-y-12">
-        <Section id="organization">
-          <SectionDescription title="Organization" />
-          <OrganizationProfileSettings
-            organization={org}
-            readOnly={!canManageOrganization}
-          />
-        </Section>
-
-        <Section id="payments">
-          <SectionDescription
-            title="Payments"
-            badge={managedAsCode ? <ManagedAsCodeBadge /> : undefined}
-          />
-          <OrganizationPaymentSettings
-            organization={org}
-            readOnly={!canManageOrganization}
-          />
-        </Section>
-
-        <Section id="subscriptions">
-          <SectionDescription title="Subscriptions" />
-          <OrganizationSubscriptionSettings
-            organization={org}
-            readOnly={!canManageOrganization}
-          />
-        </Section>
-
-        {org.feature_settings?.disputes_enabled &&
-          org.feature_settings?.dispute_auto_accept_enabled && (
-            <Section id="disputes">
-              <SectionDescription title="Disputes" />
-              <OrganizationDisputeSettings
-                organization={org}
-                readOnly={!canManageOrganization}
-              />
-            </Section>
-          )}
-
-        <Section id="customer_portal">
-          <SectionDescription title="Customer portal" />
-          <OrganizationCustomerPortalSettings
-            organization={org}
-            readOnly={!canManageOrganization}
-          />
-        </Section>
-
-        <Section id="embedding">
-          <SectionDescription
-            title="Embedding"
-            description="Hosts allowed to embed your checkout"
-          />
-          <OrganizationEmbedSettings
-            organization={org}
-            readOnly={!canManageOrganization}
-          />
-        </Section>
-
-        {canManageOrganization && (
-          <Section id="domains">
-            <SectionDescription
-              title="Domains"
-              description="Domains your organization owns"
-            />
-            <OrganizationDomainsSettings organization={org} />
-          </Section>
-        )}
-
-        <Section id="customer_emails">
-          <SectionDescription
-            title="Customer notifications"
-            description="Emails automatically sent to customers for purchases, renewals, and other subscription lifecycle events"
-          />
-          {CONFIG.IS_SANDBOX && (
-            <Alert
-              variant="warning"
-              title="Sandbox notice"
-              description={
-                <>
-                  In sandbox, customer-facing emails are only delivered to{' '}
-                  <Link
-                    href="./members"
-                    className="font-medium underline hover:no-underline"
-                  >
-                    members of your organization
-                  </Link>
-                  . Sub-addressing aliases like{' '}
-                  <strong className="font-medium">you+test@example.com</strong>{' '}
-                  are accepted.
-                </>
-              }
-            />
-          )}
-          <OrganizationCustomerEmailSettings
-            organization={org}
-            readOnly={!canManageOrganization}
-          />
-        </Section>
-
-        <Section id="account-notifications">
-          <SectionDescription
-            title="Your notifications"
-            description="Choose which emails you receive as a member of this organization."
-          />
-          {userNotificationSettings && (
-            <OrganizationNotificationSettings
-              organization={org}
-              userNotificationSettings={userNotificationSettings}
-            />
-          )}
-        </Section>
-
-        <Section id="features">
-          <SectionDescription
-            title="Features"
-            description="Manage alpha & beta features for your organization"
-          />
-          {CONFIG.IS_SANDBOX && (
-            <Alert
-              title="Preview features in sandbox"
-              description={
-                <>
-                  To enable paid access to preview features in sandbox, go to{' '}
-                  <Link
-                    href="./billing"
-                    className="font-medium underline hover:no-underline"
-                  >
-                    Settings → Billing
-                  </Link>
-                  .
-                </>
-              }
-            />
-          )}
-          <FeatureSettings
-            organization={org}
-            readOnly={!canManageOrganization}
-          />
-        </Section>
-
-        <Section id="developers">
-          <SectionDescription
-            title="Developers"
-            description="Manage access tokens to authenticate with the Polar API"
-          />
-          {canManageOrganization === false ? (
-            <AccessRestricted message="You don't have permission to manage access tokens for this organization. Ask an admin if you need access." />
-          ) : (
-            <OrganizationAccessTokensSettings organization={org} />
-          )}
-        </Section>
-
-        <Section id="danger">
-          {canManageOrganization === false ? (
-            <AccessRestricted message="You don't have permission to delete this organization." />
-          ) : (
+    <DashboardBody wrapperClassName="max-w-(--breakpoint-md)!" title="General">
+      <Box flexDirection="column" rowGap="2xl">
+        <OrganizationProfileSettings
+          organization={org}
+          readOnly={!canManageOrganization}
+        />
+        <Box id="danger" flexDirection="column">
+          {canManageOrganization ? (
             <OrganizationDeleteSettings organization={org} />
+          ) : (
+            <AccessRestricted message="You don't have permission to delete this organization." />
           )}
-        </Section>
-      </div>
+        </Box>
+      </Box>
     </DashboardBody>
   )
 }

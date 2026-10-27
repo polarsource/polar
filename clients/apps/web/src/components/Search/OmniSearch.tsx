@@ -4,6 +4,7 @@ import {
   useGeneralRoutes,
   useOrganizationRoutes,
 } from '@/components/Dashboard/navigation'
+import { useSettingsRoutes } from '@/components/Dashboard/navigationSettings'
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -42,9 +43,15 @@ export const OmniSearch = ({
 
   const generalRoutes = useGeneralRoutes(organization)
   const orgRoutes = useOrganizationRoutes(organization)
+  const settingsRoutes = useSettingsRoutes(organization)
   const allRoutes = useMemo(
-    () => [...generalRoutes, ...orgRoutes],
-    [generalRoutes, orgRoutes],
+    () => [
+      ...generalRoutes,
+      ...orgRoutes.map((route) =>
+        route.id === 'settings' ? { ...route, subs: settingsRoutes } : route,
+      ),
+    ],
+    [generalRoutes, orgRoutes, settingsRoutes],
   )
 
   const quickActions = useMemo(

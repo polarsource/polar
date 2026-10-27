@@ -353,37 +353,5 @@ const organizationRoutesList = (
     link: `/dashboard/${org?.slug}/settings`,
     icon: <TuneOutlined fontSize="inherit" />,
     if: true,
-    subs: [
-      {
-        title: 'Preferences',
-        link: `/dashboard/${org?.slug}/settings`,
-      },
-      {
-        title: 'Billing',
-        link: `/dashboard/${org?.slug}/settings/billing`,
-      },
-      {
-        title: 'Members',
-        link: `/dashboard/${org?.slug}/settings/members`,
-      },
-      {
-        title: 'Webhooks',
-        link: `/dashboard/${org?.slug}/settings/webhooks`,
-      },
-      {
-        title: 'Custom Fields',
-        link: `/dashboard/${org?.slug}/settings/custom-fields`,
-      },
-      {
-        title: 'Single Sign-On',
-        link: `/dashboard/${org?.slug}/settings/sso`,
-        if: !!org?.feature_settings?.sso_enabled,
-      },
-      {
-        title: 'Migrations',
-        link: `/dashboard/${org?.slug}/settings/migrations`,
-        if: !!org?.feature_settings?.merchant_migration_enabled,
-      },
-    ],
   },
 ]

@@ -8,6 +8,7 @@ import {
   DonutLargeOutlined,
   ExploreOutlined,
   GavelOutlined,
+  HistoryRounded,
   HiveOutlined,
   LinkOutlined,
   PeopleAltOutlined,
@@ -162,6 +163,7 @@ const PRODUCT_SECTIONS = [
   'benefits',
   'checkout-links',
   'discounts',
+  'versions',
 ] as const
 
 const productSectionRoute = (
@@ -222,6 +224,12 @@ const catalogRoutesList = (org?: schemas['Organization']): Route[] => {
       'checkout-links',
       'Checkout Links',
       <LinkOutlined fontSize="inherit" />,
+    ),
+    productSectionRoute(
+      org,
+      'versions',
+      'Versions',
+      <HistoryRounded fontSize="inherit" />,
     ),
   ]
 }

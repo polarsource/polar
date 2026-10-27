@@ -1495,6 +1495,50 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/domains/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Organization Domains
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organization_domains:list_organization_domains']
+    put?: never
+    /**
+     * Create Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_domains:create_organization_domain']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/domains/{domain_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Delete Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    delete: operations['organization_domains:delete_organization_domain']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -25871,6 +25915,12 @@ export interface components {
       items: components['schemas']['OrganizationBenefitGrant'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationDomain] */
+    ListResource_OrganizationDomain_: {
+      /** Items */
+      items: components['schemas']['OrganizationDomain'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[OrganizationMember] */
     ListResource_OrganizationMember_: {
       /** Items */
@@ -30679,6 +30729,62 @@ export interface components {
        * @description Concede disputes below this amount, in USD cents, without asking the organization. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted.
        */
       auto_accept_below_amount?: number | null
+    }
+    /** OrganizationDomain */
+    OrganizationDomain: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Domain
+       * @description Domain name.
+       */
+      domain: string
+      /**
+       * Verified At
+       * @description When Polar verified the domain. `null` while pending.
+       */
+      verified_at: string | null
+      /**
+       * Verification Record Value
+       * @description Value to publish in a DNS TXT record to prove ownership.
+       */
+      verification_record_value: string | null
+    }
+    /** OrganizationDomainAlreadyExists */
+    OrganizationDomainAlreadyExists: {
+      /**
+       * Error
+       * @example OrganizationDomainAlreadyExists
+       * @constant
+       */
+      error: 'OrganizationDomainAlreadyExists'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationDomainCreate */
+    OrganizationDomainCreate: {
+      /**
+       * Domain
+       * @description Domain name, without scheme or path.
+       * @example example.com
+       */
+      domain: string
     }
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
@@ -45667,6 +45773,170 @@ export interface operations {
         }
       }
       /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:list_organization_domains': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_OrganizationDomain_']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:create_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationDomainCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomain']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The domain is already added to this organization. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainAlreadyExists']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:delete_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        domain_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or domain not found. */
       404: {
         headers: {
           [name: string]: unknown

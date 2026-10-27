@@ -113,7 +113,7 @@ export const MetricDashboardEditorContent = ({
   isPending,
   saveLabel = 'Save',
 }: MetricDashboardEditorContentProps) => {
-  const [selected, setSelected] = useState<MetricItem[]>(
+  const [selected, setSelected] = useState<MetricItem[]>(() =>
     activeMetrics.map(toItem),
   )
 

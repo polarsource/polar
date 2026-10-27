@@ -12,7 +12,7 @@ from polar.outpost.event import Event, PropertyReader, get_property_reader
 
 class FilterClause(typing.TypedDict):
     property: str
-    operator: typing.Literal["eq", "ne", "gt", "gte", "lt", "lte"]
+    operator: typing.Literal["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"]
     value: str | int | float | bool
 
 
@@ -110,9 +110,21 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
     if is_filter_clause(clause):
         expected = clause["value"]
         expected_type = type(expected)
-        filter_operator = FILTER_OPERATORS[clause["operator"]]
         read = get_property_reader(clause["property"])
 
+        if clause["operator"] in ("like", "not_like"):
+            # Polar compares strings; a number or boolean on either side matches nothing.
+            if not isinstance(expected, str):
+                return lambda event: False
+            contains = clause["operator"] == "like"
+
+            def contains_matcher(event: Event) -> bool:
+                actual = read(event)
+                return isinstance(actual, str) and (expected in actual) is contains
+
+            return contains_matcher
+
+        filter_operator = FILTER_OPERATORS[clause["operator"]]
         if filter_operator in (operator.eq, operator.ne):
 
             def equality_matcher(event: Event) -> bool:
@@ -135,6 +147,8 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
         return ordering_matcher
 
     child_matchers = [get_matcher(child) for child in clause["clauses"]]
+    if not child_matchers:
+        return lambda event: True
     if len(child_matchers) == 1:
         return child_matchers[0]
     if clause["conjunction"] == "and":

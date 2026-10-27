@@ -7,7 +7,7 @@ from enum import StrEnum
 from pathlib import Path
 from time import monotonic
 from typing import Any, Literal, NotRequired, TypedDict
-from uuid import NAMESPACE_URL, UUID, uuid5
+from uuid import UUID, uuid4
 
 import dramatiq
 import typer
@@ -130,6 +130,9 @@ from polar.worker import JobQueueManager
 from scripts.db import assert_dev_or_testing
 from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
+)
+from scripts.seed_polar_for_polar import (
+    EXTERNAL_BENEFITS as POLAR_SELF_EXTERNAL_BENEFITS,
 )
 from scripts.seed_polar_for_polar import (
     MONTHLY_PRODUCTS as POLAR_SELF_MONTHLY_PRODUCTS,
@@ -1133,7 +1136,11 @@ async def _seed_polar_self_billing_catalog(
             ProductBenefit(
                 benefit=benefits_by_description[benefit_description], order=order
             )
-            for order, benefit_description in enumerate(benefit_descriptions)
+            for order, benefit_description in enumerate(
+                description
+                for description in benefit_descriptions
+                if description not in POLAR_SELF_EXTERNAL_BENEFITS
+            )
         ]
 
 
@@ -2387,10 +2394,7 @@ def _namespace_simple_complement_events(
 ) -> None:
     id_mapping: dict[UUID, UUID] = {}
     for index, event in enumerate(events):
-        event_id = uuid5(
-            NAMESPACE_URL,
-            f"{SIMPLE_COMPLEMENT_EVENT_PREFIX}{organization.slug}:{customer.id}:{index}",
-        )
+        event_id = uuid4()
         previous_id = event.get("id")
         if isinstance(previous_id, UUID):
             id_mapping[previous_id] = event_id

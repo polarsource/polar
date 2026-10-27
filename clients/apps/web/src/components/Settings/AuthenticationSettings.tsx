@@ -185,7 +185,7 @@ const AuthenticationSettings = () => {
   const searchParams = useSearchParams()
   const [updateEmailStage, setUpdateEmailStage] = useState<
     'off' | 'form' | 'request' | 'verified'
-  >((searchParams.get('update_email') as 'verified' | null) || 'off')
+  >(() => (searchParams.get('update_email') as 'verified' | null) || 'off')
   const userReloaded = useRef(false)
 
   const oauthLinkError =

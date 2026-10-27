@@ -99,7 +99,7 @@ const MeterFilterInput = ({
         const property = watch(`${prefix}.clauses.${index}.property`)
 
         return (
-          <div key={index}>
+          <div key={clause.id}>
             {isFilterClause(
               clause as unknown as schemas['Filter'] | schemas['FilterClause'],
             ) ? (

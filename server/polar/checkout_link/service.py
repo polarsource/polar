@@ -36,7 +36,6 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
 
 from .schemas import (
-    CheckoutLinkCreate,
     CheckoutLinkCreateProduct,
     CheckoutLinkCreateProductPrice,
     CheckoutLinkCreateProducts,
@@ -126,7 +125,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     async def create(
         self,
         session: AsyncSession,
-        checkout_link_create: CheckoutLinkCreate,
+        checkout_link_create: CheckoutLinkCreateProducts
+        | CheckoutLinkCreateProduct
+        | CheckoutLinkCreateProductPrice,
         auth_subject: AuthSubject[User | Organization | Agent],
     ) -> CheckoutLink:
         if isinstance(checkout_link_create, CheckoutLinkCreateProducts):

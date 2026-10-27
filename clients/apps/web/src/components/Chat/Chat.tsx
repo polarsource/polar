@@ -16,6 +16,8 @@ import {
 } from './types'
 import { useFileDrop } from './useFileDrop'
 
+const EMPTY_ATTACHMENTS: ChatAttachment[] = []
+
 interface ComposerConfig {
   onSend: (text: string, fileIds: string[]) => Promise<{ error?: unknown }>
   isSendPending: boolean
@@ -46,7 +48,7 @@ interface Props {
 
 export const Chat = ({
   messages,
-  attachments = [],
+  attachments = EMPTY_ATTACHMENTS,
   isOpen,
   composer,
   title = 'Messages',

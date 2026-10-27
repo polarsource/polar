@@ -745,15 +745,23 @@ class TinybirdEventsQuery:
                 func.toUnixTimestamp(events_table.c.timestamp), clause
             )
 
+        is_like = clause.operator in (FilterOperator.like, FilterOperator.not_like)
         col = DENORMALIZED_COLUMNS.get(clause.property)
         if col is not None:
+            if is_like and not isinstance(col.type, String):
+                return false()
             return self._ch_comparison(col, clause)
 
         parts = clause.property.split(".")
-        if clause.operator in (
-            FilterOperator.like,
-            FilterOperator.not_like,
-        ) or isinstance(clause.value, str):
+        if is_like:
+            return and_(
+                func.JSONType(events_table.c.user_metadata, *parts) == "String",
+                self._ch_comparison(
+                    func.JSONExtractString(events_table.c.user_metadata, *parts),
+                    clause,
+                ),
+            )
+        if isinstance(clause.value, str):
             attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
         else:
             attr = func.JSONExtractFloat(events_table.c.user_metadata, *parts)
@@ -763,11 +771,13 @@ class TinybirdEventsQuery:
     def _ch_comparison(attr: Any, clause: FilterClause) -> Any:
         v = clause.value
         if clause.operator in (FilterOperator.like, FilterOperator.not_like):
-            needle = str(v) if not isinstance(v, bool) else ("t" if v else "f")
+            # LIKE and NOT LIKE compare strings only
+            if not isinstance(v, str):
+                return false()
             haystack = func.toString(attr)
             if clause.operator == FilterOperator.like:
-                return _contains(haystack, needle)
-            return ~_contains(haystack, needle)
+                return _contains(haystack, v)
+            return ~_contains(haystack, v)
         op = clause.operator
         if op == FilterOperator.eq:
             return attr == v

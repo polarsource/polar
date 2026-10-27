@@ -136,8 +136,8 @@ export const cover: Piece = {
             <path d={LOGO_MARK_ARC_PATH} />
           </g>
         </g>
-        {anchors.map((a, i) => (
-          <Anchor key={i} at={P(a.x, a.y)} size={3.2} />
+        {anchors.map((a) => (
+          <Anchor key={`${a.x},${a.y}`} at={P(a.x, a.y)} size={3.2} />
         ))}
       </svg>
     )

@@ -64,9 +64,9 @@ const AccountWidgetContent = ({ className }: AccountWidgetProps) => {
     >
       {allPayouts.length > 0 ? (
         <div className="flex flex-col gap-y-2 pb-6">
-          {allPayouts.map((payout, i) => (
+          {allPayouts.map((payout) => (
             <Card
-              key={i}
+              key={payout.id}
               className="dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4"
             >
               <div className="dark:text-polar-400 flex flex-row items-baseline justify-between text-sm text-gray-700">

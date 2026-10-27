@@ -38,6 +38,7 @@ from polar.tax.tax_id import TaxID, TaxIDType
 if TYPE_CHECKING:
     from polar.models import (
         Checkout,
+        CreditNote,
         Customer,
         CustomerSeat,
         Discount,
@@ -276,6 +277,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         # Items are almost always needed, so eager loading makes sense
         lazy="selectin",
     )
+
+    @declared_attr
+    def credit_notes(cls) -> Mapped[list["CreditNote"]]:
+        return relationship("CreditNote", lazy="raise", back_populates="order")
 
     @declared_attr
     def customer_seats(cls) -> Mapped[list["CustomerSeat"]]:

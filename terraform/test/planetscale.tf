@@ -13,6 +13,9 @@ module "planetscale" {
     pgconf = {
       max_connections = "50"
     }
+    pgbouncer = {
+      track_extra_parameters = "IntervalStyle,statement_timeout"
+    }
   }
 }
 

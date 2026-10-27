@@ -240,7 +240,12 @@ class DeclarativeConfigService:
         if new_products:
             assert version_hash is not None
             await catalog_service.publish(
-                session, organization, live, new_products, version_hash
+                session,
+                organization,
+                live,
+                new_products,
+                version_hash,
+                name=config.catalog_name,
             )
         await catalogs.carry_over_references(session, changes.products, new_products)
         if (

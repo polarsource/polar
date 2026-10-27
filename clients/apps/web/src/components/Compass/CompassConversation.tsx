@@ -15,7 +15,7 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import { ComponentType, RefObject, useEffect } from 'react'
 import { CompassInputBar } from './CompassInputBar'
 import { CompassMessageList } from './CompassMessageList'
@@ -132,7 +132,7 @@ export const CompassConversation = ({
   }, [lastMessageId, scrollToBottom])
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
@@ -233,6 +233,6 @@ export const CompassConversation = ({
           />
         </div>
       </div>
-    </motion.div>
+    </m.div>
   )
 }

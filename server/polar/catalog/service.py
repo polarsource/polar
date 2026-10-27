@@ -1,6 +1,11 @@
 import hashlib
-from collections.abc import Mapping
+import uuid
+from collections.abc import Mapping, Sequence
 
+from polar.auth.models import Agent, AuthSubject, User
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import get_accessible_org_ids
+from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
     Catalog,
@@ -11,6 +16,7 @@ from polar.models import (
     ProductMedia,
 )
 from polar.models.catalog import CatalogStatus
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 
@@ -27,6 +33,35 @@ def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) ->
 
 
 class CatalogService:
+    async def list(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[CatalogStatus] | None = None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[Catalog], int]:
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        if organization_id is not None:
+            org_ids = {oid for oid in org_ids if oid in set(organization_id)}
+        enabled_org_ids = await OrganizationRepository.from_session(
+            session
+        ).get_ids_with_feature(set(org_ids), "config_as_code_enabled")
+        org_ids = {oid for oid in org_ids if oid in enabled_org_ids}
+
+        repository = CatalogRepository.from_session(session)
+        statement = repository.get_statement_by_org_ids(org_ids)
+        if status is not None:
+            statement = statement.where(Catalog.status.in_(status))
+        return await repository.paginate(
+            statement,
+            limit=pagination.limit,
+            page=pagination.page,
+        )
+
     async def get_live_entries(
         self, session: AsyncReadSession, organization: Organization
     ) -> tuple[str | None, dict[str, str]]:
@@ -115,6 +150,7 @@ class CatalogService:
         live: Catalog | None,
         new_products: Mapping[str, Product],
         version_hash: str,
+        name: str | None = None,
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
         catalog_product_repository = CatalogProductRepository.from_session(session)
@@ -136,6 +172,7 @@ class CatalogService:
         catalog = await repository.create(
             Catalog(
                 organization=organization,
+                name=name,
                 version_hash=version_hash,
                 status=CatalogStatus.live,
                 published_at=utc_now(),

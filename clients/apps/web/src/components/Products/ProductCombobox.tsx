@@ -1,7 +1,6 @@
 'use client'
 
 import { useProduct, useProducts } from '@/hooks/queries'
-import { hasLegacyRecurringPrices } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit'
@@ -116,10 +115,6 @@ export const ProductCombobox = ({
 
   const products = useMemo(() => {
     let items = (queriedProducts?.items ?? []).filter(
-      (product) => !hasLegacyRecurringPrices(product),
-    )
-
-    items = items.filter(
       (product) =>
         product.id !== currentProductId ||
         hasNewPricing(product, currentPriceIds),
@@ -128,7 +123,6 @@ export const ProductCombobox = ({
     if (
       !normalizedQuery &&
       currentProduct &&
-      !hasLegacyRecurringPrices(currentProduct) &&
       hasNewPricing(currentProduct, currentPriceIds) &&
       !items.some((product) => product.id === currentProduct.id)
     ) {

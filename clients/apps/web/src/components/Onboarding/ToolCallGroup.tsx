@@ -155,13 +155,7 @@ const getToolLabel = (part: DynamicToolUIPart): string => {
   }
 }
 
-export const ToolCallGroup = ({
-  parts,
-  messageId,
-}: {
-  parts: DynamicToolUIPart[]
-  messageId: string
-}) => {
+export const ToolCallGroup = ({ parts }: { parts: DynamicToolUIPart[] }) => {
   const [expanded, setExpanded] = useState(false)
 
   if (parts.length === 0) return null
@@ -204,11 +198,11 @@ export const ToolCallGroup = ({
           borderColor="border-primary"
           paddingLeft="l"
         >
-          {parts.map((part, index) => {
+          {parts.map((part) => {
             const label = getToolLabel(part)
             return (
               <p
-                key={`${messageId}-tool-${index}`}
+                key={part.toolCallId}
                 className="dark:text-polar-500 flex items-center gap-1 text-sm text-gray-500"
               >
                 {label}

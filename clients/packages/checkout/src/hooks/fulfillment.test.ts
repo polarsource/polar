@@ -1,4 +1,4 @@
-import type { Client, schemas } from '@polar-sh/client'
+import type { Client } from '@polar-sh/client'
 import { renderHook } from '@testing-library/react'
 import EventEmitter from 'eventemitter3'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -18,8 +18,6 @@ const client = { baseUrl: 'https://api.example.com' } as unknown as Client
 const emitSucceeded = () =>
   events.emit('checkout.updated', { status: 'succeeded' })
 const emitOrderCreated = () => events.emit('checkout.order_created', {})
-const emitSubscriptionCreated = () =>
-  events.emit('checkout.subscription_created', {})
 const emitWebhookDelivered = () =>
   events.emit('checkout.webhook_event_delivered', { status: 'succeeded' })
 
@@ -96,27 +94,6 @@ describe('useCheckoutFulfillmentListener', () => {
 
     await vi.advanceTimersByTimeAsync(1)
     await expect(promise).rejects.toBeUndefined()
-    expect(abortMock).toHaveBeenCalled()
-  })
-
-  it('also waits for subscription_created on legacy recurring product prices', async () => {
-    const legacyRecurringPrice = {
-      ...createFixedPrice(),
-      type: 'recurring',
-    } as unknown as schemas['LegacyRecurringProductPrice']
-
-    const promise = renderListener({
-      product_price: legacyRecurringPrice as unknown as schemas['ProductPrice'],
-    })()
-    promise.catch(() => {})
-
-    emitSucceeded()
-    emitOrderCreated()
-    emitWebhookDelivered()
-    expect(await isPending(promise)).toBe(true)
-
-    emitSubscriptionCreated()
-    await expect(promise).resolves.toBeUndefined()
     expect(abortMock).toHaveBeenCalled()
   })
 })

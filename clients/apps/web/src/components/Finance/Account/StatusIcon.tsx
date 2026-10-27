@@ -6,7 +6,7 @@ import type {
   BackgroundColorToken,
   TextColorToken,
 } from '@polar-sh/orbit/theme'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import {
   Check as CheckIcon,
   CircleDashed as CircleDashedIcon,
@@ -67,7 +67,7 @@ export const StatusIcon = ({ status, reasons }: Props) => {
       color={appearance.color}
     >
       <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
+        <m.span
           key={`${status}-${isWaiting}`}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -76,7 +76,7 @@ export const StatusIcon = ({ status, reasons }: Props) => {
           className="flex items-center justify-center"
         >
           <Icon className="h-3.5 w-3.5" />
-        </motion.span>
+        </m.span>
       </AnimatePresence>
     </Box>
   )

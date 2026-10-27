@@ -1,6 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { LoaderCircle as Loader2, Paperclip, Send } from '@polar-sh/orbit/icons'
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { AttachmentChips } from './AttachmentChips'
@@ -127,7 +127,7 @@ export const Composer = ({
         <div className="dark:border-polar-700 dark:bg-polar-800 relative flex-1 rounded-2xl border border-gray-200 bg-white">
           <AnimatePresence initial={false}>
             {attachments.length > 0 && (
-              <motion.div
+              <m.div
                 key="attachment-chips"
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
@@ -139,7 +139,7 @@ export const Composer = ({
                   attachments={attachments}
                   onRemove={removeAttachment}
                 />
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
           <textarea

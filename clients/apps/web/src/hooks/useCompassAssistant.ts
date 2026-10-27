@@ -9,6 +9,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export type AssistantPart =
   | schemas['AssistantTextPart']
   | schemas['AssistantBlockPart']
+/** A part as held on screen, keyed by its message and position within it. */
+export type AssistantMessagePart = AssistantPart & { id: string }
 /**
  * The closed set of renderable blocks the assistant can produce. Mirrors the
  * backend `AssistantBlock` union; anything outside it is ignored by the
@@ -22,21 +24,34 @@ export type DataTableRow = schemas['DataTableBlock']['rows'][number]
 export interface AssistantMessage {
   id: string
   role: 'user' | 'assistant'
-  parts: AssistantPart[]
+  parts: AssistantMessagePart[]
   answeredAt: string
   restored?: boolean
   prompt?: string
 }
 
+const partId = (messageId: string, position: number) =>
+  `${messageId}-part-${position}`
+
+const appendPart = (
+  messageId: string,
+  parts: AssistantMessagePart[],
+  part: AssistantPart,
+): AssistantMessagePart[] => [
+  ...parts,
+  { ...part, id: partId(messageId, parts.length) },
+]
+
 const appendDelta = (
-  parts: AssistantPart[],
+  messageId: string,
+  parts: AssistantMessagePart[],
   delta: string,
-): AssistantPart[] => {
+): AssistantMessagePart[] => {
   const last = parts[parts.length - 1]
   if (last && last.kind === 'text') {
-    return [...parts.slice(0, -1), { kind: 'text', text: last.text + delta }]
+    return [...parts.slice(0, -1), { ...last, text: last.text + delta }]
   }
-  return [...parts, { kind: 'text', text: delta }]
+  return appendPart(messageId, parts, { kind: 'text', text: delta })
 }
 
 interface UseCompassAssistantOptions {
@@ -86,7 +101,7 @@ export const useCompassAssistant = ({
   const appendToAssistant = useCallback(
     (
       assistantId: string,
-      apply: (parts: AssistantPart[]) => AssistantPart[],
+      apply: (parts: AssistantMessagePart[]) => AssistantMessagePart[],
     ) => {
       setMessages((prev) =>
         prev.map((message) =>
@@ -115,7 +130,7 @@ export const useCompassAssistant = ({
         {
           id: userId,
           role: 'user',
-          parts: [{ kind: 'text', text: prompt }],
+          parts: [{ kind: 'text', text: prompt, id: partId(userId, 0) }],
           answeredAt,
         },
         { id: assistantId, role: 'assistant', parts: [], answeredAt, prompt },
@@ -159,13 +174,15 @@ export const useCompassAssistant = ({
           const payload = JSON.parse(data)
           if (event === 'text') {
             appendToAssistant(assistantId, (parts) =>
-              appendDelta(parts, payload.delta),
+              appendDelta(assistantId, parts, payload.delta),
             )
           } else if (event === 'block') {
-            appendToAssistant(assistantId, (parts) => [
-              ...parts,
-              { kind: 'block', block: payload as AssistantBlock },
-            ])
+            appendToAssistant(assistantId, (parts) =>
+              appendPart(assistantId, parts, {
+                kind: 'block',
+                block: payload as AssistantBlock,
+              }),
+            )
           } else if (event === 'thread') {
             // Adopt the new thread so a mid-stream refresh can recover it
             setThread(payload.thread_id)
@@ -182,7 +199,7 @@ export const useCompassAssistant = ({
             })
           } else if (event === 'error') {
             appendToAssistant(assistantId, (parts) =>
-              appendDelta(parts, payload.message),
+              appendDelta(assistantId, parts, payload.message),
             )
           }
         }
@@ -203,7 +220,11 @@ export const useCompassAssistant = ({
         // is not a failure.
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           appendToAssistant(assistantId, (parts) =>
-            appendDelta(parts, 'Something went wrong. Please try again.'),
+            appendDelta(
+              assistantId,
+              parts,
+              'Something went wrong. Please try again.',
+            ),
           )
         }
       } finally {
@@ -238,14 +259,23 @@ export const useCompassAssistant = ({
           {
             id: `${message.id}-prompt`,
             role: 'user' as const,
-            parts: [{ kind: 'text' as const, text: message.prompt }],
+            parts: [
+              {
+                kind: 'text' as const,
+                text: message.prompt,
+                id: partId(`${message.id}-prompt`, 0),
+              },
+            ],
             answeredAt: message.created_at,
             restored: true,
           },
           {
             id: message.id,
             role: 'assistant' as const,
-            parts: message.parts,
+            parts: message.parts.map((part, position) => ({
+              ...part,
+              id: partId(message.id, position),
+            })),
             answeredAt: message.created_at,
             restored: true,
             prompt: message.prompt,

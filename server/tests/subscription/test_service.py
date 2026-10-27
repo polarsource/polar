@@ -126,7 +126,6 @@ from tests.fixtures.random_objects import (
     create_customer_seat,
     create_discount,
     create_event,
-    create_legacy_recurring_product_price,
     create_meter,
     create_order,
     create_payment_method,
@@ -7080,61 +7079,6 @@ class TestUpdateProduct:
                     subscription,
                     product_id=fixed_product.id,
                 )
-
-    async def test_upgrade_from_legacy_recurring_product_to_new_recurring_product(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        mocker.patch.object(
-            subscription_service, "_create_subscription_update_order", new=AsyncMock()
-        )
-
-        legacy_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=None,
-            prices=[],
-        )
-        legacy_price = await create_legacy_recurring_product_price(
-            save_fixture,
-            amount_type=ProductPriceAmountType.fixed,
-            product=legacy_product,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            amount=1000,
-        )
-        legacy_product.prices.append(legacy_price)
-        legacy_product.all_prices.append(legacy_price)
-        await save_fixture(legacy_product)
-
-        new_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(2000, "usd")],
-        )
-
-        subscription = await create_active_subscription(
-            save_fixture,
-            product=legacy_product,
-            customer=customer,
-        )
-
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            updated_subscription = await subscription_service.update_product(
-                session,
-                ctx,
-                subscription,
-                product_id=new_product.id,
-                proration_behavior=SubscriptionProrationBehavior.prorate,
-            )
-
-        assert updated_subscription.product == new_product
 
     async def test_yearly_subscription_on_monthly_product_resets_cycle(
         self,

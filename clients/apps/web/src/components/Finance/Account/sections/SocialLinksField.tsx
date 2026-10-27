@@ -5,7 +5,8 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { FormField } from '@polar-sh/ui/components/ui/form'
-import { useFormContext } from 'react-hook-form'
+import { useListKeys } from '@/hooks/useListKeys'
+import { useFormContext, useWatch } from 'react-hook-form'
 
 const SOCIAL_PLATFORM_DOMAINS: Record<string, string> = {
   'x.com': 'x',
@@ -58,6 +59,10 @@ interface Props {
 
 export const SocialLinksField = ({ required }: Props) => {
   const { control, formState } = useFormContext<schemas['OrganizationUpdate']>()
+  // An empty list still renders one blank row to type into.
+  const rowKeys = useListKeys(
+    Math.max(1, useWatch({ control, name: 'socials' })?.length ?? 0),
+  )
 
   const handleChange = (
     index: number,
@@ -95,7 +100,10 @@ export const SocialLinksField = ({ required }: Props) => {
               const showRemove = hasUrl || !isOnlyRow
 
               return (
-                <div key={index} className="flex items-center gap-2">
+                <div
+                  key={rowKeys.keys[index]}
+                  className="flex items-center gap-2"
+                >
                   <Input
                     type="url"
                     value={url}
@@ -116,6 +124,7 @@ export const SocialLinksField = ({ required }: Props) => {
                       variant="ghost"
                       size="icon"
                       onClick={() => {
+                        rowKeys.remove(index)
                         field.onChange(socials.filter((_, i) => i !== index))
                       }}
                       className="dark:text-polar-400 text-gray-400 hover:text-gray-600"

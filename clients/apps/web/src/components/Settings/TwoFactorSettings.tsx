@@ -89,7 +89,6 @@ const TwoFactorSettings = () => {
       })
       return
     }
-    await totpStatus.refetch()
     hideDeleteConfirmModal()
     toast({ title: 'Two-factor authentication disabled' })
   }
@@ -157,7 +156,6 @@ const TwoFactorSettings = () => {
                       }
                       if (data?.codes) {
                         setNewBackupCodes(data.codes)
-                        await backupCodesStatus.refetch()
                         showBackupCodesModal()
                       }
                     }}
@@ -177,7 +175,6 @@ const TwoFactorSettings = () => {
         hide={hideTOTPModal}
         onEnabled={async () => {
           hideTOTPModal()
-          await totpStatus.refetch()
           const { data, error } = await backupCodesEnroll.mutateAsync()
           if (error) {
             toast({
@@ -189,7 +186,6 @@ const TwoFactorSettings = () => {
           }
           if (data?.codes) {
             setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
             showBackupCodesModal()
           }
         }}
@@ -220,7 +216,6 @@ const TwoFactorSettings = () => {
           }
           if (data?.codes) {
             setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
             showBackupCodesModal()
             return data
           }

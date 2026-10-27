@@ -6,7 +6,6 @@ from pydantic import AfterValidator, BaseModel, ConfigDict
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
-    String,
     TypeDecorator,
     and_,
     case,
@@ -54,18 +53,23 @@ class FilterClause(BaseModel):
             allowed_type, attr = model._filterable_fields[self.property]
             if not isinstance(self.value, allowed_type):
                 return false()
-            # The operator is LIKE OR NOT LIKE, treat the attribute as a string
-            if self.operator in (FilterOperator.like, FilterOperator.not_like):
-                if allowed_type is not str:
-                    attr = func.cast(attr, String)
-                return self._get_comparison_clause(attr, self._get_str_value())
+            if (
+                self.operator in (FilterOperator.like, FilterOperator.not_like)
+                and allowed_type is not str
+            ):
+                return false()
             return self._get_comparison_clause(attr, self.value)
 
         attr = get_nested_metadata_attr(model, self.property)
 
-        # The operator is LIKE OR NOT LIKE, treat everything as a string
+        # LIKE and NOT LIKE compare strings only
         if self.operator in (FilterOperator.like, FilterOperator.not_like):
-            return self._get_comparison_clause(attr.as_string(), self._get_str_value())
+            if not isinstance(self.value, str):
+                return false()
+            return and_(
+                func.jsonb_typeof(attr) == "string",
+                self._get_comparison_clause(attr.as_string(), self.value),
+            )
 
         return case(
             # The property is a string, compare it with the value as a string
@@ -158,10 +162,10 @@ class FilterClause(BaseModel):
                 return actual < expected
             elif self.operator == FilterOperator.lte:
                 return actual <= expected
-            elif self.operator == FilterOperator.like:
-                return str(expected) in str(actual)
-            elif self.operator == FilterOperator.not_like:
-                return str(expected) not in str(actual)
+            elif self.operator in (FilterOperator.like, FilterOperator.not_like):
+                if not isinstance(actual, str) or not isinstance(expected, str):
+                    return False
+                return (expected in actual) is (self.operator == FilterOperator.like)
             return False
         except TypeError:
             return False

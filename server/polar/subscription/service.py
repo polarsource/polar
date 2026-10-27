@@ -41,7 +41,6 @@ from polar.email.sender import enqueue_email_template
 from polar.enums import (
     PaymentMode,
     SubscriptionProrationBehavior,
-    SubscriptionRecurringInterval,
     TaxBehavior,
 )
 from polar.event.service import event as event_service
@@ -99,7 +98,6 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
-    ProductPrice,
     ProductPriceFixed,
     ProductPriceSeatUnit,
     ProductPriceUnit,
@@ -731,15 +729,6 @@ class SubscriptionService:
                     "input": subscription_create.product_id,
                 }
             )
-        elif product.is_legacy_recurring_price:
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "product_id"),
-                    "msg": "Legacy recurring products are not supported.",
-                    "input": subscription_create.product_id,
-                }
-            )
         else:
             currency = (
                 subscription_create.currency
@@ -1078,19 +1067,10 @@ class SubscriptionService:
 
         currency = checkout.currency
         currency_prices = PriceSet.from_prices(checkout.prices[product.id], currency)
-        recurring_interval: SubscriptionRecurringInterval
-        recurring_interval_count: int
-        subscription_prices: list[ProductPrice]
-        if product.is_legacy_recurring_price:
-            # For legacy products, use only the selected price from checkout
-            subscription_prices = [checkout.product_price]
-            recurring_interval = subscription_prices[0].recurring_interval
-            recurring_interval_count = 1
-        else:
-            assert is_recurring_product(product)
-            recurring_interval = product.recurring_interval
-            recurring_interval_count = product.recurring_interval_count
-            subscription_prices = list(currency_prices)
+        assert is_recurring_product(product)
+        recurring_interval = product.recurring_interval
+        recurring_interval_count = product.recurring_interval_count
+        subscription_prices = list(currency_prices)
 
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in subscription_prices:
@@ -1914,18 +1894,6 @@ class SubscriptionService:
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": "Product is not recurring.",
-                        "input": product_id,
-                    }
-                ]
-            )
-
-        if product.is_legacy_recurring_price:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product has legacy recurring prices.",
                         "input": product_id,
                     }
                 ]

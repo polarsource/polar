@@ -122,10 +122,8 @@ const EventSelect: React.FC<EventSelectProps> = ({
         ) {
           return acc
         }
-        return {
-          ...acc,
-          [eventName.source]: [...acc[eventName.source], eventName],
-        }
+        acc[eventName.source].push(eventName)
+        return acc
       },
       { system: [], user: [] },
     )

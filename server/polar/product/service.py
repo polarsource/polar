@@ -55,7 +55,6 @@ from polar.organization_review.schemas import ReviewContext
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
-    is_legacy_price,
     is_metered_price,
     is_seat_price,
     is_static_price,
@@ -435,57 +434,56 @@ class ProductService:
             )
             errors.extend(prices_errors)
 
-        # Prevent non-legacy products from changing their recurring interval
-        if not all(is_legacy_price(price) for price in product.prices):
-            if (
+        # Prevent products from changing their recurring interval
+        if (
+            update_schema.recurring_interval is not None
+            or update_schema.recurring_interval_count is not None
+        ) and (
+            (
                 update_schema.recurring_interval is not None
-                or update_schema.recurring_interval_count is not None
-            ) and (
-                (
-                    update_schema.recurring_interval is not None
-                    and update_schema.recurring_interval != product.recurring_interval
-                )
-                or (
-                    update_schema.recurring_interval_count is not None
-                    and update_schema.recurring_interval_count
-                    != product.recurring_interval_count
-                )
-            ):
-                errors.append(
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "recurring_interval"),
-                        "msg": "Recurring interval cannot be changed.",
-                        "input": update_schema.recurring_interval,
-                    }
-                )
+                and update_schema.recurring_interval != product.recurring_interval
+            )
+            or (
+                update_schema.recurring_interval_count is not None
+                and update_schema.recurring_interval_count
+                != product.recurring_interval_count
+            )
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "recurring_interval"),
+                    "msg": "Recurring interval cannot be changed.",
+                    "input": update_schema.recurring_interval,
+                }
+            )
 
-            if (
-                "recurring_interval" in update_schema.model_fields_set
-                and update_schema.recurring_interval is None
-                and product.recurring_interval is not None
-            ):
-                errors.append(
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "recurring_interval"),
-                        "msg": "Recurring interval cannot be changed.",
-                        "input": update_schema.recurring_interval,
-                    }
-                )
-            if (
-                "recurring_interval_count" in update_schema.model_fields_set
-                and update_schema.recurring_interval_count is None
-                and product.recurring_interval_count is not None
-            ):
-                errors.append(
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "recurring_interval_count"),
-                        "msg": "Recurring interval cannot be changed.",
-                        "input": update_schema.recurring_interval_count,
-                    }
-                )
+        if (
+            "recurring_interval" in update_schema.model_fields_set
+            and update_schema.recurring_interval is None
+            and product.recurring_interval is not None
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "recurring_interval"),
+                    "msg": "Recurring interval cannot be changed.",
+                    "input": update_schema.recurring_interval,
+                }
+            )
+        if (
+            "recurring_interval_count" in update_schema.model_fields_set
+            and update_schema.recurring_interval_count is None
+            and product.recurring_interval_count is not None
+        ):
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": ("body", "recurring_interval_count"),
+                    "msg": "Recurring interval cannot be changed.",
+                    "input": update_schema.recurring_interval_count,
+                }
+            )
 
         # Prevent trying to add trial configuration to non-recurring products
         if (
@@ -851,69 +849,66 @@ class ProductService:
             seat_prices = [p for p in static_prices if is_seat_price(p)]
             unit_prices = [p for p in static_prices if is_unit_price(p)]
 
-            # Bypass these rules for legacy recurring products, which predate the
-            # static-composition model and may carry one static price per interval.
-            if not all(is_legacy_price(p) for p in static_prices):
-                if len(fixed_prices) > 1:
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": error_prefix,
-                            "msg": "Only one fixed price is allowed.",
-                            "input": prices_schema,
-                        }
-                    )
-                if len(seat_prices) > 1:
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": error_prefix,
-                            "msg": "Only one seat-based price is allowed.",
-                            "input": prices_schema,
-                        }
-                    )
-                if len(custom_prices) > 1:
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": error_prefix,
-                            "msg": "Only one custom price is allowed.",
-                            "input": prices_schema,
-                        }
-                    )
-                if len(unit_prices) > 1:
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": error_prefix,
-                            "msg": "Only one unit-based price is allowed.",
-                            "input": prices_schema,
-                        }
-                    )
-                if seat_prices and unit_prices:
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": error_prefix,
-                            "msg": (
-                                "A seat-based price cannot be combined with "
-                                "a unit-based price."
-                            ),
-                            "input": prices_schema,
-                        }
-                    )
-                if custom_prices and (fixed_prices or seat_prices or unit_prices):
-                    errors.append(
-                        {
-                            "type": "value_error",
-                            "loc": error_prefix,
-                            "msg": (
-                                "A custom price cannot be combined with "
-                                "a fixed, seat-based or unit-based price."
-                            ),
-                            "input": prices_schema,
-                        }
-                    )
+            if len(fixed_prices) > 1:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": error_prefix,
+                        "msg": "Only one fixed price is allowed.",
+                        "input": prices_schema,
+                    }
+                )
+            if len(seat_prices) > 1:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": error_prefix,
+                        "msg": "Only one seat-based price is allowed.",
+                        "input": prices_schema,
+                    }
+                )
+            if len(custom_prices) > 1:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": error_prefix,
+                        "msg": "Only one custom price is allowed.",
+                        "input": prices_schema,
+                    }
+                )
+            if len(unit_prices) > 1:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": error_prefix,
+                        "msg": "Only one unit-based price is allowed.",
+                        "input": prices_schema,
+                    }
+                )
+            if seat_prices and unit_prices:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": error_prefix,
+                        "msg": (
+                            "A seat-based price cannot be combined with "
+                            "a unit-based price."
+                        ),
+                        "input": prices_schema,
+                    }
+                )
+            if custom_prices and (fixed_prices or seat_prices or unit_prices):
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": error_prefix,
+                        "msg": (
+                            "A custom price cannot be combined with "
+                            "a fixed, seat-based or unit-based price."
+                        ),
+                        "input": prices_schema,
+                    }
+                )
 
             # Check that a meter appears only once per currency
             currency_meters: set[uuid.UUID] = set()

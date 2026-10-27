@@ -17,6 +17,7 @@ from polar.auth.models import Agent, Anonymous, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.checkout.guard import has_product_checkout
+from polar.checkout.legacy_schemas import CheckoutProductPriceUpdateMixin
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmBase,
@@ -104,7 +105,6 @@ from polar.product.guard import (
     UnitPrice,
     is_custom_price,
     is_discount_applicable,
-    is_legacy_price,
     is_seat_price,
     is_static_price,
 )
@@ -1883,8 +1883,7 @@ class CheckoutService:
     def _get_explicit_price_set(
         self, price: ProductPrice, product_prices: Sequence[ProductPrice]
     ) -> PriceSet:
-        # Legacy prices are one per interval and picked alone by design; other prices
-        # are billed together, so one can only be selected if it stands alone.
+        # Prices are billed together, so one can only be selected if it stands alone.
         other_static_prices = [
             p
             for p in product_prices
@@ -1892,9 +1891,7 @@ class CheckoutService:
             and is_static_price(p)
             and p.price_currency == price.price_currency
         ]
-        if other_static_prices and not all(
-            is_legacy_price(p) for p in (price, *other_static_prices)
-        ):
+        if other_static_prices:
             raise PolarRequestValidationError(
                 [
                     {
@@ -2359,7 +2356,10 @@ class CheckoutService:
 
             checkout.product = product
 
-            if checkout_update.product_price_id is not None:
+            if (
+                isinstance(checkout_update, CheckoutProductPriceUpdateMixin)
+                and checkout_update.product_price_id is not None
+            ):
                 try:
                     price = next(
                         p

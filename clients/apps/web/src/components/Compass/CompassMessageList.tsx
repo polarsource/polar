@@ -6,7 +6,7 @@ import { RefreshRounded } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { Fragment } from 'react'
 import { AssistantPartView } from './AssistantBlocks'
 
@@ -95,7 +95,7 @@ export const CompassMessageList = ({
       <AnimatePresence initial={false}>
         {messages.map((message, index) => (
           <Fragment key={message.id}>
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, ease: 'easeOut' }}
@@ -115,9 +115,9 @@ export const CompassMessageList = ({
                     borderRadius="l"
                     backgroundColor="background-card"
                   >
-                    {message.parts.map((part, i) => (
+                    {message.parts.map((part) => (
                       <AssistantPartView
-                        key={i}
+                        key={part.id}
                         part={part}
                         organization={organization}
                       />
@@ -138,9 +138,9 @@ export const CompassMessageList = ({
                         Thinking...
                       </span>
                     ) : (
-                      message.parts.map((part, i) => (
+                      message.parts.map((part) => (
                         <AssistantPartView
-                          key={i}
+                          key={part.id}
                           part={part}
                           organization={organization}
                           answeredAt={message.answeredAt}
@@ -161,7 +161,7 @@ export const CompassMessageList = ({
                   <MessageTimestamp at={message.answeredAt} />
                 </Box>
               )}
-            </motion.div>
+            </m.div>
             {showsGapAfter(message, index) && (
               <ResumeDivider answeredAt={message.answeredAt} />
             )}

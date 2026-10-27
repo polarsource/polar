@@ -55,7 +55,7 @@ dependencies = [
   "fpdf2>=2.8.3",
   "arabic-reshaper>=3.0.1",
   "python-bidi>=0.6.11",
-  "pydantic-ai-slim[openai]>=2.2.0",
+  "pydantic-ai-slim[openai,typesafe]>=2.2.0",
   "genai-prices>=0.0.67",
   "asgi-ratelimit>=0.10.0",
   "aiocsv>=1.4.1",
@@ -63,7 +63,7 @@ dependencies = [
   "clickhouse-connect[async]>=1.4.1",
   "trafilatura>=2.1.0",
   "firecrawl-py>=4.31.0",
-  "polar-sdk==1.0.3a1",
+  "polar-sdk==1.0.3a4",
   "anyio==4.15.1", # Potential culprit for Sep 23-24 memory leak
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
@@ -204,7 +204,7 @@ warn_required_dynamic_aliases = false
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false }
+exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false }
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

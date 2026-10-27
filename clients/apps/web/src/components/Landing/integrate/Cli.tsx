@@ -1,5 +1,6 @@
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { withOffsets } from '@/utils/lines'
 import { Chapter } from '../Chapter'
 import { WindowFrame } from '../story/Frame'
 import { FrameSheet, ImageBand } from './Backdrop'
@@ -71,14 +72,14 @@ export const Cli = () => (
         <WindowFrame aside="zsh" className="max-w-[42rem]">
           <FrameSheet>
             <div className="overflow-x-auto font-mono text-[13px] leading-6 whitespace-pre">
-              {TRANSCRIPT.map((line, i) =>
+              {withOffsets(TRANSCRIPT).map(({ line, offset }) =>
                 line.startsWith('% ') ? (
-                  <div key={i} className="text-white">
+                  <div key={offset} className="text-white">
                     <span className="text-polar-500">% </span>
                     {line.slice(2)}
                   </div>
                 ) : (
-                  <div key={i} className="text-polar-300">
+                  <div key={offset} className="text-polar-300">
                     {line || <br />}
                   </div>
                 ),

@@ -59,11 +59,11 @@ const MARKETS: Market[] = [
 ]
 
 const steps = (m: Market) => [
-  'Payment captured',
-  'Screened for fraud',
-  `${m.taxLabel} calculated`,
-  `Tax remitted in ${m.country}`,
-  'Paid out to SEB •••• 9128',
+  { id: 'capture', label: 'Payment captured' },
+  { id: 'screen', label: 'Screened for fraud' },
+  { id: 'calculate', label: `${m.taxLabel} calculated` },
+  { id: 'remit', label: `Tax remitted in ${m.country}` },
+  { id: 'payout', label: 'Paid out to SEB •••• 9128' },
 ]
 
 const STEP_MS = 850
@@ -186,12 +186,12 @@ export const Pipeline = () => {
           }
         >
           <Box flexDirection="column" rowGap="m">
-            {list.map((label, i) => {
+            {list.map(({ id, label }, i) => {
               const state =
                 i < step ? 'done' : i === step ? 'active' : 'pending'
               return (
                 <Box
-                  key={i}
+                  key={id}
                   alignItems="center"
                   columnGap="s"
                   color={

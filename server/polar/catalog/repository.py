@@ -1,9 +1,10 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload
 
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
@@ -36,6 +37,19 @@ class CatalogRepository(
         statement = select(Catalog.id, Catalog.version_hash).where(Catalog.id.in_(ids))
         result = await self.session.execute(statement)
         return {id: version_hash for id, version_hash in result.tuples()}
+
+    def get_statement_by_org_ids(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Select[tuple[Catalog]]:
+        return (
+            self.get_base_statement()
+            .where(Catalog.organization_id.in_(org_ids))
+            .order_by(
+                Catalog.published_at.desc(),
+                Catalog.created_at.desc(),
+                Catalog.id.desc(),
+            )
+        )
 
 
 class CatalogProductRepository(

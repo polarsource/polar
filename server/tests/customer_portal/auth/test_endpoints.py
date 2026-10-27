@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import AsyncIterator
 from unittest.mock import MagicMock
 
@@ -77,6 +78,20 @@ class TestEmailOTPRequest:
         response = await request_code(portal_client, "customer@example.com")
 
         assert response.status_code == 401
+
+    async def test_unknown_organization(
+        self, portal_client: httpx.AsyncClient, send_code: MagicMock
+    ) -> None:
+        response = await portal_client.post(
+            "/v1/customer-portal/customer-session/start",
+            json={"organization_id": str(uuid.uuid4())},
+        )
+        assert response.status_code == 201
+
+        response = await request_code(portal_client, "customer@example.com")
+
+        assert response.status_code == 202
+        send_code.assert_not_called()
 
     async def test_unknown_email(
         self,

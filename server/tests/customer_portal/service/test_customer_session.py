@@ -41,46 +41,27 @@ from tests.fixtures.random_objects import (
 
 
 @pytest.mark.anyio
-class TestRequest:
-    async def test_organization_does_not_exist(
-        self,
-        session: AsyncSession,
-    ) -> None:
-        """Test that non-existent organization raises OrganizationDoesNotExist."""
-        fake_org_id = uuid.uuid4()
-
-        with pytest.raises(OrganizationDoesNotExist) as exc_info:
-            await customer_session_service.request(
-                session, "test@example.com", fake_org_id
-            )
-
-        assert exc_info.value.organization_id == fake_org_id
-
-
-@pytest.mark.anyio
-class TestRequestLegacyOrg:
+class TestGetMemberLegacyOrg:
     """Tests for orgs with member_model_enabled=false (legacy customer lookup)."""
 
-    async def test_customer_exists_returns_code(
+    async def test_customer_exists_returns_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that existing customer returns session code (legacy path)."""
+        """Test that existing customer returns its member (legacy path)."""
         # organization defaults to member_model_enabled=false
         customer = await create_customer(
             save_fixture, organization=organization, email="test@example.com"
         )
 
-        customer_session_code, code = await customer_session_service.request(
-            session, "test@example.com", organization.id
+        member = await customer_session_service.get_member(
+            session, "test@example.com", organization, None
         )
 
-        assert customer_session_code.customer.id == customer.id
-        assert customer_session_code.email == "test@example.com"
-        assert code is not None
-        assert len(code) == 6  # Default code length
+        assert member.customer.id == customer.id
+        assert member.email == "test@example.com"
 
     async def test_customer_does_not_exist_raises(
         self,
@@ -90,8 +71,8 @@ class TestRequestLegacyOrg:
     ) -> None:
         """Test that non-existent email raises CustomerDoesNotExist (legacy path)."""
         with pytest.raises(CustomerDoesNotExist) as exc_info:
-            await customer_session_service.request(
-                session, "nonexistent@example.com", organization.id
+            await customer_session_service.get_member(
+                session, "nonexistent@example.com", organization, None
             )
 
         assert exc_info.value.email == "nonexistent@example.com"
@@ -109,11 +90,11 @@ class TestRequestLegacyOrg:
         )
 
         # Try with uppercase email
-        customer_session_code, code = await customer_session_service.request(
-            session, "USER@EXAMPLE.COM", organization.id
+        member = await customer_session_service.get_member(
+            session, "USER@EXAMPLE.COM", organization, None
         )
 
-        assert customer_session_code.customer.id == customer.id
+        assert member.customer.id == customer.id
 
     async def test_no_members_found(
         self,
@@ -126,20 +107,20 @@ class TestRequestLegacyOrg:
         await save_fixture(organization)
 
         with pytest.raises(CustomerDoesNotExist) as exc_info:
-            await customer_session_service.request(
-                session, "nonexistent@example.com", organization.id
+            await customer_session_service.get_member(
+                session, "nonexistent@example.com", organization, None
             )
 
         assert exc_info.value.email == "nonexistent@example.com"
         assert exc_info.value.organization == organization
 
-    async def test_single_member_returns_code(
+    async def test_single_member_returns_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that single member returns customer session code."""
+        """Test that single member returns its member."""
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
@@ -155,15 +136,13 @@ class TestRequestLegacyOrg:
         )
         await save_fixture(member)
 
-        customer_session_code, code = await customer_session_service.request(
-            session, "single@example.com", organization.id
+        member = await customer_session_service.get_member(
+            session, "single@example.com", organization, None
         )
 
         # Access customer via relationship (customer_id not set until flush)
-        assert customer_session_code.customer.id == customer.id
-        assert customer_session_code.email == "single@example.com"
-        assert code is not None
-        assert len(code) == 6  # Default code length
+        assert member.customer.id == customer.id
+        assert member.email == "single@example.com"
 
     async def test_single_member_case_insensitive_email(
         self,
@@ -188,18 +167,18 @@ class TestRequestLegacyOrg:
         await save_fixture(member)
 
         # Try with uppercase email
-        customer_session_code, code = await customer_session_service.request(
-            session, "USER@EXAMPLE.COM", organization.id
+        member = await customer_session_service.get_member(
+            session, "USER@EXAMPLE.COM", organization, None
         )
 
-        assert customer_session_code.customer.id == customer.id
+        assert member.customer.id == customer.id
 
         # Try with mixed case email
-        customer_session_code2, code2 = await customer_session_service.request(
-            session, "User@Example.Com", organization.id
+        member2 = await customer_session_service.get_member(
+            session, "User@Example.Com", organization, None
         )
 
-        assert customer_session_code2.customer.id == customer.id
+        assert member2.customer.id == customer.id
 
     async def test_multiple_members_no_customer_id_raises_selection_required(
         self,
@@ -244,8 +223,8 @@ class TestRequestLegacyOrg:
         await save_fixture(member2)
 
         with pytest.raises(CustomerSelectionRequired) as exc_info:
-            await customer_session_service.request(
-                session, shared_email, organization.id
+            await customer_session_service.get_member(
+                session, shared_email, organization, None
             )
 
         assert len(exc_info.value.customers) == 2
@@ -258,13 +237,13 @@ class TestRequestLegacyOrg:
         assert "Customer One" in customer_names
         assert "Customer Two" in customer_names
 
-    async def test_multiple_members_with_valid_customer_id_returns_code(
+    async def test_multiple_members_with_valid_customer_id_returns_member(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """Test that multiple members with valid customer_id returns code."""
+        """Test that multiple members with valid customer_id returns the selected member."""
         organization.feature_settings = {"member_model_enabled": True}
         await save_fixture(organization)
 
@@ -300,19 +279,19 @@ class TestRequestLegacyOrg:
         await save_fixture(member2)
 
         # Select customer1
-        customer_session_code, code = await customer_session_service.request(
-            session, shared_email, organization.id, customer_id=customer1.id
+        member = await customer_session_service.get_member(
+            session, shared_email, organization, customer_id=customer1.id
         )
 
-        assert customer_session_code.customer.id == customer1.id
-        assert customer_session_code.email == shared_email
+        assert member.customer.id == customer1.id
+        assert member.email == shared_email
 
         # Select customer2
-        customer_session_code2, code2 = await customer_session_service.request(
-            session, shared_email, organization.id, customer_id=customer2.id
+        member2 = await customer_session_service.get_member(
+            session, shared_email, organization, customer_id=customer2.id
         )
 
-        assert customer_session_code2.customer.id == customer2.id
+        assert member2.customer.id == customer2.id
 
     async def test_multiple_members_with_invalid_customer_id_raises_does_not_exist(
         self,
@@ -351,8 +330,8 @@ class TestRequestLegacyOrg:
         fake_customer_id = uuid.uuid4()
 
         with pytest.raises(CustomerDoesNotExist):
-            await customer_session_service.request(
-                session, shared_email, organization.id, customer_id=fake_customer_id
+            await customer_session_service.get_member(
+                session, shared_email, organization, customer_id=fake_customer_id
             )
 
     async def test_customer_id_for_different_org_raises_does_not_exist(
@@ -388,10 +367,10 @@ class TestRequestLegacyOrg:
 
         # Try to use customer from other org
         with pytest.raises(CustomerDoesNotExist):
-            await customer_session_service.request(
+            await customer_session_service.get_member(
                 session,
                 "shared@example.com",
-                organization.id,
+                organization,
                 customer_id=other_customer.id,
             )
 
@@ -419,10 +398,10 @@ class TestRequestLegacyOrg:
         await save_fixture(member)
 
         # Graceful fallback: auto-creates a new owner member since customer exists
-        customer_session_code, code = await customer_session_service.request(
-            session, "deleted@example.com", organization.id
+        member = await customer_session_service.get_member(
+            session, "deleted@example.com", organization, None
         )
-        assert customer_session_code is not None
+        assert member is not None
 
     async def test_member_email_different_from_customer_email(
         self,
@@ -447,25 +426,25 @@ class TestRequestLegacyOrg:
         await save_fixture(member)
 
         # Request with member email should work
-        customer_session_code, code = await customer_session_service.request(
-            session, "member@example.com", organization.id
+        member = await customer_session_service.get_member(
+            session, "member@example.com", organization, None
         )
 
-        assert customer_session_code.customer.id == customer.id
+        assert member.customer.id == customer.id
         # The code should be stored with the member's email
-        assert customer_session_code.email == "member@example.com"
+        assert member.email == "member@example.com"
 
         # Request with customer email should now auto-create an owner member
         # (graceful fallback finds the customer and creates a new owner member)
-        customer_session_code2, code2 = await customer_session_service.request(
-            session, "customer@example.com", organization.id
+        member2 = await customer_session_service.get_member(
+            session, "customer@example.com", organization, None
         )
-        assert customer_session_code2 is not None
-        assert customer_session_code2.customer.id == customer.id
+        assert member2 is not None
+        assert member2.customer.id == customer.id
 
 
 @pytest.mark.anyio
-class TestRequestMemberEnabledOrgGracefulFallback:
+class TestGetMemberMemberEnabledOrgGracefulFallback:
     """Tests for the graceful fallback: auto-create owner member for existing customers."""
 
     async def test_auto_creates_owner_member_for_existing_customer(
@@ -483,11 +462,11 @@ class TestRequestMemberEnabledOrgGracefulFallback:
         )
 
         # No member created manually — the fallback should create it
-        customer_session_code, code = await customer_session_service.request(
-            session, "existing@example.com", organization.id
+        member = await customer_session_service.get_member(
+            session, "existing@example.com", organization, None
         )
 
-        assert customer_session_code is not None
+        assert member is not None
         # Verify an owner member was created
 
         stmt = select(Member).where(
@@ -511,8 +490,8 @@ class TestRequestMemberEnabledOrgGracefulFallback:
         await save_fixture(organization)
 
         with pytest.raises(CustomerDoesNotExist):
-            await customer_session_service.request(
-                session, "nobody@example.com", organization.id
+            await customer_session_service.get_member(
+                session, "nobody@example.com", organization, None
             )
 
 

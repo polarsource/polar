@@ -1175,6 +1175,26 @@ class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
             "by an order, subscription, trial or discount cannot be deleted."
         )
     )
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "Whether this is the current version of the product. "
+                "Previous versions keep their subscriptions but can't be sold."
+            )
+        ),
+    ]
+    version_hash: Annotated[
+        str | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "Version hash of the catalog that introduced this version of the "
+                "product. Null for products not managed as code."
+            )
+        ),
+    ]
     prices: ProductPriceList
     benefits: BenefitList
     medias: ProductMediaList

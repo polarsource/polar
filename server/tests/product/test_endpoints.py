@@ -5,14 +5,17 @@ import pytest
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
+    Catalog,
     Customer,
     Organization,
     Product,
     ProductPriceFixed,
     UserOrganization,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
@@ -335,6 +338,49 @@ class TestGetProduct:
         price = response.json()["prices"][0]
         assert "type" not in price
         assert "recurring_interval" not in price
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_version_not_managed_as_code(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["is_current"] is True
+        assert json["version_hash"] is None
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_previous_version(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        catalog = Catalog(
+            organization=organization,
+            version_hash="abc123",
+            status=CatalogStatus.archived,
+            published_at=utc_now(),
+        )
+        await save_fixture(catalog)
+        product.catalog = catalog
+        product.is_current = False
+        await save_fixture(product)
+
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["is_current"] is False
+        assert json["version_hash"] == "abc123"
 
 
 @pytest.mark.anyio

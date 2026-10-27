@@ -34176,6 +34176,16 @@ export interface components {
        */
       is_deletable: boolean
       /**
+       * Is Current
+       * @description Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold.
+       */
+      is_current: boolean
+      /**
+       * Version Hash
+       * @description Version hash of the catalog that introduced this version of the product. Null for products not managed as code.
+       */
+      version_hash: string | null
+      /**
        * Prices
        * @description List of prices for this product.
        */

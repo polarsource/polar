@@ -80,6 +80,12 @@ variable "advertise_tags" {
   type        = list(string)
 }
 
+variable "split_dns_domain" {
+  description = "Domain the router resolves through the VPC resolver on its tailnet IP and registers as tailnet split DNS. The OAuth client also needs the dns scope."
+  type        = string
+  default     = ""
+}
+
 variable "permissions_boundary_arn" {
   description = "Optional permissions boundary ARN for the instance IAM role."
   type        = string

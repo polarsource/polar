@@ -101,6 +101,7 @@ resource "aws_instance" "this" {
       join(",", var.advertise_routes),
       join(",", var.advertise_tags),
       var.tailscale_version,
+      var.split_dns_domain,
     ]]
   })}"
 

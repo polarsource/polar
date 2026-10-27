@@ -39,14 +39,6 @@ class OrganizationDomainRepository(
         )
         return await self.get_one_or_none(statement)
 
-    async def get_by_organization_and_domain(
-        self, organization_id: UUID, domain: str
-    ) -> OrganizationDomain | None:
-        statement = self.get_statement_by_organization(organization_id).where(
-            OrganizationDomain.domain == domain
-        )
-        return await self.get_one_or_none(statement)
-
     async def get_verified_by_organization_and_domain(
         self, organization_id: UUID, domain: str
     ) -> OrganizationDomain | None:

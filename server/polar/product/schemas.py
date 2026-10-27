@@ -1185,13 +1185,13 @@ class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
             )
         ),
     ]
-    version_hash: Annotated[
-        str | None,
+    catalog_id: Annotated[
+        UUID4 | None,
         Version(starting_from=V2027_01),
         Field(
             description=(
-                "Version hash of the catalog that introduced this version of the "
-                "product. Null for products not managed as code."
+                "ID of the catalog that introduced this version of the product. "
+                "None for products not managed by declarative config."
             )
         ),
     ]

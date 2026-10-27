@@ -34181,10 +34181,10 @@ export interface components {
        */
       is_current: boolean
       /**
-       * Version Hash
-       * @description Version hash of the catalog that introduced this version of the product. Null for products not managed as code.
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
-      version_hash: string | null
+      catalog_id: string | null
       /**
        * Prices
        * @description List of prices for this product.

@@ -352,7 +352,7 @@ class TestGetProduct:
         assert response.status_code == 200
         json = response.json()
         assert json["is_current"] is True
-        assert json["version_hash"] is None
+        assert json["catalog_id"] is None
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
@@ -380,7 +380,7 @@ class TestGetProduct:
         assert response.status_code == 200
         json = response.json()
         assert json["is_current"] is False
-        assert json["version_hash"] == "abc123"
+        assert json["catalog_id"] == str(catalog.id)
 
 
 @pytest.mark.anyio

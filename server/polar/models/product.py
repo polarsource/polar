@@ -12,7 +12,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    String,
     Text,
     Uuid,
     and_,
@@ -20,7 +19,6 @@ from sqlalchemy import (
     column,
     event,
     exists,
-    select,
     table,
     text,
 )
@@ -75,7 +73,6 @@ ProductVisibility = Annotated[Visibility, SetSchemaReference("ProductVisibility"
 # models import from `polar.product` while this module is still loading.
 _orders = table("orders", column("product_id", Uuid))
 _subscriptions = table("subscriptions", column("product_id", Uuid))
-_catalogs = table("catalogs", column("id", Uuid), column("version_hash", String))
 _subscription_updates = table(
     "subscription_updates",
     column("product_id", Uuid),
@@ -272,18 +269,6 @@ class Product(
             expire_on_flush=False,
         )
 
-    @declared_attr
-    def version_hash(cls) -> Mapped[str | None]:
-        """Version hash of the catalog that introduced this version of the product."""
-        return column_property(
-            select(_catalogs.c.version_hash)
-            .where(_catalogs.c.id == cls.catalog_id)
-            .correlate_except(_catalogs)
-            .scalar_subquery(),
-            # Reloading after a flush would lazy-load, which raises in async
-            expire_on_flush=False,
-        )
-
     def get_price(
         self, id: UUID, *, include_archived: bool = False
     ) -> "ProductPrice | None":
@@ -332,11 +317,10 @@ class Product(
 
 
 @event.listens_for(Product, "init")
-def _set_new_product_query_values(target: Product, args: Any, kwargs: Any) -> None:
-    # `is_deletable` and `version_hash` are only loaded from the database on query:
-    # a product instantiated in-session has no sales or catalog yet.
+def _set_new_product_deletable(target: Product, args: Any, kwargs: Any) -> None:
+    # `is_deletable` is only loaded from the database on query: a product
+    # instantiated in-session has no sales yet, so populate it upfront.
     set_committed_value(target, "is_deletable", True)
-    set_committed_value(target, "version_hash", None)
 
 
 products_search_vector_update_function = PGFunction(

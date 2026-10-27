@@ -1,0 +1,19 @@
+terraform/production/planetscale.tf
+  s_c5a2b5d3bd9832::t_3b4d50cbd23129 12-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a793052704cecba07f95375fdf9cde090602356c",
+  "prompts": {},
+  "sessions": {
+    "s_c5a2b5d3bd9832": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7c07109a-fc7f-46b9-abfb-15b43324099b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,5 +1,8 @@
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor
 
+from .repository.customer_session_authentication_session import (
+    CustomerSessionAuthenticationSessionRepository,
+)
 from .service.customer_session import customer_session as customer_session_service
 
 
@@ -12,3 +15,16 @@ from .service.customer_session import customer_session as customer_session_servi
 async def customer_session_code_delete_expired() -> None:
     async with AsyncSessionMaker() as session:
         await customer_session_service.delete_expired(session)
+
+
+@actor(
+    actor_name="customer_session_authentication_session.delete_expired",
+    cron_trigger=CronTrigger(hour=0, minute=0),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def customer_session_authentication_session_delete_expired() -> None:
+    async with AsyncSessionMaker() as session:
+        await CustomerSessionAuthenticationSessionRepository.from_session(
+            session
+        ).delete_expired()

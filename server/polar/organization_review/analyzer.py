@@ -9,7 +9,7 @@ from polar.config import settings
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.observability.baggage import organization_baggage
 
-from .collectors.setup import same_registrable_domain
+from .collectors.setup import is_same_or_subdomain
 from .known_domains import known_domains_for_prompt, match_known_domain
 from .policy import fetch_policy_content
 from .schemas import (
@@ -656,7 +656,7 @@ _VERIFIED_DOMAIN_TAG = "(domain verified via DNS by this organization)"
 
 
 def _is_verified_host(host: str, verified_domains: list[str]) -> bool:
-    return any(same_registrable_domain(host, d) for d in verified_domains)
+    return any(is_same_or_subdomain(host, d) for d in verified_domains)
 
 
 def _annotate_domains(domains: list[str], verified_domains: list[str]) -> str:

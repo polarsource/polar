@@ -273,6 +273,28 @@ class TestBuildPromptVerifiedDomains:
             "(domain verified via DNS by this organization), panel.example.net\n"
         ) in prompt
 
+    def test_verified_subdomain_does_not_cover_parent(
+        self, review_analyzer: ReviewAnalyzer
+    ) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot(["api.acme.com"]))
+
+        assert "Website: https://www.acme.com\n" in prompt
+        assert (
+            "Webhook Domains: api.acme.com "
+            "(domain verified via DNS by this organization), panel.example.net\n"
+        ) in prompt
+
+    def test_verified_host_with_port(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = self._snapshot(["acme.com"])
+        snapshot.setup.integration.webhook_domains = ["api.acme.com:8443"]
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert (
+            "Webhook Domains: api.acme.com:8443 "
+            "(domain verified via DNS by this organization)\n"
+        ) in prompt
+
 
 class TestBuildPromptRedirects:
     def test_renders_intermediate_hops(self, review_analyzer: ReviewAnalyzer) -> None:

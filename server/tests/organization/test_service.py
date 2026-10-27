@@ -2439,7 +2439,7 @@ class TestGetReviewState:
             OrganizationDomain(
                 organization=organization,
                 domain="www.acme.com",
-                verification_token="TOKEN",
+                verification_record_value="TOKEN",
             )
         )
 

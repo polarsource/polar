@@ -146,7 +146,8 @@ Detailed, review-enforced patterns live next to the code — read the relevant f
   `lazy="raise"` relationships, status-coded `PolarError`, endpoints return ORM models,
   authentication (`AuthSubject` + scopes).
 - **Frontend** → `clients/AGENTS.md`: Orbit `<Box />` design system (raw Tailwind is **deprecated**
-  for layout/spacing/color/etc.), TanStack Query for data, Zustand for state, 250-line `max-lines` limit.
+  for layout/spacing/color/etc.), TanStack Query for data, Zustand for state, 250-line `max-lines` limit,
+  React Compiler is on for web/orbit (no manual memoization there; react-hook-form via `useWatch`/`useFormState`).
 - **Backoffice** → `server/polar/backoffice/AGENTS.md`: HTMX + DaisyUI patterns.
 
 **i18n:** add new translatable strings only to `clients/packages/i18n/src/locales/en.ts` — a CI

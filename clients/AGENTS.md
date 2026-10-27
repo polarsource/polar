@@ -43,6 +43,30 @@ Notes that save time:
 
 After finishing a feature, always run `pnpm lint` and check for any new errors or warnings introduced by your changes. Fix them before considering the feature complete.
 
+## React Compiler
+
+`apps/web` and `apps/orbit` build with the React Compiler (`reactCompiler: true` in
+`next.config.mjs`), and the web vitest suite runs through it. `packages/checkout` and
+`packages/orbit` are compiled as part of the web bundle via `transpilePackages`; their npm builds
+are not.
+
+- Do not add `useMemo`, `useCallback` or `React.memo` for performance. The compiler memoizes
+  components and hooks itself, and `react/preserve-manual-memoization` rejects manual memoization
+  whose dependencies it cannot verify. Use them only when a stable identity is needed for
+  correctness, such as an effect dependency or an external subscription.
+- Keep render pure. No `ref.current` reads during render, no mutation of props or state, and no
+  `new Date()`, `Date.now()` or `Math.random()` whose result must change on re-render: the compiler
+  caches values until their inputs change, so these run once per mount. Put time-dependent values
+  in state or an effect.
+- react-hook-form: read values with `useWatch({ control, name })` and state with
+  `useFormState({ control })`. Never call `watch()` or read `formState` in render; the
+  `react/incompatible-library` and `polar/no-form-state-read` lint rules reject it. This applies in
+  `packages/checkout` and `packages/ui` too, since the web app compiles their source.
+- An `oxlint-disable` of any `react/*` rule turns the compiler off for that whole component. Fix
+  the code instead.
+- `pnpm test` in `apps/web` and `packages/checkout` runs the suite uncompiled (with coverage) and
+  then compiled. The compiled run is the regression guard for compiler behaviour.
+
 ## Project Structure
 
 ```
@@ -612,25 +636,27 @@ const useAppStore = create<AppState>((set) => ({
 ## Form Handling
 
 ```tsx
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 
 const MyForm = () => {
   const form = useForm({
     defaultValues: { name: '', email: '' },
   })
+  const { errors } = useFormState({ control: form.control })
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       <Input {...form.register('name')} />
-      {form.formState.errors.name && (
-        <span className="text-sm text-red-500">
-          {form.formState.errors.name.message}
-        </span>
+      {errors.name && (
+        <span className="text-sm text-red-500">{errors.name.message}</span>
       )}
     </form>
   )
 }
 ```
+
+Read field values with `useWatch({ control, name })`, never `watch()`; see
+[React Compiler](#react-compiler) for why.
 
 ## Imports
 

@@ -61,13 +61,12 @@ def upgrade() -> None:
     with op.get_context().autocommit_block():
         op.execute("SET lock_timeout = '5s'")
         try:
-            # A constant default is stored in the catalog (no table rewrite, no
-            # scan), so NOT NULL needs no backfill and holds for the old code's
-            # inserts, which don't name the column.
+            # A constant default fills existing rows without a table rewrite.
+            # NOT NULL is enforced in a later migration (ADR-0006).
             op.execute(
                 "ALTER TABLE benefits "
                 "ADD COLUMN IF NOT EXISTS catalog_id UUID, "
-                "ADD COLUMN IF NOT EXISTS is_current BOOLEAN NOT NULL DEFAULT true"
+                "ADD COLUMN IF NOT EXISTS is_current BOOLEAN DEFAULT true"
             )
             _ensure_foreign_key(
                 op.f("benefits_catalog_id_fkey"),

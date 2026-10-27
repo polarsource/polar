@@ -12,7 +12,6 @@ from polar.models import (
     CustomerEmailVerification,
     CustomerSession,
     CustomerSessionAuthenticationSession,
-    CustomerSessionCode,
     CustomerSessionEmailOTP,
     EmailOTP,
     EmailVerification,
@@ -165,14 +164,6 @@ async def create_deletable_records(
             email=member.email,
             identity_id=member.id,
             authentication_session_id=customer_session_authentication_session.id,
-        )
-    )
-    await save_fixture(
-        CustomerSessionCode(
-            code="d" * 64,
-            email=customer.email,
-            customer_id=customer.id,
-            expires_at=deletable_at,
         )
     )
     await save_fixture(

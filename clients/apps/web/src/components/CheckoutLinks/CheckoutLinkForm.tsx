@@ -121,7 +121,9 @@ export const CheckoutLinkForm = ({
   // Watch for selected product IDs to determine if we should show trial configuration
   // oxlint-disable-next-line react-hooks/incompatible-library
   const selectedProductIds = useWatch({ control, name: 'products' }) || []
-  const { data: selectedProducts } = useSelectedProducts(selectedProductIds)
+  const { data: selectedProducts } = useSelectedProducts({
+    id: selectedProductIds,
+  })
 
   // Check if any selected products are recurring (subscription products)
   const hasRecurringProducts = useMemo(() => {

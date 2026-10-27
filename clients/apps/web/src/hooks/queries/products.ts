@@ -33,9 +33,14 @@ export const useProducts = (
     placeholderData: keepPreviousData,
   })
 
-export const useSelectedProducts = (id: string[], includeArchived = false) =>
+type ProductSelector = { id: string[] } | { external_id: string[] }
+
+export const useSelectedProducts = (
+  selector: ProductSelector,
+  includeArchived = false,
+) =>
   useQuery({
-    queryKey: ['products', { id }],
+    queryKey: ['products', selector],
     queryFn: async () => {
       const products: schemas['Product'][] = []
       let page = 1
@@ -44,7 +49,7 @@ export const useSelectedProducts = (id: string[], includeArchived = false) =>
           api.GET('/v1/products/', {
             params: {
               query: {
-                id,
+                ...selector,
                 is_archived: includeArchived ? null : false,
                 page,
                 limit: 100,
@@ -62,7 +67,7 @@ export const useSelectedProducts = (id: string[], includeArchived = false) =>
     },
     placeholderData: keepPreviousData,
     retry: defaultRetry,
-    enabled: id.length > 0,
+    enabled: ('id' in selector ? selector.id : selector.external_id).length > 0,
   })
 
 export const useProduct = (id?: string | null) =>

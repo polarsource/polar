@@ -15,7 +15,9 @@ import SubscriptionStatusSelect, {
   subscriptionStatusFilterValues,
   type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
-import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
+import SubscriptionsProductSelect, {
+  type ProductFilter,
+} from '@/components/Subscriptions/SubscriptionsProductSelect'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import { useProducts, useSelectedProducts } from '@/hooks/queries'
 import {
@@ -29,7 +31,7 @@ import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { startOfDay } from 'date-fns'
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 
 const CUSTOM_DATE_RANGE = 'custom'
 
@@ -40,8 +42,8 @@ const cancellationOptions: FilterOption[] = [
 
 interface SubscriptionFiltersProps {
   organization: schemas['Organization']
-  productId: string | null
-  onProductSelect: (value: string | null) => void
+  product: ProductFilter
+  onProductSelect: (product: ProductFilter) => void
   status: SubscriptionStatusFilter
   onStatusSelect: (value: SubscriptionStatusFilter) => void
   cancelAtPeriodEnd: boolean | null
@@ -53,7 +55,7 @@ interface SubscriptionFiltersProps {
 
 const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
   organization,
-  productId,
+  product,
   onProductSelect,
   status,
   onStatusSelect,
@@ -64,6 +66,20 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
   onExport,
 }) => {
   const [productQuery, setProductQuery] = useState('')
+  const filterByExternalId =
+    !!organization.feature_settings?.config_as_code_enabled
+  const productFilter = filterByExternalId
+    ? product.external_product_id
+    : product.product_id
+  const onProductFilterChange = useCallback(
+    (value: string | null) =>
+      onProductSelect(
+        filterByExternalId
+          ? { product_id: null, external_product_id: value }
+          : { product_id: value, external_product_id: null },
+      ),
+    [filterByExternalId, onProductSelect],
+  )
 
   const { data: queriedProducts, isPending: productsPending } = useProducts(
     organization.id,
@@ -74,8 +90,11 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
       limit: 100,
     },
   )
+  const selectedValues = productFilter ? [productFilter] : []
   const { data: selectedProducts } = useSelectedProducts(
-    productId ? [productId] : [],
+    filterByExternalId
+      ? { external_id: selectedValues }
+      : { id: selectedValues },
     true,
   )
 
@@ -90,6 +109,22 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
     }
     return items
   }, [queriedProducts, selectedProducts, productQuery])
+
+  const productOptions = useMemo<FilterOption[]>(
+    () =>
+      products.flatMap((product) => {
+        const value = filterByExternalId ? product.external_id : product.id
+        return value
+          ? [
+              {
+                value,
+                label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
+              },
+            ]
+          : []
+      }),
+    [products, filterByExternalId],
+  )
 
   const mobileFilters = useMemo<Filter[]>(() => {
     const intervals = dateRangeIntervals(organization)
@@ -137,16 +172,13 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
         label: 'Product',
         icon: <HiveOutlined fontSize="inherit" />,
         type: 'single',
-        options: products.map((product) => ({
-          value: product.id,
-          label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
-        })),
+        options: productOptions,
         loading: productsPending,
         searchPlaceholder: 'Search products…',
         searchQuery: productQuery,
         onSearchQueryChange: setProductQuery,
-        value: productId,
-        onChange: onProductSelect,
+        value: productFilter,
+        onChange: onProductFilterChange,
       },
       {
         key: 'date',
@@ -170,11 +202,11 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
     ]
   }, [
     organization,
-    products,
+    productOptions,
     productsPending,
     productQuery,
-    productId,
-    onProductSelect,
+    productFilter,
+    onProductFilterChange,
     status,
     onStatusSelect,
     cancelAtPeriodEnd,
@@ -209,10 +241,10 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
           </Box>
         )}
         <Box display="block">
-          <SubscriptionTiersSelect
-            products={products}
-            value={productId}
-            onChange={onProductSelect}
+          <SubscriptionsProductSelect
+            options={productOptions}
+            value={productFilter}
+            onChange={onProductFilterChange}
           />
         </Box>
         <DateRangePicker

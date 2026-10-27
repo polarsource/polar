@@ -9,6 +9,7 @@ from babel.numbers import format_percent
 from fastapi import Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
 from pydantic import UUID4, BeforeValidator, ValidationError
+from pydantic_core import PydanticCustomError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, tag, text
@@ -18,6 +19,7 @@ from polar.credit_note.repository import CreditNoteRepository
 from polar.credit_note.service import credit_note as credit_note_service
 from polar.customer.schemas.customer import CustomerUpdate
 from polar.customer.service import customer as customer_service
+from polar.exceptions import PolarRequestValidationError
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import AddressInput
 from polar.kit.currency import format_currency, get_currency_decimal_factor
@@ -883,18 +885,29 @@ async def refund(
                     billing_address = (
                         order.customer.billing_address or order.billing_address
                     )
-                    await customer_service.update(
-                        session,
-                        order.customer,
-                        CustomerUpdate(
-                            tax_id=form.tax_id,
-                            billing_address=AddressInput.model_validate(
-                                billing_address.model_dump()
-                            )
-                            if billing_address
-                            else None,
-                        ),
-                    )
+                    customer_update = CustomerUpdate(tax_id=form.tax_id)
+                    if billing_address is not None:
+                        customer_update.billing_address = AddressInput.model_validate(
+                            billing_address.model_dump()
+                        )
+                    try:
+                        await customer_service.update(
+                            session, order.customer, customer_update
+                        )
+                    except PolarRequestValidationError as e:
+                        raise ValidationError.from_exception_data(
+                            form_class.__name__,
+                            [
+                                {
+                                    "type": PydanticCustomError(
+                                        error["type"], error["msg"]
+                                    ),
+                                    "loc": ("tax_id",),
+                                    "input": form.tax_id,
+                                }
+                                for error in e.errors()
+                            ],
+                        ) from e
                 await refund_service.create(
                     session,
                     order,

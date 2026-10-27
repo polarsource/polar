@@ -57,6 +57,45 @@ async def order(
 
 @pytest.mark.anyio
 class TestRefund:
+    @pytest.mark.parametrize(
+        ("has_billing_address", "tax_id", "error_message"),
+        [
+            (True, "invalid-vat-id", "Invalid tax ID."),
+            (False, "FR40303265045", "Country is required to validate tax ID."),
+        ],
+    )
+    async def test_tax_id_validation_error(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        order: Order,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        has_billing_address: bool,
+        tax_id: str,
+        error_message: str,
+    ) -> None:
+        order.customer.billing_address = None
+        order.billing_address = (
+            Address(country=CountryAlpha2("FR")) if has_billing_address else None
+        )
+        await save_fixture(order)
+        create = mocker.patch("polar.backoffice.orders.endpoints.refund_service.create")
+
+        response = await backoffice_client.post(
+            f"/orders/{order.id}/refund",
+            data={
+                "reason": "vat_reverse_charge_correction",
+                "amount": "10",
+                "tax_id": tax_id,
+            },
+        )
+
+        assert response.status_code == 200
+        assert error_message in response.text
+        assert "input-error" in response.text
+        assert f'value="{tax_id}"' in response.text
+        create.assert_not_awaited()
+
     async def test_dynamic_form(
         self,
         backoffice_client: httpx.AsyncClient,

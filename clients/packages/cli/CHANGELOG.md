@@ -1,5 +1,15 @@
 # @polar-sh/cli
 
+## 3.1.0
+
+### Minor Changes
+
+- d3ae634: `polar --help` lists every command, and `polar <command> --help` shows the flags of every command under it at once.
+
+### Patch Changes
+
+- 2e2c654: `benefits update`, `customers update`, `customers update_external`, `customers members update`, `customers members update_external` and `products update_benefits` ask for confirmation, or `--confirm` without a terminal.
+
 ## 3.0.0
 
 ### Major Changes

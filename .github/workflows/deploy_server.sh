@@ -122,9 +122,8 @@ deploy_servers() {
     printf '%s' "$server_id" > "$record/service"
     records+=("$record")
 
-    # Reserve two seconds for parallel cleanup within GitHub's cancellation grace.
     CREATING=true
-    request 4 "$record/response" -X POST \
+    request 30 "$record/response" -X POST \
       -H "Content-Type: application/json" \
       -d "{\"imageUrl\":\"${IMG}\"}" \
       "https://api.render.com/v1/services/${server_id}/deploys"

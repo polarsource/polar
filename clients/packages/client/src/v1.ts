@@ -56950,13 +56950,15 @@ export interface operations {
           'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
         }
       }
-      /** @description Invalid or expired verification code. */
+      /** @description Invalid or expired verification code, or invalid authentication session. */
       401: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CustomerSessionCodeInvalidOrExpired']
+          'application/json':
+            | components['schemas']['CustomerSessionCodeInvalidOrExpired']
+            | components['schemas']['InvalidAuthenticationSession']
         }
       }
       /** @description Validation Error */

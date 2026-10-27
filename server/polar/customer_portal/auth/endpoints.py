@@ -4,6 +4,7 @@ from reauth.authentication_session import AuthenticationSession
 from reauth.factors.email_otp import ExpiredOTPException, InvalidOTPException
 from sqlalchemy.orm import joinedload
 
+from polar.auth.authentication_session import InvalidAuthenticationSession
 from polar.auth.exceptions import UnavailableFactorError
 from polar.customer.repository import CustomerRepository
 from polar.member.repository import MemberRepository
@@ -18,7 +19,6 @@ from ..schemas.customer_session import (
     CustomerSelectionRequiredResponse,
     CustomerSessionAuthenticationStart,
     CustomerSessionCodeAuthenticateResponse,
-    CustomerSessionCodeInvalidOrExpiredResponse,
     CustomerSessionEmailOTPRequest,
     CustomerSessionEmailOTPVerify,
 )
@@ -112,7 +112,16 @@ async def email_otp_request(
 @router.post(
     "/email-otp/verify",
     name="customer_portal.customer_session.email_otp_verify",
-    responses={401: CustomerSessionCodeInvalidOrExpiredResponse},
+    responses={
+        401: {
+            "description": (
+                "Invalid or expired verification code, "
+                "or invalid authentication session."
+            ),
+            "model": CustomerSessionCodeInvalidOrExpired.schema()
+            | InvalidAuthenticationSession.schema(),
+        }
+    },
     tags=[APITag.private],
 )
 async def email_otp_verify(

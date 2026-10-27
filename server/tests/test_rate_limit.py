@@ -335,7 +335,7 @@ class TestRefundsPostZone:
         )
         assert rule.zone == "refunds"
         assert rule.hour == 10
-        assert rule.block_time == 3600
+        assert rule.block_time is None
 
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])

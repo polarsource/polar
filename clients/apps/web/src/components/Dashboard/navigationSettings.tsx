@@ -76,7 +76,7 @@ const settingsGroupsList = (
           icon: <Users size="1em" />,
           if: true,
         },
-        section('notifications', <BoltOutlined fontSize="inherit" />),
+        section('notifications', <BoltOutlined fontSize="small" />),
         {
           id: 'settings-billing',
           title: 'Billing',

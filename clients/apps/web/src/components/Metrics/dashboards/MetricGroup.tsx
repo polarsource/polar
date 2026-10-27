@@ -32,6 +32,7 @@ export function MetricGroup({
           {metricKeys.map((metricKey, index) => (
             <MetricChartBox
               key={String(metricKey)}
+              showCatalogVersions
               data={data}
               interval={interval}
               metric={metricKey}

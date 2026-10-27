@@ -125,6 +125,7 @@ const ChartTooltipContent = <TValue extends ValueType, TName extends NameType>({
   color,
   nameKey,
   labelKey,
+  footer,
 }: RechartsPrimitive.TooltipContentProps<TValue, TName> &
   Pick<React.ComponentProps<'div'>, 'ref' | 'className'> & {
     indicator?: 'line' | 'dot' | 'dashed'
@@ -133,6 +134,7 @@ const ChartTooltipContent = <TValue extends ValueType, TName extends NameType>({
     color?: string
     nameKey?: string
     labelKey?: string
+    footer?: React.ReactNode
   }) => {
   const { config } = useChart()
 
@@ -257,6 +259,7 @@ const ChartTooltipContent = <TValue extends ValueType, TName extends NameType>({
           )
         })}
       </div>
+      {footer}
     </div>
   )
 }

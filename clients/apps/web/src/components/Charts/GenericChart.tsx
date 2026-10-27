@@ -16,6 +16,8 @@ import {
   YAxis,
   type MouseHandlerDataParam,
 } from '@polar-sh/ui/components/ui/chart'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useTheme } from 'next-themes'
 import React, {
   useCallback,
@@ -63,6 +65,59 @@ const MinHeightBar = (props: {
   )
 }
 
+const MarkerDot = ({
+  viewBox,
+  fill,
+}: {
+  viewBox?: { x?: number; y?: number }
+  fill: string
+}) => <circle cx={viewBox?.x} cy={viewBox?.y} r={3} fill={fill} />
+
+export interface ChartMarker {
+  x: string | number
+  items: { label: string; detail?: string }[]
+}
+
+const MAX_TOOLTIP_MARKER_ITEMS = 3
+
+const MarkerTooltipRows = ({ marker }: { marker: ChartMarker }) => {
+  const hidden = marker.items.length - MAX_TOOLTIP_MARKER_ITEMS
+  return (
+    <Box
+      flexDirection="column"
+      rowGap="xs"
+      paddingTop="s"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+    >
+      {marker.items.slice(0, MAX_TOOLTIP_MARKER_ITEMS).map((item, index) => (
+        <Box
+          key={index}
+          width={160}
+          alignItems="center"
+          justifyContent="between"
+          columnGap="l"
+        >
+          <Text variant="caption" truncate>
+            {item.label}
+          </Text>
+          {item.detail && (
+            <Text variant="caption" color="muted" monospace>
+              {item.detail}
+            </Text>
+          )}
+        </Box>
+      ))}
+      {hidden > 0 && (
+        <Text variant="caption" color="muted">
+          +{hidden} more
+        </Text>
+      )}
+    </Box>
+  )
+}
+
 export interface GenericChartSeries {
   key: string
   label: string
@@ -89,6 +144,7 @@ interface GenericChartProps<T extends Record<string, unknown>> {
   simple?: boolean
   ticks?: AxisTick[]
   activeCursorIndex?: number | null
+  markers?: ChartMarker[]
 }
 
 export const GenericChart = <T extends Record<string, unknown>>({
@@ -109,6 +165,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
   simple = false,
   ticks: customTicks,
   activeCursorIndex,
+  markers,
 }: GenericChartProps<T>) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -308,6 +365,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
       />
     ) : undefined
 
+    const markerColor = isDark ? '#52525B' : '#A1A1AA'
     const tooltip = (
       <ChartTooltip
         cursor={false}
@@ -318,22 +376,38 @@ export const GenericChart = <T extends Record<string, unknown>>({
           coordinate,
           accessibilityLayer,
           activeIndex,
-        }) => (
-          <ChartTooltipContent
-            active={active}
-            payload={payload}
-            label={label}
-            coordinate={coordinate}
-            accessibilityLayer={accessibilityLayer}
-            activeIndex={activeIndex}
-            className="text-black dark:text-white"
-            indicator="dot"
-            labelFormatter={tooltipLabelFormatter}
-            formatter={formatter}
-          />
-        )}
+        }) => {
+          const marker = markers?.find(
+            (m) => m.x === payload?.[0]?.payload?.[xAxisKey as string],
+          )
+          return (
+            <ChartTooltipContent
+              active={active}
+              payload={payload}
+              label={label}
+              coordinate={coordinate}
+              accessibilityLayer={accessibilityLayer}
+              activeIndex={activeIndex}
+              className="text-black dark:text-white"
+              indicator="dot"
+              labelFormatter={tooltipLabelFormatter}
+              formatter={formatter}
+              footer={marker && <MarkerTooltipRows marker={marker} />}
+            />
+          )
+        }}
       />
     )
+
+    const markerLines = markers?.map((marker) => (
+      <ReferenceLine
+        key={`marker-${marker.x}`}
+        x={marker.x}
+        stroke={markerColor}
+        strokeDasharray="4 4"
+        label={<MarkerDot fill={markerColor} />}
+      />
+    ))
 
     const legend = showLegend ? (
       <ChartLegend
@@ -375,6 +449,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
+          {markerLines}
           {series
             .slice()
             .reverse()
@@ -403,6 +478,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
+          {markerLines}
           {series.map((s) => (
             <Line
               key={s.key}
@@ -466,6 +542,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
         {yAxis}
         {tooltip}
         {legend}
+        {markerLines}
         <Area
           dataKey={primarySeries.key}
           stroke={`var(--color-${primarySeries.key})`}
@@ -497,6 +574,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
     handleMouseMove,
     handleMouseLeave,
     id,
+    markers,
   ])
 
   // Cursor line is cheap and only depends on the active index.
@@ -510,6 +588,8 @@ export const GenericChart = <T extends Record<string, unknown>>({
           x={data[activeCursorIndex][xAxisKey as string] as string | number}
           stroke={isDark ? '#27282A' : '#E5E7EB'}
           strokeWidth={1}
+          // Below series lines and catalog markers (both 400), above areas (100).
+          zIndex={350}
         />
       ) : null
     if (!cursorLine) return chartBase

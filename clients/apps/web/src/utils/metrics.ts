@@ -1,6 +1,9 @@
+import type { ChartMarker } from '@/components/Charts/GenericChart'
 import { getMetricsRangeDates, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
+  add,
+  type Duration,
   differenceInDays,
   differenceInMonths,
   differenceInWeeks,
@@ -511,3 +514,39 @@ const METRIC_SLUG_TO_GROUP_SLUG: Record<string, string> = Object.fromEntries(
  */
 export const getMetricGroupSlug = (metricSlug: string): string | undefined =>
   METRIC_SLUG_TO_GROUP_SLUG[metricSlug]
+
+export const getPeriodEnd = (
+  timestamp: Date,
+  interval: schemas['TimeInterval'],
+): Date => add(timestamp, { [`${interval}s`]: 1 } as Duration)
+
+export const getCatalogMarkers = (
+  periods: Date[],
+  catalogs: schemas['Catalog'][],
+): ChartMarker[] => {
+  const published = catalogs
+    .flatMap(({ published_at, name, version_hash }) =>
+      published_at
+        ? [{ publishedAt: new Date(published_at), name, version_hash }]
+        : [],
+    )
+    .sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime())
+
+  const markers = new Map<number, ChartMarker>()
+  for (const catalog of published) {
+    const index = periods.findLastIndex(
+      (period) => period <= catalog.publishedAt,
+    )
+    if (index === -1) continue
+    const marker = markers.get(index) ?? {
+      x: periods[index].toISOString(),
+      items: [],
+    }
+    marker.items.push({
+      label: catalog.name ?? 'Version',
+      detail: catalog.version_hash?.slice(0, 7),
+    })
+    markers.set(index, marker)
+  }
+  return [...markers.values()]
+}

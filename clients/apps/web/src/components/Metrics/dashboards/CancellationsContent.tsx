@@ -52,6 +52,7 @@ export function CancellationsContent({
           {CANCELLATION_CHART_METRICS.map((metricKey) => (
             <MetricChartBox
               key={metricKey}
+              showCatalogVersions
               data={data}
               interval={interval}
               metric={metricKey}

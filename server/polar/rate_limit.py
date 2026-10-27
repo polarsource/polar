@@ -33,6 +33,20 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/auth/email-otp": [
         Rule(minute=6, hour=12, block_time=900, zone="auth-email-otp"),
     ],
+    (
+        "^/v1/(organizations/[^/]+/members/invite|"
+        "(customer-seats|customer-portal/seats)(/[^/]+/resend)?)/?$"
+    ): [
+        Rule(
+            group=group,
+            method="POST",
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="invitations",
+        )
+        for group in RateLimitGroup
+    ],
     "^/v1/auth/totp": [
         Rule(minute=6, hour=12, block_time=900, zone="auth-totp"),
     ],

@@ -43839,13 +43839,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Cannot enforce SSO without an enabled connection. */
+      /** @description Cannot enforce SSO without an enabled connection and a verified domain. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SSOEnforcementRequiresConnection']
+          'application/json':
+            | components['schemas']['SSOEnforcementRequiresConnection']
+            | components['schemas']['SSORequiresVerifiedDomain']
         }
       }
       /** @description Validation Error */

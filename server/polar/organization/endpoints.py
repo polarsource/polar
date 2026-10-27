@@ -62,6 +62,9 @@ from polar.openapi import APITag
 from polar.organization.repository import (
     OrganizationReviewRepository,
 )
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.organization_review.appeal_case import (
     AppealNotRejectedError,
     CaseAlreadyExistsError,
@@ -78,6 +81,7 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.sso.repository import OrganizationSSOConnectionRepository
+from polar.sso.service import SSORequiresVerifiedDomain
 from polar.startup_program.service import (
     StartupProgramError,
 )
@@ -399,8 +403,12 @@ async def update(
         },
         404: OrganizationNotFound,
         409: {
-            "description": "Cannot enforce SSO without an enabled connection.",
-            "model": SSOEnforcementRequiresConnection.schema(),
+            "description": (
+                "Cannot enforce SSO without an enabled connection and a verified "
+                "domain."
+            ),
+            "model": SSOEnforcementRequiresConnection.schema()
+            | SSORequiresVerifiedDomain.schema(),
         },
     },
     tags=[APITag.public],
@@ -440,6 +448,10 @@ async def _update(
             authz.organization.id
         ):
             raise SSOEnforcementRequiresConnection()
+        if not await organization_domain_service.has_verified(
+            session, authz.organization
+        ):
+            raise SSORequiresVerifiedDomain()
     return await organization_service.update(
         session, authz.organization, organization_update
     )

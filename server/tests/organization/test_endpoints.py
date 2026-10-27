@@ -11,10 +11,12 @@ from polar.auth.models import AuthSubject
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
+from polar.kit.utils import utc_now
 from polar.kit.versioning import APIVersion
 from polar.models import (
     Agent,
     OAuth2Token,
+    OrganizationDomain,
     OrganizationSSOConnection,
     Product,
     User,
@@ -1825,6 +1827,37 @@ class TestUpdateSSOEnforced:
         assert response.status_code == 409
 
     @pytest.mark.auth
+    async def test_enable_without_verified_domain_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._create_connection(save_fixture, organization)
+        await save_fixture(
+            OrganizationDomain(organization=organization, domain="example.com")
+        )
+        auth_subject.organization_ids = frozenset({organization.id})
+        _, auth_subject.session = await auth_service._create_user_session(
+            session,
+            auth_subject.subject,
+            user_agent="test",
+            scopes=[],
+            organization_ids=frozenset({organization.id}),
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "SSORequiresVerifiedDomain"
+
+    @pytest.mark.auth
     async def test_enable_from_scoped_session(
         self,
         client: AsyncClient,
@@ -1835,6 +1868,11 @@ class TestUpdateSSOEnforced:
         user_organization: UserOrganization,
     ) -> None:
         await self._create_connection(save_fixture, organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="example.com", verified_at=utc_now()
+            )
+        )
         auth_subject.organization_ids = frozenset({organization.id})
         _, auth_subject.session = await auth_service._create_user_session(
             session,

@@ -1,5 +1,7 @@
 'use client'
 
+import { toast } from '@/components/Toast/use-toast'
+import { useSafeCopy } from '@/hooks/clipboard'
 import { useLiveCatalog } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
@@ -46,6 +48,7 @@ const LiveCatalogDetails = ({ catalog }: { catalog: schemas['Catalog'] }) => (
 
 const CatalogVersionChip = ({ catalog }: { catalog: schemas['Catalog'] }) => {
   const [copied, setCopied] = useState(false)
+  const safeCopy = useSafeCopy(toast)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -65,9 +68,7 @@ const CatalogVersionChip = ({ catalog }: { catalog: schemas['Catalog'] }) => {
         onClick={(event) => {
           event.preventDefault()
           if (!catalog.version_hash) return
-          navigator.clipboard
-            .writeText(catalog.version_hash)
-            .then(() => setCopied(true))
+          void safeCopy(catalog.version_hash).then(() => setCopied(true))
         }}
       >
         <Box

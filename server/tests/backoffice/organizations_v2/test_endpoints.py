@@ -715,7 +715,7 @@ class TestOverviewLazyCards:
             OrganizationDomain(
                 organization=organization,
                 domain="acme.com",
-                verification_token="TOKEN",
+                verification_record_value="TOKEN",
             )
         )
 
@@ -737,7 +737,7 @@ class TestOverviewLazyCards:
             OrganizationDomain(
                 organization=organization,
                 domain="acme.com",
-                verification_token="TOKEN",
+                verification_record_value="TOKEN",
             )
         )
         await save_fixture(

@@ -50,6 +50,16 @@ const OrganizationDomainsSettings = ({ organization }: Props) => {
     }
   }
 
+  const remove = async (domainId: string) => {
+    const { error } = await deleteDomain.mutateAsync(domainId)
+    if (error) {
+      toast({
+        title: 'Failed to remove domain',
+        description: extractApiErrorMessage(error, 'Please try again.'),
+      })
+    }
+  }
+
   const items = domains?.items ?? []
 
   return (
@@ -110,7 +120,7 @@ const OrganizationDomainsSettings = ({ organization }: Props) => {
                         size="icon"
                         type="button"
                         aria-label={`Remove ${domain.domain}`}
-                        onClick={() => deleteDomain.mutateAsync(domain.id)}
+                        onClick={() => remove(domain.id)}
                         loading={
                           deleteDomain.isPending &&
                           deleteDomain.variables === domain.id

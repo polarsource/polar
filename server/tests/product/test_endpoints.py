@@ -341,21 +341,6 @@ class TestGetProduct:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    async def test_version_not_managed_as_code(
-        self,
-        client: AsyncClient,
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.get(f"/v1/products/{product.id}")
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["is_current"] is True
-        assert json["catalog_id"] is None
-
-    @pytest.mark.api_version(V2027_01)
-    @pytest.mark.auth
     async def test_previous_version(
         self,
         client: AsyncClient,

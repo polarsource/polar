@@ -82,7 +82,8 @@ export const makeToolRunner = Effect.gen(function* () {
       log.apiErrorFields = error.fields
     }
     // Sandbox errors come from the runtime, such as an exceeded CPU limit.
-    // Script and API errors can quote customer data, so they stay out.
+    // Script and API errors can quote customer data, so they stay out unless
+    // the sandbox records them for a script that sees none.
     if (error.kind === 'sandbox') {
       log.errorMessage = error.message
     }

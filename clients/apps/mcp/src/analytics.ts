@@ -12,6 +12,7 @@ export const toolNames = new Set([
   'read_docs_page',
   ...generatedTools.map(({ name }) => name),
 ])
+const MAX_ERROR_MESSAGE_CHARS = 1_000
 const USER_AGENT_PRODUCT = /^([^\s/]+)(?:\/(\S+))?/
 
 export const subjectFor = async (account: string) => {
@@ -69,6 +70,7 @@ export const captureToolCall = (entry: RequestLogEntry) => {
       $mcp_is_error: entry.isError ?? true,
       $mcp_error_type: errorType(entry),
       $mcp_error_status: entry.apiStatus,
+      $mcp_error_message: entry.errorMessage?.slice(0, MAX_ERROR_MESSAGE_CHARS),
       api_error_fields: entry.apiErrorFields,
       $mcp_duration_ms: entry.durationMs,
       $mcp_client_name: entry.client?.name ?? product?.[1],

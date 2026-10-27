@@ -8,7 +8,9 @@ const CLIENT_INFO_META = 'io.modelcontextprotocol/clientInfo'
 
 // One line per MCP request, queried in Workers Logs, and one PostHog event per
 // tool call. It must never carry the token, tool arguments or results: they
-// hold customer data.
+// hold customer data. Error messages are kept only from the sandbox runtime and
+// from engine errors in search scripts, which run against the public OpenAPI
+// spec without network access, so they cannot see customer data.
 export interface RequestLogEntry {
   event: 'mcp.request'
   server: string

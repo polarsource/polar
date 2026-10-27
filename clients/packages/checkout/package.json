@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsdown",
-    "test": "vitest run --coverage",
+    "test": "vitest run --project uncompiled --coverage && vitest run --project compiled",
     "typecheck": "tsc --noEmit"
   },
   "exports": {

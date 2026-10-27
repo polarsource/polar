@@ -1,10 +1,13 @@
 import AccessRestricted from '@/components/Finance/AccessRestricted'
-import { useHasPermission } from '@/hooks/permissions'
+import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
 import { useMeter, useUpdateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
-import { permissionDeniedMessage } from '@/utils/permissions'
+import {
+  MANAGED_AS_CODE_MESSAGE,
+  permissionDeniedMessage,
+} from '@/utils/permissions'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
+import { Alert, Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
@@ -28,6 +31,7 @@ export const MeterUpdateModal = ({
   organizationId,
 }: MeterUpdateModalProps) => {
   const canManageProducts = useHasPermission(organizationId, 'products:manage')
+  const managedAsCode = useIsManagedAsCode(organizationId)
   const { data: meter } = useMeter(_meter.id, { initialData: _meter })
   const form = useForm<schemas['MeterUpdate']>({
     defaultValues: {
@@ -70,12 +74,14 @@ export const MeterUpdateModal = ({
     [router, hasProcessedEvents, updateMeter, hide, toast, setError],
   )
 
-  if (!canManageProducts) {
+  const title = managedAsCode ? 'Meter' : 'Edit Meter'
+
+  if (!canManageProducts && !managedAsCode) {
     return (
       <Box flexDirection="column" height="100%">
         <InlineModalHeader hide={hide}>
           <Text variant="heading-xxs" as="h2">
-            Edit Meter
+            {title}
           </Text>
         </InlineModalHeader>
         <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
@@ -93,7 +99,7 @@ export const MeterUpdateModal = ({
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
         <Text variant="heading-xxs" as="h2">
-          Edit Meter
+          {title}
         </Text>
       </InlineModalHeader>
       <div className="flex flex-col gap-8 px-8 pb-12">
@@ -106,29 +112,46 @@ export const MeterUpdateModal = ({
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-y-8"
           >
-            <MeterForm
-              organizationId={organizationId}
-              readOnly={hasProcessedEvents}
-            />
+            <Box
+              as="fieldset"
+              disabled={managedAsCode}
+              flexDirection="column"
+              rowGap="2xl"
+            >
+              <MeterForm
+                organizationId={organizationId}
+                readOnly={hasProcessedEvents || managedAsCode}
+              />
+            </Box>
 
-            {hasProcessedEvents && (
-              <Well className="gap-y-2 rounded-2xl p-6">
-                <WellHeader>Updating Meter</WellHeader>
-                <WellContent>
-                  <p className="dark:text-polar-500 text-sm text-gray-500">
-                    Once a meter has processed events, its filters or
-                    aggregation function cannot be changed.
-                  </p>
-                </WellContent>
-              </Well>
+            {managedAsCode ? (
+              <Alert
+                variant="info"
+                title="Managed in code"
+                description={MANAGED_AS_CODE_MESSAGE}
+              />
+            ) : (
+              hasProcessedEvents && (
+                <Well className="gap-y-2 rounded-2xl p-6">
+                  <WellHeader>Updating Meter</WellHeader>
+                  <WellContent>
+                    <p className="dark:text-polar-500 text-sm text-gray-500">
+                      Once a meter has processed events, its filters or
+                      aggregation function cannot be changed.
+                    </p>
+                  </WellContent>
+                </Well>
+              )
             )}
 
             <div className="flex flex-row items-center gap-4">
-              <Button type="submit" loading={updateMeter.isPending}>
-                Update Meter
-              </Button>
+              {!managedAsCode && (
+                <Button type="submit" loading={updateMeter.isPending}>
+                  Update Meter
+                </Button>
+              )}
               <Button variant="secondary" onClick={hide}>
-                Cancel
+                {managedAsCode ? 'Close' : 'Cancel'}
               </Button>
             </div>
           </form>

@@ -121,7 +121,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
           </div>
 
           <div className="flex flex-row items-center gap-4">
-            {!managedAsCode && (
+            {managedAsCode ? (
+              <Button variant="secondary" onClick={showEditMeterModal}>
+                View Meter
+              </Button>
+            ) : (
               <Button onClick={showEditMeterModal}>Edit Meter</Button>
             )}
             <DropdownMenu>

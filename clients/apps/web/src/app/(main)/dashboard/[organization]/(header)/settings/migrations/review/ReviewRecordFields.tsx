@@ -33,7 +33,7 @@ export function RecordCard({
       minWidth={0}
     >
       <Box alignItems="center" justifyContent="between" columnGap="m">
-        <Text variant="heading-xxs" as="h3">
+        <Text variant="title" as="h3">
           {title}
         </Text>
         {action}

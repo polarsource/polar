@@ -44,21 +44,17 @@ export function PanTransferStepBody({
 
   return (
     <Box flexDirection="column" rowGap="l">
-      <Text variant="caption" color="muted">
-        {copy.description}
-      </Text>
+      <Text color="muted">{copy.description}</Text>
 
       {copy.guidance && (
         <Box as="ol" flexDirection="column" rowGap="xs">
           {copy.guidance.map((line, index) => (
             <Box as="li" key={line} display="flex" columnGap="s">
               {/* The list marker is reset away, so spell the order out. */}
-              <Text variant="caption" color="muted" tabularNums>
+              <Text color="muted" tabularNums>
                 {index + 1}.
               </Text>
-              <Text variant="caption" color="muted">
-                {line}
-              </Text>
+              <Text color="muted">{line}</Text>
             </Box>
           ))}
         </Box>
@@ -70,7 +66,7 @@ export function PanTransferStepBody({
 
       {submittable &&
         (fieldsUnknown || !copy.action ? (
-          <Text variant="caption" color="muted">
+          <Text color="muted">
             This step needs a newer version of this page. Please refresh.
           </Text>
         ) : (

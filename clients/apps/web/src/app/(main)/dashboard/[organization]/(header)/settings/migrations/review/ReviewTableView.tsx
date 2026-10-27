@@ -182,7 +182,7 @@ export function ReviewTableView({
           />
         </Box>
 
-        <Text variant="caption" color="muted">
+        <Text color="muted">
           {primaryAction === 'continue'
             ? 'Every subscription that can move is already prepared. Continue to switch them to Polar.'
             : 'Preparing a subscription brings its customer and product to Polar. Polar starts billing only when you switch.'}
@@ -197,9 +197,7 @@ export function ReviewTableView({
             paddingVertical="2xl"
             justifyContent="center"
           >
-            <Text variant="caption" color="muted">
-              {EMPTY_MESSAGES[filter]}
-            </Text>
+            <Text color="muted">{EMPTY_MESSAGES[filter]}</Text>
           </Box>
         ) : (
           <DataTable

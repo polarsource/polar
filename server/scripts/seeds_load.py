@@ -78,6 +78,7 @@ from polar.models.organization import (
     OrganizationStatus,
 )
 from polar.models.organization_access_token import OrganizationAccessToken
+from polar.models.organization_domain import OrganizationDomain
 from polar.models.organization_review import OrganizationReview
 from polar.models.organization_sso_connection import (
     OrganizationSSOConnection,
@@ -213,6 +214,7 @@ class OrganizationDict(TypedDict):
     feature_settings: NotRequired[dict[str, bool]]
     customer_email_settings: NotRequired[OrganizationCustomerEmailSettings]
     seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
+    verified_domain: NotRequired[str]
     sso_connection: NotRequired["SSOConnectionDict"]
 
 
@@ -1695,6 +1697,7 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
             "feature_settings": {
                 "sso_enabled": True,
             },
+            "verified_domain": "polar.sh",
             "sso_connection": {
                 "name": "Local Mock SSO",
                 "issuer": "http://localhost:8080/default",
@@ -1866,6 +1869,16 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
         if "customer_email_settings" in org_data:
             organization.customer_email_settings = org_data["customer_email_settings"]
         session.add(organization)
+
+        verified_domain = org_data.get("verified_domain")
+        if verified_domain is not None:
+            session.add(
+                OrganizationDomain(
+                    organization=organization,
+                    domain=verified_domain,
+                    verified_at=utc_now(),
+                )
+            )
 
         # Seed an enabled SSO connection pointing at the local mock OIDC IdP.
         # Written directly so the http:// mock issuer bypasses the HttpsUrl schema.

@@ -9,6 +9,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import PaymentMethod
+from polar.models.payment_method import SHARED_PAYMENT_TOKEN_TYPE
 
 from ..utils import get_customer_id
 
@@ -24,5 +25,6 @@ class CustomerPaymentMethodRepository(
         self, auth_subject: AuthSubject[Customer | Member]
     ) -> Select[tuple[PaymentMethod]]:
         return self.get_base_statement().where(
-            PaymentMethod.customer_id == get_customer_id(auth_subject)
+            PaymentMethod.customer_id == get_customer_id(auth_subject),
+            PaymentMethod.type != SHARED_PAYMENT_TOKEN_TYPE,
         )

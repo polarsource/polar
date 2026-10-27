@@ -7,7 +7,9 @@ import {
   SyntaxHighlighterProvider,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { LockOutlined } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useContext } from 'react'
 
@@ -37,7 +39,22 @@ export const MeterIngestionGuide = () => {
                   <code>api_call</code>.
                 </p>
               </div>
-              {!managedAsCode && (
+              {managedAsCode ? (
+                <Box flexDirection="column" alignItems="start" rowGap="s">
+                  <Button
+                    variant="secondary"
+                    wrapperClassNames="gap-x-2"
+                    disabled
+                  >
+                    <LockOutlined fontSize="inherit" />
+                    <span>Managed in code</span>
+                  </Button>
+                  <Text variant="caption" color="muted">
+                    Meters are defined in your config. Add one there and run{' '}
+                    <code>polar config apply</code>.
+                  </Text>
+                </Box>
+              ) : (
                 <Link
                   href={`/dashboard/${organization.slug}/products/meters/create`}
                 >

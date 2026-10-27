@@ -460,17 +460,6 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
             "Must be present in the checkout's product list."
         ),
     )
-    product_price_id: UUID4 | None = Field(
-        default=None,
-        description=(
-            "ID of the product price to checkout. "
-            "Must correspond to a price present in the checkout's product list."
-        ),
-        deprecated=(
-            "Use `product_id` unless you have a product with legacy pricing "
-            "including several recurring intervals."
-        ),
-    )
     amount: Amount | None = None
     seats: Int32 | None = Field(
         default=None,
@@ -698,7 +687,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         description="ID of the organization owning the checkout session."
     )
     product_id: UUID4 | None = Field(description="ID of the product to checkout.")
-    product_price_id: UUID4 | None = Field(
+    product_price_id: Annotated[UUID4 | None, Version(up_to=V2026_10)] = Field(
         description="ID of the product price to checkout.", deprecated=True
     )
     discount_id: UUID4 | None = Field(

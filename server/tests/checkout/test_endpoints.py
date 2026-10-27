@@ -236,6 +236,20 @@ class TestGet:
         assert "product" in json
         assert "product_price" in json
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_no_product_price_id_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"{api_prefix}/{checkout_open.id}")
+
+        assert response.status_code == 200
+        assert "product_price_id" not in response.json()
+
 
 @pytest.mark.anyio
 class TestCreateCheckout:
@@ -623,6 +637,29 @@ class TestCreateCheckout:
         ad_hoc_price = response.json()["prices"][str(product.id)][0]
         assert ad_hoc_price["amount_type"] == "seat_based"
         assert ad_hoc_price["tiers"] == tiers
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.parametrize("field", ["product_id", "product_price_id"])
+    async def test_single_product_or_price_2027_01(
+        self,
+        field: str,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        value = product.id if field == "product_id" else product.prices[0].id
+        response = await client.post(
+            f"{api_prefix}/",
+            json={"payment_processor": "stripe", field: str(value)},
+        )
+
+        assert response.status_code == 422
+        assert any(
+            error["type"] == "missing" and error["loc"][-1] == "products"
+            for error in response.json()["detail"]
+        )
 
 
 @pytest.mark.anyio
@@ -1078,6 +1115,25 @@ class TestUpdateCheckout:
         assert json["discount"] is not None
         assert json["discount"]["id"] == str(discount.id)
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/{checkout_open.id}",
+            json={
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
+
 
 @pytest.mark.anyio
 class TestClientGet:
@@ -1136,6 +1192,17 @@ class TestClientGet:
         json = response.json()
         assert json["id"] == str(checkout_open.id)
         assert "metadata" not in json
+
+    @pytest.mark.api_version(V2027_01)
+    async def test_no_product_price_id_2027_01(
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.get(
+            f"{api_prefix}/client/{checkout_open.client_secret}"
+        )
+
+        assert response.status_code == 200
+        assert "product_price_id" not in response.json()
 
     async def test_excludes_non_public_benefits(
         self,
@@ -1255,6 +1322,23 @@ class TestClientUpdate:
         assert json["discount"] is not None
         assert json["discount"]["code"] == "TESTDISCOUNT50"
 
+    @pytest.mark.api_version(V2027_01)
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/client/{checkout_open.client_secret}",
+            json={
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
+
 
 @pytest.mark.anyio
 class TestClientConfirm:
@@ -1371,6 +1455,34 @@ class TestClientConfirm:
         json = response.json()
         assert json["discount"] is not None
         assert json["discount"]["code"] == "TESTDISCOUNT50"
+
+    @pytest.mark.api_version(V2027_01)
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
 
 
 @pytest.mark.anyio

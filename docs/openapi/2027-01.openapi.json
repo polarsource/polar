@@ -12950,7 +12950,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CheckoutLinkCreate"
+                "$ref": "#/components/schemas/CheckoutLinkCreateProducts"
               }
             }
           }
@@ -12992,11 +12992,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkout_links.create(\n    payment_processor='stripe',\n    allow_discount_codes=True,\n    require_billing_address=False,\n    product_price_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkout_links.create(\n    payment_processor='stripe',\n    allow_discount_codes=True,\n    require_billing_address=False,\n    products=['00000000-0000-4000-8000-000000000000'],\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkoutLinks.create(\n  {\n    \"payment_processor\": \"stripe\",\n    \"allow_discount_codes\": true,\n    \"require_billing_address\": false,\n    \"product_price_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkoutLinks.create(\n  {\n    \"payment_processor\": \"stripe\",\n    \"allow_discount_codes\": true,\n    \"require_billing_address\": false,\n    \"products\": [\n      \"00000000-0000-4000-8000-000000000000\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -39455,20 +39455,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout.",
-            "deprecated": true
-          },
           "discount_id": {
             "anyOf": [
               {
@@ -39840,7 +39826,6 @@
           "trial_end",
           "organization_id",
           "product_id",
-          "product_price_id",
           "discount_id",
           "allow_discount_codes",
           "require_billing_address",
@@ -39960,20 +39945,6 @@
             ],
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
-          },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
           },
           "amount": {
             "anyOf": [
@@ -40200,20 +40171,6 @@
             ],
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
-          },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
           },
           "amount": {
             "anyOf": [
@@ -41079,359 +41036,6 @@
         ],
         "title": "CheckoutLink",
         "description": "Checkout link data."
-      },
-      "CheckoutLinkCreate": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/CheckoutLinkCreateProductPrice"
-          },
-          {
-            "$ref": "#/components/schemas/CheckoutLinkCreateProduct"
-          },
-          {
-            "$ref": "#/components/schemas/CheckoutLinkCreateProducts"
-          }
-        ]
-      },
-      "CheckoutLinkCreateProduct": {
-        "properties": {
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "trial_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TrialInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The interval unit for the trial period."
-          },
-          "trial_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 1000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trial Interval Count",
-            "description": "The number of interval units for the trial period."
-          },
-          "payment_processor": {
-            "type": "string",
-            "const": "stripe",
-            "title": "Payment Processor",
-            "description": "Payment processor to use. Currently only Stripe is supported."
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Optional label to distinguish links internally"
-          },
-          "allow_discount_codes": {
-            "type": "boolean",
-            "title": "Allow Discount Codes",
-            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
-            "default": true
-          },
-          "require_billing_address": {
-            "type": "boolean",
-            "title": "Require Billing Address",
-            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.",
-            "default": false
-          },
-          "discount_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Discount Id",
-            "description": "ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
-          },
-          "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Units",
-            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
-          },
-          "success_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success Url",
-            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the checkout to return to this URL."
-          },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "payment_processor",
-          "product_id"
-        ],
-        "title": "CheckoutLinkCreateProduct",
-        "description": "Schema to create a new checkout link from a a single product.\n\n**Deprecated**: Use `CheckoutLinkCreateProducts` instead."
-      },
-      "CheckoutLinkCreateProductPrice": {
-        "properties": {
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "trial_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TrialInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The interval unit for the trial period."
-          },
-          "trial_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 1000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trial Interval Count",
-            "description": "The number of interval units for the trial period."
-          },
-          "payment_processor": {
-            "type": "string",
-            "const": "stripe",
-            "title": "Payment Processor",
-            "description": "Payment processor to use. Currently only Stripe is supported."
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Optional label to distinguish links internally"
-          },
-          "allow_discount_codes": {
-            "type": "boolean",
-            "title": "Allow Discount Codes",
-            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
-            "default": true
-          },
-          "require_billing_address": {
-            "type": "boolean",
-            "title": "Require Billing Address",
-            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.",
-            "default": false
-          },
-          "discount_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Discount Id",
-            "description": "ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
-          },
-          "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Units",
-            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
-          },
-          "success_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success Url",
-            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the checkout to return to this URL."
-          },
-          "product_price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Price Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "payment_processor",
-          "product_price_id"
-        ],
-        "title": "CheckoutLinkCreateProductPrice",
-        "description": "Schema to create a new checkout link from a a single product price.\n\n**Deprecated**: Use `CheckoutLinkCreateProducts` instead."
       },
       "CheckoutLinkCreateProducts": {
         "properties": {
@@ -43614,20 +43218,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout.",
-            "deprecated": true
-          },
           "discount_id": {
             "anyOf": [
               {
@@ -43935,7 +43525,6 @@
           "trial_end",
           "organization_id",
           "product_id",
-          "product_price_id",
           "discount_id",
           "allow_discount_codes",
           "require_billing_address",
@@ -44274,20 +43863,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout.",
-            "deprecated": true
-          },
           "discount_id": {
             "anyOf": [
               {
@@ -44606,7 +44181,6 @@
           "trial_end",
           "organization_id",
           "product_id",
-          "product_price_id",
           "discount_id",
           "allow_discount_codes",
           "require_billing_address",
@@ -44703,20 +44277,6 @@
             ],
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
-          },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
           },
           "amount": {
             "anyOf": [
@@ -45101,20 +44661,6 @@
             ],
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
-          },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
           },
           "amount": {
             "anyOf": [

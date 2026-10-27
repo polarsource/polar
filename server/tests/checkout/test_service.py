@@ -13,6 +13,7 @@ from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, AuthSubject
+from polar.checkout import legacy_schemas
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
@@ -3272,7 +3273,7 @@ class TestUpdate:
                 await checkout_service.update(
                     session,
                     checkout,
-                    CheckoutUpdate(
+                    legacy_schemas.CheckoutUpdate(
                         product_id=product_fixed_seat.id, product_price_id=price.id
                     ),
                 )

@@ -95,6 +95,42 @@ class TestCreatePaymentIntentFromSharedPaymentToken:
             stripe_version=SHARED_PAYMENT_TOKENS_API_VERSION,
         )
 
+    async def test_off_session(self, mocker: MockerFixture) -> None:
+        create = mocker.patch("stripe.PaymentIntent.create_async")
+
+        await stripe_service.create_payment_intent_from_shared_payment_token(
+            "spt_123", amount=1000, currency="usd", confirm=True, off_session=True
+        )
+
+        create.assert_awaited_once_with(
+            amount=1000,
+            currency="usd",
+            confirm=True,
+            off_session=True,
+            automatic_payment_methods={"enabled": True, "allow_redirects": "never"},
+            payment_method_data={"shared_payment_granted_token": "spt_123"},
+            stripe_version=SHARED_PAYMENT_TOKENS_API_VERSION,
+        )
+
+
+@pytest.mark.anyio
+class TestGetSharedPaymentGrantedToken:
+    async def test_valid(self, mocker: MockerFixture) -> None:
+        fetch = mocker.patch(
+            "polar.integrations.stripe.service.stripe_risk_client.raw_request_async",
+            new_callable=AsyncMock,
+            return_value=MagicMock(body=json.dumps({"id": "spt_123"})),
+        )
+
+        granted_token = await stripe_service.get_shared_payment_granted_token("spt_123")
+
+        assert granted_token == {"id": "spt_123"}
+        fetch.assert_awaited_once_with(
+            "get",
+            "/v1/shared_payment/granted_tokens/spt_123",
+            stripe_version=SHARED_PAYMENT_TOKENS_API_VERSION,
+        )
+
 
 @pytest.mark.anyio
 class TestGetUsdBaseRates:

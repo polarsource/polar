@@ -49,6 +49,9 @@ if TYPE_CHECKING:
 #: ``polar.order.service``) and the consumer in ``polar.integrations.stripe.payment``
 #: must agree on this string.
 STRIPE_METADATA_PAYMENT_TRIGGER = "payment_trigger"
+#: Set on PaymentIntents charged with a recurring shared payment token, so
+#: webhooks keep the token instead of the single-use PaymentMethod Stripe clones.
+STRIPE_METADATA_SHARED_PAYMENT_TOKEN = "shared_payment_token_id"
 SEPA_PAYMENT_METHOD_TYPES: Final = ("bancontact", "ideal", "sepa_debit", "sofort")
 
 
@@ -409,12 +412,21 @@ class StripeService:
         params["stripe_version"] = SHARED_PAYMENT_TOKENS_API_VERSION
         # Stripe rejects return_url on SPT-backed intents: the agent owns it.
         params.pop("return_url", None)
-        if "automatic_payment_methods" in params:
+        if "payment_method_types" not in params:
             params["automatic_payment_methods"] = {
-                **params["automatic_payment_methods"],
+                "enabled": True,
                 "allow_redirects": "never",
             }
         return await self.create_payment_intent(**params)
+
+    async def get_shared_payment_granted_token(self, id: str) -> dict[str, Any]:
+        """Preview-only endpoint (no typed SDK), hence raw_request."""
+        response = await stripe_risk_client.raw_request_async(
+            "get",
+            f"/v1/shared_payment/granted_tokens/{id}",
+            stripe_version=SHARED_PAYMENT_TOKENS_API_VERSION,
+        )
+        return cast(dict[str, Any], json.loads(response.body))
 
     async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.retrieve_async(id)

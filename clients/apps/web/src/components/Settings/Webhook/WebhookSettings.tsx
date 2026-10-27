@@ -1,33 +1,24 @@
 'use client'
 
-import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useListWebhooksEndpoints } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import {
   Alert,
-  Button,
   SpinnerNoMargin,
   Status,
   Text,
   Truncated,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronRight } from '@polar-sh/orbit/icons'
+import { ChevronRight, Send } from '@polar-sh/orbit/icons'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
+import { EmptyState } from '../../Shared/EmptyState'
 import { SettingsGroup } from '../SettingsGroup'
 import { WebhookSignatureNotice } from './WebhookSignatureNotice'
 import { WebhookSigningSchemeStatus } from './WebhookSigningSchemeStatus'
 
-const WebhookSettings = ({
-  org,
-  onAddEndpoint,
-}: {
-  org: schemas['Organization']
-  onAddEndpoint: () => void
-}) => {
-  const managedAsCode = useIsManagedAsCode(org.id)
-
+const WebhookSettings = ({ org }: { org: schemas['Organization'] }) => {
   const endpoints = useListWebhooksEndpoints({
     organizationId: org.id,
     limit: 100,
@@ -43,13 +34,19 @@ const WebhookSettings = ({
           title="We couldn't load your webhook endpoints"
           description="Refresh the page to try again."
         />
+      ) : endpoints.data?.items.length === 0 ? (
+        <EmptyState
+          icon={<Send />}
+          title="No webhook endpoints"
+          description="Add an endpoint to receive events from Polar."
+        />
       ) : (
         <SettingsGroup>
           {!endpoints.data ? (
             <Box justifyContent="center" paddingVertical="3xl">
               <SpinnerNoMargin />
             </Box>
-          ) : endpoints.data.items.length > 0 ? (
+          ) : (
             endpoints.data.items.map((endpoint) => (
               <Endpoint
                 key={endpoint.id}
@@ -57,26 +54,6 @@ const WebhookSettings = ({
                 endpoint={endpoint}
               />
             ))
-          ) : (
-            <Box
-              flexDirection="column"
-              alignItems="center"
-              rowGap="l"
-              paddingVertical="3xl"
-              paddingHorizontal="xl"
-            >
-              <Box flexDirection="column" alignItems="center" rowGap="xs">
-                <Text variant="title">No webhook endpoints</Text>
-                <Text color="muted" align="center">
-                  Get notified when orders, subscriptions and customers change.
-                </Text>
-              </Box>
-              {!managedAsCode && (
-                <Button variant="secondary" onClick={onAddEndpoint}>
-                  Add Endpoint
-                </Button>
-              )}
-            </Box>
           )}
         </SettingsGroup>
       )}

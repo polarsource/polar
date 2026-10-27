@@ -10,8 +10,9 @@ import {
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getSSOLoginURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
-import { Button, Status, Text } from '@polar-sh/orbit'
+import { Button, Status } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { LogIn } from '@polar-sh/orbit/icons'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -21,17 +22,13 @@ import {
   SettingsGroup,
   SettingsGroupItem,
   SettingsGroupRow,
+  SettingsSection,
 } from '../SettingsGroup'
+import { EmptyState } from '../../Shared/EmptyState'
 import { SSOConnectionRow } from './SSOConnectionRow'
 import SSODomains, { isVerifiedDomain } from './SSODomains'
 
-const SSOSettings = ({
-  org,
-  onAddConnection,
-}: {
-  org: schemas['Organization']
-  onAddConnection: () => void
-}) => {
+const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const {
     isShown: enforceModalShown,
     show: showEnforceModal,
@@ -72,34 +69,23 @@ const SSOSettings = ({
   return (
     <>
       <Box flexDirection="column" rowGap="2xl">
-        <SettingsGroup title="Connections">
-          {connections.data?.items && connections.data.items.length > 0 ? (
-            connections.data.items.map((connection) => (
+        {connections.data?.items && connections.data.items.length > 0 ? (
+          <SettingsGroup title="Connections">
+            {connections.data.items.map((connection) => (
               <SettingsGroupRow key={connection.id}>
                 <SSOConnectionRow org={org} connection={connection} />
               </SettingsGroupRow>
-            ))
-          ) : (
-            <Box
-              flexDirection="column"
-              alignItems="center"
-              rowGap="l"
-              paddingVertical="3xl"
-              paddingHorizontal="xl"
-            >
-              <Box flexDirection="column" alignItems="center" rowGap="xs">
-                <Text variant="title">No SSO connections</Text>
-                <Text color="muted" align="center">
-                  Connect your identity provider to let members sign in with
-                  SSO.
-                </Text>
-              </Box>
-              <Button variant="secondary" onClick={onAddConnection}>
-                Add connection
-              </Button>
-            </Box>
-          )}
-        </SettingsGroup>
+            ))}
+          </SettingsGroup>
+        ) : (
+          <SettingsSection title="Connections">
+            <EmptyState
+              icon={<LogIn />}
+              title="No SSO connections"
+              description="Add a connection so members can sign in with your identity provider."
+            />
+          </SettingsSection>
+        )}
         {!isAutomatic && (
           <SettingsGroup title="Login link">
             <SettingsGroupItem

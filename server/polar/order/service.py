@@ -49,6 +49,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, Validation
 from polar.file.s3 import S3_SERVICES
 from polar.integrations.stripe.service import (
     STRIPE_METADATA_PAYMENT_TRIGGER,
+    STRIPE_METADATA_SHARED_PAYMENT_TOKEN,
 )
 from polar.integrations.stripe.service import (
     stripe as stripe_service,
@@ -1375,13 +1376,20 @@ class OrderService:
         Resolve the payment method to charge for an off-session order: the
         explicitly requested one (which must belong to the customer), else the
         customer's default. Raises PaymentFailed if none is usable.
+
+        Shared payment tokens are excluded: their limit is reserved for the
+        subscription renewals they were granted for.
         """
         repository = PaymentMethodRepository.from_session(session)
         if payment_method_id is not None:
             payment_method = await repository.get_by_id(
                 payment_method_id, options=repository.get_eager_options()
             )
-            if payment_method is None or payment_method.customer_id != customer.id:
+            if (
+                payment_method is None
+                or payment_method.customer_id != customer.id
+                or payment_method.is_shared_payment_token
+            ):
                 raise PaymentFailed(PaymentFailedReason.missing_payment_method)
             return payment_method
 
@@ -1891,6 +1899,10 @@ class OrderService:
                 }
                 if payment_trigger is not None:
                     metadata[STRIPE_METADATA_PAYMENT_TRIGGER] = payment_trigger
+                if payment_method.is_shared_payment_token:
+                    metadata[STRIPE_METADATA_SHARED_PAYMENT_TOKEN] = (
+                        payment_method.processor_id
+                    )
 
                 if order.tax_breakdown:
                     metadata["tax_amount"] = order.tax_amount
@@ -1914,25 +1926,31 @@ class OrderService:
                         f"order_finalize:{order.id}:{payment_method.processor_id}"
                     )
 
-                payment_intent_params: dict[str, Any] = {}
+                payment_intent_params: dict[str, Any] = {
+                    "amount": order.due_amount,
+                    "currency": order.currency,
+                    "customer": stripe_customer_id,
+                    "confirm": True,
+                    "off_session": True,
+                    "expand": ["latest_charge"],
+                    "statement_descriptor_suffix": order.statement_descriptor_suffix,
+                    "description": f"{order.organization.name} — {order.description}",
+                    "metadata": metadata,
+                    "idempotency_key": idempotency_key,
+                }
                 if payment_method.type == "sepa_debit":
                     payment_intent_params["payment_method_types"] = ["sepa_debit"]
 
                 try:
-                    payment_intent = await stripe_service.create_payment_intent(
-                        amount=order.due_amount,
-                        currency=order.currency,
-                        payment_method=payment_method.processor_id,
-                        customer=stripe_customer_id,
-                        confirm=True,
-                        off_session=True,
-                        expand=["latest_charge"],
-                        statement_descriptor_suffix=order.statement_descriptor_suffix,
-                        description=f"{order.organization.name} — {order.description}",
-                        metadata=metadata,
-                        idempotency_key=idempotency_key,
-                        **payment_intent_params,
-                    )
+                    if payment_method.is_shared_payment_token:
+                        payment_intent = await stripe_service.create_payment_intent_from_shared_payment_token(
+                            payment_method.processor_id, **payment_intent_params
+                        )
+                    else:
+                        payment_intent = await stripe_service.create_payment_intent(
+                            payment_method=payment_method.processor_id,
+                            **payment_intent_params,
+                        )
                 except stripe_lib.CardError as e:
                     # Card errors (declines, expired cards, etc.) should not be retried
                     # They will be handled by the dunning process
@@ -1946,6 +1964,23 @@ class OrderService:
                         await self._mark_intent_as_failed_sync(e)
                     raise PaymentFailed(PaymentFailedReason.card_error) from e
                 except stripe_lib.InvalidRequestError as e:
+                    # A token over its limit, expired or revoked is rejected
+                    # on the token param. Dunning retries it.
+                    if (
+                        payment_method.is_shared_payment_token
+                        and e.param
+                        == "payment_method_data[shared_payment_granted_token]"
+                    ):
+                        log.warning(
+                            "Shared payment token charge rejected",
+                            order_id=order.id,
+                            error_code=e.code,
+                        )
+                        await self.handle_payment_failure(session, order)
+                        if payment_mode == PaymentMode.sync:
+                            await self._mark_intent_as_failed_sync(e)
+                        raise PaymentFailed(PaymentFailedReason.card_error) from e
+
                     error = e.error
                     if error is not None and error.message:
                         message = error.message.lower()

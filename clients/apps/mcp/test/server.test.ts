@@ -564,6 +564,7 @@ test('code mode logs the operations a call hit and tells API failures from scrip
     ],
   })
   expect(apiFailure).not.toHaveProperty('scriptError')
+  expect(apiFailure).not.toHaveProperty('errorMessage')
   expect(apiFailure).not.toHaveProperty('scriptErrorMessage')
   expect(scriptFailure).toMatchObject({
     isError: true,
@@ -571,6 +572,7 @@ test('code mode logs the operations a call hit and tells API failures from scrip
     scriptError: 'TypeError',
     unexposedOperations: ['GET /v1/customers/{}/{}'],
   })
+  expect(scriptFailure).not.toHaveProperty('errorMessage')
   expect(scriptFailure).not.toHaveProperty('scriptErrorMessage')
   expect(emptySearch).toMatchObject({ isError: false, emptyResult: true })
   expect(JSON.stringify(log.mock.calls)).not.toContain('jane@')

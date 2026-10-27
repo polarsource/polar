@@ -10,7 +10,8 @@ const CLIENT_INFO_META = 'io.modelcontextprotocol/clientInfo'
 // tool call. It must never carry the token, tool arguments or results: they
 // hold customer data. Engine error messages from search scripts are the one
 // exception sent to PostHog: search runs against the public OpenAPI spec
-// without network access, so it cannot see customer data.
+// without network access, so it cannot reach customer data. The messages can
+// still quote the script's own code, which is agent-written tool input.
 export interface RequestLogEntry {
   event: 'mcp.request'
   server: string

@@ -9,7 +9,7 @@ from typing import Any
 
 from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
 
-from .schemas import SLOReport
+from .report import SLOReport
 
 
 def _status_emoji(passing: bool) -> str:

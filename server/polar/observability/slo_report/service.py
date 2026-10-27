@@ -15,7 +15,7 @@ from polar.logging import Logger
 from polar.observability.slo import CRITICAL_ENDPOINTS
 
 from .client import GrafanaCloudAPIError, GrafanaCloudPrometheusClient
-from .schemas import EndpointSLOStatus, SLOReport
+from .report import EndpointSLOStatus, SLOReport
 
 log: Logger = structlog.get_logger()
 

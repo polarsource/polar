@@ -42,7 +42,7 @@ export const useSelectedProducts = (
   includeArchived = false,
 ) =>
   useQuery({
-    queryKey: ['products', selector],
+    queryKey: ['products', selector, includeArchived],
     queryFn: async () => {
       const products: schemas['Product'][] = []
       let page = 1

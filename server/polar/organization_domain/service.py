@@ -5,6 +5,7 @@ from uuid import UUID
 
 import dns.asyncresolver
 import dns.exception
+import dns.resolver
 import structlog
 from sqlalchemy.exc import IntegrityError
 
@@ -52,7 +53,7 @@ class OrganizationDomainVerifiedElsewhere(PolarError):
 async def _lookup_txt(name: str) -> set[str]:
     try:
         answer = await dns.asyncresolver.resolve(name, "TXT", lifetime=5)
-    except dns.exception.DNSException:
+    except dns.resolver.NXDOMAIN, dns.resolver.NoAnswer:
         return set()
     return {b"".join(record.strings).decode() for record in answer}
 
@@ -122,7 +123,10 @@ class OrganizationDomainService:
         if organization_domain.verified_at is not None:
             return organization_domain
 
-        records = await _lookup_txt(organization_domain.verification_record_name)
+        try:
+            records = await _lookup_txt(organization_domain.verification_record_name)
+        except dns.exception.DNSException as e:
+            raise OrganizationDomainVerificationFailed(organization_domain) from e
         if organization_domain.verification_record_value not in records:
             raise OrganizationDomainVerificationFailed(organization_domain)
 
@@ -160,7 +164,7 @@ class OrganizationDomainService:
             repository.get_statement_by_organization(organization.id)
         )
         for organization_domain in organization_domains:
-            if organization_domain.verification_token is None:
+            if organization_domain.verification_record_value is None:
                 continue
             if organization_domain.verified_at is None:
                 with contextlib.suppress(
@@ -168,9 +172,22 @@ class OrganizationDomainService:
                     OrganizationDomainVerifiedElsewhere,
                 ):
                     await self.verify(session, organization, organization_domain)
-            elif organization_domain.verification_token not in await _lookup_txt(
-                organization_domain.verification_record_name
-            ):
+                continue
+
+            try:
+                records = await _lookup_txt(
+                    organization_domain.verification_record_name
+                )
+            except dns.exception.DNSException as e:
+                log.warning(
+                    "organization_domain.reverify.lookup_failed",
+                    organization_id=str(organization.id),
+                    domain=organization_domain.domain,
+                    error=str(e),
+                )
+                continue
+
+            if organization_domain.verification_record_value not in records:
                 log.info(
                     "organization_domain.reverify.lost",
                     organization_id=str(organization.id),

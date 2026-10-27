@@ -1,3 +1,4 @@
+import dns.exception
 import pytest
 from pytest_mock import MockerFixture
 
@@ -46,7 +47,7 @@ class TestReverify:
         domain = OrganizationDomain(
             organization=organization,
             domain="acme.com",
-            verification_token="TOKEN",
+            verification_record_value="TOKEN",
             verified_at=verified_at,
         )
         await save_fixture(domain)
@@ -68,7 +69,7 @@ class TestReverify:
         domain = OrganizationDomain(
             organization=organization,
             domain="acme.com",
-            verification_token="TOKEN",
+            verification_record_value="TOKEN",
             verified_at=utc_now(),
         )
         await save_fixture(domain)
@@ -77,6 +78,31 @@ class TestReverify:
 
         assert domain.verified_at is None
         assert domain.verification_lost_at is not None
+
+    async def test_lookup_failure_keeps_verification(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.organization_domain.service.dns.asyncresolver.resolve",
+            side_effect=dns.exception.Timeout,
+        )
+        verified_at = utc_now()
+        domain = OrganizationDomain(
+            organization=organization,
+            domain="acme.com",
+            verification_record_value="TOKEN",
+            verified_at=verified_at,
+        )
+        await save_fixture(domain)
+
+        await organization_domain_service.reverify(session, organization)
+
+        assert domain.verified_at == verified_at
+        assert domain.verification_lost_at is None
 
     async def test_pending_record_added(
         self,
@@ -91,7 +117,7 @@ class TestReverify:
         domain = OrganizationDomain(
             organization=organization,
             domain="acme.com",
-            verification_token="TOKEN",
+            verification_record_value="TOKEN",
             verification_lost_at=utc_now(),
         )
         await save_fixture(domain)
@@ -120,7 +146,9 @@ class TestReverify:
             )
         )
         domain = OrganizationDomain(
-            organization=organization, domain="acme.com", verification_token="TOKEN"
+            organization=organization,
+            domain="acme.com",
+            verification_record_value="TOKEN",
         )
         await save_fixture(domain)
 

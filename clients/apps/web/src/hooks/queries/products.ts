@@ -33,7 +33,9 @@ export const useProducts = (
     placeholderData: keepPreviousData,
   })
 
-type ProductSelector = { id: string[] } | { external_id: string[] }
+type ProductSelector =
+  | { id: string[] }
+  | { organization_id: string; external_id: string[] }
 
 export const useSelectedProducts = (
   selector: ProductSelector,

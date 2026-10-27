@@ -93,7 +93,7 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
   const selectedValues = productFilter ? [productFilter] : []
   const { data: selectedProducts } = useSelectedProducts(
     filterByExternalId
-      ? { external_id: selectedValues }
+      ? { organization_id: organization.id, external_id: selectedValues }
       : { id: selectedValues },
     true,
   )

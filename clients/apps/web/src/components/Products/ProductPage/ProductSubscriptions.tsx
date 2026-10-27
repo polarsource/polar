@@ -35,7 +35,12 @@ export const ProductSubscriptions = ({
           </p>
         </div>
         <Link
-          href={`/dashboard/${organization.slug}/sales/subscriptions?product_id=${product.id}`}
+          href={
+            organization.feature_settings?.config_as_code_enabled &&
+            product.external_id
+              ? `/dashboard/${organization.slug}/sales/subscriptions?external_product_id=${encodeURIComponent(product.external_id)}`
+              : `/dashboard/${organization.slug}/sales/subscriptions?product_id=${product.id}`
+          }
         >
           <Button size="sm">View All</Button>
         </Link>

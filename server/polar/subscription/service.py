@@ -580,6 +580,7 @@ class SubscriptionService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        external_product_id: Sequence[str] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
@@ -614,6 +615,9 @@ class SubscriptionService:
 
         if product_id is not None:
             statement = statement.where(Subscription.product_id.in_(product_id))
+
+        if external_product_id is not None:
+            statement = statement.where(Product.external_id.in_(external_product_id))
 
         if customer_id is not None:
             statement = statement.where(Subscription.customer_id.in_(customer_id))

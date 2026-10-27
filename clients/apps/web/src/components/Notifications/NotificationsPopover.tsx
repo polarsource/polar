@@ -1,5 +1,5 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
-import { BoltOutlined } from '@polar-sh/orbit/icons'
+import { Bell } from '@polar-sh/orbit/icons'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -42,7 +42,7 @@ export const NotificationsPopover = () => {
           aria-label="Notifications"
           className="flex size-full cursor-pointer items-center justify-center"
         >
-          <BoltOutlined fontSize="small" aria-hidden="true" />
+          <Bell size={16} aria-hidden="true" />
           {hasUnread && !open && (
             <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-blue-500" />
           )}

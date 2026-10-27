@@ -140,18 +140,20 @@ const OrganizationDomainsSettings = ({ organization }: Props) => {
           ) : null}
 
           <Box gap="s" alignItems="start">
-            <Input
-              value={draft}
-              aria-label="Domain"
-              placeholder="example.com"
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !createDomain.isPending) {
-                  e.preventDefault()
-                  add()
-                }
-              }}
-            />
+            <Box flex={1} flexDirection="column">
+              <Input
+                value={draft}
+                aria-label="Domain"
+                placeholder="example.com"
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !createDomain.isPending) {
+                    e.preventDefault()
+                    add()
+                  }
+                }}
+              />
+            </Box>
             <Button
               type="button"
               onClick={add}

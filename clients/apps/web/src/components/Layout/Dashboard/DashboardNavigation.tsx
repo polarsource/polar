@@ -111,7 +111,7 @@ const BackLink = ({ href, title }: { href: string; title: string }) => {
       <SidebarMenuButton tooltip="Back to Dashboard" asChild>
         <Link
           href={href}
-          className="flex flex-row items-center gap-4 border border-transparent text-black dark:text-white"
+          className="dark:hover:bg-polar-900! flex flex-row items-center gap-4 rounded-lg px-2 text-black transition-colors duration-75 hover:bg-white! dark:text-white"
           onClick={() => {
             if (isMobile) setOpenMobile(false)
           }}

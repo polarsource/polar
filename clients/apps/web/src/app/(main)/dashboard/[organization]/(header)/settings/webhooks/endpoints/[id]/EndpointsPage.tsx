@@ -146,6 +146,7 @@ export default function ClientPage({
 
   return (
     <DashboardBody
+      wrapperClassName="max-w-(--breakpoint-md)!"
       title="Webhook"
       header={
         <div className="flex items-center gap-2">

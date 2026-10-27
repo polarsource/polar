@@ -38,7 +38,7 @@ export default function ClientPage({
         </Box>
       }
     >
-      <WebhookSettings org={org} onAddEndpoint={show} />
+      <WebhookSettings org={org} />
       <InlineModal
         isShown={isShown}
         hide={hide}

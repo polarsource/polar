@@ -20,7 +20,7 @@ export default function ClientPage({
       title="Single Sign-On"
       header={<Button onClick={show}>Add connection</Button>}
     >
-      <SSOSettings org={org} onAddConnection={show} />
+      <SSOSettings org={org} />
       <InlineModal
         isShown={isShown}
         hide={hide}

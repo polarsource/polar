@@ -2584,6 +2584,26 @@ export interface paths {
     patch: operations['products:update']
     trace?: never
   }
+  '/v1/products/name-check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Check Product Name
+     * @description Warn when a product name suggests a use case the Acceptable Use Policy forbids.
+     */
+    post: operations['products:name_check']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/products/{id}/benefits': {
     parameters: {
       query?: never
@@ -34562,6 +34582,24 @@ export interface components {
       /** Public Url */
       readonly public_url: string
     }
+    /** ProductNameCheck */
+    ProductNameCheck: {
+      /**
+       * Category
+       * @description Acceptable Use Policy category the name suggests, if any.
+       */
+      category: string | null
+      /**
+       * Phrase
+       * @description The exact phrase that matched, when a word-list rule flagged it.
+       */
+      phrase: string | null
+    }
+    /** ProductNameCheckRequest */
+    ProductNameCheckRequest: {
+      /** Name */
+      name: string
+    }
     /** ProductNotDeletable */
     ProductNotDeletable: {
       /**
@@ -49246,6 +49284,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'products:name_check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProductNameCheckRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductNameCheck']
         }
       }
       /** @description Validation Error */

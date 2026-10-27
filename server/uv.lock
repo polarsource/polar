@@ -2942,7 +2942,7 @@ dependencies = [
     { name = "py-svg-hush" },
     { name = "pycountry" },
     { name = "pydantic" },
-    { name = "pydantic-ai-slim", extra = ["openai"] },
+    { name = "pydantic-ai-slim", extra = ["openai", "typesafe"] },
     { name = "pydantic-extra-types" },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
@@ -3040,7 +3040,7 @@ requires-dist = [
     { name = "py-svg-hush", specifier = ">=0.3.0" },
     { name = "pycountry", specifier = ">=24.6.1" },
     { name = "pydantic", specifier = ">=2.13.4" },
-    { name = "pydantic-ai-slim", extras = ["openai"], specifier = ">=2.2.0" },
+    { name = "pydantic-ai-slim", extras = ["openai", "typesafe"], specifier = ">=2.2.0" },
     { name = "pydantic-extra-types", specifier = ">=2.9.0" },
     { name = "pydantic-settings", specifier = ">=2.14.2" },
     { name = "pyjwt", specifier = ">=2.13.0" },
@@ -3372,6 +3372,9 @@ wheels = [
 openai = [
     { name = "openai" },
     { name = "tiktoken" },
+]
+typesafe = [
+    { name = "typesafe-sdk" },
 ]
 
 [[package]]
@@ -4207,6 +4210,15 @@ wheels = [
 ]
 
 [[package]]
+name = "tenacity"
+version = "9.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/9e/497c1c8ebe5a5b5d1d4a7511aea22c0bb1a97e3170d98abdef0e1b34265a/tenacity-9.2.1.tar.gz", hash = "sha256:a606b5c808d0cded4a359d5b9932d867ff2a6a6b64d37350260fd01bbdf83839", size = 58261, upload-time = "2026-10-07T12:13:01.633Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d6/26/1ff2b0721ac66a3ec5b1402b333110b352ab0a8724052ac279a7b82d40c4/tenacity-9.2.1-py3-none-any.whl", hash = "sha256:9e56f17539296baab7beabb08b92f6ee3d7be92d8be72d763360677c2ad6580e", size = 32310, upload-time = "2026-10-07T12:13:00.102Z" },
+]
+
+[[package]]
 name = "termcolor"
 version = "3.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4416,6 +4428,25 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/4f/cd/3b2a3362a526f91c33f785a291462b2ec448ae531101c62372fc30a21f53/types_setuptools-84.0.0.20260812.tar.gz", hash = "sha256:09bedc248ebbb7a232c9419dfcdca329706e61bf2aa5743e9424d027f1d956b4", size = 46545, upload-time = "2026-08-12T03:52:42.316Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8a/e5/3a41cab4066465593facd660b2683c017f3d88d3297cdd26db0677b8e479/types_setuptools-84.0.0.20260812-py3-none-any.whl", hash = "sha256:799c08e4bc6a288e8a0b538afb5f5ff320a08927ba8dbedb30c74ee3ba5d867b", size = 70320, upload-time = "2026-08-12T03:52:41.154Z" },
+]
+
+[[package]]
+name = "typesafe-sdk"
+version = "0.7.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "httpx2" },
+    { name = "packaging" },
+    { name = "pydantic" },
+    { name = "pydantic-core" },
+    { name = "tenacity" },
+    { name = "truststore", marker = "sys_platform != 'emscripten'" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/26/4d/383aa14f4cfe5fb41023ea1cab52d7f79cc31ab200ee7314317cf89db744/typesafe_sdk-0.7.5.tar.gz", hash = "sha256:1eeeb0dc80a7161d84896db42a5016dc0a7c8872fa16540b70163e5357b6d398", size = 34152, upload-time = "2026-10-14T21:21:42.837Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1c/f6/bee4c3b49570c2d312057c9e37c1446cf37eb1b86bf5872f7a797e803326/typesafe_sdk-0.7.5-py3-none-any.whl", hash = "sha256:967a8b61494d536abb55ee3f3a2b10e81685cb6baad6ccdcab588bdc6c9b86d2", size = 49948, upload-time = "2026-10-14T21:21:41.337Z" },
 ]
 
 [[package]]

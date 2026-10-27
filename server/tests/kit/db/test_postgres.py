@@ -5,7 +5,9 @@ from pytest_mock import MockerFixture
 from sqlalchemy import create_engine as sqlalchemy_create_engine
 from sqlalchemy import text
 
-from polar.kit.db.postgres import create_sync_engine
+from polar.config import settings
+from polar.kit.db.postgres import create_async_engine, create_sync_engine
+from tests.fixtures.database import get_database_url
 
 
 class TestCreateSyncEngine:
@@ -83,3 +85,29 @@ class TestCreateSyncEngine:
                 assert_timeout(execute)
 
         engine.dispose()
+
+
+@pytest.mark.anyio
+class TestCreateAsyncEngine:
+    @pytest.mark.parametrize(
+        ("command_timeout", "expected_timeout"),
+        [(None, "0"), (1.25, "1250ms"), (30.0, "30s")],
+    )
+    async def test_timeout_is_set_for_each_transaction(
+        self,
+        worker_id: str,
+        command_timeout: float | None,
+        expected_timeout: str,
+    ) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            pool_size=settings.DATABASE_POOL_SIZE,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+            command_timeout=command_timeout,
+        )
+        async with engine.connect() as connection:
+            for _ in range(2):
+                async with connection.begin():
+                    result = await connection.exec_driver_sql("SHOW statement_timeout")
+                    assert result.scalar_one() == expected_timeout
+        await engine.dispose()

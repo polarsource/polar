@@ -29,6 +29,7 @@ const OrganizationDomainsSettings = ({ organization }: Props) => {
   const deleteDomain = useDeleteOrganizationDomain(organization.id)
 
   const add = async () => {
+    if (!draft.trim()) return
     const { error } = await createDomain.mutateAsync({ domain: draft })
     if (error) {
       toast({

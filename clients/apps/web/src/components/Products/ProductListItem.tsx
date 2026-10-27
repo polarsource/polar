@@ -1,12 +1,10 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
-import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useUpdateProduct } from '@/hooks/queries/products'
 import {
-  hasLegacyRecurringPrices,
   isMeteredPrice,
   isSeatBasedPrice,
   isUnitBasedPrice,
@@ -155,11 +153,7 @@ export const ProductListItem = ({
                   </Pill>
                 )}
                 <span className="text-sm leading-snug">
-                  {hasLegacyRecurringPrices(product) ? (
-                    <LegacyRecurringProductPrices product={product} />
-                  ) : (
-                    <ProductPriceLabel product={product} currency={currency} />
-                  )}
+                  <ProductPriceLabel product={product} currency={currency} />
                 </span>
                 <Button
                   size="sm"

@@ -17,12 +17,6 @@ export const hasProductCheckout = (
   return checkout.product !== null && checkout.prices !== null
 }
 
-export const isLegacyRecurringProductPrice = (
-  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice'],
-): price is schemas['LegacyRecurringProductPrice'] => {
-  return (price as schemas['LegacyRecurringProductPrice']).type === 'recurring'
-}
-
 export const getSeatPrice = (
   checkout: schemas['CheckoutPublic'],
 ): schemas['ProductPriceSeatBased'] | null => {

@@ -111,12 +111,16 @@ class OrganizationDomainService:
             raise OrganizationDomainVerificationFailed(organization_domain)
 
         repository = OrganizationDomainRepository.from_session(session)
-        if await repository.get_verified_by_domain(organization_domain.domain):
-            raise OrganizationDomainVerifiedElsewhere(organization_domain.domain)
-
-        return await repository.update(
-            organization_domain, update_dict={"verified_at": utc_now()}, flush=True
-        )
+        try:
+            async with session.begin_nested():
+                return await repository.update(
+                    organization_domain,
+                    update_dict={"verified_at": utc_now()},
+                    flush=True,
+                )
+        except IntegrityError as e:
+            await session.refresh(organization_domain)
+            raise OrganizationDomainVerifiedElsewhere(organization_domain.domain) from e
 
 
 organization_domain = OrganizationDomainService()

@@ -9,6 +9,7 @@ import {
   useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import Link from 'next/link'
+import { twMerge } from 'tailwind-merge'
 import { usePathname } from 'next/navigation'
 import {
   useAccountRoutes,
@@ -103,11 +104,21 @@ const ProductNavigation = ({
   )
 }
 
-const BackLink = ({ href, title }: { href: string; title: string }) => {
+const BackLink = ({
+  href,
+  title,
+  className,
+}: {
+  href: string
+  title: string
+  className?: string
+}) => {
   const { isMobile, setOpenMobile } = useSidebar()
 
   return (
-    <SidebarMenuItem className="mb-4 flex flex-row items-center gap-2">
+    <SidebarMenuItem
+      className={twMerge('flex flex-row items-center gap-2', className)}
+    >
       <SidebarMenuButton tooltip="Back to Dashboard" asChild>
         <Link
           href={href}
@@ -156,7 +167,9 @@ export const AccountNavigation = () => {
     <NavList
       routes={routes}
       navType="account"
-      header={<BackLink href="/dashboard" title="Account Settings" />}
+      header={
+        <BackLink href="/dashboard" title="Account Settings" className="mb-4" />
+      }
     />
   )
 }

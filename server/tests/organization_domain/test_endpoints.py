@@ -1,5 +1,6 @@
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain, UserOrganization
@@ -56,6 +57,9 @@ class TestListOrganizationDomains:
             "pending.com",
         ]
         assert json["items"][1]["verified_at"] is None
+        assert json["items"][1]["verification_record_name"] == (
+            "_polar-challenge.pending.com"
+        )
         assert json["items"][1]["verification_record_value"] == "TOKEN"
 
 
@@ -195,3 +199,128 @@ class TestDeleteOrganizationDomain:
 
         response = await client.get(f"/v1/organizations/{organization.id}/domains/")
         assert response.json()["pagination"]["total_count"] == 0
+
+
+@pytest.mark.anyio
+class TestVerifyOrganizationDomain:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        domain = OrganizationDomain(
+            organization=organization,
+            domain="acme.com",
+            verification_record_value="TOKEN",
+        )
+        await save_fixture(domain)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/domains/{domain.id}/verify"
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_other_organization_domain(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        other = OrganizationDomain(
+            organization=organization_second,
+            domain="acme.com",
+            verification_record_value="TOKEN",
+        )
+        await save_fixture(other)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/domains/{other.id}/verify"
+        )
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_record_not_found(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        lookup_txt_mock = mocker.patch(
+            "polar.organization_domain.service._lookup_txt", return_value={"OTHER"}
+        )
+        domain = OrganizationDomain(
+            organization=organization,
+            domain="acme.com",
+            verification_record_value="TOKEN",
+        )
+        await save_fixture(domain)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/domains/{domain.id}/verify"
+        )
+        assert response.status_code == 400
+        lookup_txt_mock.assert_called_once_with("_polar-challenge.acme.com")
+
+    @pytest.mark.auth
+    async def test_verified_elsewhere(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch(
+            "polar.organization_domain.service._lookup_txt", return_value={"TOKEN"}
+        )
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization_second,
+                domain="acme.com",
+                verified_at=utc_now(),
+            )
+        )
+        domain = OrganizationDomain(
+            organization=organization,
+            domain="acme.com",
+            verification_record_value="TOKEN",
+        )
+        await save_fixture(domain)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/domains/{domain.id}/verify"
+        )
+        assert response.status_code == 409
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch(
+            "polar.organization_domain.service._lookup_txt",
+            return_value={"v=spf1 -all", "TOKEN"},
+        )
+        domain = OrganizationDomain(
+            organization=organization,
+            domain="acme.com",
+            verification_record_value="TOKEN",
+        )
+        await save_fixture(domain)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/domains/{domain.id}/verify"
+        )
+        assert response.status_code == 200
+        assert response.json()["verified_at"] is not None

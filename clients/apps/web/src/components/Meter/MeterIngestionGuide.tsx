@@ -40,11 +40,27 @@ export const MeterIngestionGuide = () => {
                 </p>
               </div>
               {managedAsCode ? (
-                <Box flexDirection="column" alignItems="start" rowGap="s">
+                <Box
+                  flexDirection="column"
+                  alignItems="start"
+                  rowGap="s"
+                  padding="l"
+                  borderRadius="l"
+                  backgroundColor="background-primary"
+                >
                   <ManagedAsCodeBadge />
                   <Text variant="caption" color="muted">
-                    Meters are defined in your config. Add one there and run{' '}
-                    <code>polar config apply</code>.
+                    Add a meter to your config and run{' '}
+                    <Text
+                      as="code"
+                      variant="caption"
+                      color="inherit"
+                      monospace
+                      wrap="nowrap"
+                    >
+                      polar config apply
+                    </Text>
+                    .
                   </Text>
                 </Box>
               ) : (

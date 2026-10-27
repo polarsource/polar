@@ -130,6 +130,7 @@ class OrganizationDomainService:
         hosts = [domain]
         if not is_shared_host(f"{WILDCARD_PREFIX}{domain}"):
             hosts.append(f"{WILDCARD_PREFIX}{domain}")
+        await session.refresh(organization, with_for_update=True)
         organization.embed_hosts = [
             *organization.embed_hosts,
             *(host for host in hosts if host not in organization.embed_hosts),

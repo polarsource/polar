@@ -4,19 +4,29 @@ from polar.benefit.strategies.feature_flag.schemas import (
     BenefitFeatureFlagCreate,
     BenefitFeatureFlagCreateProperties,
 )
+from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysCreate
 from polar.benefit.strategies.meter_credit.schemas import (
     BenefitMeterCreditCreate,
     BenefitMeterCreditCreateProperties,
 )
 
-from .schemas import ConfigBenefit, ConfigBenefitMeterCredit
+from .schemas import ConfigBenefit, ConfigBenefitLicenseKeys, ConfigBenefitMeterCredit
 
 
 def benefit_create(
     benefit_config: ConfigBenefit,
     organization_id: UUID | None,
     meter_ids: dict[str, UUID],
-) -> BenefitFeatureFlagCreate | BenefitMeterCreditCreate:
+) -> BenefitFeatureFlagCreate | BenefitMeterCreditCreate | BenefitLicenseKeysCreate:
+    if isinstance(benefit_config, ConfigBenefitLicenseKeys):
+        return BenefitLicenseKeysCreate(
+            type=benefit_config.type,
+            description=benefit_config.description,
+            metadata=benefit_config.metadata,
+            visibility=benefit_config.visibility,
+            organization_id=organization_id,
+            properties=benefit_config.properties,
+        )
     if isinstance(benefit_config, ConfigBenefitMeterCredit):
         properties = benefit_config.properties
         return BenefitMeterCreditCreate(

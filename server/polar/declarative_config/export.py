@@ -137,6 +137,8 @@ def _benefit_entry(
         if str(properties["meter_id"]) not in meter_external_ids:
             return None
         data["properties"] = benefit_properties(benefit, meter_external_ids)
+    elif benefit.type == BenefitType.license_keys:
+        data["properties"] = benefit_properties(benefit, meter_external_ids)
     config = _config_benefit.validate_python(data)
     return _benefit_read.validate_python(_dump(config))
 

@@ -178,7 +178,7 @@ export const CustomerSelector = ({
               <Button
                 size="icon"
                 variant="ghost"
-                className="dark:text-polar-500 size-6 text-gray-500 opacity-0 transition-all group-hover:opacity-100"
+                className="dark:text-polar-500 size-6 text-gray-500 opacity-0 transition-opacity group-hover:opacity-100"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleToggleCustomer(customer.id)

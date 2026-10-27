@@ -4,8 +4,8 @@ import { toast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks'
 import {
   useDeleteSSOConnection,
+  useOrganizationDomains,
   useSSOConnections,
-  useSSODomains,
   useUpdateOrganization,
   useUpdateSSOConnection,
 } from '@/hooks/queries'
@@ -20,7 +20,7 @@ import { ConfirmModal } from '../../Modal/ConfirmModal'
 import { useModal } from '../../Modal/useModal'
 import EditSSOConnectionModal from './EditSSOConnectionModal'
 import NewSSOConnectionModal from './NewSSOConnectionModal'
-import SSODomains from './SSODomains'
+import SSODomains, { isVerifiedDomain } from './SSODomains'
 
 const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const { isShown, show, hide } = useModal()
@@ -32,10 +32,11 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const { currentUser } = useAuth()
   const router = useRouter()
   const connections = useSSOConnections(org.id)
-  const domains = useSSODomains(org.id)
+  const domains = useOrganizationDomains(org.id)
+  const verifiedDomains = (domains.data?.items ?? []).filter(isVerifiedDomain)
   const updateOrganization = useUpdateOrganization()
 
-  const isAutomatic = org.sso_enforced && (domains.data?.items.length ?? 0) > 0
+  const isAutomatic = org.sso_enforced && verifiedDomains.length > 0
   const hasEnabledConnection = connections.data?.items?.some(
     (connection) => connection.enabled,
   )
@@ -127,7 +128,9 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
             {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}
           </Button>
         </Box>
-        {org.sso_enforced && <SSODomains organizationId={org.id} />}
+        {org.sso_enforced && domains.data && (
+          <SSODomains organization={org} domains={verifiedDomains} />
+        )}
       </Box>
       <ConfirmModal
         isShown={enforceModalShown}

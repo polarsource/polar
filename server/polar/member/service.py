@@ -9,7 +9,8 @@ from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.repository import CustomerSeatRepository
@@ -64,7 +65,9 @@ class MemberService:
     ) -> tuple[Sequence[Member], int]:
         """List members with pagination and filtering."""
         repository = MemberRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
 
         if customer_id is not None:
@@ -100,7 +103,9 @@ class MemberService:
             AmbiguousExternalCustomerID: If the external ID matches several customers
         """
         repository = MemberRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         customer = await self._get_readable_customer(
             session,
             org_ids,
@@ -180,7 +185,9 @@ class MemberService:
     ) -> Member | None:
         """Get a member by ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(Member.id == id)
         return await repository.get_one_or_none(statement)
 
@@ -208,7 +215,9 @@ class MemberService:
     ) -> Member | None:
         """Get a member by external ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
 
         # Resolve the customer first so an ambiguous external customer ID always
         # surfaces as a 409, regardless of how many members happen to match.
@@ -674,13 +683,18 @@ class MemberService:
             ResourceNotFound: If customer not found or not accessible
             NotPermitted: If no permission to add members
         """
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         customer = await self._get_readable_customer(
             session,
             org_ids,
             customer_id=customer_id,
             external_customer_id=external_customer_id,
             options=(joinedload(Customer.organization),),
+        )
+        await assert_resource_permission(
+            session, auth_subject, customer, OrganizationPermission.customers_manage
         )
         customer_id = customer.id
 

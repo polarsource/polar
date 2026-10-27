@@ -1,7 +1,7 @@
 """add catalog_benefits and catalog columns to benefits
 
 Revision ID: 3b9e5d2a7c41
-Revises: dbdabb804bde
+Revises: e4c93484fe51
 Create Date: 2026-10-27 10:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "3b9e5d2a7c41"
-down_revision = "dbdabb804bde"
+down_revision = "e4c93484fe51"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -1,21 +1,32 @@
-import { useSSODomains } from '@/hooks/queries'
+import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import Link from 'next/link'
 
-const SSODomains = ({ organizationId }: { organizationId: string }) => {
-  const domains = useSSODomains(organizationId)
-  const items = domains.data?.items ?? []
+type VerifiedDomain = schemas['OrganizationDomain'] & { verified_at: string }
 
-  if (domains.isLoading || domains.isError) {
-    return null
-  }
+export const isVerifiedDomain = (
+  domain: schemas['OrganizationDomain'],
+): domain is VerifiedDomain => domain.verified_at !== null
 
-  if (items.length === 0) {
+const SSODomains = ({
+  organization,
+  domains,
+}: {
+  organization: schemas['Organization']
+  domains: VerifiedDomain[]
+}) => {
+  if (domains.length === 0) {
     return (
       <Text variant="caption" color="muted">
-        Contact Polar to register your email domain, so members signing in with
-        it go straight to SSO.
+        <Link
+          href={`/dashboard/${organization.slug}/settings#domains`}
+          className="underline"
+        >
+          Verify your email domain
+        </Link>{' '}
+        so members signing in with it go straight to SSO.
       </Text>
     )
   }
@@ -23,7 +34,7 @@ const SSODomains = ({ organizationId }: { organizationId: string }) => {
   return (
     <Box flexDirection="column" gap="xs">
       <Text variant="label">Domains</Text>
-      {items.map((domain) => (
+      {domains.map((domain) => (
         <Box key={domain.id} alignItems="center" justifyContent="between">
           <Text>{domain.domain}</Text>
           <Text variant="caption" color="muted">

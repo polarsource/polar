@@ -1475,7 +1475,7 @@ export interface paths {
     patch: operations['sso:update_sso_connection']
     trace?: never
   }
-  '/v1/organizations/{id}/sso-domains/': {
+  '/v1/organizations/{id}/domains/': {
     parameters: {
       query?: never
       header?: never
@@ -1483,12 +1483,56 @@ export interface paths {
       cookie?: never
     }
     /**
-     * List SSO Domains
+     * List Organization Domains
      * @description **Scopes**: `organizations:read` `organizations:write`
      */
-    get: operations['sso:list_sso_domains']
+    get: operations['organization_domains:list_organization_domains']
+    put?: never
+    /**
+     * Create Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_domains:create_organization_domain']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/domains/{domain_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
     put?: never
     post?: never
+    /**
+     * Delete Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    delete: operations['organization_domains:delete_organization_domain']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/domains/{domain_id}/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Verify Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_domains:verify_organization_domain']
     delete?: never
     options?: never
     head?: never
@@ -25975,6 +26019,12 @@ export interface components {
       items: components['schemas']['OrganizationBenefitGrant'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationDomain] */
+    ListResource_OrganizationDomain_: {
+      /** Items */
+      items: components['schemas']['OrganizationDomain'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[OrganizationMember] */
     ListResource_OrganizationMember_: {
       /** Items */
@@ -25991,12 +26041,6 @@ export interface components {
     ListResource_OrganizationSSOConnection_: {
       /** Items */
       items: components['schemas']['OrganizationSSOConnection'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[OrganizationSSODomain] */
-    ListResource_OrganizationSSODomain_: {
-      /** Items */
-      items: components['schemas']['OrganizationSSODomain'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Organization] */
@@ -30799,6 +30843,89 @@ export interface components {
        */
       auto_accept_below_amount?: number | null
     }
+    /** OrganizationDomain */
+    OrganizationDomain: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Domain
+       * @description Domain name.
+       */
+      domain: string
+      /**
+       * Verified At
+       * @description When Polar verified the domain. `null` while pending.
+       */
+      verified_at: string | null
+      /**
+       * Verification Record Name
+       * @description Name of the DNS TXT record that proves ownership.
+       */
+      verification_record_name: string
+      /**
+       * Verification Record Value
+       * @description Value of the DNS TXT record that proves ownership.
+       */
+      verification_record_value: string | null
+    }
+    /** OrganizationDomainAlreadyExists */
+    OrganizationDomainAlreadyExists: {
+      /**
+       * Error
+       * @example OrganizationDomainAlreadyExists
+       * @constant
+       */
+      error: 'OrganizationDomainAlreadyExists'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationDomainCreate */
+    OrganizationDomainCreate: {
+      /**
+       * Domain
+       * @description Domain name, without scheme or path.
+       * @example example.com
+       */
+      domain: string
+    }
+    /** OrganizationDomainVerificationFailed */
+    OrganizationDomainVerificationFailed: {
+      /**
+       * Error
+       * @example OrganizationDomainVerificationFailed
+       * @constant
+       */
+      error: 'OrganizationDomainVerificationFailed'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationDomainVerifiedElsewhere */
+    OrganizationDomainVerifiedElsewhere: {
+      /**
+       * Error
+       * @example OrganizationDomainVerifiedElsewhere
+       * @constant
+       */
+      error: 'OrganizationDomainVerifiedElsewhere'
+      /** Detail */
+      detail: string
+    }
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
       /**
@@ -31825,39 +31952,6 @@ export interface components {
        * @description Whether the connection can be used to sign in.
        */
       enabled?: boolean | null
-    }
-    /** OrganizationSSODomain */
-    OrganizationSSODomain: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Domain
-       * @description Email domain routed to the organization's SSO.
-       */
-      domain: string
-      /**
-       * Verified At
-       * Format: date-time
-       * @description When Polar verified the domain.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      verified_at: string
     }
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
@@ -45751,7 +45845,7 @@ export interface operations {
       }
     }
   }
-  'sso:list_sso_domains': {
+  'organization_domains:list_organization_domains': {
     parameters: {
       query?: {
         /** @description Page number, defaults to 1. */
@@ -45773,7 +45867,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_OrganizationSSODomain_']
+          'application/json': components['schemas']['ListResource_OrganizationDomain_']
         }
       }
       /** @description The user doesn't have the permission to manage the organization. */
@@ -45792,6 +45886,184 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:create_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationDomainCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomain']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The domain is already added to this organization. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainAlreadyExists']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:delete_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        domain_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or domain not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:verify_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        domain_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomain']
+        }
+      }
+      /** @description The DNS TXT record was not found. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainVerificationFailed']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or domain not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Another organization already verified the domain. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainVerifiedElsewhere']
         }
       }
       /** @description Validation Error */

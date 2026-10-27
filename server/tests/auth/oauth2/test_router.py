@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 from reauth.factors.oauth2.base import OAuth2Account, OAuth2Enrollment
 from sqlalchemy import select
 
+from polar.auth.exceptions import UnverifiedEmailError
 from polar.auth.oauth2.google import GoogleFactor
 from polar.config import settings
 from polar.kit.utils import utc_now
@@ -80,6 +81,36 @@ def google_account() -> OAuth2Account:
 
 @pytest.mark.anyio
 class TestLoginCallback:
+    @pytest.mark.parametrize("error_stage", ["callback", "get_email", "enroll"])
+    async def test_unverified_email(
+        self,
+        login_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        error_stage: str,
+    ) -> None:
+        start = await login_client.post("/v1/auth/start", json={})
+        assert start.status_code == 201
+        authorize = await login_client.get("/v1/auth/google/authorize")
+        assert authorize.status_code == 303
+        state = parse_qs(urlsplit(authorize.headers["location"]).query)["state"][0]
+
+        mocker.patch.object(
+            GoogleFactor, "callback", return_value=(None, google_account(), MagicMock())
+        )
+        mocker.patch.object(GoogleFactor, "get_email", return_value="jane@acme.com")
+        mocker.patch.object(GoogleFactor, "enroll", return_value=MagicMock())
+        error = UnverifiedEmailError()
+        mocker.patch.object(GoogleFactor, error_stage, side_effect=error)
+
+        response = await login_client.get(
+            "/v1/auth/google/callback", params={"code": "the-code", "state": state}
+        )
+
+        assert response.status_code == 303
+        location = urlsplit(response.headers["location"])
+        assert location.path == "/auth"
+        assert parse_qs(location.query)["error"] == [error.message]
+
     async def test_new_user_without_sso(
         self,
         login_client: httpx.AsyncClient,

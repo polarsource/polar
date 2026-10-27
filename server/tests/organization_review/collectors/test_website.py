@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from pydantic_ai.models.test import TestModel
 
+from polar.config import settings
 from polar.kit.http import SSRFBlockedError
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.website import (
@@ -16,6 +18,7 @@ from polar.organization_review.collectors.website import (
     WebsiteDeps,
     _build_tool_response,
     _extract_links_from_html,
+    _get_website_agent,
     _is_allowed_origin,
     browse_page,
     collect_website_data,
@@ -397,6 +400,25 @@ class TestFetchPage:
 # ---------------------------------------------------------------------------
 # collect_website_data (public API)
 # ---------------------------------------------------------------------------
+
+
+class TestGetWebsiteAgent:
+    def test_uses_organization_review_model(self) -> None:
+        _get_website_agent.cache_clear()
+        try:
+            with patch.object(
+                settings,
+                "get_pydantic_gateway_model",
+                return_value=(TestModel(), "openai", "gpt-6.1-sol"),
+            ) as get_model:
+                _, model_provider, model_name = _get_website_agent()
+
+            get_model.assert_called_once_with(
+                settings.PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL
+            )
+            assert (model_provider, model_name) == ("openai", "gpt-6.1-sol")
+        finally:
+            _get_website_agent.cache_clear()
 
 
 class TestCollectWebsiteData:

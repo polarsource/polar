@@ -8,6 +8,7 @@ import OrganizationAccessTokensSettings from '@/components/Settings/Organization
 import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
 import OrganizationCustomerPortalSettings from '@/components/Settings/OrganizationCustomerPortalSettings'
 import OrganizationDisputeSettings from '@/components/Settings/OrganizationDisputeSettings'
+import OrganizationDomainsSettings from '@/components/Settings/OrganizationDomainsSettings'
 import OrganizationEmbedSettings from '@/components/Settings/OrganizationEmbedSettings'
 import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
 import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
@@ -94,6 +95,16 @@ export default function ClientPage({
             readOnly={!canManageOrganization}
           />
         </Section>
+
+        {canManageOrganization && (
+          <Section id="domains">
+            <SectionDescription
+              title="Domains"
+              description="Domains your organization owns"
+            />
+            <OrganizationDomainsSettings organization={org} />
+          </Section>
+        )}
 
         <Section id="customer_emails">
           <SectionDescription

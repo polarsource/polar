@@ -1,5 +1,12 @@
 # @polar-sh/checkout
 
+## 0.5.0
+
+### Minor Changes
+
+- 609943e: Remove legacy recurring price support. `isLegacyRecurringProductPrice` is gone from `@polar-sh/checkout/guards`: every product now carries its own `recurring_interval`, and the product switcher shows one option per product.
+- 1ed6d86: Remove `product_price_id` from `ProductCheckoutPublic`, following its removal from API version 2027-01.
+
 ## 0.4.4
 
 ### Patch Changes

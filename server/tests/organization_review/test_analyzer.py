@@ -15,6 +15,7 @@ from pytest_mock import MockerFixture
 from polar.config import settings
 from polar.organization_review.analyzer import ReviewAnalyzer, _render_scraped_site
 from polar.organization_review.schemas import (
+    CheckoutReturnUrlData,
     CheckoutSuccessUrlData,
     DataSnapshot,
     HistoryData,
@@ -263,6 +264,36 @@ class TestBuildPromptRedirects:
             "  - https://api.shop.com/success → https://bad-site.com/ → "
             "REDIRECTS TO: https://shop.com/ (domain: shop.com)"
         ) in prompt
+
+
+class TestBuildPromptCheckoutUrlDomains:
+    def test_annotates_known_service_domains(
+        self, review_analyzer: ReviewAnalyzer
+    ) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "setup": SetupData(
+                    checkout_success_urls=CheckoutSuccessUrlData(
+                        unique_urls=[
+                            "https://gptuncensored.ai/",
+                            "https://script.google.com/success",
+                        ],
+                        domains=["gptuncensored.ai", "script.google.com"],
+                    ),
+                    checkout_return_urls=CheckoutReturnUrlData(
+                        unique_urls=["https://discord.com/return"],
+                        domains=["discord.com"],
+                    ),
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert (
+            "Success URL Domains: gptuncensored.ai, script.google.com (known service)"
+        ) in prompt
+        assert "Return URL Domains: discord.com (known service)" in prompt
 
 
 class TestBuildPromptCheckoutUrlHosts:

@@ -94,6 +94,17 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="payout-account-sync",
         ),
     ],
+    # Each call is a live DNS lookup on a domain the caller chose, and resolvers
+    # cache negative answers, so retrying quickly doesn't help.
+    "^/v1/organizations/[^/]+/domains/[^/]+/verify": [
+        Rule(minute=10, hour=60, zone="organization-domain-verify"),
+        Rule(
+            group=RateLimitGroup.web,
+            minute=10,
+            hour=60,
+            zone="organization-domain-verify",
+        ),
+    ],
     "^/v1/feedbacks/": [
         Rule(hour=5, block_time=3600, zone="feedback-submit"),
     ],

@@ -35957,6 +35957,17 @@ export interface components {
       /** Redirect Url */
       redirect_url: string
     }
+    /** SSORequiresVerifiedDomain */
+    SSORequiresVerifiedDomain: {
+      /**
+       * Error
+       * @example SSORequiresVerifiedDomain
+       * @constant
+       */
+      error: 'SSORequiresVerifiedDomain'
+      /** Detail */
+      detail: string
+    }
     /**
      * Scope
      * @enum {string}
@@ -45543,6 +45554,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The organization has no verified domain. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SSORequiresVerifiedDomain']
         }
       }
       /** @description Validation Error */

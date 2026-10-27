@@ -74,6 +74,13 @@ class OrganizationDomainService:
         repository = OrganizationDomainRepository.from_session(session)
         return await repository.get_by_organization_and_id(organization.id, id)
 
+    async def has_verified(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> bool:
+        repository = OrganizationDomainRepository.from_session(session)
+        statement = repository.get_verified_statement_by_organization(organization.id)
+        return await repository.count(statement) > 0
+
     async def create(
         self,
         session: AsyncSession,

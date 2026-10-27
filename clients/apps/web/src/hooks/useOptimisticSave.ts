@@ -20,7 +20,7 @@ export function useOptimisticSave<Value>(
   const flush = useCallback(async () => {
     if (isSavingRef.current) return
     isSavingRef.current = true
-    try {
+    const saveDesiredValue = async () => {
       while (!Object.is(desiredValueRef.current, lastSavedValueRef.current)) {
         const valueToSave = desiredValueRef.current
         let succeeded: boolean
@@ -37,9 +37,10 @@ export function useOptimisticSave<Value>(
           break
         }
       }
-    } finally {
-      isSavingRef.current = false
     }
+    await saveDesiredValue().finally(() => {
+      isSavingRef.current = false
+    })
   }, [])
 
   const update = useCallback(

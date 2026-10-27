@@ -72,16 +72,12 @@ export default function PayoutAccountStep({
   const handleOpenStripeDashboard = useCallback(async () => {
     if (!payoutAccount) return
     setIsLoadingDashboard(true)
-    try {
-      const link = await unwrap(
-        api.POST('/v1/payout-accounts/{id}/dashboard-link', {
-          params: { path: { id: payoutAccount.id } },
-        }),
-      )
-      window.open(link.url, '_blank', 'noopener,noreferrer')
-    } finally {
-      setIsLoadingDashboard(false)
-    }
+    const link = await unwrap(
+      api.POST('/v1/payout-accounts/{id}/dashboard-link', {
+        params: { path: { id: payoutAccount.id } },
+      }),
+    ).finally(() => setIsLoadingDashboard(false))
+    window.open(link.url, '_blank', 'noopener,noreferrer')
   }, [payoutAccount])
 
   if (payoutAccount && payoutAccount.type !== 'stripe') {

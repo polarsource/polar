@@ -94,6 +94,15 @@ interface FormState {
   contactName: string
 }
 
+const postJSON = async (url: string, body: unknown) => {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+}
+
 const INITIAL: FormState = {
   startupName: '',
   industry: '',
@@ -153,22 +162,16 @@ export const DesignPartnerForm = ({
       onSubmit={async (e) => {
         e.preventDefault()
         setStatus('submitting')
+        const payload = compact
+          ? {
+              startupName: form.startupName,
+              website: form.website,
+              email: form.email,
+              ...splitName(form.contactName),
+            }
+          : form
         try {
-          const res = await fetch('/api/design-partner', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(
-              compact
-                ? {
-                    startupName: form.startupName,
-                    website: form.website,
-                    email: form.email,
-                    ...splitName(form.contactName),
-                  }
-                : form,
-            ),
-          })
-          if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+          await postJSON('/api/design-partner', payload)
           setStatus('success')
           setForm(INITIAL)
         } catch (err) {

@@ -18,6 +18,7 @@ import {
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import React, {
+  cloneElement,
   useCallback,
   useEffect,
   useId,
@@ -516,7 +517,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
     // Spread the original children without React.Children.toArray so that
     // existing keys are preserved and Recharts doesn't remount/re-animate.
     const originalChildren: React.ReactNode = chartBase.props.children
-    return React.cloneElement(
+    return cloneElement(
       chartBase,
       {},
       ...(Array.isArray(originalChildren)

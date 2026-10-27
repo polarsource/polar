@@ -155,15 +155,16 @@ const DownloadInvoice = ({
     if (inFlightRef.current) return
     inFlightRef.current = true
     setLoading(true)
-    try {
+    const download = async () => {
       const url = await fetchInvoiceUrl()
       if (url) {
         openInNewTab(url)
       }
-    } finally {
+    }
+    await download().finally(() => {
       setLoading(false)
       inFlightRef.current = false
-    }
+    })
   }, [order.is_invoice_generated, show, fetchInvoiceUrl])
 
   const onModalSubmit = useCallback(
@@ -172,7 +173,7 @@ const DownloadInvoice = ({
       inFlightRef.current = true
       setLoading(true)
       clearErrors('root')
-      try {
+      const submit = async () => {
         const { error } = await api.PATCH(orderURL, {
           params: { path: { id: order.id } },
           body: data,
@@ -232,10 +233,11 @@ const DownloadInvoice = ({
             message: 'Failed to download the invoice. Please try again.',
           })
         }
-      } finally {
+      }
+      await submit().finally(() => {
         setLoading(false)
         inFlightRef.current = false
-      }
+      })
     },
     [
       order.id,

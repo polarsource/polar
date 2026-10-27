@@ -50,42 +50,44 @@ export const OrganizationSeatTable = ({
 
   const handleRevokeSeat = async (seat: schemas['CustomerSeat']) => {
     setSeatLoading(seat.id, true)
-    try {
+    const revoke = async () => {
       await revokeSeat.mutateAsync(seat.id)
       toast({
         title: 'Seat revoked',
         description: 'The seat has been revoked and is now available.',
       })
-    } catch (error) {
-      toast({
-        title: 'Failed to revoke seat',
-        description:
-          error instanceof Error ? error.message : 'An error occurred.',
-        variant: 'error',
-      })
-    } finally {
-      setSeatLoading(seat.id, false)
     }
+    await revoke()
+      .catch((error) => {
+        toast({
+          title: 'Failed to revoke seat',
+          description:
+            error instanceof Error ? error.message : 'An error occurred.',
+          variant: 'error',
+        })
+      })
+      .finally(() => setSeatLoading(seat.id, false))
   }
 
   const handleResendInvitation = async (seat: schemas['CustomerSeat']) => {
     setSeatLoading(seat.id, true)
-    try {
+    const resend = async () => {
       await resendInvitation.mutateAsync(seat.id)
       toast({
         title: 'Invitation resent',
         description: 'The invitation email has been sent again.',
       })
-    } catch (error) {
-      toast({
-        title: 'Failed to resend invitation',
-        description:
-          error instanceof Error ? error.message : 'An error occurred.',
-        variant: 'error',
-      })
-    } finally {
-      setSeatLoading(seat.id, false)
     }
+    await resend()
+      .catch((error) => {
+        toast({
+          title: 'Failed to resend invitation',
+          description:
+            error instanceof Error ? error.message : 'An error occurred.',
+          variant: 'error',
+        })
+      })
+      .finally(() => setSeatLoading(seat.id, false))
   }
 
   return (

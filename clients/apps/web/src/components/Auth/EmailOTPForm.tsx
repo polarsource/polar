@@ -53,64 +53,68 @@ const EmailOTPForm = ({
   const posthog = usePostHog()
   const router = useRouter()
 
+  const requestCode = async (email: string) => {
+    const turnstileToken = await getTurnstileToken()
+    if (!turnstileToken) {
+      setError('email', {
+        message: 'Verification failed. Please try again.',
+      })
+      return
+    }
+
+    let eventName: EventName = 'global:user:login:submit'
+    if (signup) {
+      eventName = 'global:user:signup:submit'
+    }
+
+    posthog.capture(eventName, {
+      method: 'email_otp',
+    })
+
+    if (!authenticationSession) {
+      await authSessionStart.mutateAsync(returnTo)
+    }
+
+    const { error } = await emailOTPRequest.mutateAsync({
+      email,
+      turnstileToken,
+    })
+    if (error) {
+      if ('error' in error && error.error === 'SSORequired') {
+        window.location.assign(error.redirect_url)
+        return
+      }
+      if (isValidationError(error.detail)) {
+        setValidationErrors(error.detail, setError)
+      } else if (error.detail) {
+        setError('email', { message: error.detail })
+      }
+      return
+    }
+
+    if (onCodeSent) {
+      onCodeSent(email)
+      return
+    }
+    const urlSearchParams = new URLSearchParams({
+      email,
+      intent: signup ? 'signup' : 'login',
+    })
+    router.push(`/auth/email-otp?${urlSearchParams.toString()}`)
+  }
+
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
     setLoading(true)
-    try {
-      const turnstileToken = await getTurnstileToken()
-      if (!turnstileToken) {
+    await requestCode(email)
+      .catch(() => {
         setError('email', {
-          message: 'Verification failed. Please try again.',
+          message: 'An unexpected error occurred. Please try again.',
         })
-        return
-      }
-
-      let eventName: EventName = 'global:user:login:submit'
-      if (signup) {
-        eventName = 'global:user:signup:submit'
-      }
-
-      posthog.capture(eventName, {
-        method: 'email_otp',
       })
-
-      if (!authenticationSession) {
-        await authSessionStart.mutateAsync(returnTo)
-      }
-
-      const { error } = await emailOTPRequest.mutateAsync({
-        email,
-        turnstileToken,
+      .finally(() => {
+        resetTurnstile()
+        setLoading(false)
       })
-      if (error) {
-        if ('error' in error && error.error === 'SSORequired') {
-          window.location.assign(error.redirect_url)
-          return
-        }
-        if (isValidationError(error.detail)) {
-          setValidationErrors(error.detail, setError)
-        } else if (error.detail) {
-          setError('email', { message: error.detail })
-        }
-        return
-      }
-
-      if (onCodeSent) {
-        onCodeSent(email)
-        return
-      }
-      const urlSearchParams = new URLSearchParams({
-        email,
-        intent: signup ? 'signup' : 'login',
-      })
-      router.push(`/auth/email-otp?${urlSearchParams.toString()}`)
-    } catch {
-      setError('email', {
-        message: 'An unexpected error occurred. Please try again.',
-      })
-    } finally {
-      resetTurnstile()
-      setLoading(false)
-    }
   }
 
   return (

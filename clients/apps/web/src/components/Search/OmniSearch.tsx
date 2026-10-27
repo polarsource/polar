@@ -24,6 +24,29 @@ import { Result } from './components/Result'
 import { getQuickActions } from './quickActions'
 import { SearchResult, SearchResultPage } from './types'
 
+const fetchSearchResults = async (
+  organizationId: string,
+  searchQuery: string,
+  signal: AbortSignal,
+): Promise<SearchResult[]> => {
+  const url = new URL(`${getServerURL()}/v1/search`, window.location.origin)
+  url.searchParams.set('organization_id', organizationId)
+  url.searchParams.set('query', searchQuery)
+  url.searchParams.set('limit', '5')
+
+  const response = await fetch(url.toString(), {
+    credentials: 'include',
+    signal,
+  })
+
+  if (!response.ok) {
+    throw new Error('Search failed')
+  }
+
+  const data = await response.json()
+  return data.results as SearchResult[]
+}
+
 interface OmniSearchProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -110,38 +133,25 @@ export const OmniSearch = ({
       }
 
       const loadingTimer = setTimeout(() => setLoading(true), 150)
-      try {
-        const url = new URL(
-          `${getServerURL()}/v1/search`,
-          window.location.origin,
+      const search = async () => {
+        setResults(
+          await fetchSearchResults(organization.id, searchQuery, signal),
         )
-        url.searchParams.set('organization_id', organization.id)
-        url.searchParams.set('query', searchQuery)
-        url.searchParams.set('limit', '5')
-
-        const response = await fetch(url.toString(), {
-          credentials: 'include',
-          signal,
-        })
-
-        if (!response.ok) {
-          throw new Error('Search failed')
-        }
-
-        const data = await response.json()
-        setResults(data.results as SearchResult[])
         setHasSearched(true)
-      } catch (error) {
-        if (error instanceof Error && error.name === 'AbortError') {
-          return
-        }
-        console.error('Search error:', error)
-        setResults([])
-        setHasSearched(true)
-      } finally {
-        clearTimeout(loadingTimer)
-        setLoading(false)
       }
+      await search()
+        .catch((error) => {
+          if (error instanceof Error && error.name === 'AbortError') {
+            return
+          }
+          console.error('Search error:', error)
+          setResults([])
+          setHasSearched(true)
+        })
+        .finally(() => {
+          clearTimeout(loadingTimer)
+          setLoading(false)
+        })
     },
   )
 

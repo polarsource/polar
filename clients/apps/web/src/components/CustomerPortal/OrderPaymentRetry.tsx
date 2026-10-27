@@ -93,41 +93,43 @@ export const OrderPaymentRetry = ({
 
     cleanupPolling()
 
-    pollingIntervalRef.current = setInterval(async () => {
-      attemptCount++
+    const checkStatus = async (attempt: number) => {
+      const { data: status, error: statusError } =
+        await checkPaymentStatus.mutateAsync({
+          orderId: order.id,
+        })
 
-      try {
-        const { data: status, error: statusError } =
-          await checkPaymentStatus.mutateAsync({
-            orderId: order.id,
-          })
-
-        if (!statusError && status) {
-          if (status.status === 'succeeded') {
-            cleanupPolling()
-            handlePaymentCompletion(true)
-            return
-          } else if (status.status === 'failed') {
-            cleanupPolling()
-            handlePaymentCompletion(false, status.error || 'Payment failed')
-            return
-          }
-        } else if (statusError) {
-          console.warn(
-            `Server error during status check (attempt ${attemptCount}):`,
-            statusError,
-          )
-        }
-
-        if (attemptCount >= maxAttempts) {
+      if (!statusError && status) {
+        if (status.status === 'succeeded') {
           cleanupPolling()
-          handlePaymentCompletion(
-            false,
-            'Payment confirmation is taking longer than expected. ' +
-              'Your payment may still be processing. Please check your order status or contact support if needed.',
-          )
+          handlePaymentCompletion(true)
+          return
+        } else if (status.status === 'failed') {
+          cleanupPolling()
+          handlePaymentCompletion(false, status.error || 'Payment failed')
+          return
         }
-      } catch (err) {
+      } else if (statusError) {
+        console.warn(
+          `Server error during status check (attempt ${attempt}):`,
+          statusError,
+        )
+      }
+
+      if (attempt >= maxAttempts) {
+        cleanupPolling()
+        handlePaymentCompletion(
+          false,
+          'Payment confirmation is taking longer than expected. ' +
+            'Your payment may still be processing. Please check your order status or contact support if needed.',
+        )
+      }
+    }
+
+    pollingIntervalRef.current = setInterval(async () => {
+      attemptCount += 1
+
+      await checkStatus(attemptCount).catch((err) => {
         console.error(
           `Error checking payment status (attempt ${attemptCount}):`,
           err,
@@ -142,7 +144,7 @@ export const OrderPaymentRetry = ({
               'Please check your order status or contact support.',
           )
         }
-      }
+      })
     }, 2000) // Check every 2 seconds
   }, [checkPaymentStatus, order.id, handlePaymentCompletion])
 
@@ -272,7 +274,7 @@ export const OrderPaymentRetry = ({
         return
       }
 
-      try {
+      const confirmPayment = async () => {
         const { data: result, error: confirmPaymentError } =
           await confirmOrderPayment.mutateAsync({
             orderId: order.id,
@@ -289,12 +291,14 @@ export const OrderPaymentRetry = ({
         if (result) {
           await handlePaymentStatus(result)
         }
-      } catch {
+      }
+
+      await confirmPayment().catch(() => {
         handlePaymentCompletion(
           false,
           'Network error occurred. Please check your connection and try again.',
         )
-      }
+      })
     },
     [
       isProcessing,
@@ -316,7 +320,7 @@ export const OrderPaymentRetry = ({
 
     setIsProcessing(true)
 
-    try {
+    const confirmPayment = async () => {
       const { data: result, error: confirmPaymentError } =
         await confirmOrderPayment.mutateAsync({
           orderId: order.id,
@@ -333,12 +337,14 @@ export const OrderPaymentRetry = ({
       if (result) {
         await handlePaymentStatus(result)
       }
-    } catch {
+    }
+
+    await confirmPayment().catch(() => {
       handlePaymentCompletion(
         false,
         'Network error occurred. Please check your connection and try again.',
       )
-    }
+    })
   }, [
     isProcessing,
     isPolling,

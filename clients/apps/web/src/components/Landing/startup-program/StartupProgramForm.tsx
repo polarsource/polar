@@ -92,6 +92,15 @@ interface FormState {
   linkedin: string
 }
 
+const postJSON = async (url: string, body: unknown) => {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+}
+
 const INITIAL: FormState = {
   startupName: '',
   industry: '',
@@ -139,12 +148,7 @@ export const StartupProgramForm = () => {
         e.preventDefault()
         setStatus('submitting')
         try {
-          const res = await fetch('/api/startup-program', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(form),
-          })
-          if (!res.ok) throw new Error(`Request failed: ${res.status}`)
+          await postJSON('/api/startup-program', form)
           setStatus('success')
           setForm(INITIAL)
         } catch (err) {

@@ -68,14 +68,16 @@ export const ConfirmModal = ({
 
     isConfirmingRef.current = true
     setIsConfirming(true)
-    try {
-      await onConfirm()
-      reset()
-      props.hide()
-    } finally {
-      isConfirmingRef.current = false
-      setIsConfirming(false)
-    }
+    await Promise.resolve()
+      .then(onConfirm)
+      .then(() => {
+        reset()
+        props.hide()
+      })
+      .finally(() => {
+        isConfirmingRef.current = false
+        setIsConfirming(false)
+      })
   }, [onConfirm, props, reset])
 
   const handleCancel = useCallback(

@@ -1,6 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
+import { redirect } from 'next/navigation'
 import AIProductPage from './AIProductPage'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,7 +28,6 @@ export default async function Page(props: {
   )
 
   if (!isAssistantEnabled) {
-    const { redirect } = await import('next/navigation')
     redirect(`/dashboard/${params.organization}/products/new`)
   }
 

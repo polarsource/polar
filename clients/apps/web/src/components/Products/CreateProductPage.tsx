@@ -115,7 +115,7 @@ export const CreateProductPage = ({
   const onSubmit = useCallback(
     async (productCreate: ProductEditOrCreateForm) => {
       setIsSubmitting(true)
-      try {
+      const create = async () => {
         const { full_medias, metadata, ...productCreateRest } = productCreate
 
         let mediaIds = full_medias.map((media) => media.id)
@@ -173,15 +173,16 @@ export const CreateProductPage = ({
             `Product ${product.name} was created successfully`,
           ),
         )
-      } catch (e) {
-        toast({
-          title: 'Error',
-          description:
-            e instanceof Error ? e.message : 'An unexpected error occurred',
-        })
-      } finally {
-        setIsSubmitting(false)
       }
+      await create()
+        .catch((e) => {
+          toast({
+            title: 'Error',
+            description:
+              e instanceof Error ? e.message : 'An unexpected error occurred',
+          })
+        })
+        .finally(() => setIsSubmitting(false))
     },
     [
       sourceProduct,

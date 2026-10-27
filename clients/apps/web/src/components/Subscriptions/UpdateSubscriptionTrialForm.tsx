@@ -60,39 +60,36 @@ export const UpdateSubscriptionTrialForm = ({
 
   const handleEndTrialNow = useCallback(async () => {
     setIsEndingTrial(true)
-    try {
-      await updateSubscription
-        .mutateAsync({ trial_end: 'now' })
-        .then(({ error }) => {
-          if (error) {
-            if (error.detail) {
-              if (isValidationError(error.detail)) {
-                setValidationErrors(
-                  error.detail,
-                  setError,
-                  undefined,
-                  subscriptionUpdateValidationDiscriminators,
-                )
-              } else {
-                toast({
-                  title: 'Trial end failed',
-                  description: `Error while ending trial for ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
-                })
-              }
+    await updateSubscription
+      .mutateAsync({ trial_end: 'now' })
+      .then(({ error }) => {
+        if (error) {
+          if (error.detail) {
+            if (isValidationError(error.detail)) {
+              setValidationErrors(
+                error.detail,
+                setError,
+                undefined,
+                subscriptionUpdateValidationDiscriminators,
+              )
+            } else {
+              toast({
+                title: 'Trial end failed',
+                description: `Error while ending trial for ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
+              })
             }
-            return
           }
+          return
+        }
 
-          toast({
-            title: 'Trial ended',
-            description: `Trial for ${subscription.product.name} has been ended. Customer will be billed immediately.`,
-          })
-          onUpdate?.()
-          hideConfirmModal()
+        toast({
+          title: 'Trial ended',
+          description: `Trial for ${subscription.product.name} has been ended. Customer will be billed immediately.`,
         })
-    } finally {
-      setIsEndingTrial(false)
-    }
+        onUpdate?.()
+        hideConfirmModal()
+      })
+      .finally(() => setIsEndingTrial(false))
   }, [updateSubscription, subscription, setError, onUpdate, hideConfirmModal])
 
   const onSubmit = useCallback(

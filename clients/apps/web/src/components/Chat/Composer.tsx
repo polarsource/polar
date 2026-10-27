@@ -83,21 +83,17 @@ export const Composer = ({
     setFlying(true)
     setSendFailed(false)
 
-    try {
-      const result = await onSend(body, uploadedFileIds)
-      if (result.error) {
-        setFlying(false)
-        setSendFailed(true)
-        return
-      }
-      setBody('')
-      clearAttachments()
-    } catch {
+    const sent = await onSend(body, uploadedFileIds)
+      .then((result) => !result.error)
+      .catch(() => false)
+      .finally(() => setSending(false))
+    if (!sent) {
       setFlying(false)
       setSendFailed(true)
-    } finally {
-      setSending(false)
+      return
     }
+    setBody('')
+    clearAttachments()
   }
 
   return (

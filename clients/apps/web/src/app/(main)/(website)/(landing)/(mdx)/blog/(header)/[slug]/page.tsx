@@ -6,6 +6,8 @@ export const dynamicParams = false
 
 const posts = () => getAllContent({ includeDrafts: DRAFTS_VISIBLE })
 
+const loadPost = (slug: string) => import(`../_posts/${slug}/page.mdx`)
+
 export async function generateStaticParams() {
   return posts()
     .filter((p) => p.type === 'blog')
@@ -48,6 +50,6 @@ export default async function BlogPost({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const { default: Post } = await import(`../_posts/${slug}/page.mdx`)
+  const { default: Post } = await loadPost(slug)
   return <Post />
 }

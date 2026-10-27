@@ -29,7 +29,7 @@ export function useAutoSave<T extends FieldValues>({
 
       hasPendingChangesRef.current = false
       isSavingRef.current = true
-      try {
+      const save = async () => {
         const savedValues = await onSaveRef.current(form.getValues())
         if (
           active &&
@@ -38,14 +38,17 @@ export function useAutoSave<T extends FieldValues>({
         ) {
           form.reset(savedValues)
         }
-      } catch {
-        // Swallow: consumers handle their own errors via onSave.
-      } finally {
-        isSavingRef.current = false
-        if (active && hasPendingChangesRef.current && timeout === null) {
-          void flushRef.current?.()
-        }
       }
+      await save()
+        .catch(() => {
+          // Swallow: consumers handle their own errors via onSave.
+        })
+        .finally(() => {
+          isSavingRef.current = false
+          if (active && hasPendingChangesRef.current && timeout === null) {
+            void flushRef.current?.()
+          }
+        })
     }
     flushRef.current = flush
 

@@ -87,7 +87,7 @@ const DownloadReceipt = ({
     setLoading(true)
     setFailed(false)
 
-    try {
+    const download = async () => {
       const initial = await fetchReceiptUrl()
       if ('url' in initial) {
         openInNewTab(initial.url)
@@ -114,10 +114,11 @@ const DownloadReceipt = ({
       } else {
         setFailed(true)
       }
-    } finally {
+    }
+    await download().finally(() => {
       setLoading(false)
       inFlightRef.current = false
-    }
+    })
   }, [fetchReceiptUrl, eventEmitter, order.id])
 
   if (failed) {

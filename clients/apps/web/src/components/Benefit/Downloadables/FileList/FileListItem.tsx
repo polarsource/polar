@@ -41,20 +41,22 @@ export const FilePreview = ({ mimeType }: { mimeType: string }) => {
   const icon = useMemo(() => {
     const size: 'small' | 'large' | 'inherit' | 'medium' = 'small'
 
-    switch (true) {
-      case /image\/(.*)/.test(mimeType):
-        return <ImageOutlined fontSize={size} />
-      case /video\/(.*)/.test(mimeType):
-        return <VideoFileOutlined fontSize={size} />
-      case /audio\/(.*)/.test(mimeType):
-        return <AudioFileOutlined fontSize={size} />
-      case /application\/zip/.test(mimeType):
-        return <FolderZipOutlined fontSize={size} />
-      case /application\/pdf/.test(mimeType):
-        return <DescriptionOutlined fontSize={size} />
-      default:
-        return <InsertDriveFileOutlined fontSize={size} />
+    if (/image\/(.*)/.test(mimeType)) {
+      return <ImageOutlined fontSize={size} />
     }
+    if (/video\/(.*)/.test(mimeType)) {
+      return <VideoFileOutlined fontSize={size} />
+    }
+    if (/audio\/(.*)/.test(mimeType)) {
+      return <AudioFileOutlined fontSize={size} />
+    }
+    if (/application\/zip/.test(mimeType)) {
+      return <FolderZipOutlined fontSize={size} />
+    }
+    if (/application\/pdf/.test(mimeType)) {
+      return <DescriptionOutlined fontSize={size} />
+    }
+    return <InsertDriveFileOutlined fontSize={size} />
   }, [mimeType])
 
   return (

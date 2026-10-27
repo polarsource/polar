@@ -86,28 +86,31 @@ export const CustomerPortalTeamSection = ({
     setIsAddingMember(true)
     setAddMemberError(undefined)
 
-    try {
-      await addMember.mutateAsync({
+    await addMember
+      .mutateAsync({
         email: newMemberEmail,
         role: 'billing_manager',
       })
-      toast({
-        title: 'Billing manager added',
-        description: `${newMemberEmail} has been added as a billing manager.`,
+      .then(() => {
+        toast({
+          title: 'Billing manager added',
+          description: `${newMemberEmail} has been added as a billing manager.`,
+        })
+        setNewMemberEmail('')
       })
-      setNewMemberEmail('')
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to add billing manager'
-      setAddMemberError(errorMessage)
-      toast({
-        title: 'Failed to add billing manager',
-        description: errorMessage,
-        variant: 'error',
+      .catch((error) => {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Failed to add billing manager'
+        setAddMemberError(errorMessage)
+        toast({
+          title: 'Failed to add billing manager',
+          description: errorMessage,
+          variant: 'error',
+        })
       })
-    } finally {
-      setIsAddingMember(false)
-    }
+      .finally(() => setIsAddingMember(false))
   }
 
   const handleRoleChange = async (
@@ -116,55 +119,61 @@ export const CustomerPortalTeamSection = ({
     newRole: string,
   ) => {
     setLoadingMembers((prev) => new Set([...prev, memberId]))
-    try {
-      await updateMember.mutateAsync({
+    await updateMember
+      .mutateAsync({
         id: memberId,
         body: { role: newRole as schemas['MemberRole'] },
       })
-      toast({
-        title: 'Role updated',
-        description: `${memberName || 'Member'} is now a ${roleToDisplayName(newRole)}.`,
+      .then(() => {
+        toast({
+          title: 'Role updated',
+          description: `${memberName || 'Member'} is now a ${roleToDisplayName(newRole)}.`,
+        })
       })
-    } catch (error) {
-      toast({
-        title: 'Failed to update role',
-        description:
-          error instanceof Error ? error.message : 'An error occurred.',
-        variant: 'error',
+      .catch((error) => {
+        toast({
+          title: 'Failed to update role',
+          description:
+            error instanceof Error ? error.message : 'An error occurred.',
+          variant: 'error',
+        })
       })
-    } finally {
-      setLoadingMembers((prev) => {
-        const next = new Set(prev)
-        next.delete(memberId)
-        return next
+      .finally(() => {
+        setLoadingMembers((prev) => {
+          const next = new Set(prev)
+          next.delete(memberId)
+          return next
+        })
       })
-    }
   }
 
   const handleRemoveMember = async (memberId: string) => {
     const memberData = membersList.find((m) => m.id === memberId)
     setLoadingMembers((prev) => new Set([...prev, memberId]))
-    try {
-      await removeMember.mutateAsync(memberId)
-      toast({
-        title: 'Member removed',
-        description: `${memberData?.name || memberData?.email || 'Member'} has been removed from the team.`,
+    await removeMember
+      .mutateAsync(memberId)
+      .then(() => {
+        toast({
+          title: 'Member removed',
+          description: `${memberData?.name || memberData?.email || 'Member'} has been removed from the team.`,
+        })
       })
-    } catch (error) {
-      toast({
-        title: 'Failed to remove member',
-        description:
-          error instanceof Error ? error.message : 'An error occurred.',
-        variant: 'error',
+      .catch((error) => {
+        toast({
+          title: 'Failed to remove member',
+          description:
+            error instanceof Error ? error.message : 'An error occurred.',
+          variant: 'error',
+        })
       })
-    } finally {
-      setLoadingMembers((prev) => {
-        const next = new Set(prev)
-        next.delete(memberId)
-        return next
+      .finally(() => {
+        setLoadingMembers((prev) => {
+          const next = new Set(prev)
+          next.delete(memberId)
+          return next
+        })
+        setMemberToRemove(null)
       })
-      setMemberToRemove(null)
-    }
   }
 
   const membersList = members?.items ?? []

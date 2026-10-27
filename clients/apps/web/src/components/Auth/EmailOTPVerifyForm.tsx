@@ -31,29 +31,32 @@ const EmailOTPVerifyForm = ({
 
   const [loading, setLoading] = useState(false)
   const submittingRef = useRef(false)
+  const verify = async (code: string) => {
+    const { error } = await emailOTPVerify.mutateAsync(code)
+    if (error) {
+      if (isValidationError(error.detail)) {
+        setValidationErrors(error.detail, setError)
+      } else if (error.detail) {
+        setError('code', { message: error.detail })
+      }
+      return
+    }
+    window.location.assign(`${CONFIG.FRONTEND_BASE_URL}/auth`)
+  }
   const onSubmit: SubmitHandler<{ code: string }> = async ({ code }) => {
     if (submittingRef.current) return
     submittingRef.current = true
     setLoading(true)
-    try {
-      const { error } = await emailOTPVerify.mutateAsync(code)
-      if (error) {
-        if (isValidationError(error.detail)) {
-          setValidationErrors(error.detail, setError)
-        } else if (error.detail) {
-          setError('code', { message: error.detail })
-        }
-        return
-      }
-      window.location.assign(`${CONFIG.FRONTEND_BASE_URL}/auth`)
-    } catch {
-      setError('code', {
-        message: 'An unexpected error occurred. Please try again.',
+    await verify(code)
+      .catch(() => {
+        setError('code', {
+          message: 'An unexpected error occurred. Please try again.',
+        })
       })
-    } finally {
-      setLoading(false)
-      submittingRef.current = false
-    }
+      .finally(() => {
+        setLoading(false)
+        submittingRef.current = false
+      })
   }
 
   return (

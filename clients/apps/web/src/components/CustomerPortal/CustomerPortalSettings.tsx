@@ -65,8 +65,7 @@ export const CustomerPortalSettings = ({
   }
 
   const handleExportData = useCallback(async () => {
-    setIsExporting(true)
-    try {
+    const exportData = async () => {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/v1/customer-portal/customers/me/export`,
         {
@@ -87,9 +86,9 @@ export const CustomerPortalSettings = ({
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
       }
-    } finally {
-      setIsExporting(false)
     }
+    setIsExporting(true)
+    await exportData().finally(() => setIsExporting(false))
   }, [customer, customerSessionToken])
 
   if (!customer) {

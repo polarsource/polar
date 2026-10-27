@@ -88,75 +88,82 @@ export const SeatManagementTable = ({
 
     setError(undefined)
 
-    try {
-      const body =
-        'subscriptionId' in identifier
-          ? { subscription_id: identifier.subscriptionId, email }
-          : { order_id: identifier.orderId, email }
+    const body =
+      'subscriptionId' in identifier
+        ? { subscription_id: identifier.subscriptionId, email }
+        : { order_id: identifier.orderId, email }
 
-      const result = await assignSeat.mutateAsync(body)
-
-      if (result.error) {
-        setError(
-          typeof result.error.detail === 'string'
-            ? result.error.detail
-            : 'Failed to assign seat',
-        )
-      } else {
-        setEmail('')
-        setIsInviting(false)
-      }
-    } catch {
-      setError('Failed to send invitation')
-    }
+    await assignSeat
+      .mutateAsync(body)
+      .then((result) => {
+        if (result.error) {
+          setError(
+            typeof result.error.detail === 'string'
+              ? result.error.detail
+              : 'Failed to assign seat',
+          )
+        } else {
+          setEmail('')
+          setIsInviting(false)
+        }
+      })
+      .catch(() => {
+        setError('Failed to send invitation')
+      })
   }
 
   const handleRevokeSeat = async (seatId: string) => {
     setLoadingSeats((prev) => new Set([...prev, seatId]))
-    try {
-      await revokeSeat.mutateAsync(seatId)
-      toast({
-        title: 'Seat revoked successfully',
-        description: 'The seat has been revoked and is now available.',
+    await revokeSeat
+      .mutateAsync(seatId)
+      .then(() => {
+        toast({
+          title: 'Seat revoked successfully',
+          description: 'The seat has been revoked and is now available.',
+        })
       })
-    } catch (error) {
-      toast({
-        title: 'Failed to revoke seat',
-        description:
-          error instanceof Error ? error.message : 'An error occurred.',
-        variant: 'error',
+      .catch((error) => {
+        toast({
+          title: 'Failed to revoke seat',
+          description:
+            error instanceof Error ? error.message : 'An error occurred.',
+          variant: 'error',
+        })
       })
-    } finally {
-      setLoadingSeats((prev) => {
-        const next = new Set(prev)
-        next.delete(seatId)
-        return next
+      .finally(() => {
+        setLoadingSeats((prev) => {
+          const next = new Set(prev)
+          next.delete(seatId)
+          return next
+        })
       })
-    }
   }
 
   const handleResendInvitation = async (seatId: string) => {
     setLoadingSeats((prev) => new Set([...prev, seatId]))
-    try {
-      await resendInvitation.mutateAsync(seatId)
-      toast({
-        title: 'Invitation resent',
-        description: 'The invitation email has been sent again.',
+    await resendInvitation
+      .mutateAsync(seatId)
+      .then(() => {
+        toast({
+          title: 'Invitation resent',
+          description: 'The invitation email has been sent again.',
+        })
       })
-    } catch (error) {
-      toast({
-        title: 'Failed to resend invitation',
-        description:
-          error instanceof Error ? error.message : 'An error occurred.',
-        variant: 'error',
+      .catch((error) => {
+        toast({
+          title: 'Failed to resend invitation',
+          description:
+            error instanceof Error ? error.message : 'An error occurred.',
+          variant: 'error',
+        })
       })
-    } finally {
-      setLoadingSeats((prev) => {
-        const next = new Set(prev)
-        next.delete(seatId)
-        return next
+      .finally(() => {
+        setLoadingSeats((prev) => {
+          const next = new Set(prev)
+          next.delete(seatId)
+          return next
+        })
       })
-    }
   }
 
   const startEditingName = (seat: CustomerSeat) => {
@@ -177,21 +184,23 @@ export const SeatManagementTable = ({
     }
 
     setEditError(undefined)
-    try {
-      await updateMember.mutateAsync({
+    await updateMember
+      .mutateAsync({
         id: seat.member.id,
         body: { name: editName.trim() || null },
       })
-      cancelEditingName()
-      toast({
-        title: 'Name updated',
-        description: "The member's name has been updated.",
+      .then(() => {
+        cancelEditingName()
+        toast({
+          title: 'Name updated',
+          description: "The member's name has been updated.",
+        })
       })
-    } catch (error) {
-      setEditError(
-        error instanceof Error ? error.message : 'Failed to update name',
-      )
-    }
+      .catch((error) => {
+        setEditError(
+          error instanceof Error ? error.message : 'Failed to update name',
+        )
+      })
   }
 
   const isSubscription = isSeatBasedSubscription(identifier)

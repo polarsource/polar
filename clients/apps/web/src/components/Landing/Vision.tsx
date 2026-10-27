@@ -11,6 +11,12 @@ const PARAGRAPHS = [
   `Polar is the financial layer for a new generation of intelligent software.`,
 ]
 
+const PARAGRAPH_WORDS = PARAGRAPHS.map((paragraph) => paragraph.split(' '))
+
+const PARAGRAPH_OFFSETS = PARAGRAPH_WORDS.map((_, pi) =>
+  PARAGRAPH_WORDS.slice(0, pi).reduce((sum, words) => sum + words.length, 0),
+)
+
 export const Vision = () => {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const wordsRef = useRef<HTMLSpanElement[]>([])
@@ -47,8 +53,6 @@ export const Vision = () => {
     return () => trigger.kill()
   }, [])
 
-  let wordIndex = 0
-
   return (
     <div ref={wrapperRef} style={{ height: '300vh' }}>
       <div className="sticky top-0 flex h-screen items-center justify-center">
@@ -61,13 +65,13 @@ export const Vision = () => {
             />
           </div>
           <div className="flex flex-col">
-            {PARAGRAPHS.map((paragraph, pi) => (
+            {PARAGRAPH_WORDS.map((words, pi) => (
               <p
                 key={pi}
                 className="font-display text-[clamp(2rem,4.5vw,4rem)] leading-[1.3] text-balance text-gray-900 not-last:mb-16 dark:text-white"
               >
-                {paragraph.split(' ').map((word, wi) => {
-                  const idx = wordIndex++
+                {words.map((word, wi) => {
+                  const idx = PARAGRAPH_OFFSETS[pi] + wi
                   return (
                     <span
                       key={`${pi}-${wi}`}

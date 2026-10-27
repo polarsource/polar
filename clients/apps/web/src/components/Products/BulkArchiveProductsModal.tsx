@@ -42,7 +42,7 @@ export const BulkArchiveProductsModal = ({
   const isArchiving = action === 'archive'
 
   const handleConfirm = async () => {
-    try {
+    const archive = async () => {
       const { succeeded, failed } = await updateProducts.mutateAsync({
         products,
         body: { is_archived: isArchiving },
@@ -53,11 +53,12 @@ export const BulkArchiveProductsModal = ({
             ? `${productCount(succeeded.length)} ${copy.pastTense}, ${failed.length} failed`
             : `${productCount(succeeded.length)} ${copy.pastTense}`,
       })
-    } catch {
-      toast({ title: copy.error })
-    } finally {
-      onComplete()
     }
+    await archive()
+      .catch(() => {
+        toast({ title: copy.error })
+      })
+      .finally(() => onComplete())
   }
 
   return (

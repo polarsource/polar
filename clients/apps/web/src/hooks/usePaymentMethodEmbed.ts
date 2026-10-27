@@ -23,15 +23,12 @@ export const usePaymentMethodEmbed = () => {
       isOpeningRef.current = true
       embedRef.current?.close()
       embedRef.current = null
-      let embed: PolarEmbedPaymentMethod
-      try {
-        embed = await PolarEmbedPaymentMethod.create({
-          sessionToken,
-          theme: theme.resolvedTheme === 'dark' ? 'dark' : 'light',
-        })
-      } finally {
+      const embed = await PolarEmbedPaymentMethod.create({
+        sessionToken,
+        theme: theme.resolvedTheme === 'dark' ? 'dark' : 'light',
+      }).finally(() => {
         isOpeningRef.current = false
-      }
+      })
       if (!isMountedRef.current) {
         embed.close()
         return

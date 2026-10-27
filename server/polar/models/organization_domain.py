@@ -45,6 +45,6 @@ class OrganizationDomain(RecordModel):
     verified_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
-    verification_token: Mapped[str | None] = mapped_column(
+    verification_record_value: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )

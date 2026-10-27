@@ -1,4 +1,4 @@
-"""add organization_domains verification_token
+"""add organization_domains verification_record_value
 
 Revision ID: e4c93484fe51
 Revises: f000c6097e24
@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.execute("SET LOCAL lock_timeout = '5s'")
     op.add_column(
         "organization_domains",
-        sa.Column("verification_token", sa.String(), nullable=True),
+        sa.Column("verification_record_value", sa.String(), nullable=True),
     )
 
 
@@ -32,4 +32,4 @@ def downgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration.
     # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
     op.execute("SET LOCAL lock_timeout = '5s'")
-    op.drop_column("organization_domains", "verification_token")
+    op.drop_column("organization_domains", "verification_record_value")

@@ -86,7 +86,7 @@ export default {
         from: '最低',
         range: '{from}–{to}',
         andAbove: '{from}+',
-        volumeExplainer: '所有用量皆依其所屬區間的費率計費',
+        volumeExplainer: '全部用量依總用量所在的區間計費',
       },
       dueToday: '今日應付',
       firstPayment: '首次付款',
@@ -109,12 +109,12 @@ export default {
         range: '{min} - {max} 席次',
         minimum: '至少 {min} 席次',
         maximum: '最多 {max} 席次',
-        updateFailed: '席次更新失敗',
+        updateFailed: '無法更新席次',
       },
       perUnit: '每 {unitLabel}',
       units: {
         label: '{unitLabelPlural}',
-        numberOfUnits: '{unitLabelPlural}數量',
+        numberOfUnits: '{unitLabelPlural} 數量',
         count: {
           '=1': '# {unitLabel}',
           other: '# {unitLabelPlural}',
@@ -123,7 +123,7 @@ export default {
         updateFailed: '無法更新單位數量',
       },
       discount: {
-        until: '{date} 前有效',
+        until: '{date}前有效',
       },
     },
     trial: {
@@ -152,7 +152,7 @@ export default {
           year: '/年',
         },
         then: '之後',
-        startingDate: '自 {date} 起',
+        startingDate: '自 {date}起',
         freeUntil: '免費試用至 {date}',
       },
     },
@@ -172,14 +172,14 @@ export default {
     },
     benefits: {
       granting: '正在授予權益...',
-      requestNewInvite: '申請新邀請',
+      requestNewInvite: '重新取得邀請',
       retryIn: {
         '=1': '# 秒後再試',
         other: '# 秒後再試',
         _mode: 'plural',
       },
       connectNewAccount: '連結新帳號',
-      requestMyInvite: '申請我的邀請',
+      requestMyInvite: '取得邀請',
       github: {
         connect: '連結 GitHub 帳號',
         goTo: '前往 {repository}',
@@ -206,7 +206,7 @@ export default {
           '請輸入你 Slack 工作區中管理員的電子郵件。對方將收到用於私人頻道的 Slack Connect 邀請。',
         emailPlaceholder: 'slack-admin@yourcompany.com',
         tryAgain: '再試一次',
-        requestInvite: '申請 Slack 邀請',
+        requestInvite: '傳送 Slack 邀請',
       },
       licenseKey: {
         copy: '複製',

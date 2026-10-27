@@ -18,3 +18,20 @@ module "planetscale" {
     }
   }
 }
+
+module "planetscale_migration" {
+  source = "../modules/planetscale_migration"
+
+  name                     = "polar-production-planetscale-migration"
+  subnet_id                = module.vpc.private_subnet_ids[0]
+  instance_type            = "c7i.4xlarge"
+  volume_size              = 1000
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  tags = {
+    Environment = "production"
+    Service     = "planetscale-migration"
+  }
+
+  depends_on = [module.vpc]
+}

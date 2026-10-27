@@ -37,3 +37,8 @@ output "planetscale" {
   description = "PlanetScale production branch and application role."
   value       = module.planetscale
 }
+
+output "planetscale_migration" {
+  description = "Production pgcopydb migration instance."
+  value       = module.planetscale_migration
+}

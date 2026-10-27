@@ -6,7 +6,7 @@ import { spec } from '../spec'
 
 const SEARCH_LIMITS = { cpuMs: 5_000, subRequests: 0 }
 
-const description = `Search the Polar API OpenAPI spec (API version ${spec.apiVersion}) by writing JavaScript. The code runs in a sandbox without network access. For guides and concepts, use search_docs instead.
+const description = `Search the Polar API OpenAPI spec (API version ${spec.apiVersion}) by writing JavaScript. \`spec\` lists every operation that execute can call on this server, and nothing else: a method not listed under a path is not available, even if the public Polar API or the docs mention it. The code runs in a sandbox without network access. For guides and concepts, use search_docs instead.
 
 Available in your code:
 

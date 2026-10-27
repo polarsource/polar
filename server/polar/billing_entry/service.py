@@ -33,6 +33,7 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
+from .types import BillingEntrySelector, PendingByMeter, PendingByPrice
 
 log = structlog.get_logger(__name__)
 
@@ -59,19 +60,6 @@ class MeteredLineItem:
     currency: str
     label: str
     proration: Literal[False] = False
-
-
-@dataclasses.dataclass(frozen=True)
-class PendingByPrice:
-    product_price_id: uuid.UUID
-
-
-@dataclasses.dataclass(frozen=True)
-class PendingByMeter:
-    meter_id: uuid.UUID
-
-
-type BillingEntrySelector = Sequence[uuid.UUID] | PendingByPrice | PendingByMeter
 
 
 class BillingEntryService:
@@ -134,16 +122,19 @@ class BillingEntryService:
 
         billable_from = subscription.trial_end or subscription.started_at
         if consumed_units and billable_from is not None:
+            order_id = next(iter(item_entries_map)).order_id
             with logfire.span(
-                "Seal and compare billed usage",
+                "Bill and compare reducer usage",
                 organization_id=str(subscription.customer.organization_id),
                 subscription_id=str(subscription.id),
+                order_id=str(order_id),
                 cutoff=cutoff,
             ) as span:
-                quantities = await reducer_service.seal(
+                quantities = await reducer_service.bill(
                     session,
                     subscription.customer,
                     set(consumed_units),
+                    order_id=order_id,
                     billable_from=billable_from,
                     cutoff=cutoff,
                 )
@@ -337,20 +328,6 @@ class BillingEntryService:
                 )
                 selector: BillingEntrySelector = PendingByMeter(meter_id)
             else:
-                # For summable aggregations (sum, count), we also need to verify
-                # the price is still active on the subscription. This prevents
-                # billing entries from discontinued prices being re-billed
-                # every cycle after a product/price change.
-                is_active_price = any(
-                    price.id == product_price_id for price in active_prices
-                )
-                if not is_active_price:
-                    log.info(
-                        f"Skipping billing entry for inactive price {product_price_id} "
-                        f"in subscription {subscription.id}"
-                    )
-                    continue
-
                 metered_line_item = await self._get_metered_line_item(
                     session,
                     metered_price,
@@ -509,7 +486,7 @@ class BillingEntryService:
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events
         )
-        amount, amount_label = price.get_amount_and_label(units - credited_units)
+        amount, amount_label = price.get_amount_and_label(units, credited_units)
         label = f"{meter.name} — {amount_label}"
 
         return MeteredLineItem(
@@ -567,7 +544,7 @@ class BillingEntryService:
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events
         )
-        amount, amount_label = price.get_amount_and_label(units - credited_units)
+        amount, amount_label = price.get_amount_and_label(units, credited_units)
         label = f"{meter.name} — {amount_label}"
 
         return MeteredLineItem(

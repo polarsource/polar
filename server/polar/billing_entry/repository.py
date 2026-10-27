@@ -46,6 +46,17 @@ class BillingEntryRepository(
             )
             await self.session.execute(statement)
 
+    async def has_invoiced_for_event(self, event_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                BillingEntry.event_id == event_id,
+                BillingEntry.order_item_id.is_not(None),
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
+
     async def get_all_by_subscription(
         self, subscription_id: UUID
     ) -> Sequence[BillingEntry]:

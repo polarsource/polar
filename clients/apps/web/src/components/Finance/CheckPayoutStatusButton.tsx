@@ -4,7 +4,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { useSyncPayoutAccount } from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { RefreshCwIcon } from 'lucide-react'
+import { RefreshCw as RefreshCwIcon } from '@polar-sh/orbit/icons'
 import { useCallback } from 'react'
 
 interface Props {

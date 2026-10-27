@@ -203,6 +203,7 @@ const AccessTokenItem = ({
   minimal?: boolean
   rootRef?: Ref<HTMLDivElement>
 }) => {
+  const [now] = useState(() => Date.now())
   const {
     isShown: updateModalShown,
     show: showUpdateModal,
@@ -248,7 +249,7 @@ const AccessTokenItem = ({
             {!minimal && (
               <p className="dark:text-polar-400 text-sm text-gray-500">
                 {token.expires_at ? (
-                  new Date(token.expires_at) < new Date() ? (
+                  new Date(token.expires_at).getTime() < now ? (
                     <span className="text-red-500 dark:text-red-400">
                       Expired on{' '}
                       <FormattedDateTime

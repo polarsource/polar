@@ -1,10 +1,21 @@
 from typing import Self
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, false, select
 
-from polar.auth.models import AuthSubject, User, is_organization, is_user
-from polar.auth.permission import OrganizationPermission, roles_with_permission
+from polar.auth.models import (
+    Agent,
+    AuthSubject,
+    User,
+    is_agent,
+    is_organization,
+    is_user,
+)
+from polar.auth.permission import (
+    AGENT_PERMISSIONS,
+    OrganizationPermission,
+    roles_with_permission,
+)
 from polar.models import OAuth2Token, Organization, UserOrganization, UserSession
 from polar.postgres import AsyncReadSession
 
@@ -41,8 +52,28 @@ def select_user_org_ids(
     return stmt
 
 
+def _select_agent_org_ids(
+    agent: Agent,
+    *,
+    permission: OrganizationPermission | None = None,
+) -> Select[tuple[UUID]]:
+    """SQL `SELECT` of the agent's organization ID, while the agent is unclaimed.
+
+    When ``permission`` is provided, the result is empty unless the agent's fixed
+    role (``AGENT_PERMISSIONS``) grants it.
+    """
+    stmt = select(Organization.id).where(
+        Organization.id == agent.organization_id, Organization.can_authenticate
+    )
+    if not agent.can_authenticate or (
+        permission is not None and permission not in AGENT_PERMISSIONS
+    ):
+        stmt = stmt.where(false())
+    return stmt
+
+
 def select_accessible_org_ids(
-    auth_subject: AuthSubject[User],
+    auth_subject: AuthSubject[User | Agent],
     *,
     permission: OrganizationPermission | None = None,
 ) -> Select[tuple[UUID]]:
@@ -61,7 +92,12 @@ def select_accessible_org_ids(
     (``sso_enforced``) — those are only accessible through an SSO-scoped session
     or a token explicitly scoped to them (which can only be issued via SSO).
     Personal access tokens remain exempt from SSO enforcement.
+
+    An agent resolves to its one organization (``_select_agent_org_ids``).
     """
+    if is_agent(auth_subject):
+        return _select_agent_org_ids(auth_subject.subject, permission=permission)
+
     # Composes the raw helper, then applies the session down-scope right below.
     stmt = select_user_org_ids(  # lint-skip: org-scope
         auth_subject.subject.id, permission=permission
@@ -83,9 +119,9 @@ class AuthzRepository:
     def from_session(cls, session: AsyncReadSession) -> Self:
         return cls(session)
 
-    async def get_user_org_ids(
+    async def get_accessible_org_ids(
         self,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Agent],
         *,
         permission: OrganizationPermission | None = None,
     ) -> set[UUID]:
@@ -102,7 +138,7 @@ class AuthzRepository:
 
     async def get_accessible_organization(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: UUID,
     ) -> Organization | None:
         """Fetch an organization by ID, returning it only if the subject can access it.
@@ -115,7 +151,7 @@ class AuthzRepository:
             Organization.can_authenticate,
         )
 
-        if is_user(auth_subject):
+        if is_user(auth_subject) or is_agent(auth_subject):
             stmt = stmt.where(
                 Organization.id.in_(select_accessible_org_ids(auth_subject))
             )

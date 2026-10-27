@@ -75,6 +75,7 @@ class TestCreate:
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_last_billed_event_set(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
@@ -128,6 +129,7 @@ class TestCreate:
         assert reducer.organization_id == meter.organization_id
         assert reducer.filter == meter.filter
         assert reducer.aggregation == meter.aggregation
+        enqueue_job_mock.assert_any_call("reducer.invalidate_cache", organization.id)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_default_unit_is_scalar(
@@ -309,6 +311,7 @@ class TestUpdate:
     @pytest.mark.parametrize("has_reducer", [False, True])
     async def test_sensitive_update_allowed(
         self,
+        enqueue_job_mock: AsyncMock,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
         meter_update: MeterUpdate,
@@ -348,6 +351,7 @@ class TestUpdate:
         assert reducer.organization_id == meter.organization_id
         assert reducer.filter == updated_meter.filter
         assert reducer.aggregation == updated_meter.aggregation
+        enqueue_job_mock.assert_any_call("reducer.invalidate_cache", organization.id)
         if original_reducer is not None:
             assert reducer.id == original_reducer.id
 
@@ -1562,6 +1566,34 @@ async def metered_subscription(
     return await create_active_subscription(
         save_fixture, customer=customer, product=product_metered_unit
     )
+
+
+@pytest.mark.anyio
+class TestEnqueueBilling:
+    async def test_only_meters_with_unbilled_events(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        events: list[Event],
+        meter: Meter,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4(), name="Empty"
+        )
+
+        await meter_service.enqueue_billing(session)
+        assert [call.args[:2] for call in enqueue_job_mock.call_args_list] == [
+            ("meter.billing_entries", meter.id)
+        ]
+
+        await meter_service.create_billing_entries(session, meter)
+        await session.flush()
+        enqueue_job_mock.reset_mock()
+
+        await meter_service.enqueue_billing(session)
+        enqueue_job_mock.assert_not_called()
 
 
 @pytest.mark.anyio

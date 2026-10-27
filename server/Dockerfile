@@ -1,5 +1,5 @@
 # Shared tooling for the Render and Lambda builds.
-FROM ghcr.io/astral-sh/uv:0.11.24 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.4 AS uv
 FROM tailscale/tailscale:v1.98.4 AS tailscale
 
 # Build the email renderer and backoffice assets with the same Node/pnpm setup.
@@ -32,21 +32,27 @@ RUN pnpm run build
 # Deployment builds refresh IPInfo; font URLs and checksums are version-pinned.
 FROM alpine:3.21 AS download-ipinfo
 
-RUN apk add --no-cache curl jq
+RUN apk add --no-cache ca-certificates curl jq
+RUN sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates
 
 COPY --chmod=755 docker/download_ipinfo.sh /usr/local/bin/download-ipinfo
 RUN --mount=type=secret,id=IPINFO_ACCESS_TOKEN download-ipinfo
 
 FROM alpine:3.21 AS download-cjk-fonts
 
-RUN apk add --no-cache curl
+RUN apk add --no-cache ca-certificates curl
+RUN sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates
 
 COPY --chmod=755 docker/download_cjk_fonts.sh /usr/local/bin/download-cjk-fonts
 RUN download-cjk-fonts
 
 # Caddy needs the Cloudflare module to issue certificates through DNS challenges.
 FROM caddy:2.11.4-builder AS build-backoffice-proxy
-RUN xcaddy build v2.11.4 --with github.com/caddy-dns/cloudflare@v0.2.4
+RUN sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates \
+  && xcaddy build v2.11.4 --with github.com/caddy-dns/cloudflare@v0.2.4
 RUN setcap -r /usr/bin/caddy
 
 # Render backend image, also used by the private backoffice.
@@ -72,7 +78,10 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
   --mount=type=cache,target=/root/.cache/uv \
   apt-get update \
-  && apt-get install -y build-essential curl git libpq5 \
+  && apt-get install -y build-essential ca-certificates curl git libpq5 \
+  && sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+    -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates \
   && uv sync --no-group dev --frozen \
   && uv tool install tinybird --python 3.13 \
   && apt-get autoremove -y build-essential
@@ -96,8 +105,18 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", \
   "--limit-max-requests", "50000", "--limit-max-requests-jitter", "10000", \
   "--timeout-graceful-shutdown", "30"]
 
+FROM public.ecr.aws/lambda/python:3.14 AS lambda-base
+
+RUN trust extract --overwrite --format=pem-bundle \
+    --filter='pkcs11:object=Comodo%20AAA%20Services%20root;type=cert' \
+    /etc/pki/ca-trust/source/blocklist/Comodo_AAA_Services_root.pem \
+  && trust extract --overwrite --format=pem-bundle \
+    --filter='pkcs11:object=emSign%20ECC%20Root%20CA%20-%20G3;type=cert' \
+    /etc/pki/ca-trust/source/blocklist/emSign_ECC_Root_CA_-_G3.pem \
+  && update-ca-trust
+
 # Compile dependencies on Amazon Linux to match the Lambda runtime.
-FROM public.ecr.aws/lambda/python:3.14 AS lambda-build
+FROM lambda-base AS lambda-build
 
 COPY --from=uv /uv /uvx /bin/
 
@@ -116,7 +135,7 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   && dnf clean all
 
 # Lambda worker image, with dependencies but without the build toolchain.
-FROM public.ecr.aws/lambda/python:3.14 AS lambda
+FROM lambda-base AS lambda
 
 COPY --from=lambda-build /app/server/.venv /app/server/.venv
 COPY --from=download-ipinfo /data /data

@@ -6,8 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 import { resolveInsightActionHref } from './insightActions'
-import { ChevronRight } from 'lucide-react'
-
+import { ChevronRight } from '@polar-sh/orbit/icons'
 const categoryColor: Record<schemas['InsightCategory'], string> = {
   growth: 'bg-green-500',
   product: 'bg-indigo-500',

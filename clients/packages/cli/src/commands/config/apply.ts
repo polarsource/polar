@@ -10,7 +10,7 @@ import {
   unchanged,
 } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
-import { configFile as file, org } from '@/utils/flags'
+import { confirm, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
@@ -25,12 +25,7 @@ import { Organizations } from '@/services/organizations'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
-const yes = Flag.Boolean('yes').pipe(
-  Flag.withAlias('y'),
-  Flag.withAlias('aladåb'),
-  Flag.withDefault(false),
-  Flag.withDescription('Apply without asking for confirmation'),
-)
+const confirmed = confirm.pipe(Flag.withAlias('aladåb'))
 
 const applied = (
   config: LoadedConfig,
@@ -62,18 +57,18 @@ const interactive = Effect.gen(function* () {
   return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
 })
 
-const confirm = (
+const approve = (
   organization: ActiveOrganization,
   json: boolean,
-  yes: boolean,
+  confirmed: boolean,
   say: Say['say'],
 ) =>
   Effect.gen(function* () {
-    if (yes) return true
+    if (confirmed) return true
     if (json || !(yield* interactive)) {
       return yield* new BillingConfigError({
         message: `Confirmation needed to apply to ${target(organization)}`,
-        hint: 'Pass --yes to apply without asking, after reviewing polar config plan.',
+        hint: 'Pass --confirm to apply without asking, after reviewing polar config plan.',
       })
     }
     yield* say([ui.blank])
@@ -84,7 +79,7 @@ const confirm = (
     ).pipe(Effect.orElseSucceed(() => false))
   })
 
-export const apply = Command.make('apply', { file, org, yes }).pipe(
+export const apply = Command.make('apply', { file, org, confirmed }).pipe(
   Command.withDescription(
     'Create or update everything in a billing config file for your organization',
   ),
@@ -103,17 +98,17 @@ export const apply = Command.make('apply', { file, org, yes }).pipe(
       description: 'Apply to another organization, by slug or ID',
     },
     {
-      command: 'polar config apply --yes',
+      command: 'polar config apply --confirm',
       description: 'Apply without asking, for scripts and CI',
     },
     {
-      command: 'polar config apply --yes --json',
+      command: 'polar config apply --confirm --json',
       description: 'Print what was applied as JSON, for scripts and agents',
     },
   ]),
   output({
     result: ApplyOutput,
-    run: ({ file, org, yes }, { say }) =>
+    run: ({ file, org, confirmed }, { say }) =>
       Effect.gen(function* () {
         const billing = yield* BillingConfig
         const { json } = yield* Output
@@ -152,11 +147,15 @@ export const apply = Command.make('apply', { file, org, yes }).pipe(
                 return {
                   config,
                   organization,
-                  result: { status: 'applied', entries: plan.entries } as const,
+                  result: {
+                    status: 'applied',
+                    entries: plan.entries,
+                    issues: plan.issues,
+                  } as const,
                 }
               }
               yield* say(changes(config, organization, plan))
-              if (!(yield* confirm(organization, json, yes, say))) {
+              if (!(yield* approve(organization, json, confirmed, say))) {
                 return yield* new BillingConfigError({
                   message: 'Apply cancelled, nothing changed',
                 })
@@ -169,7 +168,14 @@ export const apply = Command.make('apply', { file, org, yes }).pipe(
                 billing.apply(config, organization),
               )
               yield* progress.finish(`(${milliseconds(elapsed)})`)
-              return { config, organization, result }
+              return {
+                config,
+                organization,
+                result:
+                  result.status === 'applied'
+                    ? { ...result, issues: plan.issues }
+                    : result,
+              }
             }),
           'columns',
         )

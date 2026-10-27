@@ -3,7 +3,7 @@
 import { CustomerPortalProvider } from '@/components/CustomerPortal/CustomerPortalProvider'
 import { useCustomerPortalSession } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
+import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { TooltipProvider } from '@polar-sh/orbit'

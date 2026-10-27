@@ -1,6 +1,7 @@
 'use client'
 
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
@@ -12,6 +13,7 @@ import { useContext } from 'react'
 
 export const MeterIngestionGuide = () => {
   const { organization } = useContext(OrganizationContext)
+  const managedAsCode = useIsManagedAsCode(organization.id)
 
   return (
     <SyntaxHighlighterProvider>
@@ -35,11 +37,13 @@ export const MeterIngestionGuide = () => {
                   <code>api_call</code>.
                 </p>
               </div>
-              <Link
-                href={`/dashboard/${organization.slug}/products/meters/create`}
-              >
-                <Button>Create Meter</Button>
-              </Link>
+              {!managedAsCode && (
+                <Link
+                  href={`/dashboard/${organization.slug}/products/meters/create`}
+                >
+                  <Button>Create Meter</Button>
+                </Link>
+              )}
             </WellContent>
           </div>
           <Well className="dark:bg-polar-900 flex-1 shrink overflow-auto bg-white p-6 text-sm">

@@ -31,7 +31,7 @@ export const plan =
         const body =
           yield* HttpClientResponse.schemaBodyJson(PlanResponse)(response)
         return {
-          entries: entries(body.changes),
+          entries: entries(body.changes, body.settings),
           issues: issues(config, body.issues),
         } satisfies PlanResult
       }

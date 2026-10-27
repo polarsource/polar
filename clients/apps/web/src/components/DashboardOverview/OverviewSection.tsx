@@ -16,7 +16,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { SegmentedControl } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import { Settings2 } from 'lucide-react'
+import { Settings2 } from '@polar-sh/orbit/icons'
 import React from 'react'
 import {
   MetricSelectorModalContent,

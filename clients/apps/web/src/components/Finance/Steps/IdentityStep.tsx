@@ -1,8 +1,7 @@
 'use client'
 
 import { Button } from '@polar-sh/orbit'
-import { ArrowRight, CheckIcon } from 'lucide-react'
-
+import { ArrowRight, Check as CheckIcon } from '@polar-sh/orbit/icons'
 interface IdentityStepProps {
   identityVerificationStatus?: string
   onStartIdentityVerification: () => void

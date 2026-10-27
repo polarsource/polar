@@ -101,25 +101,139 @@ export const placeholderBinary = () =>
 export const readme = (version: string) =>
   `# Polar CLI
 
-Tunnel webhooks to your local environment and manage your Polar organization from the terminal.
+[![npm](https://img.shields.io/npm/v/${MAIN_PACKAGE}?label=npm)](https://www.npmjs.com/package/${MAIN_PACKAGE})
+[![Release CLI](https://github.com/polarsource/polar/actions/workflows/release_cli.yml/badge.svg)](https://github.com/polarsource/polar/actions/workflows/release_cli.yml)
+
+The Polar CLI helps you build, test and manage your Polar integration from the terminal. It is built for people and for AI agents alike.
+
+**With the CLI, you can:**
+
+- Receive webhooks on your local machine, signed exactly like production
+- Trigger sample events to exercise your webhook handler
+- List, create, update and delete products, customers, orders and other API objects
+- Create access tokens for CI and local development
+- Hand it to an AI agent: everything speaks JSON and runs without prompts
 
 \`\`\`bash
 npm install -g ${MAIN_PACKAGE}
-polar login
-polar webhook listen http://localhost:3000/
+polar auth login
+polar webhook listen 3000
 \`\`\`
 
-This package installs the prebuilt \`polar\` binary for your platform from one of the
-\`${PLATFORM_PACKAGE_PREFIX}*\` packages in a postinstall step. pnpm and bun block
-install scripts by default, so allow this one:
+## Installation
+
+The CLI is a single binary for macOS (Apple Silicon and Intel), Linux (x64 and ARM64) and Windows (x64).
+
+### npm, pnpm, bun
+
+\`\`\`bash
+npm install -g ${MAIN_PACKAGE}
+\`\`\`
+
+pnpm and bun block install scripts by default. This package unpacks the binary for your platform from one of the \`${PLATFORM_PACKAGE_PREFIX}*\` packages in a postinstall step, so allow it:
 
 \`\`\`bash
 pnpm add -g --allow-build=${MAIN_PACKAGE} ${MAIN_PACKAGE}
 bun install -g --trust ${MAIN_PACKAGE}
 \`\`\`
 
-If installation scripts stay disabled, the \`polar\` command prints an error instead of
-running. Install with \`curl -fsSL https://polar.sh/install.sh | bash\` in that case.
 
-Version ${version}. Source and documentation: https://github.com/polarsource/polar/tree/main/clients/packages/cli
+### macOS and Linux
+
+\`\`\`bash
+curl -fsSL https://polar.sh/install.sh | bash
+\`\`\`
+
+### Windows
+
+\`\`\`powershell
+irm https://polar.sh/install.ps1 | iex
+\`\`\`
+
+### Without package managers
+
+Download the binary for your platform from the [latest release](https://github.com/polarsource/polar/releases/tag/${MAIN_PACKAGE}@${version}) and put it on your \`PATH\`.
+
+Check that it works with \`polar --version\`.
+
+## Built for agents
+
+Point Claude Code, Cursor, Codex or any other agent at \`polar\` and it can run your whole Polar setup from the terminal:
+
+- API commands print JSON, and \`--json\` turns every other command's output and every error into JSON too. Errors carry a \`hint\` with the fix.
+- \`--fields\` keeps only the fields the agent needs, so responses stay small.
+- No hidden prompts: \`--sandbox\`/\`--production\` pick the environment, \`--confirm\` approves destructive commands, and \`--help\` describes every command with examples.
+- \`POLAR_ACCESS_TOKEN\` authenticates without a browser, in CI or a sandboxed agent.
+
+\`\`\`bash
+polar products list --fields id,name,prices.price_amount
+polar customers delete <id> --confirm
+\`\`\`
+
+Prefer tools over a shell? The same capabilities are available through the [Polar MCP server](https://polar.sh/docs/integrate/mcp).
+
+## Usage
+
+Sign in once, in sandbox or production, and pick the organization to work on:
+
+\`\`\`bash
+polar auth login --sandbox
+polar auth org
+\`\`\`
+
+**Webhooks.** \`listen\` creates a webhook endpoint for you and forwards every delivery to your local server. \`trigger\` sends a sample event through it.
+
+\`\`\`bash
+polar webhook listen 3000
+polar webhook trigger order.paid
+polar webhook listen --print-secret   # the signing secret for your .env
+\`\`\`
+
+**API objects.** API commands print the response as JSON; \`--fields\` keeps only the fields you name. Commands that delete or revoke ask before they act; pass \`--confirm\` to run them unattended.
+
+\`\`\`bash
+polar products list
+polar customers get <id>
+polar orders list --fields id,total_amount,customer.email
+polar subscriptions revoke <id>
+\`\`\`
+
+**Tokens.** Create an organization access token for your app or CI. When \`POLAR_ACCESS_TOKEN\` is set, the CLI uses it instead of your login.
+
+\`\`\`bash
+echo "POLAR_ACCESS_TOKEN=$(polar auth token)" >> .env.local
+polar auth token --scope products:read | gh secret set POLAR_ACCESS_TOKEN
+\`\`\`
+
+Every command, argument and flag is in the [command reference](https://polar.sh/docs/integrate/cli/reference).
+
+## Upgrading
+
+\`\`\`bash
+polar update
+\`\`\`
+
+\`update\` detects how the CLI was installed and upgrades through the same channel. With npm, \`npm install -g ${MAIN_PACKAGE}\` does the same.
+
+## Uninstalling
+
+Sign out first so no sessions are left in your OS keychain, then remove the binary the way you installed it:
+
+\`\`\`bash
+polar auth logout --all
+npm uninstall -g ${MAIN_PACKAGE}          # npm
+rm /usr/local/bin/polar                   # install.sh
+\`\`\`
+
+On Windows, delete \`%USERPROFILE%\\.polar\\bin\` and remove it from your user \`PATH\`.
+
+## Documentation
+
+- [Introduction](https://polar.sh/docs/integrate/cli/introduction)
+- [Authentication](https://polar.sh/docs/integrate/cli/authentication)
+- [Webhooks](https://polar.sh/docs/integrate/cli/webhooks)
+- [Command reference](https://polar.sh/docs/integrate/cli/reference)
+- [Source code](https://github.com/polarsource/polar/tree/main/clients/packages/cli)
+
+Version ${version}.
 `

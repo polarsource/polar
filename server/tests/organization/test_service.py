@@ -25,6 +25,7 @@ from polar.integrations.stripe.account_risk import (
 )
 from polar.kit.http import UrlReachability
 from polar.models import (
+    Agent,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -43,6 +44,7 @@ from polar.models.organization import (
     OrganizationStatus,
     OrganizationSubscriptionSettings,
     SnoozeType,
+    transition_capabilities,
 )
 from polar.models.organization import (
     OrganizationDetails as OrganizationDetailsDict,
@@ -76,8 +78,11 @@ from polar.organization.service import (
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
-from polar.organization_review.repository import OrganizationRiskSignalRepository
-from polar.organization_review.schemas import ReviewContext, ReviewVerdict
+from polar.organization_review.repository import (
+    OrganizationReviewRepository,
+    OrganizationRiskSignalRepository,
+)
+from polar.organization_review.schemas import ActorType, ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
@@ -201,7 +206,7 @@ class TestCreate:
 
         assert organization.name == "My New Organization"
         assert organization.slug == slug
-        assert organization.feature_settings == {}
+        assert organization.feature_settings == {"meter_cycling_enabled": True}
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -267,6 +272,7 @@ class TestCreate:
 
         assert organization.feature_settings == {
             "checkout_localization_enabled": True,
+            "meter_cycling_enabled": True,
         }
 
     @pytest.mark.auth
@@ -329,6 +335,76 @@ class TestCreate:
         assert (
             organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.CREATED]
         )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_organization_skips_the_human_owner_steps_until_the_claim(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Agent],
+        session: AsyncSession,
+    ) -> None:
+        agent = auth_subject.subject
+        agent.organization = None
+        await save_fixture(agent)
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        create_customer_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_create_customer"
+        )
+        posthog_mock = mocker.patch(
+            "polar.organization.service.posthog.auth_subject_event"
+        )
+
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(name="Agent Organization", slug="agent-organization"),
+            auth_subject,
+        )
+
+        assert agent.organization_id == organization.id
+        assert organization.account is not None
+        await session.refresh(organization)
+        assert organization.is_config_as_code_enabled
+        assert (
+            await user_organization_service.get_member_count(session, organization.id)
+            == 0
+        )
+        create_customer_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "organization.created", organization_id=organization.id
+        )
+        posthog_mock.assert_not_called()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_create_fails_when_a_concurrent_create_linked_an_organization_first(
+        self,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Agent],
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """
+        A concurrent create links its organization after this request loaded
+        the agent, so the early check passes but the conditional update doesn't.
+        """
+        agent = auth_subject.subject
+        agent.organization = None
+        await save_fixture(agent)
+        await session.execute(
+            update(Agent)
+            .where(Agent.id == agent.id)
+            .values(organization_id=organization.id)
+            .execution_options(synchronize_session=False)
+        )
+
+        with pytest.raises(CannotCreateOrganizationError):
+            await organization_service.create(
+                session,
+                OrganizationCreate(
+                    name="Agent Organization", slug="agent-organization"
+                ),
+                auth_subject,
+            )
 
 
 @pytest.mark.anyio
@@ -1049,6 +1125,33 @@ class TestConfirmOrganizationReviewed:
         assert result.status == OrganizationStatus.ACTIVE
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
+
+    @pytest.mark.parametrize(
+        "status", [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED]
+    )
+    async def test_preserves_capability_overrides(
+        self,
+        status: OrganizationStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[status],
+            "checkout_payments": False,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        assert result is not None
+        assert result.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.ACTIVE],
+            "checkout_payments": False,
+        }
 
     async def test_rejects_non_review_status(
         self,
@@ -1925,6 +2028,7 @@ class TestSetOrganizationUnderReview:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         # Given organization active
         organization.status = OrganizationStatus.ACTIVE
@@ -1933,7 +2037,7 @@ class TestSetOrganizationUnderReview:
 
         # When
         result = await organization_service.set_organization_under_review(
-            session, organization
+            session, organization, actor_type=ActorType.HUMAN, reviewer_id=user.id
         )
 
         # Then
@@ -1941,6 +2045,13 @@ class TestSetOrganizationUnderReview:
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
+        await session.flush()
+        decision = await OrganizationReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert decision is not None
+        assert decision.actor_type == ActorType.HUMAN
+        assert decision.reviewer_id == user.id
 
     async def test_set_organization_under_review_from_offboarding(
         self,
@@ -1955,7 +2066,7 @@ class TestSetOrganizationUnderReview:
 
         # When reverting it to review
         result = await organization_service.set_organization_under_review(
-            session, organization
+            session, organization, actor_type=ActorType.HUMAN
         )
 
         # Then it transitions back into the review flow
@@ -2038,6 +2149,13 @@ class TestHandleAccountRiskSignal:
         signals = await self._signals(session, organization)
         assert len(signals) == 1
         assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
+        await session.flush()
+        decision = await OrganizationReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert decision is not None
+        assert decision.actor_type == ActorType.STRIPE
+        assert decision.reviewer_id is None
 
     async def test_actionable_website_matches_org_by_evaluation_id(
         self,
@@ -5617,33 +5735,53 @@ class TestCapabilityOverrides:
 
 @pytest.mark.anyio
 class TestSetStatusCapabilities:
+    @pytest.mark.parametrize("previous_status", list(OrganizationStatus))
     @pytest.mark.parametrize("status", list(OrganizationStatus))
-    async def test_set_status_writes_capabilities(
+    async def test_defaults_move_to_new_status_defaults(
         self,
+        previous_status: OrganizationStatus,
         status: OrganizationStatus,
-        organization: Organization,
     ) -> None:
-        # Bypass set_status's transition validation: this test verifies the
-        # capability mapping for each status, not the transition rules.
-        organization.status = status
-        organization.set_status(status)
+        assert (
+            transition_capabilities(
+                {**STATUS_CAPABILITIES[previous_status]}, previous_status, status
+            )
+            == STATUS_CAPABILITIES[status]
+        )
 
-        assert organization.status == status
-        assert organization.capabilities == STATUS_CAPABILITIES[status]
-
-    async def test_set_status_overwrites_prior_overrides(
+    async def test_set_status_preserves_overrides(
         self,
         organization: Organization,
     ) -> None:
+        organization.status = OrganizationStatus.SNOOZED
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[OrganizationStatus.SNOOZED],
+            "checkout_payments": False,
+        }
+
+        organization.set_status(OrganizationStatus.REVIEW)
+
+        assert organization.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.REVIEW],
+            "checkout_payments": False,
+        }
+
+    async def test_set_status_moves_non_overridden_capabilities(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[OrganizationStatus.DENIED],
+            "dashboard_access": False,
+        }
+
         organization.set_status(OrganizationStatus.ACTIVE)
-        assert organization.capabilities is not None
-        organization.capabilities = {**organization.capabilities, "payouts": False}
 
-        organization.set_status(OrganizationStatus.BLOCKED)
-
-        assert (
-            organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.BLOCKED]
-        )
+        assert organization.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.ACTIVE],
+            "dashboard_access": False,
+        }
 
 
 @pytest.mark.anyio
@@ -5962,3 +6100,20 @@ class TestUpdateSSOEnforcement:
         )
 
         revoke_mock.assert_not_awaited()
+
+
+@pytest.mark.anyio
+class TestSetStatus:
+    async def test_notifies_resend(
+        self, mocker: MockerFixture, organization: Organization
+    ) -> None:
+        on_status_changed = mocker.patch(
+            "polar.organization.service.resend_service.on_organization_status_changed"
+        )
+
+        organization_service.set_status(organization, OrganizationStatus.DENIED)
+
+        assert organization.status == OrganizationStatus.DENIED
+        on_status_changed.assert_called_once_with(
+            organization.id, OrganizationStatus.ACTIVE, OrganizationStatus.DENIED
+        )

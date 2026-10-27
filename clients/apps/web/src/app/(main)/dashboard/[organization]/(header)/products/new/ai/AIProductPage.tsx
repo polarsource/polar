@@ -5,8 +5,7 @@ import { schemas } from '@polar-sh/client'
 import { AIProductChat } from './AIProductChat'
 import Link from 'next/link'
 import { Button } from '@polar-sh/orbit'
-import { ArrowLeftIcon } from 'lucide-react'
-
+import { ArrowLeft as ArrowLeftIcon } from '@polar-sh/orbit/icons'
 export default function AIProductPage({
   organization,
 }: {

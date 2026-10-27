@@ -12,7 +12,7 @@ export const DesignPartnerSignup = () => (
       backgroundColor="background-secondary"
     >
       <Box color="text-tertiary">
-        <LogoIcon size={56} />
+        <LogoIcon size={44} />
       </Box>
       <Box flexDirection="column" rowGap="m">
         <Text as="h3" variant="heading-xs">

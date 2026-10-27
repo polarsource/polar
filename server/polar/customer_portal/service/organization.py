@@ -22,6 +22,7 @@ class CustomerOrganizationService(ResourceServiceReader[Organization]):
                     Organization.products.and_(
                         ~Product.is_deleted,
                         ~Product.is_archived,
+                        Product.is_current,
                         Product.visibility == Visibility.public,
                     )
                 ).options(

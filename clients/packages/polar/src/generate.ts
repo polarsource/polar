@@ -1,7 +1,6 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
-import type { DiscountConfig } from './schema/discount'
 import type { Metadata } from './schema/metadata'
 import type { MeterConfig, MeterFilter } from './schema/meter'
 import { majorAmount, scaleRate } from './schema/money'
@@ -27,6 +26,9 @@ const renderMetadata = (metadata: Metadata | undefined): string[] =>
 
 const renderVisibility = (visibility: Visibility | undefined): string[] =>
   visibility === 'private' ? ['.private()'] : []
+
+const renderDeprecated = (deprecated: true | undefined): string[] =>
+  deprecated ? ['.deprecated()'] : []
 
 const renderCondition = (
   condition: MeterFilter['clauses'][number],
@@ -64,6 +66,9 @@ const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
   }
 
   lines.push(...renderMetadata(meter.metadata))
+  if (meter.deprecated) {
+    lines.push('.deprecated()')
+  }
 
   const aggregation = meter.aggregation
   lines.push(
@@ -85,6 +90,7 @@ const renderBenefit = (
       `flag(${name})`,
       ...renderMetadata(benefit.metadata),
       ...renderVisibility(benefit.visibility),
+      ...renderDeprecated(benefit.deprecated),
     ].join('\n')
   }
   helpers.add('credits')
@@ -96,6 +102,7 @@ const renderBenefit = (
     ...(rollover ? ['.rollover()'] : []),
     ...renderMetadata(benefit.metadata),
     ...renderVisibility(benefit.visibility),
+    ...renderDeprecated(benefit.deprecated),
   ].join('\n')
 }
 
@@ -152,6 +159,7 @@ const tiersOf = (price: PriceConfig): Tiers['tiers'] =>
 const structureOf = (price: PriceConfig): string =>
   JSON.stringify([
     price.amount_type,
+    price.tax_behavior ?? null,
     'meter' in price ? price.meter : null,
     'tiers' in price ? price.tiers.type : null,
     tiersOf(price).map(({ bound }) => bound ?? null),
@@ -248,6 +256,11 @@ const isFree = (group: ReadonlyArray<PriceConfig>): boolean =>
     (price) => price.amount_type === 'fixed' && price.price_amount === 0,
   )
 
+const renderTax = (price: PriceConfig): string[] =>
+  price.tax_behavior === undefined
+    ? []
+    : [`.tax(${literal(price.tax_behavior)})`]
+
 const renderPrice = (
   group: readonly [PriceConfig, ...PriceConfig[]],
   productCurrencies: ReadonlyArray<Currency>,
@@ -267,12 +280,15 @@ const renderPrice = (
         return 'free()'
       }
       helpers.add('fixed')
-      return `fixed().amount(${renderAmounts(
-        group,
-        (price) =>
-          'price_amount' in price ? String(price.price_amount) : undefined,
-        imports,
-      )})`
+      return [
+        `fixed().amount(${renderAmounts(
+          group,
+          (price) =>
+            'price_amount' in price ? String(price.price_amount) : undefined,
+          imports,
+        )})`,
+        ...renderTax(first),
+      ].join('\n')
     }
     case 'seat_based':
     case 'unit_based': {
@@ -301,7 +317,7 @@ const renderPrice = (
         const { '=1': singular, other: plural } = first.unit_label.en
         lines.push(`.label(${literal(singular)}, ${literal(plural)})`)
       }
-      return lines.join('\n')
+      return [...lines, ...renderTax(first)].join('\n')
     }
     case 'metered_unit':
     case 'metered_tiers': {
@@ -320,6 +336,7 @@ const renderPrice = (
             ]
           : renderTiers(first.tiers.type, group, helpers, imports)),
         ...renderCap(group, imports),
+        ...renderTax(first),
       ].join('\n')
     }
   }
@@ -377,44 +394,7 @@ const renderProduct =
         ? []
         : [`.description(${literal(product.description)})`]),
       ...renderVisibility(product.visibility),
-    ].join('\n')
-  }
-
-const renderDuration = (discount: DiscountConfig): string => {
-  const months = discount.duration_in_months
-  if (discount.duration !== 'repeating' || months === undefined) {
-    return `.${discount.duration}()`
-  }
-  const [count, unit] =
-    months % 12 === 0 ? [months / 12, 'year'] : [months, 'month']
-  return `.repeating(${literal(count)}, ${literal(count === 1 ? unit : `${unit}s`)})`
-}
-
-const renderDiscount =
-  (imports: Set<string>) =>
-  (discount: DiscountConfig, helpers: Set<string>): string => {
-    helpers.add('discount')
-    const optional = (method: string, value: string | number | undefined) =>
-      value === undefined ? [] : [`.${method}(${literal(value)})`]
-    return [
-      `discount(${literal(discount.name)})`,
-      discount.type === 'percentage'
-        ? `.percent(${literal(discount.basis_points / 100)})`
-        : `.amount(${Object.entries(discount.amounts)
-            .map(([currency, amount]) =>
-              renderMoney(currency as Currency, String(amount), imports),
-            )
-            .join(', ')})`,
-      renderDuration(discount),
-      ...optional('code', discount.code),
-      ...(discount.products === undefined
-        ? []
-        : [`.products(${discount.products.map(literal).join(', ')})`]),
-      ...optional('maxRedemptions', discount.max_redemptions),
-      ...optional('perCustomer', discount.max_redemptions_per_customer),
-      ...optional('starts', discount.starts_at),
-      ...optional('ends', discount.ends_at),
-      ...renderMetadata(discount.metadata),
+      ...renderDeprecated(product.deprecated),
     ].join('\n')
   }
 
@@ -461,19 +441,20 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     config.products === undefined
       ? []
       : renderEntries('products', config.products, renderProduct(imports))
-  const discounts =
-    config.discounts === undefined
+
+  const settings =
+    config.settings === undefined
       ? []
-      : renderEntries('discounts', config.discounts, renderDiscount(imports))
+      : [`  settings: ${JSON.stringify(config.settings)},`]
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
     '',
     'export default defineConfig({',
+    ...settings,
     ...meters,
     ...benefits,
     ...products,
-    ...discounts,
     '})',
     '',
   ].join('\n')

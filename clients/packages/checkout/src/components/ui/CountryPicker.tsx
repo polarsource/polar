@@ -13,6 +13,7 @@ import {
 const CountryPicker = ({
   allowedCountries,
   locale,
+  name,
   value,
   onChange,
   autoComplete,
@@ -25,6 +26,7 @@ const CountryPicker = ({
 }: {
   allowedCountries: readonly string[]
   locale?: string
+  name?: string
   value?: string
   onChange: (value: string) => void
   autoComplete?: string
@@ -49,6 +51,7 @@ const CountryPicker = ({
 
   return (
     <Select
+      name={name}
       onValueChange={onChange}
       value={value}
       autoComplete={autoComplete}

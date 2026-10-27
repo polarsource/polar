@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/Shared/EmptyState'
 import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import {
+  useNextPayoutAt,
   useOrganizationAccount,
   usePayoutAccount,
   usePayouts,
@@ -42,9 +43,17 @@ export default function Finance() {
     refetch: refetchPayouts,
   } = usePayouts()
 
+  const { nextPayoutAt, refetch: refetchNextPayoutAt } =
+    useNextPayoutAt(account)
+
   const refresh = useCallback(() => {
-    Promise.all([refetchAccount(), refetchSummary(), refetchPayouts()])
-  }, [refetchAccount, refetchSummary, refetchPayouts])
+    Promise.all([
+      refetchAccount(),
+      refetchSummary(),
+      refetchPayouts(),
+      refetchNextPayoutAt(),
+    ])
+  }, [refetchAccount, refetchSummary, refetchPayouts, refetchNextPayoutAt])
 
   const isRefetching =
     isRefetchingAccount || isRefetchingSummary || isRefetchingPayouts
@@ -53,7 +62,8 @@ export default function Finance() {
     payoutAccount &&
     payoutAccount.is_payout_ready &&
     summary?.available_balance?.amount &&
-    summary.available_balance.amount >= 1000
+    summary.available_balance.amount >= 1000 &&
+    nextPayoutAt === null
   const availableBalance = formatCurrency('accounting')(
     summary?.available_balance.amount ?? 0,
     summary?.available_balance.currency ?? 'usd',
@@ -139,7 +149,21 @@ export default function Finance() {
             Withdraw
           </Button>
         </Box>
-        <Text color="subtext">Minimum withdrawal amounts apply.</Text>
+        <Text color="subtext">
+          {nextPayoutAt ? (
+            <>
+              You&apos;ve recently requested a payout. The next one can be
+              requested on{' '}
+              {nextPayoutAt.toLocaleString('en-US', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}
+              .
+            </>
+          ) : (
+            'Minimum withdrawal amounts apply.'
+          )}
+        </Text>
       </Box>
 
       <Box flexDirection="column" gap="spacing-16">

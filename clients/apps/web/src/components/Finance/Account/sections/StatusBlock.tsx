@@ -6,8 +6,8 @@ import type {
   BackgroundColorToken,
   TextColorToken,
 } from '@polar-sh/orbit/theme'
-import { motion } from 'motion/react'
-import type { LucideIcon } from 'lucide-react'
+import { m } from 'motion/react'
+import type { LucideIcon } from '@polar-sh/orbit/icons'
 import type { ReactNode } from 'react'
 
 type Tone = 'success' | 'warning' | 'danger' | 'pending' | 'neutral'
@@ -50,7 +50,7 @@ export const StatusBlock = ({
       textAlign="center"
     >
       {Icon && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ type: 'spring', stiffness: 400, damping: 22 }}
@@ -66,7 +66,7 @@ export const StatusBlock = ({
           >
             <Icon className="h-5 w-5" />
           </Box>
-        </motion.div>
+        </m.div>
       )}
       <Box flexDirection="column" rowGap="xs" alignItems="center">
         <Text variant="body" color="default">

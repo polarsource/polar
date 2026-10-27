@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import Depends, Query
 
+from polar.authz.dependencies import AuthorizeWebUserRead
 from polar.benefit.schemas import BenefitID
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
@@ -12,7 +13,7 @@ from polar.kit.sorting import Sorting, SortingGetter
 from polar.kit.versioning import version
 from polar.models import Product
 from polar.models.product import ProductVisibility
-from polar.openapi import APITag, cli_preview
+from polar.openapi import APITag, cli_preview, destructive, open_world
 from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
@@ -24,11 +25,14 @@ from polar.routing import APIRouter
 from polar.version import V2027_01
 
 from . import auth, legacy_schemas
+from .name_check import check_product_name
 from .schemas import Product as ProductSchema
 from .schemas import (
     ProductBenefitsUpdate,
     ProductCreate,
     ProductID,
+    ProductNameCheck,
+    ProductNameCheckRequest,
     ProductUpdate,
 )
 from .service import ProductNotDeletable
@@ -204,10 +208,25 @@ async def get(
 
 
 @router.post(
+    "/name-check",
+    summary="Check Product Name",
+    response_model=ProductNameCheck,
+    tags=[APITag.private],
+)
+async def name_check(
+    auth_subject: AuthorizeWebUserRead,
+    name_check_request: ProductNameCheckRequest,
+) -> ProductNameCheck:
+    """Warn when a product name suggests a use case the Acceptable Use Policy forbids."""
+    return await check_product_name(name_check_request.name)
+
+
+@router.post(
     "/",
     response_model=ProductSchema,
     status_code=201,
     summary="Create Product",
+    openapi_extra=open_world(),
     responses={201: {"description": "Product created."}},
 )
 async def create(
@@ -225,6 +244,7 @@ async def create(
     response_model=ProductSchema,
     status_code=201,
     summary="Create Product",
+    openapi_extra=open_world(),
     responses={201: {"description": "Product created."}},
 )
 @version(starting_from=V2027_01)
@@ -241,6 +261,7 @@ async def create_v2027_01(
     "/{id}",
     response_model=ProductSchema,
     summary="Update Product",
+    openapi_extra=open_world(),
     responses={
         200: {"description": "Product updated."},
         403: {
@@ -270,6 +291,7 @@ async def update(
     name="update",
     response_model=ProductSchema,
     summary="Update Product",
+    openapi_extra=open_world(),
     responses={
         200: {"description": "Product updated."},
         403: {
@@ -299,6 +321,7 @@ async def update_v2027_01(
     "/{id}/benefits",
     response_model=ProductSchema,
     summary="Update Product Benefits",
+    openapi_extra={**destructive(), **open_world()},
     responses={
         200: {"description": "Product benefits updated."},
         403: {

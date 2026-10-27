@@ -19,6 +19,7 @@ module "vercel" {
       dns = {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
         content = "50b537f2e43aa1b6.vercel-dns-016.com"
+        proxied = true
       }
     },
   ]

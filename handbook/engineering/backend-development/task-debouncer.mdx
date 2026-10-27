@@ -111,7 +111,7 @@ Fields:
    - If max threshold is reached, the current task executes and becomes the new owner
 
 3. **Post-execution**: After successful execution:
-   - The `executed` flag is set to prevent further executions from tasks in the same debounce window
+   - If the finishing task still owns the key, the `executed` flag is set to prevent further executions from tasks in the same debounce window. A newer enqueue that took ownership during the run leaves `executed` unset, so the newer task still executes.
    - Metrics are recorded for monitoring
 
 ### Debounce scenarios

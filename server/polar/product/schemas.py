@@ -692,6 +692,12 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
                 "The meter interval must evenly divide the billing interval, "
                 "so the meter cycle re-aligns with the billing cycle at every renewal."
             )
+        if (
+            self.meter_interval == self.recurring_interval
+            and self.meter_interval_count == self.recurring_interval_count
+        ):
+            self.meter_interval = None
+            self.meter_interval_count = None
         return self
 
 
@@ -838,22 +844,30 @@ class ProductPriceBase(TimestampedSchema):
     )
     product_id: UUID4 = Field(description="The ID of the product owning the price.")
 
-    type: SkipJsonSchema[ProductPriceType] = Field(
-        validation_alias=AliasChoices("legacy_type", "type"),
-        deprecated=(
-            "This field is actually set from Product. "
-            "It's only kept for backward compatibility."
+    type: Annotated[
+        SkipJsonSchema[ProductPriceType],
+        Version(up_to=V2026_10),
+        Field(
+            validation_alias=AliasChoices("legacy_type", "type"),
+            deprecated=(
+                "This field is actually set from Product. "
+                "It's only kept for backward compatibility."
+            ),
         ),
-    )
-    recurring_interval: SkipJsonSchema[SubscriptionRecurringInterval | None] = Field(
-        validation_alias=AliasChoices(
-            "legacy_recurring_interval", "recurring_interval"
+    ]
+    recurring_interval: Annotated[
+        SkipJsonSchema[SubscriptionRecurringInterval | None],
+        Version(up_to=V2026_10),
+        Field(
+            validation_alias=AliasChoices(
+                "legacy_recurring_interval", "recurring_interval"
+            ),
+            deprecated=(
+                "This field is actually set from Product. "
+                "It's only kept for backward compatibility."
+            ),
         ),
-        deprecated=(
-            "This field is actually set from Product. "
-            "It's only kept for backward compatibility."
-        ),
-    )
+    ]
 
 
 class ProductPriceFixedBase(ProductPriceBase):
@@ -1080,12 +1094,15 @@ NewProductPrice = Annotated[
 def _get_discriminator_value(v: Any) -> Literal["legacy", "new"]:
     if isinstance(v, dict):
         return "legacy" if "legacy" in v else "new"
+    # Schema instances always carry the compatibility `type` field
+    if isinstance(v, ProductPriceBase):
+        return "legacy" if isinstance(v, LegacyRecurringProductPriceMixin) else "new"
     type = getattr(v, "type", None)
     return "legacy" if type is not None else "new"
 
 
 ProductPrice = Annotated[
-    Annotated[LegacyRecurringProductPrice, Tag("legacy")]
+    Annotated[LegacyRecurringProductPrice, Tag("legacy"), Version(up_to=V2026_10)]
     | Annotated[NewProductPrice, Tag("new")],
     Discriminator(_get_discriminator_value),
 ]
@@ -1187,3 +1204,16 @@ BenefitPublicList = Annotated[
     BeforeValidator(_filter_benefit_public_list),
     Field(description="List of benefits granted by the product."),
 ]
+
+
+class ProductNameCheckRequest(Schema):
+    name: str = Field(min_length=1, max_length=64)
+
+
+class ProductNameCheck(Schema):
+    category: str | None = Field(
+        description="Acceptable Use Policy category the name suggests, if any."
+    )
+    phrase: str | None = Field(
+        description="The exact phrase that matched, when a word-list rule flagged it."
+    )

@@ -12,12 +12,15 @@ from sqlalchemy import (
     Select,
     String,
     and_,
+    case,
     cast,
+    delete,
     func,
     literal,
     or_,
     select,
     tuple_,
+    union_all,
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
@@ -34,6 +37,7 @@ from polar.models import (
     Event,
     Meter,
     MeterEvent,
+    StagedEvent,
 )
 from polar.models.event import EventSource
 from polar.models.product_price import ProductPrice
@@ -99,6 +103,15 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             if event.get("pending_parent_external_id") is None:
                 event["root_id"] = event["id"]
 
+        # Ensure all event dicts have the same keys; add left out keys with None values.
+        # We do this so SQLAlchemy bulk inserts these rows instead of doing separate
+        # inserts for each event. Requires `render_nulls=True`, otherwise the None keys
+        # are dropped again.
+        keys = set().union(*events)
+        for event in events:
+            for key in keys:
+                event.setdefault(key, None)
+
         statement = (
             insert(Event)
             .on_conflict_do_nothing(index_elements=["organization_id", "external_id"])
@@ -112,6 +125,116 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         duplicates_count = len(events) - len(inserted_ids)
 
         return inserted_ids, duplicates_count
+
+    async def insert_staged_batch(
+        self, events: Sequence[dict[str, Any]]
+    ) -> tuple[Sequence[UUID], int]:
+        """Insert user events into `staged_events`, skipping those whose external ID
+        is already in `staged_events` or `events`."""
+        if not events:
+            return [], 0
+
+        for event in events:
+            if event.get("id") is None:
+                event["id"] = generate_uuid()
+        keys = set().union(*events)
+        for event in events:
+            for key in keys:
+                event.setdefault(key, None)
+
+        statement = (
+            insert(StagedEvent)
+            .on_conflict_do_nothing(
+                index_elements=["organization_id", "external_id"],
+                index_where=StagedEvent.external_id.is_not(None),
+            )
+            .returning(
+                StagedEvent.id, StagedEvent.organization_id, StagedEvent.external_id
+            )
+            .execution_options(render_nulls=True)
+        )
+        result = await self.session.execute(statement, events)
+        inserted = result.all()
+
+        # Drop the inserted rows whose external ID is already in `events`: the
+        # unique index only catches duplicates still in `staged_events`. This is
+        # its own statement after the insert because an insert racing the mover
+        # on the same external ID waits for the mover to commit, and only a
+        # snapshot taken after that wait sees the moved row in `events`.
+        external_ids_by_organization: dict[UUID, list[str]] = {}
+        for _, organization_id, external_id in inserted:
+            if external_id is not None:
+                external_ids_by_organization.setdefault(organization_id, []).append(
+                    external_id
+                )
+        duplicate_ids: list[UUID] = []
+        for organization_id, external_ids in external_ids_by_organization.items():
+            moved = await self.session.execute(
+                delete(StagedEvent)
+                .where(
+                    StagedEvent.organization_id == organization_id,
+                    StagedEvent.external_id.in_(
+                        select(Event.external_id).where(
+                            Event.organization_id == organization_id,
+                            Event.external_id.in_(external_ids),
+                        )
+                    ),
+                )
+                .returning(StagedEvent.id)
+            )
+            duplicate_ids.extend(moved.scalars())
+
+        duplicate_id_set = set(duplicate_ids)
+        inserted_ids = [id for id, _, _ in inserted if id not in duplicate_id_set]
+        return inserted_ids, len(events) - len(inserted_ids)
+
+    async def get_staged_events_backlog(self) -> tuple[int, datetime | None]:
+        """Return the number of rows in `staged_events` and the oldest `ingested_at`."""
+        result = await self.session.execute(
+            select(func.count(), func.min(StagedEvent.ingested_at))
+        )
+        count, oldest_ingested_at = result.one()
+        return count, oldest_ingested_at
+
+    async def move_staged_events(self, limit: int) -> tuple[int, Sequence[UUID]]:
+        """Move up to `limit` rows from `staged_events` to `events`, returning how
+        many were moved and the IDs inserted into `events`."""
+        claimed = (
+            select(StagedEvent.id)
+            .limit(limit)
+            .with_for_update(skip_locked=True)
+            .scalar_subquery()
+        )
+        moved = (
+            delete(StagedEvent)
+            .where(StagedEvent.id.in_(claimed))
+            .returning(*StagedEvent.__table__.columns)
+            .cte("moved")
+        )
+        columns = [column.name for column in StagedEvent.__table__.columns]
+        inserted = (
+            insert(Event)
+            .from_select(
+                [*columns, "root_id"],
+                select(
+                    *(moved.c[name] for name in columns),
+                    case(
+                        (moved.c.pending_parent_external_id.is_(None), moved.c.id),
+                        else_=None,
+                    ),
+                ),
+            )
+            .on_conflict_do_nothing()
+            .returning(Event.id)
+            .cte("inserted")
+        )
+        statement = select(
+            select(func.count()).select_from(moved).scalar_subquery(),
+            select(func.array_agg(inserted.c.id)).scalar_subquery(),
+        )
+        result = await self.session.execute(statement)
+        moved_count, inserted_ids = result.one()
+        return moved_count, inserted_ids or []
 
     async def resolve_pending_parents(
         self, inserted_ids: Sequence[UUID]
@@ -211,6 +334,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.pending_parent_external_id == cast(parent_1d.c.id, String),
                 parent_1d.c.id.in_(inserted_ids),
                 Event.id != parent_1d.c.id,
+                # Implied by the cast match above; only makes the planner use
+                # ix_events_org_pending_parent instead of scanning all pending rows
+                Event.pending_parent_external_id.in_(
+                    [str(event_id) for event_id in inserted_ids]
+                ),
             )
         )
 
@@ -239,6 +367,30 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         return newly_rooted
 
+    async def get_stored_external_ids(
+        self,
+        organization_id: UUID,
+        external_ids: Sequence[str],
+        *,
+        timestamp_from: datetime,
+        timestamp_to: datetime,
+    ) -> set[str]:
+        """The given external ids of events with a timestamp in the range, stored
+        or still staged."""
+        statement = union_all(
+            *(
+                select(model.external_id).where(
+                    model.organization_id == organization_id,
+                    model.external_id.in_(external_ids),
+                    model.timestamp >= timestamp_from,
+                    model.timestamp < timestamp_to,
+                )
+                for model in (Event, StagedEvent)
+            )
+        )
+        result = await self.session.execute(statement)
+        return {external_id for (external_id,) in result}
+
     async def get_latest_polar_self_ingestion_timestamp(
         self, organization_id: UUID
     ) -> datetime | None:
@@ -259,6 +411,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         statement = (
             self.get_base_statement()
             .where(
+                Event.organization_id == customer.organization_id,
                 Event.customer_id == customer.id,
                 Event.source == EventSource.system,
                 Event.name == SystemEvent.meter_reset,
@@ -270,6 +423,23 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if cutoff is not None:
             statement = statement.where(Event.timestamp < cutoff)
         return await self.get_one_or_none(statement)
+
+    async def has_meter_reset_ingested_after(
+        self, customer: Customer, meter_id: UUID, ingested_after: datetime
+    ) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                Event.customer_id == customer.id,
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.meter_reset,
+                Event.user_metadata["meter_id"].as_string() == str(meter_id),
+                Event.ingested_at > ingested_after,
+            )
+            .exists()
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
 
     async def get_first_user_event_timestamp(
         self, customer: Customer
@@ -529,6 +699,35 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.is_meter_credit,
             Event.customer_id == customer_id,
             Event.user_metadata == metadata,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_reversible_meter_credit(
+        self, id: UUID, org_ids: set[AccessibleOrganizationID]
+    ) -> Event | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Event.id == id,
+                Event.organization_id.in_(org_ids),
+                Event.is_meter_credit,
+                Event.user_metadata["reason"].as_string() == "manual",
+                Event.user_metadata["units"].as_integer() > 0,
+            )
+            .options(joinedload(Event.customer).joinedload(Customer.organization))
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_meter_credit_reversal(self, credit: Event) -> Event | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Event.organization_id == credit.organization_id,
+                Event.customer_id == credit.customer_id,
+                Event.is_meter_credit,
+                Event.parent_id == credit.id,
+            )
+            .limit(1)
         )
         return await self.get_one_or_none(statement)
 

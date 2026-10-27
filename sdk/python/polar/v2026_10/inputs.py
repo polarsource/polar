@@ -284,10 +284,8 @@ class BenefitFeatureFlagCreateProperties(typing.TypedDict):
     """Properties for creating a benefit of type `feature_flag`."""
 
 
-
 class BenefitFeatureFlagProperties(typing.TypedDict):
     """Properties for a benefit of type `feature_flag`."""
-
 
 
 class BenefitFeatureFlagUpdate(typing.TypedDict):
@@ -2423,9 +2421,7 @@ class OAuth2ClientConfiguration(typing.TypedDict):
     token_endpoint_auth_method: typing.NotRequired[TokenEndpointAuthMethod]
 
     grant_types: typing.NotRequired[
-        list[
-            typing.Literal["authorization_code", "refresh_token"]
-        ]
+        list[typing.Literal["authorization_code", "refresh_token"]]
     ]
 
     response_types: typing.NotRequired[list[typing.Literal["code"]]]
@@ -2451,9 +2447,7 @@ class OAuth2ClientConfigurationUpdate(typing.TypedDict):
     token_endpoint_auth_method: typing.NotRequired[TokenEndpointAuthMethod]
 
     grant_types: typing.NotRequired[
-        list[
-            typing.Literal["authorization_code", "refresh_token"]
-        ]
+        list[typing.Literal["authorization_code", "refresh_token"]]
     ]
 
     response_types: typing.NotRequired[list[typing.Literal["code"]]]
@@ -3506,9 +3500,7 @@ You can store up to **50 key-value pairs**."""
     medias: typing.NotRequired[list[str] | None]
     """List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."""
 
-    attached_custom_fields: typing.NotRequired[
-        list[AttachedCustomFieldCreate] | None
-    ]
+    attached_custom_fields: typing.NotRequired[list[AttachedCustomFieldCreate] | None]
 
 
 class PropertyAggregation(typing.TypedDict):
@@ -3877,9 +3869,7 @@ class WebhookEndpointUpdate(typing.TypedDict):
     name: typing.NotRequired[str | None]
     """An optional name for the webhook endpoint to help organize and identify it."""
 
-    api_version: typing.NotRequired[
-        typing.Literal["2026-04", "2026-10"] | None
-    ]
+    api_version: typing.NotRequired[typing.Literal["2026-04", "2026-10"] | None]
     """The API version that'll be used in event payloads."""
 
     format: typing.NotRequired[WebhookFormat | None]
@@ -3956,10 +3946,7 @@ FileCreate: typing.TypeAlias = (
 )
 
 MetadataQuery: typing.TypeAlias = (
-    dict[
-        str, str | int | bool | list[str] | list[int] | list[bool]
-    ]
-    | None
+    dict[str, str | int | bool | list[str] | list[int] | list[bool]] | None
 )
 
 ProductCreate: typing.TypeAlias = ProductCreateRecurring | ProductCreateOneTime

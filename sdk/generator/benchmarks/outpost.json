@@ -1,0 +1,59 @@
+{
+  "cold_until": 1790856000000000,
+  "bucket_counts": [1, 12, 288],
+  "epoch": "0123456789abcdef0123456789abcdef",
+  "channel": "outpost:v1:bench:updates",
+  "reducer": {
+    "id": "tokens",
+    "meter_ids": ["meter"],
+    "filter": { "conjunction": "and", "clauses": [] },
+    "aggregation": { "func": "sum", "property": "tokens" }
+  },
+  "snapshot": {
+    "customer_id": null,
+    "cold_until": 1790856000000000,
+    "version": 1790856000000001,
+    "count": 1000,
+    "sum": 123456,
+    "min": 1,
+    "max": 999,
+    "credited_units": 1000000
+  },
+  "events": {
+    "seed": 4242,
+    "count": 1000,
+    "customers": 10,
+    "names": ["llm.call", "tool.call", "agent.run", "embedding"],
+    "models": ["claude-sonnet-5", "gpt-5", "gemini-3-pro"]
+  },
+  "ingest": {
+    "reducers": [
+      {
+        "id": "tokens",
+        "meter_ids": ["tokens"],
+        "filter": { "conjunction": "and", "clauses": [] },
+        "aggregation": { "func": "sum", "property": "tokens" }
+      },
+      {
+        "id": "calls",
+        "meter_ids": ["calls"],
+        "filter": {
+          "conjunction": "and",
+          "clauses": [{ "property": "name", "operator": "eq", "value": "llm.call" }]
+        },
+        "aggregation": { "func": "count" }
+      },
+      {
+        "id": "cost",
+        "meter_ids": ["cost"],
+        "filter": {
+          "conjunction": "and",
+          "clauses": [{ "property": "name", "operator": "eq", "value": "llm.call" }]
+        },
+        "aggregation": { "func": "sum", "property": "cost" }
+      }
+    ],
+    "embedding": { "name": "embedding", "metadata": { "tokens": 7 } },
+    "llm_call": { "name": "llm.call", "metadata": { "tokens": 7, "cost": 3 } }
+  }
+}

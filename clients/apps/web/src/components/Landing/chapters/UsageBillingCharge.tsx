@@ -1,48 +1,42 @@
+'use client'
+
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { CreditCard } from 'lucide-react'
-import { dollars, PLAN_PRICE } from './useUsageConversation'
-
-const TAX_RATE = 0.2
-
-const LineItem = ({ label, amount }: { label: string; amount: number }) => (
-  <Box justifyContent="between" columnGap="l">
-    <Text variant="caption" color="muted">
-      {label}
-    </Text>
-    <Text variant="caption" color="muted" tabularNums>
-      {dollars(amount, 2)}
-    </Text>
-  </Box>
-)
+import { CreditCard } from '@polar-sh/orbit/icons'
+import { useTweened } from './useTweened'
+import { dollars, PLAN_PRICE } from './useUsageStream'
 
 export const UsageBillingCharge = ({
   usageCharge,
 }: {
   usageCharge: number
 }) => {
-  const subtotal = PLAN_PRICE + usageCharge
-
+  const total = useTweened(PLAN_PRICE + usageCharge)
   return (
     <Box
-      width="100%"
       flexDirection="column"
-      rowGap="m"
-      padding="l"
-      backgroundColor="background-card"
+      rowGap="s"
+      marginHorizontal="xl"
+      paddingTop="l"
+      paddingBottom="l"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
     >
-      <Box justifyContent="between" alignItems="center" columnGap="l">
+      <Box
+        justifyContent="between"
+        alignItems="center"
+        columnGap="l"
+        paddingBottom="s"
+      >
         <Box alignItems="center" columnGap="s">
           <CreditCard size={14} />
-          <Text variant="caption">Visa •••• 4242</Text>
+          <Text variant="default">Visa •••• 4242</Text>
         </Box>
-        <Text variant="caption" color="muted">
+        <Text variant="default" color="muted">
           Charges Nov 1
         </Text>
       </Box>
-      <LineItem label="Lumen Pro" amount={PLAN_PRICE} />
-      <LineItem label="AI tokens" amount={usageCharge} />
-      <LineItem label="VAT 20%" amount={subtotal * TAX_RATE} />
       <Box
         justifyContent="between"
         alignItems="baseline"
@@ -53,7 +47,7 @@ export const UsageBillingCharge = ({
       >
         <Text variant="body">Card charge</Text>
         <Text variant="heading-xxs" tabularNums>
-          {dollars(subtotal * (1 + TAX_RATE), 2)}
+          {dollars(total, 2)}
         </Text>
       </Box>
     </Box>

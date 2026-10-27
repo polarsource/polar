@@ -1,5 +1,6 @@
 'use client'
 
+import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModal'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker, {
@@ -16,7 +17,7 @@ import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { usePushRouteWithoutCache } from '@/utils/router'
-import MoreVert from '@mui/icons-material/MoreVert'
+import { MoreVert } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -59,6 +60,11 @@ export const CustomerHeader = ({
     show: showDeleteCustomerModal,
     hide: hideDeleteCustomerModal,
     isShown: isDeleteCustomerModalShown,
+  } = useModal()
+  const {
+    show: showAddCreditsModal,
+    hide: hideAddCreditsModal,
+    isShown: isAddCreditsModalShown,
   } = useModal()
   const safeCopy = useSafeCopy(toast)
   const canManageCustomers = useHasPermission(
@@ -192,6 +198,11 @@ export const CustomerHeader = ({
           <DropdownMenuItem onClick={showEditCustomerModal}>
             Edit Customer
           </DropdownMenuItem>
+          {canManageCustomers && (
+            <DropdownMenuItem onClick={showAddCreditsModal}>
+              Add Credits
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem destructive onClick={showDeleteCustomerModal}>
             Delete Customer
@@ -205,6 +216,17 @@ export const CustomerHeader = ({
           <EditCustomerModal
             customer={customer}
             onClose={hideEditCustomerModal}
+          />
+        }
+      />
+      <InlineModal
+        isShown={isAddCreditsModalShown}
+        hide={hideAddCreditsModal}
+        modalContent={
+          <AddCreditsModal
+            organization={organization}
+            customer={customer}
+            onClose={hideAddCreditsModal}
           />
         }
       />

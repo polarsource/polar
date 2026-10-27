@@ -2,19 +2,25 @@ from polar.kit.db.models import Model, TimestampedModel
 
 from .account import Account
 from .account_credit import AccountCredit
+from .agent import Agent
 from .authentication_session import AuthenticationSession
 from .backoffice_user import BackofficeUser
 from .backup_codes_enrollment import BackupCodesEnrollment
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
 from .billing_entry import BillingEntry
+from .billing_interval import BillingInterval
 from .campaign import Campaign
+from .catalog import Catalog
+from .catalog_product import CatalogProduct
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
 from .checkout_product import CheckoutProduct
 from .compass_thread import CompassThread
 from .compass_thread_message import CompassThreadMessage
+from .credit_note import CreditNote
+from .credit_note_item import CreditNoteItem
 from .custom_field import CustomField
 from .customer import Customer
 from .customer_email_verification import CustomerEmailVerification
@@ -94,8 +100,6 @@ from .product_benefit import ProductBenefit
 from .product_custom_field import ProductCustomField
 from .product_media import ProductMedia
 from .product_price import (
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -108,7 +112,9 @@ from .reducer import Reducer
 from .reducer_bucket import ReducerBucket
 from .refund import Refund
 from .slack_app import SlackApp
+from .staged_event import StagedEvent
 from .subscription import Subscription
+from .subscription_bulk_update import SubscriptionBulkUpdate
 from .subscription_meter import SubscriptionMeter
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
@@ -138,19 +144,25 @@ from .webhook_event import WebhookEvent
 __all__ = [
     "Account",
     "AccountCredit",
+    "Agent",
     "AuthenticationSession",
     "BackofficeUser",
     "BackupCodesEnrollment",
     "Benefit",
     "BenefitGrant",
     "BillingEntry",
+    "BillingInterval",
     "Campaign",
+    "Catalog",
+    "CatalogProduct",
     "Checkout",
     "CheckoutLink",
     "CheckoutLinkProduct",
     "CheckoutProduct",
     "CompassThread",
     "CompassThreadMessage",
+    "CreditNote",
+    "CreditNoteItem",
     "CustomField",
     "Customer",
     "CustomerEmailVerification",
@@ -177,8 +189,6 @@ __all__ = [
     "FeedbackType",
     "File",
     "IssueReward",
-    "LegacyRecurringProductPriceCustom",
-    "LegacyRecurringProductPriceFixed",
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",
@@ -246,7 +256,9 @@ __all__ = [
     "ReviewAppealSupportCase",
     "SeatStatus",
     "SlackApp",
+    "StagedEvent",
     "Subscription",
+    "SubscriptionBulkUpdate",
     "SubscriptionMeter",
     "SubscriptionProductPrice",
     "SubscriptionUpdate",

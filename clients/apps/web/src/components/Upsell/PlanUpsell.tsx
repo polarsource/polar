@@ -21,8 +21,7 @@ import {
   isEarlyMember,
   pickBestPlanSavings,
 } from '@/utils/planSavings'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import { CheckOutlined, CloseOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'

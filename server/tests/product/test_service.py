@@ -1511,40 +1511,8 @@ class TestCreateUnitBasedPrice:
 
 @pytest.mark.anyio
 class TestCreateMeterCycling:
-    """The separate meter cycle is gated behind ``meter_cycling_enabled``."""
-
-    @pytest.fixture
-    async def meter_cycling_enabled(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        organization.feature_settings = {"meter_cycling_enabled": True}
-        session.add(organization)
-        await session.flush()
-
     @pytest.mark.auth
-    async def test_meter_interval_rejected_without_flag(
-        self,
-        auth_subject: AuthSubject[User],
-        session: AsyncSession,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.create(
-                session,
-                ProductCreateRecurring(
-                    name="Product",
-                    recurring_interval=SubscriptionRecurringInterval.year,
-                    recurring_interval_count=1,
-                    meter_interval=SubscriptionRecurringInterval.month,
-                    prices=[_fixed_price_create()],
-                    organization_id=organization.id,
-                ),
-                auth_subject,
-            )
-
-    @pytest.mark.auth
-    async def test_no_meter_interval_allowed_without_flag(
+    async def test_without_meter_interval(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
@@ -1564,13 +1532,12 @@ class TestCreateMeterCycling:
         assert product.meter_interval is None
 
     @pytest.mark.auth
-    async def test_meter_interval_allowed_with_flag(
+    async def test_with_meter_interval(
         self,
         auth_subject: AuthSubject[User],
         session: AsyncSession,
         organization: Organization,
         user_organization: UserOrganization,
-        meter_cycling_enabled: None,
     ) -> None:
         product = await product_service.create(
             session,
@@ -2251,123 +2218,108 @@ class TestUpdate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid_change_recurring_interval_count_on_legacy_product(
+    async def test_invalid_explicit_null_recurring_interval_on_non_legacy_product(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
+        product: Product,
         user_organization: UserOrganization,
     ) -> None:
-        update_schema = ProductUpdate(recurring_interval_count=3)
+        assert product.recurring_interval == SubscriptionRecurringInterval.month
+        update_schema = ProductUpdate(recurring_interval=None)
 
-        updated_product = await product_service.update(
-            session,
-            product_recurring_monthly_and_yearly,
-            update_schema,
-            auth_subject,
-        )
-
-        assert updated_product.recurring_interval_count == 3
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_invalid_legacy_product_price_with_new_price(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        update_schema = ProductUpdate(
-            prices=[
-                ExistingProductPrice(
-                    id=product_recurring_monthly_and_yearly.prices[0].id
-                ),
-                ProductPriceFixedCreate(
-                    amount_type=ProductPriceAmountType.fixed,
-                    price_amount=12000,
-                    price_currency=PresentmentCurrency.usd,
-                ),
-            ]
-        )
-
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await product_service.update(
                 session,
-                product_recurring_monthly_and_yearly,
+                product,
                 update_schema,
                 auth_subject,
             )
 
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_valid_legacy_product_price_kept(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        update_schema = ProductUpdate(
-            prices=[
-                ExistingProductPrice(
-                    id=product_recurring_monthly_and_yearly.prices[0].id
-                ),
-                ExistingProductPrice(
-                    id=product_recurring_monthly_and_yearly.prices[1].id
-                ),
-            ]
-        )
-        updated_product = await product_service.update(
-            session,
-            product_recurring_monthly_and_yearly,
-            update_schema,
-            auth_subject,
-        )
-
-        assert len(updated_product.prices) == 2
-        assert (
-            updated_product.prices[0].id
-            == product_recurring_monthly_and_yearly.prices[0].id
-        )
-        assert (
-            updated_product.prices[1].id
-            == product_recurring_monthly_and_yearly.prices[1].id
-        )
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "recurring_interval")
+        assert errors[0]["msg"] == "Recurring interval cannot be changed."
+        assert product.recurring_interval == SubscriptionRecurringInterval.month
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid_legacy_product_price_replaced(
+    async def test_invalid_explicit_null_recurring_interval_count_on_non_legacy_product(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
+        product: Product,
         user_organization: UserOrganization,
     ) -> None:
-        update_schema = ProductUpdate(
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[
-                ProductPriceFixedCreate(
-                    amount_type=ProductPriceAmountType.fixed,
-                    price_amount=12000,
-                    price_currency=PresentmentCurrency.usd,
-                ),
-            ],
-        )
+        assert product.recurring_interval_count == 1
+        update_schema = ProductUpdate(recurring_interval_count=None)
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await product_service.update(
+                session,
+                product,
+                update_schema,
+                auth_subject,
+            )
+
+        errors = exc_info.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "recurring_interval_count")
+        assert errors[0]["msg"] == "Recurring interval cannot be changed."
+        assert product.recurring_interval_count == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_omitted_recurring_interval_fields_on_non_legacy_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        update_schema = ProductUpdate(name="Product Update")
         updated_product = await product_service.update(
             session,
-            product_recurring_monthly_and_yearly,
+            product,
             update_schema,
             auth_subject,
         )
 
-        assert len(updated_product.prices) == 1
+        assert updated_product.name == "Product Update"
+        assert updated_product.recurring_interval == SubscriptionRecurringInterval.month
+        assert updated_product.recurring_interval_count == 1
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid_explicit_null_recurring_interval_on_one_time_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        product_one_time: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        assert product_one_time.recurring_interval is None
+        assert product_one_time.recurring_interval_count is None
+        update_schema = ProductUpdate(
+            recurring_interval=None,
+            recurring_interval_count=None,
+        )
+
+        updated_product = await product_service.update(
+            session,
+            product_one_time,
+            update_schema,
+            auth_subject,
+        )
+
+        assert updated_product.recurring_interval is None
+        assert updated_product.recurring_interval_count is None
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

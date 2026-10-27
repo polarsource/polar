@@ -2,7 +2,7 @@
 
 import { schemas } from '@polar-sh/client'
 import { Box, type BoxProps } from '@polar-sh/orbit/Box'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useTheme } from 'next-themes'
 import { ChecklistRow } from './ChecklistRow'
 
@@ -54,7 +54,7 @@ export const ReviewChecklist = ({
             steps.map((step, index) => {
               const exitDelay = (steps.length - 1 - index) * rowStagger
               return (
-                <motion.div
+                <m.div
                   key={step.key}
                   style={{ transformOrigin: 'top center' }}
                   exit={{
@@ -71,7 +71,7 @@ export const ReviewChecklist = ({
                   <Box display="block" {...cardStyles}>
                     <ChecklistRow isLoading={false} step={step} />
                   </Box>
-                </motion.div>
+                </m.div>
               )
             })}
         </AnimatePresence>

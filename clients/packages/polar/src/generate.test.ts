@@ -265,12 +265,6 @@ const cases: [string, PolarConfig][] = [
             .grants(['custom_servers'])
             .metadata({ ['__proto__']: 'pro', constructor: 'x' }),
         }),
-        discounts: ({ discount }) => ({
-          launch: discount('Launch')
-            .metadata({ campaign: 'spring', stackable: false })
-            .percent(20)
-            .once(),
-        }),
       })
       .toJSON(),
   ],
@@ -290,34 +284,22 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
-    'discounts of every kind',
+    'deprecated meters, benefits and products',
     api
       .defineConfig({
-        meters: () => ({}),
-        products: ({ product, fixed }) => ({
-          pro: product('Pro')
-            .prices(fixed().amount(api.usd(20)))
-            .recurring('monthly'),
-          team: product('Team')
-            .prices(fixed().amount(api.usd(50)))
-            .recurring('yearly'),
+        meters: ({ meter }) => ({
+          apples: meter('Apples').unit('token').deprecated().count(),
         }),
-        discounts: ({ discount }) => ({
-          launch: discount('Launch 20%')
-            .percent(20)
-            .repeating(3, 'months')
-            .code('LAUNCH20')
-            .products('pro', 'team')
-            .maxRedemptions(500)
-            .ends('2026-12-31'),
-          welcome: discount('Welcome $10')
-            .amount(api.usd(10), api.eur(9.5), api.currency('nok')(100))
-            .once()
-            .perCustomer(1)
-            .starts('2026-01-01T09:30:00.500Z'),
-          partner: discount('Partner').percent(12.34).forever().code('PARTNER'),
-          loyal: discount('Loyal').percent(5).repeating(2, 'years').products(),
-          annual: discount('Annual').percent(100).repeating(1, 'year'),
+        benefits: ({ flag, credits }) => ({
+          beta: flag('Beta').deprecated(),
+          apples: credits('Apples').meter('apples').units(10).deprecated(),
+        }),
+        products: ({ product, meter }) => ({
+          legacy: product('Legacy')
+            .prices(meter('apples').flat().amount(api.usd(0.01)))
+            .recurring('monthly')
+            .grants(['beta', 'apples'])
+            .deprecated(),
         }),
       })
       .toJSON(),
@@ -435,6 +417,62 @@ test('renders free tiers with free() and included()', async () => {
   )
   expect(source).toContain('tier().included(3),')
   expect(source).toContain('tier().max(20).free(),')
+})
+
+test('renders the tax behavior of a price', async () => {
+  const source = await Effect.runPromise(
+    generateConfig(
+      api
+        .defineConfig({
+          meters: () => ({}),
+          products: ({ product, fixed, units, tier }) => ({
+            pro: product('Pro')
+              .prices(
+                fixed().amount(api.usd(10), api.eur(9)).tax('inclusive'),
+                units()
+                  .graduated(tier().amount(api.usd(1), api.eur(1)))
+                  .tax('exclusive'),
+              )
+              .recurring('monthly'),
+          }),
+        })
+        .toJSON(),
+    ),
+  )
+  expect(source).toContain(
+    'fixed().amount(usd(10), eur(9))\n          .tax("inclusive"),',
+  )
+  expect(source).toContain('.tax("exclusive"),')
+})
+
+test('keeps prices with different tax behaviors in separate builder calls', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      products: [
+        {
+          external_id: 'pro',
+          name: 'Pro',
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          prices: [
+            {
+              amount_type: 'fixed',
+              price_currency: 'usd',
+              price_amount: 1000,
+              tax_behavior: 'inclusive',
+            },
+            { amount_type: 'fixed', price_currency: 'eur', price_amount: 900 },
+          ],
+          benefits: [],
+        },
+      ],
+    }),
+  )
+  expect(source).toContain(
+    'fixed().amount(usd(10))\n          .tax("inclusive"),',
+  )
+  expect(source).toContain('fixed().amount(eur(9)),')
 })
 
 test('renders free volume tiers without included()', async () => {
@@ -562,46 +600,4 @@ test('leaves empty metadata out of the generated code', async () => {
     generateConfig({ meters: [{ ...meter, metadata: {} }] }),
   )
   expect(source).not.toContain('.metadata(')
-})
-
-test('renders discounts with their builder calls', async () => {
-  const source = await Effect.runPromise(
-    generateConfig({
-      meters: [],
-      discounts: [
-        {
-          external_id: 'launch',
-          name: 'Launch',
-          type: 'percentage',
-          basis_points: 2550,
-          duration: 'repeating',
-          duration_in_months: 24,
-          code: 'LAUNCH',
-        },
-        {
-          external_id: 'welcome',
-          name: 'Welcome',
-          type: 'fixed',
-          amounts: { usd: 1000, eur: 950 },
-          duration: 'once',
-        },
-      ],
-    }),
-  )
-  expect(source).toContain(
-    [
-      '  discounts: ({ discount }) => ({',
-      '    "launch": discount("Launch")',
-      '      .percent(25.5)',
-      '      .repeating(2, "years")',
-      '      .code("LAUNCH"),',
-      '    "welcome": discount("Welcome")',
-      '      .amount(usd(10), eur(9.5))',
-      '      .once(),',
-      '  }),',
-    ].join('\n'),
-  )
-  expect(source).toContain(
-    "import { defineConfig, usd, eur } from '@polar-sh/polar'",
-  )
 })

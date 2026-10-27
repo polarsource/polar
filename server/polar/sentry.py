@@ -22,22 +22,24 @@ from polar.config import settings
 from polar.observability.http_telemetry import url_without_request_values
 
 if TYPE_CHECKING:
-    from sentry_sdk._types import Event, Hint
+    from sentry_sdk._types import Breadcrumb, BreadcrumbHint, Event, Hint
 
 POSTHOG_ID_TAG = "posthog_distinct_id"
-# Personal data, secrets, and merchant-supplied values on request bodies.
-# Keys are matched as they appear on the wire, so aliased fields are listed
-# under their alias. IP addresses and user agents are kept.
-_REQUEST_PII_KEYS = frozenset(
+# Personal data, secrets, and merchant-supplied values on request bodies and
+# log breadcrumbs. Keys are matched as they appear on the wire, so aliased
+# fields are listed under their alias. IP addresses and user agents are kept.
+_PII_KEYS = frozenset(
     {
         "access_token",
         "account_email",
         "account_username",
         "api_key",
+        "assertion",
         "billing_address",
         "billing_manager_email",
         "billing_name",
         "cf-turnstile-response",
+        "claim_token",
         "client_secret",
         "code",
         "customer_billing_address",
@@ -59,6 +61,7 @@ _REQUEST_PII_KEYS = frozenset(
         "invited_email",
         "inviter_email",
         "last_name",
+        "link_token",
         "metadata",
         "name",
         "new_email",
@@ -77,6 +80,10 @@ _REQUEST_PII_KEYS = frozenset(
         "verified_last_name",
     }
 )
+# Already carried by the breadcrumb itself, or holding a traceback.
+_LOG_EVENT_META_KEYS = frozenset(
+    {"event", "level", "logger", "timestamp", "exc_info", "stack"}
+)
 
 
 class DramatiqIntegration(_DramatiqIntegration):
@@ -94,18 +101,35 @@ class DramatiqIntegration(_DramatiqIntegration):
         broker.add_middleware(SentryMiddleware(), before=first_middleware)
 
 
-def _scrub_request_pii(value: object) -> None:
+def _scrub_pii(value: object) -> None:
     if isinstance(value, dict):
         mapping = cast(dict[object, object], value)
         for key in [
-            key for key in mapping if isinstance(key, str) and key in _REQUEST_PII_KEYS
+            key for key in mapping if isinstance(key, str) and key in _PII_KEYS
         ]:
             mapping.pop(key, None)
         for item in mapping.values():
-            _scrub_request_pii(item)
+            _scrub_pii(item)
     elif isinstance(value, list):
         for item in cast(list[object], value):
-            _scrub_request_pii(item)
+            _scrub_pii(item)
+
+
+def before_breadcrumb(crumb: Breadcrumb, hint: BreadcrumbHint) -> Breadcrumb:
+    # structlog hands the event dict to stdlib logging as the record message,
+    # which the SDK stringifies whole into the breadcrumb message, out of reach
+    # of scrubbing. Runs on every log line, so it only moves fields into
+    # `data`; `before_send` scrubs them when an event is actually sent.
+    record = hint.get("log_record")
+    if record is not None and isinstance(record.msg, dict):
+        event_dict = cast(dict[str, object], record.msg)
+        crumb["message"] = event_dict.get("event")
+        crumb["data"] = {
+            key: value
+            for key, value in event_dict.items()
+            if key not in _LOG_EVENT_META_KEYS
+        }
+    return crumb
 
 
 def before_send(event: Event, hint: Hint) -> Event | None:
@@ -119,7 +143,11 @@ def before_send(event: Event, hint: Hint) -> Event | None:
             request["url"] = url_without_request_values(url)
         request.pop("query_string", None)
         request.pop("fragment", None)
-        _scrub_request_pii(request.get("data"))
+        _scrub_pii(request.get("data"))
+    breadcrumbs = event.get("breadcrumbs")
+    if isinstance(breadcrumbs, dict):
+        for breadcrumb in breadcrumbs.get("values", []):
+            _scrub_pii(breadcrumb.get("data"))
     return event
 
 
@@ -136,6 +164,7 @@ def configure_sentry(*, aws_lambda: bool = False) -> None:
         default_integrations=False,
         auto_enabling_integrations=False,
         before_send=before_send,
+        before_breadcrumb=before_breadcrumb,
         integrations=[
             AtexitIntegration(),
             ExcepthookIntegration(),

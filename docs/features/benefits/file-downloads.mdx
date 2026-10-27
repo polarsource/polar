@@ -72,3 +72,25 @@ In case you add more files or re-enable existing ones, all current customers and
 
 
 
+## Flagged Files
+
+Polar scans every uploaded file for malware. If a scan detects a threat, the file is marked with a **Malicious file detected** badge in your dashboard and every member of your organization receives an email.
+
+<Warning>
+**Customers lose access to flagged files**
+
+A flagged file is hidden from the customer portal and can no longer be downloaded, by your customers or by you. Other files in the benefit are not affected.
+</Warning>
+
+### What you can do
+
+Most detections are false positives on legitimate software, often unsigned installers, packed executables or tools that modify other programs. Start by finding out which case you are in.
+
+1. **Check the detection.** The email names the detected threat. Copy the file's SHA-256 checksum from the contextual menu and look it up on a multi-engine scanner such as [VirusTotal](https://www.virustotal.com) to see which antivirus engines flag it.
+2. **If the file may really be infected**, rebuild it on a clean machine, upload the new version and delete the flagged file. Every upload is scanned again.
+3. **If you believe it is a false positive**, report the file to the antivirus vendors that flag it through their false positive forms. Signing your executables with a code signing certificate also makes false positives less likely. Once a vendor clears the file, upload it again.
+4. **Contact [Polar support](mailto:support@polar.sh)** with the file name and checksum. We can request a review of the scan result from our malware scanning provider.
+
+<Note>
+Uploading the exact same file again usually gets it flagged again, until the antivirus vendors have updated their detections.
+</Note>

@@ -1,6 +1,6 @@
 from typing import Any, Unpack, cast
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.models import Benefit, Customer, Member, Organization, User
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 
@@ -53,7 +53,7 @@ class BenefitCustomService(
 
     async def validate_properties(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitCustomProperties:

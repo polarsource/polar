@@ -6,7 +6,8 @@ from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.enums import TokenType
 from polar.exceptions import PolarError, PolarRequestValidationError
@@ -95,6 +96,9 @@ class CustomerSessionService(ResourceServiceReader[CustomerSession]):
                 ]
             )
 
+        await assert_resource_permission(
+            session, auth_subject, customer, OrganizationPermission.customers_manage
+        )
         return customer
 
     async def _resolve_member(

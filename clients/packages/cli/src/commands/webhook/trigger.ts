@@ -16,14 +16,14 @@ import * as ui from '@/utils/ui'
 
 const event = Argument.String('event').pipe(
   Argument.withDescription(
-    'Webhook event to send, e.g. order.created. Omit to pick from a list.',
+    'Webhook event to send, e.g. order.created. Omit to pick from a list',
   ),
   Argument.optional,
 )
 
 const override = Flag.String('override').pipe(
   Flag.withDescription(
-    'Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable.',
+    'Override a payload field, as path=value. Values are sent as text; use null, a JSON object, array or quoted string for other types. Repeatable',
   ),
   Flag.atLeast(0),
 )

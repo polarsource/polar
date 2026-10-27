@@ -11,7 +11,7 @@ from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
-from ...auth import BenefitsWrite
+from ...auth import SlackBenefitsWrite
 from .schemas import ChannelNameTemplate
 from .template import (
     InvalidTemplateError,
@@ -55,7 +55,7 @@ class ChannelNamePreviewValidationErrorResponse(Schema):
 )
 async def preview_channel_name(
     payload: ChannelNamePreviewRequest,
-    auth_subject: BenefitsWrite,
+    auth_subject: SlackBenefitsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> ChannelNamePreviewResponse:
     await get_payload_organization(session, auth_subject, payload)

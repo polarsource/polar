@@ -35,6 +35,8 @@ def create_async_engine(
         pool_pre_ping=pool_pre_ping,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
+        statement_cache_size=settings.DATABASE_STATEMENT_CACHE_SIZE,
+        prepared_statement_cache_size=settings.DATABASE_PREPARED_STATEMENT_CACHE_SIZE,
         ssl="require" if settings.POSTGRES_SSL else None,
     )
 
@@ -52,6 +54,8 @@ def create_async_read_engine(
         pool_pre_ping=pool_pre_ping,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
+        statement_cache_size=settings.DATABASE_STATEMENT_CACHE_SIZE,
+        prepared_statement_cache_size=settings.DATABASE_PREPARED_STATEMENT_CACHE_SIZE,
         ssl="require" if settings.POSTGRES_SSL else None,
     )
 

@@ -15,7 +15,7 @@ uv run task lint_types   # Type checking with mypy
 # Database migrations
 uv run alembic revision --autogenerate -m "description"  # Create migration
 uv run alembic upgrade head                              # Apply migrations
-uv run task check_migrations                             # single Alembic head + later filename
+uv run task check_migrations                             # Check that the migration is fine to apply (single Alembic head, filename later, column drops are marked)
 ```
 
 When rebasing a PR that adds a migration, rename the file so its `YYYY-MM-DD-HHMM` prefix is after the latest migration on the target branch (`uv run task db_reparent` only updates `down_revision`).
@@ -187,6 +187,11 @@ Credentials resolve in order — customer session token, user session cookie, th
 authenticator then validates the resolved subject type and its scopes. **Scopes** gate
 operations: an `Authenticator` declares `required_scopes`, and access is granted if the
 subject holds at least one of them.
+
+An AI agent that signed up on its own and isn't claimed yet is an `Agent` subject (ADR-0014),
+with one organization and only `UNCLAIMED_AGENT_SCOPES`. To open an endpoint to it, list
+`Agent` in the authenticator's `allowed_subjects`, handle `is_agent` in the service's subject
+branches, and test it with `AuthSubjectFixture(subject="agent")`.
 
 Define per-module authenticators in the module's `auth.py`:
 
@@ -390,6 +395,8 @@ Always set a proper `status_code` for errors that are normal business operations
 
 (Don't add a content-less `422: {"description": ...}` override — it clobbers FastAPI's default `HTTPValidationError` and breaks the generated client.)
 
+Only declare errors the endpoint itself raises. Don't add the global authentication and permission errors (`401 Unauthorized`, `403` from the authenticator's scope check) to `responses=`: they apply to every authenticated route, so documenting them belongs in one global OpenAPI change (tracked in ENG-14), not per endpoint. This holds even if an automated reviewer asks for them.
+
 ### Endpoints return ORM models
 Set `response_model` and return the ORM object; FastAPI serializes it via `from_attributes`. Don't hand-build the read schema — except when a field is *derived* and not on the model (then `Schema.model_validate({...})`).
 ```python
@@ -405,6 +412,9 @@ route, or `json_schema_extra=destructive_when_equals(...)` / `destructive_when_o
 field that makes it destructive. `DELETE` routes already are. This sets `destructive` in
 `x-tool-annotations`, which drives both the CLI confirmation prompt and the MCP `destructiveHint`.
 `tests/test_openapi.py` fails until every MCP or CLI write operation is classified.
+Operations that reach outside the organization, such as calling a webhook URL or emailing a customer,
+are marked with `openapi_extra=open_world()`, which drives the MCP `openWorldHint`. Combine it with
+`destructive()` as `openapi_extra={**destructive(), **open_world()}`.
 
 ## Tax ID Validation
 

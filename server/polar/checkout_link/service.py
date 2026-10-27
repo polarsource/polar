@@ -6,7 +6,7 @@ from typing import Any, cast
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -36,7 +36,6 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
 
 from .schemas import (
-    CheckoutLinkCreate,
     CheckoutLinkCreateProduct,
     CheckoutLinkCreateProductPrice,
     CheckoutLinkCreateProducts,
@@ -51,7 +50,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
@@ -109,7 +108,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> CheckoutLink | None:
         repository = CheckoutLinkRepository.from_session(session)
@@ -126,8 +125,10 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     async def create(
         self,
         session: AsyncSession,
-        checkout_link_create: CheckoutLinkCreate,
-        auth_subject: AuthSubject[User | Organization],
+        checkout_link_create: CheckoutLinkCreateProducts
+        | CheckoutLinkCreateProduct
+        | CheckoutLinkCreateProductPrice,
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> CheckoutLink:
         if isinstance(checkout_link_create, CheckoutLinkCreateProducts):
             products = await self._get_validated_products(
@@ -190,7 +191,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         session: AsyncSession,
         checkout_link: CheckoutLink,
         checkout_link_update: CheckoutLinkUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> CheckoutLink:
         await assert_resource_permission(
             session, auth_subject, checkout_link, OrganizationPermission.products_manage
@@ -284,7 +285,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         self,
         session: AsyncSession,
         checkout_link: CheckoutLink,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> CheckoutLink:
         await assert_resource_permission(
             session, auth_subject, checkout_link, OrganizationPermission.products_manage
@@ -296,7 +297,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         self,
         session: AsyncSession,
         product_ids: Sequence[uuid.UUID],
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Sequence[Product]:
         products: list[Product] = []
         errors: list[ValidationError] = []
@@ -321,6 +322,17 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                         "type": "value_error",
                         "loc": ("body", "products", index),
                         "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                )
+                continue
+
+            if not product.is_current:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "products", index),
+                        "msg": "Product is no longer sold. Use the current version.",
                         "input": product_id,
                     }
                 )
@@ -359,7 +371,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         self,
         session: AsyncSession,
         price_id: uuid.UUID,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> tuple[Product, ProductPrice]:
         product_price_repository = ProductPriceRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -399,6 +411,18 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                         "type": "value_error",
                         "loc": ("body", "product_price_id"),
                         "msg": "Product is archived.",
+                        "input": price_id,
+                    }
+                ]
+            )
+
+        if not product.is_current:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is no longer sold. Use the current version.",
                         "input": price_id,
                     }
                 ]

@@ -1,11 +1,6 @@
 'use client'
 
-import {
-  cubicBezier,
-  motion,
-  useReducedMotion,
-  type Transition,
-} from 'motion/react'
+import { cubicBezier, m, useReducedMotion, type Transition } from 'motion/react'
 import { useId } from 'react'
 import {
   LOGO_ICON_VIEWBOX,
@@ -80,20 +75,20 @@ const LogoLoader = ({
 
   if (reducedMotion) {
     return (
-      <motion.svg
+      <m.svg
         {...svgProps}
         animate={{ opacity: [1, 0.4, 1] }}
         transition={{ duration: 2, ease: 'easeInOut', repeat: Infinity }}
       >
         <path d={LOGO_MARK_PATH} fill="currentColor" />
-      </motion.svg>
+      </m.svg>
     )
   }
 
   return (
     <svg {...svgProps}>
       <mask id={`${id}-rays`}>
-        <motion.circle
+        <m.circle
           cx={cx}
           cy={cy}
           fill="white"
@@ -104,7 +99,7 @@ const LogoLoader = ({
       </mask>
       <mask id={`${id}-arc`}>
         {LOGO_MARK_ARC_STROKES.map((d) => (
-          <motion.path
+          <m.path
             key={d}
             d={d}
             stroke="white"

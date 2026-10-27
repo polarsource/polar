@@ -145,6 +145,30 @@ READ_ONLY_SCOPES: set[Scope] = {
     Scope.organization_access_tokens_read,
 }
 
+# What an unclaimed agent's tokens carry: the resources it may set up before the
+# claim (ADR-0014). Declarative config is covered by its sections' scopes, minus
+# webhooks.
+UNCLAIMED_AGENT_SCOPES: set[Scope] = {
+    Scope.organizations_read,
+    Scope.organizations_write,
+    Scope.products_read,
+    Scope.products_write,
+    Scope.benefits_read,
+    Scope.benefits_write,
+    Scope.discounts_read,
+    Scope.discounts_write,
+    Scope.files_read,
+    Scope.files_write,
+    Scope.checkouts_read,
+    Scope.checkouts_write,
+    Scope.checkout_links_read,
+    Scope.checkout_links_write,
+    Scope.events_read,
+    Scope.events_write,
+    Scope.meters_read,
+    Scope.meters_write,
+}
+
 SCOPES_SUPPORTED = [
     s.value
     for s in Scope
@@ -154,6 +178,11 @@ SCOPES_SUPPORTED = [
         Scope.organization_access_tokens_write,
     }
 ]
+
+# What a claimed agent's tokens carry: it acts for the user who claimed it
+# (ADR-0014), with everything an OAuth app can be granted, like our MCP client.
+CLAIMED_AGENT_SCOPES: set[Scope] = {Scope(scope) for scope in SCOPES_SUPPORTED}
+
 SCOPES_SUPPORTED_DISPLAY_NAMES: dict[Scope, str] = {
     Scope.openid: "OpenID",
     Scope.profile: "Read your profile",

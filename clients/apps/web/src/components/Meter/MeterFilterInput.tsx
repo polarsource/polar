@@ -16,7 +16,11 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { PlusIcon, TrashIcon, XIcon } from 'lucide-react'
+import {
+  Plus as PlusIcon,
+  Trash as TrashIcon,
+  X as XIcon,
+} from '@polar-sh/orbit/icons'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import MeterFilterInputProperty from './MeterFilterInputProperty'
@@ -95,7 +99,7 @@ const MeterFilterInput = ({
         const property = watch(`${prefix}.clauses.${index}.property`)
 
         return (
-          <div key={index}>
+          <div key={clause.id}>
             {isFilterClause(
               clause as unknown as schemas['Filter'] | schemas['FilterClause'],
             ) ? (

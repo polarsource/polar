@@ -46,7 +46,6 @@ class PaymentRepository(
                 .where(
                     Transaction.type == TransactionType.payment,
                     Transaction.charge_id == Payment.processor_id,
-                    Transaction.created_at > since,
                 )
                 .exists(),
             )

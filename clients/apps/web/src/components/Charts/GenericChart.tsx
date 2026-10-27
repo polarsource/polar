@@ -11,13 +11,20 @@ import {
   ChartTooltipContent,
   Line,
   LineChart,
+  ReferenceLine,
   XAxis,
   YAxis,
+  type MouseHandlerDataParam,
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
-import React, { useCallback, useId, useMemo, useRef, useState } from 'react'
-import { ReferenceLine } from 'recharts'
-import type { MouseHandlerDataParam } from 'recharts'
+import React, {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { AxisTick } from 'recharts/types/util/types'
 
 const MinHeightBar = (props: {
@@ -115,7 +122,9 @@ export const GenericChart = <T extends Record<string, unknown>>({
 
   // Use a ref so mouse handlers are stable and don't invalidate chartBase memo
   const onDataIndexHoverRef = useRef(onDataIndexHover)
-  onDataIndexHoverRef.current = onDataIndexHover
+  useEffect(() => {
+    onDataIndexHoverRef.current = onDataIndexHover
+  }, [onDataIndexHover])
 
   const handleMouseMove = useCallback((state: MouseHandlerDataParam) => {
     const index = state.activeTooltipIndex
@@ -137,13 +146,10 @@ export const GenericChart = <T extends Record<string, unknown>>({
   const config = useMemo(
     () =>
       series.reduce(
-        (acc, s) => ({
-          ...acc,
-          [s.key]: {
-            label: s.label,
-            color: s.color,
-          },
-        }),
+        (acc, s) => {
+          acc[s.key] = { label: s.label, color: s.color }
+          return acc
+        },
         {} as Record<string, { label: string; color: string }>,
       ),
     [series],

@@ -1,76 +1,66 @@
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ArrowRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import type { ComponentType } from 'react'
-import { CreditArc } from './graphics/CreditArc'
-import { CycleArrow } from './graphics/CycleArrow'
-import { VennCluster } from './graphics/VennCluster'
 
-interface Feature {
+export interface GraphicCardProps {
   title: string
   desc: string
-  href: string
+  href?: string
   Graphic: ComponentType
 }
 
-const FEATURES: Feature[] = [
-  {
-    title: 'Usage Billing',
-    desc: 'Meter tokens, API calls, compute and storage down to the event.',
-    href: '/features/usage-billing',
-    Graphic: VennCluster,
-  },
-  {
-    title: 'Subscriptions',
-    desc: 'Recurring plans with trials, upgrades & proration built in.',
-    href: '/features/subscriptions',
-    Graphic: CycleArrow,
-  },
-  {
-    title: 'Credits',
-    desc: 'Prepaid balances that draw down with usage and top up automatically.',
-    href: '/features/credits',
-    Graphic: CreditArc,
-  },
-]
+/** A graphic in a rounded panel, with a title, description and optional link set beneath it. */
+export const GraphicCard = ({
+  title,
+  desc,
+  href,
+  Graphic,
+}: GraphicCardProps) => (
+  <Box flexDirection="column" rowGap="xl">
+    <div className="dark:border-polar-800 dark:bg-polar-900 aspect-square w-full overflow-hidden rounded-md border border-gray-200 bg-gray-50 p-8 xl:p-12">
+      <Graphic />
+    </div>
+    <Box flexDirection="column" rowGap="xs">
+      <Text variant="heading-xxs" as="h3">
+        {title}
+      </Text>
+      <Text variant="body" color="muted" as="p" wrap="pretty">
+        {desc}
+      </Text>
+      {href ? (
+        <Link href={href}>
+          <Box
+            alignItems="center"
+            columnGap="xs"
+            paddingTop="s"
+            color={{ base: 'text-primary', hover: 'text-secondary' }}
+            transitionProperty="colors"
+            transitionDuration="fast"
+          >
+            <Text variant="body" color="inherit">
+              Learn more
+            </Text>
+            <ArrowRight size={16} />
+          </Box>
+        </Link>
+      ) : null}
+    </Box>
+  </Box>
+)
 
-export const FeatureCards = () => (
+export const GraphicCardGrid = ({ cards }: { cards: GraphicCardProps[] }) => (
   <Grid
     templateColumns={{
       base: '1fr',
       md: 'repeat(2, 1fr)',
       xl: 'repeat(3, 1fr)',
     }}
-    gap="l"
+    gap="2xl"
   >
-    {FEATURES.map(({ title, desc, href, Graphic }) => (
-      <Link key={title} href={href}>
-        <Box
-          height="100%"
-          flexDirection="column"
-          justifyContent="between"
-          rowGap="3xl"
-          padding={{ base: 'xl', md: '3xl' }}
-          backgroundColor={{
-            base: 'background-secondary',
-            hover: 'background-card',
-          }}
-          transitionProperty="colors"
-          transitionDuration="fast"
-        >
-          <Box display="block" aspectRatio="1 / 1">
-            <Graphic />
-          </Box>
-          <Box flexDirection="column" rowGap="s">
-            <Text variant="heading-xs" as="h3">
-              {title}
-            </Text>
-            <Text variant="heading-xxs" color="muted">
-              {desc}
-            </Text>
-          </Box>
-        </Box>
-      </Link>
+    {cards.map((card) => (
+      <GraphicCard key={card.title} {...card} />
     ))}
   </Grid>
 )

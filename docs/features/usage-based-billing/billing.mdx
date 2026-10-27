@@ -64,13 +64,70 @@ To charge your customers for usage, you need to add a metered price to your prod
 
 Optionally, you can set a **cap**. The customer will be charged the cap amount if they exceed it, regardless of the usage.
 
-### Monthly Invoicing
+### When usage is invoiced
 
-If a customer has a subscription with a monthly billing period, usage is aggregated monthly and invoiced at the end of the month with the rest of the subscription.
+By default, usage follows the subscription's billing period. On a monthly subscription, usage is aggregated over the month and invoiced at renewal with the rest of the subscription. On a yearly subscription, it's aggregated over the year and invoiced at the yearly renewal.
 
-### Yearly Invoicing
+To invoice usage more often than the subscription renews, for example monthly on a yearly plan, set a [meter cycle](#meter-cycle).
 
-If a customer has a subscription with a yearly billing period, usage is aggregated yearly and invoiced at the end of the year with the rest of the subscription.
+## Meter cycle
+
+A meter cycle lets metered usage run on its own cadence, independent of the billing interval. It's set on the product with `meter_interval` and `meter_interval_count`, or with the **Separate meter cycle** toggle in the product's pricing section.
+
+The common case is a yearly plan with monthly usage: the customer pays the base price once a year, while overage is invoiced and [credits](/features/usage-based-billing/credits) are granted every month.
+
+At the end of each meter period, Polar:
+
+1. Invoices the period's usage as a separate order.
+2. Resets the customer's meters.
+3. Grants the [Credits benefit](/features/benefits/credits) again, applying rollover if it's enabled.
+
+Meters are reset and credits granted even when there's no usage to invoice. If the period's usage is below the minimum chargeable amount, no payment is taken: the amount is added to the customer's balance and applied to their next order.
+
+Without a meter cycle, all of this happens once per billing period, at renewal.
+
+### Alignment with the billing interval
+
+The meter cycle must divide the billing interval evenly, so both cycles line up again at every renewal. The meter cycle starts on the same anchor day as the subscription.
+
+| Billing interval  | Allowed meter cycles                                              |
+| ----------------- | ----------------------------------------------------------------- |
+| Every _n_ days    | Every _m_ days, where _m_ divides _n_                             |
+| Every _n_ weeks   | Every _m_ weeks, where _m_ divides _n_, or every _m_ days, where _m_ divides _7n_ |
+| Every _n_ months  | Every day, or every _m_ months, where _m_ divides _n_             |
+| Every _n_ years   | Every day, or every _m_ months, where _m_ divides _12n_, or every _m_ years, where _m_ divides _n_ |
+
+For example, a yearly plan accepts a meter cycle of 1, 2, 3, 4, 6 or 12 months, but not 5 months or 1 week. Weeks don't fit evenly into months, so weekly meter cycles aren't available on monthly or yearly plans.
+
+<Warning>
+  The meter cycle can't be changed once it's set on a product. Existing
+  subscriptions keep the meter cycle they were created with.
+</Warning>
+
+### At renewal and other boundaries
+
+- **Renewal**: the last meter period of a billing period is invoiced in the regular renewal order, together with the base price. No separate `subscription_meter_cycle` order is created, and the meter cycle restarts from the new billing period.
+- **Trials**: the meter cycle starts when the trial converts to a paid subscription.
+- **Plan change**: usage accrued so far is invoiced right away on the previous product's prices, before the switch takes effect.
+- **Immediate cancellation**: usage up to the cancellation is invoiced right away. A cancellation at the end of the period invoices the final usage at the end of that period, as usual.
+
+### Discounts
+
+A percentage [discount](/features/discounts) applies to every meter cycle order. A fixed-amount discount doesn't. It still applies to the renewal order.
+
+### Failed payments
+
+A failed meter cycle order is retried on the same schedule as [failed subscription payments](/features/subscriptions/failed-payments): after 2, 7, 14 and 21 days. It never affects the subscription itself: the subscription stays `active`, keeps its benefits, and isn't revoked. If every retry fails, the order is voided.
+
+If the subscription itself becomes `past_due` because its renewal payment failed, the meter cycle is paused: no usage is invoiced, meters aren't reset and no credits are granted. Usage keeps being recorded. When the subscription recovers, the accrued usage is invoiced in one order, meters are reset and credits are granted again.
+
+### Customer emails
+
+Each meter cycle order sends the customer a **Your {product} usage invoice** email with a link to the customer portal. It's controlled by the same setting as subscription renewal emails, so disabling renewal emails disables these too.
+
+### Webhooks
+
+Each meter cycle order emits `order.created` and `order.paid` like any other order. Check `billing_reason` to tell them apart from renewals. Meter cycles don't emit `subscription.cycled`, which only fires at renewal.
 
 ### Usage Charges and Subscription Cancellation
 

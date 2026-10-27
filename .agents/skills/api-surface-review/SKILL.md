@@ -19,7 +19,9 @@ SDKs under `sdk/`, and out to merchants who already wrote code against it.
 ## Scope
 
 Diffs touching `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`,
-`sdk/`, `clients/packages/client/`.
+`sdk/`, `clients/packages/client/`. Also changes to a list query in `**/service.py` or
+`**/repository.py`, because that is where list endpoints filter. For those, only the
+list-endpoint check under *Route shape* applies.
 
 **CI already does part of this job.** The `OpenAPI Diff` workflow posts the schema delta as a
 PR comment, and `OpenAPI Client Regeneration Check` fails if the client is stale. Do not
@@ -98,6 +100,12 @@ Only the parts `AGENTS.md` does not already cover:
   output.
 - A query parameter must act as a pure filter. If it changes the response shape, the resource
   is wrong and it wants its own route.
+- List endpoints return every resource the subject can access, with no filter applied by
+  default. Flag any implicit narrowing in the list statement (`status != draft`,
+  `is_archived = false`, `active = true`, …) and ask for an explicit query filter instead.
+  Source: `handbook/engineering/backend-development/rest-api-guidelines.mdx`, *List
+  endpoints*. A design document that says otherwise does not override this. Flag the
+  conflict as a Question.
 - Removing an endpoint and updating its frontend caller in one PR is a deploy hazard →
   `ship-safety` owns the split.
 

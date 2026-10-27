@@ -4,7 +4,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { useMembers } from '@/hooks/queries/members'
 import { useMultipleCustomerSeats } from '@/hooks/queries/seats'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
   Avatar,

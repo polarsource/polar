@@ -1,15 +1,16 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import respx
 from pytest_mock import MockerFixture
 
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.setup import (
     _extract_domain,
-    _normalize_domain,
     _resolve_redirect_with_browser,
     collect_setup_data,
     resolve_url_redirects,
+    same_registrable_domain,
 )
 from polar.organization_review.schemas import (
     CheckoutLinksData,
@@ -73,18 +74,42 @@ class TestExtractDomain:
         assert _extract_domain("http://my-site.org") == "my-site.org"
 
 
-class TestNormalizeDomain:
-    def test_strips_www(self) -> None:
-        assert _normalize_domain("www.example.com") == "example.com"
+class TestSameRegistrableDomain:
+    def test_exact_match(self) -> None:
+        assert same_registrable_domain("example.com", "example.com") is True
 
-    def test_bare_domain_unchanged(self) -> None:
-        assert _normalize_domain("example.com") == "example.com"
+    def test_strips_www_on_both_sides(self) -> None:
+        assert same_registrable_domain("www.example.com", "example.com") is True
+        assert same_registrable_domain("example.com", "www.example.com") is True
 
-    def test_non_www_subdomain_unchanged(self) -> None:
-        assert _normalize_domain("app.example.com") == "app.example.com"
+    def test_subdomain_is_same(self) -> None:
+        assert same_registrable_domain("api.example.com", "example.com") is True
+        assert same_registrable_domain("example.com", "api.example.com") is True
 
-    def test_www_only(self) -> None:
-        assert _normalize_domain("www.com") == "com"
+    def test_deep_subdomain_is_same(self) -> None:
+        assert same_registrable_domain("a.b.c.example.com", "example.com") is True
+
+    def test_different_domains(self) -> None:
+        assert same_registrable_domain("example.com", "other.com") is False
+
+    def test_suffix_lookalike_rejected(self) -> None:
+        """notexample.com must not match example.com — dot anchoring required."""
+        assert same_registrable_domain("notexample.com", "example.com") is False
+        assert same_registrable_domain("example.com", "notexample.com") is False
+
+    def test_cctld_safe(self) -> None:
+        """Suffix matching must not collapse multi-part TLDs."""
+        # foo.co.uk and bar.co.uk are different orgs even though both end in .co.uk
+        assert same_registrable_domain("foo.co.uk", "bar.co.uk") is False
+        # but app.foo.co.uk and foo.co.uk are the same org
+        assert same_registrable_domain("app.foo.co.uk", "foo.co.uk") is True
+
+    def test_case_insensitive(self) -> None:
+        assert same_registrable_domain("Example.COM", "example.com") is True
+
+    def test_empty_inputs(self) -> None:
+        assert same_registrable_domain("", "example.com") is False
+        assert same_registrable_domain("example.com", "") is False
 
 
 class TestCollectSetupDataEmpty:
@@ -410,6 +435,81 @@ class TestResolveUrlRedirects:
         assert results[0].redirected is True
         assert results[0].final_domain == "porn-site.com"
         assert results[0].final_url == "https://porn-site.com/landing"
+        assert results[0].hops == []
+
+    @pytest.mark.anyio
+    async def test_chain_through_other_domain_back_to_own_site(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+
+        with respx.mock:
+            respx.get("https://api.legit.com/success").respond(
+                302, headers={"Location": "https://bad-site.com/"}
+            )
+            respx.get("https://bad-site.com/").respond(
+                302, headers={"Location": "https://legit.com/"}
+            )
+            respx.get("https://legit.com/").respond(200)
+            results = await resolve_url_redirects(["https://api.legit.com/success"])
+
+        assert len(results) == 1
+        assert results[0].redirected is True
+        assert results[0].hops == ["https://bad-site.com/"]
+        assert results[0].final_url == "https://legit.com/"
+
+    @pytest.mark.anyio
+    async def test_hop_limit_still_checks_last_redirect_target(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+
+        with respx.mock:
+            for i in range(9):
+                respx.get(f"https://legit.com/{i}").respond(
+                    302, headers={"Location": f"https://legit.com/{i + 1}"}
+                )
+            respx.get("https://legit.com/9").respond(
+                302, headers={"Location": "https://bad-site.com/"}
+            )
+            results = await resolve_url_redirects(["https://legit.com/0"])
+
+        assert len(results) == 1
+        assert results[0].redirected is True
+        assert results[0].final_url == "https://bad-site.com/"
+
+    @pytest.mark.anyio
+    async def test_port_on_subdomain_not_flagged(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.organization_review.collectors.setup._validate_url_host",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
+            return_value=UrlRedirectInfo(
+                original_url="https://api.legit.com:8443/success",
+                final_url="https://legit.com/",
+                final_domain="legit.com",
+            ),
+        )
+
+        with respx.mock:
+            respx.get("https://api.legit.com:8443/success").respond(
+                302, headers={"Location": "https://legit.com/"}
+            )
+            respx.get("https://legit.com/").respond(200)
+            results = await resolve_url_redirects(
+                ["https://api.legit.com:8443/success"]
+            )
+
+        assert len(results) == 1
+        assert results[0].redirected is False
 
     @pytest.mark.anyio
     async def test_same_domain_redirect(self, mocker: MockerFixture) -> None:

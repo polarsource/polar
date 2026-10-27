@@ -219,7 +219,6 @@ def configured(mocker: MockerFixture) -> None:
     settings = mocker.patch("polar.integrations.polar.service.settings")
     settings.POLAR_SELF_ENABLED = True
     settings.POLAR_ORGANIZATION_ID = str(SELF_ORG_ID)
-    settings.POLAR_FREE_PRODUCT_ID = "prod_free"
 
 
 @pytest.fixture
@@ -1336,6 +1335,7 @@ def _make_product(
             "meter_interval": None,
             "meter_interval_count": None,
             "is_recurring": True,
+            "is_deletable": False,
             "is_archived": False,
             "organization_id": str(SELF_ORG_ID),
             "metadata": metadata or {},

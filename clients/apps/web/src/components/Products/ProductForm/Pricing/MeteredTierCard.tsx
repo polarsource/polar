@@ -1,7 +1,7 @@
 'use client'
 
 import { formatScalar } from '@/utils/formatters'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import { CloseOutlined } from '@polar-sh/orbit/icons'
 import { Button, Grid, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {

@@ -91,14 +91,15 @@ const reportError = (cause: Cause.Cause<unknown>) => {
 const instrumented = Effect.gen(function* () {
   const args = yield* (yield* Stdio.Stdio).args
   const telemetry = yield* Telemetry.Telemetry
+  const flags = Telemetry.flagNames(args)
   const startedAt = performance.now()
   return yield* cli.pipe(
     Effect.tapCause(reportError),
     Effect.onExit((exit) =>
       telemetry.record({
         command: Telemetry.commandPath(polar, args),
-        flags: Telemetry.flagNames(args),
-        ...Telemetry.outcomeOf(exit),
+        flags,
+        ...Telemetry.outcomeOf(exit, flags),
         durationMs: performance.now() - startedAt,
       }),
     ),

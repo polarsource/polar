@@ -224,6 +224,9 @@ class Customer(MetadataMixin, RecordModel):
     receipt_next_number: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default="1"
     )
+    credit_note_next_number: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

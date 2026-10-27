@@ -17,6 +17,7 @@ import {
   useResetSecretWebhookEndpoint,
   useWebhookEndpoint,
 } from '@/hooks/queries'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { operations, schemas } from '@polar-sh/client'
@@ -53,6 +54,7 @@ export default function ClientPage({
   const { data: endpoint } = useWebhookEndpoint(id)
 
   const editWebhookEndpoint = useEditWebhookEndpoint()
+  const managedAsCode = useIsManagedAsCode(organization.id)
   const handleToggleEnabled = useCallback(
     async (enabled: boolean) => {
       if (!endpoint) return
@@ -150,9 +152,11 @@ export default function ClientPage({
           <Button variant="secondary" onClick={showResetModal}>
             Reset Secret
           </Button>
-          <Button variant="destructive" onClick={showArchiveModal}>
-            Delete
-          </Button>
+          {!managedAsCode && (
+            <Button variant="destructive" onClick={showArchiveModal}>
+              Delete
+            </Button>
+          )}
         </div>
       }
       contextView={<WebhookContextView endpoint={endpoint} />}
@@ -189,6 +193,7 @@ export default function ClientPage({
             <Switch
               checked={endpoint.enabled}
               onCheckedChange={handleToggleEnabled}
+              disabled={managedAsCode}
               aria-labelledby="webhook-status-label"
             />
           </div>

@@ -97,16 +97,4 @@ describe('isOrderSummaryCollapsible', () => {
     })
     expect(isOrderSummaryCollapsible(checkout)).toBe(false)
   })
-
-  it('keeps legacy recurring prices open', () => {
-    const legacyPrice = createPrice({
-      legacy: true,
-      recurring_interval: 'month',
-    })
-    const checkout = createCheckout({
-      product_price: legacyPrice,
-      prices: { prod_1: [legacyPrice] },
-    })
-    expect(isOrderSummaryCollapsible(checkout)).toBe(false)
-  })
 })

@@ -43,7 +43,7 @@ export const ConfigResource = Schema.Literals([
   'meter',
   'benefit',
   'product',
-  'discount',
+  'webhook',
 ])
 
 export const EntryResult = Schema.Struct({
@@ -53,8 +53,14 @@ export const EntryResult = Schema.Struct({
   diff: Schema.optional(Schema.Array(FieldChange)),
 })
 
+export const SettingsResult = Schema.Struct({
+  action: EntryAction,
+  diff: Schema.optional(Schema.Array(FieldChange)),
+})
+
 export const ApplyResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  settings: Schema.optional(Schema.NullOr(SettingsResult)),
 })
 
 export const AppliedEntry = Schema.Struct({
@@ -67,6 +73,7 @@ export type AppliedEntry = typeof AppliedEntry.Type
 
 export const PlanResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  settings: Schema.optional(Schema.NullOr(SettingsResult)),
   issues: Schema.Array(ServerError),
 })
 
@@ -97,6 +104,7 @@ export const ApplyResult = Schema.Union([
   Schema.Struct({
     status: Schema.Literal('applied'),
     entries: Schema.Array(AppliedEntry),
+    issues: Schema.optionalKey(Schema.Array(ConfigIssue)),
   }),
   Schema.Struct({
     status: Schema.Literal('rejected'),
@@ -118,7 +126,10 @@ export const ApplyOutput = Schema.Union(
 
 export const ConfigDocument = Schema.Record(
   Schema.String,
-  Schema.Array(Schema.Unknown),
+  Schema.Union([
+    Schema.Array(Schema.Unknown),
+    Schema.Record(Schema.String, Schema.Unknown),
+  ]),
 )
 export type ConfigDocument = typeof ConfigDocument.Type
 

@@ -210,4 +210,60 @@ describe('planMarkdown', () => {
       ].join('\n'),
     )
   })
+
+  test('diffs settings groups like entries', () => {
+    const markdown = planMarkdown(config, acme, {
+      entries: [
+        {
+          section: 'settings',
+          id: 'payments',
+          action: 'updated',
+          diff: [{ field: 'currency', before: 'usd', after: 'eur' }],
+        },
+      ],
+      issues: [],
+    })
+    expect(markdown).toContain(
+      '#### Settings\n\n```diff\n  payments\n-   currency  USD\n+   currency  EUR\n```',
+    )
+  })
+
+  test('redacts webhook urls by the format on their own side', () => {
+    const slack = 'https://hooks.slack.com/services/T0/B0/token'
+    const after = 'https://app:pw@app.test/hook?token=new'
+    const input = {
+      webhooks: [
+        { external_id: 'app', url: after, format: 'raw', events: [] },
+        { external_id: 'sales', url: slack, format: 'slack', events: [] },
+      ],
+    }
+    const markdown = planMarkdown({ ...config, input }, acme, {
+      entries: [
+        {
+          section: 'webhooks',
+          id: 'app',
+          action: 'updated',
+          diff: [
+            { field: 'url', before: slack, after },
+            { field: 'format', before: 'slack', after: 'raw' },
+          ],
+        },
+        {
+          section: 'webhooks',
+          id: 'sales',
+          action: 'created',
+          diff: [{ field: 'url', before: null, after: slack }],
+        },
+      ],
+      issues: [],
+    })
+    expect(markdown).not.toContain('B0/token')
+    expect(markdown).not.toContain('token=new')
+    expect(markdown).not.toContain('pw@')
+    expect(markdown).toContain('-   url     https://hooks.slack.com/***')
+    expect(markdown).toContain(
+      '+   url     https://***@app.test/hook?token=***',
+    )
+    expect(markdown).toContain('+   url  https://hooks.slack.com/***')
+  })
 })

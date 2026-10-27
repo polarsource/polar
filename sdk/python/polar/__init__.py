@@ -3,17 +3,19 @@ from polar.base import (
     PolarDeserializationError,
     PolarError,
     PolarNetworkError,
+    PolarRateLimitError,
     PolarServerError,
     RequestTimeout,
     deserialize,
 )
 
-__version__ = "1.0.3a2"
+__version__ = "1.0.3a5"
 __all__ = [
     "PolarClientError",
     "PolarDeserializationError",
     "PolarError",
     "PolarNetworkError",
+    "PolarRateLimitError",
     "PolarServerError",
     "RequestTimeout",
     "deserialize",

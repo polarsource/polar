@@ -535,17 +535,6 @@ resource "tfe_variable" "polar_organization_id_production" {
   }
 }
 
-resource "tfe_variable" "polar_free_product_id_production" {
-  key             = "polar_free_product_id"
-  category        = "terraform"
-  description     = "Polar free-tier product ID"
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "polar_scale_product_id_production" {
   key             = "polar_scale_product_id"
   category        = "terraform"
@@ -1010,4 +999,12 @@ resource "tfe_variable" "redis_private_link_host_production" {
   lifecycle {
     ignore_changes = [value]
   }
+}
+
+resource "tfe_variable" "planetscale_app_password_production" {
+  key             = "planetscale_app_password"
+  category        = "terraform"
+  description     = "PlanetScale application role password for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
 }

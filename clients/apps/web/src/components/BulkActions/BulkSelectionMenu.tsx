@@ -1,7 +1,6 @@
 'use client'
 
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
+import { CloseOutlined, ExpandMoreOutlined } from '@polar-sh/orbit/icons'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {

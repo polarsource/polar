@@ -1,7 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import ClearOutlined from '@mui/icons-material/ClearOutlined'
-import DragHandleOutlined from '@mui/icons-material/DragHandleOutlined'
+import { ClearOutlined, DragHandleOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'

@@ -29,9 +29,11 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import Version
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase
+from polar.version import V2026_10
 
 DiscountID = Annotated[
     UUID4,
@@ -239,23 +241,7 @@ class DiscountFixedCreate(DiscountCreateBase):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
     duration: Duration
     duration_in_months: DurationInMonthsOptional = None
-    amount: Amount | None = Field(
-        default=None,
-        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
-    )
-    currency: Currency | None = Field(
-        default=PresentmentCurrency.usd,
-        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
-    )
-    amounts: Amounts | None = None
-
-    @model_validator(mode="after")
-    def validate_either_amount_or_amounts(self) -> Self:
-        if self.amount is not None and self.amounts is not None:
-            raise ValueError("Cannot specify both `amount` and `amounts`.")
-        if self.amount is None and self.amounts is None:
-            raise ValueError("Must specify either `amount` or `amounts`.")
-        return self
+    amounts: Amounts
 
     @model_validator(mode="after")
     def validate_duration_in_months(self) -> Self:
@@ -294,14 +280,6 @@ class DiscountUpdate(MetadataInputMixin, ExternalIDInputMixin, Schema):
     duration_in_months: DurationInMonths | None = None
 
     type: DiscountType | None = None
-    amount: Amount | None = Field(
-        default=None,
-        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
-    )
-    currency: Currency | None = Field(
-        default=None,
-        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
-    )
     amounts: Amounts | None = None
     basis_points: BasisPoints | None = None
 
@@ -310,12 +288,6 @@ class DiscountUpdate(MetadataInputMixin, ExternalIDInputMixin, Schema):
     @model_validator(mode="after")
     def validate_starts_at_ends_at(self) -> Self:
         _starts_at_ends_at_validator(self.starts_at, self.ends_at)
-        return self
-
-    @model_validator(mode="after")
-    def validate_either_amount_or_amounts(self) -> Self:
-        if self.amount is not None and self.amounts is not None:
-            raise ValueError("Cannot specify both `amount` and `amounts`.")
         return self
 
 
@@ -381,11 +353,11 @@ class DiscountRepeatDurationBase(Schema):
 
 class DiscountFixedBase(Schema):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
-    amount: int = Field(
+    amount: Annotated[int, Version(up_to=V2026_10)] = Field(
         examples=[1000],
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )
-    currency: str = Field(
+    currency: Annotated[str, Version(up_to=V2026_10)] = Field(
         examples=["usd"],
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )

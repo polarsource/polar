@@ -1,19 +1,25 @@
 import { useAuth } from '@/hooks'
 import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { useListKeys } from '@/hooks/useListKeys'
 import { useURLValidation } from '@/hooks/useURLValidation'
 import { setValidationErrors } from '@/utils/api/errors'
 import { containsBlockedWord } from '@/utils/blocked-words'
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import Facebook from '@mui/icons-material/Facebook'
-import GitHub from '@mui/icons-material/GitHub'
-import Instagram from '@mui/icons-material/Instagram'
-import LinkedIn from '@mui/icons-material/LinkedIn'
-import Public from '@mui/icons-material/Public'
-import X from '@mui/icons-material/X'
-import YouTube from '@mui/icons-material/YouTube'
+import {
+  AddOutlined,
+  AddPhotoAlternateOutlined,
+  CircleCheckBig as CheckCircle,
+  CloseOutlined,
+  Facebook,
+  GitHub,
+  Instagram,
+  LinkedIn,
+  LoaderCircle as Loader2,
+  Public,
+  TriangleAlert as AlertTriangle,
+  XLogo as X,
+  YouTube,
+} from '@polar-sh/orbit/icons'
 import { enums, isValidationError, schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
@@ -26,7 +32,6 @@ import {
   FormField,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { FileRejection } from 'react-dropzone'
@@ -65,6 +70,9 @@ const OrganizationSocialLinks = ({
   readOnly,
 }: OrganizationSocialLinksProps) => {
   const { control } = useFormContext<schemas['OrganizationUpdate']>()
+  const socialKeys = useListKeys(
+    useWatch({ control, name: 'socials' })?.length ?? 0,
+  )
 
   const getIcon = (platform: string, className: string) => {
     switch (platform) {
@@ -130,7 +138,10 @@ const OrganizationSocialLinks = ({
         return (
           <div className="space-y-3">
             {socials.map((social, index) => (
-              <div key={index} className="flex items-center gap-3">
+              <div
+                key={socialKeys.keys[index]}
+                className="flex items-center gap-3"
+              >
                 <div className="flex w-5 justify-center">
                   {getIcon(social.platform, 'text-gray-400 h-4 w-4')}
                 </div>
@@ -156,6 +167,7 @@ const OrganizationSocialLinks = ({
                     size="icon"
                     disabled={readOnly}
                     onClick={() => {
+                      socialKeys.remove(index)
                       field.onChange(socials.filter((_, i) => i !== index))
                     }}
                     className="dark:text-polar-400 text-gray-400 hover:text-gray-600"

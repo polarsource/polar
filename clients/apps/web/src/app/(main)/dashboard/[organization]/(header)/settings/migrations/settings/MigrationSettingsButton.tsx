@@ -4,7 +4,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useIsSettingMigrationTaxBehavior } from '@/hooks/queries/merchantMigrations'
 import { Button, Modal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal } from '@polar-sh/orbit/icons'
 import { MigrationSettingsPanel } from './MigrationSettingsPanel'
 
 export function MigrationSettingsButton({

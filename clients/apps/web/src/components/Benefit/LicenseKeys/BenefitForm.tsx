@@ -92,47 +92,53 @@ export const LicenseKeysBenefitForm = () => {
         />
       </div>
       {expires && (
-        <div className="flex flex-row space-x-4">
-          <FormField
-            control={control}
-            name="properties.expires.ttl"
-            render={({ field }) => {
-              return (
-                <FormItem className="w-full max-w-full">
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={control}
-            name="properties.expires.timeframe"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select timeframe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="day">Day</SelectItem>
-                        <SelectItem value="month">Month</SelectItem>
-                        <SelectItem value="year">Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
+        <div className="flex flex-col gap-y-2">
+          <div className="flex flex-row space-x-4">
+            <FormField
+              control={control}
+              name="properties.expires.ttl"
+              render={({ field }) => {
+                return (
+                  <FormItem className="w-full max-w-full">
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+            <FormField
+              control={control}
+              name="properties.expires.timeframe"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select timeframe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="day">Day</SelectItem>
+                          <SelectItem value="month">Month</SelectItem>
+                          <SelectItem value="year">Year</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+          </div>
+          <FormDescription>
+            Only applies to one-time purchases. Keys granted by a subscription
+            don&apos;t expire and are revoked when the subscription ends.
+          </FormDescription>
         </div>
       )}
 

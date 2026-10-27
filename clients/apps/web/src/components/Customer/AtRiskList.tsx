@@ -11,7 +11,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Alert, Avatar } from '@polar-sh/orbit'
-import { ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from '@polar-sh/orbit/icons'
 import { cancelDate, useAtRisk } from './useAtRisk'
 
 interface AtRiskListProps {

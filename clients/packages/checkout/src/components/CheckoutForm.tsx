@@ -35,7 +35,7 @@ import {
 } from '@stripe/stripe-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
-import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
+import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { isTemporaryDiscount } from '../utils/discount'
@@ -99,9 +99,7 @@ const BaseCheckoutForm = ({
   embed,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
-    ? isLegacyRecurringProductPrice(checkout.product_price)
-      ? checkout.product_price.recurring_interval
-      : checkout.product.recurring_interval
+    ? checkout.product.recurring_interval
     : null
   const {
     control,
@@ -534,6 +532,7 @@ const BaseCheckoutForm = ({
                           render={({ field }) => (
                             <>
                               <CountryStatePicker
+                                name={field.name}
                                 autoComplete="billing address-level1"
                                 data-testid="billing-state"
                                 country={country}
@@ -575,6 +574,7 @@ const BaseCheckoutForm = ({
                                 allowedCountries={
                                   enums.addressInputCountryValues
                                 }
+                                name={field.name}
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}

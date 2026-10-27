@@ -1,12 +1,20 @@
 import dataclasses
-from typing import Annotated
+from typing import Annotated, Any, Literal
 
 import pytest
 from fastapi import Depends, FastAPI, Request
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
-from pydantic import BaseModel, Field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Discriminator,
+    Field,
+    PlainSerializer,
+    Tag,
+    computed_field,
+)
 
 from polar.kit.versioning import (
     APIVersion,
@@ -47,6 +55,39 @@ class NextOnlyDiscount(BaseModel):
 
 class VersionedOrder(BaseModel):
     discount: Annotated[NextOnlyDiscount | None, Version(starting_from=NEXT_VERSION)]
+
+
+class Opaque:
+    pass
+
+
+class OutputOnlyCoupon(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    value: Annotated[Opaque, PlainSerializer(lambda _: "opaque", return_type=str)]
+
+
+class LegacyOrder(BaseModel):
+    coupon: Annotated[OutputOnlyCoupon | None, Version(up_to=CURRENT_VERSION)]
+
+
+class CurrentOnlyPrice(BaseModel):
+    kind: Literal["current"] = "current"
+
+
+class SharedPrice(BaseModel):
+    kind: Literal["shared"] = "shared"
+
+
+VersionedPrice = Annotated[
+    Annotated[CurrentOnlyPrice, Tag("current"), Version(up_to=CURRENT_VERSION)]
+    | Annotated[SharedPrice, Tag("shared")],
+    Discriminator(lambda v: v["kind"] if isinstance(v, dict) else v.kind),
+]
+
+
+class VersionedCatalog(BaseModel):
+    prices: list[VersionedPrice]
 
 
 def test_api_version_is_ordered_hashable_and_immutable() -> None:
@@ -125,6 +166,36 @@ def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
     assert set(next_product["required"]) == {"name", "shared_field", "next_field"}
 
 
+@pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])
+def test_versioned_computed_fields_are_required(api_version: APIVersion) -> None:
+    next_version = Version(starting_from=NEXT_VERSION)
+
+    class Model(BaseModel):
+        @computed_field(exclude_if=next_version.exclude_if)
+        def versioned(self) -> Annotated[int, next_version]:
+            return 1
+
+        @computed_field(exclude_if=lambda value: value is None)
+        def conditional(self) -> int | None:
+            return None
+
+    with api_version_context(api_version):
+        schema = Model.model_json_schema(mode="serialization")
+        data = Model().model_dump()
+
+    assert "conditional" in schema["properties"]
+    assert "conditional" not in schema.get("required", [])
+    assert "conditional" not in data
+    if api_version == NEXT_VERSION:
+        assert "versioned" in schema["properties"]
+        assert schema["required"] == ["versioned"]
+        assert data == {"versioned": 1}
+    else:
+        assert "versioned" not in schema["properties"]
+        assert "versioned" not in schema.get("required", [])
+        assert data == {}
+
+
 @pytest.mark.parametrize(
     ("api_version", "included"), [(CURRENT_VERSION, False), (NEXT_VERSION, True)]
 )
@@ -140,6 +211,48 @@ def test_prune_version_omitted_schemas(api_version: APIVersion, included: bool) 
     schema = prune_version_omitted_schemas(schema, api_version)
 
     assert ("NextOnlyDiscount" in schema["components"]["schemas"]) is included
+
+
+@pytest.mark.parametrize(
+    ("api_version", "included"), [(CURRENT_VERSION, True), (NEXT_VERSION, False)]
+)
+def test_prune_version_omitted_output_only_schemas(
+    api_version: APIVersion, included: bool
+) -> None:
+    app = FastAPI()
+
+    @app.get("/order")
+    def get_order() -> LegacyOrder:
+        return LegacyOrder(coupon=None)
+
+    with api_version_context(api_version):
+        schema = get_openapi(title="Test", version="1", routes=app.routes)
+    schema = prune_version_omitted_schemas(schema, api_version)
+
+    assert ("OutputOnlyCoupon" in schema["components"]["schemas"]) is included
+
+
+@pytest.mark.parametrize(
+    ("api_version", "included"), [(CURRENT_VERSION, True), (NEXT_VERSION, False)]
+)
+def test_prune_version_omitted_union_members(
+    api_version: APIVersion, included: bool
+) -> None:
+    app = FastAPI()
+
+    @app.get("/catalog")
+    def get_catalog() -> VersionedCatalog:
+        return VersionedCatalog(prices=[SharedPrice()])
+
+    with api_version_context(api_version):
+        schema = get_openapi(title="Test", version="1", routes=app.routes)
+    schema = prune_version_omitted_schemas(schema, api_version)
+
+    schemas: dict[str, Any] = schema["components"]["schemas"]
+    assert ("CurrentOnlyPrice" in schemas) is included
+    assert "SharedPrice" in schemas
+    members = schemas["VersionedCatalog"]["properties"]["prices"]["items"]["oneOf"]
+    assert len(members) == (2 if included else 1)
 
 
 def test_versioned_routes() -> None:

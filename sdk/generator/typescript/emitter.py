@@ -27,6 +27,7 @@ from typescript.types import (
 from typescript.utils import format_default_value_ts, format_description
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
+BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
 
 
 class TypeScriptEmitter(EmitterBase):
@@ -56,6 +57,10 @@ class TypeScriptEmitter(EmitterBase):
             self.templates_dir / "oxfmt.config.ts", root_directory / "oxfmt.config.ts"
         )
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
+        self.copy_file(
+            self.templates_dir / "vitest.config.mts",
+            root_directory / "vitest.config.mts",
+        )
         self.copy_file(self.templates_dir / "LICENSE", root_directory / "LICENSE")
 
         for skill_file in (
@@ -111,6 +116,19 @@ class TypeScriptEmitter(EmitterBase):
             src_dir / "index.ts",
             self.get_context(),
         )
+        self.render_file(
+            "src/version.ts",
+            src_dir / "version.ts",
+            self.get_context(),
+        )
+        for module in ("metering", "outpost"):
+            for source_file in (self.templates_dir / "src" / module).glob("*.ts"):
+                self.render_file(
+                    f"src/{module}/{source_file.name}",
+                    src_dir / module / source_file.name,
+                    self.get_context(),
+                )
+        self.copy_file(BENCHMARK_DATA, src_dir / "outpost" / "benchmark.json")
 
         for api in self.ir.versions:
             version_dir = src_dir / self.get_version_string(api)

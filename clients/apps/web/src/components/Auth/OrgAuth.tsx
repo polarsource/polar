@@ -7,7 +7,7 @@ import { schemas } from '@polar-sh/client'
 import { SpinnerNoMargin, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import AppleLoginButton from './AppleLoginButton'
 import EmailOTPForm from './EmailOTPForm'
 import GitHubLoginButton from './GitHubLoginButton'
@@ -45,13 +45,9 @@ const OrgAuth = ({ slug, returnTo }: { slug: string; returnTo?: string }) => {
   const [status, setStatus] = useState<
     'loading' | 'completing' | 'ready' | 'error'
   >('loading')
-  const initialized = useRef(false)
 
   useEffect(() => {
-    if (initialized.current) {
-      return
-    }
-    initialized.current = true
+    let ignore = false
 
     const init = async () => {
       // Start an org-scoped session to get this org's factors (SSO + base).
@@ -59,6 +55,9 @@ const OrgAuth = ({ slug, returnTo }: { slug: string; returnTo?: string }) => {
         params: { path: { slug } },
         body: { return_to: returnTo },
       })
+      if (ignore) {
+        return
+      }
       if (error || !started) {
         setStatus('error')
         return
@@ -78,6 +77,10 @@ const OrgAuth = ({ slug, returnTo }: { slug: string; returnTo?: string }) => {
     }
 
     init()
+
+    return () => {
+      ignore = true
+    }
   }, [slug, returnTo, router, posthog])
 
   if (status === 'error') {

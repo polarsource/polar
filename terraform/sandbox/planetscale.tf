@@ -17,6 +17,15 @@ module "planetscale" {
         }
       }
     }
+    read = {
+      target = "replica"
+      parameters = {
+        pgbouncer = {
+          default_pool_size      = "12"
+          track_extra_parameters = "IntervalStyle,statement_timeout"
+        }
+      }
+    }
   }
 }
 

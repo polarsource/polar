@@ -4,7 +4,9 @@ from pydantic import UUID4, Field
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.kit.schemas import Schema
+from polar.kit.versioning import Version
 from polar.models.benefit import BenefitType
+from polar.version import V2026_10
 
 from ..base.schemas import (
     BenefitBase,
@@ -57,7 +59,9 @@ class BenefitGitHubRepositoryProperties(Schema):
     repository_owner: RepositoryOwner
     repository_name: RepositoryName
     permission: Permission
-    repository_id: SkipJsonSchema[UUID4 | None] = Field(None, deprecated=True)
+    repository_id: Annotated[SkipJsonSchema[UUID4 | None], Version(up_to=V2026_10)] = (
+        Field(None, deprecated=True)
+    )
 
 
 class BenefitGitHubRepositorySubscriberProperties(Schema):

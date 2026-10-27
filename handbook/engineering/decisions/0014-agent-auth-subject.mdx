@@ -1,0 +1,93 @@
+---
+title: "ADR-0014: AI agents are their own auth subject until a human claims them"
+description: "An unclaimed agent authenticates as an Agent subject that endpoints must opt into; after the claim it acts for the user like any OAuth app."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-10-16
+</Info>
+
+## Context
+
+With agent sign-up (the WorkOS auth.md spec), an AI agent registers itself and gets an *identity
+assertion*, a long-lived credential it trades for short-lived access tokens. It builds an organization
+before any human exists, until a human *claims* it by signing in and approving it. Until then,
+something has to own that org and make the API calls, and neither a placeholder `User` nor the
+`Organization` subject fits (see Alternatives).
+
+## Decision
+
+**Before the claim, an agent is an `Agent` auth subject**: a row in one `agents` table, created at
+sign-up, which also holds its OAuth client, its status and who claimed it. It authenticates as
+itself, owns exactly one org through an `organization_id` on its row (not a `UserOrganization`
+membership), and can only reach endpoints whose `Authenticator` lists `Agent` in `allowed_subjects`.
+**After the claim, it acts on behalf of the claiming user by design, with ordinary user OAuth
+tokens**: the claim replaces its identity assertion with one that only yields that user's tokens. Its
+OAuth client stays marked as an agent, which is what still identifies it, for example in logs.
+
+**The claim**, in one transaction: the human becomes the org's owner, everything issued to the agent
+before the claim is revoked, and the agent's row is marked claimed (by whom and when). The row is
+kept, with its `organization_id`: the token endpoint checks it on every exchange, so revoking the
+agent stops it and identity assertions issued before the claim are rejected. The org and its data
+stay as they are.
+
+## Consequences
+
+- New rule: to open an endpoint to unclaimed agents, add `Agent` to that module's `Authenticator`,
+  handle `is_agent` in the service's subject branches, and test it with
+  `@pytest.mark.auth(AuthSubjectFixture(subject="agent"))`. Check the existing `if is_user(...) else`
+  branches: code that treats every non-user as an `Organization` will misread an `Agent`.
+- Only endpoints that set up the org's catalog may accept `Agent`: organizations, products, meters,
+  benefits, discounts, events and config. Endpoints that hold buyer data or move money never do:
+  orders, subscriptions, refunds, customers and payouts. Neither do members or webhooks,
+  including config's webhook section, because a webhook set up before the claim keeps receiving data
+  after it. In production the org can't go live before the claim; in sandbox it can.
+- Checkout sessions and checkout links accept `Agent`, in sandbox and production alike, so the agent
+  can test a checkout end to end. No per-environment rule is needed: a checkout only takes payment
+  once the org is approved, and in production that can't happen before the claim.
+- Unclaimed agents can't create organization access tokens: one would be an `Organization` caller
+  that skips this allowlist and keeps working after the claim. App-side testing that needs one waits
+  for the claim.
+- The route allowlist is the guard: a test pins the routes that accept `Agent`, so every new opt-in
+  shows up in review. Unclaimed agent tokens also carry only the scopes of the allowed resources
+  (`products:write`, `meters:write`, …), which blocks a wrong opt-in on a resource with its own scope,
+  such as refunds. It doesn't help where scopes are shared: the payout-account, member-invite and
+  review-submission routes need `organizations:write`, like editing the org itself, so only the
+  allowlist keeps agents out of them.
+- After the claim, the agent's tokens carry every scope an OAuth app can be granted, across all of
+  the claiming user's organizations. Unlike with an OAuth app, the user sees no scope list: the
+  claim page is the consent.
+- No placeholder users: the users table, login, emails and user metrics only ever see people, and
+  nothing moves between users at the claim.
+- The org-access helpers and authz policies resolve an `Agent` to its one org, so it behaves like a
+  single-organization credential. Inside that org it has its own role in
+  [ADR-0005](/engineering/decisions/0005-auth-subject-and-scopes)'s role layer (`ROLE_PERMISSIONS`):
+  org settings and build resources, never members or finance. An agent that wants a second org signs
+  up again; parallel sessions are separate agents.
+- An org owned by an agent has no human owner until the claim. Code that looks up the owner must
+  handle that.
+- OAuth tokens, grants and authorization codes gain a third sub type, `SubType.agent`.
+- Accepted trade-off: a new kind of caller across the auth model. Every authz path and subject branch
+  must account for `Agent`, and the agent's `organization_id` is a second ownership path next to
+  memberships.
+
+## Alternatives considered
+
+- **Placeholder `User` with an unreachable email**: no new subject, but non-people in the users table
+  and guards on login, emails, metrics and every endpoint that must stay off-limits.
+- **Reuse the `Organization` subject** (like organization access tokens): no new subject, but agents
+  aren't distinguishable from org tokens, so agent rules can't be expressed on endpoints.
+- **`Agent` subject after the claim too**: every user endpoint would need to opt in for the agent to
+  act for its user. Delegated user tokens already cover that.
+
+## References
+
+- Agent sign-up design document: [#15460](https://github.com/polarsource/polar/pull/15460).
+- [ADR-0005](/engineering/decisions/0005-auth-subject-and-scopes): the subject and scope model this
+  extends.
+- `server/polar/auth/models.py` (`Subject`), `server/polar/auth/permission.py` (`ROLE_PERMISSIONS`),
+  `server/polar/oauth2/sub_type.py` (`SubType`), `server/polar/authz/`.

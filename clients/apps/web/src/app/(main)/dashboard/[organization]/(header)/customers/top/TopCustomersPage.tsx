@@ -9,7 +9,7 @@ import { ChartRange, getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Alert, DataTable, DataTableColumnDef } from '@polar-sh/orbit'
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 

@@ -21,6 +21,8 @@ const span = (
   length,
 })
 
+const PARAMETERS = /^\s*:\s*(?:async\s*)?\([^)]*\)\s*=>/
+
 const keyPattern = (key: string) =>
   new RegExp(`(?<=^|[\\s{,[(])(['"\`]?)${escape(key)}\\1(?=\\s*[:,\\]])`, 'm')
 
@@ -52,18 +54,31 @@ const findAll = (source: string, pattern: RegExp, from: number) =>
     (match) => ({ offset: from + match.index, length: match[0].length }),
   )
 
-const SECTIONS = ['events', 'meters', 'benefits', 'products', 'discounts']
+const SECTIONS = [
+  'settings',
+  'events',
+  'meters',
+  'benefits',
+  'products',
+  'webhooks',
+]
+
+const columnOf = (source: string, offset: number) =>
+  offset - source.lastIndexOf('\n', offset - 1)
+
+const sectionKey = (source: string, section: string) => {
+  const own = findAll(source, keyPattern(section), 0)
+  const columns = own.map(({ offset }) => columnOf(source, offset))
+  return own[columns.indexOf(Math.min(...columns))]
+}
 
 const sectionRange = (source: string, section: string): Range => {
   const whole = { start: 0, end: source.length }
-  const column = ({ offset }: { offset: number }) =>
-    offset - source.lastIndexOf('\n', offset - 1)
-  const own = findAll(source, keyPattern(section), 0)
-  const start = own.find(
-    (match) => column(match) === Math.min(...own.map(column)),
-  )
+  const column = ({ offset }: { offset: number }) => columnOf(source, offset)
+  const start = sectionKey(source, section)
   if (start === undefined) return whole
-  const from = start.offset + start.length
+  const key = start.offset + start.length
+  const from = key + (PARAMETERS.exec(source.slice(key))?.[0].length ?? 0)
   const ends = SECTIONS.filter((other) => other !== section).flatMap((other) =>
     findAll(source, keyPattern(other), from)
       .filter((match) => column(match) <= column(start))
@@ -106,6 +121,33 @@ const entryRange = (
   return { start: start.offset, end: next?.offset ?? within.end }
 }
 
+const locateInObject = (
+  source: string,
+  section: string,
+  keys: Path,
+  got: unknown,
+): SourceLocation | undefined => {
+  const range = sectionRange(source, section)
+  let key: { offset: number; length: number } | undefined
+  for (const part of keys) {
+    if (typeof part !== 'string') break
+    const match = find(
+      source,
+      keyPattern(part),
+      key ? key.offset + key.length : range.start,
+      range.end,
+    )
+    if (match === undefined) break
+    key = match
+  }
+  if (key === undefined) return undefined
+  const target =
+    (got !== undefined &&
+      find(source, literalPattern(got), key.offset + key.length, range.end)) ||
+    key
+  return span(source, target.offset, target.length)
+}
+
 export const locateInScript = (
   source: string,
   input: unknown,
@@ -113,8 +155,17 @@ export const locateInScript = (
   got: unknown,
 ): SourceLocation | undefined => {
   const [section, index, ...rest] = path
-  if (typeof section !== 'string' || typeof index !== 'number') return undefined
+  if (typeof section !== 'string') return undefined
+  if (index === undefined) {
+    const key = sectionKey(source, section)
+    return key && span(source, key.offset, key.length)
+  }
   const entries = (input as Record<string, unknown>)?.[section]
+  if (typeof index !== 'number') {
+    return typeof entries === 'object' && entries !== null
+      ? locateInObject(source, section, path.slice(1), got)
+      : undefined
+  }
   if (!Array.isArray(entries)) return undefined
   const externalIds = entries.map((entry: { external_id?: unknown }) =>
     typeof entry?.external_id === 'string' ? entry.external_id : undefined,

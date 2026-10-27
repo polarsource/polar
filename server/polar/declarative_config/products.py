@@ -1,11 +1,8 @@
-from typing import Any
 from uuid import UUID
 
 from polar.exceptions import PolarRequestValidationError
 from polar.exceptions import ValidationError as RequestValidationError
-from polar.models import Product, ProductPrice
 from polar.product.schemas import (
-    ExistingProductPrice,
     ProductCreateOneTime,
     ProductCreateRecurring,
     ProductPriceCreate,
@@ -14,8 +11,6 @@ from polar.product.schemas import (
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
-    ProductPriceUpdate,
-    ProductUpdate,
 )
 
 from .schemas import (
@@ -26,7 +21,6 @@ from .schemas import (
     ConfigProductPriceSeatBased,
     ConfigProductPriceUnitBased,
 )
-from .validation import PriceKey, ProductChange, price_config, price_key
 
 _PRICE_INPUT_FIELDS = {
     "amount_type",
@@ -118,37 +112,3 @@ def product_create(
         prices=prices,
         organization_id=organization_id,
     )
-
-
-def product_update(
-    change: ProductChange,
-    product: Product,
-    meter_ids: dict[str, UUID],
-    external_ids: dict[str, str],
-) -> ProductUpdate:
-    update: dict[str, Any] = {
-        "metadata" if name == "user_metadata" else name: value
-        for name, value in change.update_dict.items()
-        if name not in {"prices", "benefits"}
-    }
-    if {"trial_interval", "trial_interval_count"} & update.keys():
-        update["trial_interval"] = change.config.trial_interval
-        update["trial_interval_count"] = change.config.trial_interval_count
-    if "prices" in change.update_dict:
-        existing_prices: dict[PriceKey, ProductPrice] = {}
-        for price in product.prices:
-            existing_config = price_config(price, external_ids)
-            if existing_config is not None:
-                existing_prices[price_key(existing_config)] = price
-        prices: list[ProductPriceUpdate] = []
-        for config_price in change.config.prices:
-            existing_price = existing_prices.pop(
-                price_key(config_price.model_dump()), None
-            )
-            prices.append(
-                ExistingProductPrice(id=existing_price.id)
-                if existing_price is not None
-                else price_create(config_price, meter_ids)
-            )
-        update["prices"] = prices
-    return ProductUpdate(**update)

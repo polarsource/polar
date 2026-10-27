@@ -19,6 +19,7 @@ from polar.email.schemas import (
     OrderConfirmationEmail,
     SubscriptionConfirmationEmail,
     SubscriptionCycledEmail,
+    SubscriptionUsageInvoiceEmail,
 )
 from polar.enums import (
     InvoiceNumbering,
@@ -3251,6 +3252,124 @@ class TestSendConfirmationEmail:
         assert isinstance(email, SubscriptionCycledEmail)
         assert email.props.previous_billing_provider == "Stripe"
 
+    async def test_meter_cycle_sends_usage_invoice(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        assert isinstance(
+            enqueue_email_mock.call_args[0][0], SubscriptionUsageInvoiceEmail
+        )
+        assert enqueue_email_mock.call_args[1]["subject"].endswith("usage invoice")
+
+    async def test_meter_cycle_respects_subscription_cycled_setting(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "subscription_cycled": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_meter_cycle_skips_zero_amount(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            subtotal_amount=0,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_meter_cycle_fully_discounted_still_sends(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            subtotal_amount=1000,
+            discount_amount=1000,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        assert isinstance(
+            enqueue_email_mock.call_args[0][0], SubscriptionUsageInvoiceEmail
+        )
+
     async def test_subscription_create_with_temporary_discount(
         self,
         mocker: MockerFixture,
@@ -4073,6 +4192,168 @@ class TestHandlePaymentFailure:
         events = await get_all_by_name(session, SystemEvent.order_voided)
         assert len(events) == 1
         assert events[0].user_metadata["order_id"] == str(order.id)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_meter_cycle_non_recoverable_decline_skips_retries(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """A non-recoverable decline on a meter-cycle charge skips the
+        intermediate retries and schedules the next attempt at the dunning
+        deadline, like subscription dunning does."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="stolen_card",
+            trigger=PaymentTrigger.purchase,
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        mock_mark_past_due.assert_not_called()
+        assert result_order.status == OrderStatus.pending
+        assert result_order.next_payment_attempt_at == (
+            utc_now()
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=1)
+        )
+
+    async def test_meter_cycle_order_voids_after_dunning_deadline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """The attempt scheduled at the dunning deadline voids the order when it
+        fails, even though fewer than all retry intervals were used."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        dunning_deadline = (
+            created_at
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=1)
+        )
+        with freeze_time(created_at):
+            order = await create_order(
+                save_fixture,
+                product=product,
+                customer=customer,
+                subscription=subscription,
+                status=OrderStatus.pending,
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            )
+            order.next_payment_attempt_at = dunning_deadline
+            await save_fixture(order)
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                decline_reason="stolen_card",
+                trigger=PaymentTrigger.purchase,
+                order=order,
+            )
+        with freeze_time(dunning_deadline + timedelta(minutes=1)):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                decline_reason="stolen_card",
+                trigger=PaymentTrigger.retry_dunning,
+                order=order,
+            )
+
+            mock_mark_past_due = mocker.patch(
+                "polar.subscription.service.subscription.mark_past_due"
+            )
+
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        mock_mark_past_due.assert_not_called()
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
+
+    async def test_meter_cycle_order_without_payment_method_voids_after_deadline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Failures without a payment method leave no Payment row, but the
+        order is still voided once the dunning window has passed."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        with freeze_time(created_at):
+            order = await create_order(
+                save_fixture,
+                product=product,
+                customer=customer,
+                subscription=subscription,
+                status=OrderStatus.pending,
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            )
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert (
+            result_order.next_payment_attempt_at
+            == created_at + settings.DUNNING_RETRY_INTERVALS[0]
+        )
+
+        retry_at = created_at + settings.DUNNING_RETRY_INTERVALS[0]
+        with freeze_time(retry_at):
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert (
+            result_order.next_payment_attempt_at
+            == retry_at + settings.DUNNING_RETRY_INTERVALS[1]
+        )
+
+        with freeze_time(
+            created_at
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=2)
+        ):
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
 
     @freeze_time("2024-01-01 12:00:00")
     async def test_first_dunning_enqueues_benefit_revocation(

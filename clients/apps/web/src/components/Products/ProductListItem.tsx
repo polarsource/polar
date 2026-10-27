@@ -1,16 +1,15 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
-import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useUpdateProduct } from '@/hooks/queries/products'
 import {
-  hasLegacyRecurringPrices,
   isMeteredPrice,
   isSeatBasedPrice,
   isUnitBasedPrice,
 } from '@/utils/product'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { ListItem } from '@polar-sh/orbit'
@@ -62,6 +61,7 @@ export const ProductListItem = ({
   }
 
   const updateProduct = useUpdateProduct(organization)
+  const managedAsCode = useIsManagedAsCode(organization.id)
 
   const onArchiveProduct = useCallback(async () => {
     try {
@@ -153,11 +153,7 @@ export const ProductListItem = ({
                   </Pill>
                 )}
                 <span className="text-sm leading-snug">
-                  {hasLegacyRecurringPrices(product) ? (
-                    <LegacyRecurringProductPrices product={product} />
-                  ) : (
-                    <ProductPriceLabel product={product} currency={currency} />
-                  )}
+                  <ProductPriceLabel product={product} currency={currency} />
                 </span>
                 <Button
                   size="sm"
@@ -206,34 +202,38 @@ export const ProductListItem = ({
                     >
                       Integrate Checkout
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    {product.is_archived ? null : (
-                      <DropdownMenuItem
-                        onClick={handleContextMenuCallback(() => {
-                          router.push(
-                            `/dashboard/${organization.slug}/products/${product.id}/edit`,
-                          )
-                        })}
-                      >
-                        Edit Product
-                      </DropdownMenuItem>
+                    {!managedAsCode && (
+                      <>
+                        <DropdownMenuSeparator />
+                        {product.is_archived ? null : (
+                          <DropdownMenuItem
+                            onClick={handleContextMenuCallback(() => {
+                              router.push(
+                                `/dashboard/${organization.slug}/products/${product.id}/edit`,
+                              )
+                            })}
+                          >
+                            Edit Product
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={handleContextMenuCallback(() => {
+                            router.push(
+                              `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                            )
+                          })}
+                        >
+                          Duplicate Product
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          destructive
+                          onClick={handleContextMenuCallback(showModal)}
+                        >
+                          Archive Product
+                        </DropdownMenuItem>
+                      </>
                     )}
-                    <DropdownMenuItem
-                      onClick={handleContextMenuCallback(() => {
-                        router.push(
-                          `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
-                        )
-                      })}
-                    >
-                      Duplicate Product
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      destructive
-                      onClick={handleContextMenuCallback(showModal)}
-                    >
-                      Archive Product
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>

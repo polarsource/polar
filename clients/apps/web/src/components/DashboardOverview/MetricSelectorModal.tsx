@@ -15,8 +15,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
-import DragHandleOutlined from '@mui/icons-material/DragHandleOutlined'
+import { CloseOutlined, DragHandleOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
@@ -114,7 +113,7 @@ export const MetricDashboardEditorContent = ({
   isPending,
   saveLabel = 'Save',
 }: MetricDashboardEditorContentProps) => {
-  const [selected, setSelected] = useState<MetricItem[]>(
+  const [selected, setSelected] = useState<MetricItem[]>(() =>
     activeMetrics.map(toItem),
   )
 

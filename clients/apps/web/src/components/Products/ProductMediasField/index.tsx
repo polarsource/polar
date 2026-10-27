@@ -1,4 +1,4 @@
-import AddPhotoAlternateOutlined from '@mui/icons-material/AddPhotoAlternateOutlined'
+import { AddPhotoAlternateOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { ReactNode, useCallback, useState } from 'react'
 import { FileRejection } from 'react-dropzone'

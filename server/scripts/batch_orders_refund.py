@@ -20,7 +20,6 @@ from polar.order.repository import OrderRepository
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
-from polar.refund.schemas import RefundCreate
 from polar.refund.service import RefundDisputedPayment, RefundedAlready
 from polar.refund.service import refund as refund_service
 from polar.worker import JobQueueManager
@@ -100,13 +99,11 @@ async def batch_orders_refund(
                             await refund_service.create(
                                 session,
                                 order,
-                                RefundCreate(
-                                    order_id=order.id,
-                                    reason=RefundReason.other,
-                                    amount=order.refundable_amount,
-                                    comment=None,
-                                    revoke_benefits=False,
+                                amount=order.refundable_amount,
+                                tax_amount=order.calculate_refunded_tax_from_subtotal(
+                                    order.refundable_amount
                                 ),
+                                reason=RefundReason.other,
                             )
                             # Commit and flush now since Stripe refund is now processed
                             await session.commit()

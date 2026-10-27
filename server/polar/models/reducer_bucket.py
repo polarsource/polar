@@ -23,6 +23,7 @@ from polar.kit.utils import utc_now
 
 if TYPE_CHECKING:
     from .customer import Customer
+    from .order import Order
     from .organization import Organization
     from .reducer import Reducer
 
@@ -88,9 +89,17 @@ class ReducerBucket(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
+    billed_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    order_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("orders.id"), nullable=True
+    )
+
     organization: Mapped["Organization"] = relationship(lazy="raise")
     reducer: Mapped["Reducer"] = relationship(lazy="raise")
     customer: Mapped["Customer | None"] = relationship(lazy="raise")
+    order: Mapped["Order | None"] = relationship(lazy="raise")
 
     # Sealing freezes this generation; events ingested after it go to the next,
     # so a bucket's totals combine all its generations.

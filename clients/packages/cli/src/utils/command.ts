@@ -45,7 +45,8 @@ export const output =
           if (json) {
             const value = spec.json
               ? spec.json(result)
-              : (result as unknown as P)
+              : // oxlint-disable-next-line polar-cli/no-double-cast
+                (result as unknown as P)
             yield* encode(spec.result, value)
           } else {
             yield* Console.log(spec.render(result, input).join('\n'))

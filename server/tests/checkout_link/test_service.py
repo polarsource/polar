@@ -146,19 +146,24 @@ class TestCreate:
                 auth_subject,
             )
 
+    @pytest.mark.parametrize(
+        ("field", "value"), [("is_archived", True), ("is_current", False)]
+    )
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
     async def test_archived_product(
         self,
+        field: str,
+        value: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        product_one_time.is_archived = True
+        setattr(product_one_time, field, value)
         await save_fixture(product_one_time)
 
         with pytest.raises(PolarRequestValidationError):

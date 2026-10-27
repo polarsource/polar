@@ -2,13 +2,15 @@
 
 import { useSeatClaimFulfillment } from '@/hooks/useSeatClaimFulfillment'
 import { CONFIG } from '@/utils/config'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import ErrorOutlined from '@mui/icons-material/ErrorOutlined'
+import {
+  CheckOutlined,
+  ErrorOutlined,
+  LoaderCircle as Loader2,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 export default function ClientPage({

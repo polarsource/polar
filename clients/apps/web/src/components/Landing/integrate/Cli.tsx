@@ -1,48 +1,20 @@
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { withOffsets } from '@/utils/lines'
 import { Chapter } from '../Chapter'
-import { CliInstall } from './CliInstall'
-import { CodePanel } from './CodePanel'
+import { WindowFrame } from '../story/Frame'
+import { FrameSheet, ImageBand } from './Backdrop'
 import { DocsLink } from './DocsLink'
 
 const CLI_DOCS = '/docs/integrate/webhooks/locally'
 
-interface Command {
-  command: string
-  desc: string
-}
-
-const COMMANDS: Command[] = [
-  {
-    command: 'polar auth login --sandbox',
-    desc: 'Sign in through the browser and pick an organization',
-  },
-  {
-    command: 'polar webhook listen http://localhost:3000/webhooks',
-    desc: 'Webhooks tunneled to your machine, signed',
-  },
-  {
-    command:
-      'polar webhook trigger order.paid --override data.subtotal_amount=99900',
-    desc: 'Fire any event with realistic fixtures, shaped how you need them',
-  },
-  {
-    command: 'polar customers list --email=alice@example.com',
-    desc: 'Every API resource as a command, in the active organization',
-  },
-  {
-    command: 'polar update',
-    desc: 'Signed builds for macOS, Linux and Windows',
-  },
-]
-
 const TRANSCRIPT = [
-  '% polar webhook listen 3000/webhooks',
+  '% curl -fsSL https://polar.sh/install.sh | bash',
   '',
-  '  ✔ Select Organization … Lumen',
+  '% polar webhook listen http://localhost:3000/api/webhooks',
   '',
-  '  Connected   Lumen',
-  '  Forwarding  http://localhost:3000/webhooks',
+  '  ● Connected  Acme',
+  '  Forwarding  http://localhost:3000/api/webhooks',
   '  Waiting for events...',
   '',
   '% polar webhook trigger order.paid --seed 7',
@@ -51,7 +23,7 @@ const TRANSCRIPT = [
   '',
   '% polar auth whoami --json',
   '',
-  '  { "organization": { "slug": "lumen" }, ... }',
+  '  { "source": "session", "organization": { "slug": "acme", ... } }',
 ]
 
 interface Feature {
@@ -86,40 +58,36 @@ const FEATURES: Feature[] = [
 export const Cli = () => (
   <Chapter
     id="cli"
-    index="03"
-    name="CLI"
+    name="03 CLI"
     title="Localhost, wired in"
     subtitle="The whole API from the terminal"
     description="Sign in, tunnel webhooks, fire events and call any endpoint without leaving the terminal. Every command can speak JSON."
     cta={<DocsLink href={CLI_DOCS} label="CLI documentation" />}
   >
     <Box flexDirection="column" rowGap={{ base: '3xl', md: '4xl' }}>
-      <CliInstall />
-      <Grid templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }} gap="l">
-        <Box as="ul" flexDirection="column">
-          {COMMANDS.map((item) => (
-            <Box
-              as="li"
-              key={item.command}
-              display="block"
-              paddingVertical="l"
-              borderTopWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-            >
-              <Box flexDirection="column" rowGap="xs">
-                <Text variant="default" monospace>
-                  {item.command}
-                </Text>
-                <Text variant="body" as="p" color="muted" wrap="pretty">
-                  {item.desc}
-                </Text>
-              </Box>
-            </Box>
-          ))}
-        </Box>
-        <CodePanel caption="zsh" lines={TRANSCRIPT} />
-      </Grid>
+      <ImageBand
+        src="/assets/landing/company/Polar_Flow_02_No_Logo.jpg"
+        className="min-h-[20rem] md:min-h-[28rem]"
+      >
+        <WindowFrame aside="zsh" className="max-w-[42rem]">
+          <FrameSheet>
+            <div className="overflow-x-auto font-mono text-[13px] leading-6 whitespace-pre">
+              {withOffsets(TRANSCRIPT).map(({ line, offset }) =>
+                line.startsWith('% ') ? (
+                  <div key={offset} className="text-white">
+                    <span className="text-polar-500">% </span>
+                    {line.slice(2)}
+                  </div>
+                ) : (
+                  <div key={offset} className="text-polar-300">
+                    {line || <br />}
+                  </div>
+                ),
+              )}
+            </div>
+          </FrameSheet>
+        </WindowFrame>
+      </ImageBand>
       <Grid
         templateColumns={{
           base: '1fr',
@@ -134,6 +102,7 @@ export const Cli = () => (
             flexDirection="column"
             rowGap="xl"
             padding="xl"
+            borderRadius="m"
             backgroundColor="background-secondary"
           >
             <Text variant="default" color="muted" monospace>

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, exists, select
 from sqlalchemy.orm import undefer
 
 from polar.authz.types import AccessibleOrganizationID
@@ -10,7 +10,8 @@ from polar.kit.repository import (
     RepositoryExternalIDMixin,
     RepositoryIDMixin,
 )
-from polar.models import Meter
+from polar.models import Meter, ProductPrice, Subscription, SubscriptionProductPrice
+from polar.models.subscription import SubscriptionStatus
 
 
 class MeterRepository(
@@ -63,3 +64,22 @@ class MeterRepository(
             .order_by(Meter.created_at, Meter.id)
             .options(undefer(Meter.external_id))
         )
+
+    async def has_billable_subscriptions(self, meter_id: UUID) -> bool:
+        statement = select(
+            exists()
+            .where(
+                SubscriptionProductPrice.subscription_id == Subscription.id,
+                ProductPrice.id == SubscriptionProductPrice.product_price_id,
+            )
+            .where(
+                ProductPrice.is_metered,
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == meter_id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                ~Subscription.is_deleted,
+                ~SubscriptionProductPrice.is_deleted,
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()

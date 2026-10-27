@@ -93,8 +93,10 @@ const describe = (issue: ConfigIssue): Problem => {
         title: `Duplicate external_id ${issue.got ?? quote(key)}`,
         label: 'already used by another entry',
       }
+    case 'missing_currency':
     case 'not_supported':
     case 'unknown_reference':
+    case 'deprecated_reference':
     case 'type_changed':
     case 'interval_changed':
       return { ...base, title: message, label }

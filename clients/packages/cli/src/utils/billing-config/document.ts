@@ -37,7 +37,7 @@ export const renderDocument = (file: string, document: ConfigDocument) =>
           Object.fromEntries(
             Object.entries(document).map(([section, items]) => [
               section,
-              items.map(dropOptionalNulls),
+              Array.isArray(items) ? items.map(dropOptionalNulls) : items,
             ]),
           ),
         ).pipe(

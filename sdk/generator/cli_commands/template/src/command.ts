@@ -83,6 +83,9 @@ export const command = Command.make(
 {% endif %}
     yield* api.execute({
       operationId: {{ method.operation_id | quote }},
+{% if is_next %}
+      apiVersion: {{ api.version | quote }},
+{% endif %}
       method: {{ method.http_method | quote }},
       requiresConfirmation: {{ confirmation_expression }},
       confirm: {% if needs_confirmation %}config.confirm{% else %}false{% endif %},

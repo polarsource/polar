@@ -17,8 +17,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import { AddOutlined, ClearOutlined } from '@polar-sh/orbit/icons'
 import { enums } from '@polar-sh/client'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { TreeMultiSelect } from '../TreeMultiSelect'

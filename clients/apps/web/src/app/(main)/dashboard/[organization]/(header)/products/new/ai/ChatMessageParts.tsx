@@ -72,7 +72,6 @@ export const ChatMessagePartRenderer = ({
       <ToolCallGroup
         key={`${messageId}-group-${item.startIndex}`}
         parts={item.parts as DynamicToolUIPart[]}
-        messageId={messageId}
       />
     )
   }

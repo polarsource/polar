@@ -9,7 +9,9 @@ from decimal import Decimal
 from typing import Any, Literal, TypeIs, Unpack
 
 import pytest
+from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
 
+from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
 from polar.enums import (
     EmailSender,
     PaymentProcessor,
@@ -19,7 +21,6 @@ from polar.enums import (
     TaxProcessor,
 )
 from polar.kit.address import Address
-from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -27,6 +28,7 @@ from polar.meter.aggregation import Aggregation, CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Account,
+    Agent,
     Benefit,
     BillingEntry,
     Checkout,
@@ -45,12 +47,11 @@ from polar.models import (
     EventType,
     File,
     IssueReward,
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     Member,
     Meter,
     MeterEvent,
     MeterReducer,
+    OAuth2Client,
     Order,
     OrderItem,
     Organization,
@@ -82,6 +83,7 @@ from polar.models import (
     WalletTransaction,
     WebhookEndpoint,
 )
+from polar.models.agent import AgentStatus
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
     BenefitGrant,
@@ -126,7 +128,6 @@ from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
-    ProductPriceType,
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.support_case import (
@@ -143,6 +144,7 @@ from polar.models.user_organization import OrganizationRole
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
+from polar.oauth2.constants import CLAIM_GRANT_TYPE
 from polar.product.price_set import PriceSet
 from polar.product.tiers import SeatTierType, Tiers, TierType
 from polar.tax.calculation import TaxBreakdownItem
@@ -234,6 +236,57 @@ async def organization_second(
     save_fixture: SaveFixture, account_second: Account
 ) -> Organization:
     return await create_organization(save_fixture, account_second)
+
+
+async def create_agent(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization | None = None,
+    status: AgentStatus = AgentStatus.unclaimed,
+    **kwargs: Any,
+) -> Agent:
+    oauth2_client = OAuth2Client(client_id=rstr("polar_ci_"))
+    oauth2_client.set_client_metadata(
+        {
+            "client_name": "Test Agent",
+            "token_endpoint_auth_method": "none",
+            "redirect_uris": [],
+            "grant_types": [JWT_BEARER_GRANT_TYPE, CLAIM_GRANT_TYPE],
+            "response_types": [],
+            "scope": " ".join(
+                sorted(
+                    CLAIMED_AGENT_SCOPES
+                    if status == AgentStatus.claimed
+                    else UNCLAIMED_AGENT_SCOPES
+                )
+            ),
+        }
+    )
+    agent = Agent(
+        name="Test Agent",
+        status=status,
+        oauth2_client=oauth2_client,
+        organization=organization,
+        **kwargs,
+    )
+    await save_fixture(agent)
+    return agent
+
+
+@pytest.fixture
+async def agent(save_fixture: SaveFixture, organization: Organization) -> Agent:
+    return await create_agent(save_fixture, organization=organization)
+
+
+@pytest.fixture
+async def config_as_code_enabled(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "config_as_code_enabled": True,
+    }
+    await save_fixture(organization)
 
 
 async def create_oauth_account(
@@ -814,70 +867,6 @@ async def create_product_fixed_and_seat(
 
 
 @typing.overload
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: Literal[ProductPriceAmountType.fixed],
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    amount: int = 1000,
-) -> LegacyRecurringProductPriceFixed: ...
-
-
-@typing.overload
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: Literal[ProductPriceAmountType.custom],
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    minimum_amount: int | None = None,
-    maximum_amount: int | None = None,
-    preset_amount: int | None = None,
-) -> LegacyRecurringProductPriceCustom: ...
-
-
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: ProductPriceAmountType,
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    amount: int | None = 1000,
-    minimum_amount: int | None = None,
-    maximum_amount: int | None = None,
-    preset_amount: int | None = None,
-) -> LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom:
-    product_price: LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
-    if amount_type == ProductPriceAmountType.fixed:
-        product_price = LegacyRecurringProductPriceFixed(
-            price_amount=amount,
-            price_currency=PresentmentCurrency.usd,
-            tax_behavior=None,
-            product=product,
-            is_archived=False,
-        )
-    elif amount_type == ProductPriceAmountType.custom:
-        product_price = LegacyRecurringProductPriceCustom(
-            price_currency=PresentmentCurrency.usd,
-            tax_behavior=None,
-            minimum_amount=minimum_amount,
-            maximum_amount=maximum_amount,
-            preset_amount=preset_amount,
-            product=product,
-            is_archived=False,
-        )
-    else:
-        raise ValueError("Invalid amount_type")
-
-    product_price.type = ProductPriceType.recurring
-    product_price.recurring_interval = recurring_interval
-
-    await save_fixture(product_price)
-    return product_price
-
-
-@typing.overload
 async def create_discount(
     save_fixture: SaveFixture,
     *,
@@ -1281,9 +1270,6 @@ async def create_subscription(
 
     recurring_interval = product.recurring_interval
     recurring_interval_count = product.recurring_interval_count
-    if product.is_legacy_recurring_price:
-        recurring_interval = product.prices[0].recurring_interval
-        recurring_interval_count = 1
     if not recurring_interval:
         recurring_interval = SubscriptionRecurringInterval.month
     if not recurring_interval_count:
@@ -1521,39 +1507,6 @@ async def product_recurring_custom_price(
         recurring_interval=SubscriptionRecurringInterval.month,
         prices=[(50, None, None, "usd")],
     )
-
-
-@pytest.fixture
-async def product_recurring_monthly_and_yearly(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    product = await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        prices=[],
-    )
-
-    monthly_price = await create_legacy_recurring_product_price(
-        save_fixture,
-        amount_type=ProductPriceAmountType.fixed,
-        product=product,
-        recurring_interval=SubscriptionRecurringInterval.month,
-    )
-    product.prices.append(monthly_price)
-    product.all_prices.append(monthly_price)
-
-    yearly_price = await create_legacy_recurring_product_price(
-        save_fixture,
-        amount_type=ProductPriceAmountType.fixed,
-        product=product,
-        recurring_interval=SubscriptionRecurringInterval.year,
-    )
-    product.prices.append(yearly_price)
-    product.all_prices.append(yearly_price)
-
-    await save_fixture(product)
-    return product
 
 
 @pytest.fixture
@@ -2799,6 +2752,7 @@ async def create_webhook_endpoint(
     *,
     organization: Organization,
     events: list[WebhookEventType] | None = None,
+    external_id: str | None = None,
 ) -> WebhookEndpoint:
     webhook_endpoint = WebhookEndpoint(
         url="https://example.com/webhook",
@@ -2806,6 +2760,7 @@ async def create_webhook_endpoint(
         secret="SECRET",
         events=events or list(WebhookEventType),
         organization=organization,
+        external_id=external_id,
     )
     await save_fixture(webhook_endpoint)
     return webhook_endpoint

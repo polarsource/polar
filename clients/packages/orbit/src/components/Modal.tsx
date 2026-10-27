@@ -12,8 +12,7 @@ import ReactDOM from 'react-dom'
 import FocusLock from 'react-focus-lock'
 import { twMerge } from 'tailwind-merge'
 import { Button } from './Button'
-import { X } from 'lucide-react'
-
+import { X } from '../icons'
 export interface ModalProps {
   title: string | JSX.Element
   isShown: boolean

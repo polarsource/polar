@@ -87,6 +87,38 @@ class TestCreateSubscriptionOrder:
             cutoff=cutoff,
         )
 
+    async def test_cancel_settles_without_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+        )
+        cutoff = utc_now() - SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        create_order_mock = mocker.patch.object(
+            order_service, "create_subscription_order", new=AsyncMock()
+        )
+
+        await create_subscription_order(
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cancel,
+            cutoff.isoformat(),
+        )
+
+        create_order_mock.assert_awaited_once_with(
+            ANY,
+            ANY,
+            OrderBillingReasonInternal.subscription_cancel,
+            cutoff=None,
+        )
+
     @pytest.mark.parametrize(
         "order_reason",
         [

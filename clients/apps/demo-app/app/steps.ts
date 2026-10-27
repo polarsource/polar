@@ -1,7 +1,7 @@
 // Code shown in the side panel, one step per part of the demo. Lines ending in
 // `// !` are emphasized, and the marker is stripped before highlighting.
 
-export type Step = 'config' | 'balance' | 'builtin' | 'custom'
+export type Step = 'config' | 'balance' | 'builtin' | 'custom' | 'grant'
 
 export type StepFile = { name: string; code: string }
 
@@ -142,6 +142,25 @@ await customer.track('tool_call', { // !
   server: 'custom', // !
   success: true,
   duration_ms: 420,
+})`,
+      },
+    ],
+  },
+  {
+    id: 'grant',
+    label: 'Grant',
+    title: 'Grant credits without a purchase',
+    description:
+      'Reward an action with credits straight from your server. The idempotency key makes it once per customer, however many times it is claimed.',
+    files: [
+      {
+        name: 'polar.ts',
+        code: `const customer = polar.actor({ externalCustomerId: userId }) // !
+
+await saveSurveyAnswer(userId, answer)
+
+await customer.grant('tool_call', 10, { // !
+  idempotencyKey: \`survey:\${userId}\`, // !
 })`,
       },
     ],

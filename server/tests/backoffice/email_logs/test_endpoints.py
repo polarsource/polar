@@ -6,8 +6,11 @@ import pytest
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.email.schemas import EmailTemplate
+from polar.kit.utils import utc_now
 from polar.models import User, UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_email_log
 
 
 @pytest.fixture
@@ -40,3 +43,49 @@ class TestListEmailLogs:
         assert response.status_code == 200
         for template in EmailTemplate:
             assert f'value="{template.value}"' in response.text
+
+    @pytest.mark.parametrize(
+        "query",
+        [
+            "customer@example.com",
+            "Customer@Example.com",
+            " customer@example.com ",
+            "@example.com",
+        ],
+    )
+    async def test_search_by_email(
+        self,
+        query: str,
+        save_fixture: SaveFixture,
+        backoffice_client: httpx.AsyncClient,
+    ) -> None:
+        email_log = await create_email_log(save_fixture, created_at=utc_now())
+
+        response = await backoffice_client.get("/email-logs/", params={"query": query})
+
+        assert response.status_code == 200
+        assert str(email_log.id) in response.text
+
+    async def test_search_by_email_no_match(
+        self, save_fixture: SaveFixture, backoffice_client: httpx.AsyncClient
+    ) -> None:
+        email_log = await create_email_log(save_fixture, created_at=utc_now())
+
+        response = await backoffice_client.get(
+            "/email-logs/", params={"query": "other@example.com"}
+        )
+
+        assert response.status_code == 200
+        assert str(email_log.id) not in response.text
+
+    async def test_search_by_subject(
+        self, save_fixture: SaveFixture, backoffice_client: httpx.AsyncClient
+    ) -> None:
+        email_log = await create_email_log(save_fixture, created_at=utc_now())
+
+        response = await backoffice_client.get(
+            "/email-logs/", params={"query": "receipt"}
+        )
+
+        assert response.status_code == 200
+        assert str(email_log.id) in response.text

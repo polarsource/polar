@@ -1,6 +1,6 @@
 'use client'
 
-import { BanknoteIcon } from 'lucide-react'
+import { Banknote as BanknoteIcon } from '@polar-sh/orbit/icons'
 import { StatusBlock } from './Account/sections/StatusBlock'
 
 export const ManualPayoutStatusBlock = () => (

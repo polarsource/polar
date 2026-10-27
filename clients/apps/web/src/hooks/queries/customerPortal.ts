@@ -354,6 +354,23 @@ export const useCustomerSubscriptionChargePreview = (
     enabled,
   })
 
+export const useCustomerSubscriptionMeterChargePreview = (
+  api: Client,
+  id: string,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: ['customer_subscription_meter_charge_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/meter-charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+
 export const useCustomerSubscriptionCancelPreview = (
   api: Client,
   id: string,
@@ -393,6 +410,9 @@ export const useCustomerUpdateSubscription = (api: Client) =>
         queryKey: ['customer_subscription_charge_preview'],
       })
       queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
         queryKey: ['customer_seats'],
       })
     },
@@ -419,6 +439,9 @@ export const useCustomerCancelSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
     },
   })
 
@@ -443,6 +466,9 @@ export const useCustomerRevokeSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
     },
   })
 
@@ -464,6 +490,9 @@ export const useCustomerUncancelSubscription = (api: Client) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
       })
     },
   })
@@ -496,6 +525,9 @@ export const useCustomerPauseSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
     },
   })
 
@@ -525,6 +557,9 @@ export const useCustomerResumeSubscription = (api: Client) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
       })
     },
   })

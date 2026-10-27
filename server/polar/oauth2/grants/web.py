@@ -69,6 +69,8 @@ class WebGrant(BaseGrant, TokenEndpointMixin):
             sub_type = SubType(sub_type) if sub_type else SubType.user
         except ValueError as e:
             raise InvalidRequestError("Invalid sub_type") from e
+        if sub_type == SubType.agent:
+            raise InvalidRequestError("Invalid sub_type")
 
         sub: str | None = data.get("sub")
         if sub_type == SubType.organization and sub is None:

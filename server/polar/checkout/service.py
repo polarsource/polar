@@ -1,7 +1,7 @@
 import contextlib
 import typing
 import uuid
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
 from datetime import datetime
 
 import sentry_sdk
@@ -13,17 +13,20 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
-from polar.auth.models import Anonymous, AuthSubject
+from polar.auth.models import Agent, Anonymous, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.checkout.guard import has_product_checkout
+from polar.checkout.legacy_schemas import CheckoutProductPriceUpdateMixin
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmBase,
+    CheckoutConfirmSharedPaymentToken,
     CheckoutConfirmStripe,
     CheckoutCreate,
     CheckoutPriceCreate,
     CheckoutProductCreate,
+    CheckoutProductsExternalCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
     CustomerIPAddress,
@@ -102,7 +105,6 @@ from polar.product.guard import (
     UnitPrice,
     is_custom_price,
     is_discount_applicable,
-    is_legacy_price,
     is_seat_price,
     is_static_price,
 )
@@ -178,6 +180,12 @@ class PaymentError(CheckoutError):
             f"The payment failed{f': {error}' if error else '.'} "
             "Please try again with a different payment method."
         )
+        super().__init__(message, 400)
+
+
+class SharedPaymentTokenError(CheckoutError):
+    def __init__(self, checkout: Checkout, message: str) -> None:
+        self.checkout = checkout
         super().__init__(message, 400)
 
 
@@ -285,7 +293,7 @@ class CheckoutService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
@@ -343,7 +351,7 @@ class CheckoutService:
     async def get_by_id(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
         *,
         for_update: bool = False,
@@ -378,8 +386,8 @@ class CheckoutService:
     async def create(
         self,
         session: AsyncSession,
-        checkout_create: CheckoutCreate,
-        auth_subject: AuthSubject[User | Organization],
+        checkout_create: CheckoutCreate | CheckoutProductCreate | CheckoutPriceCreate,
+        auth_subject: AuthSubject[User | Organization | Agent],
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         ip_country = self._get_ip_country(
@@ -400,9 +408,16 @@ class CheckoutService:
                 ip_country,
             )
         else:
-            products = await self._get_validated_products(
-                session, auth_subject, checkout_create.products
-            )
+            if isinstance(checkout_create, CheckoutProductsExternalCreate):
+                products_field = "external_products"
+                products = await self._get_validated_external_products(
+                    session, auth_subject, checkout_create.external_products
+                )
+            else:
+                products_field = "products"
+                products = await self._get_validated_products(
+                    session, auth_subject, checkout_create.products
+                )
             product = products[0]
             if checkout_create.prices:
                 ad_hoc_prices = await self._get_validated_prices(
@@ -411,6 +426,7 @@ class CheckoutService:
                     product.organization,
                     products,
                     checkout_create.prices,
+                    by_external_id=products_field == "external_products",
                 )
 
             currencies = self._get_currencies(
@@ -430,9 +446,13 @@ class CheckoutService:
                     [
                         {
                             "type": "value_error",
-                            "loc": ("body", "products", 0),
+                            "loc": ("body", products_field, 0),
                             "msg": "Product is not available in the specified currency.",
-                            "input": checkout_create.products[0],
+                            "input": (
+                                product.external_id
+                                if products_field == "external_products"
+                                else product.id
+                            ),
                         }
                     ]
                 ) from e
@@ -633,6 +653,7 @@ class CheckoutService:
                     "product_price_id",
                     "product_id",
                     "products",
+                    "external_products",
                     "prices",
                     "amount",
                     "currency",
@@ -766,7 +787,11 @@ class CheckoutService:
 
         products: list[Product] = []
         for product in checkout_link.products:
-            if not product.is_archived and product.visibility != Visibility.draft:
+            if (
+                not product.is_archived
+                and product.is_current
+                and product.visibility != Visibility.draft
+            ):
                 products.append(product)
 
         if len(products) == 0:
@@ -1147,6 +1172,7 @@ class CheckoutService:
         confirmation_token: stripe_lib.ConfirmationToken | None = None
         if (
             checkout.payment_processor == PaymentProcessor.stripe
+            and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is not None
             and (
                 checkout.customer_name is None
@@ -1206,6 +1232,7 @@ class CheckoutService:
 
         if (
             checkout.is_payment_form_required
+            and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is None
         ):
             errors.append(
@@ -1219,6 +1246,13 @@ class CheckoutService:
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
+
+        if (
+            checkout.payment_processor == PaymentProcessor.stripe
+            and checkout.is_payment_form_required
+            and isinstance(checkout_confirm, CheckoutConfirmSharedPaymentToken)
+        ):
+            self._validate_shared_payment_token(checkout)
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -1267,7 +1301,6 @@ class CheckoutService:
 
                 intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None = None
                 if checkout.is_payment_form_required:
-                    assert checkout_confirm.confirmation_token_id is not None
                     assert checkout.customer_billing_address is not None
                     intent_metadata: dict[str, str] = {
                         "organization_id": str(checkout.organization_id),
@@ -1292,7 +1325,6 @@ class CheckoutService:
                                 "currency": checkout.currency,
                                 "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
-                                "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
                                 "statement_descriptor_suffix": checkout.organization.statement_descriptor(),
                                 "description": checkout.description,
@@ -1319,10 +1351,26 @@ class CheckoutService:
                                     payment_method_options
                                 )
 
-                            intent = await stripe_service.create_payment_intent(
-                                **payment_intent_params
-                            )
+                            if isinstance(
+                                checkout_confirm, CheckoutConfirmSharedPaymentToken
+                            ):
+                                intent = await stripe_service.create_payment_intent_from_shared_payment_token(
+                                    checkout_confirm.shared_payment_token_id,
+                                    **payment_intent_params,
+                                )
+                            else:
+                                assert (
+                                    checkout_confirm.confirmation_token_id is not None
+                                )
+                                payment_intent_params["confirmation_token"] = (
+                                    checkout_confirm.confirmation_token_id
+                                )
+                                intent = await stripe_service.create_payment_intent(
+                                    **payment_intent_params
+                                )
                         else:
+                            assert isinstance(checkout_confirm, CheckoutConfirmStripe)
+                            assert checkout_confirm.confirmation_token_id is not None
                             setup_intent_params: SetupIntentCreateParams = {
                                 "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
@@ -1418,6 +1466,13 @@ class CheckoutService:
             checkout.customer_session_token = None
 
         return checkout
+
+    def _validate_shared_payment_token(self, checkout: Checkout) -> None:
+        if not checkout.is_payment_required or checkout.should_save_payment_method:
+            raise SharedPaymentTokenError(
+                checkout,
+                "Shared payment tokens are only supported for one-time payments.",
+            )
 
     async def handle_success(
         self,
@@ -1751,7 +1806,7 @@ class CheckoutService:
     async def _get_validated_price(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         product_price_id: uuid.UUID,
     ) -> tuple[Sequence[Product], Product, PriceSet, str]:
         product_price_repository = ProductPriceRepository.from_session(session)
@@ -1804,6 +1859,18 @@ class CheckoutService:
                 ]
             )
 
+        if not product.is_current:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_price_id"),
+                        "msg": "Product is no longer sold. Use the current version.",
+                        "input": product_price_id,
+                    }
+                ]
+            )
+
         currency = price.price_currency
 
         # Legacy explicit-price checkout: the caller picked one price by ID, so
@@ -1816,8 +1883,7 @@ class CheckoutService:
     def _get_explicit_price_set(
         self, price: ProductPrice, product_prices: Sequence[ProductPrice]
     ) -> PriceSet:
-        # Legacy prices are one per interval and picked alone by design; other prices
-        # are billed together, so one can only be selected if it stands alone.
+        # Prices are billed together, so one can only be selected if it stands alone.
         other_static_prices = [
             p
             for p in product_prices
@@ -1825,9 +1891,7 @@ class CheckoutService:
             and is_static_price(p)
             and p.price_currency == price.price_currency
         ]
-        if other_static_prices and not all(
-            is_legacy_price(p) for p in (price, *other_static_prices)
-        ):
+        if other_static_prices:
             raise PolarRequestValidationError(
                 [
                     {
@@ -1846,7 +1910,7 @@ class CheckoutService:
     async def _get_validated_product(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         product_id: uuid.UUID,
         currency: str | None,
         ip_country: str | None,
@@ -1872,6 +1936,18 @@ class CheckoutService:
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": "Product is archived.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
+        if not product.is_current:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is no longer sold. Use the current version.",
                         "input": product_id,
                     }
                 ]
@@ -1913,22 +1989,69 @@ class CheckoutService:
     async def _get_validated_products(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         product_ids: Sequence[uuid.UUID],
     ) -> Sequence[Product]:
-        products: list[Product] = []
+        products = [
+            await product_service.get(session, auth_subject, product_id)
+            for product_id in product_ids
+        ]
+        return self._validate_products(products, product_ids, "products")
+
+    async def _get_validated_external_products(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        external_product_ids: Sequence[str],
+    ) -> Sequence[Product]:
+        products_by_external_id: dict[str | None, list[Product]] = {}
+        for product in await product_service.get_by_external_ids(
+            session, auth_subject, external_product_ids
+        ):
+            products_by_external_id.setdefault(product.external_id, []).append(product)
+
+        errors: list[ValidationError] = []
+        for index, external_product_id in enumerate(external_product_ids):
+            if len(products_by_external_id.get(external_product_id, [])) > 1:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_products", index),
+                        "msg": (
+                            "Several products match this external ID "
+                            "across your organizations."
+                        ),
+                        "input": external_product_id,
+                    }
+                )
+        if len(errors) > 0:
+            raise PolarRequestValidationError(errors)
+
+        products = [
+            next(iter(products_by_external_id.get(external_product_id, [])), None)
+            for external_product_id in external_product_ids
+        ]
+        return self._validate_products(
+            products, external_product_ids, "external_products"
+        )
+
+    def _validate_products(
+        self,
+        products: Sequence[Product | None],
+        inputs: Sequence[uuid.UUID | str],
+        field: str,
+    ) -> Sequence[Product]:
+        validated_products: list[Product] = []
         errors: list[ValidationError] = []
 
-        for index, product_id in enumerate(product_ids):
-            product = await product_service.get(session, auth_subject, product_id)
-
+        for index, (product, input) in enumerate(zip(products, inputs, strict=True)):
             if product is None:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "products", index),
+                        "loc": ("body", field, index),
                         "msg": "Product does not exist.",
-                        "input": product_id,
+                        "input": input,
                     }
                 )
                 continue
@@ -1937,9 +2060,20 @@ class CheckoutService:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "products", index),
+                        "loc": ("body", field, index),
                         "msg": "Product is archived.",
-                        "input": product_id,
+                        "input": input,
+                    }
+                )
+                continue
+
+            if not product.is_current:
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", field, index),
+                        "msg": "Product is no longer sold. Use the current version.",
+                        "input": input,
                     }
                 )
                 continue
@@ -1948,51 +2082,59 @@ class CheckoutService:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "products", index),
+                        "loc": ("body", field, index),
                         "msg": "Product is a draft.",
-                        "input": product_id,
+                        "input": input,
                     }
                 )
                 continue
 
-            products.append(product)
+            validated_products.append(product)
 
-        organization_ids = {product.organization_id for product in products}
+        organization_ids = {product.organization_id for product in validated_products}
         if len(organization_ids) > 1:
             errors.append(
                 {
                     "type": "value_error",
-                    "loc": ("body", "products"),
+                    "loc": ("body", field),
                     "msg": "Products must all belong to the same organization.",
-                    "input": products,
+                    "input": validated_products,
                 }
             )
 
         if len(errors) > 0:
             raise PolarRequestValidationError(errors)
 
-        return products
+        return validated_products
 
     async def _get_validated_prices(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         products: Sequence[Product],
-        prices: dict[uuid.UUID, ProductPriceCreateList],
+        prices: Mapping[uuid.UUID, ProductPriceCreateList]
+        | Mapping[str, ProductPriceCreateList],
+        *,
+        by_external_id: bool = False,
     ) -> dict[Product, Sequence[ProductPrice]]:
+        products_by_key = {
+            (product.external_id if by_external_id else str(product.id)): product
+            for product in products
+        }
         validated_prices: dict[Product, Sequence[ProductPrice]] = {}
         errors: list[ValidationError] = []
-        for product_id, product_prices in prices.items():
-            try:
-                product = next(p for p in products if p.id == product_id)
-            except StopIteration:
+        for key, product_prices in prices.items():
+            product = products_by_key.get(
+                str(key) if by_external_id else str(key).lower()
+            )
+            if product is None:
                 errors.append(
                     {
                         "type": "value_error",
-                        "loc": ("body", "prices", str(product_id)),
+                        "loc": ("body", "prices", str(key)),
                         "msg": "Product is not set on that checkout.",
-                        "input": product_id,
+                        "input": key,
                     }
                 )
                 continue
@@ -2013,7 +2155,7 @@ class CheckoutService:
                 error_prefix=(
                     "body",
                     "prices",
-                    str(product_id),
+                    str(key),
                 ),
             )
             errors = [*errors, *price_errors]
@@ -2214,7 +2356,10 @@ class CheckoutService:
 
             checkout.product = product
 
-            if checkout_update.product_price_id is not None:
+            if (
+                isinstance(checkout_update, CheckoutProductPriceUpdateMixin)
+                and checkout_update.product_price_id is not None
+            ):
                 try:
                     price = next(
                         p
@@ -2449,15 +2594,15 @@ class CheckoutService:
                     ) from e
 
         if has_product_checkout(checkout) and (
-            isinstance(checkout_update, CheckoutConfirm)
+            isinstance(checkout_update, CheckoutConfirmBase)
             or "custom_field_data" in checkout_update.model_fields_set
         ):
             custom_field_data = validate_custom_field_data(
                 checkout.product.attached_custom_fields,
                 checkout_update.custom_field_data,
-                validate_required=isinstance(checkout_update, CheckoutConfirm),
+                validate_required=isinstance(checkout_update, CheckoutConfirmBase),
             )
-            if isinstance(checkout_update, CheckoutConfirm):
+            if isinstance(checkout_update, CheckoutConfirmBase):
                 checkout.custom_field_data = custom_field_data
             else:
                 checkout.custom_field_data = {

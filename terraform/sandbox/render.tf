@@ -19,10 +19,6 @@ data "tfe_outputs" "production" {
   workspace    = "polar"
 }
 
-data "render_postgres" "db" {
-  id = data.tfe_outputs.production.values.postgres_id
-}
-
 data "render_redis" "redis" {
   id = data.tfe_outputs.production.values.redis_id
 }
@@ -50,20 +46,6 @@ resource "render_redis" "redis_sandbox" {
 
 locals {
   private_backoffice_hostname = "backoffice.sandbox.polar.sh"
-  # Database connection info (derived from postgres resource)
-  # db_host          = render_postgres.db.id
-  db_internal_host = data.render_postgres.db.id
-  db_external_host = nonsensitive(regex("@([^/:]+)", data.render_postgres.db.connection_info.external_connection_string)[0])
-  db_port          = "5432"
-  # db_name          = data.render_postgres.db.database_name
-
-  # What the API, the workers and the Lambda workers connect as.
-  db_user     = var.postgres_user
-  db_password = var.postgres_password
-
-  # Read replica connection info
-  read_replica = [for r in data.render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
-
   # Redis connection info
   redis_host = var.redis_private_link_host
   redis_port = "6379"
@@ -97,20 +79,7 @@ module "sandbox" {
   render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
   registry_credential_id = render_registry_credential.ghcr.id
 
-  postgres_config = {
-    host               = module.pgbouncer.host
-    port               = module.pgbouncer.port
-    user               = local.db_user
-    password           = local.db_password
-    host_fallback      = local.db_internal_host
-    port_fallback      = local.db_port
-    read_host          = module.pgbouncer_read.host
-    read_port          = module.pgbouncer_read.port
-    read_user          = local.db_user
-    read_password      = local.db_password
-    read_host_fallback = local.read_replica.id
-    read_port_fallback = local.db_port
-  }
+  postgres_config = local.planetscale_postgres_config
 
   redis_config = {
     host = local.redis_host
@@ -130,8 +99,9 @@ module "sandbox" {
     web_concurrency        = "2"
     forwarded_allow_ips    = local.forwarded_allow_ips
     database_pool_size     = "10"
-    postgres_database      = "polar_sandbox"
-    postgres_read_database = "polar_sandbox"
+    postgres_database      = module.planetscale.database_name
+    postgres_read_database = module.planetscale.database_name
+    pre_deploy_command     = "env POLAR_POSTGRES_USER=${module.planetscale.app_role_username} POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
     redis_db               = "1"
     plan                   = "pro"
   }
@@ -142,12 +112,10 @@ module "sandbox" {
       custom_domains     = [{ name = "worker-sandbox.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
-    worker-sandbox-drain = {
-      start_command  = "uv run dramatiq polar.worker.run -p 2 -t 8"
-      custom_domains = [{ name = "worker-sandbox-drain.polar.sh" }]
-      redis_host     = render_redis.redis_sandbox.id
-      redis_port     = "6379"
-      redis_db       = "1"
+    worker-sandbox-event-mover = {
+      start_command      = "uv run python -m polar.event.mover"
+      num_instances      = 2
+      dramatiq_prom_port = "10001"
     }
   }
 
@@ -158,56 +126,7 @@ module "sandbox" {
     s3_bucket_name = local.diagnostics_bucket_name
   }
 
-  depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis, render_redis.redis_sandbox]
-}
-
-# =============================================================================
-# PgBouncer
-# =============================================================================
-
-module "pgbouncer" {
-  source = "../modules/pgbouncer"
-
-  environment            = "sandbox"
-  render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
-  registry_credential_id = render_registry_credential.ghcr.id
-
-  database = {
-    host     = local.db_internal_host
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
-  }
-
-  pool_config = {
-    max_client_conn   = "1000"
-    default_pool_size = "20"
-  }
-
-  depends_on = [render_registry_credential.ghcr, data.render_postgres.db]
-}
-
-module "pgbouncer_read" {
-  source = "../modules/pgbouncer"
-
-  name                   = "pgbouncer-read"
-  environment            = "sandbox"
-  render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
-  registry_credential_id = render_registry_credential.ghcr.id
-
-  database = {
-    host     = local.read_replica.id
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
-  }
-
-  pool_config = {
-    max_client_conn   = "1000"
-    default_pool_size = "20"
-  }
-
-  depends_on = [render_registry_credential.ghcr, data.render_postgres.db]
+  depends_on = [render_registry_credential.ghcr, data.render_redis.redis, render_redis.redis_sandbox]
 }
 
 # =============================================================================

@@ -94,13 +94,30 @@ class NotPermitted(PolarError):
         super().__init__(message, status_code)
 
 
+def get_resource_metadata_attribute() -> dict[str, str]:
+    """The `WWW-Authenticate` pointer to our protected resource metadata (RFC 9728),
+    which is how agents discover how to sign up."""
+    if not settings.AGENT_SIGN_UP_ENABLED:
+        return {}
+    return {
+        "resource_metadata": settings.generate_external_url(
+            "/.well-known/oauth-protected-resource"
+        )
+    }
+
+
 class Unauthorized(PolarError):
     def __init__(self, message: str = "Unauthorized", status_code: int = 401) -> None:
+        attributes = {
+            "realm": settings.WWW_AUTHENTICATE_REALM,
+            **get_resource_metadata_attribute(),
+        }
         super().__init__(
             message,
             status_code,
             headers={
-                "WWW-Authenticate": f'Bearer realm="{settings.WWW_AUTHENTICATE_REALM}"'
+                "WWW-Authenticate": "Bearer "
+                + ", ".join(f'{key}="{value}"' for key, value in attributes.items())
             },
         )
 

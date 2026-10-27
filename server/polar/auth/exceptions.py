@@ -1,6 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, Field, create_model
+from typing_extensions import TypeForm
 
 from polar.config import settings
 from polar.exceptions import PolarError
@@ -76,7 +77,10 @@ class SSORequired(PolarAuthError):
         if cls._schema is None:
             cls._schema = create_model(
                 cls.__name__,
-                error=(Literal["SSORequired"], Field(examples=[cls.__name__])),
+                error=(
+                    TypeForm(Literal["SSORequired"]),
+                    Field(examples=[cls.__name__]),
+                ),
                 detail=(str, ...),
                 redirect_url=(str, ...),
             )
@@ -88,9 +92,21 @@ class GetEmailError(PolarAuthError):
     Exception raised when there's an error getting the email from an OAuth2 provider.
     """
 
-    def __init__(self) -> None:
-        message = "An error occurred while retrieving your email from the authentication provider. Please try again."
+    def __init__(
+        self,
+        message: str = "An error occurred while retrieving your email from the authentication provider. Please try again.",
+    ) -> None:
         super().__init__(message, 400)
+
+
+class UnverifiedEmailError(GetEmailError):
+    """
+    Exception raised when the email from an OAuth2 provider is unverified.
+    """
+
+    def __init__(self) -> None:
+        message = "The email associated with this account is unverified. Please verify your email with the authentication provider and try again."
+        super().__init__(message)
 
 
 class PolarAuthRedirectionError(PolarError):

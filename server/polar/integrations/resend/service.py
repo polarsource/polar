@@ -4,8 +4,10 @@ from uuid import UUID
 from polar.config import settings
 from polar.exceptions import PolarError
 from polar.models import User
+from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
+from polar.user_organization.repository import UserOrganizationRepository
 from polar.worker import enqueue_job
 
 from .client import ContactDoesNotExist, InvalidIdentifier, client
@@ -20,6 +22,16 @@ class UserDoesNotExist(ResendServiceError):
         super().__init__(f"The user with id {user_id} does not exist.", 404)
 
 
+ACTIVE_ORGANIZATION_STATUSES = frozenset(
+    {
+        OrganizationStatus.ACTIVE,
+        OrganizationStatus.REVIEW,
+        OrganizationStatus.SNOOZED,
+        OrganizationStatus.OFFBOARDING,
+    }
+)
+
+
 class ResendService:
     def enqueue_sync_user(
         self, user_id: UUID, *, previous_email: str | None = None
@@ -27,6 +39,29 @@ class ResendService:
         if settings.RESEND_ACTIVE_USERS_SEGMENT_ID is None:
             return
         enqueue_job("resend.sync_user", user_id=user_id, previous_email=previous_email)
+
+    def enqueue_sync_organization_members(self, organization_id: UUID) -> None:
+        if settings.RESEND_ACTIVE_USERS_SEGMENT_ID is None:
+            return
+        enqueue_job("resend.sync_organization_members", organization_id=organization_id)
+
+    def on_organization_status_changed(
+        self,
+        organization_id: UUID,
+        previous_status: OrganizationStatus,
+        status: OrganizationStatus,
+    ) -> None:
+        if (previous_status in ACTIVE_ORGANIZATION_STATUSES) != (
+            status in ACTIVE_ORGANIZATION_STATUSES
+        ):
+            self.enqueue_sync_organization_members(organization_id)
+
+    async def sync_organization_members(
+        self, session: AsyncSession, organization_id: UUID
+    ) -> None:
+        repository = UserOrganizationRepository.from_session(session)
+        for user_id in await repository.get_member_user_ids(organization_id):
+            self.enqueue_sync_user(user_id)
 
     async def sync_user(
         self,
@@ -60,6 +95,15 @@ class ResendService:
                 await client.delete_contact(contact_id)
             return await repository.update(user, update_dict={"resend_id": None})
 
+        user_organization_repository = UserOrganizationRepository.from_session(session)
+        active = await user_organization_repository.has_organization_with_status(
+            user.id, ACTIVE_ORGANIZATION_STATUSES
+        )
+        if not active and previous_email is None:
+            if user.resend_id is not None:
+                await client.remove_contact_from_segment(user.resend_id, segment_id)
+            return user
+
         previous_contact: dict[str, typing.Any] | None = None
         previous_identifier = previous_email or user.resend_id
         if previous_identifier is not None:
@@ -67,6 +111,9 @@ class ResendService:
                 previous_contact = await client.get_contact(previous_identifier)
             except ContactDoesNotExist, InvalidIdentifier:
                 pass
+
+        if not active and previous_contact is None:
+            return user
 
         if (
             previous_contact is not None
@@ -91,7 +138,10 @@ class ResendService:
                         contact["id"], unsubscribed=unsubscribed
                     )
 
-        await client.add_contact_to_segment(contact["id"], segment_id)
+        if active:
+            await client.add_contact_to_segment(contact["id"], segment_id)
+        else:
+            await client.remove_contact_from_segment(contact["id"], segment_id)
         if previous_contact is not None and previous_contact["id"] != contact["id"]:
             await client.delete_contact(previous_contact["id"])
         return await repository.update(user, update_dict={"resend_id": contact["id"]})

@@ -32,3 +32,8 @@ output "grafana_cloudwatch_role_arn" {
   description = "IAM role ARN to provide in the Grafana Cloud CloudWatch scrape setup."
   value       = module.grafana_cloudwatch_role.role_arn
 }
+
+output "planetscale" {
+  description = "PlanetScale production branch and application role."
+  value       = module.planetscale
+}

@@ -2,6 +2,12 @@ import types
 import typing
 
 from polar.base import AsyncClientBase, RequestTimeout, SyncClientBase, resolve_base_url
+from polar.metering import (
+    BufferedMeteringOptions,
+    Metering,
+    MeteringOutpostOptions,
+    MeteringStrategyProtocol,
+)
 from polar.v2027_01.services.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
 from polar.v2027_01.services.benefits import BenefitsAsync, BenefitsSync
 from polar.v2027_01.services.checkout_links import CheckoutLinksAsync, CheckoutLinksSync
@@ -155,6 +161,41 @@ class PolarAsync:
         exc_tb: types.TracebackType | None = None,
     ) -> None:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
+
+    @typing.overload
+    def metering(
+        self,
+        *,
+        buffered: BufferedMeteringOptions | None = None,
+        outpost: MeteringOutpostOptions | bool | None = None,
+    ) -> Metering: ...
+
+    @typing.overload
+    def metering(self, *, strategies: list[MeteringStrategyProtocol]) -> Metering: ...
+
+    def metering(
+        self,
+        *,
+        buffered: BufferedMeteringOptions | None = None,
+        outpost: MeteringOutpostOptions | bool | None = None,
+        strategies: list[MeteringStrategyProtocol] | None = None,
+    ) -> Metering:
+        """Create a helper for buffered event delivery and customer meter reads.
+
+        Args:
+            buffered: Batch and retry options; defaults to 100 events, a 1-second
+                collection interval, a 5-second shutdown timeout, and 3 attempts.
+            outpost: True or Outpost options to enable Outpost. Disabled by default.
+                Pass False to disable; explicit options require a Redis URL.
+            strategies: Replace all defaults with custom strategies. Cannot be
+                combined with buffered or outpost.
+
+        Returns:
+            An unstarted helper to use with async with.
+        """
+        return Metering.create(
+            self, buffered=buffered, outpost=outpost, strategies=strategies
+        )
 
 
 __all__ = ["Environment", "Polar", "PolarAsync"]

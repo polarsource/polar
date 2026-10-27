@@ -1,5 +1,6 @@
 import collections.abc
 import enum
+import operator
 import re
 import typing
 
@@ -34,7 +35,7 @@ class ArrayType(BaseModel):
     """An ordered sequence of items all sharing the same type."""
 
     kind: typing.Literal["array"]
-    items: "TypeRef"
+    items: TypeRef
     min_items: int | None = None
     max_items: int | None = None
 
@@ -82,7 +83,7 @@ class UnionType(BaseModel):
     """
 
     kind: typing.Literal["union"]
-    variants: list["TypeRef"]
+    variants: list[TypeRef]
     discriminator: UnionDiscriminator | None = None
     composition_kind: typing.Literal["allOf", "oneOf", "anyOf"] | None = None
 
@@ -96,7 +97,7 @@ class NullableType(BaseModel):
     """
 
     kind: typing.Literal["nullable"]
-    inner: "TypeRef"
+    inner: TypeRef
 
 
 class LiteralType(BaseModel):
@@ -120,8 +121,8 @@ class MapType(BaseModel):
     """
 
     kind: typing.Literal["map"]
-    value_type: "TypeRef"
-    key_type: "TypeRef | None" = None
+    value_type: TypeRef
+    key_type: TypeRef | None = None
 
 
 type TypeRef = typing.Annotated[
@@ -337,8 +338,8 @@ class Service(BaseModel):
     """
 
     name: str
-    services: list["Service"]
-    methods: list["Method"]
+    services: list[Service]
+    methods: list[Method]
 
 
 class Server(BaseModel):
@@ -458,7 +459,7 @@ def _default_service_name_normalizer(input: str) -> str:
 
 def _get_operations(
     path_item: op.PathItem,
-) -> collections.abc.Generator[tuple[HTTPMethod, op.Operation], None, None]:
+) -> collections.abc.Generator[tuple[HTTPMethod, op.Operation]]:
     for method in HTTPMethod:
         if operation := getattr(path_item, method.lower(), None):
             yield method, operation
@@ -609,10 +610,12 @@ def _convert_typeref(
         return UnionType(kind="union", variants=variants, composition_kind="allOf")
 
     if schema.enum is not None:
-        if schema.title:
-            name = normalize_model_name(schema.title)
-            if name not in inline_schemas:
-                inline_schemas[name] = schema
+        name = normalize_model_name(schema.title) if schema.title else None
+        # A title already taken by other values would alias the wrong enum.
+        if (
+            name is not None
+            and inline_schemas.setdefault(name, schema).enum == schema.enum
+        ):
             referenced_names.add(name)
             for cs in context_sets:
                 cs.add(name)
@@ -629,7 +632,7 @@ def _convert_typeref(
     if schema_type in ("string", "integer", "number", "boolean"):
         return PrimitiveType(
             kind="primitive",
-            type=schema_type,  # type: ignore[arg-type]
+            type=schema_type.value,
             format=schema.schema_format or None,
             minimum=schema.minimum,
             exclusive_minimum=schema.exclusiveMinimum,
@@ -996,12 +999,12 @@ def _convert_parameter_ir(
 
     default = None
     has_default = False
-    if parameter.param_schema is not None and isinstance(
-        parameter.param_schema, op.Schema
+    if (
+        isinstance(parameter.param_schema, op.Schema)
+        and "default" in parameter.param_schema.model_fields_set
     ):
-        if "default" in parameter.param_schema.model_fields_set:
-            default = parameter.param_schema.default
-            has_default = True
+        default = parameter.param_schema.default
+        has_default = True
 
     has_example, example = _extract_example(parameter, parameter.param_schema)
 
@@ -1053,11 +1056,8 @@ def _topological_sort_unions(
 
     for union_name, union in filtered_unions.items():
         for variant in union.variants:
-            if isinstance(variant, UnionRef):
-                # This union depends on the referenced union
-                # But only if the referenced union is also in our filtered set
-                if variant.name in filtered_unions:
-                    dependencies[union_name].add(variant.name)
+            if isinstance(variant, UnionRef) and variant.name in filtered_unions:
+                dependencies[union_name].add(variant.name)
 
     # Perform topological sort using Kahn's algorithm
     result: list[NamedUnion] = []
@@ -1458,7 +1458,7 @@ def _generate_ir_version(
         services=services,
         input_models=sorted(
             [m for name, m in models_dict.items() if name in input_names],
-            key=lambda m: m.name,
+            key=operator.attrgetter("name"),
         ),
         output_models=sorted(
             [
@@ -1466,13 +1466,13 @@ def _generate_ir_version(
                 for name, m in models_dict.items()
                 if name in output_names and name not in webhook_names
             ],
-            key=lambda m: m.name,
+            key=operator.attrgetter("name"),
         ),
         webhooks=sorted(
             [m for name, m in models_dict.items() if name in webhook_names],
-            key=lambda m: m.name,
+            key=operator.attrgetter("name"),
         ),
-        enums=sorted(enums_dict.values(), key=lambda e: e.name),
+        enums=sorted(enums_dict.values(), key=operator.attrgetter("name")),
         input_unions=_topological_sort_unions(unions_dict, input_names),
         output_unions=_topological_sort_unions(unions_dict, output_names),
     )

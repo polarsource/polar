@@ -133,8 +133,12 @@ class TestGetAncestorsBatch:
             assert result[child.id] == [str(root.id)]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize(
+        "staged_events_ingest_enabled", [False, True], ids=["events", "staged_events"]
+    )
     async def test_batch_ingest_out_of_order(
         self,
+        staged_events_ingest_enabled: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -144,6 +148,10 @@ class TestGetAncestorsBatch:
         Test that ancestors are correctly computed when multiple hierarchical
         events are ingested in a single batch, even when out of order.
         """
+        organization.feature_settings = {
+            "staged_events_ingest_enabled": staged_events_ingest_enabled
+        }
+        await save_fixture(organization)
         customer = await create_customer(
             save_fixture, organization=organization, external_id="test-customer-123"
         )
@@ -200,6 +208,7 @@ class TestGetAncestorsBatch:
         )
 
         await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
 
         # Parent resolution runs in the background `event.ingested` task; drive
         # it here so `parent_id`/`root_id` are populated before assertions.

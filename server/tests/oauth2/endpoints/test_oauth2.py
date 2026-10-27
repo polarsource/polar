@@ -7,7 +7,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
-from polar.auth.scope import Scope
+from polar.auth.scope import UNCLAIMED_AGENT_SCOPES, Scope
 from polar.auth.service import USER_SESSION_TOKEN_PREFIX
 from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
@@ -16,6 +16,7 @@ from polar.kit.encryption import EncryptedString
 from polar.kit.hash_secrets import HashSecrets
 from polar.kit.utils import utc_now
 from polar.models import (
+    Agent,
     OAuth2AuthorizationCode,
     OAuth2Client,
     OAuth2Grant,
@@ -31,6 +32,7 @@ from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_servi
 from polar.oauth2.sub_type import SubType
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_agent
 
 from ..conftest import create_oauth2_authorization_code, create_oauth2_token
 
@@ -491,15 +493,16 @@ class TestOAuth2Authorize:
         assert "error=login_required" in location
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("sub_type", ["foo", "agent"])
     async def test_authenticated_invalid_sub_type(
-        self, client: AsyncClient, oauth2_client: OAuth2Client
+        self, sub_type: str, client: AsyncClient, oauth2_client: OAuth2Client
     ) -> None:
         params = {
             "client_id": oauth2_client.client_id,
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
-            "sub_type": "foo",
+            "sub_type": sub_type,
         }
         response = await client.get("/v1/oauth2/authorize", params=params)
 
@@ -1951,6 +1954,35 @@ class TestOAuth2Token:
         assert access_token.startswith("polar_at_u_")
         assert "refresh_token" not in json
 
+    async def test_web_grant_sub_agent(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        token, token_hash = generate_token_hash_pair(prefix=USER_SESSION_TOKEN_PREFIX)
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "sub_type": "agent",
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+
     async def test_web_grant_sub_organization(
         self,
         save_fixture: SaveFixture,
@@ -2421,3 +2453,88 @@ class TestOAuth2Token:
         response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 400
+
+
+@pytest.mark.anyio
+class TestOAuth2Revoke:
+    async def test_agent_token_without_client_credentials(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        agent: Agent,
+    ) -> None:
+        token = await create_oauth2_token(
+            save_fixture,
+            client=agent.oauth2_client,
+            access_token="polar_at_a_123",
+            refresh_token=None,
+            scopes=sorted(UNCLAIMED_AGENT_SCOPES),
+            agent=agent,
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={"token": "polar_at_a_123", "token_type_hint": "access_token"},
+        )
+
+        assert response.status_code == 200
+        saved_token = sync_session.get(OAuth2Token, token.id)
+        assert saved_token is not None
+        assert saved_token.access_token_revoked_at > 0
+
+    async def test_agent_token_with_other_client_id(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        agent: Agent,
+    ) -> None:
+        other_agent = await create_agent(save_fixture)
+        token = await create_oauth2_token(
+            save_fixture,
+            client=agent.oauth2_client,
+            access_token="polar_at_a_123",
+            refresh_token=None,
+            scopes=sorted(UNCLAIMED_AGENT_SCOPES),
+            agent=agent,
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={
+                "token": "polar_at_a_123",
+                "token_type_hint": "access_token",
+                "client_id": other_agent.oauth2_client.client_id,
+            },
+        )
+
+        assert response.status_code == 401
+        assert response.json()["error"] == "invalid_client"
+        saved_token = sync_session.get(OAuth2Token, token.id)
+        assert saved_token is not None
+        assert saved_token.access_token_revoked_at == 0
+
+    async def test_public_client_token_without_client_credentials(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        public_oauth2_client: OAuth2Client,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=public_oauth2_client,
+            access_token="polar_at_u_123",
+            refresh_token=None,
+            scopes=["openid"],
+            user=user,
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={"token": "polar_at_u_123", "token_type_hint": "access_token"},
+        )
+
+        assert response.status_code == 401
+        assert response.json()["error"] == "invalid_client"

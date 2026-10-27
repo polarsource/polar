@@ -3,7 +3,7 @@
 import { type ScrollFadeHandle } from '@/components/Shared/ScrollFade'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Paperclip } from 'lucide-react'
+import { Paperclip } from '@polar-sh/orbit/icons'
 import React, { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Composer, type ComposerHandle } from './Composer'
@@ -15,6 +15,8 @@ import {
   type RenderChatMessage,
 } from './types'
 import { useFileDrop } from './useFileDrop'
+
+const EMPTY_ATTACHMENTS: ChatAttachment[] = []
 
 interface ComposerConfig {
   onSend: (text: string, fileIds: string[]) => Promise<{ error?: unknown }>
@@ -46,7 +48,7 @@ interface Props {
 
 export const Chat = ({
   messages,
-  attachments = [],
+  attachments = EMPTY_ATTACHMENTS,
   isOpen,
   composer,
   title = 'Messages',

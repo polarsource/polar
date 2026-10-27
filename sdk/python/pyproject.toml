@@ -15,10 +15,14 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+  "certifi>=2026.10.19",
   "httpx>=0.28.1",
   "adaptix==3.0.0b12",
   "typing-extensions>=4.13.0",
 ]
+
+[project.optional-dependencies]
+outpost = ["redis[hiredis]>=5.0.4", "httpx-ws>=0.9.0", "anyio>=4.5.0", "opentelemetry-sdk>=1.30.0", "opentelemetry-exporter-otlp-proto-common>=1.30.0"]
 
 [project.urls]
 homepage = "https://polar.sh"
@@ -36,7 +40,11 @@ packages = ["polar"]
 artifacts = ["/polar/.agents/**"]
 
 [dependency-groups]
-dev = ["ty", "ruff", "pytest", "standardwebhooks>=1.0.0,<2.0.0"]
+dev = ["ty", "ruff", "pytest", "pytest-codspeed>=5.0.3", "fakeredis[lua]>=2.36.1", "standardwebhooks>=1.0.0,<2.0.0"]
+
+[tool.pytest.ini_options]
+markers = ["benchmark: performance benchmark, deselected by default (run with -m benchmark)"]
+addopts = "-m 'not benchmark'"
 
 [tool.ruff]
 target-version = "py311"
@@ -48,3 +56,4 @@ ignore = ["B006"]
 [tool.uv]
 default-groups = ["dev"]
 exclude-newer = "1 week"
+exclude-newer-package = { certifi = false }

@@ -97,14 +97,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         <DataTableColumnHeader column={column} title="Date" />
       ),
       cell: ({ row: { original: order } }) => (
-        <Box flexDirection="column" rowGap="xs" minWidth={0}>
-          <Text tabularNums>
-            <FormattedDateTime datetime={order.created_at} resolution="time" />
-          </Text>
-          <Text color="muted" monospace tabularNums>
-            {order.invoice_number ?? '—'}
-          </Text>
-        </Box>
+        <Text tabularNums>
+          <FormattedDateTime datetime={order.created_at} resolution="time" />
+        </Text>
       ),
     },
     {

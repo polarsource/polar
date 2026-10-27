@@ -97,15 +97,15 @@ export default defineConfig({
       // .trial(14, 'days')
       .grants(['custom_servers', 'tool_calls']),
     topup_100: product('100 tool calls')
-      .prices(fixed().amount(usd(9)))
+      .prices(fixed().amount(usd(9), eur(5)).tax('inclusive'))
       .once()
       .grants(['topup_100']),
     topup_500: product('500 tool calls')
-      .prices(fixed().amount(usd(39)))
+      .prices(fixed().amount(usd(39), eur(30)).tax('exclusive'))
       .once()
       .grants(['topup_500']),
     topup_1000: product('1,000 tool calls')
-      .prices(fixed().amount(usd(79)))
+      .prices(fixed().amount(usd(79), eur(50)).tax('location'))
       .once()
       .grants(['topup_1000']),
   }),

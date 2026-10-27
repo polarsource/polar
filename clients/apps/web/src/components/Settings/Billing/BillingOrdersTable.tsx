@@ -2,7 +2,7 @@
 
 import { useGetOrganizationOrderInvoice } from '@/hooks/queries/billing'
 import { toast } from '@/components/Toast/use-toast'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
+import { FileDownloadOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'

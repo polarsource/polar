@@ -5,14 +5,16 @@ from uuid import UUID
 import dramatiq
 import typer
 from rich.progress import Progress
-from sqlalchemy import func, or_, select
+from sqlalchemy import Select, and_, func, or_, select
 
 from polar import tasks  # noqa: F401
 from polar.config import settings
+from polar.integrations.resend.service import ACTIVE_ORGANIZATION_STATUSES
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import User
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
+from polar.user_organization.repository import UserOrganizationRepository
 from polar.worker import JobQueueManager, enqueue_job
 
 from .helper import configure_script_logging, typer_async
@@ -42,6 +44,27 @@ async def cleanup_deleted() -> None:
 async def enqueue_sync(
     *, cutoff: datetime | None = None, deleted_only: bool = False
 ) -> None:
+    statement = select(User.id)
+    if deleted_only:
+        statement = statement.where(User.is_deleted, User.resend_id.is_not(None))
+    else:
+        statement = statement.where(
+            or_(
+                User.is_deleted,
+                and_(
+                    User.blocked_at.is_(None),
+                    UserOrganizationRepository.get_has_organization_with_status_clause(
+                        User.id, ACTIVE_ORGANIZATION_STATUSES
+                    ),
+                ),
+            )
+        )
+    if cutoff is not None:
+        statement = statement.where(User.created_at > cutoff)
+    await enqueue_sync_users(statement)
+
+
+async def enqueue_sync_users(statement: Select[tuple[UUID]]) -> None:
     configure_script_logging()
     if settings.RESEND_ACTIVE_USERS_SEGMENT_ID is None or not settings.RESEND_API_KEY:
         typer.echo(
@@ -58,17 +81,7 @@ async def enqueue_sync(
             with Progress() as progress:
                 task_id = progress.add_task("[cyan]Enqueuing user sync...", total=None)
 
-                statement = select(User.id).order_by(User.id)
-                if deleted_only:
-                    statement = statement.where(
-                        User.is_deleted, User.resend_id.is_not(None)
-                    )
-                else:
-                    statement = statement.where(
-                        or_(User.is_deleted, User.blocked_at.is_(None))
-                    )
-                if cutoff is not None:
-                    statement = statement.where(User.created_at > cutoff)
+                statement = statement.order_by(User.id)
                 count_statement = statement.with_only_columns(func.count()).order_by(
                     None
                 )

@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { Check, ChevronsUpDown } from 'lucide-react'
+import { Check, ChevronsUpDown } from '@polar-sh/orbit/icons'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -122,10 +122,8 @@ const EventSelect: React.FC<EventSelectProps> = ({
         ) {
           return acc
         }
-        return {
-          ...acc,
-          [eventName.source]: [...acc[eventName.source], eventName],
-        }
+        acc[eventName.source].push(eventName)
+        return acc
       },
       { system: [], user: [] },
     )

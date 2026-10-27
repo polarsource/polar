@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { z } from 'zod'
 import type { RuntimeSDKConfig } from '../schema/runtime'
-import type { Polar } from '../sdk'
+import { errors, type Polar } from '../sdk'
 import { createActor, EventValidationError } from './actor'
 
 const config = {
@@ -230,5 +230,166 @@ describe('actor events', () => {
       'Unknown event: toString',
     )
     expect(ingest).not.toHaveBeenCalled()
+  })
+})
+
+describe('actor grants', () => {
+  const meters = {
+    tool_call: {
+      filter: {
+        conjunction: 'and',
+        clauses: [{ property: 'name', operator: 'eq', value: 'tool_call' }],
+      },
+      aggregation: { func: 'count' },
+    },
+  } as const satisfies RuntimeSDKConfig['meters']
+
+  const setup = () => {
+    const credits = vi
+      .fn()
+      .mockResolvedValue({ timestamp: '2026-10-01T12:00:00Z' })
+    const list = vi.fn()
+    const getExternal = vi
+      .fn()
+      .mockResolvedValue({ id: 'meter-id', archived_at: null })
+    const sdk = {
+      customerMeters: { credits, list },
+      meters: { getExternal },
+    } as unknown as Polar
+    return { actor: createActor({ meters }, sdk), credits, list, getExternal }
+  }
+
+  it('accepts only configured meter names', () => {
+    const { actor } = setup()
+    expectTypeOf(actor({ customerId: 'customer-id' }).grant)
+      .parameter(0)
+      .toEqualTypeOf<'tool_call'>()
+  })
+
+  it.each([
+    [
+      { customerId: 'customer-id' },
+      { customer_id: 'customer-id', meter_id: 'meter-id' },
+    ],
+    [
+      { externalCustomerId: 'external-customer-id' },
+      {
+        external_customer_id: 'external-customer-id',
+        external_meter_id: 'tool_call',
+      },
+    ],
+  ])('credits the customer %j without rollover', async (identifier, body) => {
+    const { actor, credits } = setup()
+
+    await actor(identifier).grant('tool_call', 100)
+    expect(credits).toHaveBeenCalledWith({
+      ...body,
+      units: 100,
+      rollover: false,
+    })
+  })
+
+  it('credits the customer of a member actor', async () => {
+    const { actor, credits } = setup()
+
+    await actor({
+      externalCustomerId: 'external-customer-id',
+      externalMemberId: 'external-member-id',
+    }).grant('tool_call', 100)
+    expect(credits).toHaveBeenCalledWith({
+      external_customer_id: 'external-customer-id',
+      external_meter_id: 'tool_call',
+      units: 100,
+      rollover: false,
+    })
+  })
+
+  it('passes rollover and the idempotency key', async () => {
+    const { actor, credits } = setup()
+
+    await actor({ customerId: 'customer-id' }).grant('tool_call', 100, {
+      rollover: true,
+      idempotencyKey: 'order-1',
+    })
+    expect(credits).toHaveBeenCalledWith({
+      customer_id: 'customer-id',
+      meter_id: 'meter-id',
+      units: 100,
+      rollover: true,
+      external_id: 'order-1',
+    })
+  })
+
+  it('reports the balance as not pristine until the credit is applied', async () => {
+    const { actor, list } = setup()
+    const customer = actor({ customerId: 'customer-id' })
+    const customerMeter = (modifiedAt: string, balance: number) => ({
+      items: [{ balance, created_at: modifiedAt, modified_at: modifiedAt }],
+    })
+
+    await customer.grant('tool_call', 100)
+
+    list.mockResolvedValueOnce(customerMeter('2026-10-01T11:59:59Z', 0))
+    await expect(customer.balance('tool_call')).resolves.toEqual({
+      balance: 0,
+      pristine: false,
+    })
+    list.mockResolvedValueOnce(customerMeter('2026-10-01T12:00:01Z', 100))
+    await expect(customer.balance('tool_call')).resolves.toEqual({
+      balance: 100,
+      pristine: true,
+    })
+  })
+
+  it('rejects undeclared meters at runtime', async () => {
+    const { actor, credits } = setup()
+
+    await expect(
+      actor({ customerId: 'customer-id' }).grant('nope' as 'tool_call', 100),
+    ).rejects.toThrow('Unknown meter: nope')
+    expect(credits).not.toHaveBeenCalled()
+  })
+
+  it.each([0, -1, 1.5, Number.NaN, 1_000_000_001])(
+    'rejects %d units',
+    async (units) => {
+      const { actor, credits } = setup()
+
+      await expect(
+        actor({ customerId: 'customer-id' }).grant('tool_call', units),
+      ).rejects.toThrow('Units must be a whole number')
+      expect(credits).not.toHaveBeenCalled()
+    },
+  )
+
+  it.each([
+    { customerId: 'customer-id' },
+    { externalCustomerId: 'external-customer-id' },
+  ])('rejects a meter that is not deployed for %j', async (identifier) => {
+    const credits = vi.fn()
+    const getExternal = vi.fn().mockRejectedValue(
+      new errors.ResourceNotFound(404, {
+        error: 'ResourceNotFound',
+        detail: 'Not found',
+      }),
+    )
+    const sdk = {
+      customerMeters: { credits },
+      meters: { getExternal },
+    } as unknown as Polar
+    const customer = createActor({ meters }, sdk)(identifier)
+
+    await expect(customer.grant('tool_call', 100)).rejects.toThrow(
+      'not deployed',
+    )
+    expect(credits).not.toHaveBeenCalled()
+  })
+
+  it('looks up a meter once per actor', async () => {
+    const { actor, getExternal } = setup()
+
+    await actor({ customerId: 'customer-id' }).grant('tool_call', 100)
+    await actor({ customerId: 'other-customer-id' }).grant('tool_call', 100)
+    expect(getExternal).toHaveBeenCalledTimes(1)
   })
 })

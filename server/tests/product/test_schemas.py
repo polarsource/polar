@@ -1,3 +1,6 @@
+import uuid
+import warnings
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -9,12 +12,15 @@ from polar.kit.currency import PresentmentCurrency
 from polar.models.product_price import ProductPriceAmountType
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
+    LegacyRecurringProductPriceFixed,
     ProductCreate,
     ProductCreateOneTime,
     ProductCreateRecurring,
+    ProductPrice,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceMeteredTiersCreate,
+    ProductPriceMeteredUnit,
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatTiers,
     ProductPriceUnitBasedCreate,
@@ -698,6 +704,39 @@ class TestProductCreateMeterInterval:
             )
         assert "evenly divide" in str(exc_info.value)
 
+    @pytest.mark.parametrize(
+        ("billing_interval", "billing_count", "meter_interval", "meter_count"),
+        [
+            (
+                SubscriptionRecurringInterval.month,
+                1,
+                SubscriptionRecurringInterval.month,
+                1,
+            ),
+            (
+                SubscriptionRecurringInterval.month,
+                3,
+                SubscriptionRecurringInterval.month,
+                3,
+            ),
+        ],
+    )
+    def test_equal_to_billing_normalized_to_none(
+        self,
+        billing_interval: SubscriptionRecurringInterval,
+        billing_count: int,
+        meter_interval: SubscriptionRecurringInterval,
+        meter_count: int,
+    ) -> None:
+        product = _recurring_product(
+            recurring_interval=billing_interval,
+            recurring_interval_count=billing_count,
+            meter_interval=meter_interval,
+            meter_interval_count=meter_count,
+        )
+        assert product.meter_interval is None
+        assert product.meter_interval_count is None
+
     def test_invalid_coarser_than_billing(self) -> None:
         with pytest.raises(ValidationError):
             _recurring_product(
@@ -848,3 +887,58 @@ class TestProductPriceSeatTiers:
                     ],
                 }
             )
+
+
+PRICE_BASE_FIELDS: dict[str, Any] = {
+    "id": uuid.uuid4(),
+    "created_at": datetime.now(UTC),
+    "modified_at": None,
+    "source": "catalog",
+    "price_currency": "usd",
+    "tax_behavior": None,
+    "is_archived": False,
+    "product_id": uuid.uuid4(),
+    "type": "recurring",
+    "recurring_interval": "month",
+}
+
+
+ProductPriceAdapter: TypeAdapter[Any] = TypeAdapter(ProductPrice)
+
+
+class TestProductPriceSerialization:
+    def test_new_price_instance_serializes_without_warnings(self) -> None:
+        price = ProductPriceMeteredUnit.model_validate(
+            {
+                **PRICE_BASE_FIELDS,
+                "amount_type": "metered_unit",
+                "cap_amount": None,
+                "meter_id": METER_ID,
+                "meter": {
+                    "id": METER_ID,
+                    "name": "Meter",
+                    "unit": "scalar",
+                    "custom_label": None,
+                    "custom_multiplier": None,
+                },
+                "unit_amount": Decimal("4.4"),
+            }
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            data = ProductPriceAdapter.dump_python(price, mode="json")
+
+        assert data["amount_type"] == "metered_unit"
+        assert "legacy" not in data
+
+    def test_legacy_price_instance_serializes_as_legacy(self) -> None:
+        price = LegacyRecurringProductPriceFixed.model_validate(
+            {**PRICE_BASE_FIELDS, "amount_type": "fixed", "price_amount": 1000}
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            data = ProductPriceAdapter.dump_python(price, mode="json")
+
+        assert data["legacy"] is True

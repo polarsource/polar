@@ -12,6 +12,7 @@ import {
   type ConfigResource,
   type EntryResult,
   type LoadedConfig,
+  type SettingsResult,
 } from '@/schemas/BillingConfig'
 import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
 import type { ApiClient } from '@/services/client'
@@ -56,20 +57,56 @@ const SECTIONS = {
   meter: 'meters',
   benefit: 'benefits',
   product: 'products',
-  discount: 'discounts',
+  webhook: 'webhooks',
 } as const satisfies Record<typeof ConfigResource.Type, string>
 
-export const entries = (results: ReadonlyArray<typeof EntryResult.Type>) =>
-  results.map(
+// The server reports settings changes by dotted path, like `payments.currency`
+const settingsEntries = (
+  settings: typeof SettingsResult.Type | null | undefined,
+): AppliedEntry[] => {
+  if (!settings) return []
+  const groups = new Map<string, AppliedEntry['diff'][number][]>()
+  for (const change of settings.diff ?? []) {
+    const [group = '', ...field] = change.field.split('.')
+    groups.set(group, [
+      ...(groups.get(group) ?? []),
+      { ...change, field: field.join('.') },
+    ])
+  }
+  if (groups.size === 0) {
+    return [
+      {
+        section: 'settings',
+        id: 'settings',
+        action: settings.action,
+        diff: [],
+      },
+    ]
+  }
+  return [...groups].map(([id, diff]) => ({
+    section: 'settings',
+    id,
+    action: 'updated',
+    diff,
+  }))
+}
+
+export const entries = (
+  results: ReadonlyArray<typeof EntryResult.Type>,
+  settings?: typeof SettingsResult.Type | null,
+) => [
+  ...settingsEntries(settings),
+  ...results.map(
     (entry): AppliedEntry => ({
       section: SECTIONS[entry.resource],
       id: entry.external_id,
       action: entry.action,
       diff: entry.diff ?? [],
     }),
-  )
+  ),
+]
 
-// Benefits, products and discounts sections need their own scope on top of the meters one
+// Settings, benefits, products and webhooks sections need their own scope on top of the meters one
 export const requiredScopes = (
   config: LoadedConfig,
   access: 'read' | 'write',
@@ -78,9 +115,12 @@ export const requiredScopes = (
     typeof config.input === 'object' && config.input !== null
       ? config.input
       : {}
-  return ['meters', 'benefits', 'products', 'discounts']
+  return ['meters', 'benefits', 'products', 'settings', 'webhooks']
     .filter((section) => section === 'meters' || section in input)
-    .map((section) => `${section}:${access}`)
+    .map(
+      (section) =>
+        `${section === 'settings' ? 'organizations' : section}:${access}`,
+    )
 }
 
 export const unexpected = (

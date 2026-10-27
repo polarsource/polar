@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -11,6 +12,7 @@ from polar.models import Customer, Member, Organization, Product, Subscription
 from polar.models.order import OrderStatus
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_meter import SubscriptionMeter
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import (
     CUSTOMER_AUTH_SUBJECT,
@@ -23,6 +25,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
     create_canceled_subscription,
+    create_meter,
     create_order,
     create_payment_method,
     create_product,
@@ -67,6 +70,69 @@ class TestGetSubscription:
         benefit_ids = {benefit["id"] for benefit in json["product"]["benefits"]}
         assert str(public_benefit.id) in benefit_ids
         assert str(private_benefit.id) not in benefit_ids
+
+
+@pytest.mark.anyio
+class TestGetMeterChargePreview:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_usage_on_renewal_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        period_end = utc_now() + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=period_end,
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_end = period_end
+        meter = await create_meter(save_fixture, organization=organization)
+        await save_fixture(
+            SubscriptionMeter(subscription=subscription, meter=meter, amount=500)
+        )
+
+        response = await client.get(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/meter-charge-preview"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=utc_now() + timedelta(days=60),
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_end = utc_now() + timedelta(days=10)
+        meter = await create_meter(save_fixture, organization=organization)
+        await save_fixture(
+            SubscriptionMeter(subscription=subscription, meter=meter, amount=500)
+        )
+
+        response = await client.get(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/meter-charge-preview"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["total_amount"] == 500
 
 
 @pytest.mark.anyio

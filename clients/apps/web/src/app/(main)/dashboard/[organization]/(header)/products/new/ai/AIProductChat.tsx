@@ -1,7 +1,7 @@
 'use client'
 
 import { useChat } from '@ai-sdk/react'
-import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
+import { ArrowForwardOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'

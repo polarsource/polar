@@ -31,6 +31,12 @@ class TestListEvents:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/")
+
+        assert response.status_code == 401
+
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_missing_scope(
         self,
@@ -436,6 +442,18 @@ class TestIngest:
 
         assert response.status_code == 200
 
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_can_ingest_events_without_organization_id(
+        self, client: AsyncClient
+    ) -> None:
+        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
+        assert response.json() == {"inserted": 1, "duplicates": 0}
+
 
 SQLI_PAYLOADS = [
     pytest.param("' OR '1'='1", id="string-breakout"),
@@ -523,10 +541,22 @@ class TestGetStatisticsByProperty:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-property")
+
+        assert response.status_code == 401
+
 
 @pytest.mark.anyio
 class TestGetStatisticsByCustomer:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-customer")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-customer")
 
         assert response.status_code == 401
@@ -539,10 +569,22 @@ class TestGetStatisticsByVariance:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-variance")
+
+        assert response.status_code == 401
+
 
 @pytest.mark.anyio
 class TestListStatisticsTimeseries:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/timeseries")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/timeseries")
 
         assert response.status_code == 401
@@ -580,6 +622,12 @@ class TestListEventNames:
 @pytest.mark.anyio
 class TestGetEvent:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/events/{uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/events/{uuid4()}")
 
         assert response.status_code == 401

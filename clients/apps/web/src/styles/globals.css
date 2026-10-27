@@ -71,13 +71,6 @@
 }
 
 @font-face {
-  font-family: 'Louize';
-  font-style: italic;
-  font-display: swap;
-  src: url('/fonts/Louize-Italic-205TF.otf') format('opentype');
-}
-
-@font-face {
   font-family: 'GeistMono';
   font-style: normal;
   font-display: swap;
@@ -461,5 +454,54 @@ pre.shiki {
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+@keyframes settle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
   }
 }

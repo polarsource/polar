@@ -1,0 +1,34 @@
+name: Build on Vercel
+description: Builds a staged production deployment on Vercel (not yet on the domain) and returns its URL
+inputs:
+  token:
+    description: Vercel token
+    required: true
+  org-id:
+    description: Vercel team ID
+    required: true
+  project-id:
+    description: Vercel project ID
+    required: true
+outputs:
+  deployment-url:
+    description: URL of the staged deployment
+    value: ${{ steps.deploy.outputs.deployment-url }}
+runs:
+  using: composite
+  steps:
+    - name: Install Vercel CLI
+      shell: bash
+      run: npm install --global vercel@60.0.1
+
+    - name: Deploy to Vercel (Staged Production)
+      id: deploy
+      shell: bash
+      env:
+        VERCEL_TOKEN: ${{ inputs.token }}
+        VERCEL_ORG_ID: ${{ inputs.org-id }}
+        VERCEL_PROJECT_ID: ${{ inputs.project-id }}
+      run: |
+        DEPLOYMENT_URL=$(vercel deploy --prod --skip-domain --token="$VERCEL_TOKEN")
+        echo "deployment-url=$DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+        echo "Staged production deployment URL: $DEPLOYMENT_URL"

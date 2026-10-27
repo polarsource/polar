@@ -1,9 +1,9 @@
 'use client'
 
-import HistoryRounded from '@mui/icons-material/HistoryRounded'
+import { HistoryRounded } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { CompassIconAction } from './CompassIconAction'
 import { CompassThreadList } from './CompassThreadList'
@@ -58,7 +58,7 @@ export const CompassHistoryMenu = ({
       </CompassIconAction>
       <AnimatePresence>
         {open && (
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.97, y: -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{
@@ -101,7 +101,7 @@ export const CompassHistoryMenu = ({
                 />
               </Box>
             </Box>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
     </div>

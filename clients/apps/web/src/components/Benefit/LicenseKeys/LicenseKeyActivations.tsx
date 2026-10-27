@@ -1,7 +1,7 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerLicenseKeyDeactivate } from '@/hooks/queries/customerPortal'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import { CloseOutlined } from '@polar-sh/orbit/icons'
 import { Client, schemas } from '@polar-sh/client'
 import {
   DEFAULT_LOCALE,

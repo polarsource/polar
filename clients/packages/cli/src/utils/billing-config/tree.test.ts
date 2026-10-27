@@ -278,6 +278,125 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows the tiers of a created seat- or unit-based product', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          products: [
+            {
+              external_id: 'seats',
+              name: 'Seats',
+              recurring_interval: 'month',
+              recurring_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'seat_based',
+                  price_currency: 'usd',
+                  tax_behavior: 'exclusive',
+                  minimum_units: 2,
+                  tiers: {
+                    type: 'graduated',
+                    tiers: [
+                      { bound: 10, unit_amount: 1000 },
+                      { bound: null, unit_amount: 800 },
+                    ],
+                  },
+                },
+              ],
+              benefits: [],
+            },
+            {
+              external_id: 'credits',
+              name: 'Credits',
+              recurring_interval: null,
+              recurring_interval_count: null,
+              prices: [
+                {
+                  amount_type: 'unit_based',
+                  price_currency: 'eur',
+                  unit_label: { en: { one: 'credit', other: 'credits' } },
+                  tiers: {
+                    type: 'volume',
+                    tiers: [{ bound: null, unit_amount: 50 }],
+                  },
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [
+          entry('products', 'seats', 'created', [
+            { field: 'prices', before: null, after: [] },
+          ]),
+          entry('products', 'credits', 'created'),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  products',
+        '  + seats',
+        '      billed per month, tax exclusive',
+        '      USD per seat, graduated, minimum 2',
+        '        1–10  $10',
+        '        11+   $8',
+        '  + credits',
+        '      billed once',
+        '      EUR per credit, volume',
+        '        1+  €0.50',
+      ].join('\n'),
+    )
+  })
+
+  test('lists the tiers of a created product metered in tiers under its meter', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          ...input,
+          products: [
+            {
+              external_id: 'usage',
+              name: 'Usage',
+              recurring_interval: 'month',
+              recurring_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'metered_tiers',
+                  price_currency: 'usd',
+                  meter: 'tool_call',
+                  cap_amount: 10000,
+                  tiers: {
+                    type: 'graduated',
+                    tiers: [
+                      { bound: 1000, unit_amount: 0 },
+                      { bound: null, unit_amount: '0.5' },
+                    ],
+                  },
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [entry('products', 'usage', 'created')],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  products',
+        '  + usage',
+        '      billed per month',
+        '      └ + meter tool_call',
+        '            USD per tool calls, graduated',
+        '              up to 1,000  $0 per 1,000',
+        '              over 1,000   $5 per 1,000',
+        '              capped at $100',
+      ].join('\n'),
+    )
+  })
+
   test('grants every configured benefit anew when a created product has no benefits diff', () => {
     const output = stripAnsi(
       formatTree(input, [
@@ -296,6 +415,77 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows only the host of a created Slack webhook', () => {
+    const slackUrl = 'https://hooks.slack.com/services/T0/B0/token'
+    const output = stripAnsi(
+      formatTree(
+        {
+          webhooks: [
+            {
+              external_id: 'sales',
+              url: slackUrl,
+              format: 'slack',
+              events: ['order.paid', 'subscription.canceled'],
+              api_version: '2027-01',
+            },
+          ],
+        },
+        [
+          entry('webhooks', 'sales', 'created', [
+            { field: 'url', before: null, after: slackUrl },
+            { field: 'format', before: null, after: 'slack' },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  webhooks',
+        '  + sales',
+        '      url     https://hooks.slack.com/***',
+        '      format  slack',
+        '      events  order.paid, subscription.canceled',
+      ].join('\n'),
+    )
+  })
+
+  test('redacts both sides of an updated webhook url by their own format', () => {
+    const after = 'https://app:pw@app.test/hook?token=new'
+    const output = stripAnsi(
+      formatTree(
+        {
+          webhooks: [
+            {
+              external_id: 'app',
+              url: after,
+              format: 'raw',
+              events: ['order.paid'],
+              api_version: '2027-01',
+            },
+          ],
+        },
+        [
+          entry('webhooks', 'app', 'updated', [
+            {
+              field: 'url',
+              before: 'https://hooks.slack.com/services/T0/B0/token',
+              after,
+            },
+            { field: 'format', before: 'slack', after: 'raw' },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  webhooks',
+        '  ~ app',
+        '      url     https://hooks.slack.com/*** → https://***@app.test/hook?token=***',
+        '      format  "slack" → "raw"',
+      ].join('\n'),
+    )
+  })
+
   test('falls back to ids when the config has no matching entry', () => {
     const output = stripAnsi(
       formatTree(undefined, [
@@ -305,59 +495,6 @@ describe('formatTree', () => {
       ]),
     )
     expect(output).toBe(['  meters', '  + tokens'].join('\n'))
-  })
-
-  test('describes a created discount', () => {
-    const output = stripAnsi(
-      formatTree(
-        {
-          ...input,
-          discounts: [
-            {
-              external_id: 'launch',
-              name: 'Launch',
-              type: 'percentage',
-              basis_points: 1250,
-              duration: 'repeating',
-              duration_in_months: 3,
-              code: 'LAUNCH',
-              products: ['pro', 'team'],
-              max_redemptions: 500,
-            },
-            {
-              external_id: 'welcome',
-              name: 'Welcome',
-              type: 'fixed',
-              amounts: { usd: 1000, eur: 900 },
-              duration: 'once',
-              products: [],
-            },
-          ],
-        },
-        [
-          entry('discounts', 'launch', 'created', [
-            { field: 'name', before: null, after: 'Launch' },
-            { field: 'basis_points', before: null, after: 1250 },
-          ]),
-          entry('discounts', 'welcome', 'created'),
-        ],
-      ),
-    )
-    expect(output).toBe(
-      [
-        '  discounts',
-        '  + launch',
-        '      value        12.5% off',
-        '      duration     3 months',
-        '      code         LAUNCH',
-        '      products     pro, team',
-        '      redemptions  500',
-        '  + welcome',
-        '      value     $10 / €9 off',
-        '      duration  once',
-        '      products  all',
-      ].join('\n'),
-    )
   })
 
   test('lists a section it has no sentences for, with every field', () => {
@@ -371,5 +508,117 @@ describe('formatTree', () => {
     expect(output).toBe(
       ['  checkout_links', '  + promo', '      label  "Promo"'].join('\n'),
     )
+  })
+
+  test('renders settings groups like entries, first', () => {
+    const output = stripAnsi(
+      formatTree({ settings: { payments: { currency: 'eur' } } }, [
+        {
+          section: 'meters',
+          id: 'tool_call',
+          action: 'unchanged',
+          diff: [],
+        },
+        {
+          section: 'settings',
+          id: 'payments',
+          action: 'updated',
+          diff: [
+            { field: 'currency', before: 'usd', after: 'eur' },
+            { field: 'tax', before: 'location', after: 'inclusive' },
+          ],
+        },
+      ]),
+    )
+    expect(
+      output
+        .split('\n')
+        .slice(0, 4)
+        .map((line) => line.trimEnd()),
+    ).toEqual([
+      '  settings',
+      '  ~ payments',
+      '      currency  USD → EUR',
+      '      tax       location → inclusive',
+    ])
+  })
+
+  test("mentions the tax behavior of a created product's fixed prices", () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          products: [
+            {
+              external_id: 'addon',
+              name: 'Add-on',
+              recurring_interval: 'month',
+              recurring_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'usd',
+                  tax_behavior: 'inclusive',
+                  price_amount: 500,
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [entry('products', 'addon', 'created')],
+      ),
+    )
+    expect(output).toContain('$5 per month, tax inclusive')
+  })
+
+  test('pairs each amount with its tax behavior when they differ', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          products: [
+            {
+              external_id: 'addon',
+              name: 'Add-on',
+              recurring_interval: 'month',
+              recurring_interval_count: 1,
+              prices: [
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'usd',
+                  tax_behavior: 'inclusive',
+                  price_amount: 1000,
+                },
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'eur',
+                  tax_behavior: 'exclusive',
+                  price_amount: 900,
+                },
+                {
+                  amount_type: 'metered_unit',
+                  price_currency: 'usd',
+                  tax_behavior: 'exclusive',
+                  meter: 'tool_call',
+                  unit_amount: '10',
+                },
+                {
+                  amount_type: 'metered_unit',
+                  price_currency: 'eur',
+                  tax_behavior: 'exclusive',
+                  meter: 'tool_call',
+                  unit_amount: '9',
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [entry('products', 'addon', 'created')],
+      ),
+    )
+    expect(output).toContain(
+      '$10 (tax inclusive) / €9 (tax exclusive) per month',
+    )
+    expect(output).toMatch(/\$0\.10 \/ €0\.09 per units\n\s+tax exclusive$/)
   })
 })

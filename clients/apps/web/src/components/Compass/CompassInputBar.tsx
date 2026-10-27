@@ -1,8 +1,10 @@
 'use client'
 
-import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded'
-import AttachFileRounded from '@mui/icons-material/AttachFileRounded'
-import CropFreeRounded from '@mui/icons-material/CropFreeRounded'
+import {
+  ArrowUpwardRounded,
+  AttachFileRounded,
+  CropFreeRounded,
+} from '@polar-sh/orbit/icons'
 import { Box } from '@polar-sh/orbit/Box'
 import { forwardRef } from 'react'
 

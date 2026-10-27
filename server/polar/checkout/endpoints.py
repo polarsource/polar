@@ -58,6 +58,7 @@ from .service import (
     ExpiredCheckoutError,
     NotOpenCheckout,
     PaymentError,
+    SharedPaymentTokenError,
     TrialAlreadyRedeemed,
 )
 from .service import checkout as checkout_service
@@ -82,6 +83,13 @@ CheckoutExpired = {
 CheckoutPaymentError = {
     "description": "The payment failed.",
     "model": PaymentError.schema(),
+}
+CheckoutPaymentOrSharedPaymentTokenError = {
+    "description": "The payment failed or the shared payment token was rejected.",
+    "model": Annotated[
+        PaymentError.schema() | SharedPaymentTokenError.schema(),
+        SetSchemaReference("CheckoutPaymentError"),
+    ],
 }
 CheckoutNotPermitted = {
     "description": "The organization is not allowed to accept payments.",
@@ -231,6 +239,42 @@ async def create_v2027_01(
 )
 async def update(
     id: CheckoutID,
+    checkout_update: legacy_schemas.CheckoutUpdate,
+    auth_subject: auth.CheckoutWrite,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """Update a checkout session."""
+    checkout = await checkout_service.get_by_id(
+        session, auth_subject, id, for_update=True
+    )
+
+    if checkout is None:
+        raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session, auth_subject, checkout, OrganizationPermission.sales_manage
+    )
+
+    return await checkout_service.update(
+        session, checkout, checkout_update, ip_geolocation_client
+    )
+
+
+@inner_router.patch(
+    "/{id}",
+    name="update",
+    response_model=CheckoutSchema,
+    summary="Update Checkout Session",
+    responses={
+        200: {"description": "Checkout session updated."},
+        404: CheckoutNotFound,
+        403: CheckoutForbiddenError,
+    },
+)
+@version(starting_from=V2027_01)
+async def update_v2027_01(
+    id: CheckoutID,
     checkout_update: CheckoutUpdate,
     auth_subject: auth.CheckoutWrite,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
@@ -281,6 +325,36 @@ async def client_get(
 )
 async def client_update(
     client_secret: CheckoutClientSecret,
+    checkout_update: legacy_schemas.CheckoutUpdatePublic,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """Update a checkout session by client secret."""
+    checkout = await checkout_service.get_by_client_secret(
+        session, client_secret, for_update=True
+    )
+
+    return await checkout_service.update(
+        session, checkout, checkout_update, ip_geolocation_client
+    )
+
+
+@inner_router.patch(
+    "/client/{client_secret}",
+    name="client_update",
+    response_model=CheckoutPublic,
+    summary="Update Checkout Session from Client",
+    responses={
+        200: {"description": "Checkout session updated."},
+        404: CheckoutNotFound,
+        403: CheckoutForbiddenError,
+        409: CheckoutLockedError,
+        410: CheckoutExpired,
+    },
+)
+@version(starting_from=V2027_01)
+async def client_update_v2027_01(
+    client_secret: CheckoutClientSecret,
     checkout_update: CheckoutUpdatePublic,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
@@ -309,6 +383,41 @@ async def client_update(
     },
 )
 async def client_confirm(
+    client_secret: CheckoutClientSecret,
+    checkout_confirm: legacy_schemas.CheckoutConfirm,
+    auth_subject: auth.CheckoutWeb,
+    session: AsyncSession = Depends(get_db_session),
+) -> Checkout:
+    """
+    Confirm a checkout session by client secret.
+
+    Orders and subscriptions will be processed.
+    """
+    checkout = await checkout_service.get_by_client_secret(
+        session, client_secret, for_update=True
+    )
+
+    return await checkout_service.confirm(
+        session, auth_subject, checkout, checkout_confirm
+    )
+
+
+@inner_router.post(
+    "/client/{client_secret}/confirm",
+    name="client_confirm",
+    response_model=CheckoutPublicConfirmed,
+    summary="Confirm Checkout Session from Client",
+    responses={
+        200: {"description": "Checkout session confirmed."},
+        400: CheckoutPaymentOrSharedPaymentTokenError,
+        404: CheckoutNotFound,
+        403: CheckoutForbiddenError,
+        409: CheckoutLockedError,
+        410: CheckoutExpired,
+    },
+)
+@version(starting_from=V2027_01)
+async def client_confirm_v2027_01(
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,

@@ -17,7 +17,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import TimeInterval
 from polar.models import Customer, PaymentMethod
-from polar.openapi import APITag, cli_preview
+from polar.openapi import APITag, cli_preview, destructive
 from polar.organization.schemas import OrganizationID
 from polar.payment_method.schemas import PaymentMethodTypeAdapter
 from polar.postgres import (
@@ -467,6 +467,7 @@ async def create(
     "/{id}",
     response_model=CustomerSchema,
     summary="Update Customer",
+    openapi_extra=destructive(),
     tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Customer updated."},
@@ -495,6 +496,7 @@ async def update(
     "/external/{external_id}",
     response_model=CustomerSchema,
     summary="Update Customer by External ID",
+    openapi_extra=destructive(),
     tags=[APITag.mcp, APITag.cli],
     responses={
         200: {"description": "Customer updated."},

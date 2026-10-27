@@ -94,7 +94,8 @@ test.each([
     credential: keyringCredential(),
     status: 404,
     attempts: 1,
-    message: 'Not found in sandbox. Check the ID',
+    message:
+      'Not found in sandbox. Check the ID, or run polar auth org to switch if it belongs to another organization.',
   },
   {
     credential: keyringCredential(),
@@ -213,6 +214,33 @@ test.each([
       'The request is invalid:\n    prices: Field required\n    config.body: Too long\n    prices.0.price_amount: Input should be a valid integer',
   },
   {
+    name: 'a JSON list passed to a repeatable ID flag',
+    rejection: {
+      statusCode: 422,
+      error: {
+        detail: [
+          {
+            loc: ['body', 'benefits', 0],
+            msg: 'Input should be a valid UUID, invalid character: found `[` at 1',
+            type: 'uuid_parsing',
+          },
+          {
+            loc: ['body', 'percentage', 'custom_products', 0],
+            msg: 'Input should be a valid UUID, invalid character: found `[` at 1',
+            type: 'uuid_parsing',
+          },
+          {
+            loc: ['body', 'products', 0],
+            msg: 'Input should be a valid UUID, invalid length',
+            type: 'uuid_parsing',
+          },
+        ],
+      },
+    },
+    message:
+      'The request is invalid:\n    benefits.0: Input should be a valid UUID, invalid character: found `[` at 1. Repeat --benefits once per ID instead of passing a list, e.g. --benefits <id> --benefits <id>\n    percentage.custom_products.0: Input should be a valid UUID, invalid character: found `[` at 1. Repeat --custom-products once per ID instead of passing a list, e.g. --custom-products <id> --custom-products <id>\n    products.0: Input should be a valid UUID, invalid length',
+  },
+  {
     name: 'a body without detail',
     rejection: { statusCode: 422, error: 'Unprocessable Entity' },
     message: 'The Polar API rejected the request (422).',
@@ -226,7 +254,8 @@ test.each([
   {
     name: 'a network failure',
     rejection: new TypeError('fetch failed'),
-    message: 'Polar API request failed. Check your connection and try again.',
+    message:
+      'Polar API request failed (TypeError). Check your connection and try again.',
   },
 ])('surfaces the API message for $name', async ({ rejection, message }) => {
   const polar = await polarWith(() => Effect.succeed(overrideCredential()))

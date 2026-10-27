@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { MoreVertical } from 'lucide-react'
+import { EllipsisVertical as MoreVertical } from '@polar-sh/orbit/icons'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'

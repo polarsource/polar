@@ -11,6 +11,22 @@ from jinja2 import Environment, FileSystemLoader, Template
 from generator.ir import APIIR, APIVersion, LiteralType
 
 _LOOP_DIRECTORY_PATTERN = re.compile(r"^\[\[([\w\.]+)\]\]$")
+# The Outpost Lua scripts, which every SDK embeds in a string literal.
+OUTPOST_SCRIPTS_DIRECTORY = pathlib.Path(__file__).parent.parent / "outpost"
+_LITERAL_BREAKERS = ("`", "${", '"""', "\\")
+
+
+def load_outpost_scripts() -> dict[str, str]:
+    scripts = {}
+    for path in sorted(OUTPOST_SCRIPTS_DIRECTORY.glob("*.lua")):
+        script = path.read_text()
+        if breaker := next((b for b in _LITERAL_BREAKERS if b in script), None):
+            raise ValueError(
+                f"{path.name} contains {breaker!r}, which breaks its literal"
+            )
+        scripts[path.stem] = script
+    return scripts
+
 
 PrereleaseLabel = Literal["alpha", "beta", "rc"]
 _PRERELEASE_PATTERN = re.compile(r"^(alpha|beta|rc)\.(\d+)$")
@@ -22,7 +38,7 @@ class Prerelease:
     number: int
 
     @classmethod
-    def parse(cls, value: str) -> "Prerelease":
+    def parse(cls, value: str) -> Prerelease:
         match = _PRERELEASE_PATTERN.match(value)
         if not match:
             raise ValueError(
@@ -71,21 +87,23 @@ class EmitterBase(abc.ABC):
 
         Override this method in subclasses to add custom filters, globals, or extensions.
         """
-        pass
 
     def run_post_actions(self, root_directory: pathlib.Path | str) -> None:
         """Run any post-processing actions after emitting files.
 
         Override this method in subclasses to perform actions like formatting or linting.
         """
-        pass
 
     def get_context(self) -> dict[str, typing.Any]:
         """Get the context dictionary for template rendering.
 
         Override this method in subclasses to add custom context variables.
         """
-        return {"ir": self.ir, "version": self.format_version()}
+        return {
+            "ir": self.ir,
+            "version": self.format_version(),
+            "outpost_scripts": load_outpost_scripts(),
+        }
 
     def get_version_context(self, api: APIVersion) -> dict[str, typing.Any]:
         """Get the context dictionary for template rendering for a specific API version.

@@ -38,6 +38,7 @@ const CustomerSubscriptionDetails = ({
   ) => void
   customerSessionToken: string
 }) => {
+  const [now] = useState(() => Date.now())
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
   const [showClearPendingUpdateModal, setShowClearPendingUpdateModal] =
     useState(false)
@@ -223,7 +224,7 @@ const CustomerSubscriptionDetails = ({
         {isCanceled &&
           subscription.cancel_at_period_end &&
           subscription.current_period_end &&
-          new Date(subscription.current_period_end) > new Date() && (
+          new Date(subscription.current_period_end).getTime() > now && (
             <UncancelSubscriptionButton
               api={api}
               subscription={subscription}

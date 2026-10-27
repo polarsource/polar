@@ -39,20 +39,31 @@ def _extract_domain(url: str) -> str | None:
         return None
 
 
-def _normalize_domain(domain: str) -> str:
-    """Strip leading 'www.' so that bare and www variants are treated as the same domain."""
-    return domain.removeprefix("www.")
+def same_registrable_domain(host_a: str, host_b: str) -> bool:
+    """Whether two hosts share a registrable domain after stripping `www.`.
+
+    Subdomains on the same parent are treated as the same domain. Uses suffix
+    matching rather than a hand-rolled SLD split so multi-part TLDs like
+    `*.co.uk` don't collapse false-positives.
+    """
+    a = host_a.lower().removeprefix("www.")
+    b = host_b.lower().removeprefix("www.")
+    if not a or not b:
+        return False
+    return a == b or a.endswith("." + b) or b.endswith("." + a)
 
 
-def _is_cross_domain(original: str | None, final: str | None) -> bool:
-    """Return True if two domains differ after www-normalization.
+def _is_cross_domain(original_url: str, final_url: str) -> bool:
+    """Return True if two URLs' hosts don't share a registrable domain.
 
-    Returns False if either domain is None (unparseable URLs are not
+    Returns False if either host is missing (unparseable URLs are not
     treated as cross-domain redirects — they surface via the error field).
     """
+    original = urlparse(original_url).hostname
+    final = urlparse(final_url).hostname
     if original is None or final is None:
         return False
-    return _normalize_domain(original) != _normalize_domain(final)
+    return not same_registrable_domain(original, final)
 
 
 def _unique_domains(urls: list[str]) -> list[str]:
@@ -103,6 +114,7 @@ async def _resolve_redirect(
             # Use manual redirect loop so we can validate each hop.
             # We use GET rather than HEAD because some sites block HEAD requests.
             current_url = url
+            hops: list[str] = []
             for _ in range(10):  # max redirect hops
                 response = await client.get(current_url)
                 if response.is_redirect and response.has_redirect_location:
@@ -119,17 +131,20 @@ async def _resolve_redirect(
                             original_url=url, error="redirect_blocked"
                         )
                     current_url = next_url
+                    hops.append(next_url)
                 else:
                     break
 
-            final_url = str(response.url)
-            final_domain = _extract_domain(final_url)
-            original_domain = _extract_domain(url)
-            redirected = _is_cross_domain(original_domain, final_domain)
+            # On hitting the hop limit, the last redirect target is never
+            # fetched but is still where the chain leads.
+            final_url = current_url
+            # A chain can leave the domain and come back, so every hop counts.
+            redirected = any(_is_cross_domain(url, hop) for hop in hops)
             return UrlRedirectInfo(
                 original_url=url,
                 final_url=final_url,
-                final_domain=final_domain,
+                final_domain=_extract_domain(final_url),
+                hops=hops[:-1],
                 redirected=redirected,
             )
         except httpx.TimeoutException:
@@ -173,8 +188,7 @@ async def _resolve_redirect_with_browser(url: str) -> UrlRedirectInfo:
 
     final_url = result.url
     final_domain = _extract_domain(final_url)
-    original_domain = _extract_domain(url)
-    redirected = _is_cross_domain(original_domain, final_domain)
+    redirected = _is_cross_domain(url, final_url)
     return UrlRedirectInfo(
         original_url=url,
         final_url=final_url,

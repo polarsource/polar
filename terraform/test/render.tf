@@ -26,34 +26,8 @@ locals {
 }
 
 # =============================================================================
-# PostgreSQL Database
+# Redis
 # =============================================================================
-
-resource "render_postgres" "db" {
-  environment_id = local.environment_id
-  name           = "db-test"
-  database_name  = "polar_cpit"
-  plan           = "pro_4gb"
-  region         = "ohio"
-  version        = "15"
-  disk_size_gb   = 100
-
-  high_availability_enabled = true
-
-  read_replicas = [
-    { name = "polar-read-test" },
-  ]
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes = [
-      ip_allow_list,
-      database_name,
-    ]
-  }
-
-  depends_on = [render_registry_credential.ghcr]
-}
 
 resource "render_redis" "redis" {
   count             = local.test_enabled ? 1 : 0
@@ -81,22 +55,6 @@ module "cloudflare_ips" {
 # Test
 # =============================================================================
 locals {
-  # Database connection info (derived from postgres resource)
-  db_internal_host = render_postgres.db.id
-  db_port          = "5432"
-  db_user          = render_postgres.db.database_user
-  db_password      = render_postgres.db.connection_info.password
-
-  db_external_host = nonsensitive(regex("@([^/:]+)", render_postgres.db.connection_info.external_connection_string)[0])
-
-  # Extract actual database name from internal connection string
-  # Render appends a suffix to database_name, so we parse it from the connection string
-  # Format: postgresql://user:pass@host/dbname
-  db_name = regex("[^/]+$", render_postgres.db.connection_info.internal_connection_string)
-
-  # Read replica connection info
-  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read-test"][0]
-
   # Redis connection info
   redis_host = local.test_enabled ? var.redis_private_link_host : ""
   redis_port = "6379"
@@ -119,20 +77,7 @@ module "test" {
   render_environment_id  = local.environment_id
   registry_credential_id = render_registry_credential.ghcr.id
 
-  postgres_config = {
-    host               = module.pgbouncer[0].host
-    port               = module.pgbouncer[0].port
-    user               = local.db_user
-    password           = local.db_password
-    host_fallback      = local.db_internal_host
-    port_fallback      = local.db_port
-    read_host          = module.pgbouncer_read[0].host
-    read_port          = module.pgbouncer_read[0].port
-    read_user          = local.db_user
-    read_password      = local.db_password
-    read_host_fallback = local.read_replica.id
-    read_port_fallback = local.db_port
-  }
+  postgres_config = local.planetscale_postgres_config
 
   redis_config = {
     host = local.redis_host
@@ -152,8 +97,9 @@ module "test" {
     web_concurrency        = "2"
     forwarded_allow_ips    = local.forwarded_allow_ips
     database_pool_size     = "10"
-    postgres_database      = local.db_name
-    postgres_read_database = local.db_name
+    postgres_database      = module.planetscale.database_name
+    postgres_read_database = module.planetscale.database_name
+    pre_deploy_command     = "env POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
     redis_db               = "1"
     plan                   = "pro"
   }
@@ -169,58 +115,7 @@ module "test" {
   environment_groups = module.backend_environment[0].environment_groups
   email_from_domain  = local.backend_config.email_from_domain
 
-  depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]
-}
-
-# =============================================================================
-# PgBouncer
-# =============================================================================
-
-module "pgbouncer" {
-  count  = local.test_enabled ? 1 : 0
-  source = "../modules/pgbouncer"
-
-  environment            = "test"
-  render_environment_id  = local.environment_id
-  registry_credential_id = render_registry_credential.ghcr.id
-
-  database = {
-    host     = local.db_internal_host
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
-  }
-
-  pool_config = {
-    max_client_conn   = "1000"
-    default_pool_size = "20"
-  }
-
-  depends_on = [render_registry_credential.ghcr, render_postgres.db]
-}
-
-module "pgbouncer_read" {
-  count  = local.test_enabled ? 1 : 0
-  source = "../modules/pgbouncer"
-
-  name                   = "pgbouncer-read"
-  environment            = "test"
-  render_environment_id  = local.environment_id
-  registry_credential_id = render_registry_credential.ghcr.id
-
-  database = {
-    host     = local.read_replica.id
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
-  }
-
-  pool_config = {
-    max_client_conn   = "1000"
-    default_pool_size = "20"
-  }
-
-  depends_on = [render_registry_credential.ghcr, render_postgres.db]
+  depends_on = [render_registry_credential.ghcr, render_redis.redis]
 }
 
 # =============================================================================

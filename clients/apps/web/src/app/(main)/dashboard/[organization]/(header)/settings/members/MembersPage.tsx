@@ -12,8 +12,7 @@ import {
   useListOrganizationMembers,
   useRemoveOrganizationMember,
 } from '@/hooks/queries/org'
-import Add from '@mui/icons-material/Add'
-import MoreVert from '@mui/icons-material/MoreVert'
+import { Add, MoreVert } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'

@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/Shared/EmptyState'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronRight, Gift } from 'lucide-react'
+import { ChevronRight, Gift } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 

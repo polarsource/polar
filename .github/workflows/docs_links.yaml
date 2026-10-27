@@ -1,0 +1,52 @@
+name: Docs links
+
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "handbook/**"
+      - ".github/workflows/docs_links.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  broken-links:
+    name: "Broken links: ${{ matrix.site }}"
+    timeout-minutes: 10
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    strategy:
+      fail-fast: false
+      matrix:
+        site: [docs, handbook]
+    defaults:
+      run:
+        working-directory: ${{ matrix.site }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: ${{ matrix.site }}/package.json
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: "pnpm"
+          cache-dependency-path: ${{ matrix.site }}/pnpm-lock.yaml
+
+      - name: 📦 Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Remove pnpm-lock.yaml, whose two YAML documents stop Mintlify from generating the API reference pages
+        run: rm pnpm-lock.yaml
+
+      - name: 🔗 Check for broken links
+        run: node_modules/.bin/mintlify broken-links

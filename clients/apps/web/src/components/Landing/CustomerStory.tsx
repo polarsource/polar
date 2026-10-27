@@ -1,6 +1,6 @@
-import { Grid, Text } from '@polar-sh/orbit'
+import { Grid, GridItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { ChapterHeadline } from './Chapter'
 import { StillaAI } from './Logos'
@@ -24,16 +24,25 @@ export const CustomerStory = () => (
     borderStyle="solid"
     borderColor="border-primary"
   >
+    {/* On mobile the story link follows the quote; on desktop it sits under the headline, beside it. */}
     <Grid
       width="100%"
       templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
-      gap={{ base: '3xl', lg: 'l' }}
+      templateRows={{ base: 'auto', lg: 'auto 1fr' }}
+      templateAreas={{
+        base: '"head" "quote" "link"',
+        lg: '"head quote" "link quote"',
+      }}
+      rowGap="3xl"
+      columnGap="l"
     >
-      <Box flexDirection="column" alignItems="start" rowGap="3xl">
+      <GridItem area="head">
         <ChapterHeadline
-          title="Trusted by AI startups"
+          title="Trusted by leading AI companies"
           subtitle="See how they run billing on Polar"
         />
+      </GridItem>
+      <GridItem area="link">
         <Link href={STORY.href} prefetch>
           <Box
             alignItems="center"
@@ -58,24 +67,26 @@ export const CustomerStory = () => (
             </Text>
           </Box>
         </Link>
-      </Box>
-      <figure>
-        <Box flexDirection="column" alignItems="start" rowGap="xl">
-          <StillaAI size={32} />
-          <blockquote>
-            <Text variant="heading-xs" as="p" wrap="pretty">
-              “{STORY.quote}”
-            </Text>
-          </blockquote>
-          <figcaption>
-            <Box flexDirection="column" alignItems="start" rowGap="l">
-              <Text color="muted">
-                {STORY.name}, {STORY.company}
+      </GridItem>
+      <GridItem area="quote">
+        <figure>
+          <Box flexDirection="column" alignItems="start" rowGap="xl">
+            <StillaAI size={32} />
+            <blockquote>
+              <Text variant="heading-xs" as="p" wrap="pretty">
+                “{STORY.quote}”
               </Text>
-            </Box>
-          </figcaption>
-        </Box>
-      </figure>
+            </blockquote>
+            <figcaption>
+              <Box flexDirection="column" alignItems="start" rowGap="l">
+                <Text color="muted">
+                  {STORY.name}, {STORY.company}
+                </Text>
+              </Box>
+            </figcaption>
+          </Box>
+        </figure>
+      </GridItem>
     </Grid>
   </Box>
 )

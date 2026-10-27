@@ -1,5 +1,5 @@
 import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
-import BoltOutlined from '@mui/icons-material/BoltOutlined'
+import { BoltOutlined } from '@polar-sh/orbit/icons'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {

@@ -92,19 +92,21 @@ class GetEmailError(PolarAuthError):
     Exception raised when there's an error getting the email from an OAuth2 provider.
     """
 
-    def __init__(self) -> None:
-        message = "An error occurred while retrieving your email from the authentication provider. Please try again."
+    def __init__(
+        self,
+        message: str = "An error occurred while retrieving your email from the authentication provider. Please try again.",
+    ) -> None:
         super().__init__(message, 400)
 
 
-class UnverifiedEmailError(PolarAuthError):
+class UnverifiedEmailError(GetEmailError):
     """
     Exception raised when the email from an OAuth2 provider is unverified.
     """
 
     def __init__(self) -> None:
         message = "The email associated with this account is unverified. Please verify your email with the authentication provider and try again."
-        super().__init__(message, 400)
+        super().__init__(message)
 
 
 class PolarAuthRedirectionError(PolarError):

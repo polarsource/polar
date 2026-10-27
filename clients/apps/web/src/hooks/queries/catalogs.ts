@@ -21,5 +21,31 @@ export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
       return data.items[0] ?? null
     },
     retry: defaultRetry,
+    // Catalogs are published from the CLI, so refetch on every refocus
+    staleTime: 0,
     enabled,
+  })
+
+export const useCatalogs = (
+  organizationId: string,
+  page: number,
+  limit: number,
+) =>
+  useQuery({
+    queryKey: ['catalogs', { organizationId, page, limit }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/catalogs/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              status: ['live', 'archived'],
+              page,
+              limit,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    staleTime: 0,
   })

@@ -27,7 +27,11 @@ from .customer_email_verification import CustomerEmailVerification
 from .customer_meter import CustomerMeter
 from .customer_seat import CustomerSeat, SeatStatus
 from .customer_session import CustomerSession
+from .customer_session_authentication_session import (
+    CustomerSessionAuthenticationSession,
+)
 from .customer_session_code import CustomerSessionCode
+from .customer_session_email_otp import CustomerSessionEmailOTP
 from .discord_guild_connection import DiscordGuildConnection
 from .discount import Discount
 from .discount_product import DiscountProduct
@@ -169,7 +173,9 @@ __all__ = [
     "CustomerMeter",
     "CustomerSeat",
     "CustomerSession",
+    "CustomerSessionAuthenticationSession",
     "CustomerSessionCode",
+    "CustomerSessionEmailOTP",
     "DiscordGuildConnection",
     "Discount",
     "DiscountProduct",

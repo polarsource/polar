@@ -75,6 +75,7 @@ export const registerSearchTool = Effect.fn('registerSearchTool')(function* (
           modules: { 'spec.json': { json: spec } },
           globalOutbound: null,
           limits: SEARCH_LIMITS,
+          recordScriptErrors: true,
         }),
         context.mcpReq.signal,
       ),

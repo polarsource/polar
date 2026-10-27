@@ -8,7 +8,10 @@ const CLIENT_INFO_META = 'io.modelcontextprotocol/clientInfo'
 
 // One line per MCP request, queried in Workers Logs, and one PostHog event per
 // tool call. It must never carry the token, tool arguments or results: they
-// hold customer data.
+// hold customer data. Engine error messages from search scripts are the one
+// exception sent to PostHog: search runs against the public OpenAPI spec
+// without network access, so it cannot reach customer data. The messages can
+// still quote the script's own code, which is agent-written tool input.
 export interface RequestLogEntry {
   event: 'mcp.request'
   server: string
@@ -34,6 +37,7 @@ export interface RequestLogEntry {
   apiOperations?: string[]
   unexposedOperations?: string[]
   scriptError?: string
+  scriptErrorMessage?: string
 }
 
 export class RequestLog extends Context.Service<RequestLog, RequestLogEntry>()(

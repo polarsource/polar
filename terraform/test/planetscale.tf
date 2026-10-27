@@ -33,3 +33,19 @@ locals {
     sslrootcert   = "/etc/ssl/certs/ca-certificates.crt"
   }
 }
+
+module "planetscale_private_link" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/planetscale_private_link"
+
+  name                      = "polar-test-planetscale"
+  vpc_id                    = module.vpc[0].vpc_id
+  subnet_ids                = module.vpc[0].secondary_private_subnet_ids
+  service_name              = module.planetscale.private_connection_service_name
+  client_security_group_ids = [module.ec2_tailscale[0].security_group_id]
+
+  tags = {
+    Environment = "test"
+    Service     = "planetscale"
+  }
+}

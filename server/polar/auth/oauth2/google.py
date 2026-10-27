@@ -3,7 +3,7 @@ from reauth.factors.oauth2.base import OAuth2Account, OAuth2GetProfileException
 from reauth.factors.oauth2.base import OAuth2Enrollment as OAuth2EnrollmentDataclass
 from reauth.factors.oauth2.google import GoogleOAuth2Factor as GoogleOAuth2FactorBase
 
-from polar.auth.exceptions import GetEmailError
+from polar.auth.exceptions import GetEmailError, UnverifiedEmailError
 from polar.config import settings
 from polar.postgres import AsyncSession, get_db_session
 
@@ -32,12 +32,16 @@ class GoogleFactor(OAuth2FactorMixin, GoogleOAuth2FactorBase):
         if callback_result.id_token is not None:
             try:
                 claims = await self.get_id_token_claims(callback_result.id_token)
+                if not claims["email_verified"]:
+                    raise UnverifiedEmailError()
                 return claims["email"]
             except KeyError as e:
                 raise GetEmailError() from e
 
         try:
             profile = await self.get_profile(callback_result.access_token)
+            if not profile["email_verified"]:
+                raise UnverifiedEmailError()
             return profile["email"]
         except (KeyError, OAuth2GetProfileException) as e:
             raise GetEmailError() from e

@@ -57,7 +57,7 @@ const VerifyPage = () => {
     <Form {...form}>
       <form
         className="flex w-full flex-col items-center gap-y-6"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(e) => handleSubmit(onSubmit)(e)}
       >
         <FormField
           control={control}
@@ -74,7 +74,7 @@ const VerifyPage = () => {
                     {...field}
                     autoFocus={true}
                     onChange={field.onChange}
-                    onComplete={handleSubmit(onSubmit)}
+                    onComplete={() => handleSubmit(onSubmit)()}
                   >
                     <InputOTPGroup>
                       {Array.from({ length: 6 }).map((_, index) => (

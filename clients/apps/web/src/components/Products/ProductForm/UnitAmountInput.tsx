@@ -5,7 +5,6 @@ import React, {
   ComponentProps,
   useCallback,
   useMemo,
-  useRef,
   useState,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -38,15 +37,14 @@ const UnitAmountInput = ({
   )
 
   const [displayValue, setDisplayValue] = useState(() => toDisplay(value))
-  const lastEmittedRef = useRef<number | null>(null)
+  const [lastEmitted, setLastEmitted] = useState<number | null>(null)
 
   // Sync from external value changes (e.g. currency switch), but skip if
   // the change originated from our own onChange to preserve user's typed text.
   const [prevValue, setPrevValue] = useState(value)
   if (value !== prevValue) {
     setPrevValue(value)
-    // oxlint-disable-next-line react/refs -- comparing against last emitted value to avoid overwriting user input
-    if (typeof value !== 'number' || value !== lastEmittedRef.current) {
+    if (typeof value !== 'number' || value !== lastEmitted) {
       setDisplayValue(toDisplay(value))
     }
   }
@@ -94,7 +92,7 @@ const UnitAmountInput = ({
       setDisplayValue(input)
 
       if (input === '') {
-        lastEmittedRef.current = null
+        setLastEmitted(null)
         onValueChange(null)
         return
       }
@@ -111,7 +109,7 @@ const UnitAmountInput = ({
         units = new Big(parsed).times(decimalFactor).toNumber()
       }
 
-      lastEmittedRef.current = units
+      setLastEmitted(units)
       onValueChange(units)
     },
     [onValueChange, decimalFactor, isNonDecimalCurrency],

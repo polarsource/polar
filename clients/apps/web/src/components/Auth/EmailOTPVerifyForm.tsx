@@ -60,7 +60,7 @@ const EmailOTPVerifyForm = ({
     <Form {...form}>
       <form
         className="flex w-full flex-col items-center gap-y-6"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={(e) => handleSubmit(onSubmit)(e)}
       >
         <FormField
           control={control}
@@ -78,7 +78,7 @@ const EmailOTPVerifyForm = ({
                     {...field}
                     autoFocus={true}
                     onChange={(value) => field.onChange(value.toUpperCase())}
-                    onComplete={handleSubmit(onSubmit)}
+                    onComplete={() => handleSubmit(onSubmit)()}
                   >
                     <InputOTPGroup className="w-full">
                       {Array.from({ length: 6 }).map((_, index) => (

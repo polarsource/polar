@@ -1,5 +1,6 @@
 'use client'
 
+import { DomainDnsRecord } from '@/components/Settings/DomainDnsRecord'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useCreateOrganizationDomain,
@@ -8,10 +9,8 @@ import {
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
+import { Button } from '@polar-sh/orbit'
 import { Check as CheckIcon } from '@polar-sh/orbit/icons'
-import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import type { ComponentProps } from 'react'
 import { SectionLayout } from './SectionLayout'
 
@@ -124,20 +123,7 @@ export const DomainVerificationSection = ({
         </Button>
       }
     >
-      <Box flexDirection="column" rowGap="s">
-        <Text variant="label">Name</Text>
-        <CopyToClipboardInput
-          value={domain.verification_record_name}
-          onCopy={() => toast({ title: 'Copied to clipboard' })}
-          variant="mono"
-        />
-        <Text variant="label">Value</Text>
-        <CopyToClipboardInput
-          value={domain.verification_token ?? ''}
-          onCopy={() => toast({ title: 'Copied to clipboard' })}
-          variant="mono"
-        />
-      </Box>
+      <DomainDnsRecord domain={domain} />
     </Layout>
   )
 }

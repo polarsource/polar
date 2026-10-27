@@ -19,7 +19,7 @@ export const DomainDnsRecord = ({
     />
     <Text variant="label">Value</Text>
     <CopyToClipboardInput
-      value={domain.verification_token ?? ''}
+      value={domain.verification_record_value ?? ''}
       ariaLabel="TXT record value"
       onCopy={() => toast({ title: 'Copied to clipboard' })}
       variant="mono"

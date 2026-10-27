@@ -4,7 +4,10 @@ import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
 import OrganizationProfileSettings from '@/components/Settings/OrganizationProfileSettings'
-import { LEGACY_SETTINGS_HASHES } from '@/components/Settings/settingsSections'
+import {
+  getSettingsSection,
+  LEGACY_SETTINGS_HASHES,
+} from '@/components/Settings/settingsSections'
 import { useHasPermission } from '@/hooks/permissions'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -21,10 +24,10 @@ export default function ClientPage({
 
   useEffect(() => {
     const section = LEGACY_SETTINGS_HASHES[window.location.hash.slice(1)]
-    if (section) {
+    if (section && getSettingsSection(section, org)) {
       router.replace(`/dashboard/${org.slug}/settings/${section}`)
     }
-  }, [router, org.slug])
+  }, [router, org])
 
   return (
     <DashboardBody wrapperClassName="max-w-(--breakpoint-md)!" title="General">
@@ -33,11 +36,13 @@ export default function ClientPage({
           organization={org}
           readOnly={!canManageOrganization}
         />
-        {canManageOrganization ? (
-          <OrganizationDeleteSettings organization={org} />
-        ) : (
-          <AccessRestricted message="You don't have permission to delete this organization." />
-        )}
+        <Box id="danger" flexDirection="column">
+          {canManageOrganization ? (
+            <OrganizationDeleteSettings organization={org} />
+          ) : (
+            <AccessRestricted message="You don't have permission to delete this organization." />
+          )}
+        </Box>
       </Box>
     </DashboardBody>
   )

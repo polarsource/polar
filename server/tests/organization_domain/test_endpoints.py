@@ -39,7 +39,7 @@ class TestListOrganizationDomains:
             OrganizationDomain(
                 organization=organization,
                 domain="pending.com",
-                verification_token="TOKEN",
+                verification_record_value="TOKEN",
             )
         )
         await save_fixture(
@@ -56,7 +56,7 @@ class TestListOrganizationDomains:
             "pending.com",
         ]
         assert json["items"][1]["verified_at"] is None
-        assert json["items"][1]["verification_token"] == "TOKEN"
+        assert json["items"][1]["verification_record_value"] == "TOKEN"
 
 
 @pytest.mark.anyio
@@ -141,7 +141,7 @@ class TestCreateOrganizationDomain:
         json = response.json()
         assert json["domain"] == "acme.com"
         assert json["verified_at"] is None
-        assert json["verification_token"]
+        assert json["verification_record_value"]
 
 
 @pytest.mark.anyio

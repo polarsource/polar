@@ -57,7 +57,7 @@ class OrganizationDomainService:
                     OrganizationDomain(
                         organization=organization,
                         domain=create.domain,
-                        verification_token=secrets.token_urlsafe(32),
+                        verification_record_value=secrets.token_urlsafe(32),
                     ),
                     flush=True,
                 )

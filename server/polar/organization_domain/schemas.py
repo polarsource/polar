@@ -32,6 +32,6 @@ class OrganizationDomain(IDSchema, TimestampedSchema):
     verified_at: datetime | None = Field(
         description="When Polar verified the domain. `null` while pending."
     )
-    verification_token: str | None = Field(
-        description="Token to publish in a DNS TXT record to prove ownership."
+    verification_record_value: str | None = Field(
+        description="Value to publish in a DNS TXT record to prove ownership."
     )

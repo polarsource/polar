@@ -30761,10 +30761,10 @@ export interface components {
        */
       verified_at: string | null
       /**
-       * Verification Token
-       * @description Token to publish in a DNS TXT record to prove ownership.
+       * Verification Record Value
+       * @description Value to publish in a DNS TXT record to prove ownership.
        */
-      verification_token: string | null
+      verification_record_value: string | null
     }
     /** OrganizationDomainAlreadyExists */
     OrganizationDomainAlreadyExists: {

@@ -33,7 +33,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import React, { useCallback } from 'react'
+import React, { useCallback, useId } from 'react'
 import { FileRejection } from 'react-dropzone'
 import { useForm, useFormContext, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
@@ -211,6 +211,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
   const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
   const { name, avatar_url: avatarURL } = useWatch({ control })
+  const fieldId = useId()
 
   const { status: urlStatus, validateURL } = useURLValidation({
     organizationId: organization.id,
@@ -257,7 +258,12 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
       <div className="space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-[auto_1fr] sm:gap-x-5">
           <div>
-            <label className="mb-2 block text-sm font-medium">Logo</label>
+            <label
+              htmlFor={`${fieldId}-avatar`}
+              className="mb-2 block text-sm font-medium"
+            >
+              Logo
+            </label>
             <FormField
               control={control}
               name="avatar_url"
@@ -271,7 +277,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                       isDragActive && 'opacity-50',
                     )}
                   >
-                    <input {...getInputProps()} />
+                    <input {...getInputProps({ id: `${fieldId}-avatar` })} />
                     <Avatar
                       avatar_url={avatarURL ?? ''}
                       name={name ?? ''}
@@ -294,7 +300,10 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
 
           <div className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium">
+              <label
+                htmlFor={`${fieldId}-name`}
+                className="mb-2 block text-sm font-medium"
+              >
                 Organization Name *
               </label>
               <FormField
@@ -309,6 +318,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                 render={({ field }) => (
                   <div>
                     <Input
+                      id={`${fieldId}-name`}
                       {...field}
                       value={field.value || ''}
                       placeholder="Acme Inc"
@@ -323,13 +333,19 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Country</label>
+          <label
+            htmlFor={`${fieldId}-country`}
+            className="mb-2 block text-sm font-medium"
+          >
+            Country
+          </label>
           <FormField
             control={control}
             name="country"
             render={({ field }) => (
               <div>
                 <CountryPicker
+                  id={`${fieldId}-country`}
                   allowedCountries={enums.addressInputCountryValues}
                   value={
                     (field.value as schemas['CountryAlpha2Input']) ?? undefined
@@ -346,7 +362,12 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <div>
-            <label className="mb-2 block text-sm font-medium">Website *</label>
+            <label
+              htmlFor={`${fieldId}-website`}
+              className="mb-2 block text-sm font-medium"
+            >
+              Website *
+            </label>
             <FormField
               control={control}
               name="website"
@@ -368,6 +389,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               render={({ field }) => (
                 <div>
                   <Input
+                    id={`${fieldId}-website`}
                     type="url"
                     {...field}
                     value={field.value || ''}
@@ -413,7 +435,10 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor={`${fieldId}-email`}
+              className="mb-2 block text-sm font-medium"
+            >
               Support Email *
             </label>
             <FormField
@@ -423,6 +448,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
               render={({ field }) => (
                 <div>
                   <Input
+                    id={`${fieldId}-email`}
                     type="email"
                     {...field}
                     disabled={readOnly}
@@ -439,7 +465,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
         {/* Social Links - Progressive Disclosure */}
         <div>
           <div className="mb-4 flex flex-col items-start">
-            <label className="block text-sm font-medium">Social Media</label>
+            <p className="block text-sm font-medium">Social Media</p>
             <p className="dark:text-polar-400 mt-2 text-xs text-gray-600">
               Your personal social media links are used for identity
               verification. They will never be shown publicly.

@@ -598,9 +598,12 @@ class TestApply:
             session
         ).get_all_by_external_ids(organization.id, ["tool-call-credits"])
         assert benefit.id != previous.id
-        assert benefit.properties["units"] == 1000
+        assert dict(benefit.properties)["units"] == 1000
         await session.refresh(previous)
-        assert (previous.is_current, previous.properties["units"]) == (False, 10)
+        assert (previous.is_current, dict(previous.properties)["units"]) == (
+            False,
+            10,
+        )
         assert result.catalog is not None
 
     @pytest.mark.usefixtures("config_as_code_enabled")

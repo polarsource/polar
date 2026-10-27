@@ -113,28 +113,30 @@ const SeatInvitationsPanel = ({
 
     setIsSending(true)
 
-    for (const input of emailInputs) {
-      if (input.sent) continue
+    const pendingInputs = emailInputs.filter(
+      (input) => !input.sent && input.value.trim() !== '',
+    )
 
-      if (input.value.trim() === '') continue
-
-      try {
-        await assignSeat.mutateAsync({ email: input.value.trim() })
-        setEmailInputs((prev) =>
-          prev.map((i) => (i.id === input.id ? { ...i, sent: true } : i)),
-        )
-        setSentCount((prev) => prev + 1)
-      } catch (error) {
-        console.error('Failed to assign seat:', error)
-        setEmailInputs((prev) =>
-          prev.map((i) =>
-            i.id === input.id
-              ? { ...i, error: 'Failed to send invitation' }
-              : i,
-          ),
-        )
-      }
-    }
+    await Promise.all(
+      pendingInputs.map(async (input) => {
+        try {
+          await assignSeat.mutateAsync({ email: input.value.trim() })
+          setEmailInputs((prev) =>
+            prev.map((i) => (i.id === input.id ? { ...i, sent: true } : i)),
+          )
+          setSentCount((prev) => prev + 1)
+        } catch (error) {
+          console.error('Failed to assign seat:', error)
+          setEmailInputs((prev) =>
+            prev.map((i) =>
+              i.id === input.id
+                ? { ...i, error: 'Failed to send invitation' }
+                : i,
+            ),
+          )
+        }
+      }),
+    )
 
     setIsSending(false)
   }

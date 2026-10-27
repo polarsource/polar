@@ -1,6 +1,7 @@
 import hashlib
 import uuid
 from collections.abc import Mapping, Sequence
+from datetime import datetime
 
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
@@ -40,6 +41,8 @@ class CatalogService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         status: Sequence[CatalogStatus] | None = None,
+        published_after: datetime | None = None,
+        published_before: datetime | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Catalog], int]:
         org_ids = await get_accessible_org_ids(
@@ -56,6 +59,10 @@ class CatalogService:
         statement = repository.get_statement_by_org_ids(org_ids)
         if status is not None:
             statement = statement.where(Catalog.status.in_(status))
+        if published_after is not None:
+            statement = statement.where(Catalog.published_at > published_after)
+        if published_before is not None:
+            statement = statement.where(Catalog.published_at < published_before)
         return await repository.paginate(
             statement,
             limit=pagination.limit,

@@ -1,11 +1,70 @@
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { Children, Fragment, isValidElement } from 'react'
 
-export const SettingsGroup: React.FC<React.PropsWithChildren> = ({
+export interface SettingsGroupProps {
+  title?: string
+  description?: React.ReactNode
+}
+
+export const SettingsSection: React.FC<
+  React.PropsWithChildren<SettingsGroupProps>
+> = ({ children, title, description }) => (
+  <Box as="section" flexDirection="column" rowGap="m" width="100%">
+    {(title || description) && (
+      <Box flexDirection="column" rowGap="xs">
+        {title && (
+          <Text as="h2" variant="body">
+            {title}
+          </Text>
+        )}
+        {description && (
+          <Text variant="caption" color="muted">
+            {description}
+          </Text>
+        )}
+      </Box>
+    )}
+    {children}
+  </Box>
+)
+
+export const SettingsGroup: React.FC<
+  React.PropsWithChildren<SettingsGroupProps>
+> = ({ children, ...sectionProps }) => (
+  <SettingsSection {...sectionProps}>
+    <Box
+      flexDirection="column"
+      width="100%"
+      overflow="hidden"
+      borderRadius="l"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      backgroundColor="background-secondary"
+    >
+      {Children.toArray(children).map((child, index) => (
+        <Fragment key={isValidElement(child) ? child.key : index}>
+          {index > 0 && (
+            <Box
+              borderTopWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
+            />
+          )}
+          {child}
+        </Fragment>
+      ))}
+    </Box>
+  </SettingsSection>
+)
+
+export const SettingsGroupRow: React.FC<React.PropsWithChildren> = ({
   children,
 }) => (
-  <div className="dark:ring-polar-700 dark:bg-polar-900 dark:divide-polar-700 w-full flex-col divide-y divide-gray-200 overflow-hidden rounded-2xl bg-transparent ring-1 ring-gray-200 dark:ring-1">
+  <Box flexDirection="column" paddingHorizontal="xl" paddingVertical="l">
     {children}
-  </div>
+  </Box>
 )
 
 const layouts = {
@@ -28,10 +87,10 @@ const layouts = {
     row: {
       flexDirection: 'row',
       columnGap: { base: 'l', md: '3xl' },
-      alignItems: 'start',
+      alignItems: 'center',
       justifyContent: 'between',
     },
-    label: { minWidth: 0, flex: 1, maxWidth: { md: '50%' } },
+    label: { minWidth: 0, flex: 1 },
     control: { flexShrink: 0, justifyContent: 'end' },
   },
 } as const
@@ -48,14 +107,12 @@ export const SettingsGroupItem: React.FC<
   const { row, label, control } = layouts[layout]
 
   return (
-    <Box padding="l" rowGap="l" {...row}>
-      <Box flexDirection="column" {...label}>
-        <h3 className="text-sm font-medium">{title}</h3>
-        {description && (
-          <p className="dark:text-polar-500 text-xs text-gray-500">
-            {description}
-          </p>
-        )}
+    <Box paddingHorizontal="xl" paddingVertical="l" rowGap="l" {...row}>
+      <Box flexDirection="column" rowGap="xs" {...label}>
+        <Text as="h3" variant="title">
+          {title}
+        </Text>
+        {description && <Text color="muted">{description}</Text>}
       </Box>
       {children && (
         <Box flexDirection="row" rowGap="s" {...control}>

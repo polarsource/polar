@@ -2,7 +2,7 @@
 
 import { useListNotificationRecipients } from '@/hooks/queries/notifications'
 import { schemas } from '@polar-sh/client'
-import { ListGroup } from '@polar-sh/orbit'
+import { SettingsGroup, SettingsGroupRow } from './SettingsGroup'
 
 const NotificationRecipientItem = ({
   recipient,
@@ -23,23 +23,23 @@ export const NotificationRecipientsSettings = () => {
   const { data: notificationRecipients } = useListNotificationRecipients()
 
   return (
-    <ListGroup>
+    <SettingsGroup>
       {notificationRecipients?.items &&
       notificationRecipients.items.length > 0 ? (
         notificationRecipients.items.map((recipient) => {
           return (
-            <ListGroup.Item key={recipient.id}>
+            <SettingsGroupRow key={recipient.id}>
               <NotificationRecipientItem recipient={recipient} />
-            </ListGroup.Item>
+            </SettingsGroupRow>
           )
         })
       ) : (
-        <ListGroup.Item>
+        <SettingsGroupRow>
           <p className="dark:text-polar-500 text-sm text-gray-500">
             You don&apos;t have any active Notification Recipients.
           </p>
-        </ListGroup.Item>
+        </SettingsGroupRow>
       )}
-    </ListGroup>
+    </SettingsGroup>
   )
 }

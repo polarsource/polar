@@ -40156,7 +40156,7 @@
           "shared_payment_token_id"
         ],
         "title": "CheckoutConfirmSharedPaymentToken",
-        "description": "Confirm a checkout session using a Stripe shared payment token granted by an agent.\n\nOnly supported for one-time payments."
+        "description": "Confirm a checkout session using a Stripe shared payment token granted by an agent.\n\nSubscriptions require a recurring token matching the product's interval and\ncurrency, which is then charged on every renewal. Not supported for trials\nor free checkouts."
       },
       "CheckoutConfirmStripe": {
         "properties": {

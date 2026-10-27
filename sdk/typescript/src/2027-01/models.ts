@@ -6881,7 +6881,9 @@ export interface CheckoutBillingAddressFields {
 /**
  * Confirm a checkout session using a Stripe shared payment token granted by an agent.
 
-Only supported for one-time payments.
+Subscriptions require a recurring token matching the product's interval and
+currency, which is then charged on every renewal. Not supported for trials
+or free checkouts.
  */
 export interface CheckoutConfirmSharedPaymentToken {
   /**

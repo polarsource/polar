@@ -631,7 +631,9 @@ You can store up to **50 key-value pairs**."""
 class CheckoutConfirmSharedPaymentToken(typing.TypedDict):
     """Confirm a checkout session using a Stripe shared payment token granted by an agent.
 
-    Only supported for one-time payments."""
+    Subscriptions require a recurring token matching the product's interval and
+    currency, which is then charged on every renewal. Not supported for trials
+    or free checkouts."""
 
     custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
     """Key-value object storing custom field values."""

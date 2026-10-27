@@ -53,6 +53,9 @@ from polar.exceptions import (
     ResourceNotFound,
     ValidationError,
 )
+from polar.integrations.stripe.service import (
+    STRIPE_METADATA_SHARED_PAYMENT_TOKEN,
+)
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_fingerprint
 from polar.kit.address import AddressInput
@@ -1252,7 +1255,9 @@ class CheckoutService:
             and checkout.is_payment_form_required
             and isinstance(checkout_confirm, CheckoutConfirmSharedPaymentToken)
         ):
-            self._validate_shared_payment_token(checkout)
+            await self._validate_shared_payment_token(
+                checkout, checkout_confirm.shared_payment_token_id
+            )
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -1334,11 +1339,6 @@ class CheckoutService:
                                 ),
                                 "expand": ["payment_method"],
                             }
-                            if checkout.should_save_payment_method:
-                                payment_intent_params["setup_future_usage"] = (
-                                    "off_session"
-                                )
-
                             payment_method_options: PaymentIntentCreateParamsPaymentMethodOptions = {}
                             if three_d_secure:
                                 payment_method_options["card"] = {
@@ -1354,6 +1354,13 @@ class CheckoutService:
                             if isinstance(
                                 checkout_confirm, CheckoutConfirmSharedPaymentToken
                             ):
+                                # Stripe rejects setup_future_usage on SPTs: renewals
+                                # charge the token itself, not a saved PaymentMethod.
+                                if checkout.should_save_payment_method:
+                                    payment_intent_params["metadata"] = {
+                                        **intent_metadata,
+                                        STRIPE_METADATA_SHARED_PAYMENT_TOKEN: checkout_confirm.shared_payment_token_id,
+                                    }
                                 intent = await stripe_service.create_payment_intent_from_shared_payment_token(
                                     checkout_confirm.shared_payment_token_id,
                                     **payment_intent_params,
@@ -1362,6 +1369,10 @@ class CheckoutService:
                                 assert (
                                     checkout_confirm.confirmation_token_id is not None
                                 )
+                                if checkout.should_save_payment_method:
+                                    payment_intent_params["setup_future_usage"] = (
+                                        "off_session"
+                                    )
                                 payment_intent_params["confirmation_token"] = (
                                     checkout_confirm.confirmation_token_id
                                 )
@@ -1467,11 +1478,45 @@ class CheckoutService:
 
         return checkout
 
-    def _validate_shared_payment_token(self, checkout: Checkout) -> None:
-        if not checkout.is_payment_required or checkout.should_save_payment_method:
+    async def _validate_shared_payment_token(
+        self, checkout: Checkout, shared_payment_token_id: str
+    ) -> None:
+        if not checkout.is_payment_required:
             raise SharedPaymentTokenError(
                 checkout,
-                "Shared payment tokens are only supported for one-time payments.",
+                "Shared payment tokens are not supported for trials or free checkouts.",
+            )
+        if not checkout.should_save_payment_method:
+            return
+
+        try:
+            granted_token = await stripe_service.get_shared_payment_granted_token(
+                shared_payment_token_id
+            )
+        except stripe_lib.InvalidRequestError as e:
+            raise SharedPaymentTokenError(
+                checkout, "Shared payment token is invalid."
+            ) from e
+
+        assert checkout.product is not None
+        recurring_interval = checkout.product.recurring_interval
+        recurring_interval_count = checkout.product.recurring_interval_count or 1
+        usage_limits = granted_token.get("usage_limits") or {}
+        # Not the flat `recurring_interval`: it drops the interval count.
+        recurring = usage_limits.get("recurring") or {}
+        if (
+            recurring.get("interval") != recurring_interval
+            or recurring.get("interval_count", 1) != recurring_interval_count
+        ):
+            raise SharedPaymentTokenError(
+                checkout,
+                "Shared payment token must allow recurring charges every "
+                f"{recurring_interval_count} {recurring_interval}.",
+            )
+        if usage_limits.get("currency") != checkout.currency:
+            raise SharedPaymentTokenError(
+                checkout,
+                f"Shared payment token must be granted in {checkout.currency}.",
             )
 
     async def handle_success(

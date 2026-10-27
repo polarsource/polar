@@ -16250,6 +16250,7 @@ export interface components {
     ConfigBenefit:
       | components['schemas']['ConfigBenefitFeatureFlag']
       | components['schemas']['ConfigBenefitMeterCredit']
+      | components['schemas']['ConfigBenefitLicenseKeys']
     /** ConfigBenefitConflict */
     ConfigBenefitConflict: {
       /**
@@ -16320,6 +16321,81 @@ export interface components {
       description: string
       visibility: components['schemas']['BenefitVisibility']
       metadata: components['schemas']['MetadataOutputType']
+    }
+    /** ConfigBenefitLicenseKeys */
+    ConfigBenefitLicenseKeys: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @default false
+       */
+      deprecated: boolean
+      /**
+       * External Id
+       * @description Your identifier for the benefit, used to match it.
+       */
+      external_id: string
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * @description The visibility of the benefit.
+       * @default public
+       */
+      visibility: components['schemas']['BenefitVisibility']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'license_keys'
+      properties?: components['schemas']['ConfigBenefitLicenseKeysProperties']
+    }
+    /** ConfigBenefitLicenseKeysProperties */
+    ConfigBenefitLicenseKeysProperties: {
+      /** Prefix */
+      prefix?: string | null
+      expires?:
+        | components['schemas']['BenefitLicenseKeyExpirationProperties']
+        | null
+      activations?:
+        | components['schemas']['BenefitLicenseKeyActivationCreateProperties']
+        | null
+      /** Limit Usage */
+      limit_usage?: number | null
+    }
+    /** ConfigBenefitLicenseKeysRead */
+    ConfigBenefitLicenseKeysRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'license_keys'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+      properties: components['schemas']['BenefitLicenseKeysProperties']
     }
     /** ConfigBenefitMeterCredit */
     ConfigBenefitMeterCredit: {
@@ -16414,6 +16490,7 @@ export interface components {
     ConfigBenefitRead:
       | components['schemas']['ConfigBenefitFeatureFlagRead']
       | components['schemas']['ConfigBenefitMeterCreditRead']
+      | components['schemas']['ConfigBenefitLicenseKeysRead']
     /** ConfigCatalogChange */
     ConfigCatalogChange: {
       /**
@@ -72509,6 +72586,12 @@ export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
 export const configBenefitFeatureFlagReadTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlagRead']['type']
 > = ['feature_flag']
+export const configBenefitLicenseKeysTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitLicenseKeys']['type']
+> = ['license_keys']
+export const configBenefitLicenseKeysReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitLicenseKeysRead']['type']
+> = ['license_keys']
 export const configBenefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCredit']['type']
 > = ['meter_credit']

@@ -15114,6 +15114,16 @@ export interface components {
        */
       organization_id: string
       /**
+       * Is Current
+       * @description Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold.
+       */
+      is_current: boolean
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
        * Prices
        * @description List of prices for this product.
        */
@@ -29312,6 +29322,16 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold.
+       */
+      is_current: boolean
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
     }
     /**
      * OrderReceipt
@@ -34164,6 +34184,16 @@ export interface components {
        */
       organization_id: string
       /**
+       * Is Current
+       * @description Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold.
+       */
+      is_current: boolean
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
        * External Id
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
        * @example ext_1337
@@ -34175,16 +34205,6 @@ export interface components {
        * @description Whether the product can be permanently deleted. Products referenced by an order, subscription, trial or discount cannot be deleted.
        */
       is_deletable: boolean
-      /**
-       * Is Current
-       * @description Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold.
-       */
-      is_current: boolean
-      /**
-       * Catalog Id
-       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
-       */
-      catalog_id: string | null
       /**
        * Prices
        * @description List of prices for this product.

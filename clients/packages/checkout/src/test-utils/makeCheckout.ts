@@ -216,6 +216,8 @@ const defaults: ProductCheckoutPublic = {
     medias: [],
     description: null,
     is_archived: false,
+    is_current: true,
+    catalog_id: null,
     organization_id: 'org_1',
     created_at: now.toISOString(),
     modified_at: null,

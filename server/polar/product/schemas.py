@@ -6,6 +6,7 @@ from typing import Annotated, Any, Literal, Self
 from pydantic import (
     UUID4,
     AfterValidator,
+    BaseModel,
     BeforeValidator,
     Discriminator,
     Field,
@@ -1164,17 +1165,7 @@ ProductMediaList = Annotated[
 ]
 
 
-class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
-    """
-    A product.
-    """
-
-    is_deletable: bool = Field(
-        description=(
-            "Whether the product can be permanently deleted. Products referenced "
-            "by an order, subscription, trial or discount cannot be deleted."
-        )
-    )
+class ProductVersionOutputMixin(BaseModel):
     is_current: Annotated[
         bool,
         Version(starting_from=V2027_01),
@@ -1195,6 +1186,21 @@ class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
             )
         ),
     ]
+
+
+class Product(
+    MetadataOutputMixin, ExternalIDOutputMixin, ProductVersionOutputMixin, ProductBase
+):
+    """
+    A product.
+    """
+
+    is_deletable: bool = Field(
+        description=(
+            "Whether the product can be permanently deleted. Products referenced "
+            "by an order, subscription, trial or discount cannot be deleted."
+        )
+    )
     prices: ProductPriceList
     benefits: BenefitList
     medias: ProductMediaList

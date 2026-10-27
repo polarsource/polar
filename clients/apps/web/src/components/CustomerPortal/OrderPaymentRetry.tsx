@@ -469,9 +469,7 @@ export const OrderPaymentRetry = ({
         <div className="space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-medium">
-                Payment Method
-              </label>
+              <p className="mb-2 block text-sm font-medium">Payment Method</p>
               <div className="rounded-lg border p-3">
                 <PaymentElement
                   options={{

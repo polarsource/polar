@@ -11,6 +11,7 @@ import {
 } from '@polar-sh/orbit'
 
 const CountryPicker = ({
+  id,
   allowedCountries,
   locale,
   value,
@@ -22,6 +23,7 @@ const CountryPicker = ({
   contentClassName,
   placeholder = 'Country',
 }: {
+  id?: string
   allowedCountries: readonly string[]
   locale?: string
   value?: string
@@ -52,7 +54,7 @@ const CountryPicker = ({
       autoComplete={autoComplete}
       disabled={disabled}
     >
-      <SelectTrigger className={className}>
+      <SelectTrigger id={id} className={className}>
         <SelectValue
           placeholder={placeholder}
           // Avoids issues due to browser automatic translation

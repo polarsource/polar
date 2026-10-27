@@ -20,7 +20,7 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useId, useMemo, useState } from 'react'
 import { useForm, useFormState } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 
@@ -113,6 +113,7 @@ export const MetricDashboardEditorContent = ({
   isPending,
   saveLabel = 'Save',
 }: MetricDashboardEditorContentProps) => {
+  const nameInputId = useId()
   const [selected, setSelected] = useState<MetricItem[]>(() =>
     activeMetrics.map(toItem),
   )
@@ -182,10 +183,14 @@ export const MetricDashboardEditorContent = ({
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
         {showNameField && (
           <div className="flex flex-col gap-y-2 px-5 pt-6">
-            <label className="text-sm font-medium text-gray-900 dark:text-white">
+            <label
+              htmlFor={nameInputId}
+              className="text-sm font-medium text-gray-900 dark:text-white"
+            >
               Name
             </label>
             <Input
+              id={nameInputId}
               {...register('name', { required: 'Name is required' })}
               placeholder="e.g. Revenue Overview"
             />

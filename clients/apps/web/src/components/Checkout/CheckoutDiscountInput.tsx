@@ -17,7 +17,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 
 const XIcon = ({ className }: { className?: string }) => {
   return (
@@ -56,6 +56,7 @@ export const CheckoutDiscountInput = ({
 }: CheckoutDiscountInputProps) => {
   const t = useTranslations(locale)
   const [expanded, setExpanded] = useState(false)
+  const discountCodeInputId = useId()
   const { form } = useCheckoutForm()
   const { control, setValue, clearErrors } = form
 
@@ -107,7 +108,10 @@ export const CheckoutDiscountInput = ({
     <Form {...form}>
       <div className="flex flex-col gap-1">
         {!collapsible && (
-          <label className="flex flex-row items-center justify-between text-sm">
+          <label
+            htmlFor={discountCodeInputId}
+            className="flex flex-row items-center justify-between text-sm"
+          >
             <span>{t('checkout.form.discountCode')}</span>
             <span className="dark:text-polar-500 text-xs text-gray-500">
               {t('checkout.form.optional')}
@@ -122,6 +126,7 @@ export const CheckoutDiscountInput = ({
               <FormControl>
                 <div className="relative">
                   <Input
+                    id={discountCodeInputId}
                     type="text"
                     autoComplete="off"
                     placeholder={

@@ -10,7 +10,6 @@ import {
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { CatalogVersionSelector } from '../../Catalog/CatalogVersionSelector'
 import {
   useAccountRoutes,
   useGeneralRoutes,
@@ -22,6 +21,7 @@ import {
   useProductNavigationEnabled,
 } from '../../Dashboard/navigationProducts'
 import { useSettingsRouteGroups } from '../../Dashboard/navigationSettings'
+import { CatalogNavigation } from './CatalogNavigation'
 import { NavList } from './NavList'
 
 export const useIsSettingsPath = (organization?: schemas['Organization']) => {
@@ -53,15 +53,14 @@ export const OrganizationNavigation = ({
     return <SettingsNavigation organization={organization} />
   }
 
-  return (
-    <>
-      <CatalogVersionSelector organization={organization} />
-      {productNavEnabled ? (
-        <ProductNavigation organization={organization} />
-      ) : (
-        <LegacyOrganizationNavigation organization={organization} />
-      )}
-    </>
+  if (organization.feature_settings?.config_as_code_enabled) {
+    return <CatalogNavigation organization={organization} />
+  }
+
+  return productNavEnabled ? (
+    <ProductNavigation organization={organization} />
+  ) : (
+    <LegacyOrganizationNavigation organization={organization} />
   )
 }
 

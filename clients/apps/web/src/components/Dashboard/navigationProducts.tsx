@@ -157,6 +157,83 @@ const insightsRoutesList = (org?: schemas['Organization']): Route[] => [
   },
 ]
 
+const PRODUCT_SECTIONS = [
+  'meters',
+  'benefits',
+  'checkout-links',
+  'discounts',
+] as const
+
+const productSectionRoute = (
+  org: schemas['Organization'] | undefined,
+  section: (typeof PRODUCT_SECTIONS)[number],
+  title: string,
+  icon: React.ReactElement,
+): Route => {
+  const link = `/dashboard/${org?.slug}/products/${section}`
+  return {
+    id: section,
+    title,
+    icon,
+    link,
+    checkIsActive: (path) => path.startsWith(link),
+    if: true,
+  }
+}
+
+const discountRoutesList = (org?: schemas['Organization']): Route[] => [
+  productSectionRoute(
+    org,
+    'discounts',
+    'Discounts',
+    <DiscountOutlined fontSize="inherit" />,
+  ),
+]
+
+const catalogRoutesList = (org?: schemas['Organization']): Route[] => {
+  const products = `/dashboard/${org?.slug}/products`
+  return [
+    {
+      id: 'products',
+      title: 'Products',
+      icon: <HiveOutlined fontSize="inherit" />,
+      link: products,
+      checkIsActive: (path) =>
+        path.startsWith(products) &&
+        !PRODUCT_SECTIONS.some((section) =>
+          path.startsWith(`${products}/${section}`),
+        ),
+      if: true,
+    },
+    productSectionRoute(
+      org,
+      'meters',
+      'Meters',
+      <DonutLargeOutlined fontSize="inherit" />,
+    ),
+    productSectionRoute(
+      org,
+      'benefits',
+      'Benefits',
+      <DiamondOutlined fontSize="inherit" />,
+    ),
+    productSectionRoute(
+      org,
+      'checkout-links',
+      'Checkout Links',
+      <LinkOutlined fontSize="inherit" />,
+    ),
+  ]
+}
+
+export const useDiscountRoutes = (
+  org?: schemas['Organization'],
+): RouteWithActive[] => useResolveRoutes(discountRoutesList, org)
+
+export const useCatalogRoutes = (
+  org?: schemas['Organization'],
+): RouteWithActive[] => useResolveRoutes(catalogRoutesList, org)
+
 export const useBillingRoutes = (
   org?: schemas['Organization'],
 ): RouteWithActive[] => useResolveRoutes(() => billingRoutesList(org), org)

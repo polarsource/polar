@@ -190,8 +190,9 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   const onSelectProductType = useCallback(
     (productPriceType: ProductPriceType) => {
       const products = groupedProducts[productPriceType]
+      const selectedIds = new Set(value)
       const allSelected = products.every((product) =>
-        value.includes(product.id),
+        selectedIds.has(product.id),
       )
       if (allSelected) {
         onChange(
@@ -201,7 +202,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         onChange([
           ...value,
           ...products
-            .filter((product) => !value.includes(product.id))
+            .filter((product) => !selectedIds.has(product.id))
             .map(({ id }) => id),
         ])
       }

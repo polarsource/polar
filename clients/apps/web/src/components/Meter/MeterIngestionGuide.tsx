@@ -1,5 +1,6 @@
 'use client'
 
+import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { Well, WellContent, WellHeader } from '@/components/Shared/Well'
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import {
@@ -9,7 +10,6 @@ import {
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { LockOutlined } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useContext } from 'react'
 
@@ -41,14 +41,7 @@ export const MeterIngestionGuide = () => {
               </div>
               {managedAsCode ? (
                 <Box flexDirection="column" alignItems="start" rowGap="s">
-                  <Button
-                    variant="secondary"
-                    wrapperClassNames="gap-x-2"
-                    disabled
-                  >
-                    <LockOutlined fontSize="inherit" />
-                    <span>Managed in code</span>
-                  </Button>
+                  <ManagedAsCodeBadge />
                   <Text variant="caption" color="muted">
                     Meters are defined in your config. Add one there and run{' '}
                     <code>polar config apply</code>.

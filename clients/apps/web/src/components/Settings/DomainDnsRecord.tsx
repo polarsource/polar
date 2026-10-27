@@ -13,12 +13,14 @@ export const DomainDnsRecord = ({
     <Text variant="label">Name</Text>
     <CopyToClipboardInput
       value={domain.verification_record_name}
+      ariaLabel="TXT record name"
       onCopy={() => toast({ title: 'Copied to clipboard' })}
       variant="mono"
     />
     <Text variant="label">Value</Text>
     <CopyToClipboardInput
       value={domain.verification_token ?? ''}
+      ariaLabel="TXT record value"
       onCopy={() => toast({ title: 'Copied to clipboard' })}
       variant="mono"
     />

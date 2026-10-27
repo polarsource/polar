@@ -1,7 +1,6 @@
 import contextlib
 import secrets
 from collections.abc import Sequence
-from enum import StrEnum
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -16,7 +15,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, OrganizationDomain, OrganizationRiskSignal
-from polar.organization_review.collectors.setup import same_registrable_domain
+from polar.organization_review.collectors.setup import is_same_or_subdomain
 from polar.organization_review.risk_signal import risk_signal as risk_signal_service
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -61,24 +60,12 @@ async def _lookup_txt(name: str) -> set[str]:
     return {b"".join(record.strings).decode() for record in answer}
 
 
-class WebsiteDomainStatus(StrEnum):
-    verified = "verified"
-    pending = "pending"
-    not_verified = "not_verified"
-
-
-def get_website_domain_status(
+def get_website_domain(
     website: str | None, organization_domains: Sequence[OrganizationDomain]
-) -> WebsiteDomainStatus:
+) -> OrganizationDomain | None:
     host = urlparse(website or "").hostname or ""
-    matching = [
-        d for d in organization_domains if same_registrable_domain(host, d.domain)
-    ]
-    if any(d.verified_at for d in matching):
-        return WebsiteDomainStatus.verified
-    if matching:
-        return WebsiteDomainStatus.pending
-    return WebsiteDomainStatus.not_verified
+    matching = [d for d in organization_domains if is_same_or_subdomain(host, d.domain)]
+    return max(matching, key=lambda d: d.verified_at is not None, default=None)
 
 
 class OrganizationDomainService:

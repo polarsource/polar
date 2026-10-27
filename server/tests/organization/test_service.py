@@ -2438,7 +2438,7 @@ class TestGetReviewState:
         await save_fixture(
             OrganizationDomain(
                 organization=organization,
-                domain="acme.com",
+                domain="www.acme.com",
                 verification_token="TOKEN",
             )
         )
@@ -2448,6 +2448,28 @@ class TestGetReviewState:
         step = _step(state, OrganizationReviewCheckKey.PRODUCT_URL_DOMAIN_VERIFICATION)
         assert step.status == OrganizationReviewCheckStatus.PENDING
         assert step.reasons == [OrganizationReviewCheckReason.IN_PROGRESS]
+        assert step.value == "www.acme.com"
+
+    async def test_domain_verification_subdomain_verified(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="shop.acme.com",
+                verified_at=utc_now(),
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+
+        step = _step(state, OrganizationReviewCheckKey.PRODUCT_URL_DOMAIN_VERIFICATION)
+        assert step.reasons == [OrganizationReviewCheckReason.NOT_STARTED]
 
     async def test_domain_verification_verified(
         self,

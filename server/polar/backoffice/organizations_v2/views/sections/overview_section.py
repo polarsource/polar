@@ -16,8 +16,7 @@ from polar.models import (
 )
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_domain.service import (
-    WebsiteDomainStatus,
-    get_website_domain_status,
+    get_website_domain,
 )
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
@@ -800,17 +799,17 @@ class OverviewSection(ChecklistMixin):
                 self._render_shared_payout_account_row(request)
 
     def _render_website_domain_row(self) -> None:
-        status = get_website_domain_status(self.org.website, self.organization_domains)
+        domain = get_website_domain(self.org.website, self.organization_domains)
         if self.domain_lost_at is not None:
             missing = f"Lost on {self.domain_lost_at.strftime('%Y-%m-%d')}"
-        elif status == WebsiteDomainStatus.pending:
+        elif domain is not None:
             missing = "Pending verification"
         else:
             missing = "Not verified"
 
         render_checklist_row(
             "Website Domain",
-            status == WebsiteDomainStatus.verified,
+            domain is not None and domain.verified_at is not None,
             ", ".join(d.domain for d in self.organization_domains if d.verified_at),
             missing,
         )

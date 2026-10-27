@@ -83,8 +83,7 @@ from polar.organization_access_token.repository import (
 )
 from polar.organization_domain.repository import OrganizationDomainRepository
 from polar.organization_domain.service import (
-    WebsiteDomainStatus,
-    get_website_domain_status,
+    get_website_domain,
 )
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
@@ -2276,23 +2275,22 @@ class OrganizationService:
         organization_domains = await repository.get_all(
             repository.get_statement_by_organization(organization.id)
         )
-        match get_website_domain_status(organization.website, organization_domains):
-            case WebsiteDomainStatus.verified:
-                return self._passed_check(key)
-            case WebsiteDomainStatus.pending:
-                return OrganizationReviewCheck(
-                    key=key,
-                    status=OrganizationReviewCheckStatus.PENDING,
-                    reasons=[OrganizationReviewCheckReason.IN_PROGRESS],
-                    value=_website_domain(organization.website),
-                )
-            case WebsiteDomainStatus.not_verified:
-                return OrganizationReviewCheck(
-                    key=key,
-                    status=OrganizationReviewCheckStatus.PENDING,
-                    reasons=[OrganizationReviewCheckReason.NOT_STARTED],
-                    value=_website_domain(organization.website),
-                )
+        domain = get_website_domain(organization.website, organization_domains)
+        if domain is None:
+            return OrganizationReviewCheck(
+                key=key,
+                status=OrganizationReviewCheckStatus.PENDING,
+                reasons=[OrganizationReviewCheckReason.NOT_STARTED],
+                value=_website_domain(organization.website),
+            )
+        if domain.verified_at is None:
+            return OrganizationReviewCheck(
+                key=key,
+                status=OrganizationReviewCheckStatus.PENDING,
+                reasons=[OrganizationReviewCheckReason.IN_PROGRESS],
+                value=domain.domain,
+            )
+        return self._passed_check(key)
 
     def _build_socials_check(
         self, organization: Organization

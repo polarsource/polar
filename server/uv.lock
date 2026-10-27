@@ -3051,7 +3051,7 @@ requires-dist = [
     { name = "python-slugify", specifier = ">=8.0.2" },
     { name = "python-snappy", specifier = ">=0.7.3" },
     { name = "python-stdnum", specifier = ">=2.1" },
-    { name = "reauth", specifier = "==0.4.2" },
+    { name = "reauth", specifier = "==0.5.0" },
     { name = "redis", specifier = ">=5.0.4" },
     { name = "safe-redirect-url", specifier = ">=0.1.1" },
     { name = "sentry-sdk", extras = ["fastapi", "sqlalchemy"], specifier = ">=2.64.0" },
@@ -3857,7 +3857,7 @@ wheels = [
 
 [[package]]
 name = "reauth"
-version = "0.4.2"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3865,9 +3865,9 @@ dependencies = [
     { name = "httpx" },
     { name = "pyjwt" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/09/74/04cafe115c3e5c78ef43331c671c709c1152a68a84eb39c78f336ba92149/reauth-0.4.2.tar.gz", hash = "sha256:79a878aaa1ddd2e705adf7c093911fa432190f9749e8a58376f4eb05bfcf29ae", size = 567061, upload-time = "2026-09-26T12:50:33.359Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9e/b7/e37af892f2ea305c8e5456bb598ea6e441fc8c88007ee138565927ac183c/reauth-0.5.0.tar.gz", hash = "sha256:6dac0570b5c3b34abadfe9f7894ffbd3c09ae62c69cf73131c30bb5c797d62e2", size = 575522, upload-time = "2026-10-27T10:00:00.401Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/62/1cd96d8243308078c0792cc9384ab60e454278991da83945fcace1a13435/reauth-0.4.2-py3-none-any.whl", hash = "sha256:7ca0e5d8a029e650f49c9ccf3a74ac42706ad4725d6c788742a16b5769815a58", size = 44483, upload-time = "2026-09-26T12:50:32.123Z" },
+    { url = "https://files.pythonhosted.org/packages/be/5c/b4ec3f3b5049ea3f490ff870396838c376876ba693fb2a94da592dc4654b/reauth-0.5.0-py3-none-any.whl", hash = "sha256:8310d52a989a8611a5b4dbfd07e7024b0df1c4c92b3ae968a1555debb4713a24", size = 44533, upload-time = "2026-10-27T09:59:58.943Z" },
 ]
 
 [[package]]

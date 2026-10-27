@@ -10,7 +10,7 @@ from reauth.factors.oauth2.github import (
 from polar.config import settings
 from polar.postgres import AsyncSession, get_db_session
 
-from ..exceptions import GetEmailError
+from ..exceptions import GetEmailError, UnverifiedEmailError
 from .factor import OAuth2FactorMixin
 from .state import OAuth2StateService, get_oauth2_state_service
 
@@ -35,9 +35,12 @@ class GitHubFactor(OAuth2FactorMixin, GitHubOAuth2FactorBase):
     ) -> str:
         try:
             emails = await self.get_emails(callback_result.access_token)
-            return get_primary_email(emails)
         except (KeyError, GitHubOAuth2GetEmailsException) as e:
             raise GetEmailError() from e
+        primary_email, verified = get_primary_email(emails)
+        if not verified:
+            raise UnverifiedEmailError()
+        return primary_email
 
 
 async def get_github_factor(

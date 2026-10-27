@@ -11,7 +11,7 @@
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
     "lint:changed": "oxlint --type-aware $(git diff --name-only --relative --diff-filter=ACMR HEAD | grep -E '\\.(cjs|js|jsx|mjs|ts|tsx)$')",
-    "test": "vitest run --coverage",
+    "test": "vitest run --project uncompiled --coverage && vitest run --project compiled",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:e2e:headed": "E2E_HEADED=1 vitest run --config vitest.e2e.config.ts",
     "typecheck": "tsc --noEmit"
@@ -108,6 +108,7 @@
     "@typescript/native": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
     "jsdom": "catalog:",
     "msw": "^2.15.0",
     "playwright": "1.63.0",

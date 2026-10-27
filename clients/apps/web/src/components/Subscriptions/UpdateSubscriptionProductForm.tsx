@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { ProrationBehavior } from '../Settings/ProrationBehavior'
 import AmountLabel from '../Shared/AmountLabel'
 import { toast } from '../Toast/use-toast'
@@ -43,7 +43,7 @@ export const UpdateSubscriptionProductForm = ({
       proration_behavior: defaultProrationBehavior,
     },
   })
-  const { control, handleSubmit, setError, watch } = form
+  const { control, handleSubmit, setError } = form
 
   const currentPriceIds = useMemo(
     () => subscription.prices.map(({ id }) => id),
@@ -51,7 +51,7 @@ export const UpdateSubscriptionProductForm = ({
   )
 
   // oxlint-disable-next-line react-hooks/incompatible-library
-  const selectedProductId = watch('product_id')
+  const selectedProductId = useWatch({ control, name: 'product_id' })
   const { data: selectedProduct } = useProduct(selectedProductId)
   const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
 

@@ -22,7 +22,7 @@ import {
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch, useFormState } from 'react-hook-form'
 const ClientPage = ({
   organization,
 }: {
@@ -30,6 +30,7 @@ const ClientPage = ({
 }) => {
   const router = useRouter()
   const form = useForm<{ code: string }>()
+  const { errors } = useFormState({ control: form.control })
   const { control, handleSubmit, setError } = form
   const sessionRequest = useCustomerPortalSessionAuthenticate(api)
 
@@ -116,9 +117,9 @@ const ClientPage = ({
               }}
             />
 
-            {form.formState.errors.root && (
+            {errors.root && (
               <p className="text-sm font-medium text-red-500 dark:text-red-400">
-                {form.formState.errors.root.message}
+                {errors.root.message}
               </p>
             )}
 

@@ -6,7 +6,7 @@ import { Client, isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Minus as MinusIcon, Plus as PlusIcon } from '@polar-sh/orbit/icons'
 import { useCallback, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 
 interface CustomerSeatQuantityManagerProps {
@@ -30,7 +30,7 @@ export const CustomerSeatQuantityManager = ({
 
   const assignedSeats = totalSeats - availableSeats
 
-  const { handleSubmit, watch, setValue, setError } = useForm<{
+  const { control, handleSubmit, setValue, setError } = useForm<{
     seats: number
   }>({
     values: {
@@ -39,7 +39,7 @@ export const CustomerSeatQuantityManager = ({
   })
 
   // oxlint-disable-next-line react-hooks/incompatible-library
-  const seats = watch('seats')
+  const seats = useWatch({ control, name: 'seats' })
   const canDecrease = seats !== undefined && seats > assignedSeats
   const hasChanges = seats !== totalSeats
 

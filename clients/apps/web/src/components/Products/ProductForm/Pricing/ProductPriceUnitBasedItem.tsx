@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React, { useCallback, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { getUnitLabels } from '@/utils/product'
 import { ProductFormType } from '../ProductForm'
 import { UnitLabelFields } from './UnitLabelFields'
@@ -37,12 +37,17 @@ export interface ProductPriceUnitBasedItemProps {
 export const ProductPriceUnitBasedItem: React.FC<
   ProductPriceUnitBasedItemProps
 > = ({ index, currency, nouns }) => {
-  const { control, setValue, watch, getValues } =
-    useFormContext<ProductFormType>()
+  const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
-  const currentTierType = watch(`prices.${index}.tiers.type`)
-  const minimumUnits = watch(`prices.${index}.minimum_units`)
-  const unitLabel = watch(`prices.${index}.unit_label`)
+  const currentTierType = useWatch({
+    control,
+    name: `prices.${index}.tiers.type`,
+  })
+  const minimumUnits = useWatch({
+    control,
+    name: `prices.${index}.minimum_units`,
+  })
+  const unitLabel = useWatch({ control, name: `prices.${index}.unit_label` })
   const { unitLabel: singularNoun, unitLabelPlural: pluralNoun } =
     nouns ?? getUnitLabels({ unit_label: unitLabel ?? null })
 

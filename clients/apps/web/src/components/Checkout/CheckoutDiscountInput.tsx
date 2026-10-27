@@ -1,5 +1,6 @@
 'use client'
 
+import { useWatch } from 'react-hook-form'
 import { useCheckoutForm } from '@polar-sh/checkout/providers'
 import type { schemas } from '@polar-sh/client'
 import {
@@ -56,11 +57,11 @@ export const CheckoutDiscountInput = ({
   const t = useTranslations(locale)
   const [expanded, setExpanded] = useState(false)
   const { form } = useCheckoutForm()
-  const { control, setValue, clearErrors, watch } = form
+  const { control, setValue, clearErrors } = form
 
   const hasDiscount = !!checkout.discount
 
-  const discountCode = watch('discount_code')
+  const discountCode = useWatch({ control, name: 'discount_code' })
 
   const addDiscountCode = useCallback(async () => {
     if (!discountCode) return

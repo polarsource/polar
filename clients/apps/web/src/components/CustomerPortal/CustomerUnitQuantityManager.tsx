@@ -8,7 +8,7 @@ import { Button, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Minus as MinusIcon, Plus as PlusIcon } from '@polar-sh/orbit/icons'
 import { useCallback, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 
 interface CustomerUnitQuantityManagerProps {
@@ -43,7 +43,7 @@ export const CustomerUnitQuantityManager = ({
   const { min, max } = useMemo(() => getUnitBounds(unitPrice), [unitPrice])
   const { unitLabel, unitLabelPlural } = getUnitLabels(unitPrice)
 
-  const { handleSubmit, watch, setValue, setError } = useForm<{
+  const { control, handleSubmit, setValue, setError } = useForm<{
     units: number
   }>({
     values: {
@@ -52,7 +52,7 @@ export const CustomerUnitQuantityManager = ({
   })
 
   // eslint-disable-next-line react-hooks/incompatible-library
-  const units = watch('units')
+  const units = useWatch({ control, name: 'units' })
   const canDecrease = units > min
   const canIncrease = max == null || units < max
   const hasChanges = units !== currentUnits

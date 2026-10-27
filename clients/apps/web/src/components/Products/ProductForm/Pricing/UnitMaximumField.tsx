@@ -9,7 +9,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { ProductFormType } from '../ProductForm'
 
 export interface UnitMaximumFieldProps {
@@ -21,11 +21,13 @@ export const UnitMaximumField: React.FC<UnitMaximumFieldProps> = ({
   index,
   unitLabelPlural,
 }) => {
-  const { control, setValue, trigger, watch } =
-    useFormContext<ProductFormType>()
+  const { control, setValue, trigger } = useFormContext<ProductFormType>()
 
-  const tiers = watch(`prices.${index}.tiers.tiers`)
-  const minimumUnits = watch(`prices.${index}.minimum_units`)
+  const tiers = useWatch({ control, name: `prices.${index}.tiers.tiers` })
+  const minimumUnits = useWatch({
+    control,
+    name: `prices.${index}.minimum_units`,
+  })
   const lastTier = Math.max((tiers?.length ?? 1) - 1, 0)
   const previousBound = Number(tiers?.[lastTier - 1]?.bound ?? 0)
 

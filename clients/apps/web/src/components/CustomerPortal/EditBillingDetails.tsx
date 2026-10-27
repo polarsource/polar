@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch, useFormState } from 'react-hook-form'
 
 type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
 
@@ -29,18 +29,11 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
     },
   })
 
-  const {
-    control,
-    handleSubmit,
-    watch,
-    setError,
-    setValue,
-    reset,
-    formState: { errors, isDirty },
-  } = form
+  const { control, handleSubmit, setError, setValue, reset } = form
+  const { errors, isDirty } = useFormState({ control })
 
   // oxlint-disable-next-line react-hooks/incompatible-library
-  const country = watch('billing_address.country')
+  const country = useWatch({ control, name: 'billing_address.country' })
 
   useEffect(() => {
     if (country !== 'US' && country !== 'CA') {

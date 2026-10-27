@@ -4,7 +4,7 @@ import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { isValidationError, type schemas } from '@polar-sh/client'
 import { useCallback, useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 
 export const useInvoiceDownload = ({
   organization,
@@ -33,9 +33,9 @@ export const useInvoiceDownload = ({
     },
   })
 
-  const { setError, watch } = form
+  const { control, setError } = form
   // oxlint-disable-next-line react-hooks/incompatible-library
-  const country = watch('billing_address.country')
+  const country = useWatch({ control, name: 'billing_address.country' })
 
   // Reset form when payout changes
   useEffect(() => {

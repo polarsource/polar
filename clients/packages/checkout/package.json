@@ -12,7 +12,7 @@
   },
   "scripts": {
     "build": "rm -rf dist/ && tsdown",
-    "test": "vitest run --coverage",
+    "test": "vitest run --project uncompiled --coverage && vitest run --project compiled",
     "typecheck": "tsc --noEmit"
   },
   "exports": {
@@ -93,6 +93,7 @@
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
     "@vitest/coverage-v8": "catalog:",
     "jsdom": "catalog:",
     "react": "^19.3.0",

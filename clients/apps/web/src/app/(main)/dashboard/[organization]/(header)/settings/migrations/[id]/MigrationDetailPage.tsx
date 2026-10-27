@@ -34,7 +34,6 @@ export default function MigrationDetailPage({ migrationId }: Props) {
 
   return (
     <DashboardBody
-      wrapperClassName="max-w-(--breakpoint-md)!"
       title="Stripe"
       header={migration ? <SourceMeta migration={migration} /> : undefined}
     >

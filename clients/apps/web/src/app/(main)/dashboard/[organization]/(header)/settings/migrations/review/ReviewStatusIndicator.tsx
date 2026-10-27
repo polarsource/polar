@@ -6,5 +6,5 @@ import { reviewStatus } from './reviewStatus'
 // the two can't drift apart.
 export function ReviewStatusIndicator({ row }: { row: ReviewRow }) {
   const { label, color } = reviewStatus(row)
-  return <Status status={label} color={color} size="small" />
+  return <Status status={label} color={color ?? 'gray'} size="small" />
 }

@@ -13,7 +13,7 @@ import {
   FlaskConical,
   Globe,
   Key,
-  KeyRound,
+  LogIn,
   Lock,
   Mail,
   RefreshCw,
@@ -24,7 +24,7 @@ import {
   User,
   Users,
   Wallet,
-  BoltOutlined,
+  Bell,
 } from '@polar-sh/orbit/icons'
 import { useMemo } from 'react'
 import { Route, RouteWithActive, useResolveRoutes } from './navigation'
@@ -76,7 +76,7 @@ const settingsGroupsList = (
           icon: <Users size="1em" />,
           if: true,
         },
-        section('notifications', <BoltOutlined fontSize="small" />),
+        section('notifications', <Bell size="1em" />),
         {
           id: 'settings-billing',
           title: 'Billing',
@@ -88,7 +88,7 @@ const settingsGroupsList = (
           id: 'settings-sso',
           title: 'Single Sign-On',
           link: `${base}/sso`,
-          icon: <KeyRound size="1em" />,
+          icon: <LogIn size="1em" />,
           if: !!org?.feature_settings?.sso_enabled,
         },
         section('domains', <Globe size="1em" />),

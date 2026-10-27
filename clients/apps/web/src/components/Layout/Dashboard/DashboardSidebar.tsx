@@ -9,7 +9,7 @@ import {
   ArrowOutwardOutlined,
   KeyboardArrowDown,
   LockOutlined,
-  SearchFilled as Search,
+  Search,
 } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Button } from '@polar-sh/orbit'
@@ -141,7 +141,7 @@ export const DashboardSidebar = ({
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
           >
-            <Search fontSize="small" aria-hidden="true" />
+            <Search size={16} aria-hidden="true" />
           </Button>
         </m.div>
       </SidebarHeader>

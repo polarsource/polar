@@ -1,0 +1,345 @@
+export default {
+  checkout: {
+    footer: {
+      poweredBy: 'Работает на базе',
+      merchantOfRecord:
+        'Этот заказ обрабатывается нашим онлайн-реселлером и Merchant of Record, компанией Polar, которая также отвечает на вопросы по заказу и возвраты.',
+      mandateSubscriptionTrial:
+        'Нажимая «{buttonLabel}», вы разрешаете Polar Software, Inc., нашему онлайн-реселлеру и Merchant of Record, списывать с выбранного способа оплаты указанную выше сумму по окончании пробного периода и при каждом последующем платеже до момента отмены, а также соглашаетесь с {buyerTermsLink}. Вы можете отменить подписку в любое время до окончания пробного периода, чтобы не было списания.',
+      mandateSubscription:
+        'Нажимая «{buttonLabel}», вы разрешаете Polar Software, Inc., нашему онлайн-реселлеру и Merchant of Record, немедленно списать с выбранного способа оплаты указанную выше сумму, а также списывать такую же сумму при каждом последующем платеже до момента отмены, и соглашаетесь с {buyerTermsLink}.',
+      mandateOneTime:
+        'Нажимая «{buttonLabel}», вы разрешаете Polar Software, Inc., нашему онлайн-реселлеру и Merchant of Record, списать с выбранного способа оплаты указанную выше сумму и соглашаетесь с {buyerTermsLink}. Это разовое списание.',
+      mandateSubscriptionTrialDiscounted:
+        'Нажимая «{buttonLabel}», вы разрешаете Polar Software, Inc., нашему онлайн-реселлеру и Merchant of Record, списать с выбранного способа оплаты указанную выше сумму со скидкой по окончании пробного периода, а также обычную цену при каждом платеже после окончания скидки до момента отмены, и соглашаетесь с {buyerTermsLink}. Вы можете отменить подписку в любое время до окончания пробного периода, чтобы не было списания.',
+      mandateSubscriptionDiscounted:
+        'Нажимая «{buttonLabel}», вы разрешаете Polar Software, Inc., нашему онлайн-реселлеру и Merchant of Record, немедленно списать с выбранного способа оплаты указанную выше сумму со скидкой, а также обычную цену при каждом платеже после окончания скидки до момента отмены, и соглашаетесь с {buyerTermsLink}.',
+      buyerTermsLink: 'Условиями для покупателей',
+    },
+    form: {
+      email: 'Эл. почта',
+      cardholderName: 'Имя владельца карты',
+      purchasingAsBusiness: 'Я покупаю как организация',
+      businessName: 'Название организации',
+      billingDetails: 'Реквизиты организации',
+      billingAddress: {
+        label: 'Платёжный адрес',
+        line1: 'Улица и номер дома',
+        line2: 'Квартира или офис',
+        postalCode: 'Почтовый индекс',
+        city: 'Город',
+        country: 'Страна',
+        state: 'Регион',
+        province: 'Область',
+        stateProvince: 'Регион / область',
+      },
+      taxId: 'Налоговый идентификатор',
+      discountCode: 'Промокод',
+      addDiscountCode: 'Добавить промокод',
+      optional: 'Необязательно',
+      apply: 'Применить',
+      fieldRequired: 'Это поле обязательно',
+    },
+    orderSummary: 'Сводка заказа',
+    pricing: {
+      subtotal: 'Промежуточный итог',
+      taxableAmount: 'Облагаемая налогом сумма',
+      taxes: 'Налоги',
+      inclTax: 'Налоги (включены)',
+      free: 'Бесплатно',
+      payWhatYouWant: 'Сумма на ваше усмотрение',
+      total: 'Итого',
+      everyInterval: {
+        day: {
+          '=1': 'Ежедневно',
+          '=2': 'Каждый второй день',
+          other: 'Каждые # дней',
+          one: 'Каждый # день',
+          few: 'Каждые # дня',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Еженедельно',
+          '=2': 'Раз в две недели',
+          other: 'Каждые # недель',
+          one: 'Каждую # неделю',
+          few: 'Каждые # недели',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Ежемесячно',
+          '=2': 'Раз в два месяца',
+          other: 'Каждые # месяцев',
+          one: 'Каждый # месяц',
+          few: 'Каждые # месяца',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Ежегодно',
+          '=2': 'Раз в два года',
+          other: 'Каждые # лет',
+          one: 'Каждый # год',
+          few: 'Каждые # года',
+          _mode: 'plural',
+        },
+      },
+      additionalMeteredUsage: 'Дополнительное использование по счётчику',
+      meteredChargesMayApply:
+        'Может взиматься дополнительная плата за использование',
+      meteredIncluded: '{units} включено',
+      meterUnits: {
+        token: 'токенов',
+        scalar: 'единиц',
+      },
+      tiers: {
+        from: 'От',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Весь объём использования оплачивается по ставке диапазона, в который он попадает',
+      },
+      dueToday: 'К оплате сегодня',
+      firstPayment: 'Первый платёж',
+      totalAfterTrial: 'Итого после пробного периода',
+      perSeat: 'за место',
+      basePrice: 'Базовая цена',
+      seats: {
+        label: 'Места',
+        numberOfSeats: 'Количество мест',
+        count: {
+          '=1': '# место',
+          other: '# мест',
+          one: '# место',
+          few: '# места',
+          _mode: 'plural',
+        },
+        included: {
+          '=1': 'Включено одно место',
+          other: '# мест включено',
+          one: '# место включено',
+          few: '# места включено',
+          _mode: 'plural',
+        },
+        range: '{min} – {max} мест',
+        minimum: 'Минимум мест: {min}',
+        maximum: 'Максимум мест: {max}',
+        updateFailed: 'Не удалось обновить места',
+      },
+      perUnit: 'за {unitLabel}',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: 'Количество: {unitLabelPlural}',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        updateFailed: 'Не удалось обновить количество',
+      },
+      discount: {
+        until: 'До {date}',
+      },
+    },
+    trial: {
+      hero: {
+        free: {
+          day: {
+            '=1': '# день бесплатно',
+            other: '# дней бесплатно',
+            one: '# день бесплатно',
+            few: '# дня бесплатно',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# месяц бесплатно',
+            other: '# месяцев бесплатно',
+            one: '# месяц бесплатно',
+            few: '# месяца бесплатно',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# год бесплатно',
+            other: '# лет бесплатно',
+            one: '# год бесплатно',
+            few: '# года бесплатно',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/день',
+          week: '/нед.',
+          month: '/мес.',
+          year: '/год',
+        },
+        then: 'Затем',
+        startingDate: 'с {date}',
+        freeUntil: 'Бесплатно до {date}',
+      },
+    },
+    pwywForm: {
+      label: 'Укажите справедливую цену',
+      minimum: 'минимум {amount}',
+      amountMinimum: 'Сумма должна быть не менее {min}',
+      amountFreeOrMinimum: 'Сумма должна быть {zero} или не менее {min}',
+    },
+    productSwitcher: {
+      billedRecurring: 'Оплата: {frequency}',
+      oneTimePurchase: 'Разовая покупка',
+      fromPrefix: 'От',
+    },
+    productDescription: {
+      readMore: 'Подробнее',
+    },
+    benefits: {
+      granting: 'Предоставляем доступ...',
+      requestNewInvite: 'Запросить новое приглашение',
+      retryIn: {
+        '=1': 'Повторите попытку через # секунду',
+        other: 'Повторите попытку через # секунд',
+        one: 'Повторите попытку через # секунду',
+        few: 'Повторите попытку через # секунды',
+        _mode: 'plural',
+      },
+      connectNewAccount: 'Подключить новый аккаунт',
+      requestMyInvite: 'Запросить моё приглашение',
+      github: {
+        connect: 'Подключить аккаунт GitHub',
+        goTo: 'Перейти в {repository}',
+        selectAccount: 'Выберите аккаунт GitHub',
+      },
+      discord: {
+        connect: 'Подключить аккаунт Discord',
+        open: 'Открыть Discord',
+        selectAccount: 'Выберите аккаунт Discord',
+      },
+      slackSharedChannel: {
+        connected: 'Подключено к вашему рабочему пространству Slack.',
+        connectedChannel:
+          'Подключено к вашему рабочему пространству Slack, канал {channel}.',
+        inviteSent: 'Приглашение отправлено на {email}.',
+        channel: 'Канал: {channel}.',
+        openLinkToAccept: 'Откройте ссылку, чтобы принять приглашение в Slack.',
+        acceptFromEmail:
+          'Примите его из письма с приглашением или в запросах Slack Connect.',
+        openInvite: 'Открыть приглашение в Slack',
+        provisioning:
+          'Настраиваем канал Slack для {email}... Приглашение скоро появится в вашей почте.',
+        setupFailed:
+          'Не удалось настроить канал Slack для {email}. Проверьте адрес и попробуйте снова или свяжитесь с продавцом, если ошибка повторяется.',
+        enterEmail:
+          'Введите эл. почту администратора вашего рабочего пространства Slack. Он получит приглашение Slack Connect в закрытый канал.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Повторить',
+        requestInvite: 'Запросить приглашение в Slack',
+      },
+      licenseKey: {
+        copy: 'Копировать',
+        copiedToClipboard: 'Скопировано в буфер обмена',
+        copiedToClipboardDescription:
+          'Лицензионный ключ скопирован в буфер обмена',
+        loading: 'Загрузка...',
+        status: 'Статус',
+        statusGranted: 'Предоставлен',
+        statusRevoked: 'Отозван',
+        statusDisabled: 'Отключён',
+        usage: 'Использование',
+        validations: 'Проверки',
+        validatedAt: 'Проверен',
+        neverValidated: 'Не проверялся',
+        expiryDate: 'Срок действия',
+        noExpiry: 'Без срока действия',
+        activations: 'Активации',
+        activationDeleted: 'Активация лицензионного ключа удалена',
+        activationDeletedDescription: 'Активация успешно удалена',
+        activationDeactivationFailed: 'Не удалось деактивировать активацию',
+      },
+    },
+    confirmation: {
+      confirmPayment: 'Подтвердить оплату',
+      processingTitle: 'Мы обрабатываем ваш заказ',
+      successTitle: 'Спасибо за заказ!',
+      failedTitle: 'При обработке заказа возникла проблема',
+      processingDescription: 'Подождите, пока мы подтверждаем оплату.',
+      successDescription: 'Теперь у вас есть доступ к {product}.',
+      failedDescription: 'Попробуйте снова или обратитесь в поддержку.',
+    },
+    loading: {
+      processingOrder: 'Обработка заказа...',
+      processingPayment: 'Обработка платежа',
+      paymentSuccessful: 'Оплата прошла успешно! Готовим ваши продукты...',
+      confirmationTokenFailed:
+        'Не удалось создать токен подтверждения. Повторите попытку позже.',
+      paymentNotCompleted: 'Оплата не завершена. Попробуйте снова.',
+      paymentFormNotLoaded:
+        'Не удалось загрузить форму оплаты. Обновите страницу и попробуйте снова.',
+    },
+    cta: {
+      startTrial: 'Начать пробный период',
+      subscribeNow: 'Подписаться',
+      payNow: 'Оплатить',
+      getFree: 'Получить бесплатно',
+      paymentsUnavailable: 'Оплата временно недоступна',
+    },
+    trialUnavailable: {
+      title: 'Пробный период для этой покупки недоступен',
+      description:
+        'Вы уже использовали бесплатный пробный период для этого продукта, поэтому списание произойдёт сегодня. Продолжите ниже, чтобы завершить покупку.',
+    },
+  },
+  intervals: {
+    short: {
+      day: {
+        '=1': 'дн.',
+        other: '# дн.',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'нед.',
+        other: '# нед.',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'мес.',
+        other: '# мес.',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'г.',
+        other: '# г.',
+        _mode: 'plural',
+      },
+    },
+  },
+  benefitTypes: {
+    license_keys: 'Лицензионные ключи',
+    github_repository: 'Доступ к репозиторию GitHub',
+    discord: 'Приглашение в Discord',
+    downloadables: 'Загрузка файлов',
+    custom: 'Пользовательский',
+    meter_credit: 'Кредиты по счётчику',
+    feature_flag: 'Функциональный флаг',
+    slack_shared_channel: 'Общий канал Slack',
+  },
+  ordinal: {
+    zero: '-й',
+    one: '-й',
+    two: '-й',
+    few: '-й',
+    many: '-й',
+    other: '-й',
+  },
+  embedPaymentMethod: {
+    title: 'Добавить способ оплаты',
+    close: 'Закрыть',
+    submit: 'Добавить способ оплаты',
+    processing: 'Добавление способа оплаты…',
+    fallbackError: 'Что-то пошло не так. Попробуйте снова.',
+    errors: {
+      invalidRequest: 'Не указаны обязательные параметры.',
+      unauthorized: 'Сеанс истёк.',
+      processingFailed:
+        'Не удалось обработать способ оплаты. Попробуйте снова.',
+      unknown: 'Что-то пошло не так.',
+    },
+  },
+} as const

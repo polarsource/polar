@@ -3,27 +3,35 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useAuth } from '@/hooks'
 import {
-  useDeleteSSOConnection,
   useOrganizationDomains,
   useSSOConnections,
   useUpdateOrganization,
-  useUpdateSSOConnection,
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getSSOLoginURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
-import { Button, InlineModal, ListGroup, Status, Text } from '@polar-sh/orbit'
+import { Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ConfirmModal } from '../../Modal/ConfirmModal'
 import { useModal } from '../../Modal/useModal'
-import EditSSOConnectionModal from './EditSSOConnectionModal'
-import NewSSOConnectionModal from './NewSSOConnectionModal'
+import {
+  SettingsGroup,
+  SettingsGroupItem,
+  SettingsGroupRow,
+} from '../SettingsGroup'
+import { SSOConnectionRow } from './SSOConnectionRow'
 import SSODomains, { isVerifiedDomain } from './SSODomains'
 
-const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
-  const { isShown, show, hide } = useModal()
+const SSOSettings = ({
+  org,
+  onAddConnection,
+}: {
+  org: schemas['Organization']
+  onAddConnection: () => void
+}) => {
   const {
     isShown: enforceModalShown,
     show: showEnforceModal,
@@ -63,74 +71,108 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
 
   return (
     <>
-      <Box flexDirection="column" gap="l">
-        {!isAutomatic && (
-          <Box flexDirection="column" gap="xs">
-            <Text variant="label">Login link</Text>
-            <CopyToClipboardInput
-              value={getSSOLoginURL(org.slug)}
-              variant="mono"
-              onCopy={() => toast({ title: 'Copied to clipboard' })}
-            />
-            <Text variant="caption" color="muted">
-              Share this link with your members to sign in via SSO.
-            </Text>
-          </Box>
-        )}
-        <ListGroup>
+      <Box flexDirection="column" rowGap="2xl">
+        <SettingsGroup title="Connections">
           {connections.data?.items && connections.data.items.length > 0 ? (
             connections.data.items.map((connection) => (
-              <ListGroup.Item key={connection.id}>
+              <SettingsGroupRow key={connection.id}>
                 <SSOConnectionRow org={org} connection={connection} />
-              </ListGroup.Item>
+              </SettingsGroupRow>
             ))
           ) : (
-            <ListGroup.Item>
-              <Text color="muted">
-                {`${org.name} doesn't have any SSO connections yet`}
-              </Text>
-            </ListGroup.Item>
-          )}
-          <ListGroup.Item>
-            <Button onClick={show}>Add connection</Button>
-          </ListGroup.Item>
-        </ListGroup>
-        <Box alignItems="center" justifyContent="between" width="100%">
-          <Box flexDirection="column" gap="xs">
-            <Box alignItems="center" gap="s">
-              <Text variant="label">Enforce SSO</Text>
-              <Status
-                status={org.sso_enforced ? 'Enforced' : 'Not enforced'}
-                color={org.sso_enforced ? 'green' : 'gray'}
-                size="small"
-              />
+            <Box
+              flexDirection="column"
+              alignItems="center"
+              rowGap="l"
+              paddingVertical="3xl"
+              paddingHorizontal="xl"
+            >
+              <Box flexDirection="column" alignItems="center" rowGap="xs">
+                <Text variant="title">No SSO connections</Text>
+                <Text color="muted" align="center">
+                  Connect your identity provider to let members sign in with
+                  SSO.
+                </Text>
+              </Box>
+              <Button variant="secondary" onClick={onAddConnection}>
+                Add connection
+              </Button>
             </Box>
-            <Text variant="caption" color="muted">
-              {org.sso_enforced
+          )}
+        </SettingsGroup>
+        {!isAutomatic && (
+          <SettingsGroup title="Login link">
+            <SettingsGroupItem
+              layout="stacked"
+              title="SSO login URL"
+              description="Share this link with your members to sign in via SSO."
+            >
+              <CopyToClipboardInput
+                value={getSSOLoginURL(org.slug)}
+                variant="mono"
+                onCopy={() => toast({ title: 'Copied to clipboard' })}
+              />
+            </SettingsGroupItem>
+          </SettingsGroup>
+        )}
+        <SettingsGroup title="Enforcement">
+          <SettingsGroupItem
+            layout="inline"
+            title="Enforce SSO"
+            description={
+              org.sso_enforced
                 ? 'Members must sign in through SSO to access this organization.'
                 : !hasEnabledConnection
                   ? 'Add and enable an SSO connection before enforcing SSO.'
                   : !canEnforce
                     ? 'Sign in through this organization’s SSO to enforce it.'
-                    : 'Require members to sign in through SSO to access this organization.'}
-            </Text>
-          </Box>
-          <Button
-            variant="secondary"
-            onClick={() =>
-              org.sso_enforced ? applyEnforced(false) : showEnforceModal()
-            }
-            loading={updateOrganization.isPending}
-            disabled={
-              !org.sso_enforced && (!canEnforce || !hasEnabledConnection)
+                    : 'Require members to sign in through SSO to access this organization.'
             }
           >
-            {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}
-          </Button>
-        </Box>
-        {org.sso_enforced && domains.data && (
-          <SSODomains organization={org} domains={verifiedDomains} />
-        )}
+            <Box alignItems="center" columnGap="m">
+              <Status
+                status={org.sso_enforced ? 'Enforced' : 'Not enforced'}
+                color={org.sso_enforced ? 'green' : 'gray'}
+                size="small"
+              />
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  org.sso_enforced ? applyEnforced(false) : showEnforceModal()
+                }
+                loading={updateOrganization.isPending}
+                disabled={
+                  !org.sso_enforced && (!canEnforce || !hasEnabledConnection)
+                }
+              >
+                {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}
+              </Button>
+            </Box>
+          </SettingsGroupItem>
+          {org.sso_enforced && domains.data && (
+            <SettingsGroupItem
+              layout="stacked"
+              title="Domains"
+              description={
+                verifiedDomains.length === 0 ? (
+                  <>
+                    <Link
+                      href={`/dashboard/${org.slug}/settings/domains`}
+                      className="underline"
+                    >
+                      Verify your email domain
+                    </Link>{' '}
+                    so members signing in with it go straight to SSO.
+                  </>
+                ) : undefined
+              }
+            >
+              {verifiedDomains.length > 0 && (
+                <SSODomains domains={verifiedDomains} />
+              )}
+            </SettingsGroupItem>
+          )}
+        </SettingsGroup>
       </Box>
       <ConfirmModal
         isShown={enforceModalShown}
@@ -142,110 +184,8 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
         destructiveText="Enforce"
         confirmPrompt={org.slug}
       />
-      <InlineModal
-        isShown={isShown}
-        hide={hide}
-        modalContent={<NewSSOConnectionModal organization={org} hide={hide} />}
-      />
     </>
   )
 }
 
 export default SSOSettings
-
-const SSOConnectionRow = ({
-  org,
-  connection,
-}: {
-  org: schemas['Organization']
-  connection: schemas['OrganizationSSOConnection']
-}) => {
-  const { isShown, show, hide } = useModal()
-  const {
-    isShown: deleteModalShown,
-    show: showDeleteModal,
-    hide: hideDeleteModal,
-  } = useModal()
-  const updateConnection = useUpdateSSOConnection(org.id, connection.id)
-  const deleteConnection = useDeleteSSOConnection(org.id)
-
-  const toggleEnabled = async () => {
-    const { error } = await updateConnection.mutateAsync({
-      enabled: !connection.enabled,
-    })
-    if (error) {
-      toast({
-        title: 'Update failed',
-        description: extractApiErrorMessage(error),
-      })
-    }
-  }
-
-  const onDelete = async () => {
-    const { error } = await deleteConnection.mutateAsync(connection.id)
-    if (error) {
-      toast({
-        title: 'Deletion failed',
-        description: extractApiErrorMessage(error),
-      })
-    }
-  }
-
-  return (
-    <>
-      <Box alignItems="center" justifyContent="between" width="100%">
-        <Box flexDirection="column" gap="xs">
-          <Box alignItems="center" gap="s">
-            <Text>{connection.name ?? connection.configuration.issuer}</Text>
-            <Status
-              status={connection.enabled ? 'Enabled' : 'Disabled'}
-              color={connection.enabled ? 'green' : 'gray'}
-              size="small"
-            />
-          </Box>
-          <Text variant="caption" color="muted">
-            {connection.configuration.issuer}
-          </Text>
-        </Box>
-        <Box alignItems="center" gap="s">
-          <Button variant="secondary" onClick={show}>
-            Edit
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={toggleEnabled}
-            loading={updateConnection.isPending}
-          >
-            {connection.enabled ? 'Disable' : 'Enable'}
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={showDeleteModal}
-            loading={deleteConnection.isPending}
-          >
-            Delete
-          </Button>
-        </Box>
-      </Box>
-      <ConfirmModal
-        isShown={deleteModalShown}
-        hide={hideDeleteModal}
-        onConfirm={onDelete}
-        title="Delete SSO connection"
-        description="Members will no longer be able to sign in with this connection."
-        destructive
-      />
-      <InlineModal
-        isShown={isShown}
-        hide={hide}
-        modalContent={
-          <EditSSOConnectionModal
-            organization={org}
-            connection={connection}
-            hide={hide}
-          />
-        }
-      />
-    </>
-  )
-}

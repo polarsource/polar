@@ -683,6 +683,26 @@ class TestOverviewLazyCards:
         assert "Website Domain" in response.text
         assert "Not verified" not in response.text
 
+    async def test_setup_checklist_website_domain_other_verified(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="other.com", verified_at=utc_now()
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Not verified" in response.text
+
     async def test_setup_checklist_website_domain_pending(
         self,
         backoffice_client: httpx.AsyncClient,
@@ -713,6 +733,13 @@ class TestOverviewLazyCards:
     ) -> None:
         organization.website = "https://www.acme.com"
         await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_token="TOKEN",
+            )
+        )
         await save_fixture(
             OrganizationRiskSignal(
                 organization=organization,

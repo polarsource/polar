@@ -802,10 +802,10 @@ class OverviewSection(ChecklistMixin):
         verified = [d.domain for d in self.organization_domains if d.verified_at]
         pending = [d.domain for d in self.organization_domains if not d.verified_at]
 
-        if is_on_verified_domain(host, pending):
-            missing = "Pending verification"
-        elif self.domain_lost_at is not None:
+        if self.domain_lost_at is not None:
             missing = f"Lost on {self.domain_lost_at.strftime('%Y-%m-%d')}"
+        elif is_on_verified_domain(host, pending):
+            missing = "Pending verification"
         else:
             missing = "Not verified"
 

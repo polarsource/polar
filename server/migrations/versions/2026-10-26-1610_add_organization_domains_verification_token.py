@@ -1,7 +1,7 @@
 """add organization_domains verification_token
 
 Revision ID: e4c93484fe51
-Revises: a38dbe96722b
+Revises: f000c6097e24
 Create Date: 2026-10-26 16:10:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "e4c93484fe51"
-down_revision = "a38dbe96722b"
+down_revision = "f000c6097e24"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

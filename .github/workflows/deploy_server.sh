@@ -24,66 +24,130 @@ fi
 TIMEOUT=300  # 5 minutes timeout
 POLL_INTERVAL=5  # Check every 5 seconds
 
-# Function to check deployment status
-check_deployment_status() {
-  local service_id=$1
-  local deploy_id=$2
-  local response
+# Keep responses on disk before parsing so cancellation can recover an in-flight create.
+STATE_DIR=$(mktemp -d)
+CREATING=false
+trap 'rm -rf "$STATE_DIR"' EXIT
 
-  response=$(curl -s -X GET \
-    -H "Accept: application/json" \
-    -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
-    "https://api.render.com/v1/services/${service_id}/deploys/${deploy_id}" \
-    | jq -r '.status' 2>/dev/null)
+RENDER_CURL=(curl --silent --show-error --fail --connect-timeout 1
+  -H "Accept: application/json"
+  -H "Authorization: Bearer ${RENDER_API_TOKEN}")
 
-  echo "$response"
+# Render cannot cancel live deployments or cron jobs; completed migrations stay applied.
+# SIGKILL, runner loss, or a lost create response can leave deployments uncanceled.
+# Only IDs returned to this invocation are safe to cancel.
+cancel_deployment() {
+  local record=$1 service_id deploy_id status
+  service_id=$(cat "$record/service")
+  deploy_id=$(jq -er '.id | select(type == "string" and test("^dep-[a-zA-Z0-9]+$"))' "$record/response" 2>/dev/null) || {
+    echo "  ⚠️  ${service_id}: no deployment ID received; remote acceptance is unknown"
+    return
+  }
+
+  status=unknown
+  if "${RENDER_CURL[@]}" --max-time 1 -o "$record/status" \
+    "https://api.render.com/v1/services/${service_id}/deploys/${deploy_id}"; then
+    status=$(jq -r '.status' "$record/status" 2>/dev/null) || status=unknown
+  fi
+  case "$status" in
+    live|deactivated|build_failed|update_failed|pre_deploy_failed|canceled)
+      echo "  ${service_id}/${deploy_id}: ${status}; no cancellation needed"
+      return
+      ;;
+  esac
+
+  # Also try when status lookup fails; Render decides whether it can still cancel.
+  if "${RENDER_CURL[@]}" --max-time 1 -X POST -o "$record/cancel" \
+    "https://api.render.com/v1/services/${service_id}/deploys/${deploy_id}/cancel"; then
+    status=$(jq -r '.status' "$record/cancel" 2>/dev/null) || status=unknown
+    echo "  ${service_id}/${deploy_id}: cancellation requested (${status})"
+  else
+    echo "  ⚠️  ${service_id}/${deploy_id}: cancellation failed; check Render"
+  fi
+}
+
+cleanup() {
+  local record pid
+  trap '' INT TERM
+  set +e
+  echo "🛑 Deployment stopped; stopping local work and canceling owned Render deployments"
+  # Let an in-flight create finish recording its ID; stop polling immediately.
+  if [[ "$CREATING" != true ]]; then
+    for pid in $(jobs -pr); do
+      kill -TERM "$pid" 2>/dev/null
+    done
+  fi
+  wait 2>/dev/null
+
+  for record in "$STATE_DIR"/deploy.*; do
+    [[ -d "$record" ]] || continue
+    cancel_deployment "$record" &
+  done
+  wait
+}
+
+finish() {
+  local exit_code=$?
+  trap - EXIT
+  if [[ "$exit_code" -ne 0 ]]; then
+    cleanup
+  fi
+  rm -rf "$STATE_DIR"
+  exit "$exit_code"
+}
+trap finish EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+# Wait on background commands so Bash handles signals immediately, including during curl.
+request() {
+  local timeout=$1 output=$2
+  shift 2
+  "${RENDER_CURL[@]}" --max-time "$timeout" -o "$output" "$@" &
+  wait "$!"
 }
 
 # Function to deploy a set of servers
 deploy_servers() {
-  local -n servers_ref=$1
-  local services=${2:-"unknown"}
-  local environment=${3:-"unknown"}
-  local img="${4:-$IMG}"
+  local services=$1
+  shift
+  local server_id deploy_id record status
+  local records=()
 
-  echo "🚀 Starting deployment of ${services} to ${environment}..."
+  echo "🚀 Starting deployment of ${services}..."
 
-  # Trigger deployments
-  local -A deploy_map=()  # Maps service_id to deploy_id
-  for server_id in "${servers_ref[@]}"; do
+  for server_id in "$@"; do
     echo "  Triggering deployment for ${server_id}..."
+    record=$(mktemp -d "$STATE_DIR/deploy.XXXXXX")
+    printf '%s' "$server_id" > "$record/service"
+    records+=("$record")
 
-    # Use API to get deploy ID
-    deploy_response=$(curl -s -X POST \
-      -H "Accept: application/json" \
-      -H "Authorization: Bearer ${RENDER_API_TOKEN}" \
+    # Reserve two seconds for parallel cleanup within GitHub's cancellation grace.
+    CREATING=true
+    request 4 "$record/response" -X POST \
       -H "Content-Type: application/json" \
-      -d "{\"imageUrl\":\"${img}\"}" \
-      "https://api.render.com/v1/services/${server_id}/deploys")
-
-    deploy_id=$(echo "$deploy_response" | jq -r '.id' 2>/dev/null)
-    if [[ "$deploy_id" != "null" && -n "$deploy_id" ]]; then
-      deploy_map["$server_id"]="$deploy_id"
-      echo "    Deploy ID: ${deploy_id}"
-    else
-      echo "    ❌ Failed to trigger deployment for ${server_id}"
-      echo "    Response: ${deploy_response}"
-      exit 1
-    fi
+      -d "{\"imageUrl\":\"${IMG}\"}" \
+      "https://api.render.com/v1/services/${server_id}/deploys"
+    CREATING=false
+    deploy_id=$(jq -er '.id | select(type == "string" and test("^dep-[a-zA-Z0-9]+$"))' "$record/response")
+    echo "    Deploy ID: ${deploy_id}"
   done
 
   # Wait for deployments to complete
-  echo "⏳ Waiting for ${services} in ${environment} deployments to complete..."
+  echo "⏳ Waiting for ${services} deployments to complete..."
 
-  local start_time=$(date +%s)
+  local start_time
+  start_time=$(date +%s)
   local all_complete=false
 
   while [[ $all_complete == false ]]; do
     all_complete=true
 
-    for server_id in "${!deploy_map[@]}"; do
-      deploy_id="${deploy_map[$server_id]}"
-      status=$(check_deployment_status "$server_id" "$deploy_id")
+    for record in "${records[@]}"; do
+      server_id=$(cat "$record/service")
+      deploy_id=$(jq -r '.id' "$record/response")
+      request 10 "$record/status" "https://api.render.com/v1/services/${server_id}/deploys/${deploy_id}"
+      status=$(jq -er '.status' "$record/status")
 
       case "$status" in
         "live")
@@ -110,8 +174,9 @@ deploy_servers() {
 
     if [[ $all_complete == false ]]; then
       # Check timeout
-      local current_time=$(date +%s)
-      local elapsed=$((current_time - start_time))
+      local current_time elapsed
+      current_time=$(date +%s)
+      elapsed=$((current_time - start_time))
 
       if [[ $elapsed -gt $TIMEOUT ]]; then
         echo "❌ Deployment timeout after ${TIMEOUT} seconds"
@@ -119,7 +184,8 @@ deploy_servers() {
       fi
 
       echo "  Checking again in ${POLL_INTERVAL} seconds..."
-      sleep $POLL_INTERVAL
+      sleep "$POLL_INTERVAL" &
+      wait "$!"
     fi
   done
 
@@ -130,38 +196,17 @@ deploy_servers() {
 if [ "$HAS_MIGRATIONS" = "true" ]; then
   echo "📋 Deploying API first (migrations detected), then workers in parallel"
 
-  # Deploy API first (runs migrations via preDeployCommand)
-  api_server=("$API_SERVICE_ID")
-  deploy_servers api_server "API" "environment"
-
-  # Deploy workers
-  pids=()
-
+  deploy_servers "API" "$API_SERVICE_ID"
   if [ ${#WORKER_SERVERS[@]} -gt 0 ]; then
-    deploy_servers WORKER_SERVERS "workers" "environment" &
-    pids+=($!)
+    deploy_servers "workers" "${WORKER_SERVERS[@]}"
   fi
-
-  for pid in "${pids[@]}"; do
-    wait "$pid" || exit 1
-  done
 else
   echo "📋 Deploying all services in parallel"
-
-  # Deploy API + regular workers
   if [ ${#WORKER_SERVERS[@]} -gt 0 ]; then
-    all_servers=("$API_SERVICE_ID" "${WORKER_SERVERS[@]}")
+    deploy_servers "All" "$API_SERVICE_ID" "${WORKER_SERVERS[@]}"
   else
-    all_servers=("$API_SERVICE_ID")
+    deploy_servers "All" "$API_SERVICE_ID"
   fi
-
-  pids=()
-  deploy_servers all_servers "All" "environment" &
-  pids+=($!)
-
-  for pid in "${pids[@]}"; do
-    wait "$pid" || exit 1
-  done
 fi
 
 echo "🎉 Deployment completed successfully!"

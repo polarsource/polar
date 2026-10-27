@@ -137,7 +137,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       )}
     >
       <Popover>
-        <PopoverTrigger className="dark:hover:bg-polar-700 flex cursor-pointer items-center justify-center px-4 py-3 duration-150 hover:bg-gray-100">
+        <PopoverTrigger className="dark:hover:bg-polar-700 flex cursor-pointer items-center justify-center px-4 py-3 transition-colors duration-150 hover:bg-gray-100">
           <CalendarMonthOutlined fontSize="inherit" />
         </PopoverTrigger>
         <PopoverContent>
@@ -158,7 +158,7 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
       </Popover>
 
       <Popover>
-        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer truncate px-4 text-sm duration-150 hover:bg-gray-100">
+        <PopoverTrigger className="dark:hover:bg-polar-700 flex-1 cursor-pointer truncate px-4 text-sm transition-colors duration-150 hover:bg-gray-100">
           {interval ? (
             interval.label
           ) : date?.from ? (

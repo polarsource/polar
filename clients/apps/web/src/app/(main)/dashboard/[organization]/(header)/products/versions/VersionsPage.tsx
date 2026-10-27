@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { HistoryRounded } from '@polar-sh/orbit/icons'
+import { Check, Copy, HistoryRounded } from '@polar-sh/orbit/icons'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { useSearchParams } from 'next/navigation'
@@ -41,7 +41,8 @@ const CopyHashButton = ({ hash }: { hash: string }) => {
   return (
     <button
       type="button"
-      aria-label="Copy version hash"
+      aria-label={copied ? 'Copied' : 'Copy version hash'}
+      className="group/copy"
       onClick={() =>
         navigator.clipboard.writeText(hash).then(() => setCopied(true))
       }
@@ -49,13 +50,24 @@ const CopyHashButton = ({ hash }: { hash: string }) => {
       <Box
         as="span"
         display="flex"
+        alignItems="center"
+        columnGap="xs"
         color={{ base: 'text-tertiary', hover: 'text-primary' }}
         transitionProperty="colors"
         transitionDuration="fast"
       >
         <Text as="span" variant="body" color="inherit" monospace>
-          {copied ? 'Copied' : hash.slice(0, 7)}
+          {hash.slice(0, 7)}
         </Text>
+        <span
+          className={
+            copied
+              ? 'flex'
+              : 'flex opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-visible/copy:opacity-100'
+          }
+        >
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+        </span>
       </Box>
     </button>
   )

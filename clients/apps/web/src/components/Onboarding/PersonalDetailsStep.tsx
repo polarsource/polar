@@ -211,17 +211,17 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
         await showApiResponse(400, 'Failed to save personal details')
         return
       }
+
+      trackStepCompleted('personal')
+      await showApiResponse(201, 'Created')
+      reloadUser()
+      router.push('/onboarding/business')
     } catch (error) {
-      Sentry.captureException(error)
       setSubmitting(false)
       setSubmitError(true)
-      return
+      Sentry.captureException(error)
+      await showApiResponse(500, 'Failed to save personal details')
     }
-
-    trackStepCompleted('personal')
-    await showApiResponse(201, 'Created')
-    reloadUser()
-    router.push('/onboarding/business')
   }
 
   return (

@@ -218,23 +218,20 @@ const Checkout = ({
       elements: StripeElements | null,
     ) => {
       setFullLoading(true)
-      let confirmedCheckout: schemas['CheckoutPublicConfirmed']
       try {
-        confirmedCheckout = await _confirm(data, stripe, elements)
+        const confirmedCheckout = await _confirm(data, stripe, elements)
+        await checkoutConfirmedRedirect(
+          confirmedCheckout,
+          confirmedCheckout.customer_session_token,
+        )
+        return confirmedCheckout
       } catch (error) {
+        setFullLoading(false)
         if (isExpiredCheckoutError(error)) {
           window.location.reload()
         }
-        setFullLoading(false)
         throw error
       }
-
-      await checkoutConfirmedRedirect(
-        confirmedCheckout,
-        confirmedCheckout.customer_session_token,
-      )
-
-      return confirmedCheckout
     },
     [_confirm, checkoutConfirmedRedirect],
   )

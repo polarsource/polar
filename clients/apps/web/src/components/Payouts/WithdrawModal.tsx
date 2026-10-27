@@ -112,10 +112,11 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
   const [loading, setLoading] = useState(false)
   const onConfirm = useCallback(async () => {
     setLoading(true)
-    const { data, error } = await api.POST('/v1/payouts/', {
-      body: { organization_id: organization.id },
-    })
-    setLoading(false)
+    const { data, error } = await api
+      .POST('/v1/payouts/', {
+        body: { organization_id: organization.id },
+      })
+      .finally(() => setLoading(false))
 
     if (error) {
       toast({

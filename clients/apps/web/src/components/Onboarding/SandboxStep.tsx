@@ -63,35 +63,43 @@ export function SandboxStep() {
     setSubmitting(true)
     setError(null)
 
-    const { data: org, error: createError } =
-      await createOrganization.mutateAsync({
-        name: formData.orgName,
-        slug: formData.orgSlug,
-        default_presentment_currency:
-          formData.defaultCurrency as schemas['PresentmentCurrency'],
-        default_tax_behavior: 'location',
-        legal_entity: { type: 'individual' as const },
-      })
+    const fallbackMessage = 'Failed to create organization. Please try again.'
 
-    if (createError) {
-      const fallbackMessage = 'Failed to create organization. Please try again.'
+    try {
+      const { data: org, error: createError } =
+        await createOrganization.mutateAsync({
+          name: formData.orgName,
+          slug: formData.orgSlug,
+          default_presentment_currency:
+            formData.defaultCurrency as schemas['PresentmentCurrency'],
+          default_tax_behavior: 'location',
+          legal_entity: { type: 'individual' as const },
+        })
 
-      let errorMessage = fallbackMessage
+      if (createError) {
+        let errorMessage = fallbackMessage
 
-      if (Array.isArray(createError?.detail) && createError.detail.length > 0) {
-        errorMessage = createError.detail[0]?.msg || fallbackMessage
-      } else if (typeof createError?.detail === 'string') {
-        errorMessage = createError.detail
+        if (
+          Array.isArray(createError?.detail) &&
+          createError.detail.length > 0
+        ) {
+          errorMessage = createError.detail[0]?.msg || fallbackMessage
+        } else if (typeof createError?.detail === 'string') {
+          errorMessage = createError.detail
+        }
+
+        setError(errorMessage)
+        setSubmitting(false)
+        return
       }
 
-      setError(errorMessage)
+      await reloadUser()
+      router.push(`/dashboard/${org.slug}`)
+      clearData()
+    } catch {
+      setError(fallbackMessage)
       setSubmitting(false)
-      return
     }
-
-    await reloadUser()
-    router.push(`/dashboard/${org.slug}`)
-    clearData()
   }
 
   return (

@@ -59,16 +59,14 @@ const AccountCreateModal = ({
   const goToOnboarding = useCallback(
     async (payoutAccount: schemas['PayoutAccount']) => {
       setLoading(true)
-      const { data, error } = await api.POST(
-        '/v1/payout-accounts/{id}/onboarding-link',
-        {
+      const { data, error } = await api
+        .POST('/v1/payout-accounts/{id}/onboarding-link', {
           params: {
             path: { id: payoutAccount.id },
             query: { return_path: returnPath },
           },
-        },
-      )
-      setLoading(false)
+        })
+        .finally(() => setLoading(false))
 
       if (error) {
         window.location.reload()
@@ -84,16 +82,15 @@ const AccountCreateModal = ({
     async (data: schemas['PayoutAccountCreate']) => {
       setLoading(true)
 
-      const { data: payoutAccount, error } = await api.POST(
-        '/v1/payout-accounts/',
-        {
+      const { data: payoutAccount, error } = await api
+        .POST('/v1/payout-accounts/', {
           body: {
             type: 'stripe',
             country: data.country,
             organization_id: forOrganizationId,
           },
-        },
-      )
+        })
+        .finally(() => setLoading(false))
 
       if (error) {
         if (isValidationError(error.detail)) {
@@ -101,11 +98,9 @@ const AccountCreateModal = ({
         } else {
           setError('root', { message: error.detail })
         }
-        setLoading(false)
         return
       }
 
-      setLoading(false)
       await goToOnboarding(payoutAccount)
     },
     [setLoading, forOrganizationId, goToOnboarding, setError],

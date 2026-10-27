@@ -56,31 +56,38 @@ export const PayoutAccountSection = ({
   const [resumeLoading, setResumeLoading] = useState(false)
   const resumeOnboarding = useCallback(async () => {
     if (!payoutAccount) return
-    setResumeLoading(true)
-    const { data, error } = await api.POST(
-      '/v1/payout-accounts/{id}/onboarding-link',
-      {
-        params: {
-          path: { id: payoutAccount.id },
-          query: {
-            return_path: payoutOnboardingReturnPath(
-              organization.slug,
-              payoutAccount.id,
-            ),
-          },
-        },
-      },
-    )
-    if (error || !data) {
+    const onResumeFailed = () => {
       setResumeLoading(false)
       toast({
         title: 'Could not resume payout setup',
         description: 'Please try again from Manage payout accounts.',
       })
       openManage()
-      return
     }
-    window.location.href = data.url
+    setResumeLoading(true)
+    try {
+      const { data, error } = await api.POST(
+        '/v1/payout-accounts/{id}/onboarding-link',
+        {
+          params: {
+            path: { id: payoutAccount.id },
+            query: {
+              return_path: payoutOnboardingReturnPath(
+                organization.slug,
+                payoutAccount.id,
+              ),
+            },
+          },
+        },
+      )
+      if (error || !data) {
+        onResumeFailed()
+        return
+      }
+      window.location.href = data.url
+    } catch {
+      onResumeFailed()
+    }
   }, [payoutAccount, organization.slug, openManage])
 
   const isStripeAccount = payoutAccount?.type === 'stripe'

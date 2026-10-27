@@ -31,8 +31,9 @@ const EmailUpdateForm = ({
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
     setErrorMessage(null) // Clear previous errors
     setLoading(true)
-    const { error } = await sendEmailUpdate(email, returnTo)
-    setLoading(false)
+    const { error } = await sendEmailUpdate(email, returnTo).finally(() =>
+      setLoading(false),
+    )
     if (error) {
       let errMsg = 'An error occurred while updating your email.'
       if (error.detail && Array.isArray(error.detail)) {

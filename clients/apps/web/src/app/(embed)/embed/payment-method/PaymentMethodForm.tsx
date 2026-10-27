@@ -172,7 +172,15 @@ export const PaymentMethodForm = ({
       setError(null)
       setLoading(true)
 
-      const { error: submitError } = await elements.submit()
+      let submitResult: Awaited<ReturnType<StripeElements['submit']>>
+      try {
+        submitResult = await elements.submit()
+      } catch {
+        reportError(fallbackError)
+        return
+      }
+
+      const { error: submitError } = submitResult
       if (submitError) {
         reportError(submitError.message ?? fallbackError)
         return
@@ -223,8 +231,17 @@ export const PaymentMethodForm = ({
         return
       }
 
-      const { error: actionError, setupIntent: nextActionIntent } =
-        await stripe.handleNextAction({ clientSecret: created.client_secret })
+      let actionResult: Awaited<ReturnType<Stripe['handleNextAction']>>
+      try {
+        actionResult = await stripe.handleNextAction({
+          clientSecret: created.client_secret,
+        })
+      } catch {
+        reportError(fallbackError)
+        return
+      }
+
+      const { error: actionError, setupIntent: nextActionIntent } = actionResult
 
       if (actionError || !nextActionIntent) {
         reportError(actionError?.message ?? fallbackError)

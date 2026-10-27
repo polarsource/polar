@@ -54,15 +54,15 @@ export const useInvoiceDownload = ({
     if (!payout) return
 
     setLoading(true)
-    const response = await api.GET('/v1/payouts/{id}/invoice', {
-      params: { path: { id: payout.id } },
-    })
+    const response = await api
+      .GET('/v1/payouts/{id}/invoice', {
+        params: { path: { id: payout.id } },
+      })
+      .finally(() => setLoading(false))
     if (response.error) {
-      setLoading(false)
       return
     }
     window.open(response.data.url, '_blank', 'noopener,noreferrer')
-    setLoading(false)
     onClose()
   }, [payout, onClose])
 
@@ -85,48 +85,55 @@ export const useInvoiceDownload = ({
       if (!payout) return
 
       setLoading(true)
-      const { error } = await api.PATCH('/v1/accounts/{id}', {
-        params: { path: { id: account.id } },
-        body: data,
-      })
-
-      if (error) {
-        if (isValidationError(error.detail)) {
-          setValidationErrors(error.detail, setError)
-        } else {
-          setError('root', { message: error.detail })
-        }
-        setLoading(false)
-        return
-      }
-
-      await getQueryClient().invalidateQueries({
-        queryKey: ['organizations', 'account'],
-      })
-
-      const { error: generateError, response: generateResponse } =
-        await api.POST('/v1/payouts/{id}/invoice', {
-          params: { path: { id: payout.id } },
-          body: {
-            invoice_number: data.invoice_number,
-          },
+      try {
+        const { error } = await api.PATCH('/v1/accounts/{id}', {
+          params: { path: { id: account.id } },
+          body: data,
         })
-      if (generateError) {
-        // The invoice already exists (e.g. a stale list still shows it as not
-        // generated). Refresh the list and download the existing one instead
-        // of leaving the user stuck on a repeating generate error.
-        if (generateResponse.status === 409) {
-          await getQueryClient().invalidateQueries({ queryKey: ['payouts'] })
-          await downloadInvoice()
+
+        if (error) {
+          if (isValidationError(error.detail)) {
+            setValidationErrors(error.detail, setError)
+          } else {
+            setError('root', { message: error.detail })
+          }
+          setLoading(false)
           return
         }
-        if (isValidationError(generateError.detail)) {
-          setValidationErrors(generateError.detail, setError)
-        } else {
-          setError('root', { message: generateError.detail })
+
+        await getQueryClient().invalidateQueries({
+          queryKey: ['organizations', 'account'],
+        })
+
+        const { error: generateError, response: generateResponse } =
+          await api.POST('/v1/payouts/{id}/invoice', {
+            params: { path: { id: payout.id } },
+            body: {
+              invoice_number: data.invoice_number,
+            },
+          })
+        if (generateError) {
+          // The invoice already exists (e.g. a stale list still shows it as not
+          // generated). Refresh the list and download the existing one instead
+          // of leaving the user stuck on a repeating generate error.
+          if (generateResponse.status === 409) {
+            await getQueryClient().invalidateQueries({ queryKey: ['payouts'] })
+            await downloadInvoice()
+            return
+          }
+          if (isValidationError(generateError.detail)) {
+            setValidationErrors(generateError.detail, setError)
+          } else {
+            setError('root', { message: generateError.detail })
+          }
+          setLoading(false)
+          return
         }
+      } catch {
         setLoading(false)
-        return
+        setError('root', {
+          message: 'Failed to generate the invoice. Please try again.',
+        })
       }
     },
     [payout, account, setError, downloadInvoice],

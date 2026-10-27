@@ -17,6 +17,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer import CustomerType, _avatar_url_for_email
+from polar.models.payment_method import SHARED_PAYMENT_TOKEN_TYPE
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
@@ -1110,6 +1111,26 @@ class TestListPaymentMethods:
 
         other_item = items_by_id[str(other_payment_method.id)]
         assert other_item["is_default"] is False
+
+    @pytest.mark.auth
+    async def test_hides_shared_payment_tokens(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+
+        response = await client.get(f"/v1/customers/{customer.id}/payment-methods")
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 0
 
     @pytest.mark.auth
     async def test_valid_external_id(

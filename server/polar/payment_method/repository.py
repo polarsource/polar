@@ -106,7 +106,11 @@ class PaymentMethodRepository(
         await self.session.execute(statement)
 
     def get_by_customer_statement(self, customer_id: UUID) -> Select[PaymentMethod]:
-        return self.get_base_statement().where(PaymentMethod.customer_id == customer_id)
+        """Shared payment tokens are internal to their subscription: never listed."""
+        return self.get_base_statement().where(
+            PaymentMethod.customer_id == customer_id,
+            PaymentMethod.type != SHARED_PAYMENT_TOKEN_TYPE,
+        )
 
     async def get_all_by_processor_id(
         self,

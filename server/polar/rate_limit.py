@@ -26,13 +26,30 @@ async def _authenticate(scope: Scope) -> tuple[str, RateLimitGroup]:
     return auth_subject.rate_limit_key
 
 
-_BASE_RULES: dict[str, Sequence[Rule]] = {
+async def _authentication_ip(scope: Scope) -> tuple[str, RateLimitGroup]:
+    user, group = await _authenticate_ip(scope)
+    return f"authentication:{user}", group
+
+
+_AUTHENTICATION_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/login-code": [
         Rule(minute=6, hour=12, block_time=900, zone="login-code"),
     ],
     "^/v1/auth/email-otp": [
         Rule(minute=6, hour=12, block_time=900, zone="auth-email-otp"),
     ],
+    "^/v1/auth/totp": [
+        Rule(minute=6, hour=12, block_time=900, zone="auth-totp"),
+    ],
+    "^/v1/auth/backup-codes": [
+        Rule(minute=6, hour=12, block_time=900, zone="auth-backup-codes"),
+    ],
+    "^/v1/customer-portal/customer-session/(request|authenticate)": [
+        Rule(minute=6, hour=12, block_time=900, zone="customer-session-login"),
+    ],
+}
+
+_BASE_RULES: dict[str, Sequence[Rule]] = {
     (
         "^/v1/(organizations/[^/]+/members/invite|"
         "(customer-seats|customer-portal/seats)(/[^/]+/resend)?)/?$"
@@ -47,12 +64,6 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
         )
         for group in RateLimitGroup
     ],
-    "^/v1/auth/totp": [
-        Rule(minute=6, hour=12, block_time=900, zone="auth-totp"),
-    ],
-    "^/v1/auth/backup-codes": [
-        Rule(minute=6, hour=12, block_time=900, zone="auth-backup-codes"),
-    ],
     "^/v1/email-update/(request|verify)": [
         Rule(minute=6, hour=12, block_time=900, zone="email-update"),
         Rule(
@@ -62,9 +73,6 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             block_time=900,
             zone="email-update",
         ),
-    ],
-    "^/v1/customer-portal/customer-session/(request|authenticate)": [
-        Rule(minute=6, hour=12, block_time=900, zone="customer-session-login"),
     ],
     "^/v1/customer-portal/customers/me/email-update/(request|check|verify)": [
         Rule(minute=6, hour=12, block_time=900, zone="customer-email-update"),
@@ -209,4 +217,13 @@ def get_ip_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     return RateLimitMiddleware(app, _authenticate_ip, RedisBackend(redis), rules)
 
 
-__all__ = ["get_ip_middleware", "get_middleware"]
+def get_authentication_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
+    rules = (
+        _AUTHENTICATION_RULES
+        if settings.ENV in {Environment.production, Environment.sandbox}
+        else {}
+    )
+    return RateLimitMiddleware(app, _authentication_ip, RedisBackend(redis), rules)
+
+
+__all__ = ["get_authentication_middleware", "get_ip_middleware", "get_middleware"]

@@ -2,21 +2,28 @@ import typing
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import Request, Response
+from fastapi import Depends, Request, Response
 from reauth.authentication_session import (
     AuthenticationSession as AuthenticationSessionDataclass,
 )
 from reauth.authentication_session import (
     AuthenticationSessionService as AuthenticationSessionServiceBase,
 )
+from reauth.authentication_session import (
+    ExpiredSessionException,
+    InvalidSessionTokenException,
+)
 from reauth.factors import FactorBase
 from sqlalchemy import delete, select, update
 
+from polar.auth.authentication_session import InvalidAuthenticationSession
 from polar.config import settings
 from polar.kit.crypto import get_legacy_secret
 from polar.kit.http import is_localhost
 from polar.models import CustomerSessionAuthenticationSession
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, get_db_session
+
+from .factors import get_factors
 
 TOKEN_PREFIX = "polar_customer_auth_session_"
 
@@ -103,3 +110,27 @@ class CustomerSessionAuthenticationSessionService(AuthenticationSessionServiceBa
             samesite="lax",
             expires=expires_datetime,
         )
+
+
+async def get_authentication_session_service(
+    session: AsyncSession = Depends(get_db_session),
+    factors: set[FactorBase[typing.Any]] = Depends(get_factors),
+) -> CustomerSessionAuthenticationSessionService:
+    return CustomerSessionAuthenticationSessionService(session, factors)
+
+
+async def get_authentication_session(
+    request: Request,
+    authentication_session_service: CustomerSessionAuthenticationSessionService = (
+        Depends(get_authentication_session_service)
+    ),
+) -> AuthenticationSessionDataclass:
+    token = request.cookies.get(
+        settings.CUSTOMER_SESSION_AUTHENTICATION_SESSION_COOKIE_KEY
+    )
+    if token is None or not token.isascii():
+        raise InvalidAuthenticationSession()
+    try:
+        return await authentication_session_service.validate(token)
+    except (InvalidSessionTokenException, ExpiredSessionException) as e:
+        raise InvalidAuthenticationSession() from e

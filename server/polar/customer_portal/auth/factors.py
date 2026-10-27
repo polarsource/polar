@@ -1,7 +1,10 @@
+import typing
 import uuid
 from math import ceil
 
+from fastapi import Depends
 from reauth.authentication_session import AuthenticationSession
+from reauth.factors import FactorBase
 from reauth.factors.email_otp import EmailOTP as EmailOTPDataclass
 from reauth.factors.email_otp import EmailOTPEnrollment
 from reauth.factors.email_otp import EmailOTPFactor as EmailOTPFactorBase
@@ -13,7 +16,7 @@ from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.models import CustomerSessionEmailOTP
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncSession, get_db_session
 
 from ..service.customer_session import OrganizationDoesNotExist
 from ..service.customer_session import customer_session as customer_session_service
@@ -106,3 +109,15 @@ class CustomerSessionEmailOTPFactor(EmailOTPFactorBase):
         customer_session_service.send_code(
             organization, email_otp.email, code, ceil(delta / 60)
         )
+
+
+async def get_email_otp_factor(
+    session: AsyncSession = Depends(get_db_session),
+) -> CustomerSessionEmailOTPFactor:
+    return CustomerSessionEmailOTPFactor(session)
+
+
+async def get_factors(
+    email_otp_factor: CustomerSessionEmailOTPFactor = Depends(get_email_otp_factor),
+) -> set[FactorBase[typing.Any]]:
+    return {email_otp_factor}

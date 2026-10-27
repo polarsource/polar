@@ -74,14 +74,12 @@ export const MeterUpdateModal = ({
     [router, hasProcessedEvents, updateMeter, hide, toast, setError],
   )
 
-  const title = managedAsCode ? 'Meter' : 'Edit Meter'
-
   if (!canManageProducts && !managedAsCode) {
     return (
       <Box flexDirection="column" height="100%">
         <InlineModalHeader hide={hide}>
           <Text variant="heading-xxs" as="h2">
-            {title}
+            Edit Meter
           </Text>
         </InlineModalHeader>
         <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
@@ -99,7 +97,7 @@ export const MeterUpdateModal = ({
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
         <Text variant="heading-xxs" as="h2">
-          {title}
+          {managedAsCode ? 'Meter' : 'Edit Meter'}
         </Text>
       </InlineModalHeader>
       <div className="flex flex-col gap-8 px-8 pb-12">

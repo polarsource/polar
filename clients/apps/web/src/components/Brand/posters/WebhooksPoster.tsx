@@ -25,8 +25,8 @@ export const WebhooksPoster = () => (
       <Box flexDirection="column" rowGap="l">
         <PosterHeader>POST /webhooks</PosterHeader>
         <Box flexDirection="column" rowGap="s">
-          {EVENTS.map(([time, event], i) => (
-            <Box key={i} columnGap="l">
+          {EVENTS.map(([time, event]) => (
+            <Box key={`${time}-${event}`} columnGap="l">
               <PosterMono dim>{time}</PosterMono>
               <PosterMono>{event}</PosterMono>
             </Box>

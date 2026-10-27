@@ -2,6 +2,12 @@
 # Variables
 # =============================================================================
 
+variable "planetscale_organization" {
+  description = "PlanetScale organization slug."
+  type        = string
+  sensitive   = true
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string
@@ -349,11 +355,6 @@ variable "polar_webhook_secret" {
 
 variable "polar_organization_id" {
   description = "Polar organization ID"
-  type        = string
-}
-
-variable "polar_free_product_id" {
-  description = "Polar free-tier product ID"
   type        = string
 }
 

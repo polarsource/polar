@@ -23,9 +23,11 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import Version
 from polar.models.benefit import BenefitType
 from polar.models.subscription import SubscriptionStatus
 from polar.subscription.schemas import SubscriptionMeterBase
+from polar.version import V2026_10
 
 from .customer import (
     CustomerIndividual,
@@ -115,7 +117,7 @@ class CustomerStateSubscription(
         examples=[None],
     )
 
-    price_id: SkipJsonSchema[UUID4] = Field(
+    price_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         deprecated=True,
         examples=[PRICE_ID_EXAMPLE],
         validation_alias=AliasChoices(

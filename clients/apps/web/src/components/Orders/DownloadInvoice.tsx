@@ -5,7 +5,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { setValidationErrors } from '@/utils/api/errors'
 import { api } from '@/utils/client'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import {
   enums,
   isValidationError,

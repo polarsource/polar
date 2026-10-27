@@ -3,231 +3,234 @@ from collections.abc import Sequence
 
 import pytest
 from fakeredis import FakeAsyncRedis
-from ratelimit import Rule
+from httpx import ASGITransport, AsyncClient
+from pytest_mock import MockerFixture
+from ratelimit import RateLimitMiddleware, Rule
+from ratelimit.backends.redis import RedisBackend
+from starlette.responses import Response
+from starlette.types import Receive, Scope, Send
 
-from polar.config import settings
+from polar.app import create_app
+from polar.auth.middlewares import AuthSubjectMiddleware
+from polar.auth.models import AuthSubject, Subject
+from polar.config import Environment, settings
 from polar.enums import RateLimitGroup
+from polar.middlewares import TransactionalMiddleware
+from polar.oauth2.constants import CLIENT_REGISTRATION_TOKEN_PREFIX
+from polar.postgres import AsyncSession
 from polar.rate_limit import (
     _PRODUCTION_RULES,
     _SANDBOX_RULES,
     _authenticate,
-    _bearer_token,
-    _identity_cache_key,
-    _session_cookie,
-    _token_hash,
-    clear_cached_identity,
-    write_cached_identity,
+    get_ip_middleware,
+    get_middleware,
 )
 from polar.redis import Redis
-
-
-@pytest.fixture
-async def redis() -> Redis:
-    return FakeAsyncRedis(decode_responses=True)
-
-
-def _http_scope(
-    *,
-    headers: list[tuple[bytes, bytes]] | None = None,
-    client: tuple[str, int] | None = ("8.8.8.8", 1234),
-) -> dict[str, object]:
-    return {
-        "type": "http",
-        "headers": headers or [],
-        "client": client,
-    }
-
-
-class TestBearerToken:
-    def test_returns_token(self) -> None:
-        scope = _http_scope(headers=[(b"authorization", b"Bearer polar_pat_xyz")])
-        assert _bearer_token(scope) == "polar_pat_xyz"
-
-    def test_case_insensitive_scheme(self) -> None:
-        scope = _http_scope(headers=[(b"authorization", b"BEARER polar_pat_xyz")])
-        assert _bearer_token(scope) == "polar_pat_xyz"
-
-    def test_missing_header(self) -> None:
-        scope = _http_scope(headers=[])
-        assert _bearer_token(scope) is None
-
-    def test_other_scheme(self) -> None:
-        scope = _http_scope(headers=[(b"authorization", b"Basic dXNlcjpwYXNz")])
-        assert _bearer_token(scope) is None
-
-    def test_empty_token(self) -> None:
-        scope = _http_scope(headers=[(b"authorization", b"Bearer ")])
-        assert _bearer_token(scope) is None
-
-    def test_non_http_scope(self) -> None:
-        scope: dict[str, object] = {"type": "websocket", "headers": []}
-        assert _bearer_token(scope) is None
-
-
-class TestSessionCookie:
-    def test_returns_value(self) -> None:
-        header = f"{settings.USER_SESSION_COOKIE_KEY}=polar_us_xyz".encode("ascii")
-        scope = _http_scope(headers=[(b"cookie", header)])
-        assert _session_cookie(scope) == "polar_us_xyz"
-
-    def test_among_other_cookies(self) -> None:
-        header = (
-            f"foo=bar; {settings.USER_SESSION_COOKIE_KEY}=polar_us_xyz; baz=qux"
-        ).encode("ascii")
-        scope = _http_scope(headers=[(b"cookie", header)])
-        assert _session_cookie(scope) == "polar_us_xyz"
-
-    def test_missing_header(self) -> None:
-        scope = _http_scope(headers=[])
-        assert _session_cookie(scope) is None
-
-    def test_other_cookies_only(self) -> None:
-        scope = _http_scope(headers=[(b"cookie", b"foo=bar; baz=qux")])
-        assert _session_cookie(scope) is None
-
-    def test_empty_value(self) -> None:
-        header = f"{settings.USER_SESSION_COOKIE_KEY}=".encode("ascii")
-        scope = _http_scope(headers=[(b"cookie", header)])
-        assert _session_cookie(scope) is None
-
-    def test_non_http_scope(self) -> None:
-        scope: dict[str, object] = {"type": "websocket", "headers": []}
-        assert _session_cookie(scope) is None
-
-
-@pytest.mark.anyio
-class TestIdentityCacheRoundTrip:
-    async def test_write_then_read_via_authenticate(self, redis: Redis) -> None:
-        token = "polar_pat_round_trip"
-        await write_cached_identity(
-            redis, token, ("user:abc-123", RateLimitGroup.elevated)
-        )
-
-        identity = await _authenticate(
-            _http_scope(headers=[(b"authorization", b"Bearer polar_pat_round_trip")]),
-            redis=redis,
-        )
-
-        assert identity == ("user:abc-123", RateLimitGroup.elevated)
-
-    async def test_write_sets_ttl(self, redis: Redis) -> None:
-        token = "polar_pat_ttl"
-        await write_cached_identity(redis, token, ("user:1", RateLimitGroup.default))
-
-        ttl = await redis.ttl(_identity_cache_key(token))
-        assert 0 < ttl <= 300
-
-    async def test_clear_removes_entry(self, redis: Redis) -> None:
-        token = "polar_pat_clear"
-        await write_cached_identity(redis, token, ("user:1", RateLimitGroup.default))
-        assert await redis.exists(_identity_cache_key(token)) == 1
-
-        await clear_cached_identity(redis, token)
-
-        assert await redis.exists(_identity_cache_key(token)) == 0
+from tests.fixtures.auth import AuthSubjectFixture
 
 
 @pytest.mark.anyio
 class TestAuthenticate:
-    async def test_cache_miss_uses_token_hash_pending_auth(self, redis: Redis) -> None:
-        identity = await _authenticate(
-            _http_scope(
-                headers=[(b"authorization", b"Bearer polar_pat_unknown")],
-                client=("8.8.8.8", 1234),
-            ),
-            redis=redis,
-        )
-        assert identity == (
-            f"token:{_token_hash('polar_pat_unknown')}",
-            RateLimitGroup.pending_auth,
-        )
-
-    async def test_non_ascii_token_uses_token_hash_pending_auth(
-        self, redis: Redis
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="customer"),
+    )
+    async def test_authenticated_identity(
+        self, auth_subject: AuthSubject[Subject]
     ) -> None:
-        header = "Bearer polar_pat_abc…".encode()
-        token = header.decode("latin-1").removeprefix("Bearer ")
         identity = await _authenticate(
-            _http_scope(headers=[(b"authorization", header)], client=("8.8.8.8", 1234)),
-            redis=redis,
+            {
+                "type": "http",
+                "headers": [(b"authorization", b"Bearer random-token")],
+                "client": ("8.8.8.8", 1234),
+                "state": {"auth_subject": auth_subject},
+            }
         )
-        assert identity == (
-            f"token:{_token_hash(token)}",
-            RateLimitGroup.pending_auth,
-        )
+        assert identity == auth_subject.rate_limit_key
 
-    async def test_no_token_uses_client_ip(self, redis: Redis) -> None:
-        identity = await _authenticate(_http_scope(client=("1.1.1.1", 80)), redis=redis)
-        assert identity == ("1.1.1.1", RateLimitGroup.default)
-
-    async def test_no_client_returns_anonymous(self, redis: Redis) -> None:
-        identity = await _authenticate(_http_scope(client=None), redis=redis)
-        assert identity == ("anonymous", RateLimitGroup.default)
-
-    async def test_cookie_cache_hit(self, redis: Redis) -> None:
-        cookie = "polar_us_session"
-        await write_cached_identity(redis, cookie, ("user:web", RateLimitGroup.web))
-
-        header = f"{settings.USER_SESSION_COOKIE_KEY}={cookie}".encode("ascii")
-        identity = await _authenticate(
-            _http_scope(headers=[(b"cookie", header)]), redis=redis
-        )
-
-        assert identity == ("user:web", RateLimitGroup.web)
-
-    async def test_cookie_cache_miss_uses_cookie_hash_pending_auth(
-        self, redis: Redis
+    @pytest.mark.parametrize(
+        ("headers", "client", "expected"),
+        [
+            ([], ("8.8.8.8", 1234), "8.8.8.8"),
+            ([(b"true-client-ip", b"1.1.1.1")], ("8.8.8.8", 1234), "1.1.1.1"),
+            ([], None, "anonymous"),
+        ],
+    )
+    async def test_anonymous_identity(
+        self,
+        auth_subject: AuthSubject[Subject],
+        headers: list[tuple[bytes, bytes]],
+        client: tuple[str, int] | None,
+        expected: str,
     ) -> None:
-        header = f"{settings.USER_SESSION_COOKIE_KEY}=polar_us_unknown".encode("ascii")
         identity = await _authenticate(
-            _http_scope(headers=[(b"cookie", header)], client=("9.9.9.9", 1234)),
-            redis=redis,
+            {
+                "type": "http",
+                "headers": headers,
+                "client": client,
+                "state": {"auth_subject": auth_subject},
+            }
         )
-        assert identity == (
-            f"cookie:{_token_hash('polar_us_unknown')}",
-            RateLimitGroup.pending_auth,
+        assert identity == (expected, RateLimitGroup.default)
+
+
+@pytest.mark.anyio
+class TestMiddleware:
+    @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+    @pytest.mark.parametrize("group", list(RateLimitGroup))
+    async def test_invitations_share_limit_across_routes(
+        self, rules: dict[str, Sequence[Rule]], group: RateLimitGroup
+    ) -> None:
+        async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+            await Response(status_code=204)(scope, receive, send)
+
+        async def authenticate(scope: Scope) -> tuple[str, str]:
+            return "inviter", group
+
+        limiter = RateLimitMiddleware(
+            endpoint,
+            authenticate,
+            RedisBackend(FakeAsyncRedis(decode_responses=True)),
+            rules,
+        )
+        async with AsyncClient(
+            transport=ASGITransport(app=limiter), base_url="http://test"
+        ) as client:
+            statuses = []
+            for path in (
+                "/v1/organizations/org-1/members/invite",
+                "/v1/organizations/org-2/members/invite",
+                "/v1/customer-seats",
+                "/v1/customer-seats/seat-1/resend",
+                "/v1/customer-portal/seats",
+                "/v1/customer-portal/seats/seat-2/resend",
+                "/v1/customer-seats/seat-3/resend",
+            ):
+                response = await client.post(path)
+                statuses.append(response.status_code)
+        assert statuses == [204] * 6 + [429]
+
+    @pytest.mark.parametrize(
+        ("header", "prefix"),
+        [
+            ("cookie", f"{settings.USER_SESSION_COOKIE_KEY}=random-"),
+            ("cookie", f"{settings.AUTHENTICATION_SESSION_COOKIE_KEY}=random-"),
+            ("authorization", f"Bearer {CLIENT_REGISTRATION_TOKEN_PREFIX}random-"),
+        ],
+    )
+    async def test_rotating_credentials_share_ip_limit(
+        self, session: AsyncSession, header: str, prefix: str
+    ) -> None:
+        async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+            await Response(status_code=204)(scope, receive, send)
+
+        limiter = RateLimitMiddleware(
+            endpoint,
+            _authenticate,
+            RedisBackend(FakeAsyncRedis(decode_responses=True)),
+            _PRODUCTION_RULES,
+        )
+        auth = AuthSubjectMiddleware(limiter)
+
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            scope["state"] = {"async_session": session}
+            await auth(scope, receive, send)
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            statuses = []
+            for index in range(7):
+                response = await client.post(
+                    "/v1/login-code/request",
+                    headers={header: f"{prefix}{index}"},
+                )
+                statuses.append(response.status_code)
+        assert statuses == [204] * 6 + [429]
+
+    def test_app_middleware_order(self, mocker: MockerFixture, redis: Redis) -> None:
+        mocker.patch("polar.app.settings.is_testing", return_value=False)
+        create_redis = mocker.patch("polar.app.create_redis", return_value=redis)
+        app = create_app()
+        create_redis.assert_called_once_with("rate-limit")
+        assert app.state.rate_limit_redis is redis
+        middleware: list[object] = [item.cls for item in app.user_middleware]
+        for factory in (get_middleware, get_ip_middleware):
+            assert (
+                app.user_middleware[middleware.index(factory)].kwargs["redis"] is redis
+            )
+        assert (
+            middleware.index(get_ip_middleware)
+            < middleware.index(TransactionalMiddleware)
+            < middleware.index(AuthSubjectMiddleware)
+            < middleware.index(get_middleware)
         )
 
-    async def test_bearer_token_preferred_over_cookie(self, redis: Redis) -> None:
-        await write_cached_identity(
-            redis, "polar_pat_a", ("user:bearer", RateLimitGroup.elevated)
-        )
-        await write_cached_identity(
-            redis, "polar_us_b", ("user:cookie", RateLimitGroup.web)
-        )
 
-        cookie_header = f"{settings.USER_SESSION_COOKIE_KEY}=polar_us_b".encode("ascii")
-        identity = await _authenticate(
-            _http_scope(
-                headers=[
-                    (b"authorization", b"Bearer polar_pat_a"),
-                    (b"cookie", cookie_header),
-                ]
-            ),
-            redis=redis,
-        )
+@pytest.mark.anyio
+class TestIPMiddleware:
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            {"authorization": "Bearer random-token"},
+            {"cookie": f"{settings.USER_SESSION_COOKIE_KEY}=random-session"},
+        ],
+    )
+    async def test_blocked_ip_skips_database_and_authentication(
+        self, mocker: MockerFixture, redis: Redis, headers: dict[str, str]
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.production)
 
-        assert identity == ("user:bearer", RateLimitGroup.elevated)
+        async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+            raise AssertionError("Blocked requests must not reach the endpoint")
 
-    async def test_distinct_tokens_get_distinct_identities(self, redis: Redis) -> None:
-        token_a = "polar_pat_a"
-        token_b = "polar_pat_b"
-        await write_cached_identity(redis, token_a, ("user:a", RateLimitGroup.default))
-        await write_cached_identity(
-            redis, token_b, ("organization:b", RateLimitGroup.elevated)
+        limiter = get_ip_middleware(
+            TransactionalMiddleware(AuthSubjectMiddleware(endpoint)), redis
         )
+        rule = next(iter(limiter.config.values()))[0]
+        for key in rule.ruleset("ip", "ip:1.1.1.1"):
+            await redis.set(key, 0, ex=60)
 
-        ident_a = await _authenticate(
-            _http_scope(headers=[(b"authorization", b"Bearer polar_pat_a")]),
-            redis=redis,
-        )
-        ident_b = await _authenticate(
-            _http_scope(headers=[(b"authorization", b"Bearer polar_pat_b")]),
-            redis=redis,
-        )
+        async with AsyncClient(
+            transport=ASGITransport(app=limiter), base_url="http://test"
+        ) as client:
+            response = await client.get(
+                "/v1/products/", headers={**headers, "true-client-ip": "1.1.1.1"}
+            )
+        assert response.status_code == 429
+        assert response.headers["retry-after"] == "1"
 
-        assert ident_a == ("user:a", RateLimitGroup.default)
-        assert ident_b == ("organization:b", RateLimitGroup.elevated)
+    async def test_ip_budgets_are_separate_and_health_is_exempt(
+        self, mocker: MockerFixture, redis: Redis
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.production)
+
+        async def endpoint(scope: Scope, receive: Receive, send: Send) -> None:
+            await Response(status_code=204)(scope, receive, send)
+
+        limiter = get_ip_middleware(endpoint, redis)
+        rule = next(iter(limiter.config.values()))[0]
+        for key in rule.ruleset("ip", "ip:1.1.1.1"):
+            await redis.set(key, 1, ex=60)
+
+        async with AsyncClient(
+            transport=ASGITransport(app=limiter), base_url="http://test"
+        ) as client:
+            first = await client.get(
+                "/v1/products/", headers={"true-client-ip": "1.1.1.1"}
+            )
+            blocked = await client.get(
+                "/v1/orders/", headers={"true-client-ip": "1.1.1.1"}
+            )
+            other_ip = await client.get(
+                "/v1/products/", headers={"true-client-ip": "2.2.2.2"}
+            )
+            health = await client.get("/healthz", headers={"true-client-ip": "1.1.1.1"})
+        assert first.status_code == 204
+        assert blocked.status_code == 429
+        assert other_ip.status_code == 204
+        assert health.status_code == 204
 
 
 def _select_rule(
@@ -264,29 +267,46 @@ _SENSITIVE_PATHS: list[tuple[str, str]] = [
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
 @pytest.mark.parametrize(("path", "expected_zone"), _SENSITIVE_PATHS)
-@pytest.mark.parametrize("group", [RateLimitGroup.default, RateLimitGroup.pending_auth])
 class TestSensitiveEndpointZoneIsolation:
-    """Pending-auth requests (unvalidated bearer/cookie) must use the
-    endpoint's own zone, not fall through to the shared "api" zone.
-
-    Regression coverage for https://github.com/polarsource/polar/issues/11704.
-    """
-
     def test_resolves_to_endpoint_zone(
         self,
         rules: dict[str, Sequence[Rule]],
         path: str,
         expected_zone: str,
-        group: RateLimitGroup,
     ) -> None:
-        rule = _select_rule(rules, path, group)
-        assert rule is not None, (
-            f"No rule selected for path={path!r} group={group.value!r}"
-        )
-        assert rule.zone == expected_zone, (
-            f"Path {path!r} for group {group.value!r} resolved to "
-            f"zone {rule.zone!r}, expected {expected_zone!r}"
-        )
+        rule = _select_rule(rules, path, RateLimitGroup.default)
+        assert rule is not None
+        assert rule.zone == expected_zone
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize(
+    "path", ["/v1/outpost/telemetry", "/v1/outpost/telemetry/metrics"]
+)
+@pytest.mark.parametrize(
+    ("group", "expected_zone"),
+    [
+        (RateLimitGroup.default, "outpost-telemetry"),
+        (RateLimitGroup.web, "outpost-telemetry"),
+        (RateLimitGroup.elevated, "outpost-telemetry"),
+        (RateLimitGroup.restricted, "api"),
+    ],
+)
+class TestOutpostTelemetryZone:
+    """SDK telemetry never spends the `api` budget of the token that ingests
+    events, except for restricted tokens, which keep their
+    tighter `api` limits."""
+
+    def test_resolves_to_zone(
+        self,
+        rules: dict[str, Sequence[Rule]],
+        path: str,
+        group: RateLimitGroup,
+        expected_zone: str,
+    ) -> None:
+        rule = _select_rule(rules, path, group, method="POST")
+        assert rule is not None
+        assert rule.zone == expected_zone
 
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
@@ -305,6 +325,46 @@ class TestEmailUpdateZone:
         rule = _select_rule(rules, path, group)
         assert rule is not None
         assert rule.zone == "email-update"
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize("suffix", ["", "/"])
+@pytest.mark.parametrize("group", list(RateLimitGroup))
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/v1/organizations/org-id/members/invite",
+        "/v1/customer-seats",
+        "/v1/customer-seats/seat-id/resend",
+        "/v1/customer-portal/seats",
+        "/v1/customer-portal/seats/seat-id/resend",
+    ],
+)
+class TestInvitationZone:
+    def test_matches_email_otp_limits(
+        self,
+        rules: dict[str, Sequence[Rule]],
+        suffix: str,
+        group: RateLimitGroup,
+        path: str,
+    ) -> None:
+        rule = _select_rule(
+            rules,
+            f"{path}{suffix}",
+            group,
+            method="POST",
+        )
+        otp_rule = _select_rule(
+            rules, "/v1/auth/email-otp/request", RateLimitGroup.default
+        )
+        assert rule is not None
+        assert otp_rule is not None
+        assert rule.zone == "invitations"
+        assert (rule.minute, rule.hour, rule.block_time) == (
+            otp_rule.minute,
+            otp_rule.hour,
+            otp_rule.block_time,
+        )
 
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
@@ -334,7 +394,6 @@ class TestCompassAssistantZone:
         RateLimitGroup.default,
         RateLimitGroup.web,
         RateLimitGroup.restricted,
-        RateLimitGroup.pending_auth,
     ],
 )
 class TestRefundsPostZone:
@@ -350,7 +409,7 @@ class TestRefundsPostZone:
         )
         assert rule.zone == "refunds"
         assert rule.hour == 10
-        assert rule.block_time == 3600
+        assert rule.block_time is None
 
 
 @pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
@@ -368,3 +427,44 @@ class TestRefundsElevatedAndGetFallThrough:
         rule = _select_rule(rules, "/v1/refunds/", RateLimitGroup.default, method="GET")
         assert rule is not None
         assert rule.zone == "api"
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize(
+    "group",
+    [RateLimitGroup.default, RateLimitGroup.web],
+)
+class TestAgentClaimZone:
+    """Confirming a claim checks a 6-digit code, so guesses are capped like
+    login codes; loading the claim page isn't."""
+
+    def test_confirm_resolves_to_agent_claim_zone(
+        self, rules: dict[str, Sequence[Rule]], group: RateLimitGroup
+    ) -> None:
+        rule = _select_rule(rules, "/v1/agent/claim", group, method="POST")
+
+        assert rule is not None
+        assert rule.zone == "agent-claim"
+
+    def test_get_claim_uses_api_zone(
+        self, rules: dict[str, Sequence[Rule]], group: RateLimitGroup
+    ) -> None:
+        rule = _select_rule(rules, "/v1/agent/claim/polar_acl_link", group)
+
+        assert rule is not None
+        assert rule.zone == "api"
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize("path", ["/v1/agent/identity", "/v1/agent/identity/"])
+class TestAgentSignUpZone:
+    """Each sign-up creates an OAuth client and an agent, so anonymous callers
+    are capped per IP like login codes."""
+
+    def test_resolves_to_agent_sign_up_zone(
+        self, rules: dict[str, Sequence[Rule]], path: str
+    ) -> None:
+        rule = _select_rule(rules, path, RateLimitGroup.default, method="POST")
+
+        assert rule is not None
+        assert rule.zone == "agent-sign-up"

@@ -133,6 +133,41 @@ class TestGrantExpiration:
         license_key = await _get_license_key(session, grant)
         assert license_key.expires_at is None
 
+    async def test_update_order_grant_keeps_expiration_anchored_to_purchase(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.license_keys,
+            organization=organization,
+            properties=EXPIRING_PROPERTIES,
+        )
+        order = await create_order(save_fixture, customer=customer, product=product)
+        grant = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, order=order
+        )
+
+        license_key = await _get_license_key(session, grant)
+        license_key.created_at = utc_now() - relativedelta(months=6)
+        session.add(license_key)
+        await session.flush()
+
+        benefit_grant_repository = BenefitGrantRepository.from_session(session)
+        loaded_grant = await benefit_grant_repository.get_by_id(
+            grant.id, options=benefit_grant_repository.get_eager_options()
+        )
+        assert loaded_grant is not None
+        await benefit_grant_service.update_benefit_grant(session, redis, loaded_grant)
+
+        license_key = await _get_license_key(session, grant)
+        assert license_key.expires_at == license_key.created_at + relativedelta(years=1)
+
 
 @pytest.mark.anyio
 class TestRevokeRegrant:

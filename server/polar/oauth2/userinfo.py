@@ -4,7 +4,7 @@ from authlib.oidc.core import UserInfo
 
 from polar.auth.scope import Scope, scope_to_list
 
-from .sub_type import SubTypeValue, is_sub_organization, is_sub_user
+from .sub_type import SubTypeValue, is_sub_agent, is_sub_organization, is_sub_user
 
 
 def generate_user_info(sub: SubTypeValue, scope: str) -> UserInfo:
@@ -20,7 +20,7 @@ def generate_user_info(sub: SubTypeValue, scope: str) -> UserInfo:
         _, organization = sub
         if scopes and Scope.openid in scopes:
             claims.update({"name": organization.slug})
-    else:
+    elif not is_sub_agent(sub):
         raise NotImplementedError()
 
     return UserInfo(**claims)

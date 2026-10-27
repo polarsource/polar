@@ -3,7 +3,7 @@
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
-import ArrowForward from '@mui/icons-material/ArrowForward'
+import { ArrowForward } from '@polar-sh/orbit/icons'
 import { Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -21,8 +21,8 @@ import { useModal } from '../Modal/useModal'
 import { LandingPageDesktopNavigation } from './DesktopNav'
 import { NavLink } from './NavLink'
 
-const StartupProgramBanner = () => (
-  <Link href="/startup-program" prefetch>
+const ManualBanner = () => (
+  <Link href="/field-guide" prefetch>
     <Box
       display={{
         base: 'none',
@@ -37,7 +37,7 @@ const StartupProgramBanner = () => (
       backgroundColor="background-secondary"
       color="text-primary"
     >
-      <Text color="inherit">Introducing the Polar Startup Program</Text>
+      <Text color="inherit">Introducing our new Usage Billing Engine</Text>
       <ArrowForward fontSize="inherit" />
     </Box>
   </Link>
@@ -47,7 +47,7 @@ export default function Layout({ children }: PropsWithChildren) {
   return (
     <>
       <div className="sticky top-0 z-30 flex w-full flex-col">
-        <StartupProgramBanner />
+        <ManualBanner />
         <LandingPageDesktopNavigation />
       </div>
       <div className="dark:bg-polar-950 relative flex flex-col overflow-x-clip bg-white px-0 md:w-full md:flex-1 md:items-center md:px-12">

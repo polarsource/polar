@@ -34,7 +34,7 @@
     },
     {
       "files": [
-        "src/app/**/auth/email-otp/VerifyPage.tsx",
+        "src/components/Auth/EmailOTPVerifyForm.tsx",
         "src/app/**/auth/totp/VerifyPage.tsx",
         "src/app/**/auth/backup-codes/VerifyPage.tsx"
       ],
@@ -99,6 +99,12 @@
       ],
       "rules": {
         "polar/no-raw-html-layout": "error"
+      }
+    },
+    {
+      "files": ["src/app/**/(mdx)/layout.tsx"],
+      "rules": {
+        "polar/no-broken-mdx-links": "error"
       }
     }
   ]

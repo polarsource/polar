@@ -187,7 +187,7 @@ Polar does not have a balance column anywhere. The available balance is computed
 
 When a merchant requests a payout, `PayoutService.create` writes three groups of rows on the ledger, all before the function returns. This is the same whether the payout ends up as `pending` or `held`.
 
-1. **Fee debits.** `create_payout_fees_balances` ([server/polar/transaction/service/platform_fee.py](server/polar/transaction/service/platform_fee.py)) inserts up to three balance pairs, one per applicable fee (`account`, `cross_border_transfer`, `payout`). Each pair is a merchant-side debit and a Polar-side credit. The merchant-side rows count toward the available balance via the `platform_fee_type` arm.
+1. **Fee debits.** `create_payout_fees_balances` ([server/polar/transaction/service/platform_fee.py](https://github.com/polarsource/polar/blob/main/server/polar/transaction/service/platform_fee.py)) inserts up to three balance pairs, one per applicable fee (`account`, `cross_border_transfer`, `payout`). Each pair is a merchant-side debit and a Polar-side credit. The merchant-side rows count toward the available balance via the `platform_fee_type` arm.
 2. **The Payout row.** A row is inserted in the `payouts` table with `amount = balance_after_fees` and `fees_amount = balance - balance_after_fees`.
 3. **The payout transaction.** `payout_transaction_service.create` inserts one `Transaction(type=payout, amount=-payout.amount)`. This row counts toward the available balance via the `type == payout` arm.
 
@@ -222,7 +222,7 @@ The query is intentionally simple: any held payout older than 2 days is either a
 
 `Payout.status` is a `sa.String()` column backed by a Python `StringEnum`, not a Postgres ENUM. This means adding `held` is a code-only change. There is no `ALTER TYPE`, no column rewrite, and no data migration.
 
-The `payout_status_update_trigger` Postgres trigger ([server/polar/models/payout_attempt.py](server/polar/models/payout_attempt.py)) keeps `payouts.status` in sync with the latest `payout_attempt`. It already has one early-return guard preserving `canceled`:
+The `payout_status_update_trigger` Postgres trigger ([server/polar/models/payout_attempt.py](https://github.com/polarsource/polar/blob/main/server/polar/models/payout_attempt.py)) keeps `payouts.status` in sync with the latest `payout_attempt`. It already has one early-return guard preserving `canceled`:
 
 ```sql
 IF current_status = 'canceled' THEN
@@ -254,7 +254,7 @@ The new `held` payout status is **not** a public change: payout endpoints are pr
 
 ## Appendix E: Repository queries to fix
 
-Both fixes live in [server/polar/payout/repository.py](server/polar/payout/repository.py) and land in PR 2:
+Both fixes live in [server/polar/payout/repository.py](https://github.com/polarsource/polar/blob/main/server/polar/payout/repository.py) and land in PR 2:
 
 - **`get_all_stripe_pending`.** We tighten the status filter from `not_in([canceled, succeeded])` to `== pending`. Otherwise the hourly Stripe-transfer cron picks up `held` rows and wastes one `retrieve_balance` call per hour for each held payout.
 - **`count_pending_by_payout_account`.** We extend the count to also include `held`. Otherwise `PayoutAccountService.delete` would let a merchant delete a payout account that still has funds reserved against it.

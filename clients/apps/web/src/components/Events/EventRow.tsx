@@ -1,7 +1,9 @@
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { buildCustomerDashboardPath } from '@/utils/customer'
-import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
-import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
+import {
+  KeyboardArrowDownOutlined,
+  KeyboardArrowRightOutlined,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'

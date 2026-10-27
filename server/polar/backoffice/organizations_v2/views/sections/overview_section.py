@@ -489,6 +489,12 @@ class OverviewSection(ChecklistMixin):
                         detail=f"{payment_stats.get('dispute_count', 0)} · ${payment_stats.get('dispute_amount', 0) / 100:,.2f}",
                     )
 
+                    self._payment_line(
+                        "ChargebackStop",
+                        str(payment_stats.get("chargeback_stop_count", 0)),
+                        detail="prevented / early warning",
+                    )
+
                     chargeback_rate = payment_stats.get("chargeback_rate", 0)
                     self._payment_line(
                         "Chargeback Rate",

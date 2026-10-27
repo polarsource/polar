@@ -11,8 +11,8 @@ import {
   type AcceptedLocale,
 } from '@polar-sh/i18n'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { X } from 'lucide-react'
-import { useCallback, useEffect, useMemo } from 'react'
+import { X } from '@polar-sh/orbit/icons'
+import { useCallback, useEffect, useEffectEvent, useMemo } from 'react'
 import {
   PaymentMethodForm,
   type CustomerBillingDetails,
@@ -110,19 +110,21 @@ export const PaymentMethodEmbed = ({
     navigateBackIfStandalone('failed')
   }, [embedOrigin, navigateBackIfStandalone])
 
+  const onOutsideClick = useEffectEvent(() => handleClose())
+
   useEffect(() => {
     if (mode !== 'modal') return
 
     const handleOutsideClick = (event: MouseEvent) => {
       const content = document.getElementById('polar-embed-content')
       if (content && !content.contains(event.target as Node)) {
-        handleClose()
+        onOutsideClick()
       }
     }
     const layout = document.getElementById('polar-embed-layout')
     layout?.addEventListener('click', handleOutsideClick)
     return () => layout?.removeEventListener('click', handleOutsideClick)
-  }, [mode, handleClose])
+  }, [mode])
 
   const form = (
     <PaymentMethodForm

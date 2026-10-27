@@ -1,8 +1,10 @@
+import { Banner } from '@/components/Shared/Banner'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { SlideToAction } from '@/components/Shared/SlideToAction'
 import { useTheme } from '@/design-system/useTheme'
 import {
   useCreatePayout,
+  useNextPayoutAt,
   useOrganizationAccount,
   usePayoutEstimate,
   useTransactionsSummary,
@@ -20,6 +22,8 @@ export default function Index() {
   const { data: account } = useOrganizationAccount(organization?.id)
   const { data: estimate } = usePayoutEstimate(organization?.id)
   const { data: summary } = useTransactionsSummary(account?.id)
+  const { nextPayoutAt, isFetching: isNextPayoutAtFetching } =
+    useNextPayoutAt(account)
   const { data: orders } = useOrders(organization?.id, { limit: 1 })
   const theme = useTheme()
   const router = useRouter()
@@ -43,6 +47,15 @@ export default function Index() {
           margin: theme.spacing['spacing-16'],
         }}
       >
+        {nextPayoutAt ? (
+          <Banner
+            title="Payout recently requested"
+            description={`The next one can be requested on ${nextPayoutAt.toLocaleString(
+              'en-US',
+              { dateStyle: 'medium', timeStyle: 'short' },
+            )}.`}
+          />
+        ) : null}
         <Details>
           <DetailRow
             label="Amount"
@@ -66,22 +79,24 @@ export default function Index() {
             )}
           />
         </Details>
-        <SlideToAction
-          text="Slide To Withdraw"
-          loadingText="Withdrawing..."
-          successText="Withdrawal Complete!"
-          onSlideComplete={async () => {
-            await withdrawFunds()
-          }}
-          onFinish={() => {
-            if (shouldShow(hasOrders)) {
-              setTimeout(() => {
-                requestReview()
-              }, 1500)
-            }
-            router.replace('/finance')
-          }}
-        />
+        {nextPayoutAt !== null || isNextPayoutAtFetching ? null : (
+          <SlideToAction
+            text="Slide To Withdraw"
+            loadingText="Withdrawing..."
+            successText="Withdrawal Complete!"
+            onSlideComplete={async () => {
+              await withdrawFunds()
+            }}
+            onFinish={() => {
+              if (shouldShow(hasOrders)) {
+                setTimeout(() => {
+                  requestReview()
+                }, 1500)
+              }
+              router.replace('/finance')
+            }}
+          />
+        )}
       </SafeAreaView>
     </>
   )

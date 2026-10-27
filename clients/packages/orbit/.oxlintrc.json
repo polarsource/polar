@@ -1,5 +1,13 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": ["node_modules/**", "dist/**"],
-  "extends": ["../oxlint-config/oxlint-react.json"]
+  "extends": ["../oxlint-config/oxlint-react.json"],
+  "overrides": [
+    {
+      "files": ["src/icons/**"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    }
+  ]
 }

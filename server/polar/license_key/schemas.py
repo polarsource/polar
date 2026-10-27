@@ -159,7 +159,7 @@ class LicenseKeyUser(Schema):
 
 class LicenseKeyRead(TimestampedSchema, IDSchema):
     organization_id: UUID4
-    user_id: SkipJsonSchema[UUID4] = Field(
+    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -169,7 +169,7 @@ class LicenseKeyRead(TimestampedSchema, IDSchema):
         deprecated="Use `customer_id`.",
     )
     customer_id: UUID4
-    user: SkipJsonSchema[LicenseKeyUser] = Field(
+    user: Annotated[SkipJsonSchema[LicenseKeyUser], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -307,17 +307,20 @@ class LicenseKeyCreate(LicenseKeyUpdate):
 
     @classmethod
     def generate_expiration_dt(
-        cls, ttl: int, timeframe: Literal["year", "month", "day"]
+        cls,
+        ttl: int,
+        timeframe: Literal["year", "month", "day"],
+        start: datetime | None = None,
     ) -> datetime:
-        now = utc_now()
+        start = start or utc_now()
         try:
             match timeframe:
                 case "year":
-                    return now + relativedelta(years=ttl)
+                    return start + relativedelta(years=ttl)
                 case "month":
-                    return now + relativedelta(months=ttl)
+                    return start + relativedelta(months=ttl)
                 case _:
-                    return now + relativedelta(days=ttl)
+                    return start + relativedelta(days=ttl)
         except ValueError, OverflowError:
             raise ValueError(
                 f"Expiration date overflows: ttl={ttl} with timeframe='{timeframe}' "

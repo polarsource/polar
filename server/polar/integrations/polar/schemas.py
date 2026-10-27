@@ -9,7 +9,6 @@ from polar.kit.address import AddressInput
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import Schema
 from polar.v2026_04.outputs import (
-    LegacyRecurringProductPriceFixed,
     PaymentMethodCard,
     ProductPriceFixed,
 )
@@ -57,6 +56,12 @@ class OrganizationPlan(Schema):
         ),
     )
     name: str
+    tier: str = Field(
+        description=(
+            "Plan tier shared by the monthly and annual variants of the same plan. "
+            "Read from the product's `tier` metadata, falling back to its name."
+        ),
+    )
     description: str | None = None
     recurring_interval: str | None = None
     price: OrganizationPlanPrice | None = None
@@ -72,6 +77,7 @@ class OrganizationPlan(Schema):
         return cls(
             product_id=None,
             name="Free",
+            tier="Free",
             description="Free to start and validate ideas",
             recurring_interval=None,
             price=OrganizationPlanPrice(amount=0, currency=currency),
@@ -88,6 +94,7 @@ class OrganizationPlan(Schema):
         return cls(
             product_id=None,
             name="Early Member",
+            tier="Early Member",
             description="For our founding community of early members.",
             recurring_interval=None,
             price=OrganizationPlanPrice(amount=0, currency=currency),
@@ -101,11 +108,7 @@ class OrganizationPlan(Schema):
     def from_sdk(cls, product: "Product") -> "OrganizationPlan":
         metadata = product.metadata or {}
         fixed_price = next(
-            (
-                p
-                for p in product.prices
-                if isinstance(p, ProductPriceFixed | LegacyRecurringProductPriceFixed)
-            ),
+            (p for p in product.prices if isinstance(p, ProductPriceFixed)),
             None,
         )
         fee_benefit = next(
@@ -120,6 +123,7 @@ class OrganizationPlan(Schema):
         return cls(
             product_id=product.id,
             name=product.name,
+            tier=str(metadata.get("tier") or product.name),
             description=(
                 str(metadata["description"])
                 if "description" in metadata

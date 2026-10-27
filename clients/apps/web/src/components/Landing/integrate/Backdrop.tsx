@@ -1,51 +1,68 @@
 import { StaticImage } from '@/components/Image/StaticImage'
-import { Box } from '@polar-sh/orbit/Box'
-import type { PropsWithChildren } from 'react'
+import type { PropsWithChildren, ReactNode } from 'react'
+import { WindowFrame } from '../story/Frame'
 
 export type BackdropSrc = string
 
-interface BackdropPanelProps {
+interface ImageBandProps {
   src: BackdropSrc
   focus?: string
-  aspectRatio?: string
+  sizes?: string
+  className?: string
 }
 
-/**
- * A photo-filled panel with an opaque card on top: cover-fit image, then the
- * children inside a background-primary surface that fills the padded area.
- */
-export const BackdropPanel = ({
+/** A rounded photo panel, dimmed like the landing figures, with its children centered on top. */
+export const ImageBand = ({
   src,
   focus = 'center',
-  aspectRatio,
+  sizes = '100vw',
+  className = '',
   children,
-}: PropsWithChildren<BackdropPanelProps>) => (
-  <Box
-    position="relative"
-    overflow="hidden"
-    minWidth={0}
-    aspectRatio={aspectRatio}
-    padding={{ base: 'xl', md: '2xl' }}
-    backgroundColor="background-secondary"
+}: PropsWithChildren<ImageBandProps>) => (
+  <div
+    className={`dark:border-polar-800 relative flex w-full min-w-0 items-center justify-center overflow-hidden rounded-md border border-gray-200 p-4 md:p-12 ${className}`}
   >
     <StaticImage
       src={src}
       alt=""
       fill
-      sizes="(min-width: 1024px) 50vw, 100vw"
+      sizes={sizes}
       className="object-cover"
       style={{ objectPosition: focus }}
     />
-    <Box
-      position="relative"
-      width="100%"
-      height="100%"
-      minWidth={0}
-      flexDirection="column"
-      padding={{ base: 'xl', md: '2xl' }}
-      backgroundColor="background-primary"
-    >
-      {children}
-    </Box>
-  </Box>
+    <div className="pointer-events-none absolute inset-0 bg-black/40" />
+    {children}
+  </div>
+)
+
+/** The lighter sheet inside a window frame. */
+export const FrameSheet = ({ children }: PropsWithChildren) => (
+  <div className="dark:bg-polar-900 flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl bg-white p-6">
+    {children}
+  </div>
+)
+
+interface BackdropPanelProps {
+  src: BackdropSrc
+  focus?: string
+  aside?: ReactNode
+}
+
+/** A photo panel holding one window that fills it, for figures that set their own height. */
+export const BackdropPanel = ({
+  src,
+  focus,
+  aside,
+  children,
+}: PropsWithChildren<BackdropPanelProps>) => (
+  <ImageBand
+    src={src}
+    focus={focus}
+    sizes="(min-width: 1024px) 50vw, 100vw"
+    className="aspect-[4/3]"
+  >
+    <WindowFrame aside={aside} className="h-full">
+      <FrameSheet>{children}</FrameSheet>
+    </WindowFrame>
+  </ImageBand>
 )

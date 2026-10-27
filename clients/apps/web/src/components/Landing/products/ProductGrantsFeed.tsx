@@ -1,8 +1,8 @@
 'use client'
 
 import { Switch } from '@polar-sh/orbit'
-import { AnimatePresence, motion } from 'motion/react'
-import { memo, useEffect, useRef, useState } from 'react'
+import { AnimatePresence, m } from 'motion/react'
+import { memo, useEffect, useState } from 'react'
 
 // ── Plan definitions ────────────────────────────────────────────────────────
 const PLANS = [
@@ -79,7 +79,7 @@ const FlagRow = memo(
   ({ label, isGranted }: { label: string; isGranted: boolean }) => (
     <div className="flex items-center justify-between gap-x-4 rounded-lg px-3 py-2">
       <div className="flex min-w-0 items-center gap-x-3">
-        <motion.div
+        <m.div
           animate={isGranted ? { scale: [1, 1.3, 1] } : {}}
           transition={{ duration: 0.2 }}
           className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-300 ${isGranted ? 'bg-emerald-500' : 'dark:bg-polar-600 bg-gray-200'}`}
@@ -99,34 +99,27 @@ export const ProductGrantsFeed = () => {
     user: string
   }>({ plan: PLANS[0], user: USERS[0] })
   const [grantedKeys, setGrantedKeys] = useState<Record<string, boolean>>({})
-  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
-    // Clear any in-flight grant timeouts
-    timeoutsRef.current.forEach(clearTimeout)
-    timeoutsRef.current = []
-
     // Grant flags one by one with a stagger
-    sub.plan.flagKeys.forEach((key, i) => {
-      const t = setTimeout(
+    const grantTimeouts = sub.plan.flagKeys.map((key, i) =>
+      setTimeout(
         () => {
           setGrantedKeys((prev) => ({ ...prev, [key]: true }))
         },
         300 + i * 220,
-      )
-      timeoutsRef.current.push(t)
-    })
+      ),
+    )
 
     // Reset all granted keys with a short delay so the toggle reset doesn't
     // happen on the same frame as the subscription event change
     const revoke = setTimeout(() => {
       setGrantedKeys({})
     }, 150)
-    timeoutsRef.current.push(revoke)
 
     return () => {
-      timeoutsRef.current.forEach(clearTimeout)
-      timeoutsRef.current = []
+      grantTimeouts.forEach(clearTimeout)
+      clearTimeout(revoke)
     }
   }, [sub])
 
@@ -138,7 +131,7 @@ export const ProductGrantsFeed = () => {
   }, [])
 
   return (
-    <motion.div
+    <m.div
       className="relative flex h-full flex-1 flex-col"
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
@@ -157,7 +150,7 @@ export const ProductGrantsFeed = () => {
         <div className="flex grow flex-col gap-y-5 p-5">
           {/* Subscription event */}
           <AnimatePresence mode="wait">
-            <motion.div
+            <m.div
               key={sub.user + sub.plan.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -181,7 +174,7 @@ export const ProductGrantsFeed = () => {
               >
                 {sub.plan.name.toUpperCase()}
               </span>
-            </motion.div>
+            </m.div>
           </AnimatePresence>
 
           {/* Section label */}
@@ -198,7 +191,7 @@ export const ProductGrantsFeed = () => {
               {ALL_FLAGS.filter((f) =>
                 (sub.plan.flagKeys as readonly string[]).includes(f.key),
               ).map((flag) => (
-                <motion.div
+                <m.div
                   key={flag.key}
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
@@ -210,12 +203,12 @@ export const ProductGrantsFeed = () => {
                     label={flag.label}
                     isGranted={!!grantedKeys[flag.key]}
                   />
-                </motion.div>
+                </m.div>
               ))}
             </AnimatePresence>
           </div>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   )
 }

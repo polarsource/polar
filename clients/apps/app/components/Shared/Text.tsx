@@ -1,3 +1,4 @@
+import { resolveFontStyle } from '@/design-system/fonts'
 import { TextVariantKey, textVariants } from '@/design-system/textVariants'
 import { BorderRadiiToken, ColorToken, Theme } from '@/design-system/theme'
 import { createText, TextProps } from '@shopify/restyle'
@@ -26,8 +27,14 @@ export const Text = ({
   borderRadius = 'border-radius-6',
   ...rest
 }: Props) => {
+  const variantStyle = textVariants[variant] ?? textVariants.defaults
+  const fontStyle = resolveFontStyle(rest.style, {
+    fontWeight:
+      'fontWeight' in variantStyle ? variantStyle.fontWeight : undefined,
+    fontSize: variantStyle.fontSize ?? textVariants.defaults.fontSize,
+  })
+
   if (loading) {
-    const variantStyle = textVariants[variant] ?? textVariants.defaults
     const fontSize =
       variantStyle.fontSize ?? textVariants.defaults.fontSize ?? 16
     const lineHeight =
@@ -55,7 +62,7 @@ export const Text = ({
         <RestyleText
           variant={variant}
           {...rest}
-          style={[rest.style, { opacity: 0 }]}
+          style={[rest.style, fontStyle, { opacity: 0 }]}
         >
           {placeholderText ?? 'Loading...'}
         </RestyleText>
@@ -69,5 +76,7 @@ export const Text = ({
     )
   }
 
-  return <RestyleText variant={variant} {...rest} />
+  return (
+    <RestyleText variant={variant} {...rest} style={[rest.style, fontStyle]} />
+  )
 }

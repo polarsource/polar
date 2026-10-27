@@ -5,6 +5,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.discount.repository import DiscountRepository
+from polar.kit.versioning import APIVersion
 from polar.models import Discount, Organization, UserOrganization
 from polar.models.discount import (
     DiscountDuration,
@@ -13,7 +14,8 @@ from polar.models.discount import (
     DiscountType,
 )
 from polar.postgres import AsyncSession
-from polar.version import V2027_01
+from polar.version import V2026_10, V2027_01
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount
 
@@ -39,8 +41,11 @@ class TestListDiscounts:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
-    async def test_user_does_not_see_other_organization_discounts(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_does_not_see_other_organization_discounts(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -151,6 +156,57 @@ class TestListDiscounts:
 
 @pytest.mark.anyio
 class TestCreateDiscount:
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth
+    async def test_amounts_with_legacy_inputs(
+        self,
+        api_version: APIVersion,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "fixed",
+                "duration": "once",
+                "organization_id": str(organization.id),
+                "amounts": {"usd": 1000},
+                "amount": 2000,
+                "currency": "eur",
+            },
+        )
+        if api_version == V2026_10:
+            assert response.status_code == 422
+        else:
+            assert response.status_code == 201
+            data = response.json()
+            assert data["amounts"] == {"usd": 1000}
+            assert "amount" not in data
+            assert "currency" not in data
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_legacy_amount_does_not_replace_required_amounts(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "fixed",
+                "duration": "once",
+                "organization_id": str(organization.id),
+                "amount": 1000,
+            },
+        )
+        assert response.status_code == 422
+        assert any(error["loc"][-1] == "amounts" for error in response.json()["detail"])
+
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:
@@ -229,7 +285,10 @@ class TestCreateDiscount:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_valid(
         self,
         client: AsyncClient,
@@ -455,6 +514,27 @@ class TestGetDiscount:
 
 @pytest.mark.anyio
 class TestUpdateDiscount:
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_removed_amount_and_currency_are_ignored(
+        self,
+        client: AsyncClient,
+        discount_fixed_once: DiscountFixed,
+        user_organization: UserOrganization,
+    ) -> None:
+        amounts = dict(discount_fixed_once.amounts)
+        response = await client.patch(
+            f"/v1/discounts/{discount_fixed_once.id}",
+            json={
+                "amount": 1234,
+                "currency": "eur",
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["amounts"] == amounts
+        assert "amount" not in response.json()
+        assert "currency" not in response.json()
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/discounts/{uuid.uuid4()}")
 

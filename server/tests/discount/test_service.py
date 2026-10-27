@@ -9,11 +9,11 @@ from sqlalchemy.exc import DBAPIError, IntegrityError
 from polar.auth.models import AuthSubject, User
 from polar.checkout.schemas import CheckoutUpdatePublic
 from polar.checkout.service import checkout as checkout_service
-from polar.discount.repository import DiscountRepository
-from polar.discount.schemas import (
+from polar.discount.legacy_schemas import (
     DiscountFixedCreate,
     DiscountUpdate,
 )
+from polar.discount.repository import DiscountRepository
 from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError

@@ -69,6 +69,18 @@ describe('differences', () => {
     ).toEqual([{ section: 'meters', id: 'a' }])
   })
 
+  test('compares only the settings keys the file sets', () => {
+    const remote = {
+      settings: { payments: { currency: 'usd', tax: 'inclusive' } },
+    }
+    expect(
+      differences({ settings: { payments: { currency: 'usd' } } }, remote),
+    ).toEqual([])
+    expect(
+      differences({ settings: { payments: { currency: 'eur' } } }, remote),
+    ).toEqual([{ section: 'settings', id: 'settings' }])
+  })
+
   test('an empty or missing section has nothing to differ', () => {
     expect(differences({}, { meters: [meter('a')] })).toEqual([])
     expect(differences({ meters: [] }, {})).toEqual([])

@@ -15,21 +15,22 @@ import {
   ProductEditOrCreateForm,
   productToCreateForm,
 } from '@/utils/product'
+import { useFlaggedProductName } from '@/hooks/useFlaggedProductName'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Alert, Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import type { FieldErrors } from 'react-hook-form'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import { duplicateProductMedia } from './duplicateMedia'
 import ProductForm from './ProductForm/ProductForm'
-import { Wand2Icon } from 'lucide-react'
-
+import { WandSparkles as Wand2Icon } from '@polar-sh/orbit/icons'
 export interface CreateProductPageProps {
   organization: schemas['Organization']
   sourceProduct?: schemas['Product']
@@ -96,6 +97,8 @@ export const CreateProductPage = ({
     defaultValues: getDefaultValues(),
   })
   const { handleSubmit, setError } = form
+  const name = useWatch({ control: form.control, name: 'name' })
+  const flaggedPhrase = useFlaggedProductName(name ?? '')
 
   const onInvalid = useCallback(
     (errors: FieldErrors<ProductEditOrCreateForm>) => {
@@ -233,6 +236,7 @@ export const CreateProductPage = ({
               organization={organization}
               update={false}
               hasMeterCreditBenefit={hasMeterCreditBenefit}
+              nameFlagged={flaggedPhrase !== null}
               benefitsSlot={
                 <Benefits
                   organization={organization}
@@ -248,15 +252,40 @@ export const CreateProductPage = ({
           </form>
         </Form>
       </div>
-      <div className="flex flex-row items-center gap-2 pb-12">
-        <Button
-          onClick={handleSubmit(onSubmit, onInvalid)}
-          loading={isSubmitting}
-          disabled={isSubmitting}
-        >
-          Create Product
-        </Button>
-      </div>
+      <Box flexDirection="column" rowGap="xl" paddingBottom="3xl">
+        {flaggedPhrase && (
+          <Alert
+            variant="warning"
+            title="This product may not be allowed on Polar"
+            description={
+              <>
+                {flaggedPhrase.phrase
+                  ? `“${flaggedPhrase.phrase}” suggests`
+                  : 'The name suggests'}{' '}
+                {flaggedPhrase.category}, which is not permitted under our{' '}
+                <a
+                  href="https://polar.sh/legal/acceptable-use-policy"
+                  className="underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Acceptable Use Policy
+                </a>
+                .
+              </>
+            }
+          />
+        )}
+        <Box alignItems="center" columnGap="s">
+          <Button
+            onClick={handleSubmit(onSubmit, onInvalid)}
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
+            Create Product
+          </Button>
+        </Box>
+      </Box>
     </DashboardBody>
   )
 }

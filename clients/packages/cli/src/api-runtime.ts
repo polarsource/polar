@@ -96,7 +96,11 @@ export const layer = Layer.effect(
                   ? `${formatRecordPreview(fields, columns)}\n\n`
                   : ''
               const previewRequest = polar
-                .use(invoke, environment, { timeout: 1, organizationId })
+                .use(invoke, environment, {
+                  timeout: 1,
+                  organizationId,
+                  apiVersion: operation.apiVersion,
+                })
                 .pipe(Effect.timeout('1 second'), Effect.result)
               const preview = yield* Effect.acquireUseRelease(
                 terminal.display(loadingPreview).pipe(Effect.orDie),
@@ -153,6 +157,7 @@ export const layer = Layer.effect(
             .use(operation.invoke, environment, {
               authenticated: operation.requiresAuthentication !== false,
               organizationId,
+              apiVersion: operation.apiVersion,
             })
             .pipe(
               Effect.mapError(

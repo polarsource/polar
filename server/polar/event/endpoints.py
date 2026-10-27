@@ -533,7 +533,7 @@ async def list_statistics_timeseries(
     tags=[APITag.mcp, APITag.cli],
 )
 async def list_names(
-    auth_subject: auth.EventRead,
+    auth_subject: auth.EventNamesRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.EventNamesSorting,
     session: AsyncReadSession = Depends(get_db_read_session),

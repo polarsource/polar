@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from '@polar-sh/orbit/icons'
 import * as React from 'react'
 import { DateRange, DayPicker } from 'react-day-picker'
 

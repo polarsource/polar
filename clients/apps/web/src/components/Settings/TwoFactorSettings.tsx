@@ -16,8 +16,10 @@ import TOTPSetupModal from './TOTPSetupModal'
 import BackupCodesModal from './BackupCodesModal'
 import BackupCodesRegenerateModal from './BackupCodesRegenerateModal'
 import { toast } from '../Toast/use-toast'
-import { KeyRoundIcon, ShieldCheckIcon } from 'lucide-react'
-
+import {
+  KeyRound as KeyRoundIcon,
+  ShieldCheck as ShieldCheckIcon,
+} from '@polar-sh/orbit/icons'
 const AuthenticationMethod = ({
   icon,
   title,
@@ -87,7 +89,6 @@ const TwoFactorSettings = () => {
       })
       return
     }
-    await totpStatus.refetch()
     hideDeleteConfirmModal()
     toast({ title: 'Two-factor authentication disabled' })
   }
@@ -155,7 +156,6 @@ const TwoFactorSettings = () => {
                       }
                       if (data?.codes) {
                         setNewBackupCodes(data.codes)
-                        await backupCodesStatus.refetch()
                         showBackupCodesModal()
                       }
                     }}
@@ -175,7 +175,6 @@ const TwoFactorSettings = () => {
         hide={hideTOTPModal}
         onEnabled={async () => {
           hideTOTPModal()
-          await totpStatus.refetch()
           const { data, error } = await backupCodesEnroll.mutateAsync()
           if (error) {
             toast({
@@ -187,7 +186,6 @@ const TwoFactorSettings = () => {
           }
           if (data?.codes) {
             setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
             showBackupCodesModal()
           }
         }}
@@ -218,7 +216,6 @@ const TwoFactorSettings = () => {
           }
           if (data?.codes) {
             setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
             showBackupCodesModal()
             return data
           }

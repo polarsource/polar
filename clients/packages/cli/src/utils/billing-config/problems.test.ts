@@ -56,4 +56,18 @@ describe('formatProblems for a generated config', () => {
     expect(output).toContain('at polar.config.ts › meters.tool_calls.name')
     expect(output).toContain('help: Got 1.')
   })
+
+  test('shows the missing currency message', () => {
+    const missing: ConfigIssue = {
+      severity: 'error',
+      code: 'missing_currency',
+      path: 'products.pack.prices',
+      message:
+        "The product must have a price in the organization's default currency, EUR.",
+    }
+    const output = stripAnsi(formatProblems(generated, [missing]))
+    expect(output).toContain(
+      "Error: The product must have a price in the organization's default currency, EUR.",
+    )
+  })
 })

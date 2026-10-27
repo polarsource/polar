@@ -10,20 +10,21 @@ import { SectionDescription } from '../Section'
 
 const formatAddress = (
   details: ReturnType<typeof useOrganizationBillingDetails>['data'],
-): string[] => {
+): { field: string; text: string }[] => {
   if (!details) return []
-  const lines: string[] = []
-  if (details.billing_name) lines.push(details.billing_name)
+  const lines: { field: string; text: string }[] = []
+  if (details.billing_name)
+    lines.push({ field: 'name', text: details.billing_name })
   const a = details.billing_address
   if (!a) return lines
-  if (a.line1) lines.push(a.line1)
-  if (a.line2) lines.push(a.line2)
+  if (a.line1) lines.push({ field: 'line1', text: a.line1 })
+  if (a.line2) lines.push({ field: 'line2', text: a.line2 })
   const cityLine = [a.postal_code, a.city].filter(Boolean).join(' ')
-  if (cityLine) lines.push(cityLine)
+  if (cityLine) lines.push({ field: 'city', text: cityLine })
   const regionLine = [a.state, formatCountry(a.country)]
     .filter(Boolean)
     .join(', ')
-  lines.push(regionLine)
+  lines.push({ field: 'region', text: regionLine })
   return lines
 }
 
@@ -65,8 +66,8 @@ export const BillingAddressSection = ({
         ) : hasAddress ? (
           <Box flexDirection="column" rowGap="xs">
             {lines.map((line, idx) => (
-              <Text key={idx} color={idx === 0 ? 'default' : 'muted'}>
-                {line}
+              <Text key={line.field} color={idx === 0 ? 'default' : 'muted'}>
+                {line.text}
               </Text>
             ))}
             {taxId && <Text color="muted">Tax ID: {taxId}</Text>}

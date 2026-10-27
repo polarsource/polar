@@ -8,10 +8,10 @@
   },
   "files": ["src"],
   "scripts": {
-    "generate": "uv run --directory ../generator -m cli generate openapi/2026-10.openapi.json ../cli-commands --language cli"
+    "generate": "uv run --directory ../generator -m cli generate openapi/2026-10.openapi.json openapi/2027-01.openapi.json ../cli-commands --language cli"
   },
   "peerDependencies": {
-    "@polar-sh/sdk": "1.0.2",
+    "@polar-sh/sdk": "1.0.3-alpha.4",
     "effect": "4.0.1"
   }
 }

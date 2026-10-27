@@ -78,9 +78,6 @@ export const awaitCallback = <A>({
       void open(target.toString())
         .then((child) => {
           child.on('error', () => fail(browserError))
-          child.on('exit', (code) => {
-            if (code) fail(browserError)
-          })
         })
         .catch(() => fail(browserError))
     })

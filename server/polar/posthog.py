@@ -5,11 +5,12 @@ from posthog import Posthog
 from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.config import settings
 from polar.logging import ClientContext
-from polar.models import Organization, User
+from polar.models import Agent, Organization, User
 
 ORGANIZATION_EVENT_DISTINCT_ID = "organization_event"
 
 EventCategory = Literal[
+    "agent",
     "benefits",
     "subscriptions",
     "user",
@@ -126,6 +127,24 @@ class Service:
             event=_build_event_key(category, noun, verb),
             properties={
                 **self._get_common_properties(),
+                **(properties or {}),
+            },
+        )
+
+    def agent_event(
+        self,
+        agent: Agent,
+        noun: EventNoun,
+        verb: EventVerb,
+        properties: dict[str, Any] | None = None,
+    ) -> None:
+        self.capture(
+            f"agent:{agent.id}",
+            event=_build_event_key("agent", noun, verb),
+            properties={
+                **self._get_common_properties(),
+                "agent_id": str(agent.id),
+                "agent_name": agent.name,
                 **(properties or {}),
             },
         )

@@ -4,21 +4,22 @@ import { MARKS, formatRows } from '@/utils/billing-config/entries'
 import {
   type MeterUse,
   benefitSentence,
-  discountSentence,
   meterSentence,
   meterUnit,
   productMeters,
   productSentence,
+  shownDiff,
+  webhookSentence,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'benefits' | 'products' | 'discounts'
+type Section = 'meters' | 'benefits' | 'products' | 'webhooks'
 
 const SECTIONS: ReadonlyArray<Section> = [
   'meters',
   'benefits',
   'products',
-  'discounts',
+  'webhooks',
 ]
 
 type Sentence = ReadonlyArray<string>
@@ -30,7 +31,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
   benefits: benefitSentence,
   products: productSentence,
-  discounts: discountSentence,
+  webhooks: webhookSentence,
 }
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
@@ -44,20 +45,7 @@ const COVERED: Record<Section, ReadonlySet<string>> = {
     'prices',
     'benefits',
   ]),
-  discounts: new Set([
-    'name',
-    'type',
-    'basis_points',
-    'amounts',
-    'duration',
-    'duration_in_months',
-    'code',
-    'products',
-    'max_redemptions',
-    'max_redemptions_per_customer',
-    'starts_at',
-    'ends_at',
-  ]),
+  webhooks: new Set(['url', 'format', 'events', 'api_version']),
 }
 
 const TOP = ui.INDENT
@@ -66,7 +54,7 @@ const NESTED = ui.INDENT.repeat(3)
 const ids = (input: unknown): string[] =>
   Array.isArray(input) ? input.map((id) => name(id)) : []
 
-const documents = (input: unknown, section: Section) => {
+export const documents = (input: unknown, section: Section) => {
   const items = record(input)?.[section]
   const byId = new Map<string, unknown>()
   for (const item of Array.isArray(items) ? items : []) {
@@ -126,15 +114,21 @@ const meterUse = ({ id, facts }: MeterUse): Block => ({
   body: facts,
 })
 
-const rows = (indent: string, entry: AppliedEntry, section: string) =>
+const rows = (
+  indent: string,
+  entry: AppliedEntry,
+  section: string,
+  document: unknown,
+) =>
   formatRows(
     indent,
-    entry.diff.filter(({ field }) =>
+    shownDiff(section, entry.diff, document).filter(({ field }) =>
       entry.action === 'created'
         ? !(isSection(section) && COVERED[section].has(field))
         : field !== 'benefits',
     ),
     entry.action,
+    section,
   )
 
 const GRANT_MARKS: Record<Grant['status'], string> = {
@@ -159,7 +153,7 @@ export const formatTree = (
     meters: documents(input, 'meters'),
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
-    discounts: documents(input, 'discounts'),
+    webhooks: documents(input, 'webhooks'),
   }
 
   const product = (entry: AppliedEntry) => {
@@ -185,29 +179,36 @@ export const formatTree = (
     return [
       `${TOP}${own.head}`,
       ...own.body.map((line) => `${NESTED}${line}`),
-      ...rows(NESTED, entry, 'products'),
+      ...rows(NESTED, entry, 'products', document),
       ...branches(children),
     ]
   }
 
   const plain = (entry: AppliedEntry, section: string) => {
     if (entry.action === 'unchanged') return undefined
+    const document = isSection(section)
+      ? docs[section].get(entry.id)
+      : undefined
     const own = describe(
       MARKS[entry.action],
       entry.id,
-      isSection(section)
-        ? SENTENCES[section](docs[section].get(entry.id))
-        : undefined,
+      isSection(section) ? SENTENCES[section](document) : undefined,
       entry.action === 'created',
     )
     return [
       `${TOP}${own.head}`,
       ...own.body.map((line) => `${NESTED}${line}`),
-      ...rows(NESTED, entry, section),
+      ...rows(NESTED, entry, section, document),
     ]
   }
 
-  return [...new Set([...SECTIONS, ...entries.map(({ section }) => section)])]
+  return [
+    ...new Set([
+      'settings',
+      ...SECTIONS,
+      ...entries.map(({ section }) => section),
+    ]),
+  ]
     .flatMap((section) => {
       const own = bySection(section)
       if (own.length === 0) return []

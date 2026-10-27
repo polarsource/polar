@@ -7,15 +7,15 @@ import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { MetricDashboardEditorContent } from '@/components/DashboardOverview/MetricSelectorModal'
 import {
+  useCreateMetricDashboard,
   useDeleteMetricDashboard,
-  useMetricDashboards,
   useUpdateMetricDashboard,
 } from '@/hooks/queries/metrics'
 import { useHasPermission } from '@/hooks/permissions'
 import { getServerURL } from '@/utils/api'
 import { permissionDeniedMessage } from '@/utils/permissions'
-import { METRIC_GROUPS, toISODate } from '@/utils/metrics'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { ALL_METRICS, toISODate } from '@/utils/metrics'
+import { AddOutlined, MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -26,69 +26,39 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/atoms/DropdownMenu'
-import { usePathname, useRouter } from 'next/navigation'
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useMetricsFilters } from './useMetricsFilters'
 
-const BUILT_IN_NAMES: Record<string, string> = {
-  revenue: 'Revenue',
-  orders: 'Orders',
-  subscriptions: 'Subscriptions',
-  checkouts: 'Checkouts',
-  cancellations: 'Cancellations',
-  'unit-economics': 'Unit Economics',
-  costs: 'Costs',
-  usage: 'Usage',
-}
+const ALL_METRIC_SLUGS = ALL_METRICS.map((m) => m.slug)
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function useCurrentDashboard(organization: schemas['Organization']) {
-  const pathname = usePathname()
-  const { data: customDashboards } = useMetricDashboards(organization.id)
-
-  const currentSlug = useMemo(() => {
-    const parts = pathname.split('/')
-    const metricsIndex = parts.indexOf('metrics')
-    return metricsIndex !== -1 ? (parts[metricsIndex + 1] ?? null) : null
-  }, [pathname])
-
-  const isCustomDashboard = useMemo(
-    () => !!currentSlug && UUID_REGEX.test(currentSlug),
-    [currentSlug],
+function useMetricsExport(
+  organization: schemas['Organization'],
+  earliestDateISOString: string,
+) {
+  const { interval, startDate, endDate, productId } = useMetricsFilters(
+    earliestDateISOString,
   )
 
-  const currentDashboard = useMemo(() => {
-    if (!isCustomDashboard || !customDashboards) return null
-    return (
-      customDashboards.find(
-        (d: schemas['MetricDashboardSchema']) => d.id === currentSlug,
-      ) ?? null
-    )
-  }, [isCustomDashboard, currentSlug, customDashboards])
-
-  const dashboardName = useMemo(() => {
-    if (!currentSlug) return null
-    if (BUILT_IN_NAMES[currentSlug]) return BUILT_IN_NAMES[currentSlug]
-    return currentDashboard?.name ?? null
-  }, [currentSlug, currentDashboard])
-
-  return { currentSlug, isCustomDashboard, currentDashboard, dashboardName }
-}
-
-export function DashboardViewTitle({
-  organization,
-}: {
-  organization: schemas['Organization']
-}) {
-  const { dashboardName } = useCurrentDashboard(organization)
-  if (!dashboardName) return null
-  return (
-    <h3 className="text-xl font-medium whitespace-nowrap dark:text-white">
-      {dashboardName}
-    </h3>
+  return useCallback(
+    (metrics: string[]) => {
+      const url = new URL(
+        `${getServerURL()}/v1/metrics/export`,
+        window.location.origin,
+      )
+      url.searchParams.set('organization_id', organization.id)
+      url.searchParams.set('start_date', toISODate(startDate))
+      url.searchParams.set('end_date', toISODate(endDate))
+      url.searchParams.set('interval', interval)
+      url.searchParams.set(
+        'timezone',
+        Intl.DateTimeFormat().resolvedOptions().timeZone,
+      )
+      productId?.forEach((id) => url.searchParams.append('product_id', id))
+      metrics.forEach((m) => url.searchParams.append('metrics', m))
+      window.open(url.toString(), '_blank', 'noopener,noreferrer')
+    },
+    [organization.id, startDate, endDate, interval, productId],
   )
 }
 
@@ -103,80 +73,72 @@ export function DashboardViewActions({
   earliestDateISOString,
   className,
 }: DashboardViewActionsProps) {
-  const { isShown: isEditShown, show: showEdit, hide: hideEdit } = useModal()
-
-  const { interval, startDate, endDate, productId } = useMetricsFilters(
-    earliestDateISOString,
-  )
-
-  const { currentSlug, isCustomDashboard, currentDashboard } =
-    useCurrentDashboard(organization)
-
-  const metricsForExport = useMemo(() => {
-    if (isCustomDashboard && currentDashboard) {
-      return currentDashboard.metrics
-    }
-    if (currentSlug) {
-      const group = METRIC_GROUPS.find(
-        (g) => g.category.toLowerCase().replace(/\s+/g, '-') === currentSlug,
-      )
-      return group ? group.metrics.map((m) => m.slug) : []
-    }
-    return []
-  }, [isCustomDashboard, currentDashboard, currentSlug])
-
-  const handleExport = useCallback(() => {
-    const url = new URL(
-      `${getServerURL()}/v1/metrics/export`,
-      window.location.origin,
-    )
-    url.searchParams.set('organization_id', organization.id)
-    url.searchParams.set('start_date', toISODate(startDate))
-    url.searchParams.set('end_date', toISODate(endDate))
-    url.searchParams.set('interval', interval)
-    url.searchParams.set(
-      'timezone',
-      Intl.DateTimeFormat().resolvedOptions().timeZone,
-    )
-    productId?.forEach((id) => url.searchParams.append('product_id', id))
-    metricsForExport.forEach((m) => url.searchParams.append('metrics', m))
-    window.open(url.toString(), '_blank')
-  }, [
-    organization.id,
-    startDate,
-    endDate,
-    interval,
-    productId,
-    metricsForExport,
-  ])
+  const {
+    isShown: isCreateShown,
+    show: showCreate,
+    hide: hideCreate,
+  } = useModal()
+  const exportMetrics = useMetricsExport(organization, earliestDateISOString)
 
   return (
-    <div className={twMerge('flex items-center', className)}>
-      {isCustomDashboard && currentDashboard ? (
-        <DashboardDotMenu
-          organization={organization}
-          dashboard={currentDashboard}
-          onEdit={showEdit}
-          onExport={handleExport}
-        />
-      ) : (
-        <ExportMenu onExport={handleExport} />
-      )}
-      {currentDashboard ? (
-        <Modal
-          title="Edit Dashboard"
-          isShown={isEditShown}
-          hide={hideEdit}
-          modalContent={
-            <EditDashboardContent
-              organization={organization}
-              dashboard={currentDashboard}
-              onClose={hideEdit}
-            />
-          }
-        />
-      ) : null}
+    <div className={twMerge('flex items-center gap-x-2', className)}>
+      <Button
+        size="icon"
+        variant="secondary"
+        className="h-8 w-8"
+        onClick={showCreate}
+      >
+        <AddOutlined fontSize="small" />
+      </Button>
+      <ExportMenu onExport={() => exportMetrics(ALL_METRIC_SLUGS)} />
+      <Modal
+        title="Create Dashboard"
+        isShown={isCreateShown}
+        hide={hideCreate}
+        modalContent={
+          <CreateDashboardContent
+            organization={organization}
+            onClose={hideCreate}
+          />
+        }
+      />
     </div>
+  )
+}
+
+export function CustomDashboardActions({
+  organization,
+  dashboard,
+  earliestDateISOString,
+}: {
+  organization: schemas['Organization']
+  dashboard: schemas['MetricDashboardSchema']
+  earliestDateISOString: string
+}) {
+  const { isShown: isEditShown, show: showEdit, hide: hideEdit } = useModal()
+  const exportMetrics = useMetricsExport(organization, earliestDateISOString)
+
+  return (
+    <>
+      <DashboardDotMenu
+        organization={organization}
+        dashboard={dashboard}
+        onEdit={showEdit}
+        onExport={() => exportMetrics(dashboard.metrics)}
+      />
+      <Modal
+        title="Edit Dashboard"
+        isShown={isEditShown}
+        hide={hideEdit}
+        modalContent={
+          <EditDashboardContent
+            organization={organization}
+            dashboard={dashboard}
+            onClose={hideEdit}
+          />
+        }
+      />
+    </>
   )
 }
 
@@ -208,7 +170,6 @@ function DashboardDotMenu({
   onEdit: () => void
   onExport: () => void
 }) {
-  const router = useRouter()
   const canManageAnalytics = useHasPermission(
     organization.id,
     'analytics:manage',
@@ -223,8 +184,7 @@ function DashboardDotMenu({
   const handleDelete = useCallback(async () => {
     await deleteMutation.mutateAsync()
     hideDelete()
-    router.push(`/dashboard/${organization.slug}/analytics/metrics`)
-  }, [deleteMutation, hideDelete, router, organization.slug])
+  }, [deleteMutation, hideDelete])
 
   return (
     <>
@@ -315,6 +275,61 @@ function EditDashboardContent({
       onSave={handleSave}
       isPending={updateMutation.isPending}
       saveLabel="Save Changes"
+    />
+  )
+}
+
+function CreateDashboardContent({
+  organization,
+  onClose,
+}: {
+  organization: schemas['Organization']
+  onClose: () => void
+}) {
+  const canManageAnalytics = useHasPermission(
+    organization.id,
+    'analytics:manage',
+  )
+  const createMutation = useCreateMetricDashboard(organization.id)
+
+  const handleSave = useCallback(
+    async (metrics: string[], name?: string) => {
+      const result = await createMutation.mutateAsync({
+        name: name!,
+        metrics,
+        organization_id: organization.id,
+      })
+      if (result.error) {
+        toast({
+          title: 'Could not create dashboard',
+          description: 'Please try again.',
+        })
+        return
+      }
+      onClose()
+    },
+    [createMutation, organization.id, onClose],
+  )
+
+  if (!canManageAnalytics) {
+    return (
+      <Box flex={1} flexDirection="column" alignItems="center" padding="xl">
+        <AccessRestricted
+          message={permissionDeniedMessage('analytics:manage')}
+        />
+      </Box>
+    )
+  }
+
+  return (
+    <MetricDashboardEditorContent
+      title="Create Dashboard"
+      showNameField
+      activeMetrics={[]}
+      limit={10}
+      onSave={handleSave}
+      isPending={createMutation.isPending}
+      saveLabel="Create Dashboard"
     />
   )
 }

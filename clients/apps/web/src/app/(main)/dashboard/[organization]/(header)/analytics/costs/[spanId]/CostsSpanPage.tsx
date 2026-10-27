@@ -18,7 +18,7 @@ import { Button, Grid } from '@polar-sh/orbit'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfDay, format, subDays, subMonths } from 'date-fns'
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight } from '@polar-sh/orbit/icons'
 import {
   parseAsArrayOf,
   parseAsString,

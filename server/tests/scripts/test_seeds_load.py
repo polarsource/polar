@@ -195,8 +195,8 @@ class TestSeedsLoad:
         assert all(
             organization.payout_account_id is not None for organization in organizations
         )
-        assert await session.scalar(select(func.count(UserOrganization.user_id))) == 9
-        expected_product_count = 31 + len(POLAR_SELF_PRODUCTS)
+        assert await session.scalar(select(func.count(UserOrganization.user_id))) == 8
+        expected_product_count = 30 + len(POLAR_SELF_PRODUCTS)
         assert await session.scalar(select(func.count(Product.id))) == (
             expected_product_count
         )
@@ -206,8 +206,8 @@ class TestSeedsLoad:
         assert await session.scalar(select(func.count(Benefit.id))) == 11
         assert await session.scalar(select(func.count(File.id))) == 1
         assert await session.scalar(select(func.count(Meter.id))) == 2
-        assert await session.scalar(select(func.count(Discount.id))) == 8
-        assert await session.scalar(select(func.count(CheckoutLink.id))) == 9
+        assert await session.scalar(select(func.count(Discount.id))) == 7
+        assert await session.scalar(select(func.count(CheckoutLink.id))) == 8
         assert (await session.scalar(select(func.count(ProductBenefit.id))) or 0) > 0
         assert (
             await session.scalar(select(func.count(CheckoutLinkProduct.id))) or 0
@@ -215,14 +215,14 @@ class TestSeedsLoad:
         assert (await session.scalar(select(func.count(Customer.id))) or 0) > 0
         assert (await session.scalar(select(func.count(Subscription.id))) or 0) > 0
         assert (await session.scalar(select(func.count(Member.id))) or 0) > 0
-        assert await session.scalar(select(func.count(CustomerSeat.id))) == 10
+        assert await session.scalar(select(func.count(CustomerSeat.id))) == 5
         assert (
             await session.scalar(
                 select(func.count(CustomerSeat.id)).where(
                     CustomerSeat.status == SeatStatus.claimed
                 )
             )
-            == 4
+            == 2
         )
         assert (
             await session.scalar(
@@ -230,7 +230,7 @@ class TestSeedsLoad:
                     CustomerSeat.status == SeatStatus.pending
                 )
             )
-            == 6
+            == 3
         )
 
         acme = next(
@@ -403,7 +403,8 @@ class TestSeedsLoad:
         assert postgres_events
         assert successful_ingestion == postgres_events
         assert Counter(successful_external_ids) == Counter(postgres_events.keys())
-        assert first_attempt_events.items() <= successful_ingestion.items()
+        assert first_attempt_events.keys() <= successful_ingestion.keys()
+        assert all(event_id.version == 4 for event_id in postgres_events.values())
         assert all(
             len(call.args[0]) <= 2500 for call in ingest_events_mock.await_args_list
         )

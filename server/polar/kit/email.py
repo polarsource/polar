@@ -84,9 +84,19 @@ def normalize_email(email: str) -> str:
     return f"{local_part}@{domain}"
 
 
+def mask_email(email: str) -> str:
+    """Hide an email address but its local part's first character and its domain.
+
+    For example, `pieter@polar.sh` becomes `p***@polar.sh`.
+    """
+    local_part, _, domain = email.rpartition("@")
+    return f"{local_part[:1]}***@{domain}"
+
+
 __all__ = [
     "EmailNotValidError",
     "EmailStrDNS",
+    "mask_email",
     "normalize_email",
     "unalias_email",
     "validate_email",

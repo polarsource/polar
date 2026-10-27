@@ -11,7 +11,7 @@ import {
   isOrderSummaryCollapsible,
 } from '@/utils/checkout'
 import { getResizedImage } from '@/utils/getResizedImage'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from '@polar-sh/orbit/icons'
 import {
   CheckoutForm,
   CheckoutHeroPrice,

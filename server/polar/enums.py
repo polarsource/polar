@@ -157,7 +157,6 @@ class RateLimitGroup(StrEnum):
     restricted = "restricted"
     default = "default"
     elevated = "elevated"
-    pending_auth = "pending_auth"
 
 
 class PaymentMode(StrEnum):

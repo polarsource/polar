@@ -5,6 +5,16 @@ import type { Money } from './money'
 const Units = Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))
 const Cents = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
 
+export const TaxBehavior = Schema.Literals([
+  'location',
+  'inclusive',
+  'exclusive',
+])
+
+export type TaxBehavior = typeof TaxBehavior.Type
+
+const taxField = { tax_behavior: Schema.optionalKey(TaxBehavior) }
+
 const tiersOf = <Amount extends typeof DecimalAmount>(amount: Amount) =>
   Schema.Struct({
     type: Schema.Literals(['volume', 'graduated']),
@@ -33,6 +43,7 @@ const UnitLabelConfig = Schema.Struct({
 })
 
 const quantityFields = {
+  ...taxField,
   price_currency: Currency,
   tiers: tiersOf(WholeAmount),
   minimum_units: Schema.optionalKey(Units),
@@ -61,6 +72,7 @@ const minimumWithinTiers = Schema.makeFilter(
 )
 
 const meteredFields = {
+  ...taxField,
   price_currency: Currency,
   meter: Schema.String.check(Schema.isMinLength(1)),
   cap_amount: Schema.optionalKey(
@@ -70,6 +82,7 @@ const meteredFields = {
 
 export const PriceConfig = Schema.Union([
   Schema.Struct({
+    ...taxField,
     amount_type: Schema.Literal('fixed'),
     price_currency: Currency,
     price_amount: Cents,
@@ -114,7 +127,9 @@ export interface Tier<Rate extends Money = Money> {
 type Tiers<Rate extends Money> = readonly [Tier<Rate>, ...Tier<Rate>[]]
 
 /** Volume pricing charges every unit at the matching tier's rate, so no units are ever included. */
-type VolumeTier<Rate extends Money> = Tier<Rate> & { readonly included?: never }
+type VolumeTier<Rate extends Money> = Tier<Rate> & {
+  readonly included?: never
+}
 
 type VolumeTiers<Rate extends Money> = readonly [
   VolumeTier<Rate>,
@@ -182,17 +197,39 @@ type Bounds = { readonly minimum?: number; readonly maximum?: number }
 
 type UnitLabel = { readonly singular: string; readonly plural: string }
 
+const clonePrice = <Price extends object>(
+  price: Price,
+  patch: Partial<Price>,
+): Price =>
+  Object.assign(
+    Object.create(Object.getPrototypeOf(price) as object) as Price,
+    price,
+    patch,
+  )
+
+abstract class TaxablePrice {
+  readonly taxBehavior: TaxBehavior | undefined = undefined
+
+  tax(behavior: TaxBehavior): this {
+    return clonePrice(this, { taxBehavior: behavior } as Partial<this>)
+  }
+}
+
 export class FreePrice {
   readonly kind = 'free'
 }
 
-export class FixedPrice {
+export class FixedPrice extends TaxablePrice {
   readonly kind = 'fixed'
 
-  constructor(readonly amounts: Amounts<Money<1>>) {}
+  constructor(readonly amounts: Amounts<Money<1>>) {
+    super()
+  }
 }
 
-export class QuantityPrice<Type extends QuantityType = QuantityType> {
+export class QuantityPrice<
+  Type extends QuantityType = QuantityType,
+> extends TaxablePrice {
   readonly kind = 'quantity'
 
   constructor(
@@ -201,26 +238,20 @@ export class QuantityPrice<Type extends QuantityType = QuantityType> {
     readonly tiers: Tiers<Money<1>>,
     readonly bounds: Bounds = {},
     readonly unitLabel?: UnitLabel,
-  ) {}
+  ) {
+    super()
+  }
 
   min(minimum: number): QuantityPrice<Type> {
-    return new QuantityPrice(
-      this.type,
-      this.structure,
-      this.tiers,
-      { ...this.bounds, minimum },
-      this.unitLabel,
-    )
+    return clonePrice<QuantityPrice<Type>>(this, {
+      bounds: { ...this.bounds, minimum },
+    })
   }
 
   max(maximum: number): QuantityPrice<Type> {
-    return new QuantityPrice(
-      this.type,
-      this.structure,
-      this.tiers,
-      { ...this.bounds, maximum },
-      this.unitLabel,
-    )
+    return clonePrice<QuantityPrice<Type>>(this, {
+      bounds: { ...this.bounds, maximum },
+    })
   }
 
   /** The unit noun shown at checkout and on invoices. Defaults to "unit"/"units". */
@@ -229,20 +260,13 @@ export class QuantityPrice<Type extends QuantityType = QuantityType> {
     singular: string,
     plural: string,
   ): QuantityPrice<'unit_based'> {
-    return new QuantityPrice(
-      this.type,
-      this.structure,
-      this.tiers,
-      this.bounds,
-      {
-        singular,
-        plural,
-      },
-    )
+    return clonePrice<QuantityPrice<'unit_based'>>(this, {
+      unitLabel: { singular, plural },
+    })
   }
 }
 
-export class MeteredPrice<Meter extends string> {
+export class MeteredPrice<Meter extends string> extends TaxablePrice {
   readonly kind = 'metered'
 
   constructor(
@@ -250,10 +274,12 @@ export class MeteredPrice<Meter extends string> {
     readonly structure: Structure,
     readonly tiers: Tiers<Money>,
     readonly caps: ReadonlyArray<Money<1>> = [],
-  ) {}
+  ) {
+    super()
+  }
 
   cap(...caps: Amounts<Money<1>>): MeteredPrice<Meter> {
-    return new MeteredPrice(this.meter, this.structure, this.tiers, caps)
+    return clonePrice<MeteredPrice<Meter>>(this, { caps })
   }
 }
 
@@ -476,6 +502,10 @@ export const priceConfigs = (
   where: string,
 ): ReadonlyArray<PriceConfig> =>
   currencies.map((currency): PriceConfig => {
+    const tax =
+      price.kind === 'free' || price.taxBehavior === undefined
+        ? {}
+        : { tax_behavior: price.taxBehavior }
     switch (price.kind) {
       case 'free':
         return {
@@ -485,6 +515,7 @@ export const priceConfigs = (
         }
       case 'fixed':
         return {
+          ...tax,
           amount_type: 'fixed',
           price_currency: currency,
           price_amount: amountIn(price.amounts, currency).amount,
@@ -492,6 +523,7 @@ export const priceConfigs = (
       case 'quantity': {
         const { minimum, maximum } = price.bounds
         const fields = {
+          ...tax,
           price_currency: currency,
           tiers: tiersConfig(
             price.structure === 'graduated' ? 'graduated' : 'volume',
@@ -518,6 +550,7 @@ export const priceConfigs = (
       case 'metered': {
         const cap = price.caps.find((money) => money.currency === currency)
         const fields = {
+          ...tax,
           price_currency: currency,
           meter: price.meter,
           ...(cap !== undefined && { cap_amount: cap.amount }),

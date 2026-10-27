@@ -1,8 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import { CheckOutlined, CloseOutlined } from '@polar-sh/orbit/icons'
 import { ResourceLayout, ResourceSection } from '../resources/ResourceLayout'
 
 export const PolarVsStripePage = () => {

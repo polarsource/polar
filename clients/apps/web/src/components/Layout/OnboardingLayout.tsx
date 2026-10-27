@@ -3,6 +3,8 @@ import { Box } from '@polar-sh/orbit/Box'
 import type { ReactNode, Ref } from 'react'
 import { OnboardingStepper, type OnboardingStep } from './OnboardingStepper'
 
+const EMPTY_STEPS: readonly OnboardingStep<never>[] = []
+
 interface OnboardingLayoutProps<StepId extends string> {
   branding: ReactNode
   introduction?: ReactNode
@@ -13,7 +15,7 @@ interface OnboardingLayoutProps<StepId extends string> {
   onStepSelect?: (step: StepId) => void
   stepDescriptions?: Partial<Record<StepId, ReactNode>>
   title?: string
-  subtitle?: string
+  subtitle?: ReactNode
   actions?: ReactNode
   actionsContainerRef?: Ref<HTMLElement>
   children?: ReactNode
@@ -24,7 +26,7 @@ export function OnboardingLayout<StepId extends string>({
   introduction,
   footer,
   mobileFooter,
-  steps = [],
+  steps = EMPTY_STEPS,
   currentStepIndex = -1,
   onStepSelect,
   stepDescriptions,
@@ -103,6 +105,7 @@ export function OnboardingLayout<StepId extends string>({
             width="100%"
             flex={{ base: undefined, lg: 1 }}
             justifyContent="center"
+            position="relative"
             overflowY={{ base: 'visible', lg: 'auto' }}
             paddingTop={{ base: 'xl', lg: '3xl' }}
             paddingBottom={{ base: '5xl', lg: '3xl' }}

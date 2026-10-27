@@ -100,6 +100,25 @@ describe('pull', () => {
     expect(source).toContain('.metadata({ "team": "billing" })')
   })
 
+  test('writes settings and lists them in the summary', async () => {
+    const settings = { payments: { currency: 'usd', tax: 'inclusive' } }
+    api.routes[`GET ${exportUrl}`] = exported({ meters: [meter], settings })
+
+    const result = await run('polar.config.json')
+
+    expect(result).toMatchObject({
+      status: 'written',
+      entries: [
+        { section: 'meters', id: 'tool_calls' },
+        { section: 'settings', id: 'settings' },
+      ],
+    })
+    const written = JSON.parse(
+      await readFile(join(directory, 'polar.config.json'), 'utf8'),
+    )
+    expect(written.settings).toEqual(settings)
+  })
+
   test('leaves empty metadata out of the TypeScript config', async () => {
     api.routes[`GET ${exportUrl}`] = exported({ meters: [meter] })
 
@@ -311,7 +330,7 @@ describe('pull', () => {
 
     expect(error.message).toBe('You do not have access to Acme')
     expect(error.hint).toBe(
-      'The token needs the meters:read, benefits:read, products:read scopes.',
+      'The token needs the organizations:read, meters:read, benefits:read, products:read scopes.',
     )
   })
 })

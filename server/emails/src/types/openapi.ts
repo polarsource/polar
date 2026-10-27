@@ -1186,6 +1186,13 @@ export interface components {
        * @default null
        */
       organization_slug: string | null
+      /**
+       * Threat Names
+       * @default []
+       */
+      threat_names: string[]
+      /** Benefits Url */
+      readonly benefits_url: string | null
     }
     /** MaintainerNewPaidSubscriptionNotificationPayload */
     MaintainerNewPaidSubscriptionNotificationPayload: {
@@ -2339,6 +2346,12 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
+       * Staged Events Ingest Enabled
+       * @description If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
+       * @default false
+       */
+      staged_events_ingest_enabled: boolean
+      /**
        * Config As Code Enabled
        * @description If this organization can manage its configuration from a declarative config document.
        * @default false
@@ -3288,6 +3301,32 @@ export interface components {
        */
       previous_billing_provider: string | null
       order: components['schemas']['OrderEmail'] | null
+    }
+    /** SubscriptionUsageInvoiceEmail */
+    SubscriptionUsageInvoiceEmail: {
+      /**
+       * Template
+       * @default subscription_usage_invoice
+       * @constant
+       */
+      template: 'subscription_usage_invoice'
+      props: components['schemas']['SubscriptionUsageInvoiceProps']
+    }
+    /** SubscriptionUsageInvoiceProps */
+    SubscriptionUsageInvoiceProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
+      order: components['schemas']['OrderEmail']
     }
     /** SupportCaseOrganizationNewMessageEmail */
     SupportCaseOrganizationNewMessageEmail: {

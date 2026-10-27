@@ -1,7 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight } from 'lucide-react'
-
+import { ArrowRight } from '@polar-sh/orbit/icons'
 export const DocsLink = ({ href, label }: { href: string; label: string }) => (
   <a href={href}>
     <Box

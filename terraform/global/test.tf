@@ -1,5 +1,13 @@
 # Bootstrap test variables
 
+resource "tfe_variable" "planetscale_app_password_test" {
+  key             = "planetscale_app_password"
+  category        = "terraform"
+  description     = "PlanetScale application role password for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 data "tfe_project" "test" {
   name         = "test"
   organization = "polar-sh"
@@ -527,17 +535,6 @@ resource "tfe_variable" "polar_organization_id_test" {
   key             = "polar_organization_id"
   category        = "terraform"
   description     = "Polar organization ID"
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "polar_free_product_id_test" {
-  key             = "polar_free_product_id"
-  category        = "terraform"
-  description     = "Polar free-tier product ID"
   variable_set_id = tfe_variable_set.test.id
 
   lifecycle {

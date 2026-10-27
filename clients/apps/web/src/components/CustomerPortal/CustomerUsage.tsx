@@ -1,7 +1,7 @@
 'use client'
 
 import { useCustomerCustomerMeters } from '@/hooks/queries/customerPortal'
-import Search from '@mui/icons-material/Search'
+import { SearchFilled as Search } from '@polar-sh/orbit/icons'
 import { Client } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'

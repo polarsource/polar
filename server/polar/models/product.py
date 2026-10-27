@@ -19,8 +19,6 @@ from sqlalchemy import (
     column,
     event,
     exists,
-    or_,
-    select,
     table,
     text,
 )
@@ -44,7 +42,7 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.schemas import SetSchemaReference
 from polar.kit.trial import TrialConfigurationMixin
 from polar.kit.visibility import Visibility, VisibilityMixin
-from polar.models.product_price import ProductPriceAmountType, ProductPriceType
+from polar.models.product_price import ProductPriceAmountType
 from polar.tax.calculation import TaxCode
 
 from .product_price import ProductPrice
@@ -52,6 +50,7 @@ from .product_price import ProductPrice
 if TYPE_CHECKING:
     from polar.models import (
         Benefit,
+        Catalog,
         Organization,
         ProductBenefit,
         ProductCustomField,
@@ -107,7 +106,9 @@ class Product(
             "organization_id",
             "external_id",
             unique=True,
-            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
+            postgresql_where=text(
+                "deleted_at IS NULL AND external_id IS NOT NULL AND is_current"
+            ),
         ),
     )
 
@@ -116,6 +117,15 @@ class Product(
     name: Mapped[str] = mapped_column(CITEXT(), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    catalog_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("catalogs.id", ondelete="restrict"),
+        nullable=True,
+        default=None,
+    )
+    is_current: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
     recurring_interval: Mapped[SubscriptionRecurringInterval | None] = mapped_column(
         StringEnum(SubscriptionRecurringInterval),
         nullable=True,
@@ -161,6 +171,10 @@ class Product(
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise", back_populates="products")
+
+    @declared_attr
+    def catalog(cls) -> Mapped["Catalog | None"]:
+        return relationship("Catalog", lazy="raise")
 
     @declared_attr
     def all_prices(cls) -> Mapped[list["ProductPrice"]]:
@@ -265,10 +279,6 @@ class Product(
         return None
 
     @property
-    def is_legacy_recurring_price(self) -> bool:
-        return any(price.is_recurring for price in self.prices)
-
-    @property
     def has_seat_based_price(self) -> bool:
         return any(
             price.amount_type == ProductPriceAmountType.seat_based
@@ -284,25 +294,12 @@ class Product(
 
     @hybrid_property
     def is_recurring(self) -> bool:
-        if self.recurring_interval is not None:
-            return True
-
-        # Check for Products that have legacy prices where recurring interval was set on them
-        return all(price.is_recurring for price in self.prices)
+        return self.recurring_interval is not None
 
     @is_recurring.inplace.expression
     @classmethod
     def _is_recurring_expression(cls) -> ColumnElement[bool]:
-        return or_(
-            cls.recurring_interval.is_not(None),
-            # Check for Products that have legacy prices where recurring interval was set on them
-            cls.id.in_(
-                select(ProductPrice.product_id).where(
-                    ProductPrice.type == ProductPriceType.recurring,
-                    ~ProductPrice.is_archived,
-                )
-            ),
-        )
+        return cls.recurring_interval.is_not(None)
 
     @hybrid_property
     def billing_type(self) -> ProductBillingType:

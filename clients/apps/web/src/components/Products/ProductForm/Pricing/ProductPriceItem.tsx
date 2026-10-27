@@ -1,6 +1,6 @@
 'use client'
 
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
+import { CloseOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {

@@ -1,10 +1,16 @@
 import uuid
+from decimal import Decimal
 
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.customer_meter.repository import CustomerMeterRepository
-from polar.meter.aggregation import AggregationFunction, PropertyAggregation
+from polar.kit.utils import utc_now
+from polar.meter.aggregation import (
+    AggregationFunction,
+    CountAggregation,
+    PropertyAggregation,
+)
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Customer, CustomerMeter, Meter, Organization
 from polar.postgres import AsyncSession
@@ -98,3 +104,83 @@ class TestGetOrCreate:
 
         assert customer_meter == concurrent
         assert get_for_update.call_count == 2
+
+
+@pytest.mark.anyio
+class TestGetAllByHighestConsumedUnits:
+    async def test_orders_meters_of_the_aggregation_function(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+        meter: Meter,
+    ) -> None:
+        count_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=CountAggregation(),
+        )
+        highest = CustomerMeter(
+            customer=customer_second, meter=meter, consumed_units=Decimal(30)
+        )
+        second = CustomerMeter(
+            customer=customer, meter=meter, consumed_units=Decimal(20)
+        )
+        other_function = CustomerMeter(
+            customer=customer, meter=count_meter, consumed_units=Decimal(50)
+        )
+        deleted = CustomerMeter(
+            customer=customer_second,
+            meter=count_meter,
+            consumed_units=Decimal(40),
+            deleted_at=utc_now(),
+        )
+        archived_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=CountAggregation(),
+        )
+        archived_meter.archived_at = utc_now()
+        await save_fixture(archived_meter)
+        deleted_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=CountAggregation(),
+        )
+        deleted_meter.deleted_at = utc_now()
+        await save_fixture(deleted_meter)
+        of_archived_meter = CustomerMeter(
+            customer=customer, meter=archived_meter, consumed_units=Decimal(60)
+        )
+        of_deleted_meter = CustomerMeter(
+            customer=customer, meter=deleted_meter, consumed_units=Decimal(70)
+        )
+        for customer_meter in (
+            highest,
+            second,
+            other_function,
+            deleted,
+            of_archived_meter,
+            of_deleted_meter,
+        ):
+            await save_fixture(customer_meter)
+        session.expunge_all()
+
+        repository = CustomerMeterRepository.from_session(session)
+        sum_meters = await repository.get_all_by_highest_consumed_units(
+            AggregationFunction.sum, 1
+        )
+        count_meters = await repository.get_all_by_highest_consumed_units(
+            AggregationFunction.cnt, 10
+        )
+
+        assert [customer_meter.id for customer_meter in sum_meters] == [highest.id]
+        assert sum_meters[0].customer.id == customer_second.id
+        assert [customer_meter.id for customer_meter in count_meters] == [
+            other_function.id
+        ]

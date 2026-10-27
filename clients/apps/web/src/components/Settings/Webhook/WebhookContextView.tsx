@@ -9,10 +9,12 @@ import {
   FieldUrl,
 } from '@/components/Settings/Webhook/WebhookForm'
 import { toast } from '@/components/Toast/use-toast'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useEditWebhookEndpoint } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { enums, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
@@ -37,6 +39,7 @@ export default function WebhookContextView({
 
   const { handleSubmit } = form
   const updateWebhookEndpoint = useEditWebhookEndpoint()
+  const managedAsCode = useIsManagedAsCode(endpoint.organization_id)
 
   const onSubmit = useCallback(
     async (body: schemas['WebhookEndpointUpdate']) => {
@@ -67,19 +70,28 @@ export default function WebhookContextView({
             onSubmit={handleSubmit(onSubmit)}
             className="flex max-w-[700px] flex-col gap-y-4"
           >
-            <FieldName />
-            <FieldUrl />
-            <FieldFormat />
-            <FieldApiVersion />
-            <FieldEvents />
-
-            <Button
-              type="submit"
-              loading={updateWebhookEndpoint.isPending}
-              disabled={updateWebhookEndpoint.isPending}
+            <Box
+              as="fieldset"
+              disabled={managedAsCode}
+              flexDirection="column"
+              rowGap="l"
             >
-              Save
-            </Button>
+              <FieldName />
+              <FieldUrl />
+              <FieldFormat />
+              <FieldApiVersion />
+              <FieldEvents />
+            </Box>
+
+            {!managedAsCode && (
+              <Button
+                type="submit"
+                loading={updateWebhookEndpoint.isPending}
+                disabled={updateWebhookEndpoint.isPending}
+              >
+                Save
+              </Button>
+            )}
           </form>
         </Form>
       </div>

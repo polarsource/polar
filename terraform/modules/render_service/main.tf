@@ -138,6 +138,14 @@ resource "render_env_group" "database" {
       POLAR_POSTGRES_READ_HOST_FALLBACK = { value = var.postgres_config.read_host_fallback }
       POLAR_POSTGRES_READ_PORT_FALLBACK = { value = coalesce(var.postgres_config.read_port_fallback, var.postgres_config.read_port) }
     },
+    # Let asyncpg and libpq use PGSSLMODE; POLAR_POSTGRES_SSL=true overrides it with require.
+    var.postgres_config.sslmode == null ? {} : {
+      POLAR_POSTGRES_SSL = { value = "false" }
+      PGSSLMODE          = { value = var.postgres_config.sslmode }
+    },
+    var.postgres_config.sslrootcert == null ? {} : {
+      PGSSLROOTCERT = { value = var.postgres_config.sslrootcert }
+    },
   )
 }
 
@@ -158,7 +166,7 @@ resource "render_web_service" "api" {
   plan               = var.api_service_config.plan
   region             = "ohio"
   health_check_path  = "/healthz"
-  pre_deploy_command = "uv run task pre_deploy"
+  pre_deploy_command = var.api_service_config.pre_deploy_command
 
   # Deploy from the "latest" tag so newly created services come up on the most
   # recent main build. CI deploys specific digests out-of-band (deploy_server.sh),

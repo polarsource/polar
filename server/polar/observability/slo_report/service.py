@@ -5,19 +5,34 @@ Queries Prometheus for SLO metrics and calculates weekly report data.
 Reuses PromQL patterns from server/monitoring/grafana/dashboards/api-slo.json.
 """
 
+import re
 from datetime import timedelta
 
 import structlog
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.observability.slo import CRITICAL_ENDPOINTS
 
 from .client import GrafanaCloudAPIError, GrafanaCloudPrometheusClient
-from .schemas import EndpointSLOStatus, SLOReport
+from .report import EndpointSLOStatus, SLOReport
 
 log: Logger = structlog.get_logger()
+
+# Regex metacharacters are escaped with a doubled backslash because PromQL string
+# literals unescape once before the regex is compiled. `re.escape` can't be used:
+# PromQL rejects escapes such as `\-`.
+CRITICAL_ENDPOINTS_MATCHER = '"{}"'.format(
+    "|".join(
+        sorted(
+            {
+                re.sub(r"([.+*?()|\[\]{}^$])", r"\\\\\1", endpoint)
+                for endpoint, *_ in CRITICAL_ENDPOINTS
+            }
+        )
+    )
+)
 
 
 # PromQL queries adapted from api-slo.json dashboard
@@ -39,23 +54,23 @@ ERROR_BUDGET_REMAINING_QUERY = """
 
 ENDPOINT_P99_QUERY = """
 histogram_quantile(0.99, sum by (endpoint, method, le) (
-  rate(polar_http_request_duration_seconds_bucket{env="$env"}[$range])
+  rate(polar_http_request_duration_seconds_bucket{env="$env", endpoint=~$endpoints}[$range])
 ))
 """
 
 ENDPOINT_AVAILABILITY_QUERY = """
 100 * (1 - (
-  sum by (endpoint, method) (increase(polar_http_request_total{env="$env", status_code=~"5.."}[$range]))
-  or (sum by (endpoint, method) (increase(polar_http_request_total{env="$env"}[$range])) * 0)
-) / clamp_min(sum by (endpoint, method) (increase(polar_http_request_total{env="$env"}[$range])), 1))
+  sum by (endpoint, method) (increase(polar_http_request_total{env="$env", endpoint=~$endpoints, status_code=~"5.."}[$range]))
+  or (sum by (endpoint, method) (increase(polar_http_request_total{env="$env", endpoint=~$endpoints}[$range])) * 0)
+) / clamp_min(sum by (endpoint, method) (increase(polar_http_request_total{env="$env", endpoint=~$endpoints}[$range])), 1))
 """
 
 ENDPOINT_REQUEST_COUNT_QUERY = """
-sum by (endpoint, method) (increase(polar_http_request_total{env="$env"}[$range]))
+sum by (endpoint, method) (increase(polar_http_request_total{env="$env", endpoint=~$endpoints}[$range]))
 """
 
 ENDPOINT_ERROR_COUNT_QUERY = """
-sum by (endpoint, method) (increase(polar_http_request_total{env="$env", status_code=~"5.."}[$range]))
+sum by (endpoint, method) (increase(polar_http_request_total{env="$env", endpoint=~$endpoints, status_code=~"5.."}[$range]))
 """
 
 TOTAL_REQUESTS_QUERY = """
@@ -84,9 +99,15 @@ class SLOReportService:
 
     def _substitute_query(self, query: str, env: str, range_duration: str) -> str:
         """Substitute template variables in PromQL query."""
-        return query.replace("$env", env).replace("$range", range_duration)
+        return (
+            query.replace("$endpoints", CRITICAL_ENDPOINTS_MATCHER)
+            .replace("$env", env)
+            .replace("$range", range_duration)
+        )
 
-    async def _query_scalar(self, query: str) -> float | None:
+    async def _query_scalar(
+        self, query: str, name: str, failures: list[str]
+    ) -> float | None:
         """Execute query and extract scalar result."""
         client = self._ensure_client()
         try:
@@ -98,6 +119,7 @@ class SLOReportService:
                     status=result.get("status"),
                     error_type=result.get("errorType"),
                 )
+                failures.append(name)
                 return None
 
             data = result.get("data", {})
@@ -109,16 +131,24 @@ class SLOReportService:
             return None
         except GrafanaCloudAPIError as e:
             log.error("prometheus_query_error", query=query[:100], error=str(e))
+            failures.append(name)
             return None
 
     async def _query_by_labels(
-        self, query: str, label_keys: list[str]
+        self, query: str, label_keys: list[str], name: str, failures: list[str]
     ) -> dict[tuple[str, ...], float]:
         """Execute query and return results keyed by label values."""
         client = self._ensure_client()
         try:
             result = await client.query(query)
             if result.get("status") != "success":
+                log.warning(
+                    "prometheus_query_failed",
+                    query=query[:100],
+                    status=result.get("status"),
+                    error_type=result.get("errorType"),
+                )
+                failures.append(name)
                 return {}
 
             data = result.get("data", {})
@@ -134,6 +164,7 @@ class SLOReportService:
             return results
         except GrafanaCloudAPIError as e:
             log.error("prometheus_query_error", query=query[:100], error=str(e))
+            failures.append(name)
             return {}
 
     async def generate_report(
@@ -143,7 +174,7 @@ class SLOReportService:
         """
         Generate SLO report for the last 7 days.
         """
-        env = environment or settings.ENV.value
+        env = Environment(environment).value if environment else settings.ENV.value
 
         period_end = utc_now()
         period_start = period_end - timedelta(days=7)
@@ -160,39 +191,45 @@ class SLOReportService:
             range_duration=range_duration,
         )
 
-        # Fetch global metrics
-        global_availability = await self._query_scalar(
-            self._substitute_query(GLOBAL_AVAILABILITY_QUERY, env, range_duration)
+        queried: list[str] = []
+        failures: list[str] = []
+
+        async def scalar(query: str, name: str) -> float | None:
+            queried.append(name)
+            return await self._query_scalar(
+                self._substitute_query(query, env, range_duration), name, failures
+            )
+
+        async def by_endpoint(query: str, name: str) -> dict[tuple[str, ...], float]:
+            queried.append(name)
+            return await self._query_by_labels(
+                self._substitute_query(query, env, range_duration),
+                ["endpoint", "method"],
+                name,
+                failures,
+            )
+
+        global_availability = await scalar(
+            GLOBAL_AVAILABILITY_QUERY, "Global availability"
         )
-        error_budget = await self._query_scalar(
-            self._substitute_query(ERROR_BUDGET_REMAINING_QUERY, env, range_duration)
+        error_budget = await scalar(ERROR_BUDGET_REMAINING_QUERY, "Error budget")
+        total_requests = await scalar(TOTAL_REQUESTS_QUERY, "Total requests")
+        total_errors = await scalar(TOTAL_ERRORS_QUERY, "Total errors")
+
+        p99_by_endpoint = await by_endpoint(ENDPOINT_P99_QUERY, "Endpoint P99 latency")
+        availability_by_endpoint = await by_endpoint(
+            ENDPOINT_AVAILABILITY_QUERY, "Endpoint availability"
         )
-        total_requests = await self._query_scalar(
-            self._substitute_query(TOTAL_REQUESTS_QUERY, env, range_duration)
+        requests_by_endpoint = await by_endpoint(
+            ENDPOINT_REQUEST_COUNT_QUERY, "Endpoint request count"
         )
-        total_errors = await self._query_scalar(
-            self._substitute_query(TOTAL_ERRORS_QUERY, env, range_duration)
+        errors_by_endpoint = await by_endpoint(
+            ENDPOINT_ERROR_COUNT_QUERY, "Endpoint error count"
         )
 
-        # Fetch per-endpoint metrics
-        p99_by_endpoint = await self._query_by_labels(
-            self._substitute_query(ENDPOINT_P99_QUERY, env, range_duration),
-            ["endpoint", "method"],
-        )
-        availability_by_endpoint = await self._query_by_labels(
-            self._substitute_query(ENDPOINT_AVAILABILITY_QUERY, env, range_duration),
-            ["endpoint", "method"],
-        )
-        requests_by_endpoint = await self._query_by_labels(
-            self._substitute_query(ENDPOINT_REQUEST_COUNT_QUERY, env, range_duration),
-            ["endpoint", "method"],
-        )
-        errors_by_endpoint = await self._query_by_labels(
-            self._substitute_query(ENDPOINT_ERROR_COUNT_QUERY, env, range_duration),
-            ["endpoint", "method"],
-        )
+        if failures == queried:
+            raise GrafanaCloudAPIError("All SLO report queries failed")
 
-        # Build endpoint status list from CRITICAL_ENDPOINTS config
         endpoints: list[EndpointSLOStatus] = []
         for endpoint, method, p99_target, availability_target in CRITICAL_ENDPOINTS:
             key = (endpoint, method)
@@ -213,11 +250,12 @@ class SLOReportService:
             period_start=period_start,
             period_end=period_end,
             environment=env,
-            global_availability=global_availability or 100.0,
-            error_budget_remaining=error_budget or 100.0,
+            global_availability=global_availability,
+            error_budget_remaining=error_budget,
             total_requests=int(total_requests or 0),
             total_errors=int(total_errors or 0),
             endpoints=endpoints,
+            failed_queries=failures,
         )
 
 

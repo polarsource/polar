@@ -10,7 +10,7 @@ from githubkit.exception import (
     RequestTimeout,
 )
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import Agent, AuthSubject, is_user
 from polar.integrations.github import client as github
 from polar.integrations.github_repository_benefit.service import (
     GitHubRepositoryInstallationError,
@@ -267,19 +267,18 @@ class BenefitGitHubRepositoryService(
 
     async def validate_properties(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitGitHubRepositoryProperties:
-        if is_organization(auth_subject):
-            # TODO: Support organization tokens
+        if not is_user(auth_subject):
             raise BenefitPropertiesValidationError(
                 [
                     {
                         "type": "invalid_auth_subject",
                         "msg": (
-                            "We do not yet support creating this benefit "
-                            "with an organization token."
+                            "This benefit needs a user's linked GitHub account; "
+                            "create it with a user token."
                         ),
                         "loc": ("repository_owner",),
                         "input": properties["repository_owner"],
@@ -287,7 +286,6 @@ class BenefitGitHubRepositoryService(
                 ]
             )
 
-        assert is_user(auth_subject)
         user = auth_subject.subject
 
         repository_owner = properties["repository_owner"]

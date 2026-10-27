@@ -78,7 +78,7 @@ async def get_authenticated(
             user.id
         )
     )
-    accessible_ids = await AuthzRepository.from_session(session).get_user_org_ids(
+    accessible_ids = await AuthzRepository.from_session(session).get_accessible_org_ids(
         auth_subject
     )
     return UserRead.model_validate(user).model_copy(

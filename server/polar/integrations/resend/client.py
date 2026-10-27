@@ -74,6 +74,15 @@ class ResendClient:
         )
         _raise_for_status(response, "/contacts/{contact_id}/segments/{segment_id}")
 
+    async def remove_contact_from_segment(
+        self, contact_id: str, segment_id: str
+    ) -> None:
+        response = await self.client.delete(
+            f"/contacts/{contact_id}/segments/{segment_id}"
+        )
+        if response.status_code != 404:
+            _raise_for_status(response, "/contacts/{contact_id}/segments/{segment_id}")
+
     async def update_contact(self, contact_id: str, *, unsubscribed: bool) -> None:
         response = await self.client.patch(
             f"/contacts/{contact_id}", json={"unsubscribed": unsubscribed}

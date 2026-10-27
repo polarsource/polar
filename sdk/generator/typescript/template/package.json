@@ -14,6 +14,14 @@
     ".": {
       "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" },
       "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    },
+    "./metering": {
+      "import": { "types": "./dist/metering/index.d.mts", "default": "./dist/metering/index.mjs" },
+      "require": { "types": "./dist/metering/index.d.cts", "default": "./dist/metering/index.cjs" }
+    },
+    "./outpost": {
+      "import": { "types": "./dist/outpost/index.d.mts", "default": "./dist/outpost/index.mjs" },
+      "require": { "types": "./dist/outpost/index.d.cts", "default": "./dist/outpost/index.cjs" }
     }
 {% for version in ir.versions %}
     ,
@@ -38,21 +46,50 @@
   },
   "scripts": {
     "build": "tsdown",
+    "prepare": "pnpm build",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "bench": "vitest bench --run"
   },
   "devDependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/otlp-transformer": "^0.223.0",
+    "@opentelemetry/resources": "^2.12.0",
+    "@opentelemetry/sdk-metrics": "^2.12.0",
+    "@opentelemetry/sdk-trace": "^2.12.0",
+    "ioredis": "^5.11.0",
+    "ws": "^8.21.0",
+    "@types/ws": "^8.18.1",
     "@types/node": "^24.13.6",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "standardwebhooks": "^1.0.0",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
+    "@codspeed/vitest-plugin": "^6.1.0",
     "vitest": "^4.1.9"
+  },
+  "peerDependencies": {
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/otlp-transformer": "^0.223.0",
+    "@opentelemetry/resources": "^2.12.0",
+    "@opentelemetry/sdk-metrics": "^2.12.0",
+    "@opentelemetry/sdk-trace": "^2.12.0",
+    "ioredis": "^5.11.0",
+    "ws": "^8.21.0"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/api": { "optional": true },
+    "@opentelemetry/otlp-transformer": { "optional": true },
+    "@opentelemetry/resources": { "optional": true },
+    "@opentelemetry/sdk-metrics": { "optional": true },
+    "@opentelemetry/sdk-trace": { "optional": true },
+    "ioredis": { "optional": true },
+    "ws": { "optional": true }
   },
   "packageManager": "pnpm@12.8.0",
   "keywords": [

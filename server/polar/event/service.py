@@ -13,7 +13,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import get_accessible_org_ids
@@ -38,6 +38,7 @@ from polar.meter.aggregation import PropertyAggregation
 from polar.meter.filter import Filter
 from polar.meter.repository import MeterRepository
 from polar.models import (
+    Agent,
     Customer,
     CustomerMeter,
     Event,
@@ -48,6 +49,7 @@ from polar.models import (
     User,
 )
 from polar.models.event import EventSource
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.reducer.service import reducer as reducer_service
@@ -723,7 +725,7 @@ class EventService:
     async def list_names(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
@@ -897,7 +899,7 @@ class EventService:
     async def ingest(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         ingest: EventsIngest,
         *,
         redis: Redis | None = None,
@@ -962,15 +964,56 @@ class EventService:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        event_ids, duplicates_count = await repository.insert_batch(events)
+        org_ids_with_staged_events_enabled = (
+            await self._get_org_ids_with_staged_events_enabled(
+                session, auth_subject, {event["organization_id"] for event in events}
+            )
+        )
+        staged_events = [
+            e
+            for e in events
+            if e["organization_id"] in org_ids_with_staged_events_enabled
+        ]
+        direct_events = [
+            e
+            for e in events
+            if e["organization_id"] not in org_ids_with_staged_events_enabled
+        ]
 
-        # Temporarily: fetch inserted events and create meter_events
-        with logfire.span("create_meter_events", event_count=len(event_ids)):
-            if event_ids:
-                inserted_events = await repository.get_all(
-                    repository.get_base_statement().where(Event.id.in_(event_ids))
-                )
-                await self._create_meter_events(session, inserted_events)
+        event_ids: list[uuid.UUID] = []
+        duplicates_count = 0
+        if staged_events:
+            (
+                staged_event_ids,
+                staged_duplicates_count,
+            ) = await repository.insert_staged_batch(staged_events)
+            event_ids.extend(staged_event_ids)
+            duplicates_count += staged_duplicates_count
+        if direct_events:
+            direct_event_ids, direct_duplicates_count = await repository.insert_batch(
+                direct_events, render_nulls=True
+            )
+            event_ids.extend(direct_event_ids)
+            duplicates_count += direct_duplicates_count
+
+            # Temporarily: fetch inserted events and create meter_events
+            with logfire.span("create_meter_events", event_count=len(direct_event_ids)):
+                if direct_event_ids:
+                    inserted_events = await repository.get_all(
+                        repository.get_base_statement().where(
+                            Event.id.in_(direct_event_ids)
+                        )
+                    )
+                    await self._create_meter_events(session, inserted_events)
+
+            # Parent resolution and root_id propagation run out-of-band in the
+            # `event.ingested` task — they're not needed on the request path and
+            # can be slow under contention.
+            enqueue_events(*direct_event_ids)
+
+        trace.get_current_span().set_attributes(
+            {"inserted_events": len(event_ids), "skipped_duplicates": duplicates_count}
+        )
 
         # Rollup reducer buckets in redis
         if redis is not None and event_ids:
@@ -985,23 +1028,41 @@ class EventService:
                 "rollup_reducer_buckets",
                 organization_count=len(events_by_organization),
                 event_count=len(inserted_ids),
-            ):
+            ) as span:
+                bucket_count = 0
                 for (
                     organization_id,
                     organization_events,
                 ) in events_by_organization.items():
-                    await reducer_service.rollup(
+                    bucket_count += await reducer_service.rollup(
                         session, redis, organization_id, organization_events
                     )
-
-        # Parent resolution and root_id propagation run out-of-band in the
-        # `event.ingested` task — they're not needed on the request path and
-        # can be slow under contention.
-        enqueue_events(*event_ids)
+                span.set_attribute("rolled_up_buckets", bucket_count)
 
         return EventsIngestResponse(
             inserted=len(event_ids), duplicates=duplicates_count
         )
+
+    async def move_staged_events(self, session: AsyncSession, limit: int) -> int:
+        """Move up to `limit` ingested events from `staged_events` to `events` and
+        return how many were moved."""
+        repository = EventRepository.from_session(session)
+        moved_count, event_ids = await repository.move_staged_events(limit)
+        trace.get_current_span().set_attributes(
+            {"moved_events": moved_count, "inserted_events": len(event_ids)}
+        )
+        if event_ids:
+            # Temporarily: create meter_events for the moved events
+            with logfire.span("create_meter_events", event_count=len(event_ids)):
+                inserted_events = await repository.get_all(
+                    repository.get_base_statement().where(Event.id.in_(event_ids))
+                )
+                await self._create_meter_events(session, inserted_events)
+
+            # Parent resolution and root_id propagation run out-of-band in the
+            # `event.ingested` task.
+            enqueue_events(*event_ids)
+        return moved_count
 
     async def create_event(self, session: AsyncSession, event: Event) -> Event:
         repository = EventRepository.from_session(session)
@@ -1139,7 +1200,7 @@ class EventService:
 
         if meter_event_rows:
             await session.execute(
-                insert(MeterEvent).values(meter_event_rows).on_conflict_do_nothing()
+                insert(MeterEvent).on_conflict_do_nothing(), meter_event_rows
             )
 
     def _event_matches_meter(self, event: Event, meter: Meter) -> bool:
@@ -1201,8 +1262,30 @@ class EventService:
                 session.add(cm)
         await session.flush()
 
+    async def _get_org_ids_with_staged_events_enabled(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        organization_ids: set[uuid.UUID],
+    ) -> set[uuid.UUID]:
+        if is_organization(auth_subject):
+            organization = auth_subject.subject
+            return (
+                {organization.id}
+                if organization.is_staged_events_ingest_enabled
+                else set()
+            )
+        if not organization_ids:
+            return set()
+        repository = OrganizationRepository.from_session(session)
+        return await repository.get_ids_with_feature(
+            organization_ids, "staged_events_ingest_enabled"
+        )
+
     async def _get_organization_validation_function(
-        self, session: AsyncSession, auth_subject: AuthSubject[User | Organization]
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Callable[[int, uuid.UUID | None], uuid.UUID]:
         if is_organization(auth_subject):
 
@@ -1230,10 +1313,15 @@ class EventService:
         allowed_organizations = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.events_ingest
         )
+        default_organization_id = (
+            auth_subject.subject.organization_id if is_agent(auth_subject) else None
+        )
 
         def _validate_organization_id_by_user(
             index: int, organization_id: uuid.UUID | None
         ) -> uuid.UUID:
+            if organization_id is None:
+                organization_id = default_organization_id
             if organization_id is None:
                 raise EventIngestValidationError(
                     [
@@ -1264,7 +1352,7 @@ class EventService:
     async def _get_customer_validation_function(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         customer_ids: set[uuid.UUID],
     ) -> Callable[[int, uuid.UUID], uuid.UUID]:
         if not customer_ids:
@@ -1274,7 +1362,7 @@ class EventService:
                 ~Customer.is_deleted,
                 Customer.id.in_(customer_ids),
             )
-            if is_user(auth_subject):
+            if is_user(auth_subject) or is_agent(auth_subject):
                 statement = statement.where(
                     Customer.organization_id.in_(
                         select_accessible_org_ids(auth_subject)
@@ -1307,7 +1395,7 @@ class EventService:
     async def _get_member_validation_function(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         member_ids: set[uuid.UUID],
     ) -> Callable[[int, uuid.UUID], uuid.UUID]:
         if not member_ids:
@@ -1317,7 +1405,7 @@ class EventService:
                 ~Member.is_deleted,
                 Member.id.in_(member_ids),
             )
-            if is_user(auth_subject):
+            if is_user(auth_subject) or is_agent(auth_subject):
                 statement = statement.where(
                     Member.organization_id.in_(select_accessible_org_ids(auth_subject))
                 )
@@ -1348,7 +1436,7 @@ class EventService:
     async def _get_organization_ids_for_subject(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: Sequence[uuid.UUID] | None,
     ) -> set[AccessibleOrganizationID]:
         """Get accessible org IDs, optionally filtered to a subset."""

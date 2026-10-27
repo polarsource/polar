@@ -12,6 +12,8 @@ def collect_metrics_data(
     refund_amount_cents: int,
     dispute_count: int,
     dispute_amount_cents: int,
+    chargeback_stop_count: int = 0,
+    chargeback_stop_amount_cents: int = 0,
 ) -> PaymentMetrics:
     return PaymentMetrics(
         total_payments=total_payments,
@@ -23,4 +25,6 @@ def collect_metrics_data(
         refund_amount_cents=refund_amount_cents,
         dispute_count=dispute_count,
         dispute_amount_cents=dispute_amount_cents,
+        chargeback_stop_count=chargeback_stop_count,
+        chargeback_stop_amount_cents=chargeback_stop_amount_cents,
     )

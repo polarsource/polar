@@ -1,0 +1,4 @@
+.cloudflare/
+.wrangler/
+.dev.vars*
+src/generated/

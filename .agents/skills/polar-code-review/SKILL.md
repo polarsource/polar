@@ -38,7 +38,7 @@ Run the first four always. Add the rest only when the trigger matches.
 | `adr-check` | always |
 | `reuse-check` | always |
 | `slop-check` | always |
-| `api-surface-review` | `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`, `sdk/`, `clients/packages/client/` |
+| `api-surface-review` | `**/schemas.py`, `**/endpoints.py`, `polar/openapi.py`, `docs/openapi.json`, `sdk/`, `clients/packages/client/`; or a change to a list query in `**/service.py` or `**/repository.py` |
 | `ship-safety` | `migrations/versions/`, `**/tasks.py`, `polar/models/`, `server/scripts/`; an endpoint is removed; or the diff spans `server/` and `clients/` with a dependency between them |
 | `billing-review` | the billing paths listed in that skill's Scope section |
 
@@ -59,6 +59,10 @@ Review this diff. Only changed lines are in scope — never the rest of the repo
 Use the output format the skill defines. High-confidence findings only. If you are unsure
 whether something is a defect, put it under Question instead of asserting it.
 ```
+
+Pass the diff and nothing else. Do not add the author's reasoning for a choice. A lens that
+is told why a choice was made stops checking it. The rules themselves live in each lens's
+skill and in `AGENTS.md`, not here.
 
 Each skill declares what it does **not** own, so the lenses do not overlap by construction.
 

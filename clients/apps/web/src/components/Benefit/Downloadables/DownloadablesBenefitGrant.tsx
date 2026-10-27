@@ -1,6 +1,5 @@
 import { useCustomerDownloadables } from '@/hooks/queries/customerPortal'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { ArrowDownward, MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Pill } from '@polar-sh/orbit'

@@ -31,6 +31,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.organization import OrganizationStatus
 from polar.models.product_price import ProductPriceSeatUnit
+from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from polar.tax.calculation import TaxCalculationService
 from polar.tax.calculation.base import TaxabilityReason
@@ -235,6 +236,20 @@ class TestGet:
         assert "product" in json
         assert "product_price" in json
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_read}))
+    async def test_no_product_price_id_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"{api_prefix}/{checkout_open.id}")
+
+        assert response.status_code == 200
+        assert "product_price_id" not in response.json()
+
 
 @pytest.mark.anyio
 class TestCreateCheckout:
@@ -347,7 +362,10 @@ class TestCreateCheckout:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.checkouts_write}),
+        AuthSubjectFixture(subject="agent"),
+    )
     async def test_valid(
         self,
         api_prefix: str,
@@ -373,6 +391,23 @@ class TestCreateCheckout:
             json["success_url"]
             == f"https://example.com/success?checkout_id={json['id']}"
         )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_cannot_create_checkout_for_another_organizations_product(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "product_id": str(product_organization_second.id),
+            },
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
     @pytest.mark.parametrize(
@@ -603,6 +638,330 @@ class TestCreateCheckout:
         assert ad_hoc_price["amount_type"] == "seat_based"
         assert ad_hoc_price["tiers"] == tiers
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    @pytest.mark.parametrize("field", ["product_id", "product_price_id"])
+    async def test_single_product_or_price_2027_01(
+        self,
+        field: str,
+        api_prefix: str,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        value = product.id if field == "product_id" else product.prices[0].id
+        response = await client.post(
+            f"{api_prefix}/",
+            json={"payment_processor": "stripe", field: str(value)},
+        )
+
+        assert response.status_code == 422
+        assert any(
+            error["type"] == "missing" and error["loc"][-1] == "products"
+            for error in response.json()["detail"]
+        )
+
+
+@pytest.mark.anyio
+class TestCreateCheckoutExternalProducts:
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user", scopes={Scope.checkouts_write}),
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write}),
+    )
+    async def test_valid(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        superseded = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+        superseded.is_current = False
+        await save_fixture(superseded)
+        product_one = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+        product_two = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_two",
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "external_products": ["product_two", "product_one"],
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["product_id"] == str(product_two.id)
+        assert [p["id"] for p in json["products"]] == [
+            str(product_two.id),
+            str(product_one.id),
+        ]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
+    )
+    async def test_ad_hoc_prices(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "external_products": ["product_one"],
+                "prices": {
+                    "product_one": [
+                        {
+                            "amount_type": "fixed",
+                            "price_currency": "usd",
+                            "price_amount": 4200,
+                        }
+                    ],
+                },
+            },
+        )
+
+        assert response.status_code == 201
+        ad_hoc_price = response.json()["prices"][str(product.id)][0]
+        assert ad_hoc_price["id"] != str(product.prices[0].id)
+        assert ad_hoc_price["price_amount"] == 4200
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
+    )
+    async def test_ad_hoc_prices_keyed_by_id(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "external_products": ["product_one"],
+                "prices": {
+                    str(product.id): [
+                        {
+                            "amount_type": "fixed",
+                            "price_currency": "usd",
+                            "price_amount": 4200,
+                        }
+                    ],
+                },
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == [
+            "body",
+            "prices",
+            str(product.id),
+        ]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_ambiguous_across_organizations(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.owner,
+            )
+        )
+        for org in (organization, organization_second):
+            await create_product(
+                save_fixture,
+                organization=org,
+                recurring_interval=None,
+                external_id="product_one",
+            )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "external_products": ["product_one"],
+            },
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == [
+            "body",
+            "external_products",
+            0,
+        ]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
+    )
+    async def test_invalid_products(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_archived=True,
+            external_id="archived",
+        )
+        await create_product(
+            save_fixture,
+            organization=organization_second,
+            recurring_interval=None,
+            external_id="other_organization",
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "external_products": [
+                    "archived",
+                    "other_organization",
+                    "unknown",
+                ],
+            },
+        )
+
+        assert response.status_code == 422
+        errors = response.json()["detail"]
+        assert [(e["loc"], e["msg"]) for e in errors] == [
+            (["body", "external_products", 0], "Product is archived."),
+            (["body", "external_products", 1], "Product does not exist."),
+            (["body", "external_products", 2], "Product does not exist."),
+        ]
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
+    )
+    async def test_products_and_external_products(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product.id)],
+                "external_products": ["product_one"],
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
+    )
+    async def test_deprecated_product_id(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={"payment_processor": "stripe", "product_id": str(product.id)},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.checkouts_write})
+    )
+    async def test_legacy_version(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="product_one",
+        )
+
+        response = await client.post(
+            f"{api_prefix}/",
+            json={
+                "payment_processor": "stripe",
+                "external_products": ["product_one"],
+            },
+        )
+
+        assert response.status_code == 422
+
 
 @pytest.mark.anyio
 class TestUpdateCheckout:
@@ -756,6 +1115,25 @@ class TestUpdateCheckout:
         assert json["discount"] is not None
         assert json["discount"]["id"] == str(discount.id)
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkouts_write}))
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/{checkout_open.id}",
+            json={
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
+
 
 @pytest.mark.anyio
 class TestClientGet:
@@ -814,6 +1192,17 @@ class TestClientGet:
         json = response.json()
         assert json["id"] == str(checkout_open.id)
         assert "metadata" not in json
+
+    @pytest.mark.api_version(V2027_01)
+    async def test_no_product_price_id_2027_01(
+        self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
+    ) -> None:
+        response = await client.get(
+            f"{api_prefix}/client/{checkout_open.client_secret}"
+        )
+
+        assert response.status_code == 200
+        assert "product_price_id" not in response.json()
 
     async def test_excludes_non_public_benefits(
         self,
@@ -933,6 +1322,23 @@ class TestClientUpdate:
         assert json["discount"] is not None
         assert json["discount"]["code"] == "TESTDISCOUNT50"
 
+    @pytest.mark.api_version(V2027_01)
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/client/{checkout_open.client_secret}",
+            json={
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
+
 
 @pytest.mark.anyio
 class TestClientConfirm:
@@ -1049,6 +1455,34 @@ class TestClientConfirm:
         json = response.json()
         assert json["discount"] is not None
         assert json["discount"]["code"] == "TESTDISCOUNT50"
+
+    @pytest.mark.api_version(V2027_01)
+    async def test_product_price_id_ignored_2027_01(
+        self,
+        api_prefix: str,
+        stripe_service_mock: MagicMock,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_name": "Customer Name",
+                "customer_email": "customer@example.com",
+                "customer_billing_address": {"country": "FR"},
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                "product_id": str(checkout_open.product_id),
+                "product_price_id": str(uuid.uuid4()),
+            },
+        )
+
+        assert response.status_code == 200
 
 
 @pytest.mark.anyio

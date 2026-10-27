@@ -1,6 +1,6 @@
 import { useOnboardingTracking } from '@/hooks'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
@@ -208,7 +208,7 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
         backgroundColor="background-card"
       >
         <Box flexDirection="column" rowGap="3xl">
-          <LogoIcon size={50} />
+          <LogoIcon size={40} />
           <Box flexDirection="column" rowGap="l">
             <h1 className="text-3xl">Integrate Checkout</h1>
             <p className="dark:text-polar-400 text-lg text-gray-600">

@@ -7,12 +7,14 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     Row,
+    Select,
     and_,
     func,
     literal,
     null,
     or_,
     select,
+    true,
     update,
 )
 from sqlalchemy.dialects.postgresql import insert
@@ -21,20 +23,31 @@ from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation
-from polar.models import Event, Reducer, ReducerBucket
+from polar.models import Event, Reducer, ReducerBucket, StagedEvent
 from polar.models.event import EventSource
 
 from .redis_store import get_reducer_bucket_key
 
 
 def _is_customer(
-    model: type[Event | ReducerBucket],
+    model: type[Event | StagedEvent | ReducerBucket],
     customer_id: UUID | None,
     external_customer_id: str | None,
 ) -> ColumnElement[bool]:
     return and_(
-        model.customer_id.is_not_distinct_from(customer_id),
-        model.external_customer_id.is_not_distinct_from(external_customer_id),
+        model.customer_id == customer_id,
+        model.external_customer_id == external_customer_id,
+    )
+
+
+def _is_any_customer(
+    identities: Sequence[tuple[UUID | None, str | None]],
+) -> ColumnElement[bool]:
+    return or_(
+        *(
+            _is_customer(ReducerBucket, customer_id, external_customer_id)
+            for customer_id, external_customer_id in identities
+        )
     )
 
 
@@ -68,6 +81,38 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     ) -> Row[Any]:
         """count, sum, min and max of the customer identity's user events for the
         reducer in the range, ingested after its latest sealed bucket."""
+        # Events still waiting in `staged_events` count too: the mover takes each one
+        # out of `staged_events` and into `events` in a single transaction, so this
+        # one statement sees every event exactly once.
+        events = self._aggregate_statement(
+            Event, reducer, bucket_start, bucket_end, customer_id, external_customer_id
+        ).subquery("events_statistics")
+        staged_events = self._aggregate_statement(
+            StagedEvent,
+            reducer,
+            bucket_start,
+            bucket_end,
+            customer_id,
+            external_customer_id,
+        ).subquery("staged_events_statistics")
+        statement = select(
+            (events.c.count + staged_events.c.count).label("count"),
+            (events.c.sum + staged_events.c.sum).label("sum"),
+            func.least(events.c.min, staged_events.c.min).label("min"),
+            func.greatest(events.c.max, staged_events.c.max).label("max"),
+        ).select_from(events.join(staged_events, true()))
+        result = await self.session.execute(statement)
+        return result.one()
+
+    def _aggregate_statement(
+        self,
+        model: type[Event | StagedEvent],
+        reducer: Reducer,
+        bucket_start: datetime,
+        bucket_end: datetime,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+    ) -> Select[Any]:
         sealed_at = (
             select(func.max(ReducerBucket.sealed_at))
             .where(
@@ -81,7 +126,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         aggregation = reducer.aggregation
         statistics: tuple[Any, Any, Any]
         if isinstance(aggregation, PropertyAggregation):
-            value = aggregation.get_sql_value(Event)
+            value = aggregation.get_sql_value(model)
             statistics = (
                 func.coalesce(func.sum(value), 0),
                 func.min(value),
@@ -89,23 +134,21 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
         else:
             statistics = (literal(0), null(), null())
-        statement = select(
+        return select(
             func.count().label("count"),
             statistics[0].label("sum"),
             statistics[1].label("min"),
             statistics[2].label("max"),
         ).where(
-            Event.organization_id == reducer.organization_id,
-            Event.source == EventSource.user,
-            Event.timestamp >= bucket_start,
-            Event.timestamp < bucket_end,
-            _is_customer(Event, customer_id, external_customer_id),
-            reducer.filter.get_sql_clause(Event),
-            aggregation.get_sql_clause(Event),
-            or_(sealed_at.is_(None), Event.ingested_at > sealed_at),
+            model.organization_id == reducer.organization_id,
+            model.source == EventSource.user,
+            model.timestamp >= bucket_start,
+            model.timestamp < bucket_end,
+            _is_customer(model, customer_id, external_customer_id),
+            reducer.filter.get_sql_clause(model),
+            aggregation.get_sql_clause(model),
+            or_(sealed_at.is_(None), model.ingested_at > sealed_at),
         )
-        result = await self.session.execute(statement)
-        return result.one()
 
     async def get_all_starting_within(
         self,
@@ -156,6 +199,36 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     ) -> Row[Any]:
         """count, sum, min and max of the identities' usage not billed yet, in
         buckets starting before `before`."""
+        return await self._get_totals(
+            organization_id,
+            reducer_id,
+            identities,
+            ReducerBucket.sealed_at.is_(None),
+            ReducerBucket.bucket_start < before,
+        )
+
+    async def get_totals_starting_within(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        start: datetime | None,
+        end: datetime,
+    ) -> Row[Any]:
+        """count, sum, min and max of the identities' buckets of every generation
+        starting in [start, end)."""
+        clauses = [ReducerBucket.bucket_start < end]
+        if start is not None:
+            clauses.append(ReducerBucket.bucket_start >= start)
+        return await self._get_totals(organization_id, reducer_id, identities, *clauses)
+
+    async def _get_totals(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *clauses: ColumnElement[bool],
+    ) -> Row[Any]:
         statement = select(
             func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
             func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),
@@ -164,14 +237,8 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         ).where(
             ReducerBucket.organization_id == organization_id,
             ReducerBucket.reducer_id == reducer_id,
-            ReducerBucket.sealed_at.is_(None),
-            ReducerBucket.bucket_start < before,
-            or_(
-                *(
-                    _is_customer(ReducerBucket, customer_id, external_customer_id)
-                    for customer_id, external_customer_id in identities
-                )
-            ),
+            _is_any_customer(identities),
+            *clauses,
         )
         result = await self.session.execute(statement)
         return result.one()
@@ -192,6 +259,28 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             ReducerBucket.reducer_id == reducer_id,
             _is_customer(ReducerBucket, customer_id, external_customer_id),
             ReducerBucket.bucket_start >= since,
+            ReducerBucket.synced_at.is_not(None),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
+    async def get_synced_end_within(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        customer_id: UUID | None,
+        external_customer_id: str | None,
+        bucket_start: datetime,
+        bucket_end: datetime,
+    ) -> datetime | None:
+        """End of the customer identity's latest bucket recomputed by sync, among
+        those starting within the slot."""
+        statement = select(func.max(ReducerBucket.bucket_end)).where(
+            ReducerBucket.organization_id == organization_id,
+            ReducerBucket.reducer_id == reducer_id,
+            _is_customer(ReducerBucket, customer_id, external_customer_id),
+            ReducerBucket.bucket_start >= bucket_start,
+            ReducerBucket.bucket_start < bucket_end,
             ReducerBucket.synced_at.is_not(None),
         )
         result = await self.session.execute(statement)
@@ -250,32 +339,28 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
         )
 
-    async def seal(
+    async def mark_as_sealed(
         self,
         reducer: Reducer,
         identities: Sequence[tuple[UUID | None, str | None]],
         *,
-        start: datetime,
-        end: datetime,
+        until: datetime,
+        since: datetime | None = None,
         sealed_at: datetime,
-    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
+    ) -> int:
+        """Seals the identities' unsealed buckets ending by `until`, after `since`
+        if given, and returns how many."""
+        clauses = [ReducerBucket.bucket_end <= until]
+        if since is not None:
+            clauses.append(ReducerBucket.bucket_end > since)
         open_ids = (
             select(ReducerBucket.id)
             .where(
                 ReducerBucket.organization_id == reducer.organization_id,
                 ReducerBucket.reducer_id == reducer.id,
-                or_(
-                    *(
-                        and_(
-                            ReducerBucket.customer_id == customer_id,
-                            ReducerBucket.external_customer_id == external_customer_id,
-                        )
-                        for customer_id, external_customer_id in identities
-                    )
-                ),
+                _is_any_customer(identities),
                 ReducerBucket.sealed_at.is_(None),
-                ReducerBucket.bucket_end > start,
-                ReducerBucket.bucket_end <= end,
+                *clauses,
             )
             .order_by(ReducerBucket.bucket_start)
             .with_for_update()
@@ -284,6 +369,40 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             update(ReducerBucket)
             .where(ReducerBucket.id.in_(open_ids))
             .values(sealed_at=sealed_at, modified_at=sealed_at)
+            .returning(ReducerBucket.id)
+        )
+        return len(result.all())
+
+    async def mark_as_billed(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        order_id: UUID,
+        *,
+        since: datetime,
+        until: datetime,
+        billed_at: datetime,
+    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
+        """Marks the identities' sealed, unbilled buckets within [since, until] as
+        billed by the order, and returns their count, sum, min and max."""
+        unbilled_ids = (
+            select(ReducerBucket.id)
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                _is_any_customer(identities),
+                ReducerBucket.sealed_at.is_not(None),
+                ReducerBucket.billed_at.is_(None),
+                ReducerBucket.bucket_start >= since,
+                ReducerBucket.bucket_end <= until,
+            )
+            .order_by(ReducerBucket.bucket_start)
+            .with_for_update()
+        )
+        result = await self.session.execute(
+            update(ReducerBucket)
+            .where(ReducerBucket.id.in_(unbilled_ids))
+            .values(billed_at=billed_at, order_id=order_id, modified_at=billed_at)
             .returning(
                 ReducerBucket.count,
                 ReducerBucket.sum,

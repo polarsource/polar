@@ -1,7 +1,7 @@
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import ClearOutlined from '@mui/icons-material/ClearOutlined'
+import { AddOutlined, ClearOutlined } from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
+import { useListKeys } from '@/hooks/useListKeys'
 import { useCallback } from 'react'
 
 interface EventMetadataFilterForm {
@@ -18,6 +18,7 @@ export const EventMetadataFilter = ({
   metadata,
   onChange,
 }: EventMetadataFilterForm) => {
+  const rowKeys = useListKeys(metadata.length)
   const onChangeValue = useCallback(
     (key: string, value: string | number | boolean, index: number) => {
       const parsedValue =
@@ -55,7 +56,10 @@ export const EventMetadataFilter = ({
       </div>
       <div className="flex flex-col gap-2">
         {metadata.map((field, index) => (
-          <div key={index} className="flex flex-row items-center gap-2">
+          <div
+            key={rowKeys.keys[index]}
+            className="flex flex-row items-center gap-2"
+          >
             <Input
               value={field.key || ''}
               placeholder="Key"
@@ -80,6 +84,7 @@ export const EventMetadataFilter = ({
               variant="secondary"
               type="button"
               onClick={() => {
+                rowKeys.remove(index)
                 onChange(metadata.filter((_, i) => i !== index))
               }}
             >

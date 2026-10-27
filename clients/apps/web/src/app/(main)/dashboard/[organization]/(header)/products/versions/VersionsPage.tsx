@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/Shared/EmptyState'
 import { useCatalogs } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import {
+  Alert,
   Grid,
   List,
   ListItem,
@@ -129,15 +130,22 @@ export default function VersionsPage({
 }) {
   const searchParams = useSearchParams()
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
-  const { data: catalogs, isLoading } = useCatalogs(
-    organization.id,
-    page,
-    PAGE_SIZE,
-  )
+  const {
+    data: catalogs,
+    isLoading,
+    isError,
+    refetch,
+  } = useCatalogs(organization.id, page, PAGE_SIZE)
 
   return (
     <DashboardBody title="Versions">
-      {isLoading ? null : catalogs && catalogs.items.length > 0 ? (
+      {isError ? (
+        <Alert
+          variant="danger"
+          title="Could not load versions"
+          actions={[{ text: 'Retry', onClick: () => refetch() }]}
+        />
+      ) : isLoading ? null : catalogs && catalogs.items.length > 0 ? (
         <Pagination
           currentPage={page}
           pageSize={PAGE_SIZE}

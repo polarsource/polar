@@ -8,6 +8,12 @@ module "planetscale" {
   region            = "aws-us-east-2"
   cluster_size      = "PS_80_AWS_ARM"
 
+  parameters = {
+    pgbouncer = {
+      default_pool_size = "35"
+    }
+  }
+
   bouncers = {
     app = {
       parameters = {

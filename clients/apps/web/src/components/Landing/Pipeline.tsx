@@ -85,7 +85,7 @@ const useOrder = () => {
     const timer = window.setTimeout(
       () => {
         if (step < count) {
-          setStep(step + 1)
+          setStep((s) => s + 1)
         } else {
           setStep(0)
           setMarket((m) => (m + 1) % MARKETS.length)

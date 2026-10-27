@@ -3787,6 +3787,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/catalogs/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Catalog
+     * @description Get a catalog version, with its products compared to the previous version.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['catalogs:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/custom-fields/': {
     parameters: {
       query?: never
@@ -13795,6 +13817,61 @@ export interface components {
        */
       published_at: string | null
     }
+    /** CatalogDetail */
+    CatalogDetail: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Name
+       * @description Optional name given when it was published.
+       */
+      name: string | null
+      /**
+       * Version Hash
+       * @description Hash identifying this version of the catalog.
+       */
+      version_hash: string | null
+      /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
+      status: components['schemas']['CatalogStatus']
+      /**
+       * Published At
+       * @description When the catalog was published. Null for drafts.
+       */
+      published_at: string | null
+      /**
+       * Previous Version Hash
+       * @description Version hash of the catalog published before this one. Null for the first version.
+       */
+      previous_version_hash: string | null
+      /**
+       * Products
+       * @description The products in this version, compared with the previous one.
+       */
+      products: components['schemas']['CatalogProductDiff'][]
+    }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
       /**
@@ -13816,6 +13893,41 @@ export interface components {
       error: 'CatalogImportNotReady'
       /** Detail */
       detail: string
+    }
+    /**
+     * CatalogProductChange
+     * @enum {string}
+     */
+    CatalogProductChange: 'added' | 'changed' | 'removed' | 'unchanged'
+    /** CatalogProductDiff */
+    CatalogProductDiff: {
+      /**
+       * External Id
+       * @description The product's stable name across versions.
+       */
+      external_id: string
+      /**
+       * Name
+       * @description The product name in this version, or in the previous one when removed.
+       */
+      name: string
+      /**
+       * Product Id
+       * @description The product row in this version. Null when removed.
+       */
+      product_id: string | null
+      /**
+       * Previous Product Id
+       * @description The product row in the previous version. Null when added.
+       */
+      previous_product_id: string | null
+      /** @description How the product differs from the previous version. */
+      change: components['schemas']['CatalogProductChange']
+      /**
+       * Diff
+       * @description Fields that changed since the previous version. Empty unless `change` is `changed`, or when a version can't be expressed as config.
+       */
+      diff: components['schemas']['ConfigFieldChange'][]
     }
     /**
      * CatalogStatus
@@ -53921,6 +54033,46 @@ export interface operations {
       }
     }
   }
+  'catalogs:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogDetail']
+        }
+      }
+      /** @description Catalog not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'custom-fields:list': {
     parameters: {
       query?: {
@@ -72651,6 +72803,9 @@ export const canonicalPaymentMethodTypeValues: ReadonlyArray<
   'link',
   'other',
 ]
+export const catalogProductChangeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CatalogProductChange']
+> = ['added', 'changed', 'removed', 'unchanged']
 export const catalogStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CatalogStatus']
 > = ['draft', 'live', 'archived']

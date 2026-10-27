@@ -36,6 +36,14 @@ export default defineConfig({
       .meter('tool_call')
       .units(1000)
       .rollover(),
+    topup_2000: credits('2,000 extra tool calls')
+      .meter('tool_call')
+      .units(2000)
+      .rollover(),
+    topup_3000: credits('3,000 extra tool calls')
+      .meter('tool_call')
+      .units(3000)
+      .rollover(),
   }),
   products: ({ product, free, fixed, seats, units, tier, meter }) => ({
     free: product('Free')
@@ -108,5 +116,9 @@ export default defineConfig({
       .prices(fixed().amount(usd(79), eur(50)).tax('location'))
       .once()
       .grants(['topup_1000']),
+    topup_3000: product('3,000 tool calls')
+      .prices(fixed().amount(usd(199), eur(180)).tax('exclusive'))
+      .once()
+      .grants(['topup_3000']),
   }),
 })

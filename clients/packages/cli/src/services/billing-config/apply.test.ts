@@ -6,7 +6,7 @@ import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem, Layer } from 'effect'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { apply } from '@/services/billing-config/apply'
+import { type ApplyOptions, apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
@@ -34,7 +34,7 @@ const source = [
 
 let api: ReturnType<typeof fakeHttp>
 
-const run = (file: string) =>
+const run = (file: string, options?: ApplyOptions) =>
   Effect.runPromise(
     Effect.gen(function* () {
       const clients = {
@@ -43,7 +43,7 @@ const run = (file: string) =>
         local: yield* authenticatedClient('local'),
       }
       const config = yield* loader(yield* FileSystem.FileSystem)(file)
-      return yield* apply(clients)(config, acme)
+      return yield* apply(clients)(config, acme, options)
     }).pipe(
       Effect.provide(Layer.mergeAll(BunServices.layer, api.layer)),
       Effect.provideService(Auth, fakeAuth({ environment: 'sandbox' }).auth),
@@ -96,6 +96,18 @@ describe('apply', () => {
         { section: 'meters', id: 'tool-calls', action: 'created', diff: [] },
         { section: 'products', id: 'pro', action: 'updated', diff: [] },
       ],
+    })
+  })
+
+  test('names the catalog version it publishes', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
+
+    await run(await write(source), { name: 'Spring pricing' })
+
+    const [request] = api.requests
+    expect(await request?.json()).toEqual({
+      ...JSON.parse(source),
+      catalog_name: 'Spring pricing',
     })
   })
 

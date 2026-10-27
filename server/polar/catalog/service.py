@@ -5,6 +5,8 @@ from collections.abc import Mapping, Sequence
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.declarative_config.export import export_products
+from polar.declarative_config.schemas import ConfigFieldChange, ConfigProductRead
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -21,6 +23,58 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 
 from .repository import CatalogProductRepository, CatalogRepository
+from .schemas import CatalogProductChange, CatalogProductDiff
+
+_CHANGE_ORDER = {
+    CatalogProductChange.added: 0,
+    CatalogProductChange.changed: 1,
+    CatalogProductChange.removed: 2,
+    CatalogProductChange.unchanged: 3,
+}
+
+
+def _field_changes(
+    before: ConfigProductRead | None, after: ConfigProductRead | None
+) -> list[ConfigFieldChange]:
+    if before is None or after is None:
+        return []
+    before_fields = before.model_dump(mode="json")
+    after_fields = after.model_dump(mode="json")
+    return [
+        ConfigFieldChange(field=field, before=value, after=after_fields[field])
+        for field, value in before_fields.items()
+        if value != after_fields[field]
+    ]
+
+
+def _product_diff(
+    external_id: str,
+    after: CatalogProduct | None,
+    before: CatalogProduct | None,
+    definitions: Mapping[uuid.UUID, ConfigProductRead | None],
+) -> CatalogProductDiff:
+    if before is None:
+        change = CatalogProductChange.added
+    elif after is None:
+        change = CatalogProductChange.removed
+    elif after.product_id == before.product_id:
+        change = CatalogProductChange.unchanged
+    else:
+        change = CatalogProductChange.changed
+    row = after or before
+    assert row is not None
+    return CatalogProductDiff(
+        external_id=external_id,
+        name=row.product.name,
+        product_id=after.product_id if after else None,
+        previous_product_id=before.product_id if before else None,
+        change=change,
+        diff=_field_changes(
+            definitions.get(before.product_id), definitions.get(after.product_id)
+        )
+        if change == CatalogProductChange.changed and before and after
+        else [],
+    )
 
 
 def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) -> str:
@@ -61,6 +115,66 @@ class CatalogService:
             limit=pagination.limit,
             page=pagination.page,
         )
+
+    async def get(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        id: uuid.UUID,
+    ) -> Catalog | None:
+        catalog = await CatalogRepository.from_session(session).get_by_id(id)
+        if catalog is None:
+            return None
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        if catalog.organization_id not in org_ids:
+            return None
+        enabled_org_ids = await OrganizationRepository.from_session(
+            session
+        ).get_ids_with_feature({catalog.organization_id}, "config_as_code_enabled")
+        return catalog if catalog.organization_id in enabled_org_ids else None
+
+    async def diff(
+        self, session: AsyncReadSession, catalog: Catalog
+    ) -> tuple[Catalog | None, Sequence[CatalogProductDiff]]:
+        """Compare a catalog's products with the version published before it."""
+        previous = await CatalogRepository.from_session(session).get_previous(catalog)
+        repository = CatalogProductRepository.from_session(session)
+        after = {
+            member.external_id: member
+            for member in await repository.get_all_by_catalog(catalog.id)
+        }
+        before = (
+            {
+                member.external_id: member
+                for member in await repository.get_all_by_catalog(previous.id)
+            }
+            if previous is not None
+            else {}
+        )
+        new_rows = [
+            member
+            for external_id in after.keys() & before.keys()
+            for member in (after[external_id], before[external_id])
+            if after[external_id].product_id != before[external_id].product_id
+        ]
+        definitions = await export_products(
+            session, catalog.organization_id, [member.product for member in new_rows]
+        )
+        products = [
+            _product_diff(
+                external_id,
+                after.get(external_id),
+                before.get(external_id),
+                definitions,
+            )
+            for external_id in after.keys() | before.keys()
+        ]
+        products.sort(
+            key=lambda product: (_CHANGE_ORDER[product.change], product.external_id)
+        )
+        return previous, products
 
     async def get_live_entries(
         self, session: AsyncReadSession, organization: Organization

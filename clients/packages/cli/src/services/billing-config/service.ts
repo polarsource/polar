@@ -7,7 +7,7 @@ import type {
   PlanResult,
   PullResult,
 } from '@/schemas/BillingConfig'
-import { apply } from '@/services/billing-config/apply'
+import { type ApplyOptions, apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
 import { pull } from '@/services/billing-config/pull'
@@ -24,6 +24,7 @@ export class BillingConfig extends Context.Service<
     apply: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: ApplyOptions,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
     pull: (
       organization: ActiveOrganization,

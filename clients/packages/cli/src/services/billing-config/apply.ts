@@ -18,15 +18,25 @@ import {
 } from '@/services/billing-config/api'
 import { issues } from '@/services/billing-config/issues'
 
+export interface ApplyOptions {
+  /** Name of the catalog version this apply publishes, if it publishes one */
+  readonly name?: string | undefined
+}
+
 export const apply =
   (clients: Clients) =>
-  (config: LoadedConfig, organization: ActiveOrganization) =>
+  (
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+    { name }: ApplyOptions = {},
+  ) =>
     Effect.gen(function* () {
       const response = yield* post(
         clients,
         '/config/apply',
         config,
         organization,
+        name === undefined ? undefined : { catalog_name: name },
       )
       if (response.status === 200) {
         const body =

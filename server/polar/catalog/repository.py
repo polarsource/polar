@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, tuple_
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -30,6 +30,27 @@ class CatalogRepository(
         statement = self.get_base_statement().where(
             Catalog.organization_id == organization_id,
             Catalog.status == CatalogStatus.live,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_previous(self, catalog: Catalog) -> Catalog | None:
+        """The catalog published right before this one. For a draft, the live one."""
+        if catalog.published_at is None:
+            return await self.get_live(catalog.organization_id)
+        statement = (
+            self.get_base_statement()
+            .where(
+                Catalog.organization_id == catalog.organization_id,
+                Catalog.published_at.is_not(None),
+                tuple_(Catalog.published_at, Catalog.created_at, Catalog.id)
+                < (catalog.published_at, catalog.created_at, catalog.id),
+            )
+            .order_by(
+                Catalog.published_at.desc(),
+                Catalog.created_at.desc(),
+                Catalog.id.desc(),
+            )
+            .limit(1)
         )
         return await self.get_one_or_none(statement)
 

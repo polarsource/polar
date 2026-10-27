@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Sequence
 from typing import Any, Protocol, cast
 from uuid import UUID
 
@@ -243,3 +243,46 @@ async def export_config(
         ),
         skipped=skipped,
     )
+
+
+async def export_products(
+    session: AsyncReadSession, organization_id: UUID, products: Sequence[Product]
+) -> dict[UUID, ConfigProductRead | None]:
+    """Export product rows from any catalog version, keyed by product id.
+
+    Archived meters and benefits still resolve, since older versions may
+    reference them. `None` marks a row that can't be expressed as config.
+    """
+    skipped: list[ConfigSkippedResource] = []
+    meter_repository = MeterRepository.from_session(session)
+    _, meter_external_ids = await _export_section(
+        ConfigResource.meter,
+        meter_repository.stream(
+            meter_repository.get_organization_statement(organization_id)
+        ),
+        MAXIMUM_METERS,
+        skipped,
+        name=lambda meter: meter.name,
+        archived=lambda meter: False,
+        entry=_meter_entry,
+    )
+    benefit_repository = BenefitRepository.from_session(session)
+    _, benefit_external_ids = await _export_section(
+        ConfigResource.benefit,
+        benefit_repository.stream(
+            benefit_repository.get_organization_statement(organization_id)
+        ),
+        MAXIMUM_BENEFITS,
+        skipped,
+        name=lambda benefit: benefit.description,
+        archived=lambda benefit: False,
+        entry=lambda benefit: _benefit_entry(benefit, meter_external_ids),
+    )
+
+    def entry(product: Product) -> ConfigProductRead | None:
+        try:
+            return _product_entry(product, meter_external_ids, benefit_external_ids)
+        except ValidationError:
+            return None
+
+    return {product.id: entry(product) for product in products}

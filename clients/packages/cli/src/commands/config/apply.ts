@@ -26,6 +26,12 @@ import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
 const confirmed = confirm.pipe(Flag.withAlias('aladåb'))
+const name = Flag.String('name').pipe(
+  Flag.optional,
+  Flag.withDescription(
+    'Name the catalog version this apply publishes, shown on the Versions page',
+  ),
+)
 
 const applied = (
   config: LoadedConfig,
@@ -79,7 +85,7 @@ const approve = (
     ).pipe(Effect.orElseSucceed(() => false))
   })
 
-export const apply = Command.make('apply', { file, org, confirmed }).pipe(
+export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
   Command.withDescription(
     'Create or update everything in a billing config file for your organization',
   ),
@@ -105,10 +111,14 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
       command: 'polar config apply --confirm --json',
       description: 'Print what was applied as JSON, for scripts and agents',
     },
+    {
+      command: 'polar config apply --name "Spring pricing"',
+      description: 'Name the catalog version this apply publishes',
+    },
   ]),
   output({
     result: ApplyOutput,
-    run: ({ file, org, confirmed }, { say }) =>
+    run: ({ file, org, confirmed, name }, { say }) =>
       Effect.gen(function* () {
         const billing = yield* BillingConfig
         const { json } = yield* Output
@@ -165,7 +175,9 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
                 `Applying ${plural(changeCount(plan.entries), 'change')}`,
               )
               const [elapsed, result] = yield* Effect.timed(
-                billing.apply(config, organization),
+                billing.apply(config, organization, {
+                  name: Option.getOrUndefined(name),
+                }),
               )
               yield* progress.finish(`(${milliseconds(elapsed)})`)
               return {

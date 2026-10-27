@@ -49,3 +49,11 @@ export const useCatalogs = (
     retry: defaultRetry,
     staleTime: 0,
   })
+
+export const useCatalog = (id: string) =>
+  useQuery({
+    queryKey: ['catalogs', 'detail', { id }],
+    queryFn: () =>
+      unwrap(api.GET('/v1/catalogs/{id}', { params: { path: { id } } })),
+    retry: defaultRetry,
+  })

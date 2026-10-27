@@ -36,13 +36,17 @@ export const post = (
   path: string,
   config: LoadedConfig,
   organization: ActiveOrganization,
+  extra?: Record<string, unknown>,
 ) =>
   Effect.gen(function* () {
+    const body = stripUnsupported(config.input)
     const request = yield* HttpClientRequest.post(
       yield* apiUrl(organization.environment, path),
     ).pipe(
       withOrganization(organization.id),
-      HttpClientRequest.bodyJson(stripUnsupported(config.input)),
+      HttpClientRequest.bodyJson(
+        extra ? { ...(body as Record<string, unknown>), ...extra } : body,
+      ),
     )
     return yield* clients[organization.environment].execute(request)
   })

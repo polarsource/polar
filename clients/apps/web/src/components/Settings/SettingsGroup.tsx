@@ -1,6 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Children, Fragment } from 'react'
+import { Children, Fragment, isValidElement } from 'react'
 
 export interface SettingsGroupProps {
   title?: string
@@ -44,7 +44,7 @@ export const SettingsGroup: React.FC<
       backgroundColor="background-secondary"
     >
       {Children.toArray(children).map((child, index) => (
-        <Fragment key={index}>
+        <Fragment key={isValidElement(child) ? child.key : index}>
           {index > 0 && (
             <Box
               borderTopWidth={1}

@@ -19,7 +19,9 @@ import { EllipsisVertical as MoreVertical } from '@polar-sh/orbit/icons'
 import { parseAsString, useQueryState } from 'nuqs'
 import { useCallback, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
-import UpdateBenefitModalContent from '../../../Benefit/UpdateBenefitModalContent'
+import UpdateBenefitModalContent, {
+  UpdateBenefitModalContentHandle,
+} from '../../../Benefit/UpdateBenefitModalContent'
 import { ConfirmModal } from '../../../Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../../../Modal/useModal'
@@ -59,10 +61,10 @@ export const BenefitRow = ({
     show: showDiscard,
   } = useModal()
 
-  const isDirtyRef = useRef(false)
+  const updateContentRef = useRef<UpdateBenefitModalContentHandle>(null)
 
   const requestClose = useCallback(() => {
-    if (isDirtyRef.current) {
+    if (updateContentRef.current?.isDirty()) {
       showDiscard()
     } else {
       hideEdit()
@@ -73,10 +75,6 @@ export const BenefitRow = ({
     hideDiscard()
     hideEdit()
   }, [hideDiscard, hideEdit])
-
-  const handleDirtyChange = useCallback((dirty: boolean) => {
-    isDirtyRef.current = dirty
-  }, [])
 
   useEffect(() => {
     if (editBenefitId !== benefit.id) {
@@ -188,7 +186,7 @@ export const BenefitRow = ({
             benefit={benefit}
             hideModal={hideEdit}
             requestClose={requestClose}
-            onDirtyChange={handleDirtyChange}
+            ref={updateContentRef}
             confirmOnUpdate
           />
         }

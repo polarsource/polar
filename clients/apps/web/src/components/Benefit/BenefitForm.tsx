@@ -27,7 +27,10 @@ import {
 import { usePathname } from 'next/navigation'
 import React, { useMemo } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
+import {
+  DownloadablesBenefitForm,
+  UploadStatus,
+} from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
@@ -55,14 +58,14 @@ interface UpdateBenefitFormProps {
   organization: schemas['Organization']
   type: schemas['BenefitType']
   benefitId: string
-  onUploadingChange?: (uploading: boolean) => void
+  uploadStatusRef?: React.Ref<UploadStatus>
 }
 
 export const UpdateBenefitForm = ({
   organization,
   type,
   benefitId,
-  onUploadingChange,
+  uploadStatusRef,
 }: UpdateBenefitFormProps) => {
   return (
     <BenefitForm
@@ -70,7 +73,7 @@ export const UpdateBenefitForm = ({
       type={type}
       update={true}
       benefitId={benefitId}
-      onUploadingChange={onUploadingChange}
+      uploadStatusRef={uploadStatusRef}
     />
   )
 }
@@ -80,7 +83,7 @@ interface BenefitFormProps {
   type: schemas['BenefitType'] | 'usage'
   update?: boolean
   benefitId?: string
-  onUploadingChange?: (uploading: boolean) => void
+  uploadStatusRef?: React.Ref<UploadStatus>
 }
 
 const BenefitForm = ({
@@ -88,7 +91,7 @@ const BenefitForm = ({
   type,
   update = false,
   benefitId,
-  onUploadingChange,
+  uploadStatusRef,
 }: BenefitFormProps) => {
   const { control } = useFormContext<schemas['BenefitCreate']>()
 
@@ -142,7 +145,7 @@ const BenefitForm = ({
         <DownloadablesBenefitForm
           organization={organization}
           update={update}
-          onUploadingChange={onUploadingChange}
+          uploadStatusRef={uploadStatusRef}
         />
       )}
       {type === 'license_keys' && <LicenseKeysBenefitForm />}

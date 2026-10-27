@@ -6,7 +6,15 @@ import { toast } from '@/components/Toast/use-toast'
 import { useFiles } from '@/hooks/queries/files'
 import { FileUploadOutlined as FileUploadIcon } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { ReactElement, useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ReactElement,
+  Ref,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react'
 import { useFormContext } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { FileList } from './FileList'
@@ -45,18 +53,22 @@ const DropzoneView = ({
   )
 }
 
+export interface UploadStatus {
+  isUploading: boolean
+}
+
 interface DownloadablesFormProps {
   organization: schemas['Organization']
   initialFiles: FileRead[]
   initialArchivedFiles: { [key: string]: boolean }
-  onUploadingChange?: (uploading: boolean) => void
+  uploadStatusRef?: Ref<UploadStatus>
 }
 
 const DownloadablesForm = ({
   organization,
   initialFiles,
   initialArchivedFiles,
-  onUploadingChange,
+  uploadStatusRef,
 }: DownloadablesFormProps) => {
   const {
     setValue,
@@ -136,9 +148,7 @@ const DownloadablesForm = ({
 
   const isUploading = files.some((file) => !file.is_uploaded)
 
-  useEffect(() => {
-    onUploadingChange?.(isUploading)
-  }, [isUploading, onUploadingChange])
+  useImperativeHandle(uploadStatusRef, () => ({ isUploading }), [isUploading])
 
   useEffect(() => {
     // Only re-validate when uploads complete, not during upload progress
@@ -173,13 +183,13 @@ const DownloadablesForm = ({
 interface DownloadablesBenefitFormProps {
   organization: schemas['Organization']
   update?: boolean
-  onUploadingChange?: (uploading: boolean) => void
+  uploadStatusRef?: Ref<UploadStatus>
 }
 
 export const DownloadablesBenefitForm = ({
   organization,
   update = false,
-  onUploadingChange,
+  uploadStatusRef,
 }: DownloadablesBenefitFormProps) => {
   useFormContext<schemas['BenefitDownloadablesCreate']>()
 
@@ -189,7 +199,7 @@ export const DownloadablesBenefitForm = ({
         organization={organization}
         initialFiles={[]}
         initialArchivedFiles={{}}
-        onUploadingChange={onUploadingChange}
+        uploadStatusRef={uploadStatusRef}
       />
     )
   }
@@ -197,17 +207,17 @@ export const DownloadablesBenefitForm = ({
   return (
     <DownloadablesEditForm
       organization={organization}
-      onUploadingChange={onUploadingChange}
+      uploadStatusRef={uploadStatusRef}
     />
   )
 }
 
 const DownloadablesEditForm = ({
   organization,
-  onUploadingChange,
+  uploadStatusRef,
 }: {
   organization: schemas['Organization']
-  onUploadingChange?: (uploading: boolean) => void
+  uploadStatusRef?: Ref<UploadStatus>
 }) => {
   const { getValues } = useFormContext<schemas['BenefitDownloadablesCreate']>()
 
@@ -228,7 +238,7 @@ const DownloadablesEditForm = ({
       organization={organization}
       initialFiles={filesQuery.data?.items ?? []}
       initialArchivedFiles={initial.archivedFiles}
-      onUploadingChange={onUploadingChange}
+      uploadStatusRef={uploadStatusRef}
     />
   )
 }

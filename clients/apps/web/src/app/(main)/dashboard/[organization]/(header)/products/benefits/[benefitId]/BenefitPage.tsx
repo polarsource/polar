@@ -5,7 +5,9 @@ import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
 import { BenefitDetails } from '@/components/Benefit/BenefitDetails'
 import { DownloadablesSection } from '@/components/Benefit/Downloadables/DownloadablesSection'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
-import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
+import UpdateBenefitModalContent, {
+  UpdateBenefitModalContentHandle,
+} from '@/components/Benefit/UpdateBenefitModalContent'
 import {
   benefitsDisplayNames,
   resolveBenefitIcon,
@@ -68,10 +70,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
     show: showDiscard,
   } = useModal()
 
-  const isDirtyRef = useRef(false)
+  const updateContentRef = useRef<UpdateBenefitModalContentHandle>(null)
 
   const requestClose = useCallback(() => {
-    if (isDirtyRef.current) {
+    if (updateContentRef.current?.isDirty()) {
       showDiscard()
     } else {
       hideEdit()
@@ -82,10 +84,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
     hideDiscard()
     hideEdit()
   }, [hideDiscard, hideEdit])
-
-  const handleDirtyChange = useCallback((dirty: boolean) => {
-    isDirtyRef.current = dirty
-  }, [])
 
   useEffect(() => {
     if (editBenefitId !== benefit.id) {
@@ -232,7 +230,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             benefit={benefit}
             hideModal={hideEdit}
             requestClose={requestClose}
-            onDirtyChange={handleDirtyChange}
+            ref={updateContentRef}
           />
         }
       />

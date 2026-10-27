@@ -3173,6 +3173,7 @@ class TestCatalogVersioning:
         )
         plan = await declarative_config_service.plan(session, auth_subject, changed)
         [benefit_diff] = plan.changes[0].diff
+        assert benefit_diff.after is not None
         assert (benefit_diff.field, benefit_diff.after["activations"]["limit"]) == (
             "properties",
             5,
@@ -3186,7 +3187,10 @@ class TestCatalogVersioning:
             organization.id, ["pro"]
         )
         assert current.id != previous.id
-        assert current.properties["activations"]["limit"] == 5
+        assert dict(current.properties)["activations"] == {
+            "limit": 5,
+            "enable_customer_admin": True,
+        }
 
         await benefit_grant_service.enqueue_benefits_grants(
             session, "grant", customer, new_pro, subscription=subscription

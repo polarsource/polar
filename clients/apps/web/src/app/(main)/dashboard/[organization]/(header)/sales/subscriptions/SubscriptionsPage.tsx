@@ -4,6 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { useModal } from '@/components/Modal/useModal'
 import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import {
   DEFAULT_SUBSCRIPTION_STATUS,
@@ -233,7 +234,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         const tier = getValue() as schemas['Product']
         return (
           <div className="flex flex-row items-center gap-2">
-            {tier.name}
+            <span>
+              {tier.name}
+              <ProductVersionLabel organization={organization} product={tier} />
+            </span>
             {tier.is_archived && (
               <Status status="Archived" color="red" size="small" />
             )}

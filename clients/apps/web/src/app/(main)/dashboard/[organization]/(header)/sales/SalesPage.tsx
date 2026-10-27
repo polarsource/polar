@@ -5,6 +5,7 @@ import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import ExportOrdersModal from '@/components/Orders/ExportOrdersModal'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
@@ -164,6 +165,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <Truncated>
               <Text as="span">{product.name}</Text>
             </Truncated>
+            <ProductVersionLabel
+              organization={organization}
+              product={product}
+            />
             {product.is_archived && (
               <Status status="Archived" color="red" size="small" />
             )}

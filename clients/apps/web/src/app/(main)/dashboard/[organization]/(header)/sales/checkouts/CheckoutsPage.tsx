@@ -4,6 +4,7 @@ import CheckoutStatus from '@/components/CheckoutStatus/CheckoutStatus'
 import CheckoutStatusSelect from '@/components/CheckoutStatusSelect/CheckoutStatusSelect'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import ProductSelect from '@/components/Products/ProductSelect'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { useCheckouts } from '@/hooks/queries/checkouts'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useDebouncedCallback } from '@/hooks/utils'
@@ -150,7 +151,20 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           original: { products },
         },
       }) => {
-        return <>{products.map(({ name }) => name).join(', ')}</>
+        return (
+          <span>
+            {products.map((product, index) => (
+              <React.Fragment key={product.id}>
+                {index > 0 && ', '}
+                {product.name}
+                <ProductVersionLabel
+                  organization={organization}
+                  product={product}
+                />
+              </React.Fragment>
+            ))}
+          </span>
+        )
       },
     },
   ]

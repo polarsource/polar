@@ -1,5 +1,5 @@
 import { api } from '@/utils/client'
-import { unwrap } from '@polar-sh/client'
+import { schemas, unwrap } from '@polar-sh/client'
 import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -24,6 +24,35 @@ export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
     // Catalogs are published from the CLI, so refetch on every refocus
     staleTime: 0,
     enabled,
+  })
+
+export const useCatalogVersionHashes = (
+  organization: schemas['Organization'],
+) =>
+  useQuery({
+    queryKey: [
+      'catalogs',
+      'version_hashes',
+      { organizationId: organization.id },
+    ],
+    queryFn: async () => {
+      const data = await unwrap(
+        api.GET('/v1/catalogs/', {
+          params: {
+            query: {
+              organization_id: organization.id,
+              status: ['live', 'archived'],
+              limit: 100,
+            },
+          },
+        }),
+      )
+      return new Map(
+        data.items.map(({ id, version_hash }) => [id, version_hash]),
+      )
+    },
+    retry: defaultRetry,
+    enabled: !!organization.feature_settings?.config_as_code_enabled,
   })
 
 export const useCatalogs = (

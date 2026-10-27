@@ -1,0 +1,342 @@
+export default {
+  checkout: {
+    footer: {
+      poweredBy: 'Pokreće',
+      merchantOfRecord:
+        'Ovu narudžbu obrađuje naš online prodavatelj i Merchant of Record, Polar, koji također obrađuje upite o narudžbama i povrate.',
+      mandateSubscriptionTrial:
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati iznos prikazan iznad na kraju probnog razdoblja i na svaki sljedeći datum naplate dok ne otkažete, te prihvaćate {buyerTermsLink}. Možete otkazati u bilo kojem trenutku prije kraja probnog razdoblja kako ne biste bili naplaćeni.',
+      mandateSubscription:
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da odmah naplati na odabrani način plaćanja iznos prikazan iznad te da na svaki sljedeći datum naplate naplati isti iznos dok ne otkažete, te prihvaćate {buyerTermsLink}.',
+      mandateOneTime:
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati iznos prikazan iznad, te prihvaćate {buyerTermsLink}. Riječ je o jednokratnoj naplati.',
+      mandateSubscriptionTrialDiscounted:
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da na odabrani način plaćanja naplati sniženi iznos prikazan iznad na kraju probnog razdoblja te redovitu cijenu na svaki datum naplate nakon isteka popusta, sve dok ne otkažete, te prihvaćate {buyerTermsLink}. Možete otkazati u bilo kojem trenutku prije kraja probnog razdoblja kako ne biste bili naplaćeni.',
+      mandateSubscriptionDiscounted:
+        'Klikom na „{buttonLabel}”, ovlašćujete Polar Software, Inc., našeg online prodavatelja i Merchant of Record, da odmah naplati na odabrani način plaćanja sniženi iznos prikazan iznad i redovitu cijenu na svaki datum naplate nakon isteka popusta, sve dok ne otkažete, te prihvaćate {buyerTermsLink}.',
+      buyerTermsLink: 'Uvjeti kupca',
+    },
+    form: {
+      email: 'E-pošta',
+      cardholderName: 'Ime na kartici',
+      purchasingAsBusiness: 'Kupujem kao tvrtka',
+      businessName: 'Naziv tvrtke',
+      billingDetails: 'Podaci o tvrtki',
+      billingAddress: {
+        label: 'Adresa za naplatu',
+        line1: 'Ulica i kućni broj',
+        line2: 'Broj stana ili jedinice',
+        postalCode: 'Poštanski broj',
+        city: 'Grad',
+        country: 'Zemlja',
+        state: 'Savezna država',
+        province: 'Pokrajina',
+        stateProvince: 'Savezna država / pokrajina',
+      },
+      taxId: 'Porezni ID',
+      discountCode: 'Kod za popust',
+      addDiscountCode: 'Dodaj kod za popust',
+      optional: 'Neobavezno',
+      apply: 'Primijeni',
+      fieldRequired: 'Ovo polje je obavezno',
+    },
+    orderSummary: 'Sažetak narudžbe',
+    pricing: {
+      subtotal: 'Međuzbroj',
+      taxableAmount: 'Oporezivi iznos',
+      taxes: 'PDV',
+      inclTax: 'PDV (uključen)',
+      free: 'Besplatno',
+      payWhatYouWant: 'Platite koliko želite',
+      total: 'Ukupno',
+      everyInterval: {
+        day: {
+          '=1': 'Dnevno',
+          '=2': 'Svaki drugi dan',
+          other: 'Svakih # dana',
+          one: 'Svaki # dan',
+          few: 'Svaka # dana',
+          _mode: 'plural',
+        },
+        week: {
+          '=1': 'Tjedno',
+          '=2': 'Svaka dva tjedna',
+          other: 'Svakih # tjedana',
+          one: 'Svaki # tjedan',
+          few: 'Svaka # tjedna',
+          _mode: 'plural',
+        },
+        month: {
+          '=1': 'Mjesečno',
+          '=2': 'Svaka dva mjeseca',
+          other: 'Svakih # mjeseci',
+          one: 'Svaki # mjesec',
+          few: 'Svaka # mjeseca',
+          _mode: 'plural',
+        },
+        year: {
+          '=1': 'Godišnje',
+          '=2': 'Svake dvije godine',
+          other: 'Svakih # godina',
+          one: 'Svaku # godinu',
+          few: 'Svake # godine',
+          _mode: 'plural',
+        },
+      },
+      additionalMeteredUsage: 'Dodatna mjerena potrošnja',
+      meteredChargesMayApply:
+        'Mogu se primijeniti dodatne naknade za mjerenu potrošnju',
+      meteredIncluded: '{units} uključeno',
+      meterUnits: {
+        token: 'tokena',
+        scalar: 'jedinica',
+      },
+      tiers: {
+        from: 'Od',
+        range: '{from}–{to}',
+        andAbove: '{from}+',
+        volumeExplainer:
+          'Sva potrošnja naplaćuje se po cijeni raspona u koji spada',
+      },
+      dueToday: 'Dospijeva danas',
+      firstPayment: 'Prvo plaćanje',
+      totalAfterTrial: 'Ukupno nakon probnog razdoblja',
+      perSeat: 'po mjestu',
+      basePrice: 'Osnovna cijena',
+      seats: {
+        label: 'Mjesta',
+        numberOfSeats: 'Broj mjesta',
+        count: {
+          '=1': '# mjesto',
+          other: '# mjesta',
+          one: '# mjesto',
+          _mode: 'plural',
+        },
+        included: {
+          '=1': 'Uključeno jedno mjesto',
+          other: '# mjesta uključeno',
+          one: '# mjesto uključeno',
+          few: '# mjesta uključena',
+          _mode: 'plural',
+        },
+        range: '{min} - {max} mjesta',
+        minimum: 'Najmanje {min} mjesta',
+        maximum: 'Najviše {max} mjesta',
+        updateFailed: 'Ažuriranje mjesta nije uspjelo',
+      },
+      perUnit: 'po {unitLabel}',
+      units: {
+        label: '{unitLabelPlural}',
+        numberOfUnits: 'Količina: {unitLabelPlural}',
+        count: {
+          '=1': '# {unitLabel}',
+          other: '# {unitLabelPlural}',
+          _mode: 'plural',
+        },
+        updateFailed: 'Ažuriranje jedinica nije uspjelo',
+      },
+      discount: {
+        until: 'Do {date}',
+      },
+    },
+    trial: {
+      hero: {
+        free: {
+          day: {
+            '=1': '# dan besplatno',
+            other: '# dana besplatno',
+            one: '# dan besplatno',
+            _mode: 'plural',
+          },
+          month: {
+            '=1': '# mjesec besplatno',
+            other: '# mjeseci besplatno',
+            one: '# mjesec besplatno',
+            few: '# mjeseca besplatno',
+            _mode: 'plural',
+          },
+          year: {
+            '=1': '# godinu besplatno',
+            other: '# godina besplatno',
+            one: '# godinu besplatno',
+            few: '# godine besplatno',
+            _mode: 'plural',
+          },
+        },
+        intervalSuffix: {
+          day: '/dan',
+          week: '/tjedan',
+          month: '/mjesec',
+          year: '/godina',
+        },
+        then: 'Zatim',
+        startingDate: 'od {date}',
+        freeUntil: 'Besplatno do {date}',
+      },
+    },
+    pwywForm: {
+      label: 'Odredite pravednu cijenu',
+      minimum: '{amount} minimalno',
+      amountMinimum: 'Iznos mora biti najmanje {min}',
+      amountFreeOrMinimum: 'Iznos mora biti {zero} ili najmanje {min}',
+    },
+    productSwitcher: {
+      billedRecurring: 'Naplaćuje se {frequency}',
+      oneTimePurchase: 'Jednokratna kupnja',
+      fromPrefix: 'Od',
+    },
+    productDescription: {
+      readMore: 'Saznajte više',
+    },
+    benefits: {
+      granting: 'Dodjeljujemo pogodnosti...',
+      requestNewInvite: 'Zatraži novi poziv',
+      retryIn: {
+        '=1': 'Pokušajte ponovno za # sekundu',
+        other: 'Pokušajte ponovno za # sekundi',
+        one: 'Pokušajte ponovno za # sekundu',
+        few: 'Pokušajte ponovno za # sekunde',
+        _mode: 'plural',
+      },
+      connectNewAccount: 'Poveži novi račun',
+      requestMyInvite: 'Zatraži moj poziv',
+      github: {
+        connect: 'Poveži GitHub račun',
+        goTo: 'Idi na {repository}',
+        selectAccount: 'Odaberite GitHub račun',
+      },
+      discord: {
+        connect: 'Poveži Discord račun',
+        open: 'Otvori Discord',
+        selectAccount: 'Odaberite Discord račun',
+      },
+      slackSharedChannel: {
+        connected: 'Povezano s vašim Slack radnim prostorom.',
+        connectedChannel:
+          'Povezano s vašim Slack radnim prostorom u kanalu {channel}.',
+        inviteSent: 'Poziv poslan na {email}.',
+        channel: 'Kanal: {channel}.',
+        openLinkToAccept: 'Otvorite poveznicu za prihvaćanje u Slacku.',
+        acceptFromEmail:
+          'Prihvatite ga iz e-poruke s pozivom ili iz svojih zahtjeva Slack Connect.',
+        openInvite: 'Otvori Slack poziv',
+        provisioning:
+          'Postavljamo vaš Slack kanal za {email}... Poziv bi uskoro trebao stići u vaš sandučić.',
+        setupFailed:
+          'Nismo uspjeli postaviti vaš Slack kanal s adresom {email}. Provjerite adresu i pokušajte ponovo ili se obratite prodavatelju ako problem ostane.',
+        enterEmail:
+          'Unesite e-adresu administratora u svom Slack radnom prostoru. Primit će poziv za Slack Connect za privatni kanal.',
+        emailPlaceholder: 'slack-admin@yourcompany.com',
+        tryAgain: 'Pokušaj ponovo',
+        requestInvite: 'Zatraži Slack poziv',
+      },
+      licenseKey: {
+        copy: 'Kopiraj',
+        copiedToClipboard: 'Kopirano u međuspremnik',
+        copiedToClipboardDescription: 'Ključ licence kopiran je u međuspremnik',
+        loading: 'Učitavanje...',
+        status: 'Status',
+        statusGranted: 'Odobreno',
+        statusRevoked: 'Opozvano',
+        statusDisabled: 'Onemogućeno',
+        usage: 'Upotreba',
+        validations: 'Provjere valjanosti',
+        validatedAt: 'Provjereno',
+        neverValidated: 'Nikad provjereno',
+        expiryDate: 'Datum isteka',
+        noExpiry: 'Bez isteka',
+        activations: 'Aktivacije',
+        activationDeleted: 'Aktivacija ključa licence izbrisana',
+        activationDeletedDescription: 'Aktivacija je uspješno izbrisana',
+        activationDeactivationFailed: 'Deaktivacija aktivacije nije uspjela',
+      },
+    },
+    confirmation: {
+      confirmPayment: 'Potvrdi plaćanje',
+      processingTitle: 'Obrađujemo vašu narudžbu',
+      successTitle: 'Hvala na narudžbi!',
+      failedTitle: 'Došlo je do problema pri obradi vaše narudžbe',
+      processingDescription: 'Pričekajte dok potvrdimo vaše plaćanje.',
+      successDescription: 'Sada imate pristup proizvodu {product}.',
+      failedDescription: 'Pokušajte ponovo ili kontaktirajte podršku.',
+    },
+    loading: {
+      processingOrder: 'Obrada narudžbe...',
+      processingPayment: 'Obrada plaćanja',
+      paymentSuccessful: 'Plaćanje je uspjelo! Pripremamo vaše proizvode...',
+      confirmationTokenFailed:
+        'Stvaranje potvrdnog tokena nije uspjelo. Pokušajte ponovo kasnije.',
+      paymentNotCompleted: 'Plaćanje nije dovršeno. Pokušajte ponovo.',
+      paymentFormNotLoaded:
+        'Obrazac za plaćanje nije se učitao. Osvježite stranicu i pokušajte ponovo.',
+    },
+    cta: {
+      startTrial: 'Započni probno razdoblje',
+      subscribeNow: 'Pretplatite se',
+      payNow: 'Plati sada',
+      getFree: 'Nabavi besplatno',
+      paymentsUnavailable: 'Plaćanja trenutno nisu dostupna',
+    },
+    trialUnavailable: {
+      title: 'Nema besplatnog probnog razdoblja za ovu kupnju',
+      description:
+        'Već ste iskoristili besplatno probno razdoblje za ovaj proizvod, pa ćete danas biti naplaćeni. Nastavite u nastavku da dovršite kupnju.',
+    },
+  },
+  intervals: {
+    short: {
+      day: {
+        '=1': 'd',
+        other: '# d',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'tj',
+        other: '# tj',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'mj',
+        other: '# mj',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'god.',
+        other: '# god.',
+        _mode: 'plural',
+      },
+    },
+  },
+  benefitTypes: {
+    license_keys: 'Ključevi licenci',
+    github_repository: 'Pristup GitHub repozitoriju',
+    discord: 'Discord poziv',
+    downloadables: 'Preuzimanja datoteka',
+    custom: 'Prilagođeno',
+    meter_credit: 'Mjerni krediti',
+    feature_flag: 'Oznaka značajke',
+    slack_shared_channel: 'Zajednički Slack kanal',
+  },
+  ordinal: {
+    zero: '',
+    one: '.',
+    two: '.',
+    few: '.',
+    many: '',
+    other: '.',
+  },
+  embedPaymentMethod: {
+    title: 'Dodaj način plaćanja',
+    close: 'Zatvori',
+    submit: 'Dodaj način plaćanja',
+    processing: 'Dodavanje načina plaćanja…',
+    fallbackError: 'Nešto je pošlo po krivu. Pokušajte ponovo.',
+    errors: {
+      invalidRequest: 'Nedostaju obavezni parametri.',
+      unauthorized: 'Sesija je istekla.',
+      processingFailed:
+        'Način plaćanja nije moguće obraditi. Pokušajte ponovo.',
+      unknown: 'Nešto je pošlo po krivu.',
+    },
+  },
+} as const

@@ -45,6 +45,7 @@ from polar.meter.unit import MeterUnit
 from polar.models import (
     Agent,
     Customer,
+    Member,
     Organization,
     ProductPriceFixed,
     ProductPriceMeteredTiers,
@@ -2964,6 +2965,7 @@ class TestCatalogVersioning:
         auth_subject: AuthSubject[Organization],
         organization: Organization,
         customer: Customer,
+        member_owner: Member,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
         pro = {**MONTHLY_PRO, "benefits": ["beta"]}
@@ -3058,6 +3060,7 @@ class TestCatalogVersioning:
             customer,
             old_benefit,
             granted=True,
+            member=member_owner,
             subscription=subscription,
         )
 

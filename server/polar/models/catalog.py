@@ -46,6 +46,13 @@ class Catalog(RecordModel):
         String(64), nullable=True, default=None
     )
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    parent_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("catalogs.id", ondelete="set null"),
+        nullable=True,
+        default=None,
+        index=True,
+    )
     status: Mapped[CatalogStatus] = mapped_column(
         StringEnum(CatalogStatus), nullable=False
     )
@@ -56,3 +63,7 @@ class Catalog(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def parent(cls) -> Mapped["Catalog | None"]:
+        return relationship("Catalog", remote_side="Catalog.id", lazy="raise")

@@ -450,42 +450,49 @@ describe('formatTree', () => {
   })
 
   test('redacts both sides of an updated webhook url by their own format', () => {
-    const after = 'https://app:pw@app.test/hook?token=new'
-    const output = stripAnsi(
-      formatTree(
-        {
-          webhooks: [
-            {
-              external_id: 'app',
-              url: after,
-              format: 'raw',
-              events: ['order.paid'],
-              api_version: '2027-01',
-            },
+    const stdout: { columns?: number | undefined } = process.stdout
+    const columns = stdout.columns
+    stdout.columns = 80
+    try {
+      const after = 'https://app:pw@app.test/hook?token=new'
+      const output = stripAnsi(
+        formatTree(
+          {
+            webhooks: [
+              {
+                external_id: 'app',
+                url: after,
+                format: 'raw',
+                events: ['order.paid'],
+                api_version: '2027-01',
+              },
+            ],
+          },
+          [
+            entry('webhooks', 'app', 'updated', [
+              {
+                field: 'url',
+                before: 'https://hooks.slack.com/services/T0/B0/token',
+                after,
+              },
+              { field: 'format', before: 'slack', after: 'raw' },
+            ]),
           ],
-        },
+        ),
+      )
+      expect(output).toBe(
         [
-          entry('webhooks', 'app', 'updated', [
-            {
-              field: 'url',
-              before: 'https://hooks.slack.com/services/T0/B0/token',
-              after,
-            },
-            { field: 'format', before: 'slack', after: 'raw' },
-          ]),
-        ],
-      ),
-    )
-    expect(output).toBe(
-      [
-        '  webhooks',
-        '  ~ app',
-        '      url',
-        '        - https://hooks.slack.com/***',
-        '        + https://***@app.test/hook?token=***',
-        '      format  "slack" → "raw"',
-      ].join('\n'),
-    )
+          '  webhooks',
+          '  ~ app',
+          '      url',
+          '        - https://hooks.slack.com/***',
+          '        + https://***@app.test/hook?token=***',
+          '      format  "slack" → "raw"',
+        ].join('\n'),
+      )
+    } finally {
+      stdout.columns = columns
+    }
   })
 
   test('falls back to ids when the config has no matching entry', () => {

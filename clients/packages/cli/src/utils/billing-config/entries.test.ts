@@ -3,7 +3,6 @@ import {
   formatRows,
   lineDiff,
   planSummary,
-  planTally,
   tally,
 } from '@/utils/billing-config/entries'
 import { stripAnsi } from '@/utils/test-utils/cli'

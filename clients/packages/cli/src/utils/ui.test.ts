@@ -97,7 +97,7 @@ describe('ui', () => {
   describe('box', () => {
     test('wraps long lines with a hanging indent and keeps colors', () => {
       const colors = pc.createColors(true)
-      const long = `  catalog  ${colors.red(`"${'a'.repeat(90)}"`)} → "b"`
+      const long = `  catalog  ${colors.red(`"${'a'.repeat(130)}"`)} → "b"`
       const rows = ui.box(long).split('\n')
       expect(rows.length).toBeGreaterThan(3)
       for (const row of rows.slice(1, -1)) {

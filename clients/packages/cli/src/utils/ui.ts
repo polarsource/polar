@@ -55,12 +55,16 @@ const CLOSES: Record<string, (code: number) => boolean> = {
   '49': (code) => (code >= 40 && code <= 47) || (code >= 100 && code <= 107),
 }
 
+const GRAPHEMES = new Intl.Segmenter()
+
 export const inset = `${INDENT} ${INDENT}`
 
 export const heading = (title: string) => `${INDENT}${pc.bold(title)}`
 
+const BOX_MINIMUM = 20
+
 export const boxInner = () =>
-  Math.min(process.stdout.columns || 80, BOX_WIDTH) - 4
+  Math.max(Math.min(process.stdout.columns || 80, BOX_WIDTH) - 4, BOX_MINIMUM)
 
 const wrap = (line: string, width: number) => {
   const hanging = `${line.match(/^\s*/)?.[0] ?? ''}${INDENT}`
@@ -91,7 +95,7 @@ const wrap = (line: string, width: number) => {
       row += token
       continue
     }
-    for (const character of token) {
+    for (const { segment: character } of GRAPHEMES.segment(token)) {
       const size = Bun.stringWidth(character)
       if (used + size > limit) {
         if (space) {

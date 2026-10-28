@@ -302,7 +302,13 @@ class DeclarativeConfigService:
         if catalog_after is not None and catalog_after != catalog_before:
             catalog = ConfigCatalogPlan(
                 before=None if live is None else ConfigCatalog.model_validate(live),
-                name=config.catalog_name,
+                name=config.catalog_name
+                if config.catalog_name is not None
+                else await catalog_service.get_default_name(
+                    session,
+                    organization,
+                    after_baseline=live is None and catalog_before is not None,
+                ),
             )
             catalogs.add_catalog_diffs(
                 product_changes,

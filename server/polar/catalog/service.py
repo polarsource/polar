@@ -112,6 +112,24 @@ class CatalogService:
             return before, before
         return before, compute_version_hash(before, {**entries, **definitions})
 
+    async def get_default_name(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        *,
+        after_baseline: bool = False,
+    ) -> str:
+        """Name the next catalog `v{n}`, n being its position in the organization's
+        history. Soft-deleted catalogs still count, so n never goes backwards.
+
+        Create the catalog under `CatalogRepository.lock`, or two concurrent
+        publishes can get the same n.
+        """
+        count = await CatalogRepository.from_session(session).count_by_organization(
+            organization.id
+        )
+        return f"v{count + (2 if after_baseline else 1)}"
+
     async def get_or_create_live(
         self, session: AsyncSession, organization: Organization
     ) -> Catalog | None:
@@ -129,6 +147,7 @@ class CatalogService:
         catalog = await repository.create(
             Catalog(
                 organization=organization,
+                name=await self.get_default_name(session, organization),
                 version_hash=compute_version_hash(
                     None,
                     {
@@ -182,7 +201,9 @@ class CatalogService:
         catalog = await repository.create(
             Catalog(
                 organization=organization,
-                name=name,
+                name=name
+                if name is not None
+                else await self.get_default_name(session, organization),
                 version_hash=version_hash,
                 status=CatalogStatus.live,
                 published_at=utc_now(),

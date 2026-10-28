@@ -356,7 +356,11 @@ class Config(Schema):
         min_length=1,
         max_length=256,
         description=(
-            "Name of the catalog version this apply publishes, if it publishes one."
+            "Name of the catalog version this apply publishes, if it publishes one. "
+            "Defaults to `v{n}`, n being the version's position in the "
+            "organization's catalog history. Numbers never go backwards: "
+            "applying an older config again publishes a new version with the "
+            "next number."
         ),
     )
 
@@ -475,7 +479,7 @@ class ConfigCatalogPlan(Schema):
             "`None` if the organization has no catalog yet."
         )
     )
-    name: str | None = Field(description="Name of the catalog applying publishes.")
+    name: str = Field(description="Name of the catalog applying publishes.")
 
 
 class ConfigApplyResult(Schema):

@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -32,6 +32,14 @@ class CatalogRepository(
             Catalog.status == CatalogStatus.live,
         )
         return await self.get_one_or_none(statement)
+
+    async def count_by_organization(self, organization_id: UUID) -> int:
+        """Count the organization's catalogs, soft-deleted ones included."""
+        statement = select(func.count(Catalog.id)).where(
+            Catalog.organization_id == organization_id
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
 
     async def get_version_hashes(self, ids: Sequence[UUID]) -> dict[UUID, str | None]:
         statement = select(Catalog.id, Catalog.version_hash).where(Catalog.id.in_(ids))

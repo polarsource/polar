@@ -1,5 +1,6 @@
 from collections.abc import AsyncGenerator, Mapping, Sequence
 from dataclasses import replace
+from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
 
@@ -38,6 +39,7 @@ from polar.models import (
     MerchantMigrationSourcePlatform,
     PaymentMethod,
 )
+from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
 from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationSelection,
 )
@@ -120,6 +122,21 @@ class MerchantMigrationRepository(
         ops changed while it was working. Not `get_by_id(for_update=True)`: that
         takes the lock but keeps the stale attributes already in the session."""
         await self.session.refresh(migration, with_for_update=True)
+
+    async def list_idle_ids(self, idle_since: datetime) -> Sequence[UUID]:
+        statement = (
+            select(MerchantMigration.id)
+            .where(
+                MerchantMigration.deleted_at.is_(None),
+                MerchantMigration.step.not_in(MERCHANT_MIGRATION_FINISHED_STEPS),
+                func.coalesce(
+                    MerchantMigration.modified_at, MerchantMigration.created_at
+                )
+                < idle_since,
+            )
+            .order_by(MerchantMigration.created_at)
+        )
+        return (await self.session.scalars(statement)).all()
 
     def get_ops_statement(self) -> Select[tuple[MerchantMigration]]:
         """Every migration across every organization, newest first.
@@ -917,6 +934,26 @@ class MerchantMigrationRecordRepository(
                 MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
             )
         )
+
+    async def delete_pending_batch(self, migration_id: UUID, *, batch_size: int) -> int:
+        # Postgres has no `DELETE ... LIMIT`, so the batch is bounded by a subquery.
+        batch = (
+            select(MerchantMigrationRecord.id)
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+            )
+            .limit(batch_size)
+        )
+        result = cast(
+            CursorResult[Any],
+            await self.session.execute(
+                delete(MerchantMigrationRecord).where(
+                    MerchantMigrationRecord.id.in_(batch)
+                )
+            ),
+        )
+        return result.rowcount
 
     def _restore_subscription_tax(
         self,

@@ -212,7 +212,7 @@ class TestList:
 
         assert response.status_code == 200
         assert organization.name in response.text
-        assert "Step 7 of 7" in response.text
+        assert "Step 6 of 6" in response.text
         assert "Done" in response.text
         assert "No migrations in this view." not in response.text
         assert "close the migration out" not in response.text

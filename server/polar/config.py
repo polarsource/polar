@@ -110,6 +110,7 @@ class Settings(BaseSettings):
     SLACK_BOT_TOKEN: str | None = None
     SLACK_CHANNEL: str | None = None
     MERCHANT_MIGRATION_SLACK_CHANNEL: str = "C0B76J9KR8F"
+    MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD: timedelta = timedelta(days=90)
 
     # SLO Report
     SLO_REPORT_ENABLED: bool = True

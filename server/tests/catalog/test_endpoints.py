@@ -174,7 +174,11 @@ class TestGet:
 
         assert response.status_code == 404
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
     async def test_valid(
         self,

@@ -1559,6 +1559,59 @@ class TestLogCustomerMeterComparison:
         assert span.attributes["match"] is False
         assert span.attributes["aggregation"] == "count"
 
+    async def test_logs_unsealed_credits(
+        self,
+        capfire: CaptureLogfire,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        customer: Customer,
+        customer_meter: CustomerMeter,
+    ) -> None:
+        credit = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[customer_meter.meter],
+            kind=ReducerKind.credit,
+        )
+        for bucket_start, units, sealed_at in (
+            (BUCKET_START, 100, CLOSED),
+            (NEXT_BUCKET_START, 7, None),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=credit,
+                    customer_id=customer.id,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + REDUCER_BUCKET_SIZE,
+                    count=1,
+                    sum=Decimal(units),
+                    sealed_at=sealed_at,
+                )
+            )
+        mocker.patch.object(
+            reducer_service, "get_customer_value", return_value=Decimal(5)
+        )
+
+        await reducer_service.log_customer_meter_comparison(
+            session, redis, customer_meter
+        )
+
+        [span] = [
+            span
+            for span in capfire.exporter.exported_spans
+            if span.name == "Compare customer meter with reducer"
+            and span.attributes is not None
+            and span.attributes.get("logfire.span_type") == "span"
+        ]
+        assert span.attributes is not None
+        assert span.attributes["legacy_credited"] == "0"
+        assert span.attributes["reducer_credited"] == "7"
+        assert span.attributes["credited_match"] is False
+
     async def test_swallows_failure(
         self,
         mocker: MockerFixture,

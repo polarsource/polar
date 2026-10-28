@@ -14,7 +14,6 @@ from polar.agent.identity_assertion import (
     decode_identity_assertion,
 )
 from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
-from polar.config import settings
 from polar.kit import jwt
 from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import Session
@@ -27,26 +26,8 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_agent
 
 
-@pytest.fixture
-def agent_sign_up_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "AGENT_SIGN_UP_ENABLED", True)
-
-
 @pytest.mark.anyio
 class TestJWTBearerGrant:
-    async def test_disabled(self, client: AsyncClient, agent: Agent) -> None:
-        response = await client.post(
-            "/v1/oauth2/token",
-            data={
-                "grant_type": JWT_BEARER_GRANT_TYPE,
-                "assertion": create_identity_assertion(agent.id).token,
-            },
-        )
-
-        assert response.status_code == 400
-        assert response.json()["error"] == "unsupported_grant_type"
-
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_valid(
         self, client: AsyncClient, sync_session: Session, agent: Agent
     ) -> None:
@@ -79,7 +60,6 @@ class TestJWTBearerGrant:
         assert token.client_id == agent.oauth2_client.client_id
         assert token.refresh_token is None
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_tampered_signature(
         self, save_fixture: SaveFixture, client: AsyncClient, agent: Agent
     ) -> None:
@@ -98,7 +78,6 @@ class TestJWTBearerGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     @pytest.mark.parametrize(
         ("type", "claims", "expires_in"),
         [
@@ -155,7 +134,6 @@ class TestJWTBearerGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_unknown_agent(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/oauth2/token",
@@ -168,7 +146,6 @@ class TestJWTBearerGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     @pytest.mark.parametrize(
         "agent_fields",
         [
@@ -195,7 +172,6 @@ class TestJWTBearerGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_claimed_agent(
         self,
         save_fixture: SaveFixture,
@@ -239,7 +215,6 @@ class TestJWTBearerGrant:
         assert token.user_id == user.id
         assert token.client_id == agent.oauth2_client.client_id
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     async def test_claimed_agent_assertion_before_claim(
         self, save_fixture: SaveFixture, client: AsyncClient, user: User
     ) -> None:
@@ -262,7 +237,6 @@ class TestJWTBearerGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     @pytest.mark.parametrize("user_field", ["deleted_at", "blocked_at"])
     async def test_claiming_user_cannot_authenticate(
         self,
@@ -291,7 +265,6 @@ class TestJWTBearerGrant:
         assert response.status_code == 400
         assert response.json()["error"] == "invalid_grant"
 
-    @pytest.mark.usefixtures("agent_sign_up_enabled")
     @pytest.mark.parametrize("credentials", ["form", "basic"])
     async def test_other_agent_client(
         self,

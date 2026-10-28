@@ -94,10 +94,10 @@ describe('polar config prune', () => {
     const { output, removed, exit } = await run([apples, beta], ['--confirm'])
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(removed).toBe(1)
-    expect(output).toContain('╭─ Deprecated')
-    expect(output).toContain('│ meters\n  │ - apples')
-    expect(output).toContain(
-      '│ benefits\n  │ = beta  has customers, used by legacy',
+    expect(output).toMatch(/ {2}Deprecated Acme \(sandbox\)\n {2}╭─+╮\n/)
+    expect(output).toMatch(/│ {2}meters *│\n {2}│ {2}- apples *│\n/)
+    expect(output).toMatch(
+      /│ {2}benefits *│\n {2}│ {2}= beta {2}has customers, used by legacy *│\n/,
     )
     expect(output).toContain(
       'polar.json: 1 entry removed, nothing changed on Polar',

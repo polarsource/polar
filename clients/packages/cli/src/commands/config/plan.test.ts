@@ -82,36 +82,32 @@ const run = async (result: PlanResult, args: string[] = []) => {
   return { output: stripAnsi(cli.output()), failed: exit._tag === 'Failure' }
 }
 
+const TREE =
+  /│ {2}\+ tool-calls *│\n *│ {6}events {7}all events *│\n *│ {6}aggregation {2}count *│/
+
 describe('polar config plan', () => {
   test('shows the changes and succeeds with warnings', async () => {
     const { output, failed } = await run({ entries, issues: [warning] })
     expect(failed).toBe(false)
-    expect(output).toContain(
-      [
-        '  ╭─ Changes Acme (sandbox)',
-        '  │',
-        '  │ meters',
-        '  │ + tool-calls',
-        '  │     events       all events',
-        '  │     aggregation  count',
-        '  │',
-        '  ╰─',
-      ].join('\n'),
+    expect(output).toMatch(
+      /Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Issues {8}1 warning *│\n {2}╰─+╯\n\n {2}Next\n {2}╭─+╮\n *│ {2}Run polar config apply to apply it\. *│\n {2}╰─+╯\n$/,
     )
+    expect(output).toMatch(TREE)
     expect(output).toContain(
       'Warning: No events named "tool_call" have been received yet',
     )
-    expect(output).toContain('Found 0 errors and 1 warning.')
+    expect(output).toContain('Issues        1 warning')
     expect(output).toMatch(
-      /^ {2}Reading {4}polar\.json\n {2}Found {6}1 meter\n {2}Comparing {2}\d+ms$/m,
+      /^ {2}Preflight\n {2}╭─+╮\n {2}│ {2}Reading {4}polar\.json *│\n {2}│ {2}Found {6}1 meter *│\n {2}│ {2}Comparing {2}\d+ms *│\n {2}╰─+╯$/m,
     )
   })
 
   test('reports a config that can be applied as is', async () => {
     const { output, failed } = await run({ entries, issues: [] })
     expect(failed).toBe(false)
-    expect(output).toContain(
-      'Plan: 0 to change, 1 to add, 0 unchanged\n  Run polar config apply to apply it.',
+    expect(output).toContain('Changes       0 to change, 1 to add, 0 unchanged')
+    expect(output).toMatch(
+      /│ {2}Run polar config apply to apply it\. *│\n {2}╰─+╯\n$/,
     )
   })
 
@@ -121,12 +117,13 @@ describe('polar config plan', () => {
       issues: [locked, warning],
     })
     expect(failed).toBe(true)
-    expect(output).toContain(
-      '  │ + tool-calls\n  │     events       all events\n  │     aggregation  count',
-    )
+    expect(output).toMatch(TREE)
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
     expect(output).toContain('Warning:')
-    expect(output).toContain('Found 1 error and 1 warning.')
+    expect(output).toContain('Issues        1 error, 1 warning')
+    expect(output).toContain(
+      'Fix the error above, then run polar config plan again.',
+    )
   })
 
   test('skips --pr-comment outside a pull request', async () => {

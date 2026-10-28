@@ -178,14 +178,17 @@ describe('polar config apply', () => {
     )
     expect(failed).toBe(false)
     expect(applied).toBe(1)
-    expect(output).toContain(
-      '  │ + tool-calls\n  │     events       all events\n  │     aggregation  count',
+    expect(output).toMatch(
+      /╯\n\n {2}Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 1 unchanged *│\n *│ {2}Issues {8}none *│\n {2}╰─+╯\n\n {2}Apply\n/,
+    )
+    expect(output).toMatch(
+      /│ {2}\+ tool-calls *│\n *│ {6}events {7}all events *│\n *│ {6}aggregation {2}count *│/,
     )
     expect(output).toContain(
       'polar.json applied to Acme (sandbox): 2 entries (1 created, 0 updated, 1 unchanged)',
     )
     expect(output).toMatch(
-      /╰─\n\n {2}Applying 1 change \(\d+ms\)\n {2}polar\.json applied to Acme/,
+      /╯\n\n {2}Apply\n {2}╭─+╮\n {2}│ {2}Applying 1 change \(\d+ms\) *│\n {2}╰─+╯\n {2}polar\.json applied to Acme/,
     )
   })
 
@@ -211,7 +214,7 @@ describe('polar config apply', () => {
     )
     expect(applied).toBe(0)
     expect(output).toContain('+ tool-calls')
-    expect(terminal).toContain('Apply these changes to Acme (sandbox)?')
+    expect(terminal).toContain('y to apply  n to cancel')
     expect(message(exit)).toBe('Apply cancelled, nothing changed')
   })
 
@@ -233,7 +236,7 @@ describe('polar config apply', () => {
       { status: 'applied', entries: [created] },
     )
     expect(applied).toBe(0)
-    expect(terminal).not.toContain('Apply these changes')
+    expect(terminal).not.toContain('y to apply')
     expect(output).toContain('+ tool-calls')
     expect(message(exit)).toBe('Confirmation needed to apply to Acme (sandbox)')
   })
@@ -315,7 +318,8 @@ describe('polar config apply', () => {
     expect(failed).toBe(true)
     expect(applied).toBe(0)
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
-    expect(output).toContain('Found 1 error.')
+    expect(output).toContain('Issues        1 error')
+    expect(output).toContain('Fix the error above')
     expect(output).not.toContain('applied')
   })
 })

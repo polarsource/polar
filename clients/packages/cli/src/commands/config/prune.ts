@@ -11,7 +11,7 @@ import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { plural } from '@/utils/billing-config/problems'
 import { removable } from '@/utils/billing-config/prune'
-import { NOUNS, box, found, target } from '@/utils/billing-config/review'
+import { NOUNS, found, section, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
@@ -65,10 +65,7 @@ const report = (
   })
   return groups.length === 0
     ? []
-    : [
-        ui.blank,
-        box(`Deprecated ${ui.dim(target(organization))}`, groups.join('\n\n')),
-      ]
+    : section(`Deprecated ${ui.dim(target(organization))}`, groups.join('\n\n'))
 }
 
 const interactive = Effect.gen(function* () {
@@ -163,6 +160,7 @@ export const prune = Command.make('prune', { file, org, confirmed }).pipe(
         return yield* withProgress(
           (progress) =>
             Effect.gen(function* () {
+              yield* progress.open('Preflight')
               yield* progress.start('Reading')
               const config = yield* billing.load(Option.getOrUndefined(file))
               yield* progress.finish(config.file)
@@ -174,6 +172,7 @@ export const prune = Command.make('prune', { file, org, confirmed }).pipe(
                 Effect.flatMap((now) =>
                   progress.finish(`${now - startedAt}ms`),
                 ),
+                Effect.andThen(progress.close),
               )
               const organization = yield* (yield* Organizations).resolve(
                 Option.getOrUndefined(org),

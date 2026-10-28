@@ -11,6 +11,7 @@ from polar.integrations.aws.s3.exceptions import (
     S3MultipartUploadInvalidRequest,
     S3MultipartUploadMissingPartChecksum,
     S3MultipartUploadNotFound,
+    S3MultipartUploadPartTooSmall,
 )
 from polar.integrations.aws.s3.schemas import (
     S3FileUploadCompleted,
@@ -126,6 +127,11 @@ class TestCompleteMultipartUpload:
                 S3MultipartUploadInvalidPart,
             ),
             (
+                "EntityTooSmall",
+                "Your proposed upload is smaller than the minimum allowed size",
+                S3MultipartUploadPartTooSmall,
+            ),
+            (
                 "InvalidRequest",
                 "The upload was created using a sha256 checksum. The complete request must include the checksum for each part. It was missing for part 1 in the request.",
                 S3MultipartUploadMissingPartChecksum,
@@ -167,6 +173,25 @@ class TestCompleteMultipartUpload:
             S3Service(bucket="bucket", client=client).complete_multipart_upload(
                 self.completed
             )
+
+    def test_invalid_part_checksum(self) -> None:
+        client = MagicMock()
+        completed = S3FileUploadCompleted(
+            id="upload-id",
+            path="path/file.pdf",
+            parts=[
+                S3FileUploadCompletedPart(
+                    number=1, checksum_etag="etag", checksum_sha256_base64="abc"
+                )
+            ],
+        )
+
+        with pytest.raises(S3MultipartUploadInvalidRequest):
+            S3Service(bucket="bucket", client=client).complete_multipart_upload(
+                completed
+            )
+
+        client.complete_multipart_upload.assert_not_called()
 
     def test_unexpected_client_error(self) -> None:
         client = MagicMock()

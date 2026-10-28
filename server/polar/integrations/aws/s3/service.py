@@ -1,4 +1,5 @@
 import base64
+import binascii
 import hashlib
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, cast
@@ -20,6 +21,7 @@ from .exceptions import (
     S3MultipartUploadInvalidRequest,
     S3MultipartUploadMissingPartChecksum,
     S3MultipartUploadNotFound,
+    S3MultipartUploadPartTooSmall,
 )
 from .schemas import (
     S3File,
@@ -225,7 +227,12 @@ class S3Service:
         return cast(dict[str, Any], head)
 
     def complete_multipart_upload(self, data: S3FileUploadCompleted) -> S3File:
-        boto_arguments = data.get_boto3_arguments()
+        try:
+            boto_arguments = data.get_boto3_arguments()
+        except binascii.Error as exc:
+            raise S3MultipartUploadInvalidRequest(
+                "Part `checksum_sha256_base64` must be valid base64."
+            ) from exc
         try:
             response = self.client.complete_multipart_upload(
                 Bucket=self.bucket, Key=data.path, **boto_arguments
@@ -255,6 +262,8 @@ class S3Service:
             return S3MultipartUploadNotFound(message)
         if code in {"InvalidPart", "InvalidPartOrder"}:
             return S3MultipartUploadInvalidPart(message)
+        if code == "EntityTooSmall":
+            return S3MultipartUploadPartTooSmall(message)
         if code == "InvalidRequest" and "checksum" in message.lower():
             return S3MultipartUploadMissingPartChecksum(message)
         if code in {"InvalidRequest", "MalformedXML"}:

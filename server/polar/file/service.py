@@ -16,6 +16,7 @@ from polar.integrations.aws.s3.exceptions import (
     S3MultipartUploadInvalidRequest,
     S3MultipartUploadMissingPartChecksum,
     S3MultipartUploadNotFound,
+    S3MultipartUploadPartTooSmall,
 )
 from polar.integrations.aws.s3.schemas import S3File
 from polar.kit.pagination import PaginationParams
@@ -173,6 +174,12 @@ class FileService:
                 "One or more parts are invalid. Every part must have been uploaded, "
                 "be listed in ascending `number` order, and its `checksum_etag` "
                 "must be the `ETag` header returned by that part's upload."
+            ) from e
+        except S3MultipartUploadPartTooSmall as e:
+            raise BadRequest(
+                "One or more parts are too small. Every part except the last "
+                "must be at least 5 MiB; split the file as given in `upload.parts` "
+                "of the create file response."
             ) from e
         except S3MultipartUploadMissingPartChecksum as e:
             raise BadRequest(

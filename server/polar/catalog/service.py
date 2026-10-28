@@ -122,8 +122,8 @@ class CatalogService:
         """Name the next catalog `v{n}`, n being its position in the organization's
         history. Soft-deleted catalogs still count, so n never goes backwards.
 
-        Create the catalog under `CatalogRepository.lock`, or two concurrent
-        publishes can get the same n.
+        `get_or_create_live` and `publish` take `CatalogRepository.lock` before
+        naming a catalog, so concurrent publishes can't get the same n.
         """
         count = await CatalogRepository.from_session(session).count_by_organization(
             organization.id
@@ -134,6 +134,7 @@ class CatalogService:
         self, session: AsyncSession, organization: Organization
     ) -> Catalog | None:
         repository = CatalogRepository.from_session(session)
+        await repository.lock(organization.id)
         live = await repository.get_live(organization.id)
         if live is not None:
             return live
@@ -182,6 +183,7 @@ class CatalogService:
         name: str | None = None,
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
+        await repository.lock(organization.id)
         catalog_product_repository = CatalogProductRepository.from_session(session)
 
         members = (

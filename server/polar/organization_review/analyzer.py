@@ -862,7 +862,7 @@ class ReviewAnalyzer:
             for url in setup.checkout_success_urls.unique_urls:
                 parts.append(f"  - {url}")
             parts.append(
-                f"Success URL Domains: {_annotate_domains(setup.checkout_success_urls.domains)}"
+                f"Success URL Domains: {_annotate_domains(setup.checkout_success_urls.domains, snapshot.verified_domains)}"
             )
             if setup.checkout_success_urls.redirect_results:
                 redirected = [
@@ -887,7 +887,7 @@ class ReviewAnalyzer:
             for url in setup.checkout_return_urls.unique_urls:
                 parts.append(f"  - {url}")
             parts.append(
-                f"Return URL Domains: {_annotate_domains(setup.checkout_return_urls.domains)}"
+                f"Return URL Domains: {_annotate_domains(setup.checkout_return_urls.domains, snapshot.verified_domains)}"
             )
             if setup.checkout_return_urls.redirect_results:
                 redirected = [

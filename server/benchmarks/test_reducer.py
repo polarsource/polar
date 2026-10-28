@@ -5,11 +5,11 @@ from decimal import Decimal
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import Event, Organization, Reducer, ReducerBucket
+from polar.models import Customer, Event, Organization, Reducer, ReducerBucket
 from polar.models.event import EventSource
 from polar.redis import Redis
 from polar.reducer.service import (
@@ -18,9 +18,14 @@ from polar.reducer.service import (
 )
 from polar.reducer.service import reducer as reducer_service
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import METER_TEST_EVENT, create_meter, create_reducer
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_customer,
+    create_meter,
+    create_reducer,
+)
 
-from .conftest import Run
+from .conftest import Run, create_metered_reducer
 
 pytestmark = pytest.mark.benchmark
 
@@ -51,12 +56,7 @@ def test_rollup_100_events(
 ) -> None:
     async def seed() -> None:
         for _ in range(reducers):
-            meter = await create_meter(
-                save_fixture, organization=organization, id=uuid.uuid4()
-            )
-            await create_reducer(
-                save_fixture, organization=organization, meters=[meter]
-            )
+            await create_metered_reducer(session, save_fixture, organization)
 
     run(seed())
     events = build_events(organization, 100)
@@ -77,11 +77,7 @@ def test_rollup_100_customers(
     save_fixture: SaveFixture,
     organization: Organization,
 ) -> None:
-    async def seed() -> None:
-        meter = await create_meter(save_fixture, organization=organization)
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
-
-    run(seed())
+    run(create_metered_reducer(session, save_fixture, organization))
     now = datetime.now(UTC)
     events = [
         Event(
@@ -109,11 +105,7 @@ def test_rollup_100_events_into_closed_buckets(
     save_fixture: SaveFixture,
     organization: Organization,
 ) -> None:
-    async def seed() -> None:
-        meter = await create_meter(save_fixture, organization=organization)
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
-
-    run(seed())
+    run(create_metered_reducer(session, save_fixture, organization))
     closed = get_reducer_bucket_start(utc_now()) - 2 * REDUCER_BUCKET_SIZE
     events = [
         Event(
@@ -230,3 +222,80 @@ def test_cold_usage(
     assert cold_until == newest_start + REDUCER_BUCKET_SIZE
     assert totals.count == 10 * buckets
     benchmark(read)
+
+
+# A reset after a day of usage: splits the slot it falls in and seals the day.
+def test_seal_288_buckets(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    newest_start = get_reducer_bucket_start(utc_now()) - REDUCER_BUCKET_SIZE
+    since = newest_start - 287 * REDUCER_BUCKET_SIZE
+    at = newest_start + REDUCER_BUCKET_SIZE / 2
+
+    async def seed() -> tuple[Customer, uuid.UUID]:
+        reducer = await create_metered_reducer(session, save_fixture, organization)
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="customer"
+        )
+        session.add_all(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                customer_id=customer.id,
+                bucket_start=since + index * REDUCER_BUCKET_SIZE,
+                bucket_end=since + (index + 1) * REDUCER_BUCKET_SIZE,
+                count=10,
+                sum=Decimal(100),
+                min=Decimal(1),
+                max=Decimal(50),
+                synced_at=utc_now(),
+            )
+            for index in range(288)
+        )
+        # The slot the reset splits is recomputed from its events.
+        session.add_all(
+            Event(
+                name=METER_TEST_EVENT,
+                timestamp=newest_start + timedelta(seconds=index),
+                organization_id=organization.id,
+                customer_id=customer.id,
+                source=EventSource.user,
+            )
+            for index in range(10)
+        )
+        await session.flush()
+        return customer, reducer.meter_ids[0]
+
+    customer, meter_id = run(seed())
+    savepoint: typing.Any = None
+
+    def begin() -> None:
+        nonlocal savepoint
+        savepoint = run(session.begin_nested())
+
+    def rollback() -> None:
+        run(savepoint.rollback())
+
+    def seal() -> None:
+        run(reducer_service.seal(session, customer, meter_id, at=at))
+
+    begin()
+    seal()
+    sealed = run(
+        session.scalar(
+            select(func.count())
+            .select_from(ReducerBucket)
+            .where(
+                ReducerBucket.customer_id == customer.id,
+                ReducerBucket.external_customer_id.is_(None),
+                ReducerBucket.sealed_at.is_not(None),
+            )
+        )
+    )
+    assert sealed == 288
+    rollback()
+    benchmark.pedantic(seal, setup=begin, teardown=rollback, rounds=20)

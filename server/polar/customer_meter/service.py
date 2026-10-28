@@ -224,8 +224,8 @@ class CustomerMeterService:
         customer_meter.last_balanced_event = last_event
 
         # Temporary: reducer values carry the credits until credits are reducers.
-        reducer = await ReducerRepository.from_session(session).get_by_meter_id(
-            meter.id, kind=ReducerKind.usage
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.usage
         )
         if reducer is not None:
             for customer_id, external_customer_id in get_customer_identities(customer):

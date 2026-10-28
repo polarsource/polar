@@ -23,8 +23,8 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return (await self.session.execute(statement)).scalar_one()
 
-    async def get_by_meter_id(
-        self, meter_id: UUID, *, kind: ReducerKind
+    async def get_by_meter_and_kind(
+        self, meter_id: UUID, kind: ReducerKind
     ) -> Reducer | None:
         statement = (
             self.get_base_statement()

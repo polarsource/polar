@@ -178,8 +178,8 @@ class OutpostService:
         payload: MeterUsageIncomingMessagePayload,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
-        reducer = await ReducerRepository.from_session(session).get_by_meter_id(
-            payload.meter_id, kind=ReducerKind.usage
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            payload.meter_id, ReducerKind.usage
         )
         if reducer is None or reducer.organization_id != organization.id:
             log.warning(

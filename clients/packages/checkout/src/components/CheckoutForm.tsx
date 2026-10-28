@@ -42,6 +42,11 @@ import {
 } from 'react-hook-form'
 import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
+import {
+  type CheckoutSubmitResult,
+  flattenFormErrors,
+  useCheckoutWebMCP,
+} from '../hooks/webmcp'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { isTemporaryDiscount } from '../utils/discount'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
@@ -83,8 +88,11 @@ interface BaseCheckoutFormProps {
   locale?: AcceptedLocale
   isWalletPayment?: boolean
   isPaymentFormReady?: boolean
+  isPaymentFormComplete?: boolean
+  focusPaymentForm?: (options: { clear: boolean }) => boolean
   beforeSubmit?: React.ReactNode
   embed?: boolean
+  webMCP?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -100,8 +108,11 @@ const BaseCheckoutForm = ({
   locale: localeProp,
   isWalletPayment,
   isPaymentFormReady = true,
+  isPaymentFormComplete = false,
+  focusPaymentForm,
   beforeSubmit,
   embed,
+  webMCP = false,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
     ? checkout.product.recurring_interval
@@ -278,8 +289,43 @@ const BaseCheckoutForm = ({
       if (!isShownToBuyer(error)) {
         throw error
       }
+      return error
     }
   }
+
+  const submitForAgent = () =>
+    new Promise<CheckoutSubmitResult>((resolve, reject) => {
+      handleSubmit(
+        async (data) => {
+          const error = await onSubmit(data)
+          resolve(
+            error
+              ? {
+                  status: 'failed',
+                  message:
+                    error instanceof Error && error.message
+                      ? error.message
+                      : (form.formState.errors.root?.message ??
+                        'The payment failed'),
+                }
+              : { status: 'confirmed' },
+          )
+        },
+        (errors) =>
+          resolve({ status: 'invalid', errors: flattenFormErrors(errors) }),
+      )().catch(reject)
+    })
+
+  useCheckoutWebMCP({
+    enabled: webMCP && !embed && !disabled,
+    checkout,
+    form,
+    update,
+    submit: submitForAgent,
+    focusPaymentForm,
+    isPaymentFormReady,
+    isPaymentFormComplete,
+  })
 
   const validTaxID = !!checkout.customer_tax_id
 
@@ -805,6 +851,7 @@ interface CheckoutFormProps {
   locale?: AcceptedLocale
   beforeSubmit?: React.ReactNode
   embed?: boolean
+  webMCP?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
@@ -835,6 +882,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
     : false
   const t = useTranslations(locale ?? 'en')
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
+  const [isPaymentElementComplete, setIsPaymentElementComplete] =
+    useState(false)
   if (!checkout.is_payment_form_required && isPaymentElementReady) {
     setIsPaymentElementReady(false)
   }
@@ -854,6 +903,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const onPaymentElementChange = useCallback(
     async (event: StripePaymentElementChangeEvent) => {
       setSelectedPaymentMethod(event.value.type)
+      setIsPaymentElementComplete(event.complete)
       if (event.value.type !== checkout.payment_method_type) {
         try {
           await update({ payment_method_type: event.value.type })
@@ -927,6 +977,18 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             confirm={(data) => confirm(data, stripe, elements)}
             isWalletPayment={isWalletPayment}
             isPaymentFormReady={isPaymentFormReady}
+            isPaymentFormComplete={isPaymentElementComplete}
+            focusPaymentForm={({ clear }) => {
+              const paymentElement = elements?.getElement('payment')
+              if (!paymentElement) {
+                return false
+              }
+              if (clear) {
+                paymentElement.clear()
+              }
+              paymentElement.focus()
+              return true
+            }}
           >
             {checkout.is_payment_form_required && (
               <PaymentElement

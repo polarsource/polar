@@ -293,6 +293,99 @@ describe('CheckoutForm', () => {
     })
   })
 
+  describe('WebMCP tools', () => {
+    const renderWithModelContext = (webMCP?: boolean) => {
+      const registerTool = vi.fn()
+      Object.defineProperty(document, 'modelContext', {
+        value: { registerTool },
+        configurable: true,
+      })
+      onTestFinished(() => {
+        delete (document as Document & { modelContext?: unknown }).modelContext
+      })
+      const checkout = createCheckout({
+        // oxlint-disable-next-line typescript/no-explicit-any
+        payment_processor: 'dummy' as any,
+      })
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          disabled={false}
+          locale="en"
+          webMCP={webMCP}
+          onForm={(f) => {
+            form = f
+          }}
+        />,
+      )
+
+      const execute = async (name: string, input = {}) => {
+        const [tool] = registerTool.mock.calls.find(
+          ([tool]) => tool.name === name,
+        )!
+        let result = ''
+        await act(async () => {
+          result = await tool.execute(input)
+        })
+        return result
+      }
+
+      return { registerTool, form, execute }
+    }
+
+    it('does not register tools by default', () => {
+      const { registerTool } = renderWithModelContext()
+
+      expect(registerTool).not.toHaveBeenCalled()
+    })
+
+    it('registers tools when webMCP is set', () => {
+      const { registerTool } = renderWithModelContext(true)
+
+      expect(registerTool).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'submit_checkout' }),
+        expect.anything(),
+      )
+    })
+
+    it('reports the missing required fields', async () => {
+      const { execute } = renderWithModelContext(true)
+
+      const state = JSON.parse(await execute('get_checkout_state'))
+
+      expect(state.missing_required_fields).toEqual([
+        'email',
+        'name',
+        'billing_address.country',
+        'card_details',
+      ])
+    })
+
+    it('fills in the customer details and normalizes the state', async () => {
+      const { form, execute } = renderWithModelContext(true)
+
+      await execute('set_customer_details', {
+        email: 'buyer@example.com',
+        billing_address: { country: 'us', state: 'California' },
+      })
+
+      expect(form.getValues('customer_email')).toBe('buyer@example.com')
+      expect(form.getValues('customer_billing_address.country')).toBe('US')
+      expect(form.getValues('customer_billing_address.state')).toBe('US-CA')
+    })
+
+    it('rejects a product that is not on offer', async () => {
+      const { execute } = renderWithModelContext(true)
+
+      expect(await execute('update_order', { product: 'Yearly' })).toMatch(
+        /^No product "Yearly" in this checkout/,
+      )
+    })
+  })
+
   describe('trial unavailable notice', () => {
     const renderWithTrialUnavailable = (trialUnavailable: boolean) => {
       const checkout = createCheckout({

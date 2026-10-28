@@ -398,6 +398,7 @@ const Checkout = ({
             disabled={disableCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}
+            webMCP
           />
         </div>
       </div>

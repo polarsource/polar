@@ -12,11 +12,12 @@ from polar.authz.service import (
     assert_resource_permission,
 )
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import version
 from polar.models import Order
 from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
@@ -32,6 +33,7 @@ from polar.postgres import (
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 from polar.subscription.schemas import SubscriptionID
+from polar.version import V2027_01
 
 from . import auth, sorting
 from .export import (
@@ -42,6 +44,7 @@ from .export import (
 )
 from .schemas import Order as OrderSchema
 from .schemas import (
+    OrderBenefitsMove,
     OrderCreate,
     OrderFinalize,
     OrderID,
@@ -277,6 +280,39 @@ async def create(
     )
 
     return await order_service.create_draft_order(session, organization, order_create)
+
+
+@router.post(
+    "/benefits/move",
+    status_code=202,
+    summary="Move Order Benefits",
+    tags=[APITag.private],
+    responses={
+        202: {"description": "Move started."},
+        403: {
+            "description": (
+                "You don't have the permission to manage sales, "
+                "or the organization doesn't use catalog versioning."
+            ),
+            "model": NotPermitted.schema(),
+        },
+    },
+)
+@version(starting_from=V2027_01)
+async def move_benefits(
+    benefits_move: OrderBenefitsMove,
+    auth_subject: auth.OrdersWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """
+    Give the one-time orders of a product, in any version, the benefits of
+    another product.
+
+    The orders don't change. Benefits with the same `external_id` are updated in
+    place, without reissuing license keys or roles. Added benefits are granted and
+    removed ones are revoked, in the background.
+    """
+    await order_service.start_move_benefits(session, auth_subject, benefits_move)
 
 
 @router.patch(

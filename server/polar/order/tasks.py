@@ -321,6 +321,27 @@ async def update_product_benefits_grants(
         await order_service.update_product_benefits_grants(session, product)
 
 
+@actor(actor_name="order.move_benefits", priority=TaskPriority.LOW)
+async def move_benefits(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+    source_external_id: Annotated[str, LoggableField],
+    target_product_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        product_repository = ProductRepository.from_session(session)
+        target_product = await product_repository.get_by_id(target_product_id)
+        if target_product is None:
+            log.warning(
+                "Order benefits move target no longer exists",
+                target_product_id=target_product_id,
+            )
+            return
+
+        await order_service.move_benefits(
+            session, organization_id, source_external_id, target_product
+        )
+
+
 @actor(
     actor_name="order.confirmation_email",
     priority=TaskPriority.LOW,

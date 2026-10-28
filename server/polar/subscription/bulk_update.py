@@ -3,10 +3,8 @@ import uuid
 import structlog
 
 from polar.auth.models import AuthSubject, User
-from polar.auth.permission import OrganizationPermission
-from polar.authz.service import assert_resource_permission
 from polar.enums import SubscriptionProrationBehavior
-from polar.exceptions import NotPermitted, PolarError, PolarRequestValidationError
+from polar.exceptions import PolarError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, Product, Subscription, SubscriptionBulkUpdate
@@ -44,25 +42,9 @@ class SubscriptionBulkUpdateService:
         auth_subject: AuthSubject[User | Organization],
         bulk_update_create: SubscriptionBulkUpdateCreate,
     ) -> SubscriptionBulkUpdate:
-        target = await product_service.get(
+        target = await product_service.get_move_target(
             session, auth_subject, bulk_update_create.target_product_id
         )
-        if target is None or not target.is_current or target.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "target_product_id"),
-                        "msg": "Product not found, or not a current version.",
-                        "input": bulk_update_create.target_product_id,
-                    }
-                ]
-            )
-        await assert_resource_permission(
-            session, auth_subject, target, OrganizationPermission.sales_manage
-        )
-        if not target.organization.is_config_as_code_enabled:
-            raise NotPermitted("Config as code isn't enabled for this organization.")
         return await self.start(
             session,
             target.organization,

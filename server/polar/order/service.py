@@ -9,7 +9,7 @@ from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.account.repository import AccountRepository
@@ -113,6 +113,7 @@ from polar.product.price_set import (
     PriceSet,
 )
 from polar.product.repository import ProductRepository
+from polar.product.service import product as product_service
 from polar.product.unit_price import validate_unit_limits
 from polar.receipt.service import receipt as receipt_service
 from polar.subscription.repository import SubscriptionRepository
@@ -138,7 +139,13 @@ from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .amounts import apply_wallet_balance, calculate_tax, compute_order_amounts
 from .repository import OrderRepository
-from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
+from .schemas import (
+    OrderBenefitsMove,
+    OrderCreate,
+    OrderInvoice,
+    OrderReceipt,
+    OrderUpdate,
+)
 from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
@@ -2739,7 +2746,63 @@ class OrderService:
             )
             .options(joinedload(Order.customer))
         )
+        await self._enqueue_orders_benefits_grants(session, base_statement, product)
 
+    async def start_move_benefits(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        benefits_move: OrderBenefitsMove,
+    ) -> None:
+        target = await product_service.get_move_target(
+            session, auth_subject, benefits_move.target_product_id
+        )
+        enqueue_job(
+            "order.move_benefits",
+            organization_id=target.organization_id,
+            source_external_id=benefits_move.product_external_id,
+            target_product_id=target.id,
+        )
+
+    async def move_benefits(
+        self,
+        session: AsyncSession,
+        organization_id: uuid.UUID,
+        source_external_id: str,
+        target_product: Product,
+    ) -> int:
+        """Give one-time orders of any version of a product the benefits of
+        `target_product`.
+
+        The orders themselves don't change: grants of the same benefit
+        `external_id` are updated in place, added benefits are granted and
+        removed ones are revoked.
+        """
+        base_statement = (
+            select(Order)
+            .join(Order.customer)
+            .join(Product, Order.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id == source_external_id,
+                ~Order.is_deleted,
+                Order.subscription_id.is_(None),
+                Order.seats.is_(None),
+                Order.status.in_(OrderStatus.paid_statuses()),
+                ~Customer.is_deleted,
+            )
+            .options(joinedload(Order.customer))
+        )
+        return await self._enqueue_orders_benefits_grants(
+            session, base_statement, target_product
+        )
+
+    async def _enqueue_orders_benefits_grants(
+        self,
+        session: AsyncSession,
+        base_statement: Select[tuple[Order]],
+        product: Product,
+    ) -> int:
         count_result = await session.execute(
             base_statement.with_only_columns(func.count())
         )
@@ -2761,6 +2824,7 @@ class OrderService:
                 delay=calculate_delay(index),
             )
             index += 1
+        return total_count
 
     async def update_refunds(
         self,

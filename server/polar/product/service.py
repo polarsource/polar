@@ -24,6 +24,7 @@ from polar.declarative_config.guard import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
+    NotPermitted,
     PolarError,
     PolarRequestValidationError,
     ValidationError,
@@ -197,6 +198,32 @@ class ProductService:
             .options(*repository.get_eager_options())
         )
         return await repository.get_one_or_none(statement)
+
+    async def get_move_target(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Product:
+        """Get the product version existing customers can be moved to."""
+        target = await self.get(session, auth_subject, id)
+        if target is None or not target.is_current or target.is_archived:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "target_product_id"),
+                        "msg": "Product not found, or not a current version.",
+                        "input": id,
+                    }
+                ]
+            )
+        await assert_resource_permission(
+            session, auth_subject, target, OrganizationPermission.sales_manage
+        )
+        if not target.organization.is_config_as_code_enabled:
+            raise NotPermitted("Config as code isn't enabled for this organization.")
+        return target
 
     async def get_by_external_ids(
         self,

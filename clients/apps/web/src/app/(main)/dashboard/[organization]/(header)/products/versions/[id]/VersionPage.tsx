@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowBackOutlined, Check, Copy } from '@polar-sh/orbit/icons'
+import { Check, Copy } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
@@ -128,17 +128,6 @@ const VersionTitle = ({
 }) => (
   <Box flexDirection="column" rowGap="l" minWidth={0}>
     <Box alignItems="center" columnGap="l" minWidth={0}>
-      <Link href={versionsPath} aria-label="All versions">
-        <Box
-          as="span"
-          display="flex"
-          color={{ base: 'text-tertiary', hover: 'text-primary' }}
-          transitionProperty="colors"
-          transitionDuration="fast"
-        >
-          <ArrowBackOutlined fontSize="small" />
-        </Box>
-      </Link>
       <Text variant="heading-xs" as="h1" truncate>
         {catalog.name ?? 'Untitled'}
       </Text>
@@ -289,15 +278,7 @@ const ProductRow = ({
       <ProductPriceLabel product={previous} currency={currency} />
     ) : undefined
 
-  const columns = [
-    '160px',
-    'minmax(0, 1fr)',
-    showStatus && '80px',
-    '200px',
-    '176px',
-  ]
-    .filter(Boolean)
-    .join(' ')
+  const columns = `160px minmax(0, 1fr) ${showStatus ? '296px' : '200px'} 176px`
 
   return (
     <Link href={`/dashboard/${organization.slug}/products/${row.product_id}`}>
@@ -320,14 +301,15 @@ const ProductRow = ({
               {product?.name}
             </Text>
           </Diff>
-          {showStatus ? (
-            <Box>
-              {change ? (
-                <Status size="small" {...changeStatus[change]} />
-              ) : null}
-            </Box>
-          ) : null}
-          <Box justifyContent="end" minWidth={0}>
+          <Box
+            justifyContent="end"
+            alignItems="center"
+            columnGap="m"
+            minWidth={0}
+          >
+            {showStatus && change ? (
+              <Status size="small" {...changeStatus[change]} />
+            ) : null}
             <Diff before={priceBefore}>
               <Text color={removed ? 'disabled' : 'default'}>
                 {product ? (

@@ -103,7 +103,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (queue)(polar_queue_size{queue=~\"$queue\"})",
+          "expr": "max by (queue)(last_over_time(polar_queue_size{queue=~\"$queue\"}[90s]))",
           "legendFormat": "{{queue}}",
           "refId": "A"
         }
@@ -200,7 +200,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max by (queue)(polar_queue_oldest_message_age_seconds{queue=~\"$queue\"})",
+          "expr": "max by (queue)(last_over_time(polar_queue_oldest_message_age_seconds{queue=~\"$queue\"}[90s]))",
           "legendFormat": "{{queue}}",
           "refId": "A"
         }
@@ -268,7 +268,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(max by (queue)(polar_queue_size{queue=~\"$queue\"}))",
+          "expr": "sum(max by (queue)(last_over_time(polar_queue_size{queue=~\"$queue\"}[90s])))",
           "legendFormat": "Total",
           "refId": "A"
         }
@@ -336,7 +336,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(polar_queue_size{queue=~\"$queue\",queue=\"high_priority\"})",
+          "expr": "max(last_over_time(polar_queue_size{queue=~\"$queue\",queue=\"high_priority\"}[90s]))",
           "legendFormat": "High",
           "refId": "A"
         },
@@ -345,7 +345,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(polar_queue_size{queue=~\"$queue\",queue=\"medium_priority\"})",
+          "expr": "max(last_over_time(polar_queue_size{queue=~\"$queue\",queue=\"medium_priority\"}[90s]))",
           "legendFormat": "Medium",
           "refId": "B"
         },
@@ -354,7 +354,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(polar_queue_size{queue=~\"$queue\",queue=\"low_priority\"})",
+          "expr": "max(last_over_time(polar_queue_size{queue=~\"$queue\",queue=\"low_priority\"}[90s]))",
           "legendFormat": "Low",
           "refId": "C"
         }
@@ -421,7 +421,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "max(polar_queue_oldest_message_age_seconds{queue=~\"$queue\"})",
+          "expr": "max(last_over_time(polar_queue_oldest_message_age_seconds{queue=~\"$queue\"}[90s]))",
           "legendFormat": "Max Age",
           "refId": "A"
         }

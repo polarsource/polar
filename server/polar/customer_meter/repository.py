@@ -16,7 +16,7 @@ from polar.kit.repository import (
 )
 from polar.kit.repository.base import Options
 from polar.meter.aggregation import AggregationFunction
-from polar.models import Customer, CustomerMeter, Meter, MeterReducer
+from polar.models import Customer, CustomerMeter, Meter
 
 from .sorting import CustomerMeterSortProperty
 
@@ -75,19 +75,6 @@ class CustomerMeterRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
-
-    async def get_all_by_customer_and_reducer(
-        self, customer_id: UUID, reducer_id: UUID
-    ) -> Sequence[CustomerMeter]:
-        statement = (
-            self.get_base_statement()
-            .join(MeterReducer, MeterReducer.meter_id == CustomerMeter.meter_id)
-            .where(
-                CustomerMeter.customer_id == customer_id,
-                MeterReducer.reducer_id == reducer_id,
-            )
-        )
-        return await self.get_all(statement)
 
     async def get_by_customer_and_meter_for_update(
         self,

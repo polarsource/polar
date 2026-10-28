@@ -18,7 +18,6 @@ from pytest_mock import MockerFixture
 from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
-    CustomerMeter,
     Meter,
     Organization,
     ReducerBucket,
@@ -37,22 +36,6 @@ from tests.fixtures.random_objects import (
     create_event,
     create_reducer,
 )
-
-
-@pytest.fixture
-async def customer_meter(
-    save_fixture: SaveFixture, customer_external_id: Customer, meter: Meter
-) -> CustomerMeter:
-    customer_meter = CustomerMeter(
-        customer=customer_external_id,
-        meter=meter,
-        consumed_units=Decimal(90),
-        credited_units=100,
-        balance=Decimal(10),
-        last_balanced_event=None,
-    )
-    await save_fixture(customer_meter)
-    return customer_meter
 
 
 @pytest.mark.anyio
@@ -111,12 +94,13 @@ class TestOutpost:
         save_fixture: SaveFixture,
         client: httpx.AsyncClient,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
         customer_key: str,
     ) -> None:
-        customer = customer_meter.customer
+        customer = customer_external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
         bucket_end = bucket_start + timedelta(minutes=5)
@@ -278,12 +262,13 @@ class TestOutpost:
         client: httpx.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        customer = customer_meter.customer
+        customer = customer_external_id
         external_id = customer.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
         cold_until = start + timedelta(minutes=10)
@@ -414,11 +399,12 @@ class TestOutpost:
         client: httpx.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        external_id = customer_meter.customer.external_id
+        external_id = customer_external_id.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
         split_at = start + timedelta(minutes=7)
@@ -472,11 +458,12 @@ class TestOutpost:
         client: httpx.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        external_id = customer_meter.customer.external_id
+        external_id = customer_external_id.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         # The bucket the lookback starts in.
         bucket_start = get_reducer_bucket_start(utc_now() - SYNCED_LOOKBACK)

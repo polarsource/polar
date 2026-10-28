@@ -1,5 +1,4 @@
 import typing
-import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -20,7 +19,7 @@ from polar.reducer.service import reducer as reducer_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import METER_TEST_EVENT, create_meter, create_reducer
 
-from .conftest import Run
+from .conftest import Run, create_metered_reducer
 
 pytestmark = pytest.mark.benchmark
 
@@ -51,12 +50,7 @@ def test_rollup_100_events(
 ) -> None:
     async def seed() -> None:
         for _ in range(reducers):
-            meter = await create_meter(
-                save_fixture, organization=organization, id=uuid.uuid4()
-            )
-            await create_reducer(
-                save_fixture, organization=organization, meters=[meter]
-            )
+            await create_metered_reducer(session, save_fixture, organization)
 
     run(seed())
     events = build_events(organization, 100)
@@ -77,11 +71,7 @@ def test_rollup_100_customers(
     save_fixture: SaveFixture,
     organization: Organization,
 ) -> None:
-    async def seed() -> None:
-        meter = await create_meter(save_fixture, organization=organization)
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
-
-    run(seed())
+    run(create_metered_reducer(session, save_fixture, organization))
     now = datetime.now(UTC)
     events = [
         Event(
@@ -109,11 +99,7 @@ def test_rollup_100_events_into_closed_buckets(
     save_fixture: SaveFixture,
     organization: Organization,
 ) -> None:
-    async def seed() -> None:
-        meter = await create_meter(save_fixture, organization=organization)
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
-
-    run(seed())
+    run(create_metered_reducer(session, save_fixture, organization))
     closed = get_reducer_bucket_start(utc_now()) - 2 * REDUCER_BUCKET_SIZE
     events = [
         Event(

@@ -13782,6 +13782,11 @@ export interface components {
        * @description Name given when it was published. Defaults to `v{n}`, n being its position in the organization's catalog history.
        */
       name: string | null
+      /**
+       * Parent Id
+       * @description ID of the catalog this version replaced. Null for the first one.
+       */
+      parent_id: string | null
       /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
       status: components['schemas']['CatalogStatus']
       /**

@@ -2853,7 +2853,7 @@ class TestCatalogVersioning:
         assert live is not None
         assert live.id != first.id
         assert live.version_hash not in (None, first.version_hash)
-        assert new_product.catalog_id == live.id
+        assert (live.parent_id, new_product.catalog_id) == (first.id, live.id)
         assert updated.catalog == ConfigCatalogChange(
             before=ConfigCatalog(id=first.id, name="v1"),
             after=ConfigCatalog(id=live.id, name="v2"),

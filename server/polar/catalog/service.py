@@ -207,6 +207,7 @@ class CatalogService:
                 if name is not None
                 else await self.get_default_name(session, organization),
                 version_hash=version_hash,
+                parent=live,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
             ),

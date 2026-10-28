@@ -185,15 +185,21 @@ class ProductService:
     async def list_versions(
         self,
         session: AsyncReadSession,
-        product: Product,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        external_id: str,
         *,
+        organization_id: uuid.UUID | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[ProductVersion], int]:
         repository = ProductRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        statement = repository.get_versions_statement(org_ids, external_id)
+        if organization_id is not None:
+            statement = statement.where(Product.organization_id == organization_id)
         versions, count = await repository.paginate(
-            repository.get_versions_statement(product),
-            limit=pagination.limit,
-            page=pagination.page,
+            statement, limit=pagination.limit, page=pagination.page
         )
         active_subscriptions = await repository.count_active_subscriptions(versions)
         return [

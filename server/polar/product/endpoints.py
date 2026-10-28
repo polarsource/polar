@@ -209,27 +209,33 @@ async def get(
 
 
 @router.get(
-    "/{id}/versions",
-    summary="List Product Versions",
+    "/external/{external_id}/versions",
+    summary="List Product Versions by External ID",
     response_model=ListResource[ProductVersion],
     responses={404: ProductNotFound},
     tags=[APITag.private],
 )
-async def list_versions(
-    id: ProductID,
+async def list_versions_external(
+    external_id: str,
     auth_subject: auth.CreatorProductsRead,
     pagination: PaginationParamsQuery,
+    organization_id: OrganizationID | None = Query(
+        None, description="Filter by organization ID."
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[ProductVersion]:
     """List the versions of a product managed as code, newest first."""
-    product = await product_service.get(session, auth_subject, id)
+    results, count = await product_service.list_versions(
+        session,
+        auth_subject,
+        external_id,
+        organization_id=organization_id,
+        pagination=pagination,
+    )
 
-    if product is None:
+    if count == 0:
         raise ResourceNotFound()
 
-    results, count = await product_service.list_versions(
-        session, product, pagination=pagination
-    )
     return ListResource.from_paginated_results(results, count, pagination)
 
 

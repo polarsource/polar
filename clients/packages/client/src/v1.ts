@@ -2628,7 +2628,7 @@ export interface paths {
     patch: operations['products:update']
     trace?: never
   }
-  '/v1/products/{id}/versions': {
+  '/v1/products/external/{external_id}/versions': {
     parameters: {
       query?: never
       header?: never
@@ -2636,12 +2636,12 @@ export interface paths {
       cookie?: never
     }
     /**
-     * List Product Versions
+     * List Product Versions by External ID
      * @description List the versions of a product managed as code, newest first.
      *
      *     **Scopes**: `products:read` `products:write`
      */
-    get: operations['products:list_versions']
+    get: operations['products:list_versions_external']
     put?: never
     post?: never
     delete?: never
@@ -49230,9 +49230,11 @@ export interface operations {
       }
     }
   }
-  'products:list_versions': {
+  'products:list_versions_external': {
     parameters: {
       query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -49240,7 +49242,7 @@ export interface operations {
       }
       header?: never
       path: {
-        id: string
+        external_id: string
       }
       cookie?: never
     }

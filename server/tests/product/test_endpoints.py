@@ -346,21 +346,35 @@ class TestGetProduct:
 
 @pytest.mark.anyio
 class TestListProductVersions:
-    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
-        response = await client.get(f"/v1/products/{product.id}/versions")
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/products/external/pro/versions")
 
         assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_unknown_external_id(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get("/v1/products/external/pro/versions")
+
+        assert response.status_code == 404
 
     @pytest.mark.auth
     async def test_user_cannot_access_other_organization_product(
         self,
         client: AsyncClient,
+        save_fixture: SaveFixture,
         user_organization: UserOrganization,
-        product_organization_second: Product,
+        organization_second: Organization,
     ) -> None:
-        response = await client.get(
-            f"/v1/products/{product_organization_second.id}/versions"
+        await create_product(
+            save_fixture,
+            organization=organization_second,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
         )
+
+        response = await client.get("/v1/products/external/pro/versions")
 
         assert response.status_code == 404
 
@@ -427,7 +441,7 @@ class TestListProductVersions:
                 save_fixture, product=product, customer=customer, status=status
             )
 
-        response = await client.get(f"/v1/products/{old.id}/versions")
+        response = await client.get("/v1/products/external/pro/versions")
 
         assert response.status_code == 200
         json = response.json()

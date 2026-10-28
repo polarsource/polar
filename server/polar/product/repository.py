@@ -82,22 +82,21 @@ class ProductRepository(
         )
         return await self.get_all(statement)
 
-    def get_versions_statement(self, product: Product) -> Select[tuple[Product]]:
-        """Every version of a product sharing its external ID, newest first."""
-        statement = (
-            self.get_base_statement()
+    def get_versions_statement(
+        self, org_ids: set[AccessibleOrganizationID], external_id: str
+    ) -> Select[tuple[Product]]:
+        """Every version of a product sharing an external ID, newest first."""
+        return (
+            self.get_statement_by_org_ids(org_ids)
             .outerjoin(Product.catalog)
             .options(contains_eager(Product.catalog))
-            .where(Product.organization_id == product.organization_id)
+            .where(Product.external_id == external_id)
             .order_by(
                 Catalog.published_at.desc().nulls_last(),
                 Product.created_at.desc(),
                 Product.id.desc(),
             )
         )
-        if product.external_id is None:
-            return statement.where(Product.id == product.id)
-        return statement.where(Product.external_id == product.external_id)
 
     async def count_active_subscriptions(
         self, products: Sequence[Product]

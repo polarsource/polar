@@ -49,7 +49,9 @@ class TestGetActiveReducers:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        query = mocker.spy(ReducerRepository, "get_all_active_by_organization")
+        query = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
 
         await cache.get_active_reducers(session, redis, organization.id)
         [cached] = await cache.get_active_reducers(session, redis, organization.id)
@@ -76,7 +78,9 @@ class TestGetActiveReducers:
         organization_second: Organization,
         meter: Meter,
     ) -> None:
-        query = mocker.spy(ReducerRepository, "get_all_active_by_organization")
+        query = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
         for org in (organization, organization_second):
             assert await cache.get_active_reducers(session, redis, org.id) == []
             assert await cache.get_active_reducers(session, redis, org.id) == []
@@ -143,7 +147,9 @@ class TestGetActiveReducers:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        query = mocker.spy(ReducerRepository, "get_all_active_by_organization")
+        query = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
         if failure == "get":
             mocker.patch.object(redis, "get", side_effect=RedisError)
         elif failure == "set":
@@ -174,7 +180,7 @@ class TestGetActiveReducers:
 
         query = mocker.patch.object(
             ReducerRepository,
-            "get_all_active_by_organization",
+            "get_all_active_by_organization_and_kinds",
             autospec=True,
             side_effect=query_then_invalidate,
         )

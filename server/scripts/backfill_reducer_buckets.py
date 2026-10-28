@@ -180,7 +180,7 @@ async def _get_reducers(
     """The organization's active reducers with a mergeable aggregation."""
     reducers = await ReducerRepository.from_session(
         session
-    ).get_all_active_by_organization(organization_id, (ReducerKind.usage,))
+    ).get_all_active_by_organization_and_kinds(organization_id, (ReducerKind.usage,))
     return [
         reducer
         for reducer in reducers

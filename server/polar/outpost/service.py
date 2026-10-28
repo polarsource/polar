@@ -160,7 +160,7 @@ class OutpostService:
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
         reducer_repository = ReducerRepository.from_session(session)
-        reducers = await reducer_repository.get_all_active_by_organization(
+        reducers = await reducer_repository.get_all_active_by_organization_and_kinds(
             organization.id,
             (ReducerKind.usage,),
             options=(selectinload(Reducer.meter_reducers),),
@@ -218,7 +218,9 @@ class OutpostService:
             await session.connection(
                 execution_options={"isolation_level": "REPEATABLE READ"}
             )
-        reducer = await ReducerRepository.from_session(session).get_active_by_id(
+        reducer = await ReducerRepository.from_session(
+            session
+        ).get_active_by_id_and_kinds(
             payload.reducer_id,
             (ReducerKind.usage,),
             options=(selectinload(Reducer.meter_reducers),),
@@ -279,7 +281,9 @@ class OutpostService:
         event: ReducerBucketOutpostEvent,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
-        reducer = await ReducerRepository.from_session(session).get_active_by_id(
+        reducer = await ReducerRepository.from_session(
+            session
+        ).get_active_by_id_and_kinds(
             event["reducer_id"],
             (ReducerKind.usage,),
             options=(selectinload(Reducer.meter_reducers),),

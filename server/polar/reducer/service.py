@@ -394,9 +394,9 @@ class ReducerService:
         customer_id: UUID | None,
         external_customer_id: str | None,
     ) -> None:
-        reducer = await ReducerRepository.from_session(session).get_active_by_id(
-            reducer_id, (ReducerKind.usage,)
-        )
+        reducer = await ReducerRepository.from_session(
+            session
+        ).get_active_by_id_and_kinds(reducer_id, (ReducerKind.usage,))
         if reducer is None:
             return
         repository = ReducerBucketRepository.from_session(session)

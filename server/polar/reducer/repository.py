@@ -23,11 +23,13 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return (await self.session.execute(statement)).scalar_one()
 
-    async def get_by_meter_id(self, meter_id: UUID) -> Reducer | None:
+    async def get_by_meter_id(
+        self, meter_id: UUID, *, kind: ReducerKind
+    ) -> Reducer | None:
         statement = (
             self.get_base_statement()
             .join(MeterReducer)
-            .where(MeterReducer.meter_id == meter_id)
+            .where(MeterReducer.meter_id == meter_id, Reducer.kind == kind)
         )
         return await self.get_one_or_none(statement)
 

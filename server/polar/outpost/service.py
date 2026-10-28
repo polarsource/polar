@@ -27,6 +27,7 @@ from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
 from polar.models import Customer, Organization, Reducer
+from polar.models.reducer import ReducerKind
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
     get_customer_identities,
@@ -178,7 +179,7 @@ class OutpostService:
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
         reducer = await ReducerRepository.from_session(session).get_by_meter_id(
-            payload.meter_id
+            payload.meter_id, kind=ReducerKind.usage
         )
         if reducer is None or reducer.organization_id != organization.id:
             log.warning(

@@ -29,6 +29,7 @@ from polar.models import (
     Reducer,
     ReducerBucket,
 )
+from polar.models.reducer import ReducerKind
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -165,7 +166,7 @@ class ReducerService:
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:
         repository = ReducerRepository.from_session(session)
         meter = await repository.get_meter_for_update(meter.id)
-        reducer = await repository.get_by_meter_id(meter.id)
+        reducer = await repository.get_by_meter_id(meter.id, kind=ReducerKind.usage)
         if reducer is not None:
             return await repository.update(
                 reducer,
@@ -396,7 +397,7 @@ class ReducerService:
                 async with session.begin_nested():
                     reducer = await ReducerRepository.from_session(
                         session
-                    ).get_by_meter_id(customer_meter.meter_id)
+                    ).get_by_meter_id(customer_meter.meter_id, kind=ReducerKind.usage)
                     if reducer is None or isinstance(
                         reducer.aggregation, UniqueAggregation
                     ):
@@ -478,7 +479,7 @@ class ReducerService:
         repository = ReducerRepository.from_session(session)
         reducers: dict[UUID, Reducer] = {}
         for meter_id in meter_ids:
-            reducer = await repository.get_by_meter_id(meter_id)
+            reducer = await repository.get_by_meter_id(meter_id, kind=ReducerKind.usage)
             if reducer is not None and not isinstance(
                 reducer.aggregation, UniqueAggregation
             ):

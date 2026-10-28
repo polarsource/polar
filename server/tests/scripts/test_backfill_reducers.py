@@ -9,6 +9,7 @@ from polar.models.reducer import ReducerKind
 from polar.reducer.service import reducer as reducer_service
 from scripts.backfill_reducers import backfill_batch
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_reducer
 
 
 @pytest.mark.anyio
@@ -37,6 +38,32 @@ class TestBackfillReducers:
         for _ in range(4):
             assert await backfill_batch(session, batch_size=1) == (0, 1)
         assert await backfill_batch(session, batch_size=1) == (0, 0)
+
+    async def test_adds_the_credit_reducer_of_a_meter_with_a_usage_reducer(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        usage = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+
+        assert await backfill_batch(session) == (1, 0)
+        kinds = dict(
+            (
+                await session.execute(
+                    select(Reducer.kind, Reducer.id)
+                    .join(MeterReducer)
+                    .where(MeterReducer.meter_id == meter.id)
+                )
+            )
+            .tuples()
+            .all()
+        )
+        assert kinds.keys() == {ReducerKind.usage, ReducerKind.credit}
+        assert kinds[ReducerKind.usage] == usage.id
 
     async def test_stale_meter_does_not_overwrite_reducer(
         self, session: AsyncSession, meter: Meter

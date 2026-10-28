@@ -5,16 +5,15 @@ import { getCatalogMarkers, getPeriodEnd } from './metrics'
 const catalog = (
   published_at: string,
   name: string | null,
-  version_hash: string,
 ): schemas['Catalog'] => ({
-  id: version_hash,
+  id: published_at,
   organization_id: 'org',
   created_at: published_at,
   modified_at: null,
   status: 'archived',
   published_at,
   name,
-  version_hash,
+  parent_id: null,
 })
 
 describe('getCatalogMarkers', () => {
@@ -26,21 +25,21 @@ describe('getCatalogMarkers', () => {
 
   it('snaps each version to the period it was published in, oldest first', () => {
     const markers = getCatalogMarkers(periods, [
-      catalog('2026-10-02T18:00:00Z', null, 'cccccccccc'),
-      catalog('2026-10-02T09:00:00Z', 'Spring pricing', 'bbbbbbbbbb'),
-      catalog('2026-10-01T00:00:00Z', null, 'aaaaaaaaaa'),
+      catalog('2026-10-02T18:00:00Z', null),
+      catalog('2026-10-02T09:00:00Z', 'Spring pricing'),
+      catalog('2026-10-01T00:00:00Z', null),
     ])
 
     expect(markers).toEqual([
       {
         x: '2026-10-01T00:00:00.000Z',
-        items: [{ label: 'Version', detail: 'aaaaaaa' }],
+        items: [{ prefix: 'Published', label: 'new version' }],
       },
       {
         x: '2026-10-02T00:00:00.000Z',
         items: [
-          { label: 'Spring pricing', detail: 'bbbbbbb' },
-          { label: 'Version', detail: 'ccccccc' },
+          { prefix: 'Published', label: 'Spring pricing' },
+          { prefix: 'Published', label: 'new version' },
         ],
       },
     ])
@@ -48,9 +47,7 @@ describe('getCatalogMarkers', () => {
 
   it('skips versions published before the first period', () => {
     expect(
-      getCatalogMarkers(periods, [
-        catalog('2026-09-30T23:59:59Z', null, 'aaaaaaaaaa'),
-      ]),
+      getCatalogMarkers(periods, [catalog('2026-09-30T23:59:59Z', null)]),
     ).toEqual([])
   })
 })

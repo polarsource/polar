@@ -68,14 +68,16 @@ const MinHeightBar = (props: {
 const MarkerDot = ({
   viewBox,
   fill,
+  r = 3,
 }: {
   viewBox?: { x?: number; y?: number }
   fill: string
-}) => <circle cx={viewBox?.x} cy={viewBox?.y} r={3} fill={fill} />
+  r?: number
+}) => <circle cx={viewBox?.x} cy={viewBox?.y} r={r} fill={fill} />
 
 export interface ChartMarker {
   x: string | number
-  items: { label: string; detail?: string }[]
+  items: { prefix?: string; label: string }[]
 }
 
 const MAX_TOOLTIP_MARKER_ITEMS = 3
@@ -92,21 +94,15 @@ const MarkerTooltipRows = ({ marker }: { marker: ChartMarker }) => {
       borderColor="border-primary"
     >
       {marker.items.slice(0, MAX_TOOLTIP_MARKER_ITEMS).map((item, index) => (
-        <Box
-          key={index}
-          width={160}
-          alignItems="center"
-          justifyContent="between"
-          columnGap="l"
-        >
-          <Text variant="caption" truncate>
-            {item.label}
-          </Text>
-          {item.detail && (
-            <Text variant="caption" color="muted" monospace>
-              {item.detail}
+        <Box key={index} alignItems="baseline" columnGap="xs">
+          {item.prefix && (
+            <Text variant="caption" color="muted">
+              {item.prefix}
             </Text>
           )}
+          <Text variant="label" truncate>
+            {item.label}
+          </Text>
         </Box>
       ))}
       {hidden > 0 && (
@@ -404,7 +400,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
         key={`marker-${marker.x}`}
         x={marker.x}
         stroke={markerColor}
-        strokeDasharray="4 4"
         label={<MarkerDot fill={markerColor} />}
       />
     ))
@@ -581,18 +576,32 @@ export const GenericChart = <T extends Record<string, unknown>>({
   // Injected via cloneElement so chartBase stays stable on hover.
   const chartContent = useMemo(() => {
     if (!chartBase) return null
-    const cursorLine =
-      activeCursorIndex != null && data[activeCursorIndex] ? (
-        <ReferenceLine
-          key="cursor"
-          x={data[activeCursorIndex][xAxisKey as string] as string | number}
-          stroke={isDark ? '#27282A' : '#E5E7EB'}
-          strokeWidth={1}
-          // Below series lines and catalog markers (both 400), above areas (100).
-          zIndex={350}
-        />
-      ) : null
-    if (!cursorLine) return chartBase
+    const activeX =
+      activeCursorIndex != null
+        ? (data[activeCursorIndex]?.[xAxisKey as string] as
+            | string
+            | number
+            | undefined)
+        : undefined
+    if (activeX === undefined) return chartBase
+    const activeMarkerColor = isDark ? '#A1A1AA' : '#52525B'
+    const overlays = markers?.some((m) => m.x === activeX) ? (
+      <ReferenceLine
+        key="active-marker"
+        x={activeX}
+        stroke={activeMarkerColor}
+        label={<MarkerDot fill={activeMarkerColor} r={4} />}
+      />
+    ) : (
+      <ReferenceLine
+        key="cursor"
+        x={activeX}
+        stroke={isDark ? '#27282A' : '#E5E7EB'}
+        strokeWidth={1}
+        // Below series lines and catalog markers (both 400), above areas (100).
+        zIndex={350}
+      />
+    )
     // Spread the original children without React.Children.toArray so that
     // existing keys are preserved and Recharts doesn't remount/re-animate.
     const originalChildren: React.ReactNode = chartBase.props.children
@@ -602,9 +611,9 @@ export const GenericChart = <T extends Record<string, unknown>>({
       ...(Array.isArray(originalChildren)
         ? originalChildren
         : [originalChildren]),
-      cursorLine,
+      overlays,
     )
-  }, [chartBase, activeCursorIndex, data, xAxisKey, isDark])
+  }, [chartBase, activeCursorIndex, data, xAxisKey, isDark, markers])
 
   return (
     <ChartContainer

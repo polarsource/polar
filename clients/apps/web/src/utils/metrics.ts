@@ -525,10 +525,8 @@ export const getCatalogMarkers = (
   catalogs: schemas['Catalog'][],
 ): ChartMarker[] => {
   const published = catalogs
-    .flatMap(({ published_at, name, version_hash }) =>
-      published_at
-        ? [{ publishedAt: new Date(published_at), name, version_hash }]
-        : [],
+    .flatMap(({ published_at, name }) =>
+      published_at ? [{ publishedAt: new Date(published_at), name }] : [],
     )
     .sort((a, b) => a.publishedAt.getTime() - b.publishedAt.getTime())
 
@@ -543,8 +541,8 @@ export const getCatalogMarkers = (
       items: [],
     }
     marker.items.push({
-      label: catalog.name ?? 'Version',
-      detail: catalog.version_hash?.slice(0, 7),
+      prefix: 'Published',
+      label: catalog.name ?? 'new version',
     })
     markers.set(index, marker)
   }

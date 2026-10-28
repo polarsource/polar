@@ -122,6 +122,10 @@ _IMPORT_TASK = "merchant_migration.import_catalog"
 _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
 _STALLED_CUTOVER_ERROR = "Switch stalled with no progress; start it again to resume."
+_FINISHED_CUTOVER_ERROR = (
+    "This migration is finished and its Stripe key is deleted. "
+    "Start a new migration to switch the subscriptions still on Stripe."
+)
 _STALLED_OPERATION_ERROR = (
     "The last migration job stalled. Start it again, then try once it finishes."
 )
@@ -270,12 +274,14 @@ class MigrationOperationInProgress(MerchantMigrationError):
 
 
 class CutoverNotStarted(MerchantMigrationError):
-    def __init__(self) -> None:
-        super().__init__(
+    def __init__(
+        self,
+        message: str = (
             "Reach the switch step in the card transfer before switching "
-            "subscriptions over.",
-            409,
-        )
+            "subscriptions over."
+        ),
+    ) -> None:
+        super().__init__(message, 409)
 
 
 class MerchantMigrationRecordNotFound(MerchantMigrationError):
@@ -1257,7 +1263,7 @@ class MerchantMigrationService:
             migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
             or not migration.source_credentials.get("api_key_encrypted")
         ):
-            raise SourceNotConnected()
+            raise CutoverNotStarted(_FINISHED_CUTOVER_ERROR)
         if migration.pan_transfer_steps:
             steps = list(migration.pan_transfer_steps)
             if self._advance_retired_steps(migration, steps):

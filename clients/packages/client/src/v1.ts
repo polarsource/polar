@@ -58906,15 +58906,6 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationCutoverReport']
         }
       }
-      /** @description The migration is finished, so its source key is deleted. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['SourceNotConnected']
-        }
-      }
       /** @description Not allowed to manage this organization. */
       403: {
         headers: {

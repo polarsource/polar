@@ -4593,7 +4593,7 @@ class TestStartCutover:
             flush=True,
         )
 
-        with pytest.raises(SourceNotConnected):
+        with pytest.raises(CutoverNotStarted, match="finished"):
             await service.start_cutover(session, auth_subject, migration.id)
 
         await session.refresh(failed)

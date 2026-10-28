@@ -393,10 +393,6 @@ async def get_cutover(
     response_model=MerchantMigrationCutoverReport,
     summary="Switch Merchant Migration Subscriptions",
     responses={
-        400: {
-            "description": "The migration is finished, so its source key is deleted.",
-            "model": SourceNotConnected.schema(),
-        },
         403: {
             "description": "Not allowed to manage this organization.",
             "model": NotPermitted.schema(),

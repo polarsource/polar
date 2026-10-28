@@ -34,14 +34,8 @@ class CatalogProduct(Schema):
 
 
 class CatalogVersion(Catalog):
-    """A catalog version with its products and neighboring versions."""
+    """A catalog version with its products."""
 
-    previous_id: UUID4 | None = Field(
-        description="ID of the version published before this one."
-    )
-    next_id: UUID4 | None = Field(
-        description="ID of the version published after this one."
-    )
     products: list[CatalogProduct] = Field(
         description="The products in this version, ordered by key."
     )

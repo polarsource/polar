@@ -80,9 +80,6 @@ class CatalogService:
     async def get_version(
         self, session: AsyncReadSession, catalog: Catalog
     ) -> CatalogVersion:
-        repository = CatalogRepository.from_session(session)
-        previous = await repository.get_previous(catalog)
-        next = await repository.get_next(catalog)
         product_ids = await CatalogProductRepository.from_session(
             session
         ).get_product_ids_by_catalog(catalog.id)
@@ -90,8 +87,6 @@ class CatalogService:
         return CatalogVersion.model_validate(
             {
                 **CatalogSchema.model_validate(catalog).model_dump(),
-                "previous_id": previous.id if previous is not None else None,
-                "next_id": next.id if next is not None else None,
                 "products": [
                     {"external_id": external_id, "product_id": product_id}
                     for external_id, product_id in product_ids.items()

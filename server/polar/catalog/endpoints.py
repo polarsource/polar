@@ -82,7 +82,7 @@ async def get(
     auth_subject: auth.CatalogRead,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CatalogVersion:
-    """Get a catalog version, the products in it, and its neighboring versions."""
+    """Get a catalog version and the products in it."""
     catalog = await catalog_service.get(session, auth_subject, id)
     if catalog is None:
         raise ResourceNotFound()

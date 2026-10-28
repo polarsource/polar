@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select, tuple_
+from sqlalchemy import Select, select
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -45,48 +45,6 @@ class CatalogRepository(
         statement = select(Catalog.id, Catalog.version_hash).where(Catalog.id.in_(ids))
         result = await self.session.execute(statement)
         return {id: version_hash for id, version_hash in result.tuples()}
-
-    async def get_previous(self, catalog: Catalog) -> Catalog | None:
-        if catalog.published_at is None:
-            return None
-        statement = (
-            self._get_published_statement(catalog.organization_id)
-            .where(
-                tuple_(Catalog.published_at, Catalog.created_at, Catalog.id)
-                < (catalog.published_at, catalog.created_at, catalog.id)
-            )
-            .order_by(
-                Catalog.published_at.desc(),
-                Catalog.created_at.desc(),
-                Catalog.id.desc(),
-            )
-            .limit(1)
-        )
-        return await self.get_one_or_none(statement)
-
-    async def get_next(self, catalog: Catalog) -> Catalog | None:
-        if catalog.published_at is None:
-            return None
-        statement = (
-            self._get_published_statement(catalog.organization_id)
-            .where(
-                tuple_(Catalog.published_at, Catalog.created_at, Catalog.id)
-                > (catalog.published_at, catalog.created_at, catalog.id)
-            )
-            .order_by(
-                Catalog.published_at.asc(),
-                Catalog.created_at.asc(),
-                Catalog.id.asc(),
-            )
-            .limit(1)
-        )
-        return await self.get_one_or_none(statement)
-
-    def _get_published_statement(self, organization_id: UUID) -> Select[tuple[Catalog]]:
-        return self.get_base_statement().where(
-            Catalog.organization_id == organization_id,
-            Catalog.published_at.is_not(None),
-        )
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

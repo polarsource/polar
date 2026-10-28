@@ -3796,7 +3796,7 @@ export interface paths {
     }
     /**
      * Get Catalog
-     * @description Get a catalog version, the products in it, and its neighboring versions.
+     * @description Get a catalog version and the products in it.
      *
      *     **Scopes**: `products:read` `products:write`
      */
@@ -13855,7 +13855,7 @@ export interface components {
     CatalogStatus: 'draft' | 'live' | 'archived'
     /**
      * CatalogVersion
-     * @description A catalog version with its products and neighboring versions.
+     * @description A catalog version with its products.
      */
     CatalogVersion: {
       /**
@@ -13900,16 +13900,6 @@ export interface components {
        * @description When the catalog was published. Null for drafts.
        */
       published_at: string | null
-      /**
-       * Previous Id
-       * @description ID of the version published before this one.
-       */
-      previous_id: string | null
-      /**
-       * Next Id
-       * @description ID of the version published after this one.
-       */
-      next_id: string | null
       /**
        * Products
        * @description The products in this version, ordered by key.

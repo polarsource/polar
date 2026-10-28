@@ -208,60 +208,14 @@ class TestGet:
         assert response.status_code == 200
         json = response.json()
         assert json["id"] == str(live.id)
-        assert json["previous_id"] == str(archived.id)
-        assert json["next_id"] is None
         assert json["products"] == [
             {"external_id": "lifetime", "product_id": str(product_one_time.id)},
             {"external_id": "pro", "product_id": str(product_second.id)},
         ]
 
-        response = await client.get(f"/v1/catalogs/{archived.id}")
-
-        json = response.json()
-        assert json["previous_id"] is None
-        assert json["next_id"] == str(live.id)
-
         response = await client.get(f"/v1/catalogs/{draft.id}")
 
         json = response.json()
-        assert json["previous_id"] is None
-        assert json["next_id"] is None
         assert json["products"] == [
             {"external_id": "pro", "product_id": str(product_second.id)}
         ]
-
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
-    async def test_tied_published_at(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        now = utc_now()
-        first = Catalog(
-            organization=organization,
-            status=CatalogStatus.archived,
-            published_at=now,
-            created_at=now - timedelta(seconds=1),
-        )
-        second = Catalog(
-            organization=organization,
-            status=CatalogStatus.live,
-            published_at=now,
-            created_at=now,
-        )
-        await save_fixture(first)
-        await save_fixture(second)
-
-        response = await client.get(f"/v1/catalogs/{first.id}")
-
-        json = response.json()
-        assert json["previous_id"] is None
-        assert json["next_id"] == str(second.id)
-
-        response = await client.get(f"/v1/catalogs/{second.id}")
-
-        json = response.json()
-        assert json["previous_id"] == str(first.id)
-        assert json["next_id"] is None

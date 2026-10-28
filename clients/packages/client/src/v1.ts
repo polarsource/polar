@@ -6368,7 +6368,7 @@ export interface paths {
      *
      *     With an archived `catalog` version, products are compared to that version
      *     instead of the live one. The plan then shows the changes from that version,
-     *     not what apply would do, and `catalog` is None.
+     *     not what apply would do, and the response's `catalog` is None.
      *
      *     Each section requires the read or write scope for its resource.
      *

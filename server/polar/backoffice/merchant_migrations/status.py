@@ -195,12 +195,17 @@ def step_position(step: MerchantMigrationStep) -> tuple[int, int]:
     closed migration reads as the last step."""
     if step == MerchantMigrationStep.closed:
         return len(STEP_ORDER), len(STEP_ORDER)
-    return STEP_ORDER.index(step) + 1, len(STEP_ORDER)
+    return STEP_ORDER.index(visible_step(step)) + 1, len(STEP_ORDER)
 
 
 def is_finished(migration: MerchantMigration) -> bool:
     """Whether the merchant's work on this migration is done."""
     return migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
+
+
+def visible_step(step: MerchantMigrationStep) -> MerchantMigrationStep:
+    """The step ops should read."""
+    return step
 
 
 def current_pan_step(migration: MerchantMigration) -> PanTransferStep | None:

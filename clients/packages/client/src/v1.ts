@@ -16305,7 +16305,7 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. `null` is the same as `false`.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
        * @default false
        */
       deprecated: boolean | null
@@ -16365,7 +16365,7 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. `null` is the same as `false`.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
        * @default false
        */
       deprecated: boolean | null
@@ -16628,7 +16628,7 @@ export interface components {
         | components['schemas']['UniqueAggregation']
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. `null` is the same as `false`.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
        * @default false
        */
       deprecated: boolean | null
@@ -16713,7 +16713,7 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. `null` is the same as `false`.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
        * @default false
        */
       deprecated: boolean | null

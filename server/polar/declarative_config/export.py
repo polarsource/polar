@@ -212,6 +212,12 @@ async def get_deprecated_products_statement(
     )
 
 
+async def _chain[T](*iterators: AsyncIterator[T]) -> AsyncIterator[T]:
+    for iterator in iterators:
+        async for item in iterator:
+            yield item
+
+
 async def export_config(
     session: AsyncReadSession, organization: Organization
 ) -> ConfigExport:
@@ -245,39 +251,33 @@ async def export_config(
     )
 
     product_repository = ProductRepository.from_session(session)
+    current_external_ids = await product_repository.get_external_ids(
+        organization.id, current=True
+    )
+    deprecated_statement = await get_deprecated_products_statement(
+        session, organization, current_external_ids
+    )
     products, _ = await _export_section(
         ConfigResource.product,
-        product_repository.stream(
-            product_repository.get_organization_statement(organization.id)
+        _chain(
+            product_repository.stream(
+                product_repository.get_organization_statement(organization.id)
+            ),
+            product_repository.stream(deprecated_statement),
         ),
         MAXIMUM_PRODUCTS,
         skipped,
         name=lambda product: product.name,
-        archived=lambda product: product.is_archived,
+        archived=lambda product: (
+            product.is_archived and product.external_id in current_external_ids
+        ),
         entry=lambda product: _product_entry(
-            product, meter_external_ids, benefit_external_ids, deprecated=False
+            product,
+            meter_external_ids,
+            benefit_external_ids,
+            deprecated=product.external_id not in current_external_ids,
         ),
     )
-    deprecated_products, _ = await _export_section(
-        ConfigResource.product,
-        product_repository.stream(
-            await get_deprecated_products_statement(
-                session,
-                organization,
-                await product_repository.get_external_ids(
-                    organization.id, current=True
-                ),
-            )
-        ),
-        MAXIMUM_PRODUCTS - len(products),
-        skipped,
-        name=lambda product: product.name,
-        archived=lambda product: False,
-        entry=lambda product: _product_entry(
-            product, meter_external_ids, benefit_external_ids, deprecated=True
-        ),
-    )
-    products.extend(deprecated_products)
 
     return ConfigExport(
         config=ConfigExportDocument(

@@ -136,8 +136,6 @@ class ProductRepository(
     async def get_external_ids(
         self, organization_id: UUID, *, current: bool = False
     ) -> set[str]:
-        """Return the external IDs of the organization's products, of any
-        version, or only of current versions."""
         statement = select(Product.external_id).where(
             Product.organization_id == organization_id,
             Product.external_id.is_not(None),

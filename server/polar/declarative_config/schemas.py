@@ -62,7 +62,7 @@ class ConfigDeprecationMixin(BaseModel):
         description=(
             "Keeps the resource for customers who still use it, "
             "but active products and benefits can't reference it. "
-            "`null` is the same as `false`."
+            "Leaving it empty is the same as `false`."
         ),
     )
 

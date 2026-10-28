@@ -16453,7 +16453,7 @@ export interface components {
       before: components['schemas']['ConfigCatalog'] | null
       /**
        * Name
-       * @description Name of the catalog applying publishes.
+       * @description Name of the catalog applying publishes. A default `v{n}` name moves to the next number if another apply publishes first.
        */
       name: string
     }

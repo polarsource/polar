@@ -479,7 +479,12 @@ class ConfigCatalogPlan(Schema):
             "`None` if the organization has no catalog yet."
         )
     )
-    name: str = Field(description="Name of the catalog applying publishes.")
+    name: str = Field(
+        description=(
+            "Name of the catalog applying publishes. A default `v{n}` name moves "
+            "to the next number if another apply publishes first."
+        )
+    )
 
 
 class ConfigApplyResult(Schema):

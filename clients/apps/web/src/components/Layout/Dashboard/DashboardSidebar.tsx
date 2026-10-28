@@ -280,15 +280,6 @@ export const DashboardSidebar = ({
                       New Organization
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem
-                    onClick={() =>
-                      router.push(
-                        `/dashboard/${organization.slug}/settings/profile`,
-                      )
-                    }
-                  >
-                    Account Settings
-                  </DropdownMenuItem>
                   {!CONFIG.IS_SANDBOX && (
                     <DropdownMenuItem
                       onClick={() =>

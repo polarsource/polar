@@ -138,19 +138,11 @@ const AccessTokensSettings = () => {
         </p>
       </div>
       <SettingsGroup>
-        {tokens.data?.items && tokens.data.items.length > 0 ? (
-          tokens.data?.items.map((token) => (
-            <SettingsGroupRow key={token.id}>
-              <AccessToken {...token} />
-            </SettingsGroupRow>
-          ))
-        ) : (
-          <SettingsGroupRow>
-            <p className="dark:text-polar-400 text-sm text-gray-500">
-              You don&apos;t have any active Personal Access Tokens.
-            </p>
+        {tokens.data?.items.map((token) => (
+          <SettingsGroupRow key={token.id}>
+            <AccessToken {...token} />
           </SettingsGroupRow>
-        )}
+        ))}
       </SettingsGroup>
     </div>
   )

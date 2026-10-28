@@ -1,28 +1,11 @@
-import AccessTokensSettings from '@/components/Settings/AccessTokenSettings'
-import OAuthSettings from '@/components/Settings/OAuth/OAuthSettings'
-import { Section, SectionDescription } from '@/components/Settings/Section'
+import { DeveloperSettings } from '@/app/(main)/dashboard/[organization]/(header)/settings/[section]/PersonalSettingsSections'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Developer',
-  description: 'Manage your developer settings',
+  title: 'OAuth Apps',
+  description: 'Manage your OAuth apps',
 }
 
 export default function Page() {
-  return (
-    <>
-      <Section id="oauth">
-        <SectionDescription
-          title="OAuth Applications"
-          description="Your configured OAuth applications"
-        />
-
-        <OAuthSettings />
-      </Section>
-      <Section id="personal-access-tokens">
-        <SectionDescription title="Personal Access Tokens" />
-        <AccessTokensSettings />
-      </Section>
-    </>
-  )
+  return <DeveloperSettings />
 }

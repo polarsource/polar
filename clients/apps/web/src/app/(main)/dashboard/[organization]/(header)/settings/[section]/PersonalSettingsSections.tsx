@@ -11,9 +11,11 @@ import PersonalInformationSettings from '@/components/Settings/PersonalInformati
 import { SettingsSection } from '@/components/Settings/SettingsGroup'
 import TwoFactorSettings from '@/components/Settings/TwoFactorSettings'
 import UserDeleteSettings from '@/components/Settings/UserDeleteSettings'
+import { usePersonalAccessTokens } from '@/hooks/queries'
 import { useUserOrganizationNotificationSettings } from '@/hooks/queries/user_organizations'
 import { schemas } from '@polar-sh/client'
 import { Alert } from '@polar-sh/orbit'
+import { useState } from 'react'
 
 export const NotificationsSettings = ({
   organization,
@@ -70,13 +72,23 @@ export const SecuritySettings = () => (
   </>
 )
 
-export const DeveloperSettings = () => (
-  <>
-    <SettingsSection title="OAuth applications">
-      <OAuthSettings />
-    </SettingsSection>
-    <SettingsSection title="Personal access tokens">
-      <AccessTokensSettings />
-    </SettingsSection>
-  </>
-)
+export const DeveloperSettings = () => {
+  const { data: tokens } = usePersonalAccessTokens()
+  const [now] = useState(() => Date.now())
+  const hasTokens = !!tokens?.items.some(
+    (token) => !token.expires_at || new Date(token.expires_at).getTime() > now,
+  )
+
+  return (
+    <>
+      <SettingsSection title={hasTokens ? 'OAuth apps' : undefined}>
+        <OAuthSettings />
+      </SettingsSection>
+      {hasTokens && (
+        <SettingsSection title="Personal access tokens">
+          <AccessTokensSettings />
+        </SettingsSection>
+      )}
+    </>
+  )
+}

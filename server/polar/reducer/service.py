@@ -706,6 +706,14 @@ class ReducerService:
                     reducer, identities, since=since, until=until, sealed_at=utc_now()
                 )
                 span.set_attribute("sealed_buckets", sealed)
+            if sealed:
+                # Credits are the customer's: their events only carry its id.
+                for customer_id, external_customer_id in (
+                    [(customer.id, None)]
+                    if reducer.kind == ReducerKind.credit
+                    else identities
+                ):
+                    _enqueue_outpost_event(reducer, customer_id, external_customer_id)
 
     async def _split_at(
         self,

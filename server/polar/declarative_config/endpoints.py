@@ -111,9 +111,12 @@ async def apply(
 
     Meters, benefits, products and webhook endpoints are matched by
     `external_id`: missing ones are created, and changed ones are updated.
-    Products that are deprecated, or in the live catalog but not listed, are
-    left out of the published catalog. A product that isn't listed but still has active
-    subscriptions must be marked deprecated instead, or nothing is applied.
+    Deprecated products are neither created nor updated.
+    Deprecated products, and products that `config pull` exports but the config
+    doesn't list, are left out of the published catalog. Other products, and all
+    products when `products` is omitted, are left untouched. A product that
+    isn't listed but has a billable subscription or a pending subscription
+    update must be marked deprecated instead, or nothing is applied.
     Other resources that aren't listed are left untouched.
     `settings` are applied first, so products can be priced in a new
     `payments.currency` in the same config. Every active product must have a price in

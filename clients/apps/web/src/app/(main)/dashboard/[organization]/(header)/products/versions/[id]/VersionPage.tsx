@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, Copy } from '@polar-sh/orbit/icons'
+import { ArrowBackOutlined, Check, Copy } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
@@ -38,6 +38,9 @@ type Entry = {
 }
 
 const changes = ['added', 'changed', 'removed'] as const
+
+// Temporary: subscriber counts cost one request per product, so large catalogs skip them.
+const MAX_PRODUCTS_WITH_SUBSCRIBERS = 25
 
 const changeStatus = {
   added: { status: 'Added', color: 'green' },
@@ -128,6 +131,17 @@ const VersionTitle = ({
 }) => (
   <Box flexDirection="column" rowGap="l" minWidth={0}>
     <Box alignItems="center" columnGap="l" minWidth={0}>
+      <Link href={versionsPath} aria-label="All versions">
+        <Box
+          as="span"
+          display="flex"
+          color={{ base: 'text-tertiary', hover: 'text-primary' }}
+          transitionProperty="colors"
+          transitionDuration="fast"
+        >
+          <ArrowBackOutlined fontSize="small" />
+        </Box>
+      </Link>
       <Text variant="heading-xs" as="h1" truncate>
         {catalog.name ?? 'Untitled'}
       </Text>
@@ -259,12 +273,14 @@ const ProductRow = ({
   product,
   previous,
   showStatus,
+  showSubscribers,
 }: {
   organization: Organization
   entry: Entry
   product?: Product
   previous?: Product
   showStatus: boolean
+  showSubscribers: boolean
 }) => {
   const currency = organization.default_presentment_currency
   const removed = change === 'removed'
@@ -278,7 +294,7 @@ const ProductRow = ({
       <ProductPriceLabel product={previous} currency={currency} />
     ) : undefined
 
-  const columns = `160px minmax(0, 1fr) ${showStatus ? '296px' : '200px'} 176px`
+  const columns = `160px minmax(0, 1fr) ${showStatus ? '296px' : '200px'}${showSubscribers ? ' 176px' : ''}`
 
   return (
     <Link href={`/dashboard/${organization.slug}/products/${row.product_id}`}>
@@ -318,10 +334,12 @@ const ProductRow = ({
               </Text>
             </Diff>
           </Box>
-          <Subscribers
-            organizationId={organization.id}
-            productId={row.product_id}
-          />
+          {showSubscribers ? (
+            <Subscribers
+              organizationId={organization.id}
+              productId={row.product_id}
+            />
+          ) : null}
         </Grid>
       </ListItem>
     </Link>
@@ -392,6 +410,9 @@ export default function VersionPage({
                     : undefined
                 }
                 showStatus={!!parent}
+                showSubscribers={
+                  entries.length <= MAX_PRODUCTS_WITH_SUBSCRIBERS
+                }
               />
             ))}
           </List>

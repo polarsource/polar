@@ -38,6 +38,7 @@ from polar.reducer.redis_store import get_reducer_bucket_key
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
+    get_customer_identities,
     get_reducer_bucket_start,
 )
 from polar.reducer.service import reducer as reducer_service
@@ -1196,6 +1197,62 @@ class TestBillBuckets:
 
         assert quantities == {reducer.id: expected}
         assert len(await get_buckets(session)) == 2
+
+    async def test_notifies_outpost_of_sealed_reducers(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        external_customer: Customer,
+        meter: Meter,
+    ) -> None:
+        enqueue_outpost_event = mocker.patch(
+            "polar.reducer.service.enqueue_outpost_event"
+        )
+        usage = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        credit = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        empty = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        for reducer in (usage, credit):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer_id=external_customer.id,
+                    bucket_start=BUCKET_START,
+                    bucket_end=NEXT_BUCKET_START,
+                    count=1,
+                    sum=Decimal(1),
+                )
+            )
+
+        await reducer_service._seal_buckets(
+            session, [usage, credit, empty], external_customer, until=NEXT_BUCKET_START
+        )
+
+        expected = {
+            *(
+                (usage.id, customer_id, external_customer_id)
+                for customer_id, external_customer_id in get_customer_identities(
+                    external_customer
+                )
+            ),
+            (credit.id, external_customer.id, None),
+        }
+        assert enqueue_outpost_event.call_count == len(expected)
+        assert {
+            (event["reducer_id"], event["customer_id"], event["external_customer_id"])
+            for (_, event), _ in enqueue_outpost_event.call_args_list
+        } == expected
 
 
 @pytest.mark.anyio

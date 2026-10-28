@@ -6,13 +6,21 @@ from typing import TYPE_CHECKING, Any, cast
 import botocore
 import structlog
 from botocore.client import ClientError
+from botocore.exceptions import ParamValidationError
 
 from polar.config import settings
 from polar.kit.http import get_content_disposition
 from polar.kit.utils import generate_uuid, utc_now
 
 from .client import client, get_client
-from .exceptions import S3FileError
+from .exceptions import (
+    S3CompleteMultipartUploadError,
+    S3FileError,
+    S3MultipartUploadInvalidPart,
+    S3MultipartUploadInvalidRequest,
+    S3MultipartUploadMissingPartChecksum,
+    S3MultipartUploadNotFound,
+)
 from .schemas import (
     S3File,
     S3FileCreate,
@@ -218,9 +226,17 @@ class S3Service:
 
     def complete_multipart_upload(self, data: S3FileUploadCompleted) -> S3File:
         boto_arguments = data.get_boto3_arguments()
-        response = self.client.complete_multipart_upload(
-            Bucket=self.bucket, Key=data.path, **boto_arguments
-        )
+        try:
+            response = self.client.complete_multipart_upload(
+                Bucket=self.bucket, Key=data.path, **boto_arguments
+            )
+        except ParamValidationError as exc:
+            raise S3MultipartUploadInvalidRequest(str(exc)) from exc
+        except ClientError as exc:
+            error = self._get_complete_multipart_upload_error(exc)
+            if error is None:
+                raise
+            raise error from exc
         if not response:
             raise S3FileError("No response from S3")
 
@@ -228,6 +244,22 @@ class S3Service:
         head = self.get_head_or_raise(data.path, s3_version_id=version_id)
         file = S3File.from_head(data.path, head)
         return file
+
+    def _get_complete_multipart_upload_error(
+        self, exc: ClientError
+    ) -> S3CompleteMultipartUploadError | None:
+        error = exc.response.get("Error", {})
+        code = error.get("Code", "")
+        message = error.get("Message", "")
+        if code == "NoSuchUpload":
+            return S3MultipartUploadNotFound(message)
+        if code in {"InvalidPart", "InvalidPartOrder"}:
+            return S3MultipartUploadInvalidPart(message)
+        if code == "InvalidRequest" and "checksum" in message.lower():
+            return S3MultipartUploadMissingPartChecksum(message)
+        if code in {"InvalidRequest", "MalformedXML"}:
+            return S3MultipartUploadInvalidRequest(message)
+        return None
 
     def replace_object(self, file: S3File, data: bytes) -> S3File:
         digest = hashlib.sha256(data).digest()

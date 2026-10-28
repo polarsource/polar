@@ -166,6 +166,80 @@ class TestEndpoints:
 
 
 @pytest.mark.anyio
+class TestCompleteUpload:
+    async def _upload(
+        self, session: AsyncSession, organization: Organization, file: TestFile
+    ) -> tuple[File, FileUploadCompleted]:
+        created = await file.create(session, organization)
+        uploaded = await file.upload(created)
+        repository = FileRepository.from_session(session)
+        record = await repository.get_by_id(created.id)
+        assert record
+        return record, FileUploadCompleted(
+            id=created.upload.id, path=created.path, parts=uploaded
+        )
+
+    async def test_path_mismatch(
+        self, session: AsyncSession, organization: Organization, logo_jpg: TestFile
+    ) -> None:
+        record, completed_schema = await self._upload(session, organization, logo_jpg)
+        completed_schema.path = f"{record.path}-other"
+
+        with pytest.raises(BadRequest, match="upload.path"):
+            await file_service.complete_upload(
+                session, file=record, completed_schema=completed_schema
+            )
+
+        assert record.is_uploaded is False
+
+    async def test_unknown_upload_id(
+        self, session: AsyncSession, organization: Organization, logo_jpg: TestFile
+    ) -> None:
+        record, completed_schema = await self._upload(session, organization, logo_jpg)
+        completed_schema.id = str(record.id)
+
+        with pytest.raises(BadRequest, match="upload.id"):
+            await file_service.complete_upload(
+                session, file=record, completed_schema=completed_schema
+            )
+
+        assert record.is_uploaded is False
+
+    async def test_invalid_part_etag(
+        self, session: AsyncSession, organization: Organization, logo_jpg: TestFile
+    ) -> None:
+        record, completed_schema = await self._upload(session, organization, logo_jpg)
+        completed_schema.parts[0].checksum_etag = '"00000000000000000000000000000000"'
+
+        with pytest.raises(BadRequest, match="checksum_etag"):
+            await file_service.complete_upload(
+                session, file=record, completed_schema=completed_schema
+            )
+
+        assert record.is_uploaded is False
+
+    @pytest.mark.auth
+    async def test_endpoint_unknown_upload_id(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        logo_jpg: TestFile,
+    ) -> None:
+        record, completed_schema = await self._upload(session, organization, logo_jpg)
+        completed_schema.id = str(record.id)
+
+        response = await client.post(
+            f"/v1/files/{record.id}/uploaded",
+            json=completed_schema.model_dump(mode="json"),
+        )
+
+        assert response.status_code == 400
+        assert "upload.id" in response.json()["detail"]
+
+
+@pytest.mark.anyio
 class TestSVGSanitization:
     async def _upload(
         self,

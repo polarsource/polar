@@ -30,7 +30,7 @@ const kind = (config: LoadedConfig, externalId: string) => {
     )
   })
   return match
-    ? `${match[1]} ${ui.printable(externalId)}`
+    ? `${ui.printable(externalId)} (${match[1]})`
     : ui.printable(externalId)
 }
 

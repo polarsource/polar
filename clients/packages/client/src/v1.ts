@@ -13890,7 +13890,7 @@ export interface components {
       organization_id: string
       /**
        * Name
-       * @description Optional name given when it was published.
+       * @description Name given when it was published. Defaults to `v{n}`, n being its position in the organization's catalog history.
        */
       name: string | null
       /**
@@ -13898,11 +13898,6 @@ export interface components {
        * @description The catalog version this one was published on top of.
        */
       parent_id: string | null
-      /**
-       * Version Hash
-       * @description Hash identifying this version of the catalog.
-       */
-      version_hash: string | null
       /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
       status: components['schemas']['CatalogStatus']
       /**

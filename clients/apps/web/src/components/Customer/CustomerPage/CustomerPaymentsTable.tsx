@@ -2,6 +2,7 @@
 
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
+import { paymentDeclineReasonColumns } from '@/components/PaymentStatus/paymentDeclineReasonColumns'
 import { usePayments } from '@/hooks/queries/payments'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -64,6 +65,7 @@ export const CustomerPaymentsTable = ({
               <PaymentStatus payment={original} />
             ),
           },
+          ...paymentDeclineReasonColumns(payments?.items ?? []),
           {
             header: '',
             accessorKey: 'action',

@@ -198,15 +198,27 @@ describe('formatRows with wide values', () => {
     const output = stripAnsi(
       formatRows(
         '      ',
-        [{ field: 'catalog', before, after }],
+        [{ field: 'checksum', before, after }],
         'updated',
       ).join('\n'),
     )
     expect(output).toBe(
-      ['      catalog', `        - "${before}"`, `        + "${after}"`].join(
+      ['      checksum', `        - "${before}"`, `        + "${after}"`].join(
         '\n',
       ),
     )
+  })
+})
+
+describe('formatRows for catalog versions', () => {
+  test('omits the catalog version hashes', () => {
+    expect(
+      formatRows(
+        '',
+        [{ field: 'catalog', before: 'a'.repeat(64), after: 'b'.repeat(64) }],
+        'updated',
+      ),
+    ).toEqual([])
   })
 })
 

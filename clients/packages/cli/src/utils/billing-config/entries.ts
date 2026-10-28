@@ -159,8 +159,10 @@ const renderSetting = (change: Change): Change => ({
   after: settingValue(change.field, change.after),
 })
 
+const HIDDEN_FIELDS = new Set(['catalog'])
+
 export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
-  mergeRecurrence(diff)
+  mergeRecurrence(diff.filter((change) => !HIDDEN_FIELDS.has(change.field)))
     .map((change) => (section === 'settings' ? renderSetting(change) : change))
     .flatMap(expand)
     .map((change) => ({ ...change, field: name(change.field) }))

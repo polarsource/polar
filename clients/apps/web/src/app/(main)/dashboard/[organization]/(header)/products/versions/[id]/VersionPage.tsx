@@ -364,7 +364,9 @@ export default function VersionPage({
     products?.map((product) => [product.id, product]),
   )
 
-  if (error) notFound()
+  if (error || (catalog && catalog.organization_id !== organization.id)) {
+    notFound()
+  }
   if (!catalog) {
     return <DashboardBody title={null} />
   }

@@ -167,15 +167,17 @@ export function SwitchPanelView({
         )}
       </Box>
 
-      <ConfirmModal
-        isShown={confirming}
-        hide={() => setConfirming(false)}
-        title={`Switch ${numberFormat.format(switchCount)} subscriptions?`}
-        description={SWITCH_UNDONE_WARNING}
-        destructive
-        destructiveText={`Switch ${numberFormat.format(switchCount)} subscriptions`}
-        onConfirm={onSwitch}
-      />
+      {!readOnly && (
+        <ConfirmModal
+          isShown={confirming}
+          hide={() => setConfirming(false)}
+          title={`Switch ${numberFormat.format(switchCount)} subscriptions?`}
+          description={SWITCH_UNDONE_WARNING}
+          destructive
+          destructiveText={`Switch ${numberFormat.format(switchCount)} subscriptions`}
+          onConfirm={onSwitch}
+        />
+      )}
 
       <InlineModal
         isShown={openRow !== null}

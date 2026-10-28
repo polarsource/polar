@@ -2,8 +2,9 @@ import dns.exception
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.email.schemas import DomainVerificationLostEmail
 from polar.kit.utils import utc_now
-from polar.models import Organization, OrganizationDomain
+from polar.models import Organization, OrganizationDomain, UserOrganization
 from polar.organization_domain.service import (
     organization_domain as organization_domain_service,
 )
@@ -62,9 +63,14 @@ class TestReverify:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
+        user_organization: UserOrganization,
+        user_organization_second: UserOrganization,
     ) -> None:
         mocker.patch(
             "polar.organization_domain.service._lookup_txt", return_value=set()
+        )
+        enqueue_email_mock = mocker.patch(
+            "polar.organization_domain.service.enqueue_email_template"
         )
         domain = OrganizationDomain(
             organization=organization,
@@ -78,6 +84,15 @@ class TestReverify:
 
         assert domain.verified_at is None
         assert domain.verification_lost_at is not None
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert isinstance(email, DomainVerificationLostEmail)
+        assert email.props.domain == "acme.com"
+        assert email.props.record_name == "_polar-challenge.acme.com"
+        assert email.props.record_value == "TOKEN"
+        assert enqueue_email_mock.call_args.kwargs["to_email_addr"] == (
+            user_organization.user.email
+        )
 
     async def test_lookup_failure_keeps_verification(
         self,

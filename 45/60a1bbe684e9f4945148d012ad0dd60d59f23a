@@ -1,0 +1,19 @@
+server/polar/user/service.py
+  s_0c4ebc803bedac::t_a0c340257d9570 102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4560a1bbe684e9f4945148d012ad0dd60d59f23a",
+  "prompts": {},
+  "sessions": {
+    "s_0c4ebc803bedac": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "15430796-9c24-4e65-b2bb-f2cc84f3efa1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

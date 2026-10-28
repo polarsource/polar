@@ -133,12 +133,40 @@ class ReducerService:
     ) -> None:
         """Makes `at` a bucket boundary and seals the customer's buckets of every
         reducer of the meter before it."""
+        await self._seal(
+            session,
+            customer,
+            meter_id,
+            [kind for kind in ReducerKind if _is_sealed_on_reset(kind)],
+            at=at,
+        )
+
+    async def seal_credits(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        at: datetime,
+    ) -> None:
+        """Seals the customer's credits before `at` right away: unlike usage, they
+        are all in Postgres already."""
+        await self._seal(session, customer, meter_id, (ReducerKind.credit,), at=at)
+
+    async def _seal(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_id: UUID,
+        kinds: Iterable[ReducerKind],
+        *,
+        at: datetime,
+    ) -> None:
         try:
             async with session.begin_nested():
                 reducers = [
                     reducer
-                    for kind in ReducerKind
-                    if _is_sealed_on_reset(kind)
+                    for kind in kinds
                     for reducer in (
                         await self._get_reducers(session, [meter_id], kind)
                     ).values()

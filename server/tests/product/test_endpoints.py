@@ -1,28 +1,35 @@
 import uuid
+from datetime import timedelta
 from typing import Any
 
 import pytest
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
+    Catalog,
     Customer,
     Organization,
     Product,
     ProductPriceFixed,
     UserOrganization,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_custom_field,
+    create_customer,
     create_order,
     create_product,
     create_product_unit_based,
+    create_subscription,
     set_product_benefits,
 )
 
@@ -335,6 +342,101 @@ class TestGetProduct:
         price = response.json()["prices"][0]
         assert "type" not in price
         assert "recurring_interval" not in price
+
+
+@pytest.mark.anyio
+class TestListProductVersions:
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+        response = await client.get(f"/v1/products/{product.id}/versions")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_product(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.get(
+            f"/v1/products/{product_organization_second.id}/versions"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        now = utc_now()
+        archived = Catalog(
+            organization=organization,
+            name="v1",
+            status=CatalogStatus.archived,
+            published_at=now - timedelta(days=1),
+        )
+        live = Catalog(
+            organization=organization,
+            name="v2",
+            status=CatalogStatus.live,
+            published_at=now,
+            parent=archived,
+        )
+        for catalog in (archived, live):
+            await save_fixture(catalog)
+        products: list[Product] = []
+        for external_id, catalog in (
+            ("pro", archived),
+            ("pro", live),
+            ("basic", live),
+        ):
+            for previous in products:
+                if previous.external_id == external_id:
+                    previous.is_current = False
+                    await save_fixture(previous)
+            product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                external_id=external_id,
+            )
+            product.catalog = catalog
+            await save_fixture(product)
+            products.append(product)
+        old, current, other = products
+        for i, (product, status) in enumerate(
+            (
+                (old, SubscriptionStatus.active),
+                (old, SubscriptionStatus.trialing),
+                (current, SubscriptionStatus.active),
+                (current, SubscriptionStatus.canceled),
+                (other, SubscriptionStatus.active),
+            )
+        ):
+            customer = await create_customer(
+                save_fixture, organization=organization, email=f"c{i}@example.com"
+            )
+            await create_subscription(
+                save_fixture, product=product, customer=customer, status=status
+            )
+
+        response = await client.get(f"/v1/products/{old.id}/versions")
+
+        assert response.status_code == 200
+        assert [
+            (item["product_id"], item["name"], item["is_current"], item["customers"])
+            for item in response.json()
+        ] == [
+            (str(current.id), "v2", True, 1),
+            (str(old.id), "v1", False, 2),
+        ]
 
 
 @pytest.mark.anyio

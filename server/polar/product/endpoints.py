@@ -1,4 +1,5 @@
 import builtins
+from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import Depends, Query
@@ -34,6 +35,7 @@ from .schemas import (
     ProductNameCheck,
     ProductNameCheckRequest,
     ProductUpdate,
+    ProductVersion,
 )
 from .service import ProductNotDeletable
 from .service import product as product_service
@@ -205,6 +207,27 @@ async def get(
         raise ResourceNotFound()
 
     return product
+
+
+@router.get(
+    "/{id}/versions",
+    summary="List Product Versions",
+    response_model=builtins.list[ProductVersion],
+    responses={404: ProductNotFound},
+    tags=[APITag.private],
+)
+async def list_versions(
+    id: ProductID,
+    auth_subject: auth.CreatorProductsRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Sequence[ProductVersion]:
+    """List the versions of a product managed as code, newest first."""
+    product = await product_service.get(session, auth_subject, id)
+
+    if product is None:
+        raise ResourceNotFound()
+
+    return await product_service.list_versions(session, product)
 
 
 @router.post(

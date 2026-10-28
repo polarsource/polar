@@ -72,6 +72,7 @@ from .schemas import (
     ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
     ProductUpdate,
+    ProductVersion,
 )
 from .sorting import ProductSortProperty
 
@@ -180,6 +181,12 @@ class ProductService:
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
+
+    async def list_versions(
+        self, session: AsyncReadSession, product: Product
+    ) -> Sequence[ProductVersion]:
+        rows = await ProductRepository.from_session(session).get_versions(product)
+        return [ProductVersion.model_validate(row._mapping) for row in rows]
 
     async def get(
         self,

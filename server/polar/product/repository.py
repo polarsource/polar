@@ -1,8 +1,9 @@
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, and_, case, func, select
-from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
+from sqlalchemy import Row, Select, and_, case, func, or_, select
+from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.currency import PresentmentCurrency
@@ -18,13 +19,16 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    Catalog,
     CheckoutProduct,
     Product,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    Subscription,
 )
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import sql
 
 from .sorting import ProductSortProperty
@@ -78,6 +82,48 @@ class ProductRepository(
             undefer(Product.external_id)
         )
         return await self.get_all(statement)
+
+    async def get_versions(self, product: Product) -> Sequence[Row[Any]]:
+        """Every version of a product sharing its external ID, newest first, with
+        the customers subscribed to each."""
+        source = aliased(Product)
+        customers = (
+            select(func.count(Subscription.customer_id.distinct()))
+            .where(
+                Subscription.product_id == Product.id,
+                Subscription.deleted_at.is_(None),
+                Subscription.status.in_(SubscriptionStatus.active_statuses()),
+            )
+            .correlate(Product)
+            .scalar_subquery()
+        )
+        statement = (
+            select(
+                Product.id.label("product_id"),
+                Catalog.id.label("catalog_id"),
+                Catalog.name,
+                Catalog.published_at,
+                Product.is_current,
+                customers.label("customers"),
+            )
+            .outerjoin(Catalog, Catalog.id == Product.catalog_id)
+            .where(
+                Product.deleted_at.is_(None),
+                Product.organization_id == product.organization_id,
+                or_(
+                    Product.id == product.id,
+                    Product.external_id
+                    == select(source.external_id)
+                    .where(source.id == product.id)
+                    .scalar_subquery(),
+                ),
+            )
+            .order_by(
+                Catalog.published_at.desc().nulls_last(), Product.created_at.desc()
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.all()
 
     async def get_all_by_external_ids(
         self,

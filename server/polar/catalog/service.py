@@ -63,11 +63,15 @@ class CatalogService:
             statement = statement.where(Catalog.published_at > published_after)
         if published_before is not None:
             statement = statement.where(Catalog.published_at < published_before)
-        return await repository.paginate(
+        results, count = await repository.paginate(
             statement,
             limit=pagination.limit,
             page=pagination.page,
         )
+        customers = await repository.count_customers(results)
+        for result in results:
+            result.customers = customers.get(result.id, 0)  # type: ignore[attr-defined]
+        return results, count
 
     async def get_live_entries(
         self,

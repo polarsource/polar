@@ -3,11 +3,18 @@ from datetime import timedelta
 import pytest
 from httpx import AsyncClient
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
-from polar.models import Catalog, Organization, UserOrganization
+from polar.models import Catalog, CatalogProduct, Organization, UserOrganization
 from polar.models.catalog import CatalogStatus
+from polar.models.subscription import SubscriptionStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import (
+    create_customer,
+    create_product,
+    create_subscription,
+)
 
 
 @pytest.fixture
@@ -124,6 +131,61 @@ class TestList:
 
         assert response.status_code == 200
         assert [item["id"] for item in response.json()["items"]] == [str(archived.id)]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_customers(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog],
+    ) -> None:
+        draft, live, archived = catalogs
+        old_pro, pro, basic = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+            )
+            for _ in range(3)
+        ]
+        for catalog, product, external_id in (
+            (archived, old_pro, "pro"),
+            (archived, basic, "basic"),
+            (live, pro, "pro"),
+            (live, basic, "basic"),
+            (draft, old_pro, "pro"),
+        ):
+            await save_fixture(
+                CatalogProduct(
+                    catalog=catalog, product=product, external_id=external_id
+                )
+            )
+        grandfathered, current, churned = [
+            await create_customer(
+                save_fixture, organization=organization, email=f"{name}@example.com"
+            )
+            for name in ("grandfathered", "current", "churned")
+        ]
+        for customer, product, status in (
+            (grandfathered, old_pro, SubscriptionStatus.active),
+            (current, pro, SubscriptionStatus.active),
+            (current, basic, SubscriptionStatus.trialing),
+            (churned, old_pro, SubscriptionStatus.canceled),
+        ):
+            await create_subscription(
+                save_fixture, product=product, customer=customer, status=status
+            )
+
+        response = await client.get("/v1/catalogs/")
+
+        assert response.status_code == 200
+        assert {item["id"]: item["customers"] for item in response.json()["items"]} == {
+            str(draft.id): 0,
+            str(live.id): 1,
+            str(archived.id): 1,
+        }
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")

@@ -2628,6 +2628,28 @@ export interface paths {
     patch: operations['products:update']
     trace?: never
   }
+  '/v1/products/{id}/versions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Product Versions
+     * @description List the versions of a product managed as code, newest first.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['products:list_versions']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/products/name-check': {
     parameters: {
       query?: never
@@ -13794,6 +13816,11 @@ export interface components {
        * @description When the catalog was published. Null for drafts.
        */
       published_at: string | null
+      /**
+       * Customers
+       * @description Customers with an active subscription to a product of this catalog, counted on the newest catalog that still contains it.
+       */
+      customers: number
     }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
@@ -35408,6 +35435,43 @@ export interface components {
         | null
     }
     /**
+     * ProductVersion
+     * @description A version of a product managed as code, as published by a catalog.
+     */
+    ProductVersion: {
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description ID of the product row for this version.
+       */
+      product_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that published this version.
+       */
+      catalog_id: string | null
+      /**
+       * Name
+       * @description Name of the catalog that published it.
+       */
+      name: string | null
+      /**
+       * Published At
+       * @description When it was published.
+       */
+      published_at: string | null
+      /**
+       * Is Current
+       * @description Whether new checkouts use this version.
+       */
+      is_current: boolean
+      /**
+       * Customers
+       * @description Customers with an active subscription to this version.
+       */
+      customers: number
+    }
+    /**
      * Visibility
      * @enum {string}
      */
@@ -49143,6 +49207,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Product not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'products:list_versions': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductVersion'][]
         }
       }
       /** @description Product not found. */

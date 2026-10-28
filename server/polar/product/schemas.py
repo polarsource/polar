@@ -1,5 +1,6 @@
 import builtins
 from collections.abc import Sequence
+from datetime import datetime
 from decimal import Decimal
 from typing import Annotated, Any, Literal, Self
 
@@ -1216,4 +1217,19 @@ class ProductNameCheck(Schema):
     )
     phrase: str | None = Field(
         description="The exact phrase that matched, when a word-list rule flagged it."
+    )
+
+
+class ProductVersion(Schema):
+    """A version of a product managed as code, as published by a catalog."""
+
+    product_id: UUID4 = Field(description="ID of the product row for this version.")
+    catalog_id: UUID4 | None = Field(
+        description="ID of the catalog that published this version."
+    )
+    name: str | None = Field(description="Name of the catalog that published it.")
+    published_at: datetime | None = Field(description="When it was published.")
+    is_current: bool = Field(description="Whether new checkouts use this version.")
+    customers: int = Field(
+        description="Customers with an active subscription to this version."
     )

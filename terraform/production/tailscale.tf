@@ -1,3 +1,8 @@
+variable "tailscale_version" {
+  description = "Shared Tailscale release from the Global Settings variable set."
+  type        = string
+}
+
 resource "aws_secretsmanager_secret" "ec2_tailscale" {
   name = "polar-production-ec2-tailscale"
 
@@ -20,6 +25,7 @@ module "ec2_tailscale" {
   advertise_routes           = module.vpc.private_subnet_cidr_blocks
   advertise_tags             = ["tag:router", "tag:production"]
   tailscale_oauth_secret_arn = aws_secretsmanager_secret.ec2_tailscale.arn
+  tailscale_version          = var.tailscale_version
   permissions_boundary_arn   = data.aws_iam_policy.permission_boundary.arn
 
   tags = {

@@ -100,6 +100,7 @@ resource "aws_instance" "this" {
       tostring(var.tailscale_ssh),
       join(",", var.advertise_routes),
       join(",", var.advertise_tags),
+      var.tailscale_version,
     ]]
   })}"
 

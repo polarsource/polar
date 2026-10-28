@@ -216,8 +216,8 @@ class DeclarativeConfigService:
             raise ConfigInvalid(errors)
 
         live = await catalog_service.get_or_create_live(session, organization)
-        _, _, version_hash = await catalog_service.get_next_version_hash(
-            session, organization, catalogs.product_definitions(changes)
+        _, version_hash = await catalog_service.get_next_version_hash(
+            session, organization, live, catalogs.product_definitions(changes)
         )
         settings_result = await self._apply_settings(
             session, organization, changes.settings
@@ -293,12 +293,9 @@ class DeclarativeConfigService:
             session, organization, config, for_update=False
         )
         issues.extend(catalogs.benefit_issues(changes))
-        (
-            live,
-            catalog_before,
-            catalog_after,
-        ) = await catalog_service.get_next_version_hash(
-            session, organization, catalogs.product_definitions(changes)
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        catalog_before, catalog_after = await catalog_service.get_next_version_hash(
+            session, organization, live, catalogs.product_definitions(changes)
         )
         product_changes = self._plan_changes(ConfigResource.product, changes.products)
         catalog: ConfigCatalogPlan | None = None

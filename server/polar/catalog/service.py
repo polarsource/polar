@@ -70,23 +70,23 @@ class CatalogService:
         )
 
     async def get_live_entries(
-        self, session: AsyncReadSession, organization: Organization
-    ) -> tuple[Catalog | None, str | None, dict[str, str]]:
-        """Return the live catalog, its version hash and contents.
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        live: Catalog | None,
+    ) -> tuple[str | None, dict[str, str]]:
+        """Return the live catalog's version hash and contents.
 
-        Before the first publish, there's no live catalog yet, and the hash and
-        contents are those of the catalog apply creates from the existing products.
+        Before the first publish, that's the catalog apply creates from the
+        existing products.
         """
-        live = await CatalogRepository.from_session(session).get_live(organization.id)
         if live is not None:
             members = await CatalogProductRepository.from_session(
                 session
             ).get_all_by_catalog(live.id)
-            return (
-                live,
-                live.version_hash,
-                {member.external_id: str(member.product_id) for member in members},
-            )
+            return live.version_hash, {
+                member.external_id: str(member.product_id) for member in members
+            }
         entries = {
             product.external_id: str(product.id)
             for product in await ProductRepository.from_session(
@@ -95,21 +95,22 @@ class CatalogService:
             if product.external_id is not None
         }
         if not entries:
-            return None, None, {}
-        return None, compute_version_hash(None, entries), entries
+            return None, {}
+        return compute_version_hash(None, entries), entries
 
     async def get_next_version_hash(
         self,
         session: AsyncReadSession,
         organization: Organization,
+        live: Catalog | None,
         definitions: Mapping[str, str],
-    ) -> tuple[Catalog | None, str | None, str | None]:
-        """Return the live catalog, its version hash, and the version hash of the
-        catalog these new product definitions would publish."""
-        live, before, entries = await self.get_live_entries(session, organization)
+    ) -> tuple[str | None, str | None]:
+        """Return the live version hash, and the version hash of the catalog these
+        new product definitions would publish."""
+        before, entries = await self.get_live_entries(session, organization, live)
         if not definitions:
-            return live, before, before
-        return live, before, compute_version_hash(before, {**entries, **definitions})
+            return before, before
+        return before, compute_version_hash(before, {**entries, **definitions})
 
     async def get_or_create_live(
         self, session: AsyncSession, organization: Organization

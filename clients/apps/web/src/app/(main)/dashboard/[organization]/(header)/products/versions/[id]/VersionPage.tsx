@@ -8,25 +8,9 @@ import { useCatalog } from '@/hooks/queries/catalogs'
 import { useSelectedProducts } from '@/hooks/queries/products'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
-import {
-  Button,
-  Grid,
-  List,
-  ListItem,
-  Text,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/orbit'
+import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  ArrowBackOutlined,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-} from '@polar-sh/orbit/icons'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { ArrowBackOutlined, Check, Copy } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
@@ -40,67 +24,15 @@ const shortHash = (catalog: { version_hash: string | null }) =>
 const plural = (count: number, noun: string) =>
   `${count} ${count === 1 ? noun : `${noun}s`}`
 
-const VersionLink = ({
-  version,
-  versionsPath,
-  direction,
-  children,
-}: {
-  version: CatalogVersion | undefined
-  versionsPath: string
-  direction: 'Newer' | 'Older'
-  children: ReactNode
-}) => {
-  if (!version) {
-    return (
-      <Button
-        size="icon"
-        variant="secondary"
-        aria-label={`${direction} version`}
-        disabled
-      >
-        {children}
-      </Button>
-    )
-  }
-  const label = `${direction} · ${version.name ?? shortHash(version)}`
-  return (
-    <Tooltip delayDuration={150}>
-      <TooltipTrigger asChild>
-        <Link href={`${versionsPath}/${version.id}`} aria-label={label}>
-          <Button size="icon" variant="secondary" tabIndex={-1}>
-            {children}
-          </Button>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  )
-}
-
-const LiveWindow = ({
-  catalog,
-  next,
-}: {
-  catalog: CatalogVersion
-  next: CatalogVersion | undefined
-}) => {
+const LiveWindow = ({ catalog }: { catalog: CatalogVersion }) => {
   if (!catalog.published_at) return 'Draft'
-  if (!next?.published_at) {
-    return (
-      <>
-        Published{' '}
-        <Text as="span" color="default">
-          <PublishedAt catalog={catalog} />
-        </Text>
-      </>
-    )
-  }
   return (
-    <Text as="span" color="default">
-      <FormattedDateTime datetime={catalog.published_at} /> –{' '}
-      <FormattedDateTime datetime={next.published_at} />
-    </Text>
+    <>
+      Published{' '}
+      <Text as="span" color="default">
+        <PublishedAt catalog={catalog} />
+      </Text>
+    </>
   )
 }
 
@@ -190,10 +122,6 @@ export default function VersionPage({
   catalogId: string
 }) {
   const { data: catalog, error } = useCatalog(catalogId)
-  const { data: previous, isLoading: previousLoading } = useCatalog(
-    catalog?.previous_id,
-  )
-  const { data: next, isLoading: nextLoading } = useCatalog(catalog?.next_id)
   const rows = catalog?.products ?? []
   const { data: products } = useSelectedProducts(
     rows.map(({ product_id }) => product_id),
@@ -205,7 +133,7 @@ export default function VersionPage({
   )
 
   if (error) notFound()
-  if (!catalog || previousLoading || nextLoading) {
+  if (!catalog) {
     return <DashboardBody title={null} />
   }
 
@@ -244,28 +172,10 @@ export default function VersionPage({
               <CopyHashButton hash={catalog.version_hash} />
             ) : null}
             <Text color="muted">
-              <LiveWindow catalog={catalog} next={next} />
+              <LiveWindow catalog={catalog} />
             </Text>
             {catalog.status === 'live' ? <CurrentBadge /> : null}
           </Box>
-        </Box>
-      }
-      header={
-        <Box columnGap="s">
-          <VersionLink
-            version={next}
-            versionsPath={versionsPath}
-            direction="Newer"
-          >
-            <ChevronUp size={16} />
-          </VersionLink>
-          <VersionLink
-            version={previous}
-            versionsPath={versionsPath}
-            direction="Older"
-          >
-            <ChevronDown size={16} />
-          </VersionLink>
         </Box>
       }
     >

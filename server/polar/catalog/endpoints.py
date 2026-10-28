@@ -4,6 +4,7 @@ from pydantic import UUID4, AwareDatetime
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.models import Catalog
 from polar.models.catalog import CatalogStatus
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -81,9 +82,9 @@ async def get(
     id: UUID4,
     auth_subject: auth.CatalogRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> CatalogVersion:
+) -> Catalog:
     """Get a catalog version and the products in it."""
     catalog = await catalog_service.get(session, auth_subject, id)
     if catalog is None:
         raise ResourceNotFound()
-    return await catalog_service.get_version(session, catalog)
+    return catalog

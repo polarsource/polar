@@ -17,6 +17,9 @@ class Catalog(IDSchema, TimestampedSchema):
             "position in the organization's catalog history."
         )
     )
+    parent_id: UUID4 | None = Field(
+        description="The catalog version this one was published on top of."
+    )
     status: CatalogStatus = Field(
         description=(
             "`live` for the catalog new checkouts use, `archived` for previous "

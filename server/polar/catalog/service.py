@@ -3,6 +3,8 @@ import uuid
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 
+from sqlalchemy.orm import selectinload
+
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
@@ -23,8 +25,6 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 
 from .repository import CatalogProductRepository, CatalogRepository
-from .schemas import Catalog as CatalogSchema
-from .schemas import CatalogVersion
 
 
 def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) -> str:
@@ -74,25 +74,12 @@ class CatalogService:
     ) -> Catalog | None:
         org_ids = await self._get_readable_org_ids(session, auth_subject)
         repository = CatalogRepository.from_session(session)
-        statement = repository.get_statement_by_org_ids(org_ids).where(Catalog.id == id)
-        return await repository.get_one_or_none(statement)
-
-    async def get_version(
-        self, session: AsyncReadSession, catalog: Catalog
-    ) -> CatalogVersion:
-        product_ids = await CatalogProductRepository.from_session(
-            session
-        ).get_product_ids_by_catalog(catalog.id)
-
-        return CatalogVersion.model_validate(
-            {
-                **CatalogSchema.model_validate(catalog).model_dump(),
-                "products": [
-                    {"external_id": external_id, "product_id": product_id}
-                    for external_id, product_id in product_ids.items()
-                ],
-            }
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Catalog.id == id)
+            .options(selectinload(Catalog.products))
         )
+        return await repository.get_one_or_none(statement)
 
     async def _get_readable_org_ids(
         self,
@@ -244,6 +231,7 @@ class CatalogService:
                 name=name
                 if name is not None
                 else await self.get_default_name(session, organization),
+                parent=live,
                 version_hash=version_hash,
                 status=CatalogStatus.live,
                 published_at=utc_now(),

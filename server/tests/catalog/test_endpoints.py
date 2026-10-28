@@ -30,6 +30,7 @@ async def catalogs(
     live = Catalog(
         organization=organization,
         name="Spring pricing",
+        parent=archived,
         version_hash="b" * 64,
         status=CatalogStatus.live,
         published_at=now,
@@ -208,6 +209,7 @@ class TestGet:
         assert response.status_code == 200
         json = response.json()
         assert json["id"] == str(live.id)
+        assert json["parent_id"] == str(archived.id)
         assert json["products"] == [
             {"external_id": "lifetime", "product_id": str(product_one_time.id)},
             {"external_id": "pro", "product_id": str(product_second.id)},

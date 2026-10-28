@@ -2852,6 +2852,8 @@ class TestCatalogVersioning:
         live = await catalogs_repo.get_live(organization.id)
         assert live is not None
         assert live.id != first.id
+        assert first.parent_id is None
+        assert live.parent_id == first.id
         assert live.version_hash not in (None, first.version_hash)
         assert new_product.catalog_id == live.id
         assert updated.catalog == ConfigCatalogChange(

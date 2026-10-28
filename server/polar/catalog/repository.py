@@ -74,15 +74,3 @@ class CatalogProductRepository(
             .options(joinedload(CatalogProduct.product))
         )
         return await self.get_all(statement)
-
-    async def get_product_ids_by_catalog(self, catalog_id: UUID) -> dict[str, UUID]:
-        statement = (
-            select(CatalogProduct.external_id, CatalogProduct.product_id)
-            .where(
-                CatalogProduct.catalog_id == catalog_id,
-                CatalogProduct.deleted_at.is_(None),
-            )
-            .order_by(CatalogProduct.external_id)
-        )
-        result = await self.session.execute(statement)
-        return dict(result.tuples().all())

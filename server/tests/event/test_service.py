@@ -1614,6 +1614,55 @@ class TestCreateEvent:
         assert bucket.bucket_start <= event.timestamp < bucket.bucket_end
         assert (bucket.count, bucket.sum) == (1, Decimal(10))
 
+    async def test_meter_reset_seals_the_credits_before_it(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        reset_at = utc_now()
+        meter_id = str(meter.id)
+        for event in (
+            build_system_event(
+                SystemEvent.meter_credited,
+                customer,
+                organization,
+                {"meter_id": meter_id, "units": 10, "rollover": False},
+                timestamp=reset_at - timedelta(minutes=10),
+            ),
+            build_system_event(
+                SystemEvent.meter_reset,
+                customer,
+                organization,
+                {"meter_id": meter_id},
+                timestamp=reset_at,
+            ),
+            build_system_event(
+                SystemEvent.meter_credited,
+                customer,
+                organization,
+                {"meter_id": meter_id, "units": 4, "rollover": True},
+                timestamp=reset_at,
+            ),
+        ):
+            await event_service.create_event(session, event)
+
+        buckets = (
+            await session.scalars(
+                select(ReducerBucket)
+                .join(Reducer)
+                .where(
+                    Reducer.kind == ReducerKind.credit,
+                    ReducerBucket.customer_id == customer.id,
+                    ReducerBucket.external_customer_id.is_(None),
+                )
+            )
+        ).all()
+        assert sum(b.sum for b in buckets if b.sealed_at is not None) == 10
+        assert sum(b.sum for b in buckets if b.sealed_at is None) == 4
+
 
 @pytest.mark.anyio
 class TestMoveStagedEvents:

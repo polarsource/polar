@@ -181,7 +181,7 @@ class OutpostService:
     ) -> None:
         reducer = await ReducerRepository.from_session(
             session
-        ).get_active_by_id_and_kinds(payload.reducer_id, (ReducerKind.usage,))
+        ).get_active_by_id_and_kinds(payload.reducer_id, tuple(ReducerKind))
         if reducer is None or reducer.organization_id != organization.id:
             log.warning(
                 "Reducer not found",
@@ -329,14 +329,23 @@ class OutpostService:
 
         version = await reducer_service.get_database_now(session)
         since = get_reducer_bucket_start(version - SYNCED_LOOKBACK)
+        # Credits are the customer's and all in Polar: Outpost never counts any.
+        credits = (
+            await reducer_service.get_credits(session, reducer, customer.id)
+            if reducer.kind == ReducerKind.credit and customer is not None
+            else (0, 0, None, None)
+        )
         payloads = []
         for customer_id, external_customer_id in identities:
-            (
-                cold_until,
-                (count, total, minimum, maximum),
-            ) = await reducer_service.get_cold_usage(
-                session, reducer, customer_id, external_customer_id, since=since
-            )
+            if reducer.kind == ReducerKind.credit:
+                cold_until, (count, total, minimum, maximum) = version, credits
+            else:
+                (
+                    cold_until,
+                    (count, total, minimum, maximum),
+                ) = await reducer_service.get_cold_usage(
+                    session, reducer, customer_id, external_customer_id, since=since
+                )
             payloads.append(
                 MeterUsageOutgoingMessagePayload(
                     reducer_id=reducer.id,

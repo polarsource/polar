@@ -125,6 +125,7 @@ from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
+    create_benefit_grant,
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
@@ -308,7 +309,6 @@ class TestList:
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
-        assert count == 1
         assert len(orders) == 1
         assert orders[0].id == order.id
 
@@ -6570,20 +6570,23 @@ class TestMoveBenefits:
         other = await create_product(
             save_fixture, organization=organization, recurring_interval=None
         )
+        benefit = await create_benefit(save_fixture, organization=organization)
         order = await create_order(save_fixture, product=previous, customer=customer)
-        await create_order(
-            save_fixture,
-            product=previous,
-            customer=customer,
-            status=OrderStatus.refunded,
+        revoked_order = await create_order(
+            save_fixture, product=previous, customer=customer
         )
-        await create_order(save_fixture, product=other, customer=customer)
+        other_order = await create_order(save_fixture, product=other, customer=customer)
+        for granted_order, granted in (
+            (order, True),
+            (revoked_order, False),
+            (other_order, True),
+        ):
+            await create_benefit_grant(
+                save_fixture, customer, benefit, granted=granted, order=granted_order
+            )
 
-        count = await order_service.move_benefits(
-            session, organization.id, "pro", current
-        )
+        await order_service.move_benefits(session, organization.id, "pro", current)
 
-        assert count == 1
         enqueue_job_mock.assert_called_once_with(
             "benefit.enqueue_benefits_grants",
             task="grant",

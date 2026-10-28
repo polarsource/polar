@@ -49544,7 +49544,7 @@ export interface operations {
           'application/json': unknown
         }
       }
-      /** @description You don't have the permission to manage sales, or the organization doesn't use catalog versioning. */
+      /** @description You don't have the permission to manage sales, or config as code isn't enabled for the organization. */
       403: {
         headers: {
           [name: string]: unknown

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, case, func, select, update
+from sqlalchemy import CursorResult, Select, case, exists, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import (
@@ -33,6 +33,7 @@ from polar.metrics.fx import (
     usd_settled_payment_clauses,
 )
 from polar.models import (
+    BenefitGrant,
     Customer,
     Discount,
     Order,
@@ -59,6 +60,32 @@ class OrderRepository(
     RepositoryBase[Order],
 ):
     model = Order
+
+    def get_benefits_move_statement(
+        self, organization_id: UUID, product_external_id: str
+    ) -> Select[tuple[Order]]:
+        """Paid one-time orders of any version of a product whose customer still
+        holds at least one of their benefits."""
+        return (
+            select(Order)
+            .join(Order.customer)
+            .join(Product, Order.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id == product_external_id,
+                ~Order.is_deleted,
+                Order.subscription_id.is_(None),
+                Order.seats.is_(None),
+                Order.status.in_(OrderStatus.paid_statuses()),
+                ~Customer.is_deleted,
+                exists().where(
+                    BenefitGrant.order_id == Order.id,
+                    BenefitGrant.is_granted,
+                    BenefitGrant.deleted_at.is_(None),
+                ),
+            )
+            .options(joinedload(Order.customer))
+        )
 
     async def get_revenue_by_customer(
         self,

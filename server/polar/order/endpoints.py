@@ -292,7 +292,7 @@ async def create(
         403: {
             "description": (
                 "You don't have the permission to manage sales, "
-                "or the organization doesn't use catalog versioning."
+                "or config as code isn't enabled for the organization."
             ),
             "model": NotPermitted.schema(),
         },

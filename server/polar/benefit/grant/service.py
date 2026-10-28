@@ -374,16 +374,11 @@ class BenefitGrantService:
                 customer, **scope
             )
 
-        repointed_benefit_ids = (
+        if task == "grant":
             await self._repoint_grants(
                 session, existing_grants, customer, product, member_id
             )
-            if task == "grant"
-            else set()
-        )
-        granted_benefit_ids = {
-            g.benefit_id for g in existing_grants if g.is_granted
-        } | repointed_benefit_ids
+        granted_benefit_ids = {g.benefit_id for g in existing_grants if g.is_granted}
         # Don't retry grants that failed due to required customer action
         errored_benefit_ids = {
             g.benefit_id
@@ -456,19 +451,23 @@ class BenefitGrantService:
         customer: Customer,
         product: Product,
         member_id: UUID | None,
-    ) -> set[UUID]:
+    ) -> None:
         """Point grants of a previous benefit version at the product's version.
 
         With catalog versioning, editing a benefit creates a new row with the same
         `external_id`. Revoking and granting again would reissue license keys or
         remove Discord roles, so the grant is kept and updated in place instead.
         Meter credits are consumed, so they're revoked and granted as usual.
+        Grants only move forward to the live version: granting a superseded
+        product never moves them back.
         """
+        if not product.is_current:
+            return
         organization = await OrganizationRepository.from_session(session).get_by_id(
             product.organization_id
         )
         if organization is None or not organization.is_config_as_code_enabled:
-            return set()
+            return
 
         targets = {
             benefit.external_id: benefit
@@ -485,7 +484,7 @@ class BenefitGrantService:
             and grant.benefit_id not in product_benefit_ids
         ]
         if not targets or not candidates:
-            return set()
+            return
 
         previous_benefits = {
             benefit.id: benefit
@@ -493,9 +492,11 @@ class BenefitGrantService:
                 session
             ).get_all_versions_by_ids([grant.benefit_id for grant in candidates])
         }
+        # A grant row, even revoked, already holds the target benefit in this scope,
+        # and the scope's unique index allows only one.
         taken = {grant.benefit_id for grant in grants if grant.member_id == member_id}
 
-        repointed: set[UUID] = set()
+        repointed = False
         for grant in candidates:
             previous = previous_benefits[grant.benefit_id]
             target = (
@@ -511,12 +512,11 @@ class BenefitGrantService:
             grant.benefit_id = target.id
             session.add(grant)
             taken.add(target.id)
-            repointed.add(target.id)
+            repointed = True
             enqueue_job("benefit.update", benefit_grant_id=grant.id)
 
         if repointed:
             await session.flush()
-        return repointed
 
     async def _repoint_benefit_records(
         self,

@@ -12,14 +12,17 @@ from redis.exceptions import RedisError
 from sqlalchemy import Row
 
 from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncReadSession
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.meter.aggregation import (
+    Aggregation,
     AggregationFunction,
     PropertyAggregation,
     UniqueAggregation,
 )
+from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Customer,
     CustomerMeter,
@@ -29,6 +32,7 @@ from polar.models import (
     Reducer,
     ReducerBucket,
 )
+from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
@@ -49,6 +53,27 @@ SEAL_DELAY = timedelta(minutes=11)
 type Contributions = dict[redis_store.BucketId, list[tuple[datetime, Decimal]]]
 # What an event adds to a count reducer.
 ONE = Decimal(1)
+CREDIT_AGGREGATION = PropertyAggregation(func=AggregationFunction.sum, property="units")
+
+
+def _get_credit_filter(meter: Meter) -> Filter:
+    """Matches the meter's `meter.credited` events."""
+    return Filter(
+        conjunction=FilterConjunction.and_,
+        clauses=[
+            FilterClause(
+                property="source", operator=FilterOperator.eq, value=EventSource.system
+            ),
+            FilterClause(
+                property="name",
+                operator=FilterOperator.eq,
+                value=SystemEvent.meter_credited,
+            ),
+            FilterClause(
+                property="meter_id", operator=FilterOperator.eq, value=str(meter.id)
+            ),
+        ],
+    )
 
 
 def get_reducer_bucket_start(timestamp: datetime) -> datetime:
@@ -164,24 +189,28 @@ class ReducerService:
         }
 
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:
+        """Creates the meter's credit reducer, and creates or updates its usage
+        reducer, which it returns."""
         repository = ReducerRepository.from_session(session)
         meter = await repository.get_meter_for_update(meter.id)
+        if await repository.get_by_meter_and_kind(meter.id, ReducerKind.credit) is None:
+            await self._create_reducer(
+                session,
+                meter,
+                ReducerKind.credit,
+                _get_credit_filter(meter),
+                CREDIT_AGGREGATION,
+            )
+
         reducer = await repository.get_by_meter_and_kind(meter.id, ReducerKind.usage)
         if reducer is not None:
             return await repository.update(
                 reducer,
                 update_dict={"filter": meter.filter, "aggregation": meter.aggregation},
             )
-
-        reducer = await repository.create(
-            Reducer(
-                organization=meter.organization,
-                filter=meter.filter,
-                aggregation=meter.aggregation,
-            )
+        return await self._create_reducer(
+            session, meter, ReducerKind.usage, meter.filter, meter.aggregation
         )
-        session.add(MeterReducer(meter=meter, reducer=reducer))
-        return reducer
 
     async def rollup(
         self,
@@ -471,6 +500,25 @@ class ReducerService:
                     **statistics,
                 )
             _enqueue_outpost_event(reducer, customer_id, external_customer_id)
+
+    async def _create_reducer(
+        self,
+        session: AsyncSession,
+        meter: Meter,
+        kind: ReducerKind,
+        filter: Filter,
+        aggregation: Aggregation,
+    ) -> Reducer:
+        reducer = await ReducerRepository.from_session(session).create(
+            Reducer(
+                organization=meter.organization,
+                kind=kind,
+                filter=filter,
+                aggregation=aggregation,
+            )
+        )
+        session.add(MeterReducer(meter=meter, reducer=reducer))
+        return reducer
 
     async def _get_reducers(
         self, session: AsyncSession, meter_ids: Iterable[UUID]

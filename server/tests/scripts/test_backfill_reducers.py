@@ -5,6 +5,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.models import Meter, MeterReducer, Organization, Reducer
+from polar.models.reducer import ReducerKind
 from polar.reducer.service import reducer as reducer_service
 from scripts.backfill_reducers import backfill_batch
 from tests.fixtures.database import SaveFixture
@@ -33,8 +34,8 @@ class TestBackfillReducers:
 
         meter.set_deleted_at()
         second_meter.set_deleted_at()
-        assert await backfill_batch(session, batch_size=1) == (0, 1)
-        assert await backfill_batch(session, batch_size=1) == (0, 1)
+        for _ in range(4):
+            assert await backfill_batch(session, batch_size=1) == (0, 1)
         assert await backfill_batch(session, batch_size=1) == (0, 0)
 
     async def test_stale_meter_does_not_overwrite_reducer(
@@ -74,7 +75,11 @@ class TestBackfillReducers:
         await save_fixture(archived_meter)
 
         assert await backfill_batch(session) == (2, 0)
-        statement = select(MeterReducer.meter_id, Reducer).join(Reducer)
+        statement = (
+            select(MeterReducer.meter_id, Reducer)
+            .join(Reducer)
+            .where(Reducer.kind == ReducerKind.usage)
+        )
         first_run = dict((await session.execute(statement)).tuples().all())
         assert set(first_run) == {meter.id, archived_meter.id}
         assert first_run[meter.id].id != first_run[archived_meter.id].id
@@ -100,7 +105,7 @@ class TestBackfillReducers:
             meter.set_deleted_at()
         await session.flush()
 
-        assert await backfill_batch(session) == (0, 1)
+        assert await backfill_batch(session) == (0, 2)
         assert (await session.scalars(select(Reducer))).all() == []
         assert (await session.scalars(select(MeterReducer))).all() == []
         assert await backfill_batch(session) == (0, 0)
@@ -112,7 +117,11 @@ class TestBackfillReducers:
         meter: Meter,
     ) -> None:
         assert await backfill_batch(session) == (1, 0)
-        reducer = (await session.scalars(select(Reducer))).one()
+        reducer = (
+            await session.scalars(
+                select(Reducer).where(Reducer.kind == ReducerKind.usage)
+            )
+        ).one()
         second_meter = Meter(
             organization=organization,
             name="Second meter",
@@ -123,5 +132,5 @@ class TestBackfillReducers:
         meter.set_deleted_at()
         await session.flush()
 
-        assert await backfill_batch(session) == (0, 0)
+        assert await backfill_batch(session) == (0, 1)
         assert (await session.scalars(select(Reducer))).one().id == reducer.id

@@ -39,9 +39,14 @@ from polar.declarative_config.service import (
 from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
 )
-from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.enums import (
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+    TaxBehaviorOption,
+)
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.trial import TrialInterval
+from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
@@ -53,6 +58,7 @@ from polar.models import (
     ProductPriceMeteredTiers,
     ProductPriceUnit,
     SubscriptionMeter,
+    SubscriptionUpdate,
     User,
     UserOrganization,
 )
@@ -3110,6 +3116,73 @@ class TestProductRemoval:
         with pytest.raises(ConfigInvalid) as e:
             await declarative_config_service.apply(session, redis, auth_subject, config)
         assert e.value.errors == [issue]
+
+    async def test_unlisted_product_with_scheduled_change(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        team = {**MONTHLY_PRO, "external_id": "team", "name": "Team"}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, team]}),
+        )
+        products_repo = ProductRepository.from_session(session)
+        [pro] = await products_repo.get_all_by_external_ids(organization.id, ["pro"])
+        [team_product] = await products_repo.get_all_by_external_ids(
+            organization.id, ["team"]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=pro, customer=customer
+        )
+        await save_fixture(
+            SubscriptionUpdate(
+                subscription=subscription,
+                product=team_product,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+                applies_at=utc_now(),
+            )
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO]})
+        )
+
+        assert [(issue.type, issue.input) for issue in plan.issues] == [
+            (ConfigIssueType.removed_in_use, "team")
+        ]
+
+    async def test_unlisted_archived_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        [pack] = await ProductRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
+        pack.is_archived = True
+        await save_fixture(pack)
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO]})
+        )
+
+        assert (plan.removed, plan.issues, plan.catalog) == ([], [], None)
 
     async def test_deprecated_product_with_subscriptions(
         self,

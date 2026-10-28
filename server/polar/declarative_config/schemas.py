@@ -388,10 +388,12 @@ class Config(Schema):
         max_length=MAXIMUM_PRODUCTS,
         description=(
             "Products to create or update, matched by `external_id`. "
-            "Deprecated products, and live products that aren't listed, are left "
-            "out of the next catalog. A product that isn't listed but still has "
-            "active subscriptions is an error: mark it `deprecated` instead. "
-            "When `products` is omitted, existing products are left untouched."
+            "Deprecated products are never created or updated. They, and live "
+            "products that aren't listed, are left out of the next catalog. "
+            "A product that isn't listed but still has active subscriptions is "
+            "an error: mark it `deprecated` instead. Products config can't "
+            "describe, and all products when `products` is omitted, are left "
+            "untouched."
         ),
     )
     webhooks: list[ConfigWebhookEndpoint] = Field(

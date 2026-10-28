@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, and_, case, func, select
+from sqlalchemy import Select, and_, case, func, select, union
 from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
@@ -24,9 +24,9 @@ from polar.models import (
     ProductPriceCustom,
     ProductPriceFixed,
     Subscription,
+    SubscriptionUpdate,
 )
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
-from polar.models.subscription import SubscriptionStatus
 from polar.postgres import sql
 
 from .sorting import ProductSortProperty
@@ -101,27 +101,36 @@ class ProductRepository(
             statement = statement.with_for_update(of=Product, key_share=True)
         return await self.get_all(statement)
 
-    async def get_external_ids_with_billable_subscriptions(
+    async def get_external_ids_in_use(
         self, organization_id: UUID, external_ids: Sequence[str]
     ) -> set[str]:
-        """Return the external IDs with a billable subscription on any version."""
+        """Return the external IDs that a billable subscription is on, or is
+        scheduled to change to, in any of their versions."""
         if not external_ids:
             return set()
-        statement = (
+        products = (
+            Product.organization_id == organization_id,
+            Product.external_id.in_(external_ids),
+        )
+        subscribed = (
             select(Product.external_id)
-            .distinct()
             .join(Subscription, Subscription.product_id == Product.id)
+            .where(*products, Subscription.billable, ~Subscription.is_deleted)
+        )
+        scheduled = (
+            select(Product.external_id)
+            .join(SubscriptionUpdate, SubscriptionUpdate.product_id == Product.id)
+            .join(Subscription, Subscription.id == SubscriptionUpdate.subscription_id)
             .where(
-                Product.organization_id == organization_id,
-                Product.external_id.in_(external_ids),
-                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                *products,
+                SubscriptionUpdate.applied_at.is_(None),
+                ~SubscriptionUpdate.is_deleted,
+                Subscription.billable,
                 ~Subscription.is_deleted,
             )
         )
-        result = await self.session.execute(statement)
-        return {
-            external_id for external_id in result.scalars() if external_id is not None
-        }
+        result = await self.session.execute(union(subscribed, scheduled))
+        return {external_id for external_id in result.scalars() if external_id}
 
     def get_organization_statement(
         self, organization_id: UUID

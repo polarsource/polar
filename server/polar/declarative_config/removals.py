@@ -4,6 +4,7 @@ from polar.models import Organization
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 
+from .export import export_config
 from .schemas import (
     Config,
     ConfigIssue,
@@ -20,30 +21,33 @@ async def products(
 ) -> tuple[list[ConfigRemoval], list[ConfigIssue]]:
     """Live products the config deprecates or doesn't list.
 
-    A product that isn't listed but still has active subscriptions on any of
-    its versions must be marked deprecated instead.
+    Products the config can't describe, which pull skips, are left untouched.
+    A product that isn't listed but is still in use must be marked deprecated
+    instead.
     """
     if "products" not in config.model_fields_set:
         return [], []
     live = await CatalogRepository.from_session(session).get_live(organization.id)
     _, entries = await catalog_service.get_live_entries(session, organization, live)
-    listed = {
-        product.external_id for product in config.products if not product.deprecated
-    }
+    listed = {product.external_id for product in config.products}
     deprecated = {
         product.external_id for product in config.products if product.deprecated
     }
-    missing = sorted(entries.keys() - listed - deprecated)
-    in_use = await ProductRepository.from_session(
-        session
-    ).get_external_ids_with_billable_subscriptions(organization.id, missing)
+    missing = sorted(entries.keys() - listed)
+    if missing:
+        exported = await export_config(session, organization)
+        describable = {product.external_id for product in exported.config.products}
+        missing = [external_id for external_id in missing if external_id in describable]
+    in_use = await ProductRepository.from_session(session).get_external_ids_in_use(
+        organization.id, missing
+    )
     removed = [
         ConfigRemoval(
             resource=ConfigResource.product,
             external_id=external_id,
             reason=ConfigRemovalReason.deprecated,
         )
-        for external_id in sorted(entries.keys() & (deprecated - listed))
+        for external_id in sorted(entries.keys() & deprecated)
     ] + [
         ConfigRemoval(
             resource=ConfigResource.product,

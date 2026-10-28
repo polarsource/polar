@@ -1866,7 +1866,7 @@ class TestPlan:
         assert [(issue.severity, issue.loc) for issue in plan.issues] == [
             (ConfigIssueSeverity.warning, ["body", "products", 0, "prices"])
         ]
-        assert [change.field for change in plan.changes[0].diff] == ["name", "catalog"]
+        assert [change.field for change in plan.changes[0].diff] == ["name"]
         [product] = await ProductRepository.from_session(
             session
         ).get_all_by_external_ids(organization.id, ["team"])
@@ -1940,10 +1940,7 @@ class TestPlan:
         )
 
         assert plan.changes[0].action == ConfigAction.updated
-        assert [change.field for change in plan.changes[0].diff] == [
-            "prices",
-            "catalog",
-        ]
+        assert [change.field for change in plan.changes[0].diff] == ["prices"]
 
     @pytest.mark.parametrize(
         "update",
@@ -1998,13 +1995,13 @@ class TestPlan:
                     },
                 },
                 ConfigAction.updated,
-                ["prices", "catalog"],
+                ["prices"],
                 id="tier_rate",
             ),
             pytest.param(
                 {**UNIT_BASED_PRICE, "minimum_units": 5},
                 ConfigAction.updated,
-                ["prices", "catalog"],
+                ["prices"],
                 id="minimum_units",
             ),
             pytest.param(
@@ -2013,7 +2010,7 @@ class TestPlan:
                     "unit_label": {"en": {"=1": "device", "other": "devices"}},
                 },
                 ConfigAction.updated,
-                ["prices", "catalog"],
+                ["prices"],
                 id="unit_label",
             ),
         ],
@@ -2111,7 +2108,7 @@ class TestPlan:
                     },
                 },
                 ConfigAction.updated,
-                ["prices", "catalog"],
+                ["prices"],
                 id="tier_rate",
             ),
         ],
@@ -2295,11 +2292,9 @@ class TestPlan:
 
         [change] = plan.changes
         assert change.action == ConfigAction.updated
-        assert [
-            (field.field, field.before, field.after)
-            for field in change.diff
-            if field.field != "catalog"
-        ] == [("trial_interval_count", 14, 7)]
+        assert [(field.field, field.before, field.after) for field in change.diff] == [
+            ("trial_interval_count", 14, 7)
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_trial_unchanged(
@@ -2738,12 +2733,7 @@ class TestCatalogVersioning:
         assert plan.catalog == ConfigCatalogPlan(
             before=ConfigCatalog(id=first.id, name="v1"), name="Spring pricing"
         )
-        catalog_diff = plan.changes[0].diff[-1]
-        assert (catalog_diff.field, catalog_diff.before, catalog_diff.after) == (
-            "catalog",
-            "v1",
-            "Spring pricing",
-        )
+        assert "catalog" not in [field.field for field in plan.changes[0].diff]
 
         result = await declarative_config_service.apply(
             session, redis, auth_subject, named
@@ -2781,8 +2771,7 @@ class TestCatalogVersioning:
             session, auth_subject, initial_config
         )
         assert create_plan.catalog == ConfigCatalogPlan(before=None, name="v1")
-        created_catalog = create_plan.changes[0].diff[-1]
-        assert (created_catalog.field, created_catalog.before) == ("catalog", None)
+        assert "catalog" not in [field.field for field in create_plan.changes[0].diff]
 
         created = await declarative_config_service.apply(
             session, redis, auth_subject, initial_config
@@ -2824,12 +2813,7 @@ class TestCatalogVersioning:
         update_plan = await declarative_config_service.plan(
             session, auth_subject, updated_config
         )
-        catalog_diff = update_plan.changes[0].diff[-1]
-        assert (catalog_diff.field, catalog_diff.before, catalog_diff.after) == (
-            "catalog",
-            "v1",
-            "v2",
-        )
+        assert [field.field for field in update_plan.changes[0].diff] == ["prices"]
         assert update_plan.catalog == ConfigCatalogPlan(
             before=ConfigCatalog(id=first.id, name="v1"), name="v2"
         )
@@ -2894,7 +2878,7 @@ class TestCatalogVersioning:
 
         plan = await declarative_config_service.plan(session, auth_subject, config)
         assert plan.catalog == ConfigCatalogPlan(before=None, name="v2")
-        assert plan.changes[0].diff[-1].field == "catalog"
+        assert "catalog" not in [field.field for field in plan.changes[0].diff]
 
         result = await declarative_config_service.apply(
             session, redis, auth_subject, config

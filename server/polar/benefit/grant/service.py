@@ -387,8 +387,13 @@ class BenefitGrantService:
             else []
         )
 
+        # Pending grants are revoked too, so a later customer action can't grant them
         revoke_benefit_ids = (
-            [b.id for b in product.benefits if b.id in granted_benefit_ids]
+            [
+                b.id
+                for b in product.benefits
+                if b.id in granted_benefit_ids or b.id in errored_benefit_ids
+            ]
             if task == "revoke"
             else []
         )

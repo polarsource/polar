@@ -8,8 +8,6 @@ from polar.models import Product
 from polar.postgres import AsyncSession
 
 from .schemas import (
-    ConfigChange,
-    ConfigFieldChange,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
@@ -47,23 +45,6 @@ def benefit_issues(changes: ConfigChanges) -> list[ConfigIssue]:
         for change in changes.benefits
         if change.existing is not None and change.update_dict
     ]
-
-
-def add_catalog_diffs(
-    product_changes: Sequence[ConfigChange],
-    changes: Sequence[ProductChange],
-    catalog_before: str | None,
-    catalog_after: str,
-) -> None:
-    for product_change, change in zip(product_changes, changes, strict=True):
-        if _publishes_new_row(change):
-            product_change.diff.append(
-                ConfigFieldChange(
-                    field="catalog",
-                    before=catalog_before,
-                    after=catalog_after,
-                )
-            )
 
 
 async def carry_over_references(

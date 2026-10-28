@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import Field
+from pydantic import UUID4, Field
 
 from polar.kit.schemas import IDSchema, TimestampedSchema
 from polar.models.catalog import CatalogStatus
@@ -11,9 +11,14 @@ class Catalog(IDSchema, TimestampedSchema):
     """A version of an organization's product catalog."""
 
     organization_id: OrganizationID
-    name: str | None = Field(description="Optional name given when it was published.")
-    version_hash: str | None = Field(
-        description="Hash identifying this version of the catalog."
+    name: str | None = Field(
+        description=(
+            "Name given when it was published. Defaults to `v{n}`, n being its "
+            "position in the organization's catalog history."
+        )
+    )
+    parent_id: UUID4 | None = Field(
+        description="ID of the catalog this version replaced. Null for the first one."
     )
     status: CatalogStatus = Field(
         description=(

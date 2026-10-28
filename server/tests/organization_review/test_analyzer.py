@@ -139,6 +139,45 @@ def review_analyzer(mocker: MockerFixture) -> ReviewAnalyzer:
     return ReviewAnalyzer()
 
 
+class TestInit:
+    def test_defaults_to_organization_review_model(self, mocker: MockerFixture) -> None:
+        get_model = mocker.patch.object(
+            settings,
+            "get_pydantic_gateway_model",
+            return_value=(TestModel(), "openai", "gpt-6.1-sol"),
+        )
+
+        ReviewAnalyzer()
+
+        get_model.assert_called_once_with(
+            settings.PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL
+        )
+
+    @pytest.mark.parametrize(
+        ("model_name", "expected_settings"),
+        [
+            ("gpt-6.1-sol", {}),
+            ("gpt-5.5", {}),
+            ("gpt-4o", {"temperature": 0}),
+        ],
+    )
+    def test_temperature_for_model(
+        self,
+        mocker: MockerFixture,
+        model_name: str,
+        expected_settings: dict[str, int],
+    ) -> None:
+        mocker.patch.object(
+            settings,
+            "get_pydantic_gateway_model",
+            return_value=(TestModel(), "openai", model_name),
+        )
+
+        analyzer = ReviewAnalyzer()
+
+        assert analyzer.agent.model_settings == expected_settings
+
+
 def _stub_analyzer_io(
     mocker: MockerFixture,
     review_analyzer: ReviewAnalyzer,

@@ -564,12 +564,16 @@ test('code mode logs the operations a call hit and tells API failures from scrip
     ],
   })
   expect(apiFailure).not.toHaveProperty('scriptError')
+  expect(apiFailure).not.toHaveProperty('errorMessage')
+  expect(apiFailure).not.toHaveProperty('scriptErrorMessage')
   expect(scriptFailure).toMatchObject({
     isError: true,
     errorKind: 'script',
     scriptError: 'TypeError',
     unexposedOperations: ['GET /v1/customers/{}/{}'],
   })
+  expect(scriptFailure).not.toHaveProperty('errorMessage')
+  expect(scriptFailure).not.toHaveProperty('scriptErrorMessage')
   expect(emptySearch).toMatchObject({ isError: false, emptyResult: true })
   expect(JSON.stringify(log.mock.calls)).not.toContain('jane@')
   log.mockRestore()
@@ -683,6 +687,80 @@ test('tool calls are sent to PostHog as $mcp_tool_call events without the token,
   } finally {
     env.POSTHOG_PROJECT_KEY = ''
     env.MCP_ANALYTICS_SECRET = 'analytics-secret-test'
+  }
+})
+
+test('only engine errors from search scripts send their message to PostHog', async () => {
+  env.POSTHOG_PROJECT_KEY = 'phc_test'
+  const log = vi.spyOn(console, 'info').mockImplementation(() => {})
+  const search = () =>
+    rpc('tools/call', { name: 'search', arguments: { code: 'x' } })
+  const execute = () =>
+    rpc('tools/call', { name: 'execute', arguments: { code: 'x' } })
+  try {
+    evaluate.mockResolvedValueOnce({
+      error: "Cannot read properties of undefined (reading 'post')",
+      errorName: 'TypeError',
+    })
+    await search()
+    evaluate.mockResolvedValueOnce({
+      error: 'x'.repeat(1_500),
+      errorName: 'TypeError',
+    })
+    await search()
+    evaluate.mockRejectedValueOnce(new Error('Worker exceeded CPU time limit.'))
+    await search()
+    evaluate.mockResolvedValueOnce({
+      error: 'jane@example.com not found',
+      errorName: 'Error',
+    })
+    await search()
+    evaluate.mockResolvedValueOnce({
+      error: 'jane@example.com is not iterable',
+      errorName: 'TypeError',
+    })
+    await execute()
+    evaluate.mockResolvedValueOnce({
+      error: 'Polar API 404: {"detail":"jane@example.com not found"}',
+      errorName: 'Error',
+      status: 404,
+    })
+    await execute()
+
+    const [searchScript, , searchSandbox, searchThrown, ...executeFailures] =
+      log.mock.calls.map(([entry]) => entry)
+    expect(searchScript).toMatchObject({
+      errorKind: 'script',
+      scriptError: 'TypeError',
+      scriptErrorMessage:
+        "Cannot read properties of undefined (reading 'post')",
+    })
+    expect(searchSandbox).toMatchObject({ errorKind: 'sandbox' })
+    expect(searchSandbox).not.toHaveProperty('scriptErrorMessage')
+    expect(searchThrown).toMatchObject({ errorKind: 'script' })
+    expect(searchThrown).not.toHaveProperty('scriptErrorMessage')
+    expect(executeFailures).toHaveLength(2)
+    for (const entry of executeFailures) {
+      expect(entry).not.toHaveProperty('scriptErrorMessage')
+    }
+
+    const events = fetchMock.mock.calls
+      .filter(([url]) => url === 'https://us.i.posthog.com/capture/')
+      .map(([, init]) => JSON.parse(init!.body as string).properties)
+    expect(events).toHaveLength(6)
+    expect(events[0]).toMatchObject({
+      $mcp_tool_name: 'search',
+      $mcp_error_message:
+        "Cannot read properties of undefined (reading 'post')",
+    })
+    expect(events[1].$mcp_error_message).toBe('x'.repeat(1_000))
+    for (const event of events.slice(2)) {
+      expect(event).not.toHaveProperty('$mcp_error_message')
+    }
+    expect(JSON.stringify([log.mock.calls, events])).not.toContain('jane@')
+  } finally {
+    env.POSTHOG_PROJECT_KEY = ''
+    log.mockRestore()
   }
 })
 

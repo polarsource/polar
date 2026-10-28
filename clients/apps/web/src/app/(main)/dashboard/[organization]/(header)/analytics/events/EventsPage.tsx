@@ -157,6 +157,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const searchParams = useSearchParams()
   const resetPage = useCallback(() => setCurrentPage(1), [setCurrentPage])
 
+  const selectedEventTypeSet = new Set(selectedEventTypes)
+
+  const toggleEventType = (eventTypeName: string) => {
+    setSelectedEventTypes((prev) =>
+      prev && prev.includes(eventTypeName)
+        ? prev.filter((name) => name !== eventTypeName)
+        : ([...(prev ?? []), eventTypeName] as string[]),
+    )
+    resetPage()
+  }
+
   const onDateRangeChange = useCallback(
     (dateRange: { from: Date; to: Date }) => {
       setStartDate(dateRange.from)
@@ -298,22 +309,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                             size="small"
                             className="justify-between px-3 font-mono text-xs"
                             inactiveClassName="text-gray-500 dark:text-polar-500"
-                            selected={selectedEventTypes?.includes(
-                              eventType.name,
-                            )}
-                            onSelect={() => {
-                              setSelectedEventTypes((prev) =>
-                                prev && prev.includes(eventType.name)
-                                  ? prev.filter(
-                                      (name) => name !== eventType.name,
-                                    )
-                                  : ([
-                                      ...(prev ?? []),
-                                      eventType.name,
-                                    ] as string[]),
-                              )
-                              resetPage()
-                            }}
+                            selected={selectedEventTypeSet.has(eventType.name)}
+                            onSelect={() => toggleEventType(eventType.name)}
                           >
                             <span className="w-full truncate">
                               {eventType.label}

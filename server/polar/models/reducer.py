@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -6,6 +7,7 @@ from sqlalchemy import TIMESTAMP, ForeignKey, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
+from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import Aggregation, AggregationType
 from polar.meter.filter import Filter, FilterType
@@ -13,6 +15,11 @@ from polar.meter.filter import Filter, FilterType
 if TYPE_CHECKING:
     from .meter_reducer import MeterReducer
     from .organization import Organization
+
+
+class ReducerKind(StrEnum):
+    usage = "usage"
+    credit = "credit"
 
 
 class Reducer(RecordModel):
@@ -29,6 +36,9 @@ class Reducer(RecordModel):
     )
     filter: Mapped[Filter] = mapped_column(FilterType, nullable=False)
     aggregation: Mapped[Aggregation] = mapped_column(AggregationType, nullable=False)
+    kind: Mapped[ReducerKind] = mapped_column(
+        StringEnum(ReducerKind), nullable=False, default=ReducerKind.usage
+    )
 
     organization: Mapped["Organization"] = relationship(lazy="raise")
     meter_reducers: Mapped[list["MeterReducer"]] = relationship(

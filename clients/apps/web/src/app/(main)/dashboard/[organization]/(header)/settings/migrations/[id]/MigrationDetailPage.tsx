@@ -149,15 +149,32 @@ function StepContent({
           />
         </Box>
       )
-    // The switch runs here, and stays reachable at cleanup so the merchant can
-    // switch the ones an earlier run left on Stripe.
     case 'activate_subscriptions':
-    case 'cleanup':
       return (
         <Box flexDirection="column" rowGap="l">
-          {def && <StepHeading def={def} />}
+          <StepHeading def={def} />
           <SwitchPanel migrationId={migration.id} />
         </Box>
+      )
+    // Completing deleted the Stripe key, so the report stays but nothing can
+    // be switched again.
+    case 'completed':
+      return (
+        <Box flexDirection="column" rowGap="l">
+          <Text variant="caption" color="muted">
+            This migration is complete, and Polar deleted your Stripe key.
+            Subscriptions that didn&apos;t switch stay on Stripe. To move them,
+            start a new migration.
+          </Text>
+          <SwitchPanel migrationId={migration.id} readOnly />
+        </Box>
+      )
+    case 'closed':
+      return (
+        <Text variant="caption" color="muted">
+          This migration was closed after 90 days without activity. To move
+          subscriptions still on Stripe, start a new migration.
+        </Text>
       )
   }
 

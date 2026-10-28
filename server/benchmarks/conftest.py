@@ -6,6 +6,7 @@ import asyncio
 import collections.abc
 import gc
 import typing
+import uuid
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession as SQLAlchemyAsyncSession
@@ -13,8 +14,9 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.config import settings
 from polar.kit.db.postgres import AsyncSession, create_async_engine
-from polar.models import Organization
+from polar.models import Organization, Reducer
 from polar.redis import Redis
+from polar.reducer.service import reducer as reducer_service
 from polar.worker import JobQueueManager
 from polar.worker._enqueue import _job_queue_manager
 from tests.fixtures.database import (
@@ -25,6 +27,7 @@ from tests.fixtures.database import (
 )
 from tests.fixtures.random_objects import (
     create_account,
+    create_meter,
     create_organization,
     create_user,
 )
@@ -125,3 +128,13 @@ def organization(run: Run[typing.Any], save_fixture: SaveFixture) -> Organizatio
         return await create_organization(save_fixture, account)
 
     return run(seed())
+
+
+async def create_metered_reducer(
+    session: AsyncSession, save_fixture: SaveFixture, organization: Organization
+) -> Reducer:
+    """A meter and its reducers, as the meter service creates them."""
+    meter = await create_meter(save_fixture, organization=organization, id=uuid.uuid4())
+    reducer = await reducer_service.sync_meter(session, meter)
+    await session.flush()
+    return reducer

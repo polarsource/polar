@@ -189,6 +189,27 @@ describe('lineDiff', () => {
   })
 })
 
+describe('formatRows with wide values', () => {
+  test('stacks a change that would not fit on one row', () => {
+    const before =
+      '4c12c56eb4452fe6ff96fc1f1c5d6865863b2ccdb79a71f33b82b4f48e85d957'
+    const after =
+      'bb3fc5e5582aebd4d08beccdef425659478ac62cfb44f39cf6ab9dfe6834529c'
+    const output = stripAnsi(
+      formatRows(
+        '      ',
+        [{ field: 'catalog', before, after }],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).toBe(
+      ['      catalog', `        - "${before}"`, `        + "${after}"`].join(
+        '\n',
+      ),
+    )
+  })
+})
+
 describe('tally and planSummary', () => {
   const entries = [
     { section: 'meters', id: 'a', action: 'created' as const, diff: [] },

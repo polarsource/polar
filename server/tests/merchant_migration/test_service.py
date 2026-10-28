@@ -4498,11 +4498,11 @@ class TestStartCutover:
     ) -> None:
         enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
         migration = await build_connected_migration(save_fixture, organization)
-        # Already switched once: the step is done and the migration is at cleanup.
+        # Already switched a subset once: the step is done, the migration isn't.
         migration.pan_transfer_steps = pan_steps_until(
             migration.pan_transfer_method, None
         )
-        migration.step = MerchantMigrationStep.cleanup
+        migration.step = MerchantMigrationStep.activate_subscriptions
         await save_fixture(migration)
         moved = await _imported_subscription(
             save_fixture,
@@ -4546,6 +4546,59 @@ class TestStartCutover:
         enqueue.assert_called_once_with(
             "merchant_migration.cutover", merchant_migration_id=migration.id
         )
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("step", "keeps_key", "reached_switch"),
+        [
+            (MerchantMigrationStep.cleanup, True, True),
+            (MerchantMigrationStep.completed, False, True),
+            (MerchantMigrationStep.closed, False, False),
+        ],
+    )
+    async def test_finished_migration_cannot_retry(
+        self,
+        step: MerchantMigrationStep,
+        keeps_key: bool,
+        reached_switch: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        migration = await build_connected_migration(save_fixture, organization)
+        if reached_switch:
+            migration.pan_transfer_steps = pan_steps_until(
+                migration.pan_transfer_method, None
+            )
+        migration.step = step
+        if not keeps_key:
+            migration.source_credentials = {"stripe_user_id": "acct_123"}
+        await save_fixture(migration)
+        failed = await _imported_subscription(
+            save_fixture,
+            migration,
+            organization,
+            product,
+            source_id="sub_failed",
+            email="failed@example.com",
+        )
+        await MerchantMigrationRecordRepository.from_session(session).update(
+            failed,
+            update_dict={"cutover_status": MerchantMigrationCutoverStatus.failed},
+            flush=True,
+        )
+
+        with pytest.raises(CutoverNotStarted, match="finished"):
+            await service.start_cutover(session, auth_subject, migration.id)
+
+        await session.refresh(failed)
+        assert failed.cutover_status == MerchantMigrationCutoverStatus.failed
+        enqueue.assert_not_called()
 
 
 @pytest.mark.anyio
@@ -4879,7 +4932,9 @@ class TestRunCutover:
         await session.flush()
         await session.refresh(migration)
         assert service._step_completed(migration, STEP_MOVE_SUBSCRIPTIONS)
-        assert migration.step == MerchantMigrationStep.cleanup
+        assert migration.step == MerchantMigrationStep.completed
+        assert "api_key_encrypted" not in migration.source_credentials
+        assert migration.source_credentials["stripe_user_id"] is not None
         assert migration.operation is not None
         assert migration.operation.status == MerchantMigrationOperationStatus.done
 
@@ -4934,8 +4989,9 @@ class TestRunCutover:
         assert untouched.cutover_status is None
         assert migration.operation is not None
         assert migration.operation.status == MerchantMigrationOperationStatus.done
-        # Still to switch, so the migration isn't finished.
-        assert migration.step != MerchantMigrationStep.cleanup
+        # Still to switch, so the migration isn't finished and keeps its key.
+        assert migration.step != MerchantMigrationStep.completed
+        assert migration.source_credentials["api_key_encrypted"]
 
     async def test_a_later_switch_of_the_rest_finishes(
         self,
@@ -4985,7 +5041,8 @@ class TestRunCutover:
 
         await session.refresh(migration)
         assert runner.run.await_count == 1
-        assert migration.step == MerchantMigrationStep.cleanup
+        assert migration.step == MerchantMigrationStep.completed
+        assert "api_key_encrypted" not in migration.source_credentials
 
     async def test_skips_when_renewals_disabled(
         self,
@@ -5076,7 +5133,7 @@ class TestRunCutover:
         await session.refresh(migration)
         assert runner.run.await_count == 0
         assert migration.operation.status == MerchantMigrationOperationStatus.running
-        assert migration.step != MerchantMigrationStep.cleanup
+        assert migration.step != MerchantMigrationStep.completed
 
     async def test_skips_when_operation_is_terminal(
         self,

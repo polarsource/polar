@@ -174,15 +174,14 @@ export default function ClientPage({
   const [section, setSection] = useQueryState('section', parseAsString)
   const { data: customDashboards } = useMetricDashboards(organizationId)
 
-  const groups = useMemo<MetricGroupDefinition[]>(
-    () =>
-      METRIC_GROUPS.map((g) => ({
-        slug: metricGroupSlug(g.category),
-        title: g.category,
-        metrics: g.metrics.map((m) => m.slug),
-      })).filter(({ slug }) => groupSlugs.includes(slug)),
-    [groupSlugs],
-  )
+  const groups = useMemo<MetricGroupDefinition[]>(() => {
+    const enabledSlugs = new Set(groupSlugs)
+    return METRIC_GROUPS.map((g) => ({
+      slug: metricGroupSlug(g.category),
+      title: g.category,
+      metrics: g.metrics.map((m) => m.slug),
+    })).filter(({ slug }) => enabledSlugs.has(slug))
+  }, [groupSlugs])
 
   const dashboards = useMemo(
     () =>

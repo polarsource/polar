@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
@@ -7,18 +8,34 @@ from pytest_mock import MockerFixture
 
 from polar.config import Environment, settings
 from polar.integrations.slack.client import SlackClientError
+from polar.kit.utils import utc_now
 from polar.merchant_migration.pan_transfer import PanTransferMethod
+from polar.merchant_migration.repository import MerchantMigrationRecordRepository
+from polar.merchant_migration.service import (
+    merchant_migration as merchant_migration_service,
+)
 from polar.merchant_migration.slack import SlackAlertInProgress
 from polar.merchant_migration.tasks import (
+    merchant_migration_close_idle,
     merchant_migration_notify_created,
     merchant_migration_notify_waiting_for_ops,
 )
-from polar.models import Organization
+from polar.models import (
+    MerchantMigration,
+    MerchantMigrationOperation,
+    MerchantMigrationOperationStatus,
+    MerchantMigrationRecord,
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+    MerchantMigrationStep,
+    Organization,
+)
+from polar.models.merchant_migration_operation import STALL_THRESHOLD
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 
-from ._helpers import build_connected_migration, pan_steps_until
+from ._helpers import build_connected_migration, pan_steps_until, record_source_ids
 
 
 @pytest.fixture
@@ -144,3 +161,158 @@ class TestNotifyWaitingForOps:
         await merchant_migration_notify_waiting_for_ops(migration.id, "authorize_copy")
 
         chat_post_message.assert_not_awaited()
+
+
+IDLE = settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD + timedelta(days=1)
+
+
+@pytest.fixture
+def worker_session(mocker: MockerFixture, session: AsyncSession) -> AsyncSession:
+    mocker.patch(
+        "polar.merchant_migration.tasks.AsyncSessionMaker",
+        side_effect=lambda: contextlib.nullcontext(session),
+    )
+    mocker.patch("polar.merchant_migration.tasks.asyncio.sleep", new=AsyncMock())
+    return session
+
+
+@pytest.fixture
+async def idle_migration(
+    save_fixture: SaveFixture, organization: Organization
+) -> MerchantMigration:
+    migration = await build_connected_migration(save_fixture, organization)
+    migration.step = MerchantMigrationStep.activate_subscriptions
+    migration.modified_at = utc_now() - IDLE
+    await save_fixture(migration)
+    for source_id, status in [
+        ("cus_pending_1", MerchantMigrationRecordStatus.pending),
+        ("cus_pending_2", MerchantMigrationRecordStatus.pending),
+        ("cus_pending_3", MerchantMigrationRecordStatus.pending),
+        ("cus_imported", MerchantMigrationRecordStatus.imported),
+        ("cus_skipped", MerchantMigrationRecordStatus.skipped),
+    ]:
+        await save_fixture(
+            MerchantMigrationRecord(
+                merchant_migration=migration,
+                organization=organization,
+                type=MerchantMigrationRecordType.customer,
+                status=status,
+                source_id=source_id,
+                canonical={"payment_method": {"last4": "4242", "brand": "visa"}},
+            )
+        )
+    return migration
+
+
+@pytest.mark.anyio
+class TestCloseIdle:
+    @pytest.mark.parametrize("stalled_operation", [False, True])
+    async def test_closes_an_idle_migration(
+        self,
+        stalled_operation: bool,
+        mocker: MockerFixture,
+        worker_session: AsyncSession,
+        save_fixture: SaveFixture,
+        idle_migration: MerchantMigration,
+    ) -> None:
+        if stalled_operation:
+            idle_migration.operation = MerchantMigrationOperation(
+                status=MerchantMigrationOperationStatus.running,
+                last_progress_at=utc_now() - IDLE - STALL_THRESHOLD,
+            )
+            idle_migration.modified_at = utc_now() - IDLE
+            await save_fixture(idle_migration)
+        mocker.patch("polar.merchant_migration.service.CLOSE_DELETE_BATCH_SIZE", 2)
+        credentials = dict(idle_migration.source_credentials)
+
+        await merchant_migration_close_idle()
+
+        await worker_session.flush()
+        await worker_session.refresh(idle_migration)
+        assert idle_migration.step == MerchantMigrationStep.closed
+        assert idle_migration.source_credentials == {
+            key: value
+            for key, value in credentials.items()
+            if key != "api_key_encrypted"
+        }
+        assert idle_migration.source_connected is True
+        records = await MerchantMigrationRecordRepository.from_session(
+            worker_session
+        ).list_by_migration(idle_migration.id)
+        assert {record.source_id: record.canonical for record in records} == {
+            "cus_imported": {"payment_method": {"last4": "4242", "brand": "visa"}},
+            "cus_skipped": {"payment_method": {"last4": "4242", "brand": "visa"}},
+        }
+
+    async def test_resumes_and_is_idempotent(
+        self, worker_session: AsyncSession, idle_migration: MerchantMigration
+    ) -> None:
+        idle_since = utc_now() - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD
+        await merchant_migration_service.close_idle(
+            worker_session, idle_migration.id, idle_since=idle_since
+        )
+        await worker_session.flush()
+        await worker_session.refresh(idle_migration)
+        assert idle_migration.source_credentials.get("api_key_encrypted")
+        assert await record_source_ids(worker_session, idle_migration) == {
+            "cus_imported",
+            "cus_skipped",
+        }
+
+        await merchant_migration_close_idle()
+        await worker_session.flush()
+        await worker_session.refresh(idle_migration)
+        closed_at = idle_migration.modified_at
+        assert idle_migration.step == MerchantMigrationStep.closed
+        assert "api_key_encrypted" not in idle_migration.source_credentials
+
+        await merchant_migration_close_idle()
+        await worker_session.flush()
+        await worker_session.refresh(idle_migration)
+        assert idle_migration.modified_at == closed_at
+
+    @pytest.mark.parametrize(
+        ("step", "idle_for", "running_operation"),
+        [
+            pytest.param(
+                MerchantMigrationStep.activate_subscriptions,
+                settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD - timedelta(days=1),
+                False,
+                id="recently_active",
+            ),
+            pytest.param(
+                MerchantMigrationStep.activate_subscriptions,
+                IDLE,
+                True,
+                id="active_operation",
+            ),
+            pytest.param(MerchantMigrationStep.cleanup, IDLE, False, id="cleanup"),
+            pytest.param(MerchantMigrationStep.completed, IDLE, False, id="completed"),
+            pytest.param(MerchantMigrationStep.closed, IDLE, False, id="closed"),
+        ],
+    )
+    async def test_skips(
+        self,
+        step: MerchantMigrationStep,
+        idle_for: timedelta,
+        running_operation: bool,
+        worker_session: AsyncSession,
+        save_fixture: SaveFixture,
+        idle_migration: MerchantMigration,
+    ) -> None:
+        idle_migration.step = step
+        if running_operation:
+            idle_migration.operation = MerchantMigrationOperation(
+                status=MerchantMigrationOperationStatus.running,
+                last_progress_at=utc_now(),
+            )
+        idle_migration.modified_at = utc_now() - idle_for
+        await save_fixture(idle_migration)
+
+        await merchant_migration_close_idle()
+
+        await worker_session.flush()
+        await worker_session.refresh(idle_migration)
+        assert idle_migration.step == step
+        assert idle_migration.source_credentials.get("api_key_encrypted")
+        assert len(await record_source_ids(worker_session, idle_migration)) == 5

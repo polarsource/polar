@@ -11,6 +11,9 @@ function summary(migration: schemas['MerchantMigration']): string {
   if (!migration.source_connected) {
     return 'Connect Stripe to begin'
   }
+  if (migration.step === 'closed') {
+    return 'Closed after 90 days without activity'
+  }
   const position = currentPosition(migration)
   if (position.kind === 'completed') {
     return 'Completed'

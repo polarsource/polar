@@ -3,7 +3,18 @@ from datetime import datetime
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, case, func, select, update
+from sqlalchemy import (
+    ColumnElement,
+    CursorResult,
+    Select,
+    SQLColumnExpression,
+    case,
+    exists,
+    func,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import (
@@ -35,21 +46,40 @@ from polar.metrics.fx import (
 from polar.models import (
     Customer,
     Discount,
+    Dispute,
     Order,
     OrderItem,
     Organization,
     Product,
     ProductPrice,
+    Refund,
     Subscription,
     Transaction,
 )
+from polar.models.dispute import DisputeStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.refund import RefundStatus
 from polar.models.subscription import SubscriptionStatus
 
 from .sorting import OrderSortProperty
 
 if TYPE_CHECKING:
     from sqlalchemy.orm.strategy_options import _AbstractLoad
+
+
+def order_benefits_revoked_clause(
+    order_id: SQLColumnExpression[UUID | None] | UUID,
+) -> ColumnElement[bool]:
+    revoking_refund = exists().where(
+        Refund.order_id == order_id,
+        Refund.revoke_benefits.is_(True),
+        Refund.status.in_([RefundStatus.pending, RefundStatus.succeeded]),
+    )
+    revoking_dispute = exists().where(
+        Dispute.order_id == order_id,
+        Dispute.status.in_(DisputeStatus.closed_statuses()),
+    )
+    return or_(revoking_refund, revoking_dispute)
 
 
 class OrderRepository(

@@ -11,6 +11,7 @@ import {
   describe,
   expect,
   it,
+  onTestFinished,
   vi,
 } from 'vitest'
 import type { ProductCheckoutPublic } from '../guards'
@@ -72,6 +73,12 @@ beforeAll(() => {
     disconnect() {}
     // oxlint-disable-next-line typescript/no-explicit-any
   } as any
+  globalThis.matchMedia ??= ((media: string) => ({
+    matches: false,
+    media,
+    addEventListener() {},
+    removeEventListener() {},
+  })) as unknown as typeof matchMedia
 })
 
 afterEach(() => {
@@ -422,6 +429,54 @@ describe('CheckoutForm', () => {
     })
 
     expect(screen.getByText('Invalid US state')).toBeInTheDocument()
+  })
+
+  it('picks the state from a native select on touch devices, which in-app browsers cannot close mid-scroll', async () => {
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (media) =>
+        ({
+          matches: media === '(pointer: coarse)',
+          media,
+          addEventListener() {},
+          removeEventListener() {},
+        }) as unknown as MediaQueryList,
+    )
+    onTestFinished(() => matchMedia.mockRestore())
+    let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
+    const checkout = createCheckout({
+      // oxlint-disable-next-line typescript/no-explicit-any
+      payment_processor: 'dummy' as any,
+      billing_address_fields: {
+        country: 'required',
+        state: 'required',
+        city: 'optional',
+        postal_code: 'optional',
+        line1: 'optional',
+        line2: 'disabled',
+      },
+    })
+
+    render(
+      <FormWrapper
+        checkout={checkout}
+        {...defaultProps}
+        onForm={(f) => {
+          form = f
+        }}
+        defaultValues={{ customer_billing_address: { country: 'US' } }}
+        locale="en"
+      />,
+    )
+
+    const state = screen.getByTestId('billing-state')
+    expect(state.tagName).toBe('SELECT')
+
+    await act(async () => {
+      fireEvent.change(state, { target: { value: 'US-VA' } })
+    })
+
+    expect(form!.getValues('customer_billing_address.state')).toBe('US-VA')
+    expect(state).toHaveDisplayValue('Virginia')
   })
 
   it('clears billing address errors when country changes', async () => {

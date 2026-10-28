@@ -2,11 +2,13 @@
 
 import { Input } from './Input'
 import {
+  NativeSelect,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  useCoarsePointer,
 } from './Select'
 
 export const FIXED_STATE_OPTIONS: Record<string, Record<string, string>> = {
@@ -111,6 +113,29 @@ const CountryStatePicker = ({
   'data-testid'?: string
 }) => {
   const states = country ? FIXED_STATE_OPTIONS[country] : undefined
+  const coarsePointer = useCoarsePointer()
+
+  if (states && coarsePointer) {
+    return (
+      <NativeSelect
+        className={className}
+        data-testid={testId}
+        name={name}
+        autoComplete={autoComplete}
+        disabled={disabled}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {Object.entries(states).map(([code, name]) => (
+          <option key={code} value={code}>
+            {name}
+          </option>
+        ))}
+      </NativeSelect>
+    )
+  }
+
   if (states) {
     return (
       <Select

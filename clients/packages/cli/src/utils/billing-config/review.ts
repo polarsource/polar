@@ -1,11 +1,13 @@
-import type { ActiveOrganization } from '@/schemas/Auth'
+import type { ActiveOrganization, PolarEnvironment } from '@/schemas/Auth'
 import type {
   AppliedEntry,
+  CatalogPlan,
   ConfigIssue,
   LoadedConfig,
   PlanResult,
 } from '@/schemas/BillingConfig'
 import { record } from '@/utils/billing-config/describe'
+import { planTally } from '@/utils/billing-config/entries'
 import { formatProblems, plural } from '@/utils/billing-config/problems'
 import { formatTree } from '@/utils/billing-config/tree'
 import * as ui from '@/utils/ui'
@@ -16,8 +18,26 @@ export const errors = (issues: ReadonlyArray<ConfigIssue>) =>
 const warnings = (issues: ReadonlyArray<ConfigIssue>) =>
   issues.filter((issue) => issue.severity === 'warning').length
 
-export const summary = (issues: ReadonlyArray<ConfigIssue>) =>
-  `${ui.INDENT}Found ${plural(errors(issues), 'error')} and ${plural(warnings(issues), 'warning')}.`
+const issueTally = (issues: ReadonlyArray<ConfigIssue>) => {
+  const parts = [
+    ...(errors(issues) > 0 ? [ui.red(plural(errors(issues), 'error'))] : []),
+    ...(warnings(issues) > 0
+      ? [ui.yellow(plural(warnings(issues), 'warning'))]
+      : []),
+  ]
+  return parts.length === 0 ? ui.dim('none') : parts.join(', ')
+}
+
+export const catalogChange = (
+  { before, name }: CatalogPlan,
+  dim: (text: string) => string = ui.dim,
+) =>
+  `${before === null ? dim('none') : (before.name ?? dim('unnamed'))} ${dim('→')} ${name}`
+
+export const fixErrors = (issues: ReadonlyArray<ConfigIssue>) =>
+  `${ui.INDENT}Fix the ${errors(issues) === 1 ? 'error' : `${errors(issues)} errors`} above, then run ${ui.command('polar config plan')} again.`
+
+export const runApply = `${ui.INDENT}Run ${ui.command('polar config apply')} to apply it.`
 
 export const unchanged = (entries: ReadonlyArray<AppliedEntry>) =>
   entries.every((entry) => entry.action === 'unchanged')
@@ -25,7 +45,7 @@ export const unchanged = (entries: ReadonlyArray<AppliedEntry>) =>
 export const target = (organization: ActiveOrganization) =>
   `${organization.name} (${organization.environment})`
 
-const NOUNS = [
+export const NOUNS = [
   ['meters', 'meter'],
   ['benefits', 'benefit'],
   ['products', 'product'],
@@ -48,40 +68,49 @@ export const found = (config: LoadedConfig) => {
   return all.length === 0 ? 'nothing to apply' : all.join(', ')
 }
 
-const gutter = (text: string) =>
-  text
-    .split('\n')
-    .map((line) =>
-      line === ''
-        ? `${ui.INDENT}${ui.dim('│')}`
-        : `${ui.INDENT}${ui.dim('│')} ${line.slice(ui.INDENT.length)}`,
-    )
-    .join('\n')
+const ENVIRONMENT_COLORS: Record<PolarEnvironment, (text: string) => string> = {
+  production: ui.red,
+  sandbox: ui.cyan,
+  local: ui.dim,
+}
 
-const box = (title: string, text: string) =>
-  [
-    `${ui.INDENT}${ui.dim('╭─')} ${title}`,
-    `${ui.INDENT}${ui.dim('│')}`,
-    gutter(text),
-    `${ui.INDENT}${ui.dim('│')}`,
-    `${ui.INDENT}${ui.dim('╰─')}`,
-  ].join('\n')
+export const section = (title: string, text: string) => [
+  ui.blank,
+  ui.heading(title),
+  ui.box(text),
+]
 
-export const changes = (
+export const sections = (config: LoadedConfig, result: PlanResult) => [
+  ...(result.entries.length > 0
+    ? section('Changes', formatTree(config.input, result.entries))
+    : []),
+  ...(result.issues.length > 0
+    ? section('Issues', formatProblems(config, result.issues))
+    : []),
+]
+
+export const overview = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   result: PlanResult,
-) => [
-  ...(result.entries.length > 0
-    ? [
-        ui.blank,
-        box(
-          `Changes ${ui.dim(target(organization))}`,
-          formatTree(config.input, result.entries),
-        ),
-      ]
-    : []),
-  ...(result.issues.length > 0
-    ? [ui.blank, formatProblems(config, result.issues)]
-    : []),
-]
+) =>
+  section(
+    'Summary',
+    ui.keyValue([
+      ['Organization', organization.name],
+      [
+        'Environment',
+        ENVIRONMENT_COLORS[organization.environment](organization.environment),
+      ],
+      ['File', config.file],
+      ['Changes', planTally(result.entries)],
+      ...(result.catalog
+        ? [['Catalog', catalogChange(result.catalog)] as const]
+        : []),
+      ['Issues', issueTally(result.issues)],
+    ]),
+  )
+
+export const next = (text: string) => section('Next', text)
+
+export const nextOpen = () => [ui.blank, ui.heading('Next'), ui.boxTop()]

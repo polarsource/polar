@@ -695,7 +695,9 @@ def _render_scraped_site(
 class ReviewAnalyzer:
     def __init__(self, model: str | None = None) -> None:
         model_instance, model_provider, model_name = (
-            settings.get_pydantic_gateway_model(model)
+            settings.get_pydantic_gateway_model(
+                model or settings.PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL
+            )
         )
         # gpt-5.5+ reasoning models reject any non-default temperature.
         self.agent = Agent(
@@ -703,7 +705,9 @@ class ReviewAnalyzer:
             output_type=ReviewAgentReport,
             system_prompt=SYSTEM_PROMPT,
             model_settings=(
-                {} if model_name.startswith("gpt-5.5") else {"temperature": 0}
+                {}
+                if model_name.startswith(("gpt-5.5", "gpt-6"))
+                else {"temperature": 0}
             ),
         )
         self.model_provider = model_provider

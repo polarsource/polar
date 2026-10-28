@@ -27,6 +27,7 @@ async def catalogs(
         version_hash="b" * 64,
         status=CatalogStatus.live,
         published_at=now,
+        parent=archived,
     )
     draft = Catalog(organization=organization, status=CatalogStatus.draft)
     for catalog in (archived, live, draft):
@@ -77,13 +78,14 @@ class TestList:
         json = response.json()
         assert json["pagination"]["total_count"] == 3
         assert [
-            (item["id"], item["name"], item["status"], item["version_hash"])
+            (item["id"], item["name"], item["status"], item["parent_id"])
             for item in json["items"]
         ] == [
             (str(draft.id), None, "draft", None),
-            (str(live.id), "Spring pricing", "live", live.version_hash),
-            (str(archived.id), None, "archived", archived.version_hash),
+            (str(live.id), "Spring pricing", "live", str(archived.id)),
+            (str(archived.id), None, "archived", None),
         ]
+        assert all("version_hash" not in item for item in json["items"])
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
@@ -101,3 +103,35 @@ class TestList:
             str(live.id),
             str(archived.id),
         ]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_published_filter(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, archived = catalogs
+        assert live.published_at is not None
+        cutoff = (live.published_at - timedelta(hours=1)).isoformat()
+
+        response = await client.get("/v1/catalogs/", params={"published_after": cutoff})
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["items"]] == [str(live.id)]
+
+        response = await client.get(
+            "/v1/catalogs/", params={"published_before": cutoff}
+        )
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["items"]] == [str(archived.id)]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_published_filter_requires_utc_offset(
+        self, client: AsyncClient
+    ) -> None:
+        response = await client.get(
+            "/v1/catalogs/", params={"published_after": "2026-10-01T00:00:00"}
+        )
+
+        assert response.status_code == 422

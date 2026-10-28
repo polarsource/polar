@@ -8,8 +8,23 @@ module "planetscale" {
   region            = "aws-us-east-2"
   cluster_size      = "PS_80_AWS_ARM"
 
+  parameters = {
+    pgbouncer = {
+      default_pool_size = "35"
+    }
+  }
+
   bouncers = {
     app = {
+      parameters = {
+        pgbouncer = {
+          default_pool_size      = "12"
+          track_extra_parameters = "IntervalStyle,statement_timeout"
+        }
+      }
+    }
+    read = {
+      target = "replica"
       parameters = {
         pgbouncer = {
           default_pool_size      = "12"

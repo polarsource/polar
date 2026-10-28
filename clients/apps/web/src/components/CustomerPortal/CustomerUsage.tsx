@@ -61,7 +61,8 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                               clipPath:
                                 'polygon(0 0, 100% 0, 100% 100%, 0% 100%)',
                               transform: 'rotate(-90deg)',
-                              transition: 'all 0.3s ease',
+                              transition:
+                                'clip-path 0.3s ease, transform 0.3s ease',
                             }}
                           />
                         </div>

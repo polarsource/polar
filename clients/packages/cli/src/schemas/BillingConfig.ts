@@ -71,10 +71,35 @@ export const AppliedEntry = Schema.Struct({
 })
 export type AppliedEntry = typeof AppliedEntry.Type
 
+export const CatalogPlan = Schema.Struct({
+  before: Schema.NullOr(Schema.Struct({ name: Schema.NullOr(Schema.String) })),
+  name: Schema.String,
+})
+export type CatalogPlan = typeof CatalogPlan.Type
+
 export const PlanResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  catalog: Schema.optional(Schema.NullOr(CatalogPlan)),
   settings: Schema.optional(Schema.NullOr(SettingsResult)),
   issues: Schema.Array(ServerError),
+})
+
+export const PruneEntry = Schema.Struct({
+  resource: ConfigResource,
+  external_id: Schema.String,
+  in_use: Schema.Boolean,
+  referenced_by: Schema.Array(Schema.String),
+})
+export type PruneEntry = typeof PruneEntry.Type
+
+export const PruneResponse = Schema.Struct({
+  entries: Schema.Array(PruneEntry),
+})
+
+export const PruneOutput = Schema.Struct({
+  file: Schema.String,
+  entries: Schema.Array(PruneEntry),
+  removed: Schema.Boolean,
 })
 
 export const SourceLocation = Schema.Struct({
@@ -96,6 +121,7 @@ export type ConfigIssue = typeof ConfigIssue.Type
 
 export const PlanResult = Schema.Struct({
   entries: Schema.Array(AppliedEntry),
+  catalog: Schema.optionalKey(CatalogPlan),
   issues: Schema.Array(ConfigIssue),
 })
 export type PlanResult = typeof PlanResult.Type

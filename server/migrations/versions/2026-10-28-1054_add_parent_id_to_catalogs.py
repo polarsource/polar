@@ -1,0 +1,75 @@
+"""add parent_id to catalogs
+
+Revision ID: a78f3131b283
+Revises: 3ea325a76aee
+Create Date: 2026-10-28 10:54:06.902206
+
+"""
+
+import sqlalchemy as sa
+from alembic import op
+
+# Polar Custom Imports
+
+# revision identifiers, used by Alembic.
+revision = "a78f3131b283"
+down_revision = "3ea325a76aee"
+branch_labels: tuple[str] | None = None
+depends_on: tuple[str] | None = None
+
+
+def upgrade() -> None:
+    # Ensures we don't break app by applying a deadlock-inducing migration.
+    # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
+    op.execute("SET LOCAL lock_timeout = '5s'")
+    op.add_column(
+        "catalogs",
+        sa.Column("parent_id", sa.Uuid(), nullable=True),
+        if_not_exists=True,
+    )
+    op.drop_constraint(
+        op.f("catalogs_parent_id_fkey"),
+        "catalogs",
+        type_="foreignkey",
+        if_exists=True,
+    )
+    op.create_foreign_key(
+        op.f("catalogs_parent_id_fkey"),
+        "catalogs",
+        "catalogs",
+        ["parent_id"],
+        ["id"],
+        ondelete="set null",
+        postgresql_not_valid=True,
+    )
+
+    with op.get_context().autocommit_block():
+        op.execute("SET lock_timeout = '5min'")
+        try:
+            op.drop_index(
+                op.f("ix_catalogs_parent_id"),
+                table_name="catalogs",
+                postgresql_concurrently=True,
+                if_exists=True,
+            )
+            op.create_index(
+                op.f("ix_catalogs_parent_id"),
+                "catalogs",
+                ["parent_id"],
+                unique=False,
+                postgresql_concurrently=True,
+            )
+        finally:
+            op.execute("RESET lock_timeout")
+
+    op.execute("SET LOCAL lock_timeout = '5s'")
+    op.execute("ALTER TABLE catalogs VALIDATE CONSTRAINT catalogs_parent_id_fkey")
+
+
+def downgrade() -> None:
+    # Ensures we don't break app by applying a deadlock-inducing migration.
+    # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
+    op.execute("SET LOCAL lock_timeout = '5s'")
+    op.drop_constraint(op.f("catalogs_parent_id_fkey"), "catalogs", type_="foreignkey")
+    op.drop_index(op.f("ix_catalogs_parent_id"), table_name="catalogs")
+    op.drop_column("catalogs", "parent_id")

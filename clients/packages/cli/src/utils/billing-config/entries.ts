@@ -96,13 +96,11 @@ const formatChange = (
     const [first = '', ...rest] = valueLines(change.after).map(ui.green)
     return row(indent, change.field, width, first, rest)
   }
-  if (isInline(change.before) && isInline(change.after)) {
-    return row(
-      indent,
-      change.field,
-      width,
-      `${paint(change.before, ui.red)} ${ui.dim('→')} ${paint(change.after, ui.green)}`,
-    )
+  const inline = `${paint(change.before, ui.red)} ${ui.dim('→')} ${paint(change.after, ui.green)}`
+  const fits =
+    indent.length + width + 2 + Bun.stringWidth(inline) <= ui.boxInner()
+  if (isInline(change.before) && isInline(change.after) && fits) {
+    return row(indent, change.field, width, inline)
   }
   return [
     `${indent}${ui.dim(change.field)}`,
@@ -197,15 +195,29 @@ const COLORS: Record<Action, Color> = {
 const count = (entries: ReadonlyArray<AppliedEntry>, action: Action) =>
   entries.filter((entry) => entry.action === action).length
 
+const counted = (
+  entries: ReadonlyArray<AppliedEntry>,
+  action: Action,
+  label: string,
+) => {
+  const total = count(entries, action)
+  return (total === 0 ? ui.dim : COLORS[action])(`${total} ${label}`)
+}
+
 export const tally = (entries: ReadonlyArray<AppliedEntry>) =>
   (['created', 'updated', 'unchanged'] as const)
-    .map((action) =>
-      COLORS[action](`${count(entries, action)} ${DONE[action]}`),
-    )
+    .map((action) => counted(entries, action, DONE[action]))
     .join(', ')
 
 export const changeCount = (entries: ReadonlyArray<AppliedEntry>) =>
   count(entries, 'created') + count(entries, 'updated')
 
+export const planTally = (entries: ReadonlyArray<AppliedEntry>) =>
+  [
+    counted(entries, 'updated', 'to change'),
+    counted(entries, 'created', 'to add'),
+    counted(entries, 'unchanged', 'unchanged'),
+  ].join(', ')
+
 export const planSummary = (entries: ReadonlyArray<AppliedEntry>) =>
-  `${ui.INDENT}${ui.dim('Plan:')} ${COLORS.updated(`${count(entries, 'updated')} to change`)}, ${COLORS.created(`${count(entries, 'created')} to add`)}, ${COLORS.unchanged(`${count(entries, 'unchanged')} unchanged`)}`
+  `${ui.INDENT}${ui.dim('Plan:')} ${planTally(entries)}`

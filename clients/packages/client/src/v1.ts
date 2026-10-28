@@ -16305,10 +16305,10 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. `null` is the same as `false`.
        * @default false
        */
-      deprecated: boolean
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the benefit, used to match it.
@@ -16365,10 +16365,10 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. `null` is the same as `false`.
        * @default false
        */
-      deprecated: boolean
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the benefit, used to match it.
@@ -16628,10 +16628,10 @@ export interface components {
         | components['schemas']['UniqueAggregation']
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. `null` is the same as `false`.
        * @default false
        */
-      deprecated: boolean
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the meter. Used to match the config entry with an existing meter.
@@ -16713,10 +16713,10 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. `null` is the same as `false`.
        * @default false
        */
-      deprecated: boolean
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the product, used to match it.
@@ -17006,9 +17006,9 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Deprecated
-       * @description Set on products that are no longer in the catalog but still have customers, and left out otherwise.
+       * @description `true` for products that are no longer in the catalog but still have customers.
        */
-      deprecated?: true | null
+      deprecated: true | null
     }
     /** ConfigPrune */
     ConfigPrune: {

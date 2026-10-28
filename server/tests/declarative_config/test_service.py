@@ -3408,14 +3408,20 @@ class TestExport:
             session, auth_subject, Config.model_validate(document)
         )
 
+        prune = await declarative_config_service.prune(
+            session, auth_subject, Config.model_validate(document)
+        )
+
         pack, pro = document["products"]
         assert (pack["external_id"], pro["external_id"]) == ("pack", "pro")
-        assert "deprecated" not in pack
-        assert pro["deprecated"] is True
+        assert (pack["deprecated"], pro["deprecated"]) == (None, True)
         assert pro["prices"][0]["price_amount"] == 2500
         assert (plan.issues, plan.removed, plan.catalog) == ([], [], None)
         assert [(change.external_id, change.action) for change in plan.changes] == [
             ("pack", ConfigAction.unchanged)
+        ]
+        assert [(entry.external_id, entry.in_use) for entry in prune.entries] == [
+            ("pro", True)
         ]
 
         subscription.status = SubscriptionStatus.canceled

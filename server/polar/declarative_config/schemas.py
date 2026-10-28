@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Self
 from annotated_types import Gt
 from pydantic import (
     UUID4,
+    AfterValidator,
     BaseModel,
     ConfigDict,
     Discriminator,
@@ -55,12 +56,13 @@ MAXIMUM_WEBHOOK_ENDPOINTS = 25
 
 
 class ConfigDeprecationMixin(BaseModel):
-    deprecated: bool = Field(
+    deprecated: Annotated[bool | None, AfterValidator(bool)] = Field(
         default=False,
         exclude=True,
         description=(
             "Keeps the resource for customers who still use it, "
-            "but active products and benefits can't reference it."
+            "but active products and benefits can't reference it. "
+            "`null` is the same as `false`."
         ),
     )
 
@@ -700,11 +702,9 @@ class ConfigProductRead(_ConfigRead):
     benefits: list[str]
     metadata: MetadataOutputType
     deprecated: Literal[True] | None = Field(
-        default=None,
-        exclude_if=lambda deprecated: deprecated is None,
         description=(
-            "Set on products that are no longer in the catalog but still have "
-            "customers, and left out otherwise."
+            "`true` for products that are no longer in the catalog but still "
+            "have customers."
         ),
     )
 

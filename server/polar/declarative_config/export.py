@@ -1,8 +1,9 @@
-from collections.abc import AsyncIterator, Callable, Collection, Iterable, Sequence
+from collections.abc import AsyncIterator, Callable, Collection
 from typing import Any, Protocol, cast
 from uuid import UUID
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
+from sqlalchemy import Select
 
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
@@ -191,26 +192,24 @@ def _settings(organization: Organization) -> ConfigSettingsRead:
     return ConfigSettingsRead.model_validate(_dump(settings))
 
 
-async def get_deprecated_products(
+async def get_deprecated_products_statement(
     session: AsyncReadSession,
     organization: Organization,
     catalog_external_ids: Collection[str],
-) -> Sequence[Product]:
+) -> Select[tuple[Product]]:
     """Latest version of each product outside the catalog that customers still use.
 
     Config keeps them as deprecated, so existing customers can still reference
     them, until no customer is left.
     """
     repository = ProductRepository.from_session(session)
-    in_use = await repository.get_external_ids_in_use(organization.id, None)
-    return await repository.get_latest_by_external_ids(
-        organization.id, sorted(in_use - set(catalog_external_ids))
+    outside = await repository.get_external_ids(organization.id) - set(
+        catalog_external_ids
     )
-
-
-async def _iterate[T](items: Iterable[T]) -> AsyncIterator[T]:
-    for item in items:
-        yield item
+    in_use = await repository.get_external_ids_in_use(organization.id, sorted(outside))
+    return repository.get_latest_by_external_ids_statement(
+        organization.id, sorted(in_use)
+    )
 
 
 async def export_config(
@@ -261,11 +260,13 @@ async def export_config(
     )
     deprecated_products, _ = await _export_section(
         ConfigResource.product,
-        _iterate(
-            await get_deprecated_products(
+        product_repository.stream(
+            await get_deprecated_products_statement(
                 session,
                 organization,
-                await product_repository.get_current_external_ids(organization.id),
+                await product_repository.get_external_ids(
+                    organization.id, current=True
+                ),
             )
         ),
         MAXIMUM_PRODUCTS - len(products),

@@ -380,22 +380,15 @@ class DeclarativeConfigService:
                 organization.id, [b.external_id for b in deprecated_benefits]
             )
         }
-        product_ids = {
-            product.external_id: product.id
-            for product in await product_repository.get_all_by_external_ids(
-                organization.id, [p.external_id for p in deprecated_products]
-            )
-        }
+        products_in_use = await product_repository.get_external_ids_in_use(
+            organization.id, [p.external_id for p in deprecated_products]
+        )
 
         # Products first: a deprecated benefit or meter stays while a kept product uses it
         product_entries: list[ConfigPruneEntry] = []
         kept_products = [p for p in config.products if not p.deprecated]
         for product in deprecated_products:
-            product_id = product_ids.get(product.external_id)
-            in_use = (
-                product_id is not None
-                and await subscription_repository.exists_billable_by_product(product_id)
-            )
+            in_use = product.external_id in products_in_use
             if in_use:
                 kept_products.append(product)
             product_entries.append(

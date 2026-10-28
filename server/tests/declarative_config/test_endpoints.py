@@ -470,7 +470,7 @@ class TestExport:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_current_product_omits_deprecated(
+    async def test_current_product_is_not_deprecated(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -491,7 +491,7 @@ class TestExport:
         assert response.status_code == 200
         [product] = response.json()["config"]["products"]
         assert product["external_id"] == "pro"
-        assert "deprecated" not in product
+        assert product["deprecated"] is None
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

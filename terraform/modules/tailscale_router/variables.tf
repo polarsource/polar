@@ -51,7 +51,7 @@ variable "advertise_exit_node" {
 variable "tailscale_version" {
   description = "Tailscale version to install"
   type        = string
-  default     = "1.94.2"
+  default     = "1.104.2"
 }
 
 variable "plan" {

@@ -1,6 +1,3 @@
-import asyncio
-from functools import wraps
-
 import typer
 from sqlalchemy import Update, func, select, update
 
@@ -9,19 +6,12 @@ from scripts.helper import (
     configure_script_logging,
     limit_bindparam,
     run_batched_update,
+    typer_async,
 )
 
 cli = typer.Typer()
 
 configure_script_logging()
-
-
-def typer_async(f):  # type: ignore
-    @wraps(f)
-    def wrapper(*args, **kwargs):  # type: ignore
-        return asyncio.run(f(*args, **kwargs))
-
-    return wrapper
 
 
 def backfill_statement() -> Update:

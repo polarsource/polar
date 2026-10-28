@@ -45,10 +45,21 @@ class MerchantMigrationStep(StrEnum):
     create_catalog = "create_catalog"
     copy_cards = "copy_cards"
     activate_subscriptions = "activate_subscriptions"
+    # Legacy: what a finished switch used to set. Nothing writes it; rows still
+    # on it read as `completed` until a data migration moves them.
     cleanup = "cleanup"
+    # Every imported subscription was switched, skipped or failed. Finishing
+    # deletes the source key.
     completed = "completed"
     # Closed by Polar after the retention period without activity.
     closed = "closed"
+
+
+MERCHANT_MIGRATION_FINISHED_STEPS = (
+    MerchantMigrationStep.cleanup,
+    MerchantMigrationStep.completed,
+    MerchantMigrationStep.closed,
+)
 
 
 class MerchantMigration(RecordModel):
@@ -106,11 +117,12 @@ class MerchantMigration(RecordModel):
     def source_connected(self) -> bool:
         """Whether the source provider has been connected (credentials stored).
 
-        A closed migration counts as connected: closing it deletes the key.
+        Completed and closed migrations count as connected: reaching either step
+        deletes the key.
         """
         return (
             bool(self.source_credentials.get("api_key_encrypted"))
-            or self.step == MerchantMigrationStep.closed
+            or self.step in MERCHANT_MIGRATION_FINISHED_STEPS
         )
 
     @property

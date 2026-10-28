@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from dataclasses import replace
 from datetime import datetime
-from typing import NamedTuple, TypedDict
+from typing import Any, NamedTuple, TypedDict
 from uuid import UUID
 
 import stripe as stripe_lib
@@ -27,6 +27,7 @@ from polar.models import (
     PaymentMethod,
 )
 from polar.models.merchant_migration import (
+    MERCHANT_MIGRATION_FINISHED_STEPS,
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
@@ -121,6 +122,10 @@ _IMPORT_TASK = "merchant_migration.import_catalog"
 _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
 _STALLED_CUTOVER_ERROR = "Switch stalled with no progress; start it again to resume."
+_FINISHED_CUTOVER_ERROR = (
+    "This migration is finished and its Stripe key is deleted. "
+    "Start a new migration to switch the subscriptions still on Stripe."
+)
 _STALLED_OPERATION_ERROR = (
     "The last migration job stalled. Start it again, then try once it finishes."
 )
@@ -269,12 +274,14 @@ class MigrationOperationInProgress(MerchantMigrationError):
 
 
 class CutoverNotStarted(MerchantMigrationError):
-    def __init__(self) -> None:
-        super().__init__(
+    def __init__(
+        self,
+        message: str = (
             "Reach the switch step in the card transfer before switching "
-            "subscriptions over.",
-            409,
-        )
+            "subscriptions over."
+        ),
+    ) -> None:
+        super().__init__(message, 409)
 
 
 class MerchantMigrationRecordNotFound(MerchantMigrationError):
@@ -1251,6 +1258,12 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        # The switch needs the key, which finishing the migration deletes.
+        if (
+            migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
+            or not migration.source_credentials.get("api_key_encrypted")
+        ):
+            raise CutoverNotStarted(_FINISHED_CUTOVER_ERROR)
         if migration.pan_transfer_steps:
             steps = list(migration.pan_transfer_steps)
             if self._advance_retired_steps(migration, steps):
@@ -1381,7 +1394,11 @@ class MerchantMigrationService:
         # A switch of a subset must not finish the migration: it would read as
         # done while prepared subscriptions still bill on the source.
         if not await record_repository.has_pending_cutover_candidates(migration.id):
-            update_dict["step"] = MerchantMigrationStep.cleanup
+            log.info("merchant_migration.completed", merchant_migration_id=migration.id)
+            # The key and the step change together, so a migration only loses its
+            # key once nothing is left to switch.
+            update_dict["step"] = MerchantMigrationStep.completed
+            update_dict["source_credentials"] = self._without_source_key(migration)
         if completed_steps is not None:
             # `annotate` refuses a completed step, so the receipt note goes on
             # the step object directly before the completion is persisted.
@@ -1426,8 +1443,7 @@ class MerchantMigrationService:
         migration = await repository.get_by_id(migration_id, for_update=True)
         if (
             migration is None
-            or migration.step
-            in (MerchantMigrationStep.completed, MerchantMigrationStep.closed)
+            or migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
             or (migration.modified_at or migration.created_at) >= idle_since
             or self._operation_blocks_new_work(migration)
         ):
@@ -1447,15 +1463,18 @@ class MerchantMigrationService:
         await repository.update(
             migration,
             update_dict={
-                "source_credentials": {
-                    key: value
-                    for key, value in migration.source_credentials.items()
-                    if key != "api_key_encrypted"
-                },
+                "source_credentials": self._without_source_key(migration),
                 "step": MerchantMigrationStep.closed,
             },
         )
         return True
+
+    def _without_source_key(self, migration: MerchantMigration) -> dict[str, Any]:
+        return {
+            key: value
+            for key, value in migration.source_credentials.items()
+            if key != "api_key_encrypted"
+        }
 
     def _operation_blocks_new_work(self, migration: MerchantMigration) -> bool:
         operation = migration.operation

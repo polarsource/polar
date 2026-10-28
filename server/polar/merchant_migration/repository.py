@@ -37,9 +37,9 @@ from polar.models import (
     MerchantMigration,
     MerchantMigrationRecord,
     MerchantMigrationSourcePlatform,
-    MerchantMigrationStep,
     PaymentMethod,
 )
+from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
 from polar.models.merchant_migration_operation import (
     MerchantMigrationOperationSelection,
 )
@@ -128,9 +128,7 @@ class MerchantMigrationRepository(
             select(MerchantMigration.id)
             .where(
                 MerchantMigration.deleted_at.is_(None),
-                MerchantMigration.step.not_in(
-                    (MerchantMigrationStep.completed, MerchantMigrationStep.closed)
-                ),
+                MerchantMigration.step.not_in(MERCHANT_MIGRATION_FINISHED_STEPS),
                 func.coalesce(
                     MerchantMigration.modified_at, MerchantMigration.created_at
                 )

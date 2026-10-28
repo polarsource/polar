@@ -21,7 +21,10 @@ from polar.merchant_migration.pan_transfer import (
 )
 from polar.merchant_migration.repository import RecordCounts
 from polar.models import MerchantMigration
-from polar.models.merchant_migration import MerchantMigrationStep
+from polar.models.merchant_migration import (
+    MERCHANT_MIGRATION_FINISHED_STEPS,
+    MerchantMigrationStep,
+)
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -37,25 +40,16 @@ STEP_LABELS: dict[MerchantMigrationStep, str] = {
     MerchantMigrationStep.create_catalog: "Catalog imported",
     MerchantMigrationStep.copy_cards: "Moving cards",
     MerchantMigrationStep.activate_subscriptions: "Activating subscriptions",
-    MerchantMigrationStep.cleanup: "Cleanup",
     MerchantMigrationStep.completed: "Completed",
     MerchantMigrationStep.closed: "Closed (inactive)",
 }
 
 STEP_ORDER: list[MerchantMigrationStep] = [
-    step for step in MerchantMigrationStep if step != MerchantMigrationStep.closed
+    step
+    for step in MerchantMigrationStep
+    if step not in (MerchantMigrationStep.cleanup, MerchantMigrationStep.closed)
 ]
 
-# A cutover that leaves no switchable subscription unattempted lands on
-# `cleanup`; there is no close-out step after that. Ops reads those the same
-# way the merchant dashboard does: finished.
-FINISHED_STEPS = frozenset(
-    {
-        MerchantMigrationStep.cleanup,
-        MerchantMigrationStep.completed,
-        MerchantMigrationStep.closed,
-    }
-)
 
 METHOD_LABELS: dict[PanTransferMethod, str] = {
     PanTransferMethod.pan_copy: "Stripe to Stripe copy",
@@ -208,11 +202,11 @@ def step_position(step: MerchantMigrationStep) -> tuple[int, int]:
 
 def is_finished(migration: MerchantMigration) -> bool:
     """Whether the merchant's work on this migration is done."""
-    return migration.step in FINISHED_STEPS
+    return migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
 
 
 def visible_step(step: MerchantMigrationStep) -> MerchantMigrationStep:
-    """The step ops should read. `cleanup` displays as completed."""
+    """The step ops should read. Legacy `cleanup` rows display as completed."""
     if step == MerchantMigrationStep.cleanup:
         return MerchantMigrationStep.completed
     return step

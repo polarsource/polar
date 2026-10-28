@@ -15,7 +15,7 @@ class TestSourceConnected:
         [
             (MerchantMigrationStep.pre_check, {"api_key_encrypted": "x"}, True),
             (MerchantMigrationStep.pre_check, {"stripe_user_id": "acct_1"}, False),
-            (MerchantMigrationStep.completed, {"stripe_user_id": "acct_1"}, False),
+            (MerchantMigrationStep.completed, {"stripe_user_id": "acct_1"}, True),
             (MerchantMigrationStep.closed, {"stripe_user_id": "acct_1"}, True),
         ],
     )

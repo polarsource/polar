@@ -113,8 +113,8 @@ export function ConnectGuide({
   return (
     <Box flexDirection="column" rowGap="xl">
       <Box flexDirection="column" rowGap="m">
-        <Text variant="label">1. Create a restricted key in Stripe</Text>
-        <Text variant="caption" color="muted">
+        <Text variant="title">1. Create a restricted key in Stripe</Text>
+        <Text color="muted">
           Name it something like &ldquo;Polar migration&rdquo;. This environment
           needs a {mode}-mode key ({stripeKeyPlaceholder(mode)}).
         </Text>
@@ -133,13 +133,13 @@ export function ConnectGuide({
       </Box>
 
       <Box flexDirection="column" rowGap="m">
-        <Text variant="label">2. Set these permissions</Text>
+        <Text variant="title">2. Set these permissions</Text>
         {hasMissing ? (
-          <Text variant="caption" color="danger">
+          <Text color="danger">
             Grant the highlighted permissions and paste a new key.
           </Text>
         ) : (
-          <Text variant="caption" color="muted">
+          <Text color="muted">
             Search for each one in Stripe&rsquo;s Permissions column. Leave
             everything else at None.
           </Text>
@@ -148,23 +148,25 @@ export function ConnectGuide({
           flexDirection="column"
           rowGap="l"
           padding="l"
-          borderRadius="m"
-          backgroundColor="background-secondary"
+          borderRadius="l"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
         >
           {PERMISSION_GROUPS.map((group) => (
             <PermissionGroup key={group} group={group} missing={missing} />
           ))}
         </Box>
-        <Text variant="caption" color="muted">
+        <Text color="muted">
           Polar only writes to Stripe to cancel each subscription when you
           switch it over, so no customer is billed twice. Everything else is
           read-only.
         </Text>
       </Box>
 
-      <Box flexDirection="column" rowGap="xs">
-        <Text variant="label">3. Paste the key below</Text>
-        <Text variant="caption" color="muted">
+      <Box flexDirection="column" rowGap="m">
+        <Text variant="title">3. Paste the key below</Text>
+        <Text color="muted">
           We&rsquo;ll check it and start your migration.
         </Text>
       </Box>

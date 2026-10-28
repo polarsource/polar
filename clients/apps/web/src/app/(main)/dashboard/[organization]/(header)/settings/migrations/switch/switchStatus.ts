@@ -18,5 +18,5 @@ export function switchStatus(row: SwitchRow): SwitchStatus {
   if (row.has_payment_method === false) {
     return { label: 'No payment method', color: 'yellow' }
   }
-  return { label: 'Ready' }
+  return { label: 'Ready', color: 'green' }
 }

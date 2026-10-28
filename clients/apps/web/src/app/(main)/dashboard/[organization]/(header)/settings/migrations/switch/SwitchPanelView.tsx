@@ -148,9 +148,7 @@ export function SwitchPanelView({
             paddingVertical="2xl"
             justifyContent="center"
           >
-            <Text variant="caption" color="muted">
-              {SWITCH_EMPTY_MESSAGES[filter]}
-            </Text>
+            <Text color="muted">{SWITCH_EMPTY_MESSAGES[filter]}</Text>
           </Box>
         ) : (
           <DataTable

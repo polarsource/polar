@@ -149,6 +149,11 @@ export function ReviewTableView({
       />
 
       <Box flexDirection="column" rowGap="m">
+        <Text color="muted">
+          {primaryAction === 'continue'
+            ? 'Every subscription that can move is already prepared. Continue to switch them to Polar.'
+            : 'Preparing a subscription brings its customer and product to Polar. Polar starts billing only when you switch.'}
+        </Text>
         <Box
           alignItems="center"
           justifyContent="between"
@@ -182,12 +187,6 @@ export function ReviewTableView({
           />
         </Box>
 
-        <Text variant="caption" color="muted">
-          {primaryAction === 'continue'
-            ? 'Every subscription that can move is already prepared. Continue to switch them to Polar.'
-            : 'Preparing a subscription brings its customer and product to Polar. Polar starts billing only when you switch.'}
-        </Text>
-
         {rows.length === 0 ? (
           <Box
             borderWidth={1}
@@ -197,9 +196,7 @@ export function ReviewTableView({
             paddingVertical="2xl"
             justifyContent="center"
           >
-            <Text variant="caption" color="muted">
-              {EMPTY_MESSAGES[filter]}
-            </Text>
+            <Text color="muted">{EMPTY_MESSAGES[filter]}</Text>
           </Box>
         ) : (
           <DataTable

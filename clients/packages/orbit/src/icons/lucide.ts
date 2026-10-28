@@ -70,6 +70,7 @@ export {
   Plus,
   RefreshCw,
   Rocket,
+  RotateCcw,
   Search,
   Send,
   Settings2,

@@ -1,55 +1,46 @@
 'use client'
 
-import { CustomerSelector } from '@/components/Customer/CustomerSelector'
-import { EventCreationGuideModal } from '@/components/Events/EventCreationGuideModal'
-import { EventMetadataFilter } from '@/components/Events/EventMetadataFilter'
-import { Events } from '@/components/Events/Events'
+import { EventDetailPanel } from '@/components/Events/EventDetailPanel'
+import { EventLog } from '@/components/Events/EventLog'
+import { EventSearch } from '@/components/Events/EventSearch'
+import { EventsHistogram } from '@/components/Events/EventsHistogram'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import DateRangePicker from '@/components/Metrics/DateRangePicker'
-import { Modal } from '@polar-sh/orbit'
-import { useModal } from '@/components/Modal/useModal'
-import Pagination from '@/components/Pagination/Pagination'
-import { useEventNames, useEvents } from '@/hooks/queries/events'
+import { EmptyState } from '@/components/Shared/EmptyState'
+import { useInfiniteEvents } from '@/hooks/queries/events'
+import { useInViewport } from '@/hooks/utils'
 import useDebounce from '@/utils/useDebounce'
-import {
-  AddOutlined,
-  RefreshOutlined,
-  SearchFilled as Search,
-} from '@polar-sh/orbit/icons'
-import { operations, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
-import { List, ListItem } from '@polar-sh/orbit'
+import { schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Spinner,
 } from '@polar-sh/orbit'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { Search } from '@polar-sh/orbit/icons'
 import { endOfToday } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   parseAsArrayOf,
-  parseAsInteger,
   parseAsIsoDateTime,
   parseAsJson,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
-import React, { useCallback, useMemo, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useEffect } from 'react'
 import z from 'zod'
+import { EventsSidebar } from './EventsSidebar'
 
 const PAGE_SIZE = 100
 
-interface ClientPageProps {
+const ClientPage = ({
+  organization,
+}: {
   organization: schemas['Organization']
-}
-
-const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
+}) => {
   const [sorting, setSorting] = useQueryState(
     'sorting',
     parseAsStringLiteral(['-timestamp', 'timestamp'] as const).withDefault(
@@ -73,10 +64,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     'customerIds',
     parseAsArrayOf(parseAsString),
   )
-  const [currentPage, setCurrentPage] = useQueryState(
-    'page',
-    parseAsInteger.withDefault(1),
-  )
   const [metadata, setMetadata] = useQueryState(
     'metadata',
     parseAsJson(
@@ -84,319 +71,204 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     ),
   )
 
-  const router = useRouter()
-
-  const {
-    isShown: isEventCreationGuideShown,
-    show: showEventCreationGuide,
-    hide: hideEventCreationGuide,
-  } = useModal()
-
-  const { data } = useEventNames(organization.id, {
-    sorting: ['name'],
-    limit: 500,
-    customer_id: selectedCustomerIds ?? undefined,
-  })
-
-  const eventTypes = useMemo(
-    () =>
-      data?.pages
-        .flatMap((page) => page.items)
-        .reduce(
-          (acc, curr) => {
-            acc[curr.source] = [...(acc[curr.source] ?? []), curr]
-            return acc
-          },
-          {} as Record<schemas['EventSource'], schemas['EventTypeWithStats'][]>,
-        ),
-    [data],
+  const [source, setSource] = useQueryState(
+    'source',
+    parseAsStringLiteral(['user', 'system'] as const),
   )
+  const [selectedEventId, setSelectedEventId] = useQueryState(
+    'event',
+    parseAsString,
+  )
+
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
   const debouncedQuery = useDebounce(query, 500)
   const debouncedMetadata = useDebounce(metadata, 500)
 
-  const eventParameters = useMemo(():
-    | operations['events:list']['parameters']['query']
-    | undefined => {
-    return {
-      name:
-        selectedEventTypes && selectedEventTypes.length > 0
-          ? selectedEventTypes
-          : null,
-      page: currentPage,
-      customer_id: selectedCustomerIds ?? null,
-      limit: PAGE_SIZE,
-      sorting: [sorting],
-      start_timestamp: startDate.toISOString(),
-      end_timestamp: endDate.toISOString(),
-      query:
-        debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null,
-      metadata: debouncedMetadata ?? null,
+  const {
+    data: events,
+    isFetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteEvents(organization.id, {
+    name:
+      selectedEventTypes && selectedEventTypes.length > 0
+        ? selectedEventTypes
+        : null,
+    customer_id: selectedCustomerIds ?? null,
+    source: source ?? null,
+    limit: PAGE_SIZE,
+    sorting: [sorting],
+    start_timestamp: startDate.toISOString(),
+    end_timestamp: endDate.toISOString(),
+    query: debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null,
+    metadata: debouncedMetadata ?? null,
+  })
+
+  const { ref: loadMoreRef, inViewport } = useInViewport<HTMLDivElement>()
+  useEffect(() => {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
     }
-  }, [
-    selectedEventTypes,
-    currentPage,
-    startDate,
-    endDate,
-    sorting,
-    debouncedQuery,
-    selectedCustomerIds,
-    debouncedMetadata,
-  ])
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  const { data: events, isFetching } = useEvents(
-    organization.id,
-    eventParameters,
-  )
-
-  const totalCount =
-    events?.pagination && 'total_count' in events.pagination
-      ? events.pagination.total_count
-      : 0
-
-  const searchParams = useSearchParams()
-  const resetPage = useCallback(() => setCurrentPage(1), [setCurrentPage])
-
-  const selectedEventTypeSet = new Set(selectedEventTypes)
-
-  const toggleEventType = (eventTypeName: string) => {
+  const toggleEventType = (name: string) => {
     setSelectedEventTypes((prev) =>
-      prev && prev.includes(eventTypeName)
-        ? prev.filter((name) => name !== eventTypeName)
-        : ([...(prev ?? []), eventTypeName] as string[]),
+      prev?.includes(name)
+        ? prev.filter((n) => n !== name)
+        : [...(prev ?? []), name],
     )
-    resetPage()
   }
 
-  const onDateRangeChange = useCallback(
-    (dateRange: { from: Date; to: Date }) => {
-      setStartDate(dateRange.from)
-      setEndDate(dateRange.to)
-      resetPage()
-    },
-    [setStartDate, setEndDate, resetPage],
-  )
+  const onDateRangeChange = (range: { from: Date; to: Date }) => {
+    setStartDate(range.from)
+    setEndDate(range.to)
+  }
 
-  const [hasScrolled, setHasScrolled] = useState(false)
+  const filterParams = new URLSearchParams(searchParams)
+  filterParams.delete('event')
+  const hasActiveFilters = filterParams.size > 0
 
-  const handleScroll = useCallback(
-    (event: React.UIEvent<HTMLDivElement>) => {
-      if (event.currentTarget.scrollTop > 0 && !hasScrolled) {
-        setHasScrolled(true)
-      } else if (event.currentTarget.scrollTop === 0 && hasScrolled) {
-        setHasScrolled(false)
-      }
-    },
-    [hasScrolled],
-  )
+  const items = events?.pages.flatMap((page) => page.items) ?? []
+  const selectedIndex = items.findIndex((e) => e.id === selectedEventId)
+  const previousEvent = selectedIndex > 0 ? items[selectedIndex - 1] : null
+  const nextEvent = selectedIndex >= 0 ? items[selectedIndex + 1] : null
 
-  const dateRange = {
-    from: startDate,
-    to: endDate,
+  const selectEvent = (id: string) => {
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      setSelectedEventId(id)
+    } else {
+      router.push(`/dashboard/${organization.slug}/analytics/events/${id}`)
+    }
   }
 
   return (
     <DashboardBody
-      title="Events"
-      header={
-        <h3 className="dark:text-polar-500 text-xl text-gray-500">
-          {totalCount} {totalCount === 1 ? 'Event' : 'Events'}
-        </h3>
-      }
+      title={null}
+      wrapperClassName="pt-4 md:gap-0 md:pt-6"
       contextViewPlacement="left"
-      contextViewTitle="Events"
-      contextViewClassName="w-full lg:max-w-[320px] xl:max-w-[320px] h-full overflow-y-hidden"
+      contextViewTitle="Filters"
+      contextViewClassName="w-full lg:max-w-[300px] xl:max-w-[300px] h-full overflow-y-hidden"
       contextView={
-        <div className="flex h-full flex-col gap-y-4">
-          <div className="flex flex-row items-center justify-between gap-6 px-4 pt-4">
-            <div>Events</div>
-            <div className="flex flex-row items-center gap-4">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    className="h-6 w-6 rounded-full"
-                    variant="ghost"
-                    onClick={() => {
-                      router.replace(
-                        `/dashboard/${organization.slug}/analytics/events`,
-                      )
-                    }}
-                  >
-                    <RefreshOutlined fontSize="inherit" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>Reset Filters</span>
-                </TooltipContent>
-              </Tooltip>
-              <Button
-                size="icon"
-                className="h-6 w-6"
-                onClick={showEventCreationGuide}
-              >
-                <AddOutlined fontSize="small" />
-              </Button>
-            </div>
-          </div>
-          <div
-            className={twMerge(
-              'flex flex-col gap-y-6 overflow-y-auto px-4 pt-2 pb-4',
-              hasScrolled && 'dark:border-polar-700 border-t border-gray-200',
-            )}
-            onScroll={handleScroll}
-          >
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-row items-center gap-3">
-                <Input
-                  placeholder="Search Events"
-                  value={query ?? undefined}
-                  onChange={(e) => {
-                    setQuery(e.target.value)
-                    resetPage()
-                  }}
-                  preSlot={<Search fontSize="small" />}
-                />
-              </div>
-              {debouncedQuery &&
-                debouncedQuery.length > 0 &&
-                debouncedQuery.length < 3 && (
-                  <p className="dark:text-polar-500 text-xs text-gray-400">
-                    Type at least 3 characters to search
-                  </p>
-                )}
-            </div>
-            <div className="flex h-full grow flex-col gap-y-6">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Timeline</h3>
-                <DateRangePicker
-                  date={dateRange}
-                  onDateChange={onDateRangeChange}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-sm">Sorting</h3>
-                <Select
-                  value={sorting}
-                  onValueChange={(value) => {
-                    setSorting(value as '-timestamp' | 'timestamp')
-                    resetPage()
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="-timestamp">Newest</SelectItem>
-                    <SelectItem value="timestamp">Oldest</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {Object.entries(eventTypes ?? {})
-                .sort((a) => (a[0] === 'system' ? 1 : -1))
-                .map(([source, eventTypes]) => {
-                  if (eventTypes.length === 0) return null
-
-                  return (
-                    <div className="flex flex-col gap-y-2" key={source}>
-                      <h3 className="text-sm capitalize">{source} Events</h3>
-                      <List size="small" className="rounded-xl">
-                        {eventTypes.map((eventType) => (
-                          <ListItem
-                            key={eventType.name}
-                            size="small"
-                            className="justify-between px-3 font-mono text-xs"
-                            inactiveClassName="text-gray-500 dark:text-polar-500"
-                            selected={selectedEventTypeSet.has(eventType.name)}
-                            onSelect={() => toggleEventType(eventType.name)}
-                          >
-                            <span className="w-full truncate">
-                              {eventType.label}
-                            </span>
-                            <span className="text-xxs dark:text-polar-500 font-mono text-gray-500">
-                              {Number(eventType.occurrences).toLocaleString(
-                                'en-US',
-                                {
-                                  style: 'decimal',
-                                  compactDisplay: 'short',
-                                  notation: 'compact',
-                                },
-                              )}
-                            </span>
-                          </ListItem>
-                        ))}
-                      </List>
-                    </div>
-                  )
-                })}
-
-              <CustomerSelector
-                organizationId={organization.id}
-                selectedCustomerIds={selectedCustomerIds}
-                onSelectCustomerIds={(customerIds) => {
-                  setSelectedCustomerIds(customerIds)
-                  resetPage()
-                }}
-              />
-
-              <EventMetadataFilter
-                metadata={Object.entries(metadata ?? {}).map(
-                  ([key, value]) => ({
-                    key,
-                    value,
-                  }),
-                )}
-                onChange={(metadata) => {
-                  setMetadata(
-                    metadata.reduce(
-                      (acc, curr) => {
-                        acc[curr.key] = curr.value
-                        return acc
-                      },
-                      {} as Record<string, string | number | boolean>,
-                    ),
-                  )
-                  resetPage()
-                }}
-              />
-            </div>
-          </div>
-          <Modal
-            title="Create Event"
-            isShown={isEventCreationGuideShown}
-            hide={hideEventCreationGuide}
-            modalContent={
-              <EventCreationGuideModal hide={hideEventCreationGuide} />
+        <EventsSidebar
+          organization={organization}
+          dateRange={{ from: startDate, to: endDate }}
+          onDateRangeChange={onDateRangeChange}
+          selectedEventTypes={selectedEventTypes ?? []}
+          onToggleEventType={toggleEventType}
+          selectedCustomerIds={selectedCustomerIds}
+          onSelectCustomerIds={(ids) => {
+            setSelectedCustomerIds(ids)
+          }}
+          metadata={metadata}
+          onMetadataChange={(value) => {
+            setMetadata(Object.keys(value).length > 0 ? value : null)
+          }}
+          hasActiveFilters={hasActiveFilters}
+          onReset={() =>
+            router.replace(`/dashboard/${organization.slug}/analytics/events`)
+          }
+        />
+      }
+      detailView={
+        selectedEventId ? (
+          <EventDetailPanel
+            key={selectedEventId}
+            eventId={selectedEventId}
+            organization={organization}
+            onSelectEvent={setSelectedEventId}
+            onPrevious={
+              previousEvent
+                ? () => setSelectedEventId(previousEvent.id)
+                : undefined
             }
+            onNext={
+              nextEvent ? () => setSelectedEventId(nextEvent.id) : undefined
+            }
+            onClose={() => setSelectedEventId(null)}
           />
-        </div>
+        ) : undefined
       }
       wide
     >
-      <div className="flex h-full flex-col gap-y-4">
-        {events?.items.length === 0 && !isFetching ? (
-          <div className="dark:border-polar-700 flex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-8 text-center md:p-24">
-            <h1 className="text-2xl">No Events Found</h1>
-            <p className="dark:text-polar-500 text-gray-500">
-              There are no events matching your current filters
-            </p>
+      <Box flexDirection="column" gap="xl">
+        <EventsHistogram
+          organizationId={organization.id}
+          startDate={startDate}
+          endDate={endDate}
+          eventNames={selectedEventTypes}
+          customerIds={selectedCustomerIds}
+          source={source}
+          onSelectRange={onDateRangeChange}
+        />
+        <Box alignItems="center" gap="s">
+          <div className="min-w-0 flex-1">
+            <EventSearch
+              organizationId={organization.id}
+              query={query}
+              onQueryChange={(value) => {
+                setQuery(value)
+              }}
+              selectedEventTypes={selectedEventTypes ?? []}
+              onEventTypesChange={(names) => {
+                setSelectedEventTypes(names && names.length > 0 ? names : null)
+              }}
+              selectedCustomerIds={selectedCustomerIds ?? []}
+              onCustomerIdsChange={(ids) => {
+                setSelectedCustomerIds(ids && ids.length > 0 ? ids : null)
+              }}
+              source={source}
+              onSourceChange={(value) => {
+                setSource(value)
+              }}
+              metadata={metadata ?? {}}
+              onMetadataChange={(value) => {
+                setMetadata(value)
+              }}
+            />
           </div>
+          <div className="w-32 shrink-0">
+            <Select
+              value={sorting}
+              onValueChange={(value) => {
+                setSorting(value as '-timestamp' | 'timestamp')
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="-timestamp">Newest</SelectItem>
+                <SelectItem value="timestamp">Oldest</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </Box>
+        {items.length === 0 && !isFetching ? (
+          <EmptyState
+            icon={<Search />}
+            title="No events found"
+            description="Try widening the timeline or clearing filters"
+          />
         ) : (
           <>
-            <Events events={events?.items ?? []} organization={organization} />
-            <Pagination
-              className="self-end"
-              totalCount={totalCount}
-              pageSize={PAGE_SIZE}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-              currentURL={searchParams}
+            <EventLog
+              events={items}
+              selectedEventId={selectedEventId}
+              onSelect={selectEvent}
+              onClose={() => setSelectedEventId(null)}
             />
+            <div ref={loadMoreRef} />
+            {isFetchingNextPage && (
+              <Box justifyContent="center" paddingVertical="l">
+                <Spinner />
+              </Box>
+            )}
           </>
         )}
-      </div>
+      </Box>
     </DashboardBody>
   )
 }

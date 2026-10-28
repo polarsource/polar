@@ -2,6 +2,7 @@ from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import (
     UUID as SA_UUID,
@@ -19,6 +20,7 @@ from sqlalchemy import (
     literal,
     or_,
     select,
+    text,
     tuple_,
     union_all,
     update,
@@ -796,7 +798,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         start_timestamp: datetime,
         end_timestamp: datetime,
         interval: TimeInterval,
+        timezone: ZoneInfo,
     ) -> list[datetime]:
+        await self.session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
         cte = get_timestamp_series_cte(start_timestamp, end_timestamp, interval)
         result = await self.session.execute(select(cte.c.timestamp))
         return [row[0] for row in result.all()]

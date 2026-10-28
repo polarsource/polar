@@ -113,6 +113,7 @@ export interface DashboardBodyProps {
   header?: JSX.Element
   titleActions?: React.ReactNode
   wide?: boolean
+  detailView?: React.ReactNode
 }
 
 export const DashboardBody = ({
@@ -127,6 +128,7 @@ export const DashboardBody = ({
   header,
   titleActions,
   wide = false,
+  detailView,
 }: DashboardBodyProps) => {
   const { currentRoute, currentSubRoute } = useRoute()
 
@@ -159,6 +161,7 @@ export const DashboardBody = ({
       animate="animate"
       exit="exit"
     >
+      {contextViewPlacement === 'left' && detailView}
       <div className="dark:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 bg-white px-4 md:overflow-y-auto md:border md:px-8 md:shadow-xs">
         <div
           className={twMerge(
@@ -232,6 +235,7 @@ export const DashboardBody = ({
           {contextView}
         </m.div>
       ) : null}
+      {contextViewPlacement === 'right' && detailView}
       {contextView && (
         <Modal
           title={contextViewTitle}

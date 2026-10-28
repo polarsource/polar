@@ -65,6 +65,9 @@ Rules of thumb:
 
 - `run` never prints. In-flight status goes through `withProgress`/`note` from
   `@/utils/progress`, which stay silent under `--json`.
+- Prompt only when `interactive` from `@/utils/interactive` says so. It is false
+  without a terminal, under a detected coding agent, and with `--non-interactive`;
+  fail with the flag that answers the question instead.
 - Commands that never return (`listen`) use `streaming()` instead and emit
   through its `Emit`: human text, or one JSON object per line under `--json`.
 - Commands where JSON makes no sense (e.g. one that opens a browser) use

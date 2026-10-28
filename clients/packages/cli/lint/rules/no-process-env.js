@@ -6,6 +6,7 @@ const allowed = [
   'services/auth.ts',
   'services/config.ts',
   'services/telemetry.ts',
+  'utils/agent.ts',
 ]
 
 export default {

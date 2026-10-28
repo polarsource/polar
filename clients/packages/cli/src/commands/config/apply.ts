@@ -1,4 +1,4 @@
-import { Duration, Effect, Option, Stdio } from 'effect'
+import { Duration, Effect, Option } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import { changeCount, tally } from '@/utils/billing-config/entries'
 import { plural } from '@/utils/billing-config/problems'
@@ -27,6 +27,7 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
+import { interactive } from '@/utils/interactive'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
@@ -53,11 +54,6 @@ const render = (
         applied(config, organization, result.entries),
         ui.blank,
       ]
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 const keypress = (frame: string) =>
   Prompt.Custom<boolean, boolean>(false, {

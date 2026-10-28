@@ -1,6 +1,7 @@
 import { commands } from '@polar-sh/cli-commands'
 import { Command, GlobalFlag } from 'effect/cli'
 import { Help } from '@/utils/help'
+import { NonInteractive } from '@/utils/interactive'
 import { Output } from '@/utils/output'
 import { auth } from '@/commands/auth'
 import { config } from '@/commands/config'
@@ -26,7 +27,7 @@ export const program = ({ preview }: ProgramOptions) =>
       },
       { group: 'API RESOURCES', commands },
     ]),
-    Command.withGlobalFlags([Output]),
+    Command.withGlobalFlags([Output, NonInteractive]),
   )
 
 const sharedBuiltIns = [

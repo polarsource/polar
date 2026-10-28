@@ -1,5 +1,6 @@
-import { Console, Duration, Effect, Exit, Stdio } from 'effect'
+import { Console, Duration, Effect, Exit } from 'effect'
 import yoctoSpinner from 'yocto-spinner'
+import { interactive } from '@/utils/interactive'
 import { isJson } from '@/utils/output'
 import * as ui from '@/utils/ui'
 
@@ -137,8 +138,7 @@ export const withProgress = <A, E, R>(
 ) =>
   Effect.gen(function* () {
     if (yield* isJson) return yield* run(silent)
-    const stdio = yield* Stdio.Stdio
-    const { progress, fail } = make(yield* stdio.stdoutIsTerminal, layout)
+    const { progress, fail } = make(yield* interactive, layout)
     return yield* run(progress).pipe(
       Effect.onExit((exit) => (Exit.isSuccess(exit) ? progress.close : fail)),
     )

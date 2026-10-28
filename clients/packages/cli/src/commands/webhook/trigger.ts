@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, Stdio } from 'effect'
+import { Effect, Option, Schema } from 'effect'
 import { Argument, Command, Flag, Prompt } from 'effect/cli'
 import { org } from '@/utils/flags'
 import { formatCatalog } from '@/utils/trigger/catalog'
@@ -12,6 +12,7 @@ import {
 } from '@/schemas/Trigger'
 import { Trigger } from '@/services/trigger'
 import { output } from '@/utils/command'
+import { interactive } from '@/utils/interactive'
 import * as ui from '@/utils/ui'
 
 const event = Argument.String('event').pipe(
@@ -44,11 +45,6 @@ const list = Flag.Boolean('list').pipe(
   Flag.withDefault(false),
   Flag.withDescription('List every event you can trigger, with descriptions'),
 )
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 const pickEvent = (events: ReadonlyArray<TriggerEvent>) =>
   Prompt.AutoComplete({

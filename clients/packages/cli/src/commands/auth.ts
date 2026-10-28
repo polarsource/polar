@@ -1,4 +1,4 @@
-import { Effect, Schema, Stdio } from 'effect'
+import { Effect, Schema } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import {
   ActiveOrganization,
@@ -15,6 +15,7 @@ import { token } from '@/commands/token'
 import { output } from '@/utils/command'
 import { local, production, sandbox } from '@/utils/flags'
 import { note } from '@/utils/progress'
+import { interactive } from '@/utils/interactive'
 import * as ui from '@/utils/ui'
 
 const isSelected = (
@@ -67,11 +68,6 @@ const announceAuthorization =
         ui.blank,
       ].join('\n'),
     )
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 const chooseEnvironment = (flags: EnvironmentFlags, action: string) =>
   Effect.gen(function* () {

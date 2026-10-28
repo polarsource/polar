@@ -1,4 +1,4 @@
-import { Clock, Effect, Option, Stdio } from 'effect'
+import { Clock, Effect, Option } from 'effect'
 import { Command, Prompt } from 'effect/cli'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
@@ -15,6 +15,7 @@ import { NOUNS, found, section, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
+import { interactive } from '@/utils/interactive'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
@@ -67,11 +68,6 @@ const report = (
     ? []
     : section(`Deprecated ${ui.dim(target(organization))}`, groups.join('\n\n'))
 }
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 const confirm =
   (

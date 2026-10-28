@@ -13,6 +13,7 @@ import {
 } from 'effect'
 import { HttpClient, HttpClientRequest } from 'effect/http'
 import { UsedEnvironments } from '@/services/api'
+import { detectAgent } from '@/utils/agent'
 import { VERSION } from '@/version'
 
 const OPT_OUT_VARIABLE = 'POLAR_CLI_TELEMETRY_OPTOUT'
@@ -43,18 +44,6 @@ export const Build = Context.Reference<BuildKind>('polar/Telemetry/Build', {
       : 'development',
 })
 
-const agents: ReadonlyArray<readonly [string, RegExp]> = [
-  ['claude-code', /^CLAUDECODE$|^CLAUDE_CODE_/],
-  ['cursor', /^CURSOR_/],
-  ['codex', /^CODEX_/],
-  ['opencode', /^OPENCODE_/],
-  ['pi', /^PI_CODING_AGENT$/],
-  ['gemini-cli', /^GEMINI_CLI$/],
-  ['copilot', /^(GITHUB_)?COPILOT_/],
-  ['aider', /^AIDER_/],
-  ['windsurf', /^WINDSURF_/],
-]
-
 const enabled = (value: string | undefined) =>
   value !== undefined && ['1', 'true', 'yes'].includes(value.toLowerCase())
 
@@ -66,14 +55,6 @@ export const isCI = (env: Env) =>
 
 export const isCompiledBinary = (main = Bun.main) =>
   main.startsWith('/$bunfs/') || /^[A-Za-z]:\\~BUN\\/.test(main)
-
-export const detectAgent = (env: Env) => {
-  const names = Object.keys(env).filter((name) => env[name])
-  const known = agents.find(([, pattern]) =>
-    names.some((name) => pattern.test(name)),
-  )?.[0]
-  return known ?? env['AI_AGENT']?.toLowerCase() ?? undefined
-}
 
 interface CommandTree {
   readonly name: string

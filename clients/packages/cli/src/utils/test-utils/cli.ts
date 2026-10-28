@@ -11,6 +11,8 @@ import {
 } from 'effect'
 import { Command } from 'effect/cli'
 import { Environment as ApiEnvironment } from '@/services/api'
+import { type Env, Environment as AgentEnvironment } from '@/utils/agent'
+import { NonInteractive } from '@/utils/interactive'
 import { Output } from '@/utils/output'
 
 export const stripAnsi = (text: string) => Bun.stripANSI(text)
@@ -89,6 +91,7 @@ const scriptedTerminal = (
 export interface RunCliOptions {
   interactive?: boolean
   input?: ReadonlyArray<Terminal.UserInput>
+  env?: Env
 }
 
 export const runCli = <Name extends string, Input, E, R, ContextInput>(
@@ -100,7 +103,7 @@ export const runCli = <Name extends string, Input, E, R, ContextInput>(
   const frames: string[] = []
   const interactive = options.interactive ?? false
   const effect = Command.runWith(
-    command.pipe(Command.withGlobalFlags([Output])),
+    command.pipe(Command.withGlobalFlags([Output, NonInteractive])),
     { version: '0.0.0', renderErrors: false },
   )(args).pipe(
     Effect.provideService(
@@ -118,6 +121,7 @@ export const runCli = <Name extends string, Input, E, R, ContextInput>(
     ),
     Effect.provideService(Console.Console, console),
     Effect.provideService(ApiEnvironment, {}),
+    Effect.provideService(AgentEnvironment, options.env ?? {}),
   )
   return {
     effect,

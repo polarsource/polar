@@ -241,6 +241,21 @@ describe('polar config apply', () => {
     expect(message(exit)).toBe('Confirmation needed to apply to Acme (sandbox)')
   })
 
+  test.each([
+    ['a coding agent runs it', [], { CLAUDECODE: '1' }],
+    ['--non-interactive is passed', ['--non-interactive'], {}],
+  ])('does not prompt when %s', async (_, args, env) => {
+    const { terminal, applied, exit } = await run(
+      { entries: [created], issues: [] },
+      { status: 'applied', entries: [created] },
+      args,
+      { interactive: true, env },
+    )
+    expect(applied).toBe(0)
+    expect(terminal).not.toContain('y to apply')
+    expect(message(exit)).toBe('Confirmation needed to apply to Acme (sandbox)')
+  })
+
   test('does nothing when the config is already applied', async () => {
     const { output, failed, applied } = await run(
       { entries: [kept], issues: [] },

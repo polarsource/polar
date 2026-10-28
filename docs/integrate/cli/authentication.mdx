@@ -100,6 +100,12 @@ to `production`. When a token can access several organizations, pass
   browser session.
 </Note>
 
+The CLI never prompts or animates when stdin is not a terminal, when it runs
+inside a coding agent such as Claude Code, Cursor or Codex, or when
+`--non-interactive` is passed. Commands that would have asked a question fail
+instead and name the flag that answers it, such as `--confirm` or `--org`.
+Add `--json` to get the result, or the error, as JSON.
+
 ## Where things are stored
 
 - Sessions live in the operating system keychain under the service name

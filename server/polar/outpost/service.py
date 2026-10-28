@@ -272,16 +272,20 @@ class OutpostService:
     ) -> None:
         reducer = await ReducerRepository.from_session(
             session
-        ).get_active_by_id_and_kinds(event["reducer_id"], (ReducerKind.usage,))
+        ).get_active_by_id_and_kinds(event["reducer_id"], tuple(ReducerKind))
         if reducer is None:
             return
         identity = (event["customer_id"], event["external_customer_id"])
+        customer = await self._get_customer(session, organization, identity)
         await self._send_meter_usage(
             session,
             organization,
             reducer,
-            [identity],
-            await self._get_customer(session, organization, identity),
+            # Credits are the customer's, whatever identity it reads them with.
+            get_customer_identities(customer)
+            if reducer.kind == ReducerKind.credit and customer is not None
+            else [identity],
+            customer,
             send_stream,
         )
 

@@ -37,6 +37,23 @@ class TestCreateSetupIntent:
             ],
         )
 
+    async def test_keeps_explicit_payment_method_types(
+        self, mocker: MockerFixture
+    ) -> None:
+        create = mocker.patch("stripe.SetupIntent.create_async")
+
+        await stripe_service.create_setup_intent(
+            payment_method_types=["card"],
+            confirmation_token="ctoken_test",
+            confirm=True,
+        )
+
+        create.assert_awaited_once_with(
+            payment_method_types=["card"],
+            confirmation_token="ctoken_test",
+            confirm=True,
+        )
+
 
 @pytest.mark.anyio
 class TestCreatePaymentIntent:
@@ -70,6 +87,22 @@ class TestCreatePaymentIntent:
                 "sepa_debit",
                 "sofort",
             ]
+
+    async def test_keeps_explicit_payment_method_types(
+        self, mocker: MockerFixture
+    ) -> None:
+        create = mocker.patch("stripe.PaymentIntent.create_async")
+
+        await stripe_service.create_payment_intent(
+            amount=1000,
+            currency="eur",
+            payment_method_types=["card"],
+            setup_future_usage="off_session",
+        )
+
+        create.assert_awaited_once()
+        assert create.call_args.kwargs["payment_method_types"] == ["card"]
+        assert "excluded_payment_method_types" not in create.call_args.kwargs
 
 
 @pytest.mark.anyio

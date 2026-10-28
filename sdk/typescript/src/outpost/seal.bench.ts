@@ -50,8 +50,6 @@ describe("APPLY_SNAPSHOT", () => {
             EPOCH,
             cutoff,
             cutoff + 1,
-            "meter",
-            1_000_000,
             1000,
             123456,
             1,

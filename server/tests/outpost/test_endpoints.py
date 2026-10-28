@@ -146,11 +146,11 @@ class TestOutpost:
                     "type": "meter_usage",
                     "payload": {
                         customer_key: customer_value,
-                        "meter_id": str(customer_meter.meter_id),
+                        "reducer_id": str(reducer.id),
                     },
                 }
             )
-            responses = [await websocket.receive_json() for _ in range(3)]
+            responses = [await websocket.receive_json(timeout=2) for _ in range(3)]
 
         payloads = {
             (payload["customer_id"], payload["external_customer_id"]): payload
@@ -161,7 +161,7 @@ class TestOutpost:
             (None, customer.external_id),
             (str(customer.id), customer.external_id),
         }
-        assert all(p["credited_units"] == 100 for p in payloads.values())
+        assert all(p["reducer_id"] == str(reducer.id) for p in payloads.values())
         assert all(p["customer_exists"] for p in payloads.values())
         external = payloads[(None, customer.external_id)]
         assert external["cold_until"] == to_epoch_microseconds(bucket_end)
@@ -181,7 +181,9 @@ class TestOutpost:
         organization: Organization,
         meter: Meter,
     ) -> None:
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
             await websocket.receive_json()
@@ -190,11 +192,11 @@ class TestOutpost:
                     "type": "meter_usage",
                     "payload": {
                         "external_customer_id": "unknown",
-                        "meter_id": str(meter.id),
+                        "reducer_id": str(reducer.id),
                     },
                 }
             )
-            response = await websocket.receive_json()
+            response = await websocket.receive_json(timeout=2)
 
         assert response["payload"]["external_customer_id"] == "unknown"
         assert response["payload"]["customer_exists"] is False
@@ -262,18 +264,17 @@ class TestOutpost:
                 },
             )
 
-            response = await websocket.receive_json()
+            response = await websocket.receive_json(timeout=2)
 
         payload = response["payload"]
         assert isinstance(payload.pop("version"), int)
         assert response == {
             "type": "meter_usage",
             "payload": {
-                "meter_id": str(customer_meter.meter_id),
+                "reducer_id": str(reducer.id),
                 "customer_id": None,
                 "external_customer_id": external_id,
                 "customer_exists": True,
-                "credited_units": 100,
                 "cold_until": to_epoch_microseconds(cold_until),
                 "count": 2,
                 "sum": 7.0,
@@ -331,7 +332,7 @@ class TestOutpost:
                     "external_customer_id": external_id,
                 },
             )
-            response = await websocket.receive_json()
+            response = await websocket.receive_json(timeout=2)
 
         payload = response["payload"]
         assert payload["cold_until"] == to_epoch_microseconds(
@@ -384,7 +385,7 @@ class TestOutpost:
                 },
             )
 
-            response = await websocket.receive_json()
+            response = await websocket.receive_json(timeout=2)
 
         payload = response["payload"]
         assert payload["cold_until"] == to_epoch_microseconds(bucket_end)
@@ -448,7 +449,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
                         "ids": ["counted", "unknown", "staged"],
                     },
                 }
@@ -465,11 +465,10 @@ class TestOutpost:
                 "bucket_start": to_epoch_microseconds(bucket_start),
                 "ids": ["counted", "staged"],
                 "snapshot": {
-                    "meter_id": str(meter.id),
+                    "reducer_id": str(reducer.id),
                     "customer_id": None,
                     "external_customer_id": "alice",
                     "customer_exists": False,
-                    "credited_units": 0,
                     "cold_until": to_epoch_microseconds(synced_at),
                     "count": 2,
                     "sum": 2.0,
@@ -533,7 +532,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
                         "ids": ["early", "late"],
                     },
                 }
@@ -574,7 +572,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
                         "ids": ["ingested"],
                     },
                 }
@@ -610,7 +607,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": 10**24,
-                        "meter_id": str(meter.id),
                         "ids": ["event"],
                     },
                 }
@@ -643,7 +639,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
                         "ids": [f"event-{index}" for index in range(1001)],
                     },
                 }

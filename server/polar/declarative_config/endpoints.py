@@ -1,5 +1,9 @@
-from fastapi import Depends, Query
+from typing import Annotated, Literal
 
+from fastapi import Depends, Query
+from pydantic import UUID4
+
+from polar.catalog.service import CatalogNotFound
 from polar.exceptions import NotPermitted, Unauthorized
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -26,6 +30,16 @@ from .service import declarative_config as declarative_config_service
 
 router = APIRouter(prefix="/config", tags=["config", APITag.private])
 
+CatalogNotFoundResponse = {
+    "description": "No published catalog has this ID.",
+    "model": CatalogNotFound.schema(),
+}
+
+CatalogSelectorQuery = Annotated[
+    Literal["live"] | UUID4,
+    Query(description="The catalog to use: `live`, or the ID of a published catalog."),
+]
+
 
 @router.get(
     "/",
@@ -42,6 +56,7 @@ router = APIRouter(prefix="/config", tags=["config", APITag.private])
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
         },
+        404: CatalogNotFoundResponse,
     },
 )
 async def export(
@@ -53,10 +68,14 @@ async def export(
             "**Required unless you use an organization token.**"
         ),
     ),
+    catalog: CatalogSelectorQuery = "live",
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ConfigExport:
     """
     Export the organization's current config as a declarative config document.
+
+    With `catalog`, products come from that catalog version. Settings, meters
+    and benefits aren't versioned, so they're always the current ones.
 
     `config` has the shape plan and apply accept, without `organization_id`:
     planning it for the same organization without edits reports no changes.
@@ -68,7 +87,7 @@ async def export(
     Requires the read or write scope of every exported section.
     """
     return await declarative_config_service.export(
-        session, auth_subject, organization_id
+        session, auth_subject, organization_id, catalog
     )
 
 
@@ -143,11 +162,13 @@ async def apply(
             ),
             "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
         },
+        404: CatalogNotFoundResponse,
     },
 )
 async def plan(
     config: Config,
     auth_subject: ConfigRead,
+    catalog: CatalogSelectorQuery = "live",
     session: AsyncSession = Depends(get_db_session),
 ) -> ConfigPlan:
     """
@@ -156,9 +177,13 @@ async def plan(
     Returns the action for each resource, and every issue: `error` issues make
     apply fail, `warning` issues don't.
 
+    With an archived `catalog` version, products are compared to that version
+    instead of the live one. The plan then shows the changes from that version,
+    not what apply would do, and `catalog` is None.
+
     Each section requires the read or write scope for its resource.
     """
-    return await declarative_config_service.plan(session, auth_subject, config)
+    return await declarative_config_service.plan(session, auth_subject, config, catalog)
 
 
 @router.post(

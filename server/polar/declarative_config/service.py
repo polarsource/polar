@@ -14,11 +14,13 @@ from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
+from polar.catalog.service import CatalogSelector
 from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Agent, Organization, Product, User
+from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -292,27 +294,44 @@ class DeclarativeConfigService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
+        catalog_selector: CatalogSelector = "live",
     ) -> ConfigPlan:
         _assert_section_scopes(auth_subject, config, write=False)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
-        changes, issues = await validation.check(
-            session, organization, config, for_update=False
+        base = await catalog_service.resolve(session, organization, catalog_selector)
+        archived_base = (
+            base if base is not None and base.status != CatalogStatus.live else None
         )
-        issues.extend(catalogs.benefit_issues(changes))
-        removed, removal_issues = await removals.products(session, organization, config)
-        issues.extend(removal_issues)
-        live = await CatalogRepository.from_session(session).get_live(organization.id)
-        catalog_before, catalog_after = await catalog_service.get_next_version_hash(
+        changes, issues = await validation.check(
             session,
             organization,
-            live,
-            catalogs.product_definitions(changes),
-            [removal.external_id for removal in removed],
+            config,
+            for_update=False,
+            catalog=archived_base,
         )
+        issues.extend(catalogs.benefit_issues(changes))
+        removed, removal_issues = await removals.products(
+            session, organization, config, catalog=archived_base
+        )
+        issues.extend(removal_issues)
+        live = None if archived_base is not None else base
         catalog: ConfigCatalogPlan | None = None
+        # Apply publishes on top of live, so planning against an archived
+        # catalog has no next catalog.
+        catalog_before, catalog_after = (
+            (None, None)
+            if archived_base is not None
+            else await catalog_service.get_next_version_hash(
+                session,
+                organization,
+                live,
+                catalogs.product_definitions(changes),
+                [removal.external_id for removal in removed],
+            )
+        )
         if catalog_after is not None and catalog_after != catalog_before:
             catalog = ConfigCatalogPlan(
                 before=None if live is None else ConfigCatalog.model_validate(live),
@@ -458,6 +477,7 @@ class DeclarativeConfigService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: UUID | None,
+        catalog_selector: CatalogSelector = "live",
     ) -> ConfigExport:
         _assert_scopes(auth_subject, EXPORTED_SECTIONS, write=False)
         organization = await self._get_organization(
@@ -466,7 +486,8 @@ class DeclarativeConfigService:
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
         )
-        return await export_config(session, organization)
+        catalog = await catalog_service.resolve(session, organization, catalog_selector)
+        return await export_config(session, organization, catalog)
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]

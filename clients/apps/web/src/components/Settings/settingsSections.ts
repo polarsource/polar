@@ -23,7 +23,7 @@ export const SETTINGS_SECTIONS = {
   notifications: { title: 'Notifications' },
   profile: { title: 'Profile' },
   security: { title: 'Security' },
-  developer: { title: 'Developer' },
+  developer: { title: 'OAuth Apps' },
 } satisfies Record<string, SettingsSection>
 
 export type SettingsSectionSlug = keyof typeof SETTINGS_SECTIONS

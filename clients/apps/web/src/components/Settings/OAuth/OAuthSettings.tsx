@@ -70,7 +70,7 @@ const OAuthSettings = () => {
         )}
         <SettingsGroupRow>
           <div className="flex flex-row items-center gap-x-4">
-            <Button asChild onClick={showNewOAuthClientModal}>
+            <Button size="sm" asChild onClick={showNewOAuthClientModal}>
               Create OAuth App
             </Button>
           </div>

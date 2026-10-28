@@ -69,9 +69,10 @@ Prices are the only thing that is frozen per customer today. Everything else fol
 
 There are only 4 concepts that make all of this possible:
 
-1. **Catalog.** It contains the full list of products and benefits at a point in time. It is identified by its `id`, has an optional human name, and has a state: `draft`, `live`, or `archived`. Every organization has one live catalog and at most one draft.
-   - The API only exposes the `id` and the name. Internally, we also store a hash, unique per organization, computed from the previous published hash and the catalog content. It detects no-op applies: an apply that doesn't change the catalog doesn't publish one. The hash isn't part of the API.
-   - History is sorted by `published_at`.
+1. **Catalog.** It contains the full list of products and benefits at a point in time. It is identified by a hash, not a number, and has a state: `draft`, `live`, or `archived`. Every organization has one live catalog and at most one draft.
+   - Like git, we store the full hash, unique per organization, and show the shortest prefix that is unique in the organization (6 characters). The examples below use 4 characters to keep them short.
+   - The hash is computed from the previous published hash and the catalog content. So every published catalog gets a new hash, even if it goes back to an older definition.
+   - Hashes don't have an order, so history is sorted by `published_at`.
 2. **Copy-on-write** for products and benefits. Every change creates a new row in the draft catalog. Once the catalog is published, those rows are locked.
 3. **`external_id` is the stable name.** It is required for every product, benefit, and meter. All rows with the same `external_id` are versions of one resource. Each row stores the catalog where it was created.
 4. **`is_current`.** It is `true` for rows in the live catalog. It is a fast way to filter current entities and new sales. Only one row per `external_id` can be current, with a unique index on `(organization_id, external_id) WHERE is_current`. Catalog membership (`catalog_products`, `catalog_benefits`) is the source of truth, and `is_current` is only updated when a catalog is published.

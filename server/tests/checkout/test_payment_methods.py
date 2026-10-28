@@ -32,13 +32,31 @@ def test_get_payment_mode(
 @pytest.mark.parametrize(
     ("mode", "country", "currency", "expected"),
     [
-        ("payment", None, "usd", ["card"]),
-        ("payment", "US", "usd", ["card"]),
-        ("payment", "BE", "eur", ["card", "bancontact"]),
-        ("payment", "BE", "usd", ["card"]),
-        ("payment", "NL", "eur", ["card"]),
-        ("subscription", "BE", "eur", ["card"]),
-        ("setup", "BE", "eur", ["card"]),
+        ("payment", None, "eur", ["card", "link"]),
+        ("payment", None, "usd", ["card", "link", "amazon_pay"]),
+        ("payment", "US", "usd", ["card", "link", "amazon_pay", "cashapp"]),
+        ("subscription", "US", "usd", ["card", "link", "amazon_pay", "cashapp"]),
+        ("payment", "BE", "eur", ["card", "link", "bancontact"]),
+        ("payment", "BE", "usd", ["card", "link", "amazon_pay"]),
+        ("subscription", "BE", "eur", ["card", "link"]),
+        ("setup", "BE", "eur", ["card", "link"]),
+        ("payment", "AT", "eur", ["card", "link", "eps"]),
+        ("payment", "NL", "eur", ["card", "link", "ideal"]),
+        (
+            "payment",
+            "KR",
+            "krw",
+            ["card", "link", "kr_card", "kakao_pay", "naver_pay", "samsung_pay"],
+        ),
+        (
+            "subscription",
+            "KR",
+            "krw",
+            ["card", "link", "kr_card", "kakao_pay", "naver_pay"],
+        ),
+        ("payment", "CN", "cny", ["card", "link", "alipay", "wechat_pay"]),
+        ("subscription", "CN", "usd", ["card", "link", "amazon_pay"]),
+        ("payment", "IN", "inr", ["card", "link", "upi"]),
     ],
 )
 def test_get_payment_method_types(

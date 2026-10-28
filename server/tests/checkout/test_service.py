@@ -5484,7 +5484,7 @@ class TestConfirm:
         )
 
         params = stripe_service_mock.create_payment_intent.call_args.kwargs
-        assert params["payment_method_types"] == ["card"]
+        assert params["payment_method_types"] == ["card", "link", "amazon_pay"]
         assert "automatic_payment_methods" not in params
 
     async def test_setup_intent_payment_method_types(
@@ -5515,7 +5515,7 @@ class TestConfirm:
         )
 
         params = stripe_service_mock.create_setup_intent.call_args.kwargs
-        assert params["payment_method_types"] == ["card"]
+        assert params["payment_method_types"] == ["card", "link", "amazon_pay"]
         assert "automatic_payment_methods" not in params
 
     async def test_valid_fully_discounted_forever_subscription(

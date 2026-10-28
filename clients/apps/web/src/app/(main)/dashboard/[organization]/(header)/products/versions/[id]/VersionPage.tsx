@@ -30,7 +30,7 @@ type Organization = schemas['Organization']
 type CatalogVersion = schemas['CatalogVersion']
 type CatalogProduct = schemas['CatalogProduct']
 type Product = schemas['Product']
-type Change = 'added' | 'changed' | 'removed'
+type Change = (typeof changes)[number]
 type Entry = {
   row: CatalogProduct
   change: Change | null
@@ -84,12 +84,6 @@ const priceSignature = ({
     [recurring_interval, recurring_interval_count, prices],
     (key, value) => (identityFields.has(key) ? undefined : value),
   )
-
-const benefitSignature = ({ benefits }: Product) =>
-  benefits
-    .map(({ id }) => id)
-    .sort()
-    .join()
 
 const plural = (count: number, noun: string) =>
   `${count} ${count === 1 ? noun : `${noun}s`}`
@@ -276,18 +270,15 @@ const ProductRow = ({
   product,
   previous,
   showStatus,
-  showBenefits,
 }: {
   organization: Organization
   entry: Entry
   product?: Product
   previous?: Product
   showStatus: boolean
-  showBenefits: boolean
 }) => {
   const currency = organization.default_presentment_currency
   const removed = change === 'removed'
-  const benefitCount = product?.benefits.length ?? 0
 
   const nameBefore =
     previous && previous.name !== product?.name ? previous.name : undefined
@@ -297,19 +288,12 @@ const ProductRow = ({
     priceSignature(previous) !== priceSignature(product) ? (
       <ProductPriceLabel product={previous} currency={currency} />
     ) : undefined
-  const benefitsBefore =
-    previous &&
-    product &&
-    benefitSignature(previous) !== benefitSignature(product)
-      ? plural(previous.benefits.length, 'benefit')
-      : undefined
 
   const columns = [
     '160px',
     'minmax(0, 1fr)',
     showStatus && '80px',
-    'auto',
-    showBenefits && '128px',
+    '200px',
     '176px',
   ]
     .filter(Boolean)
@@ -343,24 +327,15 @@ const ProductRow = ({
               ) : null}
             </Box>
           ) : null}
-          <Diff before={priceBefore}>
-            <Text color={removed ? 'disabled' : 'default'}>
-              {product ? (
-                <ProductPriceLabel product={product} currency={currency} />
-              ) : null}
-            </Text>
-          </Diff>
-          {showBenefits ? (
-            <Box justifyContent="end">
-              <Diff before={benefitsBefore}>
-                <Text color="muted" align="right">
-                  {benefitCount || benefitsBefore
-                    ? plural(benefitCount, 'benefit')
-                    : null}
-                </Text>
-              </Diff>
-            </Box>
-          ) : null}
+          <Box justifyContent="end" minWidth={0}>
+            <Diff before={priceBefore}>
+              <Text color={removed ? 'disabled' : 'default'}>
+                {product ? (
+                  <ProductPriceLabel product={product} currency={currency} />
+                ) : null}
+              </Text>
+            </Diff>
+          </Box>
           <Subscribers
             organizationId={organization.id}
             productId={row.product_id}
@@ -399,7 +374,6 @@ export default function VersionPage({
     `--org ${organization.slug}`,
     ...(catalog.status === 'live' ? [] : [`--version ${catalog.id}`]),
   ]
-  const showBenefits = !!products?.some(({ benefits }) => benefits.length)
   const summary = [
     plural(catalog.products.length, 'product'),
     ...changes.flatMap((change) => {
@@ -434,7 +408,6 @@ export default function VersionPage({
                     : undefined
                 }
                 showStatus={!!parent}
-                showBenefits={showBenefits}
               />
             ))}
           </List>

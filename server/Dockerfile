@@ -1,6 +1,6 @@
 # Shared tooling for the Render and Lambda builds.
 FROM ghcr.io/astral-sh/uv:0.13.4 AS uv
-FROM tailscale/tailscale:v1.98.4 AS tailscale
+FROM tailscale/tailscale:v1.104.2 AS tailscale
 
 # Build the email renderer and backoffice assets with the same Node/pnpm setup.
 FROM node:24-slim AS node-builder

@@ -44,6 +44,7 @@ import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import {
   type CheckoutSubmitResult,
+  errorDetail,
   flattenFormErrors,
   useCheckoutWebMCP,
 } from '../hooks/webmcp'
@@ -304,11 +305,7 @@ const BaseCheckoutForm = ({
         result = error
           ? {
               status: 'failed',
-              message:
-                error instanceof Error && error.message
-                  ? error.message
-                  : (form.formState.errors.root?.message ??
-                    'The payment failed'),
+              message: errorDetail(error) || 'The payment failed',
             }
           : { status: 'confirmed' }
       },
@@ -906,7 +903,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const onPaymentElementChange = useCallback(
     async (event: StripePaymentElementChangeEvent) => {
       setSelectedPaymentMethod(event.value.type)
-      setIsPaymentElementComplete(event.complete)
+      setIsPaymentElementComplete(event.value.type === 'card' && event.complete)
       if (event.value.type !== checkout.payment_method_type) {
         try {
           await update({ payment_method_type: event.value.type })

@@ -2,6 +2,7 @@ import type { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
 import {
   describePrice,
+  errorDetail,
   findProduct,
   flattenFormErrors,
   normalizeState,
@@ -103,5 +104,25 @@ describe('flattenFormErrors', () => {
       customer_email: 'Required',
       'customer_billing_address.line1': 'Line 1 is required',
     })
+  })
+})
+
+describe('errorDetail', () => {
+  it('returns a string detail as is', () => {
+    expect(errorDetail({ detail: 'Your card was declined.' })).toBe(
+      'Your card was declined.',
+    )
+  })
+
+  it('serializes a structured detail', () => {
+    expect(errorDetail({ detail: [{ msg: 'Invalid' }] })).toBe(
+      '[{"msg":"Invalid"}]',
+    )
+  })
+
+  it('falls back to the error message', () => {
+    expect(errorDetail(new Error('Stripe elements not provided'))).toBe(
+      'Stripe elements not provided',
+    )
   })
 })

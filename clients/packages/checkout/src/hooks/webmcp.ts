@@ -203,7 +203,7 @@ const describeCheckout = (
     {
       status: checkout.status,
       order: describeOrder(checkout),
-      amounts_in_cents: {
+      amounts: {
         subtotal: checkout.amount,
         discount: checkout.discount_amount,
         tax: checkout.tax_amount,
@@ -233,9 +233,11 @@ const describeCheckout = (
   )
 }
 
-const errorDetail = (error: unknown) => {
+export const errorDetail = (error: unknown) => {
   if (error && typeof error === 'object' && 'detail' in error) {
-    return JSON.stringify(error.detail)
+    return typeof error.detail === 'string'
+      ? error.detail
+      : JSON.stringify(error.detail)
   }
   return error instanceof Error ? error.message : String(error)
 }
@@ -329,7 +331,8 @@ export const useCheckoutWebMCP = (options: CheckoutWebMCPOptions) => {
               country,
               state: normalizeState(
                 country,
-                billing_address.state ?? current?.state,
+                billing_address.state ??
+                  (country === current?.country ? current?.state : ''),
               ),
             } as schemas['AddressInput']
             form.setValue('customer_billing_address.country', address.country, {
@@ -359,7 +362,7 @@ export const useCheckoutWebMCP = (options: CheckoutWebMCPOptions) => {
       {
         name: 'update_order',
         description:
-          'Change what is being bought, in one call: switch to another product on offer (by name or ID, see order.other_products in get_checkout_state), set the number of seats of a per-seat product, set the amount of a pay-what-you-want product, or apply a discount code (an empty string removes it). Amounts are in cents. Returns the updated checkout state with the new total, or why the change was rejected.',
+          'Change what is being bought, in one call: switch to another product on offer (by name or ID, see order.other_products in get_checkout_state), set the number of seats of a per-seat product, set the amount of a pay-what-you-want product, or apply a discount code (an empty string removes it). Amounts are integers in the smallest unit of the checkout currency, like all amounts in get_checkout_state: 1500 is $15.00 in USD, but ¥1500 in JPY. Returns the updated checkout state with the new total, or why the change was rejected.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -368,16 +371,16 @@ export const useCheckoutWebMCP = (options: CheckoutWebMCPOptions) => {
               description: 'Name or ID of a product on offer',
             },
             seats: { type: 'integer', minimum: 1 },
-            amount_in_cents: { type: 'integer', minimum: 0 },
+            amount: { type: 'integer', minimum: 0 },
             discount_code: { type: 'string' },
           },
         },
         execute: async (input) => {
           const { checkout, form, update } = latest.current
-          const { product, seats, amount_in_cents, discount_code } = input as {
+          const { product, seats, amount, discount_code } = input as {
             product?: string
             seats?: number
-            amount_in_cents?: number
+            amount?: number
             discount_code?: string
           }
           const payload: schemas['CheckoutUpdatePublic'] = {}
@@ -391,14 +394,14 @@ export const useCheckoutWebMCP = (options: CheckoutWebMCPOptions) => {
           if (seats !== undefined) {
             payload.seats = seats
           }
-          if (amount_in_cents !== undefined) {
-            payload.amount = amount_in_cents
+          if (amount !== undefined) {
+            payload.amount = amount
           }
           if (discount_code !== undefined) {
             payload.discount_code = discount_code || null
           }
           if (Object.keys(payload).length === 0) {
-            return 'Nothing to change: pass product, seats, amount_in_cents or discount_code.'
+            return 'Nothing to change: pass product, seats, amount or discount_code.'
           }
           form.clearErrors(['product_id', 'seats', 'amount', 'discount_code'])
           try {
@@ -426,7 +429,9 @@ export const useCheckoutWebMCP = (options: CheckoutWebMCPOptions) => {
           if (!focusPaymentForm || !isPaymentFormReady) {
             return 'The payment form is not ready yet. Try again in a moment.'
           }
-          focusPaymentForm({ clear: input.clear === true })
+          if (!focusPaymentForm({ clear: input.clear === true })) {
+            return 'The payment form is not available yet. Try again in a moment.'
+          }
           return 'The card number field has focus. Digits only: type the card number, press Tab, type the expiry as MMYY, press Tab, type the CVC. Focus does not move between the card fields by itself.'
         },
       },

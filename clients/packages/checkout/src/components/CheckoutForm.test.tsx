@@ -377,6 +377,20 @@ describe('CheckoutForm', () => {
       expect(form.getValues('customer_billing_address.state')).toBe('US-CA')
     })
 
+    it('drops the state when the country changes', async () => {
+      const { form, execute } = renderWithModelContext(true)
+
+      await execute('set_customer_details', {
+        billing_address: { country: 'US', state: 'CA' },
+      })
+      await execute('set_customer_details', {
+        billing_address: { country: 'DE' },
+      })
+
+      expect(form.getValues('customer_billing_address.country')).toBe('DE')
+      expect(form.getValues('customer_billing_address.state')).toBe('')
+    })
+
     it('rejects a product that is not on offer', async () => {
       const { execute } = renderWithModelContext(true)
 

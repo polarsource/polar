@@ -51,6 +51,7 @@ class Catalog(RecordModel):
         ForeignKey("catalogs.id", ondelete="set null"),
         nullable=True,
         default=None,
+        index=True,
     )
     status: Mapped[CatalogStatus] = mapped_column(
         StringEnum(CatalogStatus), nullable=False

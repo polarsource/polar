@@ -463,7 +463,7 @@ class ConfigCatalog(IDSchema):
 
 class ConfigCatalogChange(Schema):
     before: ConfigCatalog | None = Field(
-        description="The live catalog before applying. Null before the first publish."
+        description="The live catalog before applying. `None` before the first publish."
     )
     after: ConfigCatalog = Field(description="The catalog applying published.")
 
@@ -472,7 +472,7 @@ class ConfigCatalogPlan(Schema):
     before: ConfigCatalog | None = Field(
         description=(
             "The live catalog that applying replaces. "
-            "Null if the organization has no catalog yet."
+            "`None` if the organization has no catalog yet."
         )
     )
     name: str | None = Field(description="Name of the catalog applying publishes.")

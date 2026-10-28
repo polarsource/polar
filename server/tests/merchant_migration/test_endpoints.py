@@ -72,16 +72,6 @@ def _body(organization: Organization, **overrides: object) -> dict[str, object]:
     return {**VALID_BODY, "organization_id": str(organization.id), **overrides}
 
 
-async def _enable_feature(
-    save_fixture: SaveFixture, organization: Organization
-) -> None:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "merchant_migration_enabled": True,
-    }
-    await save_fixture(organization)
-
-
 def _mock_stripe_adapter(
     mocker: MockerFixture,
     *,
@@ -121,26 +111,12 @@ class TestCreate:
         assert response.status_code == 403
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_feature_disabled_returns_403(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            "/v1/merchant-migrations/", json=_body(organization)
-        )
-        assert response.status_code == 403
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_invalid_key_format_returns_422(
         self,
         client: AsyncClient,
-        save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         response = await client.post(
             "/v1/merchant-migrations/", json=_body(organization, api_key="nope")
         )
@@ -151,12 +127,10 @@ class TestCreate:
         self,
         client: AsyncClient,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         _mock_stripe_adapter(mocker, missing_scopes=["Subscriptions (write)"])
 
         response = await client.post(
@@ -172,11 +146,9 @@ class TestCreate:
         self,
         client: AsyncClient,
         organization: Organization,
-        save_fixture: SaveFixture,
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         _mock_stripe_adapter(
             mocker, auth_error=stripe_lib.AuthenticationError("bad key")
         )
@@ -191,12 +163,10 @@ class TestCreate:
         self,
         client: AsyncClient,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         _mock_stripe_adapter(mocker, country="IN")
 
         response = await client.post(
@@ -212,12 +182,10 @@ class TestCreate:
         self,
         client: AsyncClient,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         _mock_stripe_adapter(mocker)
         enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
 
@@ -256,7 +224,6 @@ class TestCreate:
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         await build_connected_migration(save_fixture, organization_second)
         _mock_stripe_adapter(mocker)
 
@@ -278,7 +245,6 @@ class TestCreate:
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         existing = await build_connected_migration(save_fixture, organization)
         _mock_stripe_adapter(mocker)
 

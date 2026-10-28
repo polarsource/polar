@@ -1,0 +1,77 @@
+dev/experiments/webmcp-checkout/.gitignore
+  s_3ecceb23385a6f::t_e30be0f4575f9e 1
+dev/experiments/webmcp-checkout/run.py
+  s_3ecceb23385a6f::t_ae044e29b65774 159-177
+  s_3ecceb23385a6f::t_a42aea51dac50a 125,134
+  s_3ecceb23385a6f::t_2c8e025b0bbc62 377,380-383,385-387
+  s_3ecceb23385a6f::t_00b53fc443d2a2 230
+  s_3ecceb23385a6f::t_6b31b91ce8de94 1-30,33,38-40,42-50,112-117,122-124,126-133,135-158,178-229,231-310,312-315,317,319-320,327-328,344-347,350-365,367-376,378-379,384,388-393,395-403,406-420
+  s_3ecceb23385a6f::t_19af2b5f39e5f3 394,404-405
+  s_3ecceb23385a6f::t_f18c9da4c1a6c6 118-121
+  s_3ecceb23385a6f::t_2133694a001e5e 311,316,318,321-323,329-343,348-349
+  s_3ecceb23385a6f::t_60e3e8983e2d34 31-32,34-37,41,51-111
+  s_3ecceb23385a6f::t_dbaad5ed5c91c3 324-326
+  s_3ecceb23385a6f::t_934150a483a643 366
+clients/packages/checkout/src/hooks/webmcp.test.ts
+  s_3ecceb23385a6f::t_f25efd9835d4ad 2,70-107
+  s_3ecceb23385a6f::t_b8eb5256ed41e0 1,30-69
+  s_3ecceb23385a6f::t_5361ae119b4643 3-29
+clients/packages/checkout/src/hooks/webmcp.ts
+  s_3ecceb23385a6f::t_93040d37c5f0f9 131-140
+  s_3ecceb23385a6f::t_b8f59272b611e9 39
+  s_3ecceb23385a6f::t_91716a0f937bec 1,4-38,40-53,59-106,180,184-189,191-197,199,234-242,280-298,300,313,329,346,356,358,448,450,452,459,461
+  s_3ecceb23385a6f::t_9f3bbadca61de1 107,112-123,125-130,141-178
+  s_3ecceb23385a6f::t_acc4371960706c 362,366-369,376-382,384-389
+  s_3ecceb23385a6f::t_55e26011bb5d41 422-423
+  s_3ecceb23385a6f::t_9c36bff2092812 267
+  s_3ecceb23385a6f::t_c0e1d9c41fffc6 360-361,363-365,370-375,383,390-400,402,404,406-411
+  s_3ecceb23385a6f::t_884b30d573724f 205
+  s_3ecceb23385a6f::t_7201563309476a 401,403,405
+  s_3ecceb23385a6f::t_6d8b5c803796c2 108-111
+  s_3ecceb23385a6f::t_bf0e058e9dc989 2-3,54-58,179,181-183,190,198,202-204,206-219,221-233,243-266,268-279,299,301-312,314-328,330-345,347-355,357,359,412-421,424-431,433-447,449,451,454-458,460
+  s_3ecceb23385a6f::t_37b7ddbdf9c3e8 124
+  s_3ecceb23385a6f::t_f11b5cf43247ed 200-201,220,432,453
+dev/experiments/webmcp-checkout/report.py
+  s_3ecceb23385a6f::t_44e333bc8a6212 1-93
+clients/packages/checkout/src/components/CheckoutForm.tsx
+  s_3ecceb23385a6f::t_5273b590380dc3 978-988
+  s_3ecceb23385a6f::t_a726df754bc002 290,294-305,307-313,315-322,324-326
+  s_3ecceb23385a6f::t_eca01ba8c80ff4 91
+  s_3ecceb23385a6f::t_7019e03bf54886 977
+  s_3ecceb23385a6f::t_fc6638de5ec268 111
+  s_3ecceb23385a6f::t_0bf640603f8106 110
+  s_3ecceb23385a6f::t_7806762daa8124 306
+  s_3ecceb23385a6f::t_a19545e67e19f2 314
+  s_3ecceb23385a6f::t_04465b68eae5e6 92
+  s_3ecceb23385a6f::t_5df3a39c647cb0 45-49
+  s_3ecceb23385a6f::t_b4975a476810c5 882-883
+  s_3ecceb23385a6f::t_fd5b64b30e46bb 903
+  s_3ecceb23385a6f::t_a414b687f8028c 323
+dev/experiments/webmcp-checkout/README.md
+  s_3ecceb23385a6f::t_8b90bc7a29490f 41-63
+  s_3ecceb23385a6f::t_c0a298d93b4cb0 1-37,40,64-69
+  s_3ecceb23385a6f::t_c67cb8c9ffd6e7 70-74
+  s_3ecceb23385a6f::t_a1654e05f9433e 38-39
+dev/experiments/webmcp-checkout/setup_fixtures.py
+  s_3ecceb23385a6f::t_cf4e99486571dd 1,3
+  s_3ecceb23385a6f::t_c13fade1666d85 4-6
+  s_3ecceb23385a6f::t_7d568356c7747c 2,7-20,27-110,113-116
+  s_3ecceb23385a6f::t_836233c9fa574c 111-112
+  s_3ecceb23385a6f::t_fa7c1965314751 21-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f2f15b52c8c41b7403d9b21b35f8c4dd5c05f4af",
+  "prompts": {},
+  "sessions": {
+    "s_3ecceb23385a6f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e4a0b9cf-add7-48df-9118-82b6aa0c6b99",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

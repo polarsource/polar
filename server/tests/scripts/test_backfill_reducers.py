@@ -159,5 +159,9 @@ class TestBackfillReducers:
         meter.set_deleted_at()
         await session.flush()
 
-        assert await backfill_batch(session) == (0, 1)
-        assert (await session.scalars(select(Reducer))).one().id == reducer.id
+        assert await backfill_batch(session) == (1, 1)
+        assert (
+            await session.scalars(
+                select(Reducer).where(Reducer.kind == ReducerKind.usage)
+            )
+        ).one().id == reducer.id

@@ -123,13 +123,18 @@ class ReducerService:
         *,
         at: datetime,
     ) -> None:
-        """Makes `at` a bucket boundary and seals the customer's usage before it."""
+        """Makes `at` a bucket boundary and seals the customer's usage and credits
+        before it."""
         try:
             async with session.begin_nested():
-                reducers = await self._get_reducers(session, [meter_id])
-                await self._seal_buckets(
-                    session, list(reducers.values()), customer, until=at
-                )
+                reducers = [
+                    reducer
+                    for kind in (ReducerKind.usage, ReducerKind.credit)
+                    for reducer in (
+                        await self._get_reducers(session, [meter_id], kind)
+                    ).values()
+                ]
+                await self._seal_buckets(session, reducers, customer, until=at)
         except Exception:
             log.exception(
                 "Failed to seal reducer buckets",
@@ -153,7 +158,9 @@ class ReducerService:
         meter_ids = sorted(meter_ids)
         try:
             async with session.begin_nested():
-                reducers = await self._get_reducers(session, meter_ids)
+                reducers = await self._get_reducers(
+                    session, meter_ids, ReducerKind.usage
+                )
                 # The meter.reset at `cutoff` should have sealed this usage already.
                 # That task and this run at roughly the same time, so if it
                 # hasn't run already we seal it here. The one that runs
@@ -521,15 +528,13 @@ class ReducerService:
         return reducer
 
     async def _get_reducers(
-        self, session: AsyncSession, meter_ids: Iterable[UUID]
+        self, session: AsyncSession, meter_ids: Iterable[UUID], kind: ReducerKind
     ) -> dict[UUID, Reducer]:
-        """The meters' reducers with buckets, by meter id."""
+        """The meters' reducers of the kind with buckets, by meter id."""
         repository = ReducerRepository.from_session(session)
         reducers: dict[UUID, Reducer] = {}
         for meter_id in meter_ids:
-            reducer = await repository.get_by_meter_and_kind(
-                meter_id, ReducerKind.usage
-            )
+            reducer = await repository.get_by_meter_and_kind(meter_id, kind)
             if reducer is not None and not isinstance(
                 reducer.aggregation, UniqueAggregation
             ):

@@ -331,6 +331,7 @@ class TestUpdate:
         if has_reducer:
             original_reducer = Reducer(
                 organization=organization,
+                kind=ReducerKind.usage,
                 filter=meter.filter,
                 aggregation=meter.aggregation,
             )

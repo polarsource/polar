@@ -13779,7 +13779,7 @@ export interface components {
       organization_id: string
       /**
        * Name
-       * @description Optional name given when it was published.
+       * @description Name given when it was published. Defaults to `v{n}`, n being its position in the organization's catalog history.
        */
       name: string | null
       /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
@@ -16205,7 +16205,7 @@ export interface components {
       settings?: components['schemas']['ConfigSettings'] | null
       /**
        * Catalog Name
-       * @description Name of the catalog version this apply publishes, if it publishes one.
+       * @description Name of the catalog version this apply publishes, if it publishes one. Defaults to `v{n}`, n being the version's position in the organization's catalog history. Numbers never go backwards: applying an older config again publishes a new version with the next number.
        */
       catalog_name?: string | null
       /**
@@ -16453,9 +16453,9 @@ export interface components {
       before: components['schemas']['ConfigCatalog'] | null
       /**
        * Name
-       * @description Name of the catalog applying publishes.
+       * @description Name of the catalog applying publishes. A default `v{n}` name moves to the next number if another apply publishes first.
        */
-      name: string | null
+      name: string
     }
     /** ConfigChange */
     ConfigChange: {

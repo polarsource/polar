@@ -2728,20 +2728,20 @@ class TestCatalogVersioning:
         await declarative_config_service.apply(session, redis, auth_subject, unnamed)
         first = await catalogs_repo.get_live(organization.id)
         assert first is not None
-        assert first.name is None
+        assert first.name == "v1"
 
         await declarative_config_service.apply(session, redis, auth_subject, name_only)
         assert await catalogs_repo.get_live(organization.id) == first
-        assert first.name is None
+        assert first.name == "v1"
 
         plan = await declarative_config_service.plan(session, auth_subject, named)
         assert plan.catalog == ConfigCatalogPlan(
-            before=ConfigCatalog(id=first.id, name=None), name="Spring pricing"
+            before=ConfigCatalog(id=first.id, name="v1"), name="Spring pricing"
         )
         catalog_diff = plan.changes[0].diff[-1]
         assert (catalog_diff.field, catalog_diff.before, catalog_diff.after) == (
             "catalog",
-            None,
+            "v1",
             "Spring pricing",
         )
 
@@ -2753,9 +2753,14 @@ class TestCatalogVersioning:
         assert live.id != first.id
         assert live.name == "Spring pricing"
         assert result.catalog == ConfigCatalogChange(
-            before=ConfigCatalog(id=first.id, name=None),
+            before=ConfigCatalog(id=first.id, name="v1"),
             after=ConfigCatalog(id=live.id, name="Spring pricing"),
         )
+
+        await declarative_config_service.apply(session, redis, auth_subject, unnamed)
+        third = await catalogs_repo.get_live(organization.id)
+        assert third is not None
+        assert third.name == "v3"
 
     async def test_lifecycle(
         self,
@@ -2775,7 +2780,7 @@ class TestCatalogVersioning:
         create_plan = await declarative_config_service.plan(
             session, auth_subject, initial_config
         )
-        assert create_plan.catalog == ConfigCatalogPlan(before=None, name=None)
+        assert create_plan.catalog == ConfigCatalogPlan(before=None, name="v1")
         created_catalog = create_plan.changes[0].diff[-1]
         assert (created_catalog.field, created_catalog.before) == ("catalog", None)
 
@@ -2790,7 +2795,7 @@ class TestCatalogVersioning:
         assert first.version_hash is not None
         assert (len(first.version_hash), old_product.catalog_id) == (64, first.id)
         assert created.catalog == ConfigCatalogChange(
-            before=None, after=ConfigCatalog(id=first.id, name=None)
+            before=None, after=ConfigCatalog(id=first.id, name="v1")
         )
         assert [
             m.product_id for m in await members_repo.get_all_by_catalog(first.id)
@@ -2819,9 +2824,14 @@ class TestCatalogVersioning:
         update_plan = await declarative_config_service.plan(
             session, auth_subject, updated_config
         )
-        assert update_plan.changes[0].diff[-1].field == "catalog"
+        catalog_diff = update_plan.changes[0].diff[-1]
+        assert (catalog_diff.field, catalog_diff.before, catalog_diff.after) == (
+            "catalog",
+            "v1",
+            "v2",
+        )
         assert update_plan.catalog == ConfigCatalogPlan(
-            before=ConfigCatalog(id=first.id, name=None), name=None
+            before=ConfigCatalog(id=first.id, name="v1"), name="v2"
         )
 
         updated = await declarative_config_service.apply(
@@ -2845,8 +2855,8 @@ class TestCatalogVersioning:
         assert live.version_hash not in (None, first.version_hash)
         assert new_product.catalog_id == live.id
         assert updated.catalog == ConfigCatalogChange(
-            before=ConfigCatalog(id=first.id, name=None),
-            after=ConfigCatalog(id=live.id, name=None),
+            before=ConfigCatalog(id=first.id, name="v1"),
+            after=ConfigCatalog(id=live.id, name="v2"),
         )
         assert [
             m.product_id for m in await members_repo.get_all_by_catalog(live.id)
@@ -2883,7 +2893,7 @@ class TestCatalogVersioning:
         config = Config.model_validate({"products": [MONTHLY_PRO_25]})
 
         plan = await declarative_config_service.plan(session, auth_subject, config)
-        assert plan.catalog == ConfigCatalogPlan(before=None, name=None)
+        assert plan.catalog == ConfigCatalogPlan(before=None, name="v2")
         assert plan.changes[0].diff[-1].field == "catalog"
 
         result = await declarative_config_service.apply(
@@ -2905,12 +2915,43 @@ class TestCatalogVersioning:
         assert existing.catalog_id is not None
         assert existing.catalog_id != live.id
         assert result.catalog == ConfigCatalogChange(
-            before=ConfigCatalog(id=existing.catalog_id, name=None),
-            after=ConfigCatalog(id=live.id, name=None),
+            before=ConfigCatalog(id=existing.catalog_id, name="v1"),
+            after=ConfigCatalog(id=live.id, name="v2"),
         )
         assert (await repository.get_version_hashes([existing.catalog_id])) == {
             existing.catalog_id: compute_version_hash(None, {"pro": str(existing.id)})
         }
+
+    async def test_reapply_older_config_takes_next_number(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        initial_config = Config.model_validate({"products": [MONTHLY_PRO]})
+        updated_config = Config.model_validate({"products": [MONTHLY_PRO_25]})
+        catalogs_repo = CatalogRepository.from_session(session)
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, initial_config
+        )
+        first = await catalogs_repo.get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session, redis, auth_subject, updated_config
+        )
+        await catalogs_repo.soft_delete(first)
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, initial_config
+        )
+
+        live = await catalogs_repo.get_live(organization.id)
+        assert live is not None
+        assert live.version_hash != first.version_hash
+        assert result.catalog is not None
+        assert result.catalog.after == ConfigCatalog(id=live.id, name="v3")
 
     async def test_archived_product_stays_archived(
         self,

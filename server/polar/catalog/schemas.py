@@ -11,7 +11,12 @@ class Catalog(IDSchema, TimestampedSchema):
     """A version of an organization's product catalog."""
 
     organization_id: OrganizationID
-    name: str | None = Field(description="Optional name given when it was published.")
+    name: str | None = Field(
+        description=(
+            "Name given when it was published. Defaults to `v{n}`, n being its "
+            "position in the organization's catalog history."
+        )
+    )
     status: CatalogStatus = Field(
         description=(
             "`live` for the catalog new checkouts use, `archived` for previous "

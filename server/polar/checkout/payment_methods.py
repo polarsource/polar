@@ -35,7 +35,9 @@ class PaymentMethodRule:
 PAYMENT_METHOD_RULES: dict[str, PaymentMethodRule] = {
     "card": PaymentMethodRule(),
     "link": PaymentMethodRule(),
-    "amazon_pay": PaymentMethodRule(currencies=frozenset({"usd"})),
+    "amazon_pay": PaymentMethodRule(
+        countries=frozenset({"US", "DE"}), currencies=frozenset({"usd"})
+    ),
     "cashapp": PaymentMethodRule(
         countries=frozenset({"US"}), currencies=frozenset({"usd"})
     ),

@@ -383,7 +383,10 @@ class StripeService:
     async def create_payment_intent(
         self, **params: Unpack[PaymentIntentCreateParams]
     ) -> stripe_lib.PaymentIntent:
-        if params.get("setup_future_usage") == "off_session":
+        if (
+            params.get("setup_future_usage") == "off_session"
+            and "payment_method_types" not in params
+        ):
             params["excluded_payment_method_types"] = [
                 *params.get("excluded_payment_method_types", []),
                 *SEPA_PAYMENT_METHOD_TYPES,
@@ -426,10 +429,11 @@ class StripeService:
     async def create_setup_intent(
         self, **params: Unpack[SetupIntentCreateParams]
     ) -> stripe_lib.SetupIntent:
-        params["excluded_payment_method_types"] = [
-            *params.get("excluded_payment_method_types", []),
-            *SEPA_PAYMENT_METHOD_TYPES,
-        ]
+        if "payment_method_types" not in params:
+            params["excluded_payment_method_types"] = [
+                *params.get("excluded_payment_method_types", []),
+                *SEPA_PAYMENT_METHOD_TYPES,
+            ]
         log.info(
             "stripe.setup_intent.create",
             customer=params.get("customer"),

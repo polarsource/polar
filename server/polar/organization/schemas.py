@@ -268,6 +268,17 @@ class OrganizationFeatureSettings(Schema):
             ),
         ),
     ] = False
+    checkout_payment_method_rules_enabled: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "If this organization's checkout offers payment methods from "
+                "Polar's country rules instead of the payment processor's "
+                "automatic selection."
+            ),
+        ),
+    ] = False
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

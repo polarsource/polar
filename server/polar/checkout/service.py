@@ -1323,7 +1323,6 @@ class CheckoutService:
                             payment_intent_params: PaymentIntentCreateParams = {
                                 "amount": checkout.total_amount,
                                 "currency": checkout.currency,
-                                "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
                                 "customer": stripe_customer_id,
                                 "statement_descriptor_suffix": checkout.organization.statement_descriptor(),
@@ -1354,6 +1353,9 @@ class CheckoutService:
                             if isinstance(
                                 checkout_confirm, CheckoutConfirmSharedPaymentToken
                             ):
+                                payment_intent_params["automatic_payment_methods"] = {
+                                    "enabled": True
+                                }
                                 intent = await stripe_service.create_payment_intent_from_shared_payment_token(
                                     checkout_confirm.shared_payment_token_id,
                                     **payment_intent_params,
@@ -1362,6 +1364,14 @@ class CheckoutService:
                                 assert (
                                     checkout_confirm.confirmation_token_id is not None
                                 )
+                                if checkout.payment_method_types is not None:
+                                    payment_intent_params["payment_method_types"] = (
+                                        checkout.payment_method_types
+                                    )
+                                else:
+                                    payment_intent_params[
+                                        "automatic_payment_methods"
+                                    ] = {"enabled": True}
                                 payment_intent_params["confirmation_token"] = (
                                     checkout_confirm.confirmation_token_id
                                 )
@@ -1372,7 +1382,6 @@ class CheckoutService:
                             assert isinstance(checkout_confirm, CheckoutConfirmStripe)
                             assert checkout_confirm.confirmation_token_id is not None
                             setup_intent_params: SetupIntentCreateParams = {
-                                "automatic_payment_methods": {"enabled": True},
                                 "confirm": True,
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
@@ -1383,6 +1392,15 @@ class CheckoutService:
                                 ),
                                 "expand": ["payment_method"],
                             }
+
+                            if checkout.payment_method_types is not None:
+                                setup_intent_params["payment_method_types"] = (
+                                    checkout.payment_method_types
+                                )
+                            else:
+                                setup_intent_params["automatic_payment_methods"] = {
+                                    "enabled": True
+                                }
 
                             if three_d_secure:
                                 setup_intent_params["payment_method_options"] = {

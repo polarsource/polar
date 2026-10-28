@@ -856,6 +856,32 @@ describe('CheckoutForm', () => {
       })
     })
 
+    it('uses the checkout payment method types instead of exclusions', () => {
+      const checkout = stripeCheckout({
+        is_payment_setup_required: false,
+        is_payment_required: true,
+        total_amount: 999,
+        currency: 'eur',
+        payment_method_types: ['card', 'bancontact'],
+      })
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      const options = lastElementsOptions()
+      expect(options).toMatchObject({
+        mode: 'payment',
+        paymentMethodTypes: ['card', 'bancontact'],
+      })
+      expect(options).not.toHaveProperty('excludedPaymentMethodTypes')
+    })
+
     it('passes a converted Stripe locale through Elements options', () => {
       render(
         <FormWrapper

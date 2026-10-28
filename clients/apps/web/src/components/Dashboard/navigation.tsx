@@ -308,7 +308,7 @@ const accountRoutesList = (): Route[] => [
   },
   {
     id: 'developer',
-    title: 'Developer',
+    title: 'OAuth Apps',
     link: `/dashboard/account/developer`,
     icon: <CodeOutlined fontSize="inherit" />,
     if: true,

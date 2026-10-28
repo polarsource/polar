@@ -4,19 +4,15 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
 import { useMerchantMigrations } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
-import { Alert, Button, Grid, InlineModal, Text } from '@polar-sh/orbit'
+import { Alert, Button, InlineModal, SpinnerNoMargin } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { AddOutlined } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { CreateMigrationModal } from './CreateMigrationModal'
-import { MigrationCard } from './MigrationCard'
-
-const GRID_COLUMNS = {
-  base: '1fr',
-  md: 'repeat(2, minmax(0, 1fr))',
-  xl: 'repeat(3, minmax(0, 1fr))',
-}
+import { SettingsGroup } from '@/components/Settings/SettingsGroup'
+import { EmptyState } from '@/components/Shared/EmptyState'
+import { Download } from '@polar-sh/orbit/icons'
+import { MigrationRow } from './MigrationRow'
 
 // Mirrors the server's create guard: only organizations that finished
 // onboarding (active or under review) can start a migration.
@@ -47,27 +43,16 @@ export default function MigrationsPage({ organization }: Props) {
   )
 
   return (
-    <DashboardBody title="Migrations">
-      <Box flexDirection="column" rowGap="2xl">
-        <Box
-          flexDirection={{ base: 'column', sm: 'row' }}
-          alignItems={{ sm: 'center' }}
-          justifyContent="between"
-          rowGap="m"
-          columnGap="l"
-        >
-          <Text color="muted" wrap="pretty">
-            Migrate your billing from Stripe to Polar. Each migration connects
-            one Stripe account and runs in guided steps.
-          </Text>
-          <Button onClick={show} disabled={!canCreate}>
-            <Box alignItems="center" columnGap="s">
-              <AddOutlined fontSize="inherit" />
-              New migration
-            </Box>
-          </Button>
-        </Box>
-
+    <DashboardBody
+      wrapperClassName="max-w-(--breakpoint-md)!"
+      title="Migrations"
+      header={
+        <Button onClick={show} disabled={!canCreate}>
+          New migration
+        </Button>
+      }
+    >
+      <Box flexDirection="column" rowGap="l">
         {!canCreate && (
           <Alert
             variant="warning"
@@ -85,26 +70,34 @@ export default function MigrationsPage({ organization }: Props) {
           />
         )}
 
-        {isLoading ? (
-          <SkeletonGrid />
-        ) : isError ? (
+        {isError ? (
           <Alert
             variant="danger"
             title="We couldn't load your migrations"
             description="Something went wrong. Please refresh the page and try again."
           />
-        ) : migrations.length === 0 ? (
-          <EmptyState onStart={show} disabled={!canCreate} />
+        ) : !isLoading && migrations.length === 0 ? (
+          <EmptyState
+            icon={<Download />}
+            title="No migrations"
+            description="Start a migration to move your Stripe billing to Polar."
+          />
         ) : (
-          <Grid templateColumns={GRID_COLUMNS} gap="l">
-            {migrations.map((migration) => (
-              <MigrationCard
-                key={migration.id}
-                migration={migration}
-                href={`${basePath}/${migration.id}`}
-              />
-            ))}
-          </Grid>
+          <SettingsGroup>
+            {isLoading ? (
+              <Box justifyContent="center" paddingVertical="3xl">
+                <SpinnerNoMargin />
+              </Box>
+            ) : (
+              migrations.map((migration) => (
+                <MigrationRow
+                  key={migration.id}
+                  migration={migration}
+                  href={`${basePath}/${migration.id}`}
+                />
+              ))
+            )}
+          </SettingsGroup>
         )}
       </Box>
 
@@ -120,70 +113,5 @@ export default function MigrationsPage({ organization }: Props) {
         }
       />
     </DashboardBody>
-  )
-}
-
-function EmptyState({
-  onStart,
-  disabled,
-}: {
-  onStart: () => void
-  disabled: boolean
-}) {
-  return (
-    <Box
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      rowGap="l"
-      paddingVertical="5xl"
-      borderRadius="l"
-      backgroundColor="background-card"
-      borderWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-    >
-      <Text variant="heading-xs" as="h2">
-        No migrations yet
-      </Text>
-      <Text color="muted">
-        Start a migration to bring your Stripe billing to Polar.
-      </Text>
-      <Button variant="secondary" onClick={onStart} disabled={disabled}>
-        <Box alignItems="center" columnGap="s">
-          <AddOutlined fontSize="inherit" />
-          New migration
-        </Box>
-      </Button>
-    </Box>
-  )
-}
-
-function SkeletonGrid() {
-  return (
-    <Grid templateColumns={GRID_COLUMNS} gap="l">
-      {[0, 1, 2].map((i) => (
-        <Box
-          key={i}
-          flexDirection="column"
-          rowGap="l"
-          padding="xl"
-          borderRadius="l"
-          backgroundColor="background-card"
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-        >
-          <Box
-            width={40}
-            height={40}
-            borderRadius="m"
-            backgroundColor="background-secondary"
-          />
-          <Text variant="body" loading placeholderText="Stripe" />
-          <Text variant="caption" loading placeholderText="Started recently" />
-        </Box>
-      ))}
-    </Grid>
   )
 }

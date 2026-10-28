@@ -43,9 +43,7 @@ export function PanTransferStepItem({
       </Box>
 
       <Box flex={1} minWidth={0} flexDirection="column" rowGap="m">
-        <Text variant="caption" color={current ? 'default' : 'muted'}>
-          {title}
-        </Text>
+        <Text color={current ? 'default' : 'muted'}>{title}</Text>
 
         {done && <CompletedSummary step={step} fields={copy?.inputs ?? []} />}
 
@@ -63,7 +61,7 @@ export function PanTransferStepItem({
               sourceStripeAccountId={sourceStripeAccountId}
             />
           ) : (
-            <Text variant="caption" color="muted">
+            <Text color="muted">
               This step needs a newer version of this page. Please refresh.
             </Text>
           ))}

@@ -16,7 +16,6 @@ from polar.postgres import (
 from polar.routing import APIRouter
 
 from .auth_md import render_auth_md
-from .dependencies import agent_sign_up_enabled
 from .schemas import (
     AgentClaim,
     AgentClaimCeremony,
@@ -35,9 +34,7 @@ from .service import (
 )
 from .service import agent as agent_service
 
-router = APIRouter(
-    prefix="/agent", tags=["agent"], dependencies=[Depends(agent_sign_up_enabled)]
-)
+router = APIRouter(prefix="/agent", tags=["agent"])
 
 
 @router.post(
@@ -147,9 +144,7 @@ async def confirm_claim(
     return Response(status_code=204)
 
 
-auth_md_router = APIRouter(
-    include_in_schema=False, dependencies=[Depends(agent_sign_up_enabled)]
-)
+auth_md_router = APIRouter(include_in_schema=False)
 
 
 @auth_md_router.get("/auth.md", name="agent:auth_md")

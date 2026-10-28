@@ -18,7 +18,7 @@ class Catalog(IDSchema, TimestampedSchema):
         )
     )
     parent_id: UUID4 | None = Field(
-        description="The catalog version this one was published on top of."
+        description="ID of the catalog this version replaced. Null for the first one."
     )
     status: CatalogStatus = Field(
         description=(

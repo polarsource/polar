@@ -64,7 +64,9 @@ export function CreateMigrationModal({
   return (
     <>
       <InlineModalHeader hide={onClose}>
-        <Text variant="body">New migration</Text>
+        <Text variant="heading-xxs" as="h2">
+          New migration
+        </Text>
       </InlineModalHeader>
 
       <Box
@@ -75,16 +77,11 @@ export function CreateMigrationModal({
         paddingHorizontal="2xl"
         paddingBottom="2xl"
       >
-        <Box alignItems="center" columnGap="m">
-          <StripeMark size={48} />
-          <Box flexDirection="column" rowGap="xs">
-            <Text variant="heading-xs" as="h2">
-              Stripe
-            </Text>
-            <Text variant="caption" color="muted">
-              The only source available for now.
-            </Text>
-          </Box>
+        <Box alignItems="center" columnGap="s">
+          <StripeMark size={28} />
+          <Text variant="title" as="h3">
+            Stripe
+          </Text>
         </Box>
 
         <Text color="muted">

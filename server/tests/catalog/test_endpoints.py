@@ -30,10 +30,10 @@ async def catalogs(
     live = Catalog(
         organization=organization,
         name="Spring pricing",
-        parent=archived,
         version_hash="b" * 64,
         status=CatalogStatus.live,
         published_at=now,
+        parent=archived,
     )
     draft = Catalog(organization=organization, status=CatalogStatus.draft)
     for catalog in (archived, live, draft):
@@ -84,11 +84,12 @@ class TestList:
         json = response.json()
         assert json["pagination"]["total_count"] == 3
         assert [
-            (item["id"], item["name"], item["status"]) for item in json["items"]
+            (item["id"], item["name"], item["status"], item["parent_id"])
+            for item in json["items"]
         ] == [
-            (str(draft.id), None, "draft"),
-            (str(live.id), "Spring pricing", "live"),
-            (str(archived.id), None, "archived"),
+            (str(draft.id), None, "draft", None),
+            (str(live.id), "Spring pricing", "live", str(archived.id)),
+            (str(archived.id), None, "archived", None),
         ]
         assert all("version_hash" not in item for item in json["items"])
 

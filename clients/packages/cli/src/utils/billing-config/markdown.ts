@@ -12,7 +12,7 @@ import {
   valueLines,
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
-import { errors, unchanged } from '@/utils/billing-config/review'
+import { catalogChange, errors, unchanged } from '@/utils/billing-config/review'
 import { shownDiff } from '@/utils/billing-config/sentences'
 import { documents } from '@/utils/billing-config/tree'
 
@@ -108,14 +108,26 @@ const callout = (
 const metadata = (
   config: LoadedConfig,
   organization: ActiveOrganization,
-  { entries }: PlanResult,
+  { entries, catalog }: PlanResult,
 ) => {
   const count = (action: AppliedEntry['action']) =>
     entries.filter((entry) => entry.action === action).length
+  const columns = [
+    ['Organization', escape(organization.name)],
+    ['Environment', organization.environment],
+    ['Config', `\`${config.file}\``],
+    [
+      'Changes',
+      `${count('updated')} to change, ${count('created')} to add, ${count('unchanged')} unchanged`,
+    ],
+    ...(catalog
+      ? [['Catalog', escape(catalogChange(catalog, (text) => text))]]
+      : []),
+  ]
   return [
-    '| Organization | Environment | Config | Changes |',
-    '| --- | --- | --- | --- |',
-    `| ${escape(organization.name)} | ${organization.environment} | \`${config.file}\` | ${count('updated')} to change, ${count('created')} to add, ${count('unchanged')} unchanged |`,
+    `| ${columns.map(([label]) => label).join(' | ')} |`,
+    `| ${columns.map(() => '---').join(' | ')} |`,
+    `| ${columns.map(([, value]) => value).join(' | ')} |`,
   ].join('\n')
 }
 

@@ -4,11 +4,12 @@ import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import PaymentMethod from '@/components/PaymentMethod/PaymentMethod'
 import PaymentStatus from '@/components/PaymentStatus/PaymentStatus'
+import { paymentDeclineReasonColumns } from '@/components/PaymentStatus/paymentDeclineReasonColumns'
 import { ProductListItem } from '@/components/Products/ProductListItem'
 import { useCustomer } from '@/hooks/queries/customers'
 import { usePayments } from '@/hooks/queries/payments'
 import { schemas } from '@polar-sh/client'
-import { DataTable, Truncated, type DataTableColumnDef } from '@polar-sh/orbit'
+import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { List } from '@polar-sh/orbit'
 import React from 'react'
@@ -24,10 +25,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
   const { data: payments, isLoading: paymentsLoading } = usePayments(
     organization.id,
     { checkout_id: checkout.id },
-  )
-
-  const hasDeclinedPayment = (payments?.items ?? []).some(
-    (payment) => payment.status === 'failed',
   )
 
   return (
@@ -104,25 +101,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, checkout }) => {
                 <PaymentStatus payment={original} />
               ),
             },
-            ...(hasDeclinedPayment
-              ? ([
-                  {
-                    accessorKey: 'decline_reason',
-                    header: 'Bank Decline Reason',
-                    cell: ({ row: { original } }) => {
-                      const reason =
-                        original.decline_message || original.decline_reason
-                      return reason ? (
-                        <Truncated>
-                          <span className="text-sm">{reason}</span>
-                        </Truncated>
-                      ) : (
-                        '—'
-                      )
-                    },
-                  },
-                ] satisfies DataTableColumnDef<schemas['Payment']>[])
-              : []),
+            ...paymentDeclineReasonColumns(payments?.items ?? []),
           ]}
           data={payments?.items ?? []}
         />

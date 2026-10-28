@@ -297,7 +297,6 @@ class DeclarativeConfigService:
         catalog_before, catalog_after = await catalog_service.get_next_version_hash(
             session, organization, live, catalogs.product_definitions(changes)
         )
-        product_changes = self._plan_changes(ConfigResource.product, changes.products)
         catalog: ConfigCatalogPlan | None = None
         if catalog_after is not None and catalog_after != catalog_before:
             catalog = ConfigCatalogPlan(
@@ -310,18 +309,12 @@ class DeclarativeConfigService:
                     after_baseline=live is None and catalog_before is not None,
                 ),
             )
-            catalogs.add_catalog_diffs(
-                product_changes,
-                changes.products,
-                None if catalog.before is None else catalog.before.name,
-                catalog.name,
-            )
         return ConfigPlan(
             changes=[
                 *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
-                *product_changes,
+                *self._plan_changes(ConfigResource.product, changes.products),
             ],
             catalog=catalog,
             settings=None

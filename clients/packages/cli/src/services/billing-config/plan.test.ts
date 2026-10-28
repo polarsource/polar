@@ -127,6 +127,18 @@ describe('plan', () => {
     ])
   })
 
+  test('keeps the catalog the plan publishes', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      catalog: { before: { id: 'catalog-1', name: 'v1' }, name: 'v2' },
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.catalog).toEqual({ before: { name: 'v1' }, name: 'v2' })
+  })
+
   test('turns 422 structural errors into issues with no changes', async () => {
     api.routes[`POST ${planUrl}`] = Response.json(
       {

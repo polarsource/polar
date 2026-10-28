@@ -38,7 +38,7 @@ export function PrecheckPanel({
 
   return (
     <Box flexDirection="column" rowGap="l" marginTop="m">
-      <Text variant="caption" color="muted">
+      <Text color="muted">
         We&apos;ll read your Stripe products, prices, coupons, customers and
         subscriptions and check they can be imported. Nothing is changed in
         Stripe.
@@ -48,9 +48,7 @@ export function PrecheckPanel({
         <Box flexDirection="column" rowGap="xs">
           <Box alignItems="center" columnGap="s">
             <Spinner />
-            <Text variant="caption" color="muted">
-              Reading your Stripe catalog…
-            </Text>
+            <Text color="muted">Reading your Stripe catalog…</Text>
           </Box>
           <Text variant="caption" color="muted">
             {stalled ? CATALOG_READ_STALLED : CATALOG_READ_DURATION}

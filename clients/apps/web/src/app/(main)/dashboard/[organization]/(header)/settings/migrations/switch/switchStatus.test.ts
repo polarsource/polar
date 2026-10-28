@@ -60,6 +60,7 @@ describe('switchStatus', () => {
   it('shows "Ready" for a pending row with a card', () => {
     expect(switchStatus(row({ has_payment_method: true }))).toEqual({
       label: 'Ready',
+      color: 'green',
     })
   })
 

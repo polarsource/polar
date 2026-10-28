@@ -13806,7 +13806,7 @@ export interface components {
       name: string | null
       /**
        * Parent Id
-       * @description The catalog version this one was published on top of.
+       * @description ID of the catalog this version replaced. Null for the first one.
        */
       parent_id: string | null
       /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
@@ -13895,7 +13895,7 @@ export interface components {
       name: string | null
       /**
        * Parent Id
-       * @description The catalog version this one was published on top of.
+       * @description ID of the catalog this version replaced. Null for the first one.
        */
       parent_id: string | null
       /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */

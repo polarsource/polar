@@ -1742,9 +1742,7 @@ class MerchantMigrationService:
         record_id: UUID,
         update: MerchantMigrationRecordUpdate,
     ) -> MerchantMigrationRecordUpdate:
-        migration = await self._get_manageable(
-            session, auth_subject, migration_id, for_update=True
-        )
+        migration = await self._get_manageable(session, auth_subject, migration_id)
         repository = MerchantMigrationRecordRepository.from_session(session)
         record = await repository.get_by_id(record_id, for_update=True)
         if record is None or record.merchant_migration_id != migration.id:
@@ -1752,6 +1750,8 @@ class MerchantMigrationService:
         if record.type != MerchantMigrationRecordType.subscription:
             raise RecordNotSubscription()
         # Record edits are activity too, so the idle close leaves the migration be.
+        # The migration row is only written after the record is locked: the
+        # cutover takes the same two locks in that order.
         migration.set_modified_at()
         if isinstance(update, MerchantMigrationRecordTaxUpdate):
             if record.cutover_status == MerchantMigrationCutoverStatus.moved:

@@ -438,6 +438,15 @@ class ReducerService:
         )
         return cold_until, totals
 
+    async def get_credits(
+        self, session: AsyncReadSession, reducer: Reducer, customer_id: UUID
+    ) -> Row[Any]:
+        """count, sum, min and max of the customer's credits since the meter's
+        latest reset: the credit reducer's unsealed buckets."""
+        return await ReducerBucketRepository.from_session(session).get_unsealed_totals(
+            reducer.organization_id, reducer.id, [(customer_id, None)]
+        )
+
     async def get_stored_external_ids(
         self,
         session: AsyncReadSession,
@@ -534,11 +543,7 @@ class ReducerService:
                         customer_meter.meter_id, ReducerKind.credit
                     )
                     if credit is not None:
-                        totals = await ReducerBucketRepository.from_session(
-                            session
-                        ).get_unsealed_totals(
-                            credit.organization_id, credit.id, [(customer.id, None)]
-                        )
+                        totals = await self.get_credits(session, credit, customer.id)
                         span.set_attribute(
                             "legacy_credited", str(customer_meter.credited_units)
                         )

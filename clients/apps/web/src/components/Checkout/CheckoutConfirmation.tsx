@@ -10,7 +10,8 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import { Avatar } from '@polar-sh/orbit'
+import { formatDate } from '@polar-sh/i18n/formatters/date'
+import { Avatar, Text } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
@@ -212,6 +213,17 @@ export const CheckoutConfirmation = ({
               {status === 'failed' &&
                 t('checkout.confirmation.failedDescription')}
             </p>
+            {status === 'succeeded' && checkout.trial_end && (
+              <Text as="p" color="muted">
+                {t('checkout.trial.hero.freeUntil', {
+                  date: formatDate(checkout.trial_end, locale, {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  }),
+                })}
+              </Text>
+            )}
           </div>
           {status === 'confirmed' && (
             <div className="flex items-center justify-center">

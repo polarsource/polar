@@ -22,6 +22,7 @@ const numberFormat = new Intl.NumberFormat('en-US')
 
 interface Props {
   migrationId: string
+  readOnly?: boolean
   report: schemas['MerchantMigrationCutoverReport']
   filter: SwitchFilter
   onFilterChange: (filter: SwitchFilter) => void
@@ -44,6 +45,7 @@ interface Props {
 
 export function SwitchPanelView({
   migrationId,
+  readOnly = false,
   report,
   filter,
   onFilterChange,
@@ -73,17 +75,16 @@ export function SwitchPanelView({
       ? `Switch ${numberFormat.format(switchCount)} subscriptions`
       : 'Switch subscriptions'
 
-  const columns = useMemo(
-    () =>
-      buildSwitchColumns({
-        isSelected: (id) => isRowSelected(selection, id),
-        headerState: canSelectAll ? headerCheckState(selection) : 'unchecked',
-        canSelectAll,
-        onToggle,
-        onToggleAll,
-      }),
-    [canSelectAll, selection, onToggle, onToggleAll],
-  )
+  const columns = useMemo(() => {
+    const all = buildSwitchColumns({
+      isSelected: (id) => isRowSelected(selection, id),
+      headerState: canSelectAll ? headerCheckState(selection) : 'unchecked',
+      canSelectAll,
+      onToggle,
+      onToggleAll,
+    })
+    return readOnly ? all.filter((column) => column.id !== 'select') : all
+  }, [readOnly, canSelectAll, selection, onToggle, onToggleAll])
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
   const onPaginationChange: OnChangeFn<PaginationState> = (updater) => {
@@ -127,13 +128,15 @@ export function SwitchPanelView({
               onChange={onFilterChange}
             />
           </Box>
-          <Button
-            size="sm"
-            onClick={() => setConfirming(true)}
-            disabled={running || switchCount <= 0}
-          >
-            {buttonLabel}
-          </Button>
+          {!readOnly && (
+            <Button
+              size="sm"
+              onClick={() => setConfirming(true)}
+              disabled={running || switchCount <= 0}
+            >
+              {buttonLabel}
+            </Button>
+          )}
         </Box>
 
         {rows.length === 0 ? (
@@ -164,15 +167,17 @@ export function SwitchPanelView({
         )}
       </Box>
 
-      <ConfirmModal
-        isShown={confirming}
-        hide={() => setConfirming(false)}
-        title={`Switch ${numberFormat.format(switchCount)} subscriptions?`}
-        description={SWITCH_UNDONE_WARNING}
-        destructive
-        destructiveText={`Switch ${numberFormat.format(switchCount)} subscriptions`}
-        onConfirm={onSwitch}
-      />
+      {!readOnly && (
+        <ConfirmModal
+          isShown={confirming}
+          hide={() => setConfirming(false)}
+          title={`Switch ${numberFormat.format(switchCount)} subscriptions?`}
+          description={SWITCH_UNDONE_WARNING}
+          destructive
+          destructiveText={`Switch ${numberFormat.format(switchCount)} subscriptions`}
+          onConfirm={onSwitch}
+        />
+      )}
 
       <InlineModal
         isShown={openRow !== null}
@@ -182,6 +187,7 @@ export function SwitchPanelView({
             <SwitchRecordModal
               row={openRow}
               migrationId={migrationId}
+              readOnly={readOnly}
               onClose={() => setOpenRow(null)}
             />
           ) : (

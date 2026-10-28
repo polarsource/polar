@@ -1230,6 +1230,11 @@ class TestUpdateRecord:
         ).get_by_id(record.id)
         assert reloaded is not None
         assert reloaded.canonical["tax_behavior"] == "exclusive"
+        touched = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert touched is not None
+        assert touched.modified_at is not None
 
 
 @pytest.mark.anyio
@@ -1298,6 +1303,11 @@ class TestSetTaxBehavior:
             reloaded = await repository.get_by_id(record.id)
             assert reloaded is not None
             assert reloaded.canonical.get("tax_behavior") == expected
+        touched = await MerchantMigrationRepository.from_session(session).get_by_id(
+            migration.id
+        )
+        assert touched is not None
+        assert touched.modified_at is not None
         reloaded_customer = await repository.get_by_id(customer.id)
         assert reloaded_customer is not None
         assert reloaded_customer.canonical == {}

@@ -2,7 +2,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import Column, ColumnElement, and_, or_, select
+from sqlalchemy import Column, ColumnElement, and_, func, or_, select
 from sqlalchemy.sql.visitors import iterate
 
 from polar.checkout.repository import expired_pending_anonymization
@@ -20,12 +20,14 @@ from polar.models import (
     EmailVerification,
     ExternalEvent,
     MemberSession,
+    MerchantMigration,
     OAuth2State,
     OAuth2Token,
     UserSession,
     WebhookDelivery,
     WebhookEvent,
 )
+from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
 
 from .base import Invariant, InvariantError
 
@@ -120,6 +122,16 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
             *expired_pending_anonymization(
                 cutoff - settings.EXPIRED_CHECKOUT_RETENTION_PERIOD
             )
+        ),
+    ),
+    CleanupTask(
+        "merchant_migration.close_idle",
+        MerchantMigration,
+        lambda cutoff: and_(
+            MerchantMigration.deleted_at.is_(None),
+            MerchantMigration.step.not_in(MERCHANT_MIGRATION_FINISHED_STEPS),
+            func.coalesce(MerchantMigration.modified_at, MerchantMigration.created_at)
+            < cutoff - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
         ),
     ),
     CleanupTask(

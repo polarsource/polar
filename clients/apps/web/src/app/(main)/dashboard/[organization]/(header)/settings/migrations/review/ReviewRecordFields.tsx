@@ -110,9 +110,11 @@ export function BillingCountryField({
 export function TaxAfterSwitchField({
   row,
   migrationId,
+  readOnly = false,
 }: {
   row: ReviewRow
   migrationId: string
+  readOnly?: boolean
 }) {
   if (row.entity !== 'subscriptions') return null
   return (
@@ -120,6 +122,7 @@ export function TaxAfterSwitchField({
       key={row.record_id ?? row.source_id}
       migrationId={migrationId}
       row={row}
+      readOnly={readOnly}
     />
   )
 }

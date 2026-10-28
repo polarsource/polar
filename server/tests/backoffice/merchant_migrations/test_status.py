@@ -93,6 +93,16 @@ def _finish_all() -> list[PanTransferStep]:
 
 
 class TestAttention:
+    def test_closed_migration_is_done_despite_failed_records(self) -> None:
+        migration = _migration(
+            step=MerchantMigrationStep.closed, steps=_advance_to("start_copy")
+        )
+
+        result = attention(migration, 1)
+
+        assert result.level == AttentionLevel.done
+        assert result.label == "Closed"
+
     def test_failed_records_need_ops_before_anything_else(self) -> None:
         migration = _migration(
             step=MerchantMigrationStep.completed, steps=_advance_to("start_copy")
@@ -192,9 +202,10 @@ class TestAttention:
 
 
 class TestFinished:
-    def test_cleanup_and_completed_count_as_finished(self) -> None:
+    def test_cleanup_completed_and_closed_count_as_finished(self) -> None:
         assert is_finished(_migration(step=MerchantMigrationStep.cleanup))
         assert is_finished(_migration(step=MerchantMigrationStep.completed))
+        assert is_finished(_migration(step=MerchantMigrationStep.closed))
 
     def test_an_in_progress_step_is_not_finished(self) -> None:
         assert not is_finished(_migration(step=MerchantMigrationStep.copy_cards))
@@ -205,6 +216,11 @@ class TestFinished:
             == MerchantMigrationStep.completed
         )
         assert step_position(MerchantMigrationStep.cleanup) == step_position(
+            MerchantMigrationStep.completed
+        )
+
+    def test_closed_displays_on_the_last_step(self) -> None:
+        assert step_position(MerchantMigrationStep.closed) == step_position(
             MerchantMigrationStep.completed
         )
 

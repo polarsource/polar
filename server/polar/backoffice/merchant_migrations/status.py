@@ -21,7 +21,10 @@ from polar.merchant_migration.pan_transfer import (
 )
 from polar.merchant_migration.repository import RecordCounts
 from polar.models import MerchantMigration
-from polar.models.merchant_migration import MerchantMigrationStep
+from polar.models.merchant_migration import (
+    MERCHANT_MIGRATION_FINISHED_STEPS,
+    MerchantMigrationStep,
+)
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -37,18 +40,16 @@ STEP_LABELS: dict[MerchantMigrationStep, str] = {
     MerchantMigrationStep.create_catalog: "Catalog imported",
     MerchantMigrationStep.copy_cards: "Moving cards",
     MerchantMigrationStep.activate_subscriptions: "Activating subscriptions",
-    MerchantMigrationStep.cleanup: "Cleanup",
     MerchantMigrationStep.completed: "Completed",
+    MerchantMigrationStep.closed: "Closed (inactive)",
 }
 
-STEP_ORDER = list(MerchantMigrationStep)
+STEP_ORDER: list[MerchantMigrationStep] = [
+    step
+    for step in MerchantMigrationStep
+    if step not in (MerchantMigrationStep.cleanup, MerchantMigrationStep.closed)
+]
 
-# A cutover that leaves no switchable subscription unattempted lands on
-# `cleanup`; there is no close-out step after that. Ops reads those the same
-# way the merchant dashboard does: finished.
-FINISHED_STEPS = frozenset(
-    {MerchantMigrationStep.cleanup, MerchantMigrationStep.completed}
-)
 
 METHOD_LABELS: dict[PanTransferMethod, str] = {
     PanTransferMethod.pan_copy: "Stripe to Stripe copy",
@@ -192,17 +193,20 @@ def progress(counts: RecordCounts, migration_id: UUID) -> RecordProgress:
 
 
 def step_position(step: MerchantMigrationStep) -> tuple[int, int]:
-    """1-based position of the migration's step, for a `3 of 7` readout."""
+    """1-based position of the migration's step, for a `3 of 7` readout. A
+    closed migration reads as the last step."""
+    if step == MerchantMigrationStep.closed:
+        return len(STEP_ORDER), len(STEP_ORDER)
     return STEP_ORDER.index(visible_step(step)) + 1, len(STEP_ORDER)
 
 
 def is_finished(migration: MerchantMigration) -> bool:
     """Whether the merchant's work on this migration is done."""
-    return migration.step in FINISHED_STEPS
+    return migration.step in MERCHANT_MIGRATION_FINISHED_STEPS
 
 
 def visible_step(step: MerchantMigrationStep) -> MerchantMigrationStep:
-    """The step ops should read. `cleanup` displays as completed."""
+    """The step ops should read. Legacy `cleanup` rows display as completed."""
     if step == MerchantMigrationStep.cleanup:
         return MerchantMigrationStep.completed
     return step
@@ -281,9 +285,14 @@ def _pan_attention(step: PanTransferStep) -> Attention:
 def attention(migration: MerchantMigration, failed_records: int) -> Attention:
     """Triage one migration into a single badge.
 
-    Failed ledger rows win over everything else: the import gave up on them, and
-    nothing in the checklist will pick them back up on its own.
+    A closed migration is done. Otherwise failed ledger rows win over everything
+    else: the import gave up on them, and nothing in the checklist will pick them
+    back up on its own.
     """
+    if migration.step == MerchantMigrationStep.closed:
+        return Attention(
+            AttentionLevel.done, "Closed", "Closed after 90 days without activity", None
+        )
     step = current_pan_step(migration)
     if failed_records:
         return Attention(

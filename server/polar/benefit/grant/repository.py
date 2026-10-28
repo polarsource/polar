@@ -24,6 +24,7 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
+from polar.order.repository import order_benefits_revoked_clause
 
 from .sorting import BenefitGrantSortProperty
 
@@ -222,6 +223,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
+                ~order_benefits_revoked_clause(BenefitGrant.order_id),
             )
         )
         return await self.get_all(statement)
@@ -243,6 +245,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
+                ~order_benefits_revoked_clause(BenefitGrant.order_id),
             )
         )
         return await self.get_all(statement)

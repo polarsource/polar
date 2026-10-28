@@ -496,7 +496,6 @@ class BenefitGrantService:
         # and the scope's unique index allows only one.
         taken = {grant.benefit_id for grant in grants if grant.member_id == member_id}
 
-        repointed = False
         for grant in candidates:
             previous = previous_benefits[grant.benefit_id]
             target = (
@@ -512,11 +511,7 @@ class BenefitGrantService:
             grant.benefit_id = target.id
             session.add(grant)
             taken.add(target.id)
-            repointed = True
             enqueue_job("benefit.update", benefit_grant_id=grant.id)
-
-        if repointed:
-            await session.flush()
 
     async def _repoint_benefit_records(
         self,

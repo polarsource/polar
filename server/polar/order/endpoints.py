@@ -31,6 +31,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.product.schemas import ProductID
+from polar.product.service import ProductNotMoveTarget
 from polar.routing import APIRouter
 from polar.subscription.schemas import SubscriptionID
 from polar.version import V2027_01
@@ -295,6 +296,14 @@ async def create(
                 "or config as code isn't enabled for the organization."
             ),
             "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Target product not found.",
+            "model": ResourceNotFound.schema(),
+        },
+        409: {
+            "description": "Target product is not the current version.",
+            "model": ProductNotMoveTarget.schema(),
         },
     },
 )

@@ -27,6 +27,7 @@ from polar.exceptions import (
     NotPermitted,
     PolarError,
     PolarRequestValidationError,
+    ResourceNotFound,
     ValidationError,
 )
 from polar.file.service import file as file_service
@@ -78,6 +79,14 @@ from .sorting import ProductSortProperty
 
 
 class ProductError(PolarError): ...
+
+
+class ProductNotMoveTarget(ProductError):
+    def __init__(self, product_id: uuid.UUID) -> None:
+        self.product_id = product_id
+        super().__init__(
+            "Customers can only be moved to the current version of a product.", 409
+        )
 
 
 class ProductNotDeletable(ProductError):
@@ -207,17 +216,10 @@ class ProductService:
     ) -> Product:
         """Get the product version existing customers can be moved to."""
         target = await self.get(session, auth_subject, id)
-        if target is None or not target.is_current or target.is_archived:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "target_product_id"),
-                        "msg": "Product not found, or not a current version.",
-                        "input": id,
-                    }
-                ]
-            )
+        if target is None:
+            raise ResourceNotFound()
+        if not target.is_current or target.is_archived:
+            raise ProductNotMoveTarget(target.id)
         await assert_resource_permission(
             session, auth_subject, target, OrganizationPermission.sales_manage
         )

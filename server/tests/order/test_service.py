@@ -309,6 +309,7 @@ class TestList:
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
+        assert count == 1
         assert len(orders) == 1
         assert orders[0].id == order.id
 

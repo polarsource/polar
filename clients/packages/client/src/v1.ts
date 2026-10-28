@@ -34345,6 +34345,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ProductNotMoveTarget */
+    ProductNotMoveTarget: {
+      /**
+       * Error
+       * @example ProductNotMoveTarget
+       * @constant
+       */
+      error: 'ProductNotMoveTarget'
+      /** Detail */
+      detail: string
+    }
     ProductPrice:
       | components['schemas']['ProductPriceFixed']
       | components['schemas']['ProductPriceCustom']
@@ -46560,6 +46571,24 @@ export interface operations {
           'application/json': components['schemas']['NotPermitted']
         }
       }
+      /** @description Target product not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Target product is not the current version. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductNotMoveTarget']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -49551,6 +49580,24 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Target product not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Target product is not the current version. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductNotMoveTarget']
         }
       }
       /** @description Validation Error */

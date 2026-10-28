@@ -2545,7 +2545,7 @@ class TestBulkUpdate:
             },
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 409
 
     @pytest.mark.auth
     async def test_without_catalog_versioning(

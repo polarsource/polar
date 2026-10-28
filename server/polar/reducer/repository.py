@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, delete, or_, select
@@ -74,30 +74,37 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return len((await self.session.scalars(statement)).all())
 
-    def get_active_statement(self) -> Select[tuple[Reducer]]:
-        """Usage reducers used by at least one active meter."""
+    def get_active_statement(
+        self, kinds: Collection[ReducerKind]
+    ) -> Select[tuple[Reducer]]:
+        """Reducers of the kinds used by at least one active meter."""
         active_reducer_ids = (
             select(MeterReducer.reducer_id)
             .join(MeterReducer.meter)
             .where(Meter.archived_at.is_(None), Meter.deleted_at.is_(None))
         )
         return self.get_base_statement().where(
-            Reducer.kind == ReducerKind.usage, Reducer.id.in_(active_reducer_ids)
+            Reducer.kind.in_(kinds), Reducer.id.in_(active_reducer_ids)
         )
 
     async def get_active_by_id(
-        self, id: UUID, *, options: Options = ()
+        self, id: UUID, kinds: Collection[ReducerKind], *, options: Options = ()
     ) -> Reducer | None:
         return await self.get_one_or_none(
-            self.get_active_statement().where(Reducer.id == id).options(*options)
+            self.get_active_statement(kinds).where(Reducer.id == id).options(*options)
         )
 
     async def get_all_active_by_organization(
-        self, organization_id: UUID, *, options: Options = ()
+        self,
+        organization_id: UUID,
+        kinds: Collection[ReducerKind],
+        *,
+        options: Options = (),
     ) -> Sequence[Reducer]:
-        """Reducers of the organization used by at least one active meter."""
+        """Reducers of the kinds and organization used by at least one active
+        meter."""
         statement = (
-            self.get_active_statement()
+            self.get_active_statement(kinds)
             .where(Reducer.organization_id == organization_id)
             .options(*options)
         )

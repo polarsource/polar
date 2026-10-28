@@ -395,7 +395,7 @@ class ReducerService:
         external_customer_id: str | None,
     ) -> None:
         reducer = await ReducerRepository.from_session(session).get_active_by_id(
-            reducer_id
+            reducer_id, (ReducerKind.usage,)
         )
         if reducer is None:
             return

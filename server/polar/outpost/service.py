@@ -161,7 +161,9 @@ class OutpostService:
     ) -> None:
         reducer_repository = ReducerRepository.from_session(session)
         reducers = await reducer_repository.get_all_active_by_organization(
-            organization.id, options=(selectinload(Reducer.meter_reducers),)
+            organization.id,
+            (ReducerKind.usage,),
+            options=(selectinload(Reducer.meter_reducers),),
         )
         message = OutgoingMessageAdapter.validate_python(
             {
@@ -217,7 +219,9 @@ class OutpostService:
                 execution_options={"isolation_level": "REPEATABLE READ"}
             )
         reducer = await ReducerRepository.from_session(session).get_active_by_id(
-            payload.reducer_id, options=(selectinload(Reducer.meter_reducers),)
+            payload.reducer_id,
+            (ReducerKind.usage,),
+            options=(selectinload(Reducer.meter_reducers),),
         )
         if (
             reducer is None
@@ -276,7 +280,9 @@ class OutpostService:
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
         reducer = await ReducerRepository.from_session(session).get_active_by_id(
-            event["reducer_id"], options=(selectinload(Reducer.meter_reducers),)
+            event["reducer_id"],
+            (ReducerKind.usage,),
+            options=(selectinload(Reducer.meter_reducers),),
         )
         if reducer is None:
             return

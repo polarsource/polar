@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from uuid import UUID
 
 import pytest
@@ -165,7 +165,9 @@ class TestGetActiveReducers:
         organization: Organization,
     ) -> None:
         async def query_then_invalidate(
-            repository: ReducerRepository, organization_id: UUID
+            repository: ReducerRepository,
+            organization_id: UUID,
+            kinds: Collection[ReducerKind],
         ) -> Sequence[Reducer]:
             await cache.invalidate(redis, organization_id)
             return []

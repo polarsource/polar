@@ -114,7 +114,7 @@ describe('polar config prune', () => {
       new RegExp(
         [
           '│ {2}Keep, still in use *│',
-          ' {2}│ {2}= benefit {2}beta {4}3 customers, used by product legacy *│',
+          ' {2}│ {2}= benefit {2}beta {4}3 customers, used by legacy \\(product\\) *│',
           ' {2}│ {2}= product {2}legacy {2}1 customer *│',
         ].join('\n'),
       ),

@@ -62,7 +62,7 @@ class ConfigurationIncomingMessage(IncomingMessageBase):
 
 
 class MeterUsageIncomingMessagePayloadBase(MessageBase):
-    meter_id: UUID4
+    reducer_id: UUID4
 
 
 class MeterUsageIncomingMessageCustomerPayload(MeterUsageIncomingMessagePayloadBase):
@@ -88,8 +88,6 @@ class MeterUsageIncomingMessage(IncomingMessageBase):
 
 class ConfirmIncomingMessagePayloadBase(MessageBase):
     reducer_id: UUID4
-    # The meter whose snapshot the answer carries, read with the ids.
-    meter_id: UUID4
     bucket_start: EpochMicroseconds
     ids: list[str] = Field(max_length=CONFIRM_MAX_IDS)
 
@@ -162,16 +160,13 @@ class ConfigurationOutgoingMessage(OutgoingMessageBase):
 
 
 class MeterUsageOutgoingMessagePayload(MessageBase):
-    meter_id: UUID4
+    reducer_id: UUID4
     # The bucket identity as events carry it: a customer can have several.
     customer_id: UUID4 | None
     external_customer_id: str | None
     customer_exists: bool
     # Database time of the read: keep the payload with the highest version.
     version: EpochMicroseconds
-    # Temporary: the customer's credits, the same for each of its identities,
-    # until credits are reducers.
-    credited_units: int
     # Usage before this is Polar's; Outpost counts its own from there on.
     cold_until: EpochMicroseconds
     count: int

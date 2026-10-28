@@ -35,6 +35,7 @@ from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.bucket_repository import ReducerBucketRepository
 from polar.reducer.redis_store import get_reducer_bucket_key
+from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
     get_reducer_bucket_start,
@@ -1685,3 +1686,44 @@ class TestSyncMeter:
             func=AggregationFunction.sum, property="units"
         )
         assert usage.aggregation == meter.aggregation
+
+
+@pytest.mark.anyio
+class TestSyncCredits:
+    async def test_rebuilds_the_credits_since_the_latest_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        meter_id = str(meter.id)
+        for name, metadata, timestamp in (
+            (SystemEvent.meter_credited, {"units": 10}, CUTOFF - timedelta(hours=1)),
+            (SystemEvent.meter_reset, {}, CUTOFF),
+            (SystemEvent.meter_credited, {"units": 4}, CUTOFF),
+            (SystemEvent.meter_credited, {"units": 6}, CUTOFF + timedelta(hours=1)),
+        ):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                source=EventSource.system,
+                name=name,
+                timestamp=timestamp,
+                metadata={"meter_id": meter_id, "rollover": False, **metadata},
+            )
+        credit = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.credit
+        )
+        assert credit is not None
+
+        for _ in range(2):
+            await reducer_service.sync_credits(session, customer, meter.id)
+
+            count, total, _, _ = await ReducerBucketRepository.from_session(
+                session
+            ).get_unsealed_totals(organization.id, credit.id, [(customer.id, None)])
+            assert (count, total) == (2, 10)

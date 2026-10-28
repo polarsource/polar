@@ -15,6 +15,7 @@ from pydantic import (
 
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
+from polar.models.reducer import ReducerKind
 
 
 def to_epoch_microseconds(value: datetime) -> int:
@@ -145,6 +146,7 @@ class ConnectionOutgoingMessage(OutgoingMessageBase):
 
 class ConfigurationReducer(MessageBase):
     id: UUID4
+    kind: ReducerKind
     filter: Filter
     aggregation: Aggregation
     meter_ids: list[UUID4]

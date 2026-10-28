@@ -162,7 +162,7 @@ class OutpostService:
         reducer_repository = ReducerRepository.from_session(session)
         reducers = await reducer_repository.get_all_active_by_organization_and_kinds(
             organization.id,
-            (ReducerKind.usage,),
+            tuple(ReducerKind),
             options=(selectinload(Reducer.meter_reducers),),
         )
         message = OutgoingMessageAdapter.validate_python(

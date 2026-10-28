@@ -83,9 +83,11 @@ export function SwitchRecordModal({
               />
             </Box>
           ) : null}
-          {!readOnly && (
-            <TaxAfterSwitchField row={row} migrationId={migrationId} />
-          )}
+          <TaxAfterSwitchField
+            row={row}
+            migrationId={migrationId}
+            readOnly={readOnly}
+          />
         </Box>
 
         {showCustomer ? (

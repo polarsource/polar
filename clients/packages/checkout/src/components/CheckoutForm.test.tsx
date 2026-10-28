@@ -294,7 +294,16 @@ describe('CheckoutForm', () => {
   })
 
   describe('WebMCP tools', () => {
-    const renderWithModelContext = (webMCP?: boolean) => {
+    const renderWithModelContext = (
+      webMCP?: boolean,
+      {
+        checkout: overrides,
+        defaultValues,
+      }: {
+        checkout?: Parameters<typeof createCheckout>[0]
+        defaultValues?: Partial<schemas['CheckoutUpdatePublic']>
+      } = {},
+    ) => {
       const registerTool = vi.fn()
       Object.defineProperty(document, 'modelContext', {
         value: { registerTool },
@@ -306,6 +315,7 @@ describe('CheckoutForm', () => {
       const checkout = createCheckout({
         // oxlint-disable-next-line typescript/no-explicit-any
         payment_processor: 'dummy' as any,
+        ...overrides,
       })
       let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
 
@@ -316,6 +326,7 @@ describe('CheckoutForm', () => {
           disabled={false}
           locale="en"
           webMCP={webMCP}
+          defaultValues={defaultValues}
           onForm={(f) => {
             form = f
           }}
@@ -389,6 +400,25 @@ describe('CheckoutForm', () => {
 
       expect(form.getValues('customer_billing_address.country')).toBe('DE')
       expect(form.getValues('customer_billing_address.state')).toBe('')
+    })
+
+    it('clears the tax ID when the country changes', async () => {
+      const { form, execute } = renderWithModelContext(true, {
+        checkout: {
+          is_business_customer: true,
+          customer_tax_id: 'DE123456789',
+        },
+        defaultValues: {
+          customer_billing_address: { country: 'DE' },
+          customer_tax_id: 'DE123456789',
+        } as Partial<schemas['CheckoutUpdatePublic']>,
+      })
+
+      await execute('set_customer_details', {
+        billing_address: { country: 'FR' },
+      })
+
+      expect(form.getValues('customer_tax_id')).toBe('')
     })
 
     it('rejects a product that is not on offer', async () => {

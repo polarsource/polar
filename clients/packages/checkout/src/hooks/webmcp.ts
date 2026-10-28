@@ -325,14 +325,14 @@ export const useCheckoutWebMCP = (options: CheckoutWebMCPOptions) => {
             if (!country) {
               return 'billing_address.country is required to set a billing address.'
             }
+            const countryChanged = country !== current?.country
             const address = {
               ...current,
               ...billing_address,
               country,
               state: normalizeState(
                 country,
-                billing_address.state ??
-                  (country === current?.country ? current?.state : ''),
+                billing_address.state ?? (countryChanged ? '' : current?.state),
               ),
             } as schemas['AddressInput']
             form.setValue('customer_billing_address.country', address.country, {
@@ -348,6 +348,14 @@ export const useCheckoutWebMCP = (options: CheckoutWebMCPOptions) => {
               }
             }
             payload.customer_billing_address = address
+            if (
+              countryChanged &&
+              (latest.current.checkout.customer_tax_id ||
+                form.getValues('customer_tax_id'))
+            ) {
+              form.resetField('customer_tax_id', { defaultValue: '' })
+              payload.customer_tax_id = null
+            }
           }
 
           try {

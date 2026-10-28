@@ -70,14 +70,16 @@ class CatalogService:
         )
 
     async def get_live_entries(
-        self, session: AsyncReadSession, organization: Organization
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        live: Catalog | None,
     ) -> tuple[str | None, dict[str, str]]:
         """Return the live catalog's version hash and contents.
 
         Before the first publish, that's the catalog apply creates from the
         existing products.
         """
-        live = await CatalogRepository.from_session(session).get_live(organization.id)
         if live is not None:
             members = await CatalogProductRepository.from_session(
                 session
@@ -100,11 +102,12 @@ class CatalogService:
         self,
         session: AsyncReadSession,
         organization: Organization,
+        live: Catalog | None,
         definitions: Mapping[str, str],
     ) -> tuple[str | None, str | None]:
         """Return the live version hash, and the version hash of the catalog these
         new product definitions would publish."""
-        before, entries = await self.get_live_entries(session, organization)
+        before, entries = await self.get_live_entries(session, organization, live)
         if not definitions:
             return before, before
         return before, compute_version_hash(before, {**entries, **definitions})

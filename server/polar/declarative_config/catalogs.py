@@ -52,16 +52,16 @@ def benefit_issues(changes: ConfigChanges) -> list[ConfigIssue]:
 def add_catalog_diffs(
     product_changes: Sequence[ConfigChange],
     changes: Sequence[ProductChange],
-    catalog_before: str | None,
-    catalog_after: str,
+    name_before: str | None,
+    name_after: str | None,
 ) -> None:
     for product_change, change in zip(product_changes, changes, strict=True):
         if _publishes_new_row(change):
             product_change.diff.append(
                 ConfigFieldChange(
                     field="catalog",
-                    before=catalog_before,
-                    after=catalog_after,
+                    before=name_before,
+                    after=name_after,
                 )
             )
 

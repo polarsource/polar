@@ -77,13 +77,13 @@ class TestList:
         json = response.json()
         assert json["pagination"]["total_count"] == 3
         assert [
-            (item["id"], item["name"], item["status"], item["version_hash"])
-            for item in json["items"]
+            (item["id"], item["name"], item["status"]) for item in json["items"]
         ] == [
-            (str(draft.id), None, "draft", None),
-            (str(live.id), "Spring pricing", "live", live.version_hash),
-            (str(archived.id), None, "archived", archived.version_hash),
+            (str(draft.id), None, "draft"),
+            (str(live.id), "Spring pricing", "live"),
+            (str(archived.id), None, "archived"),
         ]
+        assert all("version_hash" not in item for item in json["items"])
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")

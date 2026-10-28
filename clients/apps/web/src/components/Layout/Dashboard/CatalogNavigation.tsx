@@ -61,14 +61,13 @@ const CatalogVersionChip = ({ catalog }: { catalog: schemas['Catalog'] }) => {
     <Tooltip delayDuration={150}>
       <TooltipTrigger
         ref={triggerRef}
-        aria-label="Copy live catalog version hash"
+        aria-label="Copy live catalog ID"
         className="flex"
         // Radix closes the tooltip on press; keep it open so the copy is visible
         onPointerDown={(event) => event.preventDefault()}
         onClick={(event) => {
           event.preventDefault()
-          if (!catalog.version_hash) return
-          void safeCopy(catalog.version_hash).then(() => setCopied(true))
+          void safeCopy(catalog.id).then(() => setCopied(true))
         }}
       >
         <Box
@@ -79,8 +78,8 @@ const CatalogVersionChip = ({ catalog }: { catalog: schemas['Catalog'] }) => {
           transitionDuration="fast"
           cursor="default"
         >
-          <Text as="span" variant="caption" color="inherit" monospace>
-            {copied ? 'Copied' : catalog.version_hash?.slice(0, 7)}
+          <Text as="span" variant="caption" color="inherit" truncate>
+            {copied ? 'Copied' : (catalog.name ?? 'Untitled')}
           </Text>
         </Box>
       </TooltipTrigger>

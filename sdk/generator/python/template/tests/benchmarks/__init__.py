@@ -12,6 +12,7 @@ BUCKET_COUNTS: list[int] = DATA["bucket_counts"]
 CHANNEL: str = DATA["channel"]
 EPOCH: str = DATA["epoch"]
 REDUCER: Reducer = DATA["reducer"]
+CREDIT_REDUCER: Reducer = DATA["credit_reducer"]
 SNAPSHOT: dict[str, typing.Any] = DATA["snapshot"]
 # Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
 PENDING_COUNTS = [1, 100, 1000]
@@ -62,10 +63,6 @@ def encode_state(buckets: int) -> list[str]:
         "1",
         "cold:max",
         "999",
-        "credited:meter",
-        "1000000",
-        "credited_version:meter",
-        str(COLD_UNTIL + 1),
     ]
     for index in range(buckets):
         prefix = f"bucket:{COLD_UNTIL + index * BUCKET_SIZE}:"

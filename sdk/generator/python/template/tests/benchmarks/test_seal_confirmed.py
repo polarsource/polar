@@ -76,8 +76,6 @@ def test_apply_snapshot_after_confirm(
             EPOCH,
             cutoff,
             cutoff + 1,
-            "meter",
-            1_000_000,
             1000,
             123456,
             1,

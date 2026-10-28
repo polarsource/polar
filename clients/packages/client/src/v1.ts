@@ -15641,9 +15641,9 @@ export interface components {
         | null
       /**
        * Payment Method Types
-       * @description Payment method types to offer in the payment form. If `null`, they're selected automatically by the payment processor.
+       * @description Payment method types to offer in the payment form.
        */
-      payment_method_types: string[] | null
+      payment_method_types: string[]
     }
     /**
      * CheckoutPublicConfirmed
@@ -15920,9 +15920,9 @@ export interface components {
         | null
       /**
        * Payment Method Types
-       * @description Payment method types to offer in the payment form. If `null`, they're selected automatically by the payment processor.
+       * @description Payment method types to offer in the payment form.
        */
-      payment_method_types: string[] | null
+      payment_method_types: string[]
       /** Customer Session Token */
       customer_session_token: string | null
     }
@@ -30921,12 +30921,6 @@ export interface components {
        * @default false
        */
       config_as_code_enabled: boolean
-      /**
-       * Checkout Payment Method Rules Enabled
-       * @description If this organization's checkout offers payment methods from Polar's country rules instead of the payment processor's automatic selection.
-       * @default false
-       */
-      checkout_payment_method_rules_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate

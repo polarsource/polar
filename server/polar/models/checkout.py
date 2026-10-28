@@ -405,11 +405,7 @@ class Checkout(
         return self.is_payment_required or self.is_payment_setup_required
 
     @property
-    def payment_method_types(self) -> list[str] | None:
-        if not self.organization.feature_settings.get(
-            "checkout_payment_method_rules_enabled", False
-        ):
-            return None
+    def payment_method_types(self) -> list[str]:
         return get_payment_method_types(
             mode=get_payment_mode(
                 is_payment_required=self.is_payment_required,

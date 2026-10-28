@@ -1364,14 +1364,9 @@ class CheckoutService:
                                 assert (
                                     checkout_confirm.confirmation_token_id is not None
                                 )
-                                if checkout.payment_method_types is not None:
-                                    payment_intent_params["payment_method_types"] = (
-                                        checkout.payment_method_types
-                                    )
-                                else:
-                                    payment_intent_params[
-                                        "automatic_payment_methods"
-                                    ] = {"enabled": True}
+                                payment_intent_params["payment_method_types"] = (
+                                    checkout.payment_method_types
+                                )
                                 payment_intent_params["confirmation_token"] = (
                                     checkout_confirm.confirmation_token_id
                                 )
@@ -1382,6 +1377,7 @@ class CheckoutService:
                             assert isinstance(checkout_confirm, CheckoutConfirmStripe)
                             assert checkout_confirm.confirmation_token_id is not None
                             setup_intent_params: SetupIntentCreateParams = {
+                                "payment_method_types": checkout.payment_method_types,
                                 "confirm": True,
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
@@ -1392,15 +1388,6 @@ class CheckoutService:
                                 ),
                                 "expand": ["payment_method"],
                             }
-
-                            if checkout.payment_method_types is not None:
-                                setup_intent_params["payment_method_types"] = (
-                                    checkout.payment_method_types
-                                )
-                            else:
-                                setup_intent_params["automatic_payment_methods"] = {
-                                    "enabled": True
-                                }
 
                             if three_d_secure:
                                 setup_intent_params["payment_method_options"] = {

@@ -880,11 +880,8 @@ class CheckoutPublic(CheckoutBase):
     discount: CheckoutDiscount | None
     organization: CheckoutOrganization
     attached_custom_fields: list[AttachedCustomField] | None
-    payment_method_types: list[str] | None = Field(
-        description=(
-            "Payment method types to offer in the payment form. "
-            "If `null`, they're selected automatically by the payment processor."
-        )
+    payment_method_types: list[str] = Field(
+        description="Payment method types to offer in the payment form."
     )
 
 

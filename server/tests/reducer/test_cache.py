@@ -57,6 +57,7 @@ class TestGetActiveReducers:
         assert query.call_count == 1
         assert cached.id == reducer.id
         assert cached.organization_id == organization.id
+        assert cached.kind == reducer.kind
         assert cached.filter == meter.filter
         assert cached.aggregation == aggregation
         assert (

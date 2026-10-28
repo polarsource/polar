@@ -26,7 +26,6 @@ const baseProduct: schemas['CheckoutProduct'] = {
   prices: [],
   benefits: [],
   medias: [],
-  is_current: true,
   catalog_id: null,
   description: null,
   is_archived: false,

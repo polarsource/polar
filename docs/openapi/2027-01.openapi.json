@@ -41849,11 +41849,6 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
-          "is_current": {
-            "type": "boolean",
-            "title": "Is Current",
-            "description": "Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold."
-          },
           "catalog_id": {
             "anyOf": [
               {
@@ -41914,7 +41909,6 @@
           "is_recurring",
           "is_archived",
           "organization_id",
-          "is_current",
           "catalog_id",
           "prices",
           "benefits",
@@ -68350,11 +68344,6 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
-          "is_current": {
-            "type": "boolean",
-            "title": "Is Current",
-            "description": "Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold."
-          },
           "catalog_id": {
             "anyOf": [
               {
@@ -68387,7 +68376,6 @@
           "is_recurring",
           "is_archived",
           "organization_id",
-          "is_current",
           "catalog_id"
         ],
         "title": "OrderProduct"
@@ -73381,11 +73369,6 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
-          "is_current": {
-            "type": "boolean",
-            "title": "Is Current",
-            "description": "Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold."
-          },
           "catalog_id": {
             "anyOf": [
               {
@@ -73477,7 +73460,6 @@
           "is_recurring",
           "is_archived",
           "organization_id",
-          "is_current",
           "catalog_id",
           "external_id",
           "metadata",

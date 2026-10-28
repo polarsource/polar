@@ -1166,16 +1166,6 @@ ProductMediaList = Annotated[
 
 
 class ProductVersionOutputMixin(BaseModel):
-    is_current: Annotated[
-        bool,
-        Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "Whether this is the current version of the product. "
-                "Previous versions keep their subscriptions but can't be sold."
-            )
-        ),
-    ]
     catalog_id: Annotated[
         UUID4 | None,
         Version(starting_from=V2027_01),

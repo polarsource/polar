@@ -341,7 +341,7 @@ class TestGetProduct:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
-    async def test_previous_version(
+    async def test_catalog_id(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -357,14 +357,12 @@ class TestGetProduct:
         )
         await save_fixture(catalog)
         product.catalog = catalog
-        product.is_current = False
         await save_fixture(product)
 
         response = await client.get(f"/v1/products/{product.id}")
 
         assert response.status_code == 200
         json = response.json()
-        assert json["is_current"] is False
         assert json["catalog_id"] == str(catalog.id)
 
 

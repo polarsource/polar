@@ -15114,11 +15114,6 @@ export interface components {
        */
       organization_id: string
       /**
-       * Is Current
-       * @description Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold.
-       */
-      is_current: boolean
-      /**
        * Catalog Id
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
@@ -29323,11 +29318,6 @@ export interface components {
        */
       organization_id: string
       /**
-       * Is Current
-       * @description Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold.
-       */
-      is_current: boolean
-      /**
        * Catalog Id
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
@@ -34183,11 +34173,6 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
-      /**
-       * Is Current
-       * @description Whether this is the current version of the product. Previous versions keep their subscriptions but can't be sold.
-       */
-      is_current: boolean
       /**
        * Catalog Id
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.

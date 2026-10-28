@@ -101,7 +101,7 @@ const DeclineReasonBox = ({
   >
     <Box alignItems="center" justifyContent="between" columnGap="s">
       <Text variant="caption" color="muted">
-        Bank Decline Reason
+        Decline Reason
       </Text>
       {unrecoverable ? <Pill color="red">Unrecoverable</Pill> : null}
     </Box>

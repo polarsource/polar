@@ -13816,11 +13816,6 @@ export interface components {
        * @description When the catalog was published. Null for drafts.
        */
       published_at: string | null
-      /**
-       * Customers
-       * @description Customers with an active subscription to a product of this catalog, counted on the newest catalog that still contains it.
-       */
-      customers: number
     }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
@@ -26020,6 +26015,12 @@ export interface components {
       items: components['schemas']['PersonalAccessToken'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[ProductVersion] */
+    ListResource_ProductVersion_: {
+      /** Items */
+      items: components['schemas']['ProductVersion'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Product] */
     ListResource_Product_: {
       /** Items */
@@ -35466,10 +35467,10 @@ export interface components {
        */
       is_current: boolean
       /**
-       * Customers
-       * @description Customers with an active subscription to this version.
+       * Active Subscriptions Count
+       * @description Active subscriptions to this version.
        */
-      customers: number
+      active_subscriptions_count: number
     }
     /**
      * Visibility
@@ -49231,7 +49232,12 @@ export interface operations {
   }
   'products:list_versions': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
       header?: never
       path: {
         id: string
@@ -49246,7 +49252,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ProductVersion'][]
+          'application/json': components['schemas']['ListResource_ProductVersion_']
         }
       }
       /** @description Product not found. */

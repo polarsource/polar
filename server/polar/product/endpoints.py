@@ -1,5 +1,4 @@
 import builtins
-from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import Depends, Query
@@ -212,22 +211,26 @@ async def get(
 @router.get(
     "/{id}/versions",
     summary="List Product Versions",
-    response_model=builtins.list[ProductVersion],
+    response_model=ListResource[ProductVersion],
     responses={404: ProductNotFound},
     tags=[APITag.private],
 )
 async def list_versions(
     id: ProductID,
     auth_subject: auth.CreatorProductsRead,
+    pagination: PaginationParamsQuery,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Sequence[ProductVersion]:
+) -> ListResource[ProductVersion]:
     """List the versions of a product managed as code, newest first."""
     product = await product_service.get(session, auth_subject, id)
 
     if product is None:
         raise ResourceNotFound()
 
-    return await product_service.list_versions(session, product)
+    results, count = await product_service.list_versions(
+        session, product, pagination=pagination
+    )
+    return ListResource.from_paginated_results(results, count, pagination)
 
 
 @router.post(

@@ -1230,6 +1230,6 @@ class ProductVersion(Schema):
     name: str | None = Field(description="Name of the catalog that published it.")
     published_at: datetime | None = Field(description="When it was published.")
     is_current: bool = Field(description="Whether new checkouts use this version.")
-    customers: int = Field(
-        description="Customers with an active subscription to this version."
+    active_subscriptions_count: int = Field(
+        description="Active subscriptions to this version."
     )

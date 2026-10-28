@@ -183,10 +183,30 @@ class ProductService:
         )
 
     async def list_versions(
-        self, session: AsyncReadSession, product: Product
-    ) -> Sequence[ProductVersion]:
-        rows = await ProductRepository.from_session(session).get_versions(product)
-        return [ProductVersion.model_validate(row._mapping) for row in rows]
+        self,
+        session: AsyncReadSession,
+        product: Product,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[ProductVersion], int]:
+        repository = ProductRepository.from_session(session)
+        versions, count = await repository.paginate(
+            repository.get_versions_statement(product),
+            limit=pagination.limit,
+            page=pagination.page,
+        )
+        active_subscriptions = await repository.count_active_subscriptions(versions)
+        return [
+            ProductVersion(
+                product_id=version.id,
+                catalog_id=version.catalog_id,
+                name=version.catalog.name if version.catalog else None,
+                published_at=version.catalog.published_at if version.catalog else None,
+                is_current=version.is_current,
+                active_subscriptions_count=active_subscriptions.get(version.id, 0),
+            )
+            for version in versions
+        ], count
 
     async def get(
         self,

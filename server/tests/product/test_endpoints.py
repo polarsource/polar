@@ -430,9 +430,16 @@ class TestListProductVersions:
         response = await client.get(f"/v1/products/{old.id}/versions")
 
         assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
         assert [
-            (item["product_id"], item["name"], item["is_current"], item["customers"])
-            for item in response.json()
+            (
+                item["product_id"],
+                item["name"],
+                item["is_current"],
+                item["active_subscriptions_count"],
+            )
+            for item in json["items"]
         ] == [
             (str(current.id), "v2", True, 1),
             (str(old.id), "v1", False, 2),

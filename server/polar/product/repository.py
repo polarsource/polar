@@ -1,9 +1,8 @@
 from collections.abc import Sequence
-from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Row, Select, and_, case, func, or_, select
-from sqlalchemy.orm import aliased, contains_eager, joinedload, selectinload, undefer
+from sqlalchemy import Select, and_, case, func, select
+from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.currency import PresentmentCurrency
@@ -83,47 +82,37 @@ class ProductRepository(
         )
         return await self.get_all(statement)
 
-    async def get_versions(self, product: Product) -> Sequence[Row[Any]]:
-        """Every version of a product sharing its external ID, newest first, with
-        the customers subscribed to each."""
-        source = aliased(Product)
-        customers = (
-            select(func.count(Subscription.customer_id.distinct()))
+    def get_versions_statement(self, product: Product) -> Select[tuple[Product]]:
+        """Every version of a product sharing its external ID, newest first."""
+        statement = (
+            self.get_base_statement()
+            .outerjoin(Product.catalog)
+            .options(contains_eager(Product.catalog))
+            .where(Product.organization_id == product.organization_id)
+            .order_by(
+                Catalog.published_at.desc().nulls_last(),
+                Product.created_at.desc(),
+                Product.id.desc(),
+            )
+        )
+        if product.external_id is None:
+            return statement.where(Product.id == product.id)
+        return statement.where(Product.external_id == product.external_id)
+
+    async def count_active_subscriptions(
+        self, products: Sequence[Product]
+    ) -> dict[UUID, int]:
+        statement = (
+            select(Subscription.product_id, func.count(Subscription.id))
             .where(
-                Subscription.product_id == Product.id,
+                Subscription.product_id.in_([product.id for product in products]),
                 Subscription.deleted_at.is_(None),
                 Subscription.status.in_(SubscriptionStatus.active_statuses()),
             )
-            .correlate(Product)
-            .scalar_subquery()
-        )
-        statement = (
-            select(
-                Product.id.label("product_id"),
-                Catalog.id.label("catalog_id"),
-                Catalog.name,
-                Catalog.published_at,
-                Product.is_current,
-                customers.label("customers"),
-            )
-            .outerjoin(Catalog, Catalog.id == Product.catalog_id)
-            .where(
-                Product.deleted_at.is_(None),
-                Product.organization_id == product.organization_id,
-                or_(
-                    Product.id == product.id,
-                    Product.external_id
-                    == select(source.external_id)
-                    .where(source.id == product.id)
-                    .scalar_subquery(),
-                ),
-            )
-            .order_by(
-                Catalog.published_at.desc().nulls_last(), Product.created_at.desc()
-            )
+            .group_by(Subscription.product_id)
         )
         result = await self.session.execute(statement)
-        return result.all()
+        return {product_id: count for product_id, count in result.tuples()}
 
     async def get_all_by_external_ids(
         self,

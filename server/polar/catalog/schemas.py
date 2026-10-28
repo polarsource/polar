@@ -29,9 +29,3 @@ class Catalog(IDSchema, TimestampedSchema):
     published_at: datetime | None = Field(
         description="When the catalog was published. Null for drafts."
     )
-    customers: int = Field(
-        description=(
-            "Customers with an active subscription to a product of this catalog, "
-            "counted on the newest catalog that still contains it."
-        )
-    )

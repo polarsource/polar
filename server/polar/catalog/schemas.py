@@ -12,9 +12,6 @@ class Catalog(IDSchema, TimestampedSchema):
 
     organization_id: OrganizationID
     name: str | None = Field(description="Optional name given when it was published.")
-    version_hash: str | None = Field(
-        description="Hash identifying this version of the catalog."
-    )
     status: CatalogStatus = Field(
         description=(
             "`live` for the catalog new checkouts use, `archived` for previous "

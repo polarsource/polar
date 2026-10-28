@@ -40,7 +40,9 @@ from .schemas import (
     ConfigAction,
     ConfigApplyResult,
     ConfigBenefitMeterCredit,
+    ConfigCatalog,
     ConfigCatalogChange,
+    ConfigCatalogPlan,
     ConfigChange,
     ConfigExport,
     ConfigIssue,
@@ -214,7 +216,7 @@ class DeclarativeConfigService:
             raise ConfigInvalid(errors)
 
         live = await catalog_service.get_or_create_live(session, organization)
-        catalog_before, version_hash = await catalog_service.get_next_version_hash(
+        _, version_hash = await catalog_service.get_next_version_hash(
             session, organization, catalogs.product_definitions(changes)
         )
         settings_result = await self._apply_settings(
@@ -237,15 +239,20 @@ class DeclarativeConfigService:
             meter_ids,
             benefit_ids,
         )
+        catalog: ConfigCatalogChange | None = None
         if new_products:
             assert version_hash is not None
-            await catalog_service.publish(
+            before = None if live is None else ConfigCatalog.model_validate(live)
+            published = await catalog_service.publish(
                 session,
                 organization,
                 live,
                 new_products,
                 version_hash,
                 name=config.catalog_name,
+            )
+            catalog = ConfigCatalogChange(
+                before=before, after=ConfigCatalog.model_validate(published)
             )
         await catalogs.carry_over_references(session, changes.products, new_products)
         if (
@@ -267,9 +274,7 @@ class DeclarativeConfigService:
                 *benefit_results,
                 *product_results,
             ],
-            catalog=ConfigCatalogChange(before=catalog_before, after=version_hash)
-            if new_products and version_hash is not None
-            else None,
+            catalog=catalog,
             settings=settings_result,
         )
 
@@ -292,14 +297,20 @@ class DeclarativeConfigService:
             session, organization, catalogs.product_definitions(changes)
         )
         product_changes = self._plan_changes(ConfigResource.product, changes.products)
-        catalog: ConfigCatalogChange | None = None
+        catalog: ConfigCatalogPlan | None = None
         if catalog_after is not None and catalog_after != catalog_before:
-            catalog = ConfigCatalogChange(before=catalog_before, after=catalog_after)
+            live = await CatalogRepository.from_session(session).get_live(
+                organization.id
+            )
+            catalog = ConfigCatalogPlan(
+                before=None if live is None else ConfigCatalog.model_validate(live),
+                name=config.catalog_name,
+            )
             catalogs.add_catalog_diffs(
                 product_changes,
                 changes.products,
-                catalog_before,
-                catalog_after,
+                None if catalog.before is None else catalog.before.name,
+                catalog.name,
             )
         return ConfigPlan(
             changes=[

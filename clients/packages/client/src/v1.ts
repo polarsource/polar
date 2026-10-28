@@ -13782,11 +13782,6 @@ export interface components {
        * @description Optional name given when it was published.
        */
       name: string | null
-      /**
-       * Version Hash
-       * @description Hash identifying this version of the catalog.
-       */
-      version_hash: string | null
       /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
       status: components['schemas']['CatalogStatus']
       /**
@@ -16210,7 +16205,7 @@ export interface components {
       settings?: components['schemas']['ConfigSettings'] | null
       /**
        * Catalog Name
-       * @description Name of the catalog version this apply publishes, if it publishes one. It doesn't change the version hash.
+       * @description Name of the catalog version this apply publishes, if it publishes one.
        */
       catalog_name?: string | null
       /**
@@ -16431,18 +16426,36 @@ export interface components {
     ConfigBenefitRead:
       | components['schemas']['ConfigBenefitFeatureFlagRead']
       | components['schemas']['ConfigBenefitMeterCreditRead']
+    /** ConfigCatalog */
+    ConfigCatalog: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Name of the catalog.
+       */
+      name: string | null
+    }
     /** ConfigCatalogChange */
     ConfigCatalogChange: {
+      /** @description The live catalog before applying. Null before the first publish. */
+      before: components['schemas']['ConfigCatalog'] | null
+      /** @description The catalog applying published. */
+      after: components['schemas']['ConfigCatalog']
+    }
+    /** ConfigCatalogPlan */
+    ConfigCatalogPlan: {
+      /** @description The live catalog that applying replaces. Null if the organization has no catalog yet. */
+      before: components['schemas']['ConfigCatalog'] | null
       /**
-       * Before
-       * @description Version hash of the live catalog before applying.
+       * Name
+       * @description Name of the catalog applying publishes.
        */
-      before: string | null
-      /**
-       * After
-       * @description Version hash of the live catalog after applying.
-       */
-      after: string
+      name: string | null
     }
     /** ConfigChange */
     ConfigChange: {
@@ -16649,7 +16662,7 @@ export interface components {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
       /** @description The catalog that applying publishes, if any. */
-      catalog: components['schemas']['ConfigCatalogChange'] | null
+      catalog: components['schemas']['ConfigCatalogPlan'] | null
       /** @description Change for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsChange'] | null
       /** Issues */

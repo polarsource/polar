@@ -1,4 +1,5 @@
 from fastapi import Depends, Query
+from pydantic import AwareDatetime
 
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -29,6 +30,20 @@ async def list(
     status: MultipleQueryFilter[CatalogStatus] | None = Query(
         None, title="Status Filter", description="Filter by catalog status."
     ),
+    published_after: AwareDatetime | None = Query(
+        None,
+        description=(
+            "Only include catalogs published after this date. "
+            "Must include a UTC offset."
+        ),
+    ),
+    published_before: AwareDatetime | None = Query(
+        None,
+        description=(
+            "Only include catalogs published before this date. "
+            "Must include a UTC offset."
+        ),
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CatalogSchema]:
     """List the catalogs of organizations using config as code, newest first."""
@@ -37,6 +52,8 @@ async def list(
         auth_subject,
         organization_id=organization_id,
         status=status,
+        published_after=published_after,
+        published_before=published_before,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(

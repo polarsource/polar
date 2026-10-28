@@ -354,6 +354,60 @@ class TestOutpost:
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_event_credit_reducer_bucket(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        customer = customer_external_id
+        reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        bucket_start = get_reducer_bucket_start(utc_now())
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                customer=customer,
+                bucket_start=bucket_start,
+                bucket_end=bucket_start + timedelta(minutes=5),
+                count=1,
+                sum=Decimal(10),
+                min=Decimal(10),
+                max=Decimal(10),
+            )
+        )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await publish(
+                redis,
+                organization.id,
+                {
+                    "type": "reducer_bucket",
+                    "reducer_id": reducer.id,
+                    "customer_id": customer.id,
+                    "external_customer_id": None,
+                },
+            )
+            responses = [await websocket.receive_json(timeout=2) for _ in range(3)]
+
+        payloads = [response["payload"] for response in responses]
+        assert {(p["customer_id"], p["external_customer_id"]) for p in payloads} == {
+            (str(customer.id), None),
+            (None, customer.external_id),
+            (str(customer.id), customer.external_id),
+        }
+        assert all((p["count"], p["sum"]) == (1, 10.0) for p in payloads)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_event_reducer_bucket_split_half_synced(
         self,
         save_fixture: SaveFixture,

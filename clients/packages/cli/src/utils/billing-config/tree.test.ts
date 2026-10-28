@@ -480,7 +480,9 @@ describe('formatTree', () => {
       [
         '  webhooks',
         '  ~ app',
-        '      url     https://hooks.slack.com/*** → https://***@app.test/hook?token=***',
+        '      url',
+        '        - https://hooks.slack.com/***',
+        '        + https://***@app.test/hook?token=***',
         '      format  "slack" → "raw"',
       ].join('\n'),
     )

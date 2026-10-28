@@ -734,6 +734,9 @@ importers:
       '@polar-sh/polar':
         specifier: workspace:*
         version: link:../../packages/polar
+      ioredis:
+        specifier: ^5.11.1
+        version: 5.11.1(supports-color@10.2.2)
       next:
         specifier: ^16.3.6
         version: 16.3.8(@babel/core@8.0.6)(@opentelemetry/api@1.9.1)(@types/node@24.19.1)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)

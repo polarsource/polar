@@ -5,36 +5,30 @@ import { RuntimeSDK } from './runtime'
 import { defineConfig } from './schema/config'
 import { and, eq, gte } from './schema/meter'
 
-afterEach(() => {
-  vi.restoreAllMocks()
-  vi.useRealTimers()
-})
+afterEach(() => vi.restoreAllMocks())
 
-test('defined configs connect lazily, read balances by external meter ID, and track metadata events', async () => {
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-10-01T12:00:00Z'))
-  let modifiedAt = '2026-10-01T11:00:00Z'
+const options = {
+  accessToken: 'test',
+  environment: 'sandbox',
+  metering: { outpost: false },
+} as const
+
+test('defined configs connect lazily, read balances by deployed meter ID, and track metadata events', async () => {
+  const ingested: unknown[] = []
   const fetch = vi
     .spyOn(globalThis, 'fetch')
     .mockImplementation(async (input, init) => {
       const url = new URL(String(input))
+      if (url.pathname.endsWith('/meters/external/tokens')) {
+        return Response.json({ id: 'meter-id', archived_at: null })
+      }
       if (url.pathname.endsWith('/customer-meters/')) {
-        expect(url.searchParams.get('external_meter_id')).toBe('tokens')
-        expect(url.searchParams.get('meter_id')).toBeNull()
+        expect(url.searchParams.get('meter_id')).toBe('meter-id')
         expect(url.searchParams.get('external_customer_id')).toBe('customer-1')
-        return Response.json({
-          items: [
-            { balance: 10, created_at: modifiedAt, modified_at: modifiedAt },
-          ],
-        })
+        return Response.json({ items: [{ balance: 10 }] })
       }
       if (url.pathname.endsWith('/events/ingest')) {
-        const body = JSON.parse(String(init?.body))
-        expect(body.events[0]).toMatchObject({
-          external_customer_id: 'customer-1',
-          external_member_id: 'member-1',
-          metadata: { inputTokens: 1500 },
-        })
+        ingested.push(...JSON.parse(String(init?.body)).events)
         return Response.json({ inserted: 1 })
       }
       throw new Error(`Unexpected request ${url}`)
@@ -47,43 +41,33 @@ test('defined configs connect lazily, read balances by external meter ID, and tr
     }),
   })
   const json = config.toJSON()
-  const client = RuntimeSDK(config, {
-    accessToken: 'test',
-    environment: 'sandbox',
-  })
+  const client = RuntimeSDK(config, options)
   const customer = client.actor({
     externalCustomerId: 'customer-1',
     externalMemberId: 'member-1',
   })
   expectTypeOf(customer.balance).parameter(0).toEqualTypeOf<'tokens'>()
   expect(fetch).not.toHaveBeenCalled()
-  expect(await customer.balance('tokens')).toEqual({
-    balance: 10,
-    pristine: true,
-  })
-  await customer.track('unrelated', { inputTokens: 1500 })
-  expect((await customer.balance('tokens')).pristine).toBe(true)
+  expect(await customer.balance('tokens')).toEqual({ balance: 10 })
+
   await customer.track('llm.completion', { inputTokens: 1500 })
-  expect((await customer.balance('tokens')).pristine).toBe(false)
-  modifiedAt = '2026-10-01T12:00:01Z'
-  expect((await customer.balance('tokens')).pristine).toBe(true)
+  await client.flush()
+  expect(ingested).toMatchObject([
+    {
+      name: 'llm.completion',
+      external_customer_id: 'customer-1',
+      external_member_id: 'member-1',
+      metadata: { inputTokens: 1500 },
+    },
+  ])
+  await client.close()
   expect(config.toJSON()).toEqual(json)
 })
 
-test('connected configs validate and ingest typed events and track the meters they feed', async () => {
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-10-01T12:00:00Z'))
+test('connected configs validate and track typed events', async () => {
   const ingested: unknown[] = []
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
     const url = new URL(String(input))
-    if (url.pathname.endsWith('/customer-meters/')) {
-      const modifiedAt = '2026-10-01T11:00:00Z'
-      return Response.json({
-        items: [
-          { balance: 1, created_at: modifiedAt, modified_at: modifiedAt },
-        ],
-      })
-    }
     if (url.pathname.endsWith('/events/ingest')) {
       ingested.push(...JSON.parse(String(init?.body)).events)
       return Response.json({ inserted: 1 })
@@ -107,14 +91,8 @@ test('connected configs validate and ingest typed events and track the meters th
       completions: meter().on(events['llm.completion']).count(),
     }),
   })
-  const customer = RuntimeSDK(config, {
-    accessToken: 'test',
-    environment: 'sandbox',
-  }).actor({ externalCustomerId: 'customer-1' })
-  const pristine = async () => ({
-    searches: (await customer.balance('searches')).pristine,
-    completions: (await customer.balance('completions')).pristine,
-  })
+  const client = RuntimeSDK(config, options)
+  const customer = client.actor({ externalCustomerId: 'customer-1' })
 
   expectTypeOf(customer.track)
     .parameter(0)
@@ -122,17 +100,12 @@ test('connected configs validate and ingest typed events and track the meters th
     .toEqualTypeOf<'tool_call' | 'llm.completion'>()
 
   await customer.track('tool_call', { tool: 'fetch', durationMs: 5 })
-  expect(await pristine()).toEqual({ searches: true, completions: true })
-
   await customer.track('tool_call', { tool: 'search', durationMs: 5 })
-  expect(await pristine()).toEqual({ searches: false, completions: true })
-
   await customer.track('llm.completion', { model: 'claude', inputTokens: 10 })
-  expect(await pristine()).toEqual({ searches: false, completions: false })
-
   await expect(
     customer.track('llm.completion', { model: 'claude', inputTokens: 1.5 }),
   ).rejects.toBeInstanceOf(EventValidationError)
+  await client.flush()
 
   expect(ingested).toMatchObject([
     {
@@ -146,6 +119,7 @@ test('connected configs validate and ingest typed events and track the meters th
     },
     { name: 'llm.completion', metadata: { model: 'claude', inputTokens: 10 } },
   ])
+  await client.close()
 })
 
 test('access types granted metadata from the benefit declared in the config', async () => {
@@ -176,7 +150,6 @@ test('access types granted metadata from the benefit declared in the config', as
       ['custom_servers', flag('Custom servers').metadata({ limit: 5 })],
     ],
   })
-  const options = { accessToken: 'test', environment: 'sandbox' } as const
   const customer = RuntimeSDK(entries, options).actor({ customerId: 'c' })
 
   const access = await customer.access('custom_servers')

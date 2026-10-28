@@ -83,7 +83,6 @@ export const getTopUps = async () =>
     }))
 
 export const createProCheckout = async (externalId: string, origin: string) => {
-  const pro = await findPlan('pro')
   const { items } = await polar.sdk.subscriptions.list({
     external_customer_id: externalId,
     active: true,
@@ -91,7 +90,7 @@ export const createProCheckout = async (externalId: string, origin: string) => {
   })
 
   const checkout = await polar.sdk.checkouts.create({
-    products: [pro.id],
+    external_products: ['pro'],
     external_customer_id: externalId,
     // Upgrades the free subscription instead of creating a second one
     subscription_id: items[0]?.id,
@@ -237,7 +236,6 @@ export const callTool = async (
     }
   }
 
-  // Doesn't wait for a pristine balance, so it may not reflect the latest calls yet
   const { balance } = await customer.balance('tool_call')
 
   if (server === 'builtin' && balance < count) {
@@ -245,7 +243,6 @@ export const callTool = async (
     return { paywall: true, balance, granted }
   }
 
-  // One event per call, so tracking keeps the balance's pristine state accurate
   const ingestSpan = log.start(`Ingesting ${count} tool_call`)
   await customer.track(
     Array.from({ length: count }, () => ({

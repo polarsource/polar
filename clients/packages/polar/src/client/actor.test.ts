@@ -1,8 +1,16 @@
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import { z } from 'zod'
 import type { RuntimeSDKConfig } from '../schema/runtime'
-import { errors, type Polar } from '../sdk'
+import { errors, type Metering, type Polar } from '../sdk'
 import { createActor, EventValidationError } from './actor'
+
+const fakeMetering = () => {
+  const track = vi.fn()
+  const meter = vi.fn().mockResolvedValue(null)
+  const actor = vi.fn().mockResolvedValue({ track, meter })
+  const metering = async () => ({ actor }) as unknown as Metering
+  return { metering, actor, track, meter }
+}
 
 const config = {
   benefits: { custom_meters: {} },
@@ -13,11 +21,13 @@ describe('actor benefits', () => {
     const actor = createActor(
       config,
       {} as Polar,
+      fakeMetering().metering,
     )({ customerId: 'customer-id' })
     expectTypeOf(actor.access).parameter(0).toEqualTypeOf<'custom_meters'>()
     const unconfigured = createActor(
       {},
       {} as Polar,
+      fakeMetering().metering,
     )({ customerId: 'customer-id' })
     expectTypeOf(unconfigured.access).parameter(0).toEqualTypeOf<never>()
   })
@@ -33,7 +43,7 @@ describe('actor benefits', () => {
       items: [{ benefit: { metadata: { seats: 5 } } }],
     })
     const sdk = { benefitGrants: { list } } as unknown as Polar
-    const actor = createActor(config, sdk)(identifier)
+    const actor = createActor(config, sdk, fakeMetering().metering)(identifier)
 
     await expect(actor.access('custom_meters')).resolves.toEqual({
       granted: true,
@@ -48,27 +58,32 @@ describe('actor benefits', () => {
   })
 
   it.each([
-    [{ memberId: 'member-id' }, { member_id: 'member-id' }],
     [
-      { externalMemberId: 'external-member-id' },
-      { external_member_id: 'external-member-id' },
+      { customerId: 'customer-id', memberId: 'member-id' },
+      { customer_id: 'customer-id', member_id: 'member-id' },
+    ],
+    [
+      {
+        externalCustomerId: 'external-customer-id',
+        externalMemberId: 'external-member-id',
+      },
+      {
+        external_customer_id: 'external-customer-id',
+        external_member_id: 'external-member-id',
+      },
     ],
   ])('checks the specified member %j', async (identifier, query) => {
     const list = vi.fn().mockResolvedValue({
       items: [{ benefit: { metadata: {} } }],
     })
     const sdk = { benefitGrants: { list } } as unknown as Polar
-    const actor = createActor(
-      config,
-      sdk,
-    )({ customerId: 'customer-id', ...identifier })
+    const actor = createActor(config, sdk, fakeMetering().metering)(identifier)
 
     await expect(actor.access('custom_meters')).resolves.toEqual({
       granted: true,
       metadata: {},
     })
     expect(list).toHaveBeenCalledWith({
-      customer_id: 'customer-id',
       ...query,
       external_benefit_id: 'custom_meters',
       is_granted: true,
@@ -85,7 +100,11 @@ describe('actor benefits', () => {
       benefitGrants: { list },
       benefits: { iterList },
     } as unknown as Polar
-    const actor = createActor(config, sdk)({ customerId: 'customer-id' })
+    const actor = createActor(
+      config,
+      sdk,
+      fakeMetering().metering,
+    )({ customerId: 'customer-id' })
 
     await expect(actor.access('custom_meters')).resolves.toEqual({
       granted: false,
@@ -101,7 +120,11 @@ describe('actor benefits', () => {
       benefitGrants: { list },
       benefits: { iterList },
     } as unknown as Polar
-    const actor = createActor(config, sdk)({ customerId: 'customer-id' })
+    const actor = createActor(
+      config,
+      sdk,
+      fakeMetering().metering,
+    )({ customerId: 'customer-id' })
 
     await expect(actor.access('custom_meters')).rejects.toThrow('not deployed')
   })
@@ -119,10 +142,13 @@ describe('actor events', () => {
   } as const satisfies RuntimeSDKConfig['events']
 
   const setup = () => {
-    const ingest = vi.fn().mockResolvedValue({ inserted: 1 })
-    const sdk = { events: { ingest } } as unknown as Polar
-    const actor = createActor({ events }, sdk)({ customerId: 'customer-id' })
-    return { actor, ingest }
+    const { metering, actor: meteringActor, track } = fakeMetering()
+    const actor = createActor(
+      { events },
+      {} as Polar,
+      metering,
+    )({ customerId: 'customer-id' })
+    return { actor, meteringActor, track }
   }
 
   it('types metadata from the event schema', () => {
@@ -148,11 +174,11 @@ describe('actor events', () => {
     expectTypeOf(typeOnly).toBeFunction()
   })
 
-  it('ingests the validated output of the event schema', async () => {
-    const { actor, ingest } = setup()
+  it('tracks the validated output of the event schema', async () => {
+    const { actor, track } = setup()
     await actor.track('tool_call', { tool: 'search', durationMs: 12 })
     await actor.track('heartbeat')
-    expect(ingest.mock.calls.map(([body]) => body.events[0])).toMatchObject([
+    expect(track.mock.calls.map(([event]) => event)).toMatchObject([
       {
         name: 'tool_call',
         metadata: { tool: 'search', durationMs: 12, region: 'eu' },
@@ -162,7 +188,7 @@ describe('actor events', () => {
   })
 
   it('rejects invalid metadata before ingesting', async () => {
-    const { actor, ingest } = setup()
+    const { actor, track } = setup()
     const tracked = actor.track('tool_call', {
       tool: 'search',
       durationMs: 1.5,
@@ -171,27 +197,30 @@ describe('actor events', () => {
     await expect(tracked).rejects.toThrow(
       /^Invalid metadata for event "tool_call"\n.+\n {2}at \["durationMs"\]$/,
     )
-    expect(ingest).not.toHaveBeenCalled()
+    expect(track).not.toHaveBeenCalled()
   })
 
   it('passes metadata through for events without a schema', async () => {
-    const { actor, ingest } = setup()
+    const { actor, track } = setup()
     await actor.track('legacy', { anything: 1 })
-    expect(ingest.mock.calls[0]?.[0].events[0]).toMatchObject({
+    expect(track.mock.calls[0]?.[0]).toMatchObject({
       name: 'legacy',
       metadata: { anything: 1 },
     })
   })
 
-  it('ingests an array of events in a single request', async () => {
-    const { actor, ingest } = setup()
+  it('tracks an array of events for the same actor', async () => {
+    const { actor, meteringActor, track } = setup()
     await actor.track([
       { name: 'tool_call', metadata: { tool: 'search', durationMs: 12 } },
       { name: 'heartbeat' },
       { name: 'legacy', metadata: { anything: 1 } },
     ])
-    expect(ingest).toHaveBeenCalledOnce()
-    expect(ingest.mock.calls[0]?.[0].events).toMatchObject([
+    expect(meteringActor).toHaveBeenCalledExactlyOnceWith({
+      customer_id: 'customer-id',
+      member_id: null,
+    })
+    expect(track.mock.calls.map(([event]) => event)).toMatchObject([
       {
         name: 'tool_call',
         metadata: { tool: 'search', durationMs: 12, region: 'eu' },
@@ -211,25 +240,25 @@ describe('actor events', () => {
   })
 
   it('rejects the whole array when any event is invalid', async () => {
-    const { actor, ingest } = setup()
+    const { actor, track } = setup()
     await expect(
       actor.track([
         { name: 'tool_call', metadata: { tool: 'search', durationMs: 12 } },
         { name: 'tool_call', metadata: { tool: 'search', durationMs: 1.5 } },
       ]),
     ).rejects.toBeInstanceOf(EventValidationError)
-    expect(ingest).not.toHaveBeenCalled()
+    expect(track).not.toHaveBeenCalled()
   })
 
   it('rejects undeclared events at runtime', async () => {
-    const { actor, ingest } = setup()
+    const { actor, track } = setup()
     await expect(actor.track('nope' as 'legacy')).rejects.toThrow(
       'Unknown event: nope',
     )
     await expect(actor.track('toString' as 'legacy')).rejects.toThrow(
       'Unknown event: toString',
     )
-    expect(ingest).not.toHaveBeenCalled()
+    expect(track).not.toHaveBeenCalled()
   })
 })
 
@@ -248,15 +277,21 @@ describe('actor grants', () => {
     const credits = vi
       .fn()
       .mockResolvedValue({ timestamp: '2026-10-01T12:00:00Z' })
-    const list = vi.fn()
     const getExternal = vi
       .fn()
       .mockResolvedValue({ id: 'meter-id', archived_at: null })
     const sdk = {
-      customerMeters: { credits, list },
+      customerMeters: { credits },
       meters: { getExternal },
     } as unknown as Polar
-    return { actor: createActor({ meters }, sdk), credits, list, getExternal }
+    const { metering, actor: meteringActor, meter } = fakeMetering()
+    return {
+      actor: createActor({ meters }, sdk, metering),
+      credits,
+      getExternal,
+      meteringActor,
+      meter,
+    }
   }
 
   it('accepts only configured meter names', () => {
@@ -320,25 +355,38 @@ describe('actor grants', () => {
     })
   })
 
-  it('reports the balance as not pristine until the credit is applied', async () => {
-    const { actor, list } = setup()
-    const customer = actor({ customerId: 'customer-id' })
-    const customerMeter = (modifiedAt: string, balance: number) => ({
-      items: [{ balance, created_at: modifiedAt, modified_at: modifiedAt }],
-    })
+  it.each([
+    [
+      { customerId: 'customer-id' },
+      { customer_id: 'customer-id', member_id: null },
+    ],
+    [
+      { externalCustomerId: 'external-customer-id' },
+      {
+        external_customer_id: 'external-customer-id',
+        external_member_id: null,
+      },
+    ],
+  ])(
+    'reads the balance of %j by deployed meter ID',
+    async (identifier, input) => {
+      const { actor, meteringActor, meter } = setup()
+      meter.mockResolvedValueOnce({ balance: 100 })
 
-    await customer.grant('tool_call', 100)
+      await expect(actor(identifier).balance('tool_call')).resolves.toEqual({
+        balance: 100,
+      })
+      expect(meteringActor).toHaveBeenCalledWith(input)
+      expect(meter).toHaveBeenCalledWith('meter-id')
+    },
+  )
 
-    list.mockResolvedValueOnce(customerMeter('2026-10-01T11:59:59Z', 0))
-    await expect(customer.balance('tool_call')).resolves.toEqual({
-      balance: 0,
-      pristine: false,
-    })
-    list.mockResolvedValueOnce(customerMeter('2026-10-01T12:00:01Z', 100))
-    await expect(customer.balance('tool_call')).resolves.toEqual({
-      balance: 100,
-      pristine: true,
-    })
+  it('reads a zero balance when the customer has no meter yet', async () => {
+    const { actor } = setup()
+
+    await expect(
+      actor({ customerId: 'customer-id' }).balance('tool_call'),
+    ).resolves.toEqual({ balance: 0 })
   })
 
   it('rejects undeclared meters at runtime', async () => {
@@ -377,7 +425,11 @@ describe('actor grants', () => {
       customerMeters: { credits },
       meters: { getExternal },
     } as unknown as Polar
-    const customer = createActor({ meters }, sdk)(identifier)
+    const customer = createActor(
+      { meters },
+      sdk,
+      fakeMetering().metering,
+    )(identifier)
 
     await expect(customer.grant('tool_call', 100)).rejects.toThrow(
       'not deployed',

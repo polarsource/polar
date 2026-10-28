@@ -4,6 +4,7 @@ export type {
   models,
   Polar,
   PolarCore,
+  MeteringOptions,
   PolarOptions,
   RequestOptions,
 } from './sdk'
@@ -13,7 +14,11 @@ export type { BenefitAccess, MeterBalance } from './client/actor'
 export type { EventMetadata } from './schema/event'
 
 export { RuntimeSDK } from './runtime'
-export type { RuntimeConnection, WebhookRoutes } from './runtime'
+export type {
+  RuntimeConnection,
+  RuntimeSDKOptions,
+  WebhookRoutes,
+} from './runtime'
 
 export {
   and,

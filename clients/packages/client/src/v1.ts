@@ -16442,7 +16442,7 @@ export interface components {
     }
     /** ConfigCatalogChange */
     ConfigCatalogChange: {
-      /** @description The live catalog before applying. `None` before the first publish. */
+      /** @description The live catalog before applying. `None` if no catalog exists to replace. */
       before: components['schemas']['ConfigCatalog'] | null
       /** @description The catalog applying published. */
       after: components['schemas']['ConfigCatalog']

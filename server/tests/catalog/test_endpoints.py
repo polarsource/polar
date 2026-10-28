@@ -4,7 +4,13 @@ import pytest
 from httpx import AsyncClient
 
 from polar.kit.utils import utc_now
-from polar.models import Catalog, Organization, UserOrganization
+from polar.models import (
+    Catalog,
+    CatalogProduct,
+    Organization,
+    Product,
+    UserOrganization,
+)
 from polar.models.catalog import CatalogStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -133,3 +139,89 @@ class TestList:
         )
 
         assert response.status_code == 422
+
+
+@pytest.mark.anyio
+class TestGet:
+    async def test_anonymous(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, _ = catalogs
+
+        response = await client.get(f"/v1/catalogs/{live.id}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_not_member(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, _ = catalogs
+
+        response = await client.get(f"/v1/catalogs/{live.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("user_organization", "catalogs")
+    async def test_config_as_code_disabled(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, _ = catalogs
+
+        response = await client.get(f"/v1/catalogs/{live.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        catalogs: tuple[Catalog, Catalog, Catalog],
+        product: Product,
+        product_second: Product,
+        product_one_time: Product,
+    ) -> None:
+        draft, live, archived = catalogs
+        for catalog, catalog_product, external_id in (
+            (archived, product, "pro"),
+            (archived, product_one_time, "lifetime"),
+            (live, product_second, "pro"),
+            (live, product_one_time, "lifetime"),
+            (draft, product_second, "pro"),
+        ):
+            await save_fixture(
+                CatalogProduct(
+                    catalog=catalog, product=catalog_product, external_id=external_id
+                )
+            )
+
+        response = await client.get(f"/v1/catalogs/{live.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(live.id)
+        assert json["previous_id"] == str(archived.id)
+        assert json["next_id"] is None
+        assert json["products"] == [
+            {"external_id": "lifetime", "product_id": str(product_one_time.id)},
+            {"external_id": "pro", "product_id": str(product_second.id)},
+        ]
+
+        response = await client.get(f"/v1/catalogs/{archived.id}")
+
+        json = response.json()
+        assert json["previous_id"] is None
+        assert json["next_id"] == str(live.id)
+
+        response = await client.get(f"/v1/catalogs/{draft.id}")
+
+        json = response.json()
+        assert json["previous_id"] is None
+        assert json["next_id"] is None
+        assert json["products"] == [
+            {"external_id": "pro", "product_id": str(product_second.id)}
+        ]

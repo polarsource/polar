@@ -46,6 +46,34 @@ class CatalogRepository(
         result = await self.session.execute(statement)
         return {id: version_hash for id, version_hash in result.tuples()}
 
+    async def get_previous(self, catalog: Catalog) -> Catalog | None:
+        if catalog.published_at is None:
+            return None
+        statement = (
+            self._get_published_statement(catalog.organization_id)
+            .where(Catalog.published_at < catalog.published_at)
+            .order_by(Catalog.published_at.desc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
+    async def get_next(self, catalog: Catalog) -> Catalog | None:
+        if catalog.published_at is None:
+            return None
+        statement = (
+            self._get_published_statement(catalog.organization_id)
+            .where(Catalog.published_at > catalog.published_at)
+            .order_by(Catalog.published_at.asc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
+
+    def _get_published_statement(self, organization_id: UUID) -> Select[tuple[Catalog]]:
+        return self.get_base_statement().where(
+            Catalog.organization_id == organization_id,
+            Catalog.published_at.is_not(None),
+        )
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Catalog]]:
@@ -74,3 +102,15 @@ class CatalogProductRepository(
             .options(joinedload(CatalogProduct.product))
         )
         return await self.get_all(statement)
+
+    async def get_product_ids_by_catalog(self, catalog_id: UUID) -> dict[str, UUID]:
+        statement = (
+            select(CatalogProduct.external_id, CatalogProduct.product_id)
+            .where(
+                CatalogProduct.catalog_id == catalog_id,
+                CatalogProduct.deleted_at.is_(None),
+            )
+            .order_by(CatalogProduct.external_id)
+        )
+        result = await self.session.execute(statement)
+        return dict(result.tuples().all())

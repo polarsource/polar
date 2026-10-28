@@ -1,6 +1,7 @@
 from fastapi import Depends, Query
-from pydantic import AwareDatetime
+from pydantic import UUID4, AwareDatetime
 
+from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models.catalog import CatalogStatus
@@ -11,6 +12,7 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Catalog as CatalogSchema
+from .schemas import CatalogVersion
 from .service import catalog as catalog_service
 
 router = APIRouter(prefix="/catalogs", tags=["catalogs", APITag.private])
@@ -61,3 +63,27 @@ async def list(
         count,
         pagination,
     )
+
+
+CatalogNotFound = {
+    "description": "Catalog not found.",
+    "model": ResourceNotFound.schema(),
+}
+
+
+@router.get(
+    "/{id}",
+    summary="Get Catalog",
+    response_model=CatalogVersion,
+    responses={404: CatalogNotFound},
+)
+async def get(
+    id: UUID4,
+    auth_subject: auth.CatalogRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> CatalogVersion:
+    """Get a catalog version, the products in it, and its neighboring versions."""
+    catalog = await catalog_service.get(session, auth_subject, id)
+    if catalog is None:
+        raise ResourceNotFound()
+    return await catalog_service.get_version(session, catalog)

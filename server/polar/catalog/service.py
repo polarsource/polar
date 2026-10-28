@@ -6,6 +6,7 @@ from datetime import datetime
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -22,6 +23,8 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 
 from .repository import CatalogProductRepository, CatalogRepository
+from .schemas import Catalog as CatalogSchema
+from .schemas import CatalogVersion
 
 
 def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) -> str:
@@ -45,15 +48,9 @@ class CatalogService:
         published_before: datetime | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Catalog], int]:
-        org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.products_read
-        )
+        org_ids = await self._get_readable_org_ids(session, auth_subject)
         if organization_id is not None:
             org_ids = {oid for oid in org_ids if oid in set(organization_id)}
-        enabled_org_ids = await OrganizationRepository.from_session(
-            session
-        ).get_ids_with_feature(set(org_ids), "config_as_code_enabled")
-        org_ids = {oid for oid in org_ids if oid in enabled_org_ids}
 
         repository = CatalogRepository.from_session(session)
         statement = repository.get_statement_by_org_ids(org_ids)
@@ -68,6 +65,52 @@ class CatalogService:
             limit=pagination.limit,
             page=pagination.page,
         )
+
+    async def get(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        id: uuid.UUID,
+    ) -> Catalog | None:
+        org_ids = await self._get_readable_org_ids(session, auth_subject)
+        repository = CatalogRepository.from_session(session)
+        statement = repository.get_statement_by_org_ids(org_ids).where(Catalog.id == id)
+        return await repository.get_one_or_none(statement)
+
+    async def get_version(
+        self, session: AsyncReadSession, catalog: Catalog
+    ) -> CatalogVersion:
+        repository = CatalogRepository.from_session(session)
+        previous = await repository.get_previous(catalog)
+        next = await repository.get_next(catalog)
+        product_ids = await CatalogProductRepository.from_session(
+            session
+        ).get_product_ids_by_catalog(catalog.id)
+
+        return CatalogVersion.model_validate(
+            {
+                **CatalogSchema.model_validate(catalog).model_dump(),
+                "previous_id": previous.id if previous is not None else None,
+                "next_id": next.id if next is not None else None,
+                "products": [
+                    {"external_id": external_id, "product_id": product_id}
+                    for external_id, product_id in product_ids.items()
+                ],
+            }
+        )
+
+    async def _get_readable_org_ids(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+    ) -> set[AccessibleOrganizationID]:
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        enabled_org_ids = await OrganizationRepository.from_session(
+            session
+        ).get_ids_with_feature(set(org_ids), "config_as_code_enabled")
+        return {oid for oid in org_ids if oid in enabled_org_ids}
 
     async def get_live_entries(
         self,

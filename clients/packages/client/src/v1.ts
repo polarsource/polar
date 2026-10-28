@@ -53890,6 +53890,10 @@ export interface operations {
           | components['schemas']['CatalogStatus']
           | components['schemas']['CatalogStatus'][]
           | null
+        /** @description Only include catalogs published after this date. Must include a UTC offset. */
+        published_after?: string | null
+        /** @description Only include catalogs published before this date. Must include a UTC offset. */
+        published_before?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

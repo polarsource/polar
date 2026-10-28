@@ -101,3 +101,35 @@ class TestList:
             str(live.id),
             str(archived.id),
         ]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_published_filter(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, archived = catalogs
+        assert live.published_at is not None
+        cutoff = (live.published_at - timedelta(hours=1)).isoformat()
+
+        response = await client.get("/v1/catalogs/", params={"published_after": cutoff})
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["items"]] == [str(live.id)]
+
+        response = await client.get(
+            "/v1/catalogs/", params={"published_before": cutoff}
+        )
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["items"]] == [str(archived.id)]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_published_filter_requires_utc_offset(
+        self, client: AsyncClient
+    ) -> None:
+        response = await client.get(
+            "/v1/catalogs/", params={"published_after": "2026-10-01T00:00:00"}
+        )
+
+        assert response.status_code == 422

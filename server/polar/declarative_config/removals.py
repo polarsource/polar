@@ -1,7 +1,7 @@
 from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import catalog as catalog_service
 from polar.models import Organization
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
 
 from .export import export_config
@@ -17,11 +17,11 @@ from .schemas import (
 
 
 async def products(
-    session: AsyncSession, organization: Organization, config: Config
+    session: AsyncReadSession, organization: Organization, config: Config
 ) -> tuple[list[ConfigRemoval], list[ConfigIssue]]:
     """Live products the config deprecates or doesn't list.
 
-    Products the config can't describe, which pull skips, are left untouched.
+    Products that pull doesn't export are left untouched.
     A product that isn't listed but is still in use must be marked deprecated
     instead.
     """

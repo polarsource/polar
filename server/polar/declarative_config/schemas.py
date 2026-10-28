@@ -391,9 +391,9 @@ class Config(Schema):
             "Deprecated products are never created or updated. They, and live "
             "products that aren't listed, are left out of the next catalog. "
             "A product that isn't listed but still has active subscriptions is "
-            "an error: mark it `deprecated` instead. Products config can't "
-            "describe, and all products when `products` is omitted, are left "
-            "untouched."
+            "an error: mark it `deprecated` instead. Products that pulling the "
+            "config doesn't export, and all products when `products` is "
+            "omitted, are left untouched."
         ),
     )
     webhooks: list[ConfigWebhookEndpoint] = Field(

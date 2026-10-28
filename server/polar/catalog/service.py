@@ -104,7 +104,7 @@ class CatalogService:
         organization: Organization,
         live: Catalog | None,
         definitions: Mapping[str, str],
-        removed: Collection[str] = (),
+        removed: Collection[str],
     ) -> tuple[str | None, str | None]:
         """Return the live version hash, and the version hash of the catalog these
         new product definitions, without the removed products, would publish."""
@@ -186,8 +186,8 @@ class CatalogService:
         live: Catalog | None,
         new_products: Mapping[str, Product],
         version_hash: str,
+        removed: Collection[str],
         name: str | None = None,
-        removed: Collection[str] = (),
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)

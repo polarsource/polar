@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, case, func, select, union
@@ -130,7 +131,7 @@ class ProductRepository(
             )
         )
         result = await self.session.execute(union(subscribed, scheduled))
-        return {external_id for external_id in result.scalars() if external_id}
+        return set(cast(Sequence[str], result.scalars().all()))
 
     def get_organization_statement(
         self, organization_id: UUID

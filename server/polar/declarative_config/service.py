@@ -256,8 +256,8 @@ class DeclarativeConfigService:
                 live,
                 new_products,
                 version_hash,
+                removed_external_ids,
                 name=config.catalog_name,
-                removed=removed_external_ids,
             )
             catalog = ConfigCatalogChange(
                 before=before, after=ConfigCatalog.model_validate(published)

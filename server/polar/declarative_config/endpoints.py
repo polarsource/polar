@@ -111,8 +111,8 @@ async def apply(
 
     Meters, benefits, products and webhook endpoints are matched by
     `external_id`: missing ones are created, and changed ones are updated.
-    Products that are deprecated, or that are live but not listed, are left out
-    of the published catalog. A product that isn't listed but still has active
+    Products that are deprecated, or in the live catalog but not listed, are
+    left out of the published catalog. A product that isn't listed but still has active
     subscriptions must be marked deprecated instead, or nothing is applied.
     Other resources that aren't listed are left untouched.
     `settings` are applied first, so products can be priced in a new

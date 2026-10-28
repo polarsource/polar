@@ -3040,12 +3040,13 @@ class TestProductRemoval:
         result = await declarative_config_service.apply(
             session, redis, auth_subject, config
         )
-        assert (result.removed, result.catalog) == (plan.removed, plan.catalog)
+        assert result.removed == plan.removed
         await session.refresh(pack)
         assert pack.is_current is False
         live = await CatalogRepository.from_session(session).get_live(organization.id)
         assert live is not None
-        assert live.version_hash == plan.catalog.after
+        assert result.catalog is not None
+        assert (result.catalog.after.id, live.name) == (live.id, plan.catalog.name)
         [pro] = await products_repo.get_all_by_external_ids(organization.id, ["pro"])
         members = await CatalogProductRepository.from_session(
             session

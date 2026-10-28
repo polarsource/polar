@@ -78,6 +78,7 @@ class TestApply:
                     "action": "created",
                 }
             ],
+            "removed": [],
             "catalog": None,
             "settings": None,
         }
@@ -293,6 +294,7 @@ class TestPlan:
         assert response.status_code == 200
         assert response.json() == {
             "changes": [],
+            "removed": [],
             "catalog": None,
             "settings": None,
             "issues": [],

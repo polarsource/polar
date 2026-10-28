@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime
 
 from polar.auth.models import Agent, AuthSubject, User
@@ -104,13 +104,19 @@ class CatalogService:
         organization: Organization,
         live: Catalog | None,
         definitions: Mapping[str, str],
+        removed: Collection[str] = (),
     ) -> tuple[str | None, str | None]:
         """Return the live version hash, and the version hash of the catalog these
-        new product definitions would publish."""
+        new product definitions, without the removed products, would publish."""
         before, entries = await self.get_live_entries(session, organization, live)
-        if not definitions:
+        if not definitions and not removed:
             return before, before
-        return before, compute_version_hash(before, {**entries, **definitions})
+        kept = {
+            external_id: value
+            for external_id, value in entries.items()
+            if external_id not in removed
+        }
+        return before, compute_version_hash(before, {**kept, **definitions})
 
     async def get_default_name(
         self,
@@ -181,10 +187,12 @@ class CatalogService:
         new_products: Mapping[str, Product],
         version_hash: str,
         name: str | None = None,
+        removed: Collection[str] = (),
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
         catalog_product_repository = CatalogProductRepository.from_session(session)
+        product_repository = ProductRepository.from_session(session)
 
         members = (
             {}
@@ -196,6 +204,12 @@ class CatalogService:
                 )
             }
         )
+        for external_id in removed:
+            removed_product = members.pop(external_id, None)
+            if removed_product is not None:
+                await product_repository.update(
+                    removed_product, update_dict={"is_current": False}
+                )
         if live is not None:
             await repository.update(
                 live, update_dict={"status": CatalogStatus.archived}, flush=True

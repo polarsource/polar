@@ -23,8 +23,10 @@ from polar.models import (
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    Subscription,
 )
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import sql
 
 from .sorting import ProductSortProperty
@@ -98,6 +100,28 @@ class ProductRepository(
         if for_update:
             statement = statement.with_for_update(of=Product, key_share=True)
         return await self.get_all(statement)
+
+    async def get_external_ids_with_billable_subscriptions(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> set[str]:
+        """Return the external IDs with a billable subscription on any version."""
+        if not external_ids:
+            return set()
+        statement = (
+            select(Product.external_id)
+            .distinct()
+            .join(Subscription, Subscription.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id.in_(external_ids),
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                ~Subscription.is_deleted,
+            )
+        )
+        result = await self.session.execute(statement)
+        return {
+            external_id for external_id in result.scalars() if external_id is not None
+        }
 
     def get_organization_statement(
         self, organization_id: UUID

@@ -388,7 +388,10 @@ class Config(Schema):
         max_length=MAXIMUM_PRODUCTS,
         description=(
             "Products to create or update, matched by `external_id`. "
-            "Existing products that aren't listed are left untouched."
+            "Deprecated products, and live products that aren't listed, are left "
+            "out of the next catalog. A product that isn't listed but still has "
+            "active subscriptions is an error: mark it `deprecated` instead. "
+            "When `products` is omitted, existing products are left untouched."
         ),
     )
     webhooks: list[ConfigWebhookEndpoint] = Field(
@@ -421,6 +424,7 @@ class ConfigIssueType(StrEnum):
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
     not_supported = "not_supported"
+    removed_in_use = "removed_in_use"
     type_changed = "type_changed"
     unknown_event = "unknown_event"
     unknown_reference = "unknown_reference"
@@ -487,8 +491,27 @@ class ConfigCatalogPlan(Schema):
     )
 
 
+class ConfigRemovalReason(StrEnum):
+    missing = "missing"
+    deprecated = "deprecated"
+
+
+class ConfigRemoval(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
+    external_id: str = Field(description="The resource's `external_id`.")
+    reason: ConfigRemovalReason = Field(
+        description=(
+            "`missing` when the config doesn't list the resource, "
+            "`deprecated` when it's marked deprecated."
+        )
+    )
+
+
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
+    removed: list[ConfigRemoval] = Field(
+        description="Resources left out of the published catalog."
+    )
     catalog: ConfigCatalogChange | None = Field(
         description="The published catalog, if applying published a new one."
     )
@@ -520,6 +543,9 @@ class ConfigSettingsChange(ConfigSettingsResult):
 
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
+    removed: list[ConfigRemoval] = Field(
+        description="Resources that applying leaves out of the next catalog."
+    )
     catalog: ConfigCatalogPlan | None = Field(
         description="The catalog that applying publishes, if any."
     )

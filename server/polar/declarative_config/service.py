@@ -32,7 +32,7 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, catalogs, products, validation
+from . import benefits, catalogs, products, removals, validation
 from .auth import SECTION_SCOPES
 from .export import EXPORTED_SECTIONS, export_config
 from .schemas import (
@@ -209,15 +209,22 @@ class DeclarativeConfigService:
             session, organization, config, for_update=True
         )
         issues.extend(catalogs.benefit_issues(changes))
+        removed, removal_issues = await removals.products(session, organization, config)
+        issues.extend(removal_issues)
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
         if errors:
             raise ConfigInvalid(errors)
 
+        removed_external_ids = [removal.external_id for removal in removed]
         live = await catalog_service.get_or_create_live(session, organization)
         _, version_hash = await catalog_service.get_next_version_hash(
-            session, organization, live, catalogs.product_definitions(changes)
+            session,
+            organization,
+            live,
+            catalogs.product_definitions(changes),
+            removed_external_ids,
         )
         settings_result = await self._apply_settings(
             session, organization, changes.settings
@@ -240,7 +247,7 @@ class DeclarativeConfigService:
             benefit_ids,
         )
         catalog: ConfigCatalogChange | None = None
-        if new_products:
+        if new_products or removed:
             assert version_hash is not None
             before = None if live is None else ConfigCatalog.model_validate(live)
             published = await catalog_service.publish(
@@ -250,6 +257,7 @@ class DeclarativeConfigService:
                 new_products,
                 version_hash,
                 name=config.catalog_name,
+                removed=removed_external_ids,
             )
             catalog = ConfigCatalogChange(
                 before=before, after=ConfigCatalog.model_validate(published)
@@ -274,6 +282,7 @@ class DeclarativeConfigService:
                 *benefit_results,
                 *product_results,
             ],
+            removed=removed,
             catalog=catalog,
             settings=settings_result,
         )
@@ -293,9 +302,15 @@ class DeclarativeConfigService:
             session, organization, config, for_update=False
         )
         issues.extend(catalogs.benefit_issues(changes))
+        removed, removal_issues = await removals.products(session, organization, config)
+        issues.extend(removal_issues)
         live = await CatalogRepository.from_session(session).get_live(organization.id)
         catalog_before, catalog_after = await catalog_service.get_next_version_hash(
-            session, organization, live, catalogs.product_definitions(changes)
+            session,
+            organization,
+            live,
+            catalogs.product_definitions(changes),
+            [removal.external_id for removal in removed],
         )
         product_changes = self._plan_changes(ConfigResource.product, changes.products)
         catalog: ConfigCatalogPlan | None = None
@@ -323,6 +338,7 @@ class DeclarativeConfigService:
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *product_changes,
             ],
+            removed=removed,
             catalog=catalog,
             settings=None
             if changes.settings is None

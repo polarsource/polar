@@ -16220,7 +16220,7 @@ export interface components {
       benefits?: components['schemas']['ConfigBenefit'][]
       /**
        * Products
-       * @description Products to create or update, matched by `external_id`. Existing products that aren't listed are left untouched.
+       * @description Products to create or update, matched by `external_id`. Deprecated products, and live products that aren't listed, are left out of the next catalog. A product that isn't listed but still has active subscriptions is an error: mark it `deprecated` instead. When `products` is omitted, existing products are left untouched.
        */
       products?: components['schemas']['ConfigProduct'][]
       /**
@@ -16243,6 +16243,11 @@ export interface components {
     ConfigApplyResult: {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
+      /**
+       * Removed
+       * @description Resources left out of the published catalog.
+       */
+      removed: components['schemas']['ConfigRemoval'][]
       /** @description The published catalog, if applying published a new one. */
       catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Result for `settings`, if in the config. */
@@ -16562,6 +16567,7 @@ export interface components {
       | 'meter_locked'
       | 'missing_currency'
       | 'not_supported'
+      | 'removed_in_use'
       | 'type_changed'
       | 'unknown_event'
       | 'unknown_reference'
@@ -16661,6 +16667,11 @@ export interface components {
     ConfigPlan: {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
+      /**
+       * Removed
+       * @description Resources that applying leaves out of the next catalog.
+       */
+      removed: components['schemas']['ConfigRemoval'][]
       /** @description The catalog that applying publishes, if any. */
       catalog: components['schemas']['ConfigCatalogPlan'] | null
       /** @description Change for `settings`, if in the config. */
@@ -17016,6 +17027,23 @@ export interface components {
        */
       referenced_by: string[]
     }
+    /** ConfigRemoval */
+    ConfigRemoval: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /** @description `missing` when the config doesn't list the resource, `deprecated` when it's marked deprecated. */
+      reason: components['schemas']['ConfigRemovalReason']
+    }
+    /**
+     * ConfigRemovalReason
+     * @enum {string}
+     */
+    ConfigRemovalReason: 'missing' | 'deprecated'
     /**
      * ConfigResource
      * @enum {string}
@@ -72733,6 +72761,7 @@ export const configIssueTypeValues: ReadonlyArray<
   'meter_locked',
   'missing_currency',
   'not_supported',
+  'removed_in_use',
   'type_changed',
   'unknown_event',
   'unknown_reference',
@@ -72767,6 +72796,9 @@ export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
 export const configProductPriceUnitBasedReadAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBasedRead']['amount_type']
 > = ['unit_based']
+export const configRemovalReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigRemovalReason']
+> = ['missing', 'deprecated']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
 > = ['meter', 'benefit', 'product', 'webhook']

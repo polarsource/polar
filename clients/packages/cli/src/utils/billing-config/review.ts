@@ -1,6 +1,7 @@
 import type { ActiveOrganization, PolarEnvironment } from '@/schemas/Auth'
 import type {
   AppliedEntry,
+  CatalogPlan,
   ConfigIssue,
   LoadedConfig,
   PlanResult,
@@ -26,6 +27,12 @@ const issueTally = (issues: ReadonlyArray<ConfigIssue>) => {
   ]
   return parts.length === 0 ? ui.dim('none') : parts.join(', ')
 }
+
+export const catalogChange = (
+  { before, name }: CatalogPlan,
+  dim: (text: string) => string = ui.dim,
+) =>
+  `${before === null ? dim('none') : (before.name ?? dim('unnamed'))} ${dim('→')} ${name}`
 
 export const fixErrors = (issues: ReadonlyArray<ConfigIssue>) =>
   `${ui.INDENT}Fix the ${errors(issues) === 1 ? 'error' : `${errors(issues)} errors`} above, then run ${ui.command('polar config plan')} again.`
@@ -97,6 +104,9 @@ export const overview = (
       ],
       ['File', config.file],
       ['Changes', planTally(result.entries)],
+      ...(result.catalog
+        ? [['Catalog', catalogChange(result.catalog)] as const]
+        : []),
       ['Issues', issueTally(result.issues)],
     ]),
   )

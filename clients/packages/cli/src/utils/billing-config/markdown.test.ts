@@ -97,6 +97,22 @@ describe('planMarkdown', () => {
     )
   })
 
+  test('adds the catalog change to the summary table', () => {
+    expect(
+      planMarkdown(config, acme, {
+        entries,
+        catalog: { before: { name: 'v1' }, name: 'Spring_pricing' },
+        issues: [],
+      }),
+    ).toContain(
+      [
+        '| Organization | Environment | Config | Changes | Catalog |',
+        '| --- | --- | --- | --- | --- |',
+        '| Acme\\_Inc | sandbox | `polar.json` | 2 to change, 1 to add, 1 unchanged | v1 → Spring\\_pricing |',
+      ].join('\n'),
+    )
+  })
+
   test('has nothing to say when the plan changes nothing and has no errors', () => {
     expect(
       planMarkdown(config, acme, {

@@ -71,8 +71,15 @@ export const AppliedEntry = Schema.Struct({
 })
 export type AppliedEntry = typeof AppliedEntry.Type
 
+export const CatalogPlan = Schema.Struct({
+  before: Schema.NullOr(Schema.Struct({ name: Schema.NullOr(Schema.String) })),
+  name: Schema.String,
+})
+export type CatalogPlan = typeof CatalogPlan.Type
+
 export const PlanResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  catalog: Schema.optional(Schema.NullOr(CatalogPlan)),
   settings: Schema.optional(Schema.NullOr(SettingsResult)),
   issues: Schema.Array(ServerError),
 })
@@ -114,6 +121,7 @@ export type ConfigIssue = typeof ConfigIssue.Type
 
 export const PlanResult = Schema.Struct({
   entries: Schema.Array(AppliedEntry),
+  catalog: Schema.optionalKey(CatalogPlan),
   issues: Schema.Array(ConfigIssue),
 })
 export type PlanResult = typeof PlanResult.Type

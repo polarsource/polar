@@ -1,0 +1,24 @@
+dev/experiments/webmcp-checkout/frame-tools/server.mjs
+  s_9bce59aa53a795::t_f35a8c51777fdc 58,116
+  s_9bce59aa53a795::t_265bfaa179bf2c 1-57,59-115,117-219
+dev/experiments/webmcp-checkout/run.py
+  s_9bce59aa53a795::t_6bb0bf059e9010 29,193-194,196-201,207,222-223,226,376-378,402-405,408-409,425-427
+dev/experiments/webmcp-checkout/README.md
+  s_9bce59aa53a795::t_90b98cf64def9d 41-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9dc015354acc63ce1922566c5df16f20857ff138",
+  "prompts": {},
+  "sessions": {
+    "s_9bce59aa53a795": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "83f59293-98e2-4a54-94df-48d346d93177",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

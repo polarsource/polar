@@ -293,28 +293,31 @@ const BaseCheckoutForm = ({
     }
   }
 
-  const submitForAgent = () =>
-    new Promise<CheckoutSubmitResult>((resolve, reject) => {
-      handleSubmit(
-        async (data) => {
-          const error = await onSubmit(data)
-          resolve(
-            error
-              ? {
-                  status: 'failed',
-                  message:
-                    error instanceof Error && error.message
-                      ? error.message
-                      : (form.formState.errors.root?.message ??
-                        'The payment failed'),
-                }
-              : { status: 'confirmed' },
-          )
-        },
-        (errors) =>
-          resolve({ status: 'invalid', errors: flattenFormErrors(errors) }),
-      )().catch(reject)
-    })
+  const submitForAgent = async (): Promise<CheckoutSubmitResult> => {
+    let result: CheckoutSubmitResult = {
+      status: 'failed',
+      message: 'The checkout was not submitted',
+    }
+    await handleSubmit(
+      async (data) => {
+        const error = await onSubmit(data)
+        result = error
+          ? {
+              status: 'failed',
+              message:
+                error instanceof Error && error.message
+                  ? error.message
+                  : (form.formState.errors.root?.message ??
+                    'The payment failed'),
+            }
+          : { status: 'confirmed' }
+      },
+      (errors) => {
+        result = { status: 'invalid', errors: flattenFormErrors(errors) }
+      },
+    )()
+    return result
+  }
 
   useCheckoutWebMCP({
     enabled: webMCP && !embed && !disabled,

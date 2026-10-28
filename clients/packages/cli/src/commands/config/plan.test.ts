@@ -23,6 +23,7 @@ const config: LoadedConfig = {
   source,
   input: JSON.parse(source),
   generated: false,
+  issues: [],
 }
 
 const acme = {

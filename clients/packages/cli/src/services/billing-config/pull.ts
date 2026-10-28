@@ -53,7 +53,7 @@ const loadDocument = (
       .exists(file)
       .pipe(Effect.orElseSucceed(() => false))
     if (!exists) return undefined
-    const config = yield* load(file)
+    const config = yield* load(file, { lint: false })
     const input = config.input
     if (typeof input !== 'object' || input === null || Array.isArray(input)) {
       return yield* new BillingConfigError({

@@ -85,6 +85,35 @@ describe('load', () => {
     expect(async.input).toEqual({ meters: ['async'] })
   })
 
+  test('does not evaluate a script with lint errors', async () => {
+    const config = await load(
+      await write(
+        [
+          "const prices = await fetch('https://pricing.example.com')",
+          "throw new Error('evaluated')",
+        ].join('\n'),
+        'polar.config.ts',
+      ),
+    )
+    expect(config.input).toBeUndefined()
+    expect(config.issues.map((issue) => [issue.severity, issue.code])).toEqual([
+      ['error', 'reads_network'],
+    ])
+  })
+
+  test('keeps lint warnings next to an evaluated script', async () => {
+    const config = await load(
+      await write(
+        "export default { meters: [{ external_id: process.env.POLAR_CONFIG_TEST_ID ?? 'a' }] }",
+        'polar.config.ts',
+      ),
+    )
+    expect(config.input).toEqual({ meters: [{ external_id: 'a' }] })
+    expect(config.issues.map((issue) => issue.code)).toEqual([
+      'reads_environment',
+    ])
+  })
+
   test('reports a default exported function that throws', async () => {
     const error = await failure(
       load(

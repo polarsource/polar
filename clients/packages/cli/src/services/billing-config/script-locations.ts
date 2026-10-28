@@ -1,8 +1,7 @@
 import type { SourceLocation } from '@/schemas/BillingConfig'
+import { escapeRegExp } from '@/utils/regexp'
 
 type Path = ReadonlyArray<string | number>
-
-const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 const positionOf = (source: string, offset: number) => {
   const before = source.slice(0, offset)
@@ -24,12 +23,15 @@ const span = (
 const PARAMETERS = /^\s*:\s*(?:async\s*)?\([^)]*\)\s*=>/
 
 const keyPattern = (key: string) =>
-  new RegExp(`(?<=^|[\\s{,[(])(['"\`]?)${escape(key)}\\1(?=\\s*[:,\\]])`, 'm')
+  new RegExp(
+    `(?<=^|[\\s{,[(])(['"\`]?)${escapeRegExp(key)}\\1(?=\\s*[:,\\]])`,
+    'm',
+  )
 
 const literalPattern = (value: unknown) =>
   typeof value === 'string'
-    ? new RegExp(`(['"\`])${escape(value)}\\1`)
-    : new RegExp(`(?<![\\w.])${escape(String(value))}(?![\\w.])`)
+    ? new RegExp(`(['"\`])${escapeRegExp(value)}\\1`)
+    : new RegExp(`(?<![\\w.])${escapeRegExp(String(value))}(?![\\w.])`)
 
 const FIELD_PATTERNS: Record<string, RegExp> = {
   name: /displayName|(?<![\w.])name(?=\s*:)/,

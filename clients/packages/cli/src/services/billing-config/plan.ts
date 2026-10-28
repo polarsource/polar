@@ -21,6 +21,10 @@ export const plan =
   (clients: Clients) =>
   (config: LoadedConfig, organization: ActiveOrganization) =>
     Effect.gen(function* () {
+      const local = config.issues
+      if (local.some((issue) => issue.severity === 'error')) {
+        return { entries: [], issues: local } satisfies PlanResult
+      }
       const response = yield* post(
         clients,
         '/config/plan',
@@ -32,7 +36,7 @@ export const plan =
           yield* HttpClientResponse.schemaBodyJson(PlanResponse)(response)
         return {
           entries: entries(body.changes, body.settings),
-          issues: issues(config, body.issues),
+          issues: [...local, ...issues(config, body.issues)],
         } satisfies PlanResult
       }
       if (response.status === 422) {
@@ -40,7 +44,7 @@ export const plan =
           yield* HttpClientResponse.schemaBodyJson(ValidationErrors)(response)
         return {
           entries: [],
-          issues: issues(config, detail),
+          issues: [...local, ...issues(config, detail)],
         } satisfies PlanResult
       }
       return yield* unexpected(

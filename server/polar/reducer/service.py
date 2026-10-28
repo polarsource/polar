@@ -491,7 +491,8 @@ class ReducerService:
         self, session: AsyncReadSession, redis: Redis, customer_meter: CustomerMeter
     ) -> None:
         """Logs the customer meter's consumed units next to the reducer's value
-        since the meter's latest reset."""
+        since the meter's latest reset, and its credited units next to the credit
+        reducer's unsealed total."""
         customer = customer_meter.customer
         with logfire.span(
             "Compare customer meter with reducer",
@@ -500,9 +501,27 @@ class ReducerService:
         ) as span:
             try:
                 async with session.begin_nested():
-                    reducer = await ReducerRepository.from_session(
-                        session
-                    ).get_by_meter_and_kind(customer_meter.meter_id, ReducerKind.usage)
+                    repository = ReducerRepository.from_session(session)
+                    credit = await repository.get_by_meter_and_kind(
+                        customer_meter.meter_id, ReducerKind.credit
+                    )
+                    if credit is not None:
+                        totals = await ReducerBucketRepository.from_session(
+                            session
+                        ).get_unsealed_totals(
+                            credit.organization_id, credit.id, [(customer.id, None)]
+                        )
+                        span.set_attribute(
+                            "legacy_credited", str(customer_meter.credited_units)
+                        )
+                        span.set_attribute("reducer_credited", str(totals.sum))
+                        span.set_attribute(
+                            "credited_match",
+                            math.isclose(totals.sum, customer_meter.credited_units),
+                        )
+                    reducer = await repository.get_by_meter_and_kind(
+                        customer_meter.meter_id, ReducerKind.usage
+                    )
                     if reducer is None or isinstance(
                         reducer.aggregation, UniqueAggregation
                     ):

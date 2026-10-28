@@ -202,16 +202,16 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         reducer_id: UUID,
         identities: Sequence[tuple[UUID | None, str | None]],
         *,
-        before: datetime,
+        before: datetime | None = None,
     ) -> Row[Any]:
-        """count, sum, min and max of the identities' usage not billed yet, in
-        buckets starting before `before`."""
+        """count, sum, min and max of the identities' unsealed buckets, starting
+        before `before` if given."""
         return await self._get_totals(
             organization_id,
             reducer_id,
             identities,
             ReducerBucket.sealed_at.is_(None),
-            ReducerBucket.bucket_start < before,
+            ReducerBucket.bucket_start < before if before is not None else true(),
         )
 
     async def get_totals_starting_within(

@@ -174,6 +174,76 @@ class TestOutpost:
         assert (internal["count"], internal["sum"]) == (0, 0.0)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
+    async def test_request_credit_usage(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+        customer_key: str,
+    ) -> None:
+        customer = customer_external_id
+        reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        current = get_reducer_bucket_start(utc_now())
+        for bucket_start, units, sealed in (
+            # Before the latest reset.
+            (current - timedelta(hours=3), 100, True),
+            # Older than the synced lookback.
+            (current - SYNCED_LOOKBACK - timedelta(hours=1), 10, False),
+            (current, 5, False),
+        ):
+            bucket_end = bucket_start + timedelta(minutes=5)
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    count=1,
+                    sum=Decimal(units),
+                    min=Decimal(units),
+                    max=Decimal(units),
+                    sealed_at=bucket_end if sealed else None,
+                )
+            )
+        customer_value = {
+            "customer_id": str(customer.id),
+            "external_customer_id": customer.external_id,
+        }[customer_key]
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "meter_usage",
+                    "payload": {
+                        customer_key: customer_value,
+                        "reducer_id": str(reducer.id),
+                    },
+                }
+            )
+            responses = [await websocket.receive_json(timeout=2) for _ in range(3)]
+
+        payloads = [response["payload"] for response in responses]
+        assert {(p["customer_id"], p["external_customer_id"]) for p in payloads} == {
+            (str(customer.id), None),
+            (None, customer.external_id),
+            (str(customer.id), customer.external_id),
+        }
+        for payload in payloads:
+            assert payload["reducer_id"] == str(reducer.id)
+            assert payload["cold_until"] == payload["version"]
+            assert (payload["count"], payload["sum"]) == (2, 15.0)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_meter_usage_unknown_customer(
         self,
         save_fixture: SaveFixture,

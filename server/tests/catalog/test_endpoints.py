@@ -225,3 +225,39 @@ class TestGet:
         assert json["products"] == [
             {"external_id": "pro", "product_id": str(product_second.id)}
         ]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_tied_published_at(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        now = utc_now()
+        first = Catalog(
+            organization=organization,
+            status=CatalogStatus.archived,
+            published_at=now,
+            created_at=now - timedelta(seconds=1),
+        )
+        second = Catalog(
+            organization=organization,
+            status=CatalogStatus.live,
+            published_at=now,
+            created_at=now,
+        )
+        await save_fixture(first)
+        await save_fixture(second)
+
+        response = await client.get(f"/v1/catalogs/{first.id}")
+
+        json = response.json()
+        assert json["previous_id"] is None
+        assert json["next_id"] == str(second.id)
+
+        response = await client.get(f"/v1/catalogs/{second.id}")
+
+        json = response.json()
+        assert json["previous_id"] == str(first.id)
+        assert json["next_id"] is None

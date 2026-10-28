@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, select, tuple_
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -51,8 +51,15 @@ class CatalogRepository(
             return None
         statement = (
             self._get_published_statement(catalog.organization_id)
-            .where(Catalog.published_at < catalog.published_at)
-            .order_by(Catalog.published_at.desc())
+            .where(
+                tuple_(Catalog.published_at, Catalog.created_at, Catalog.id)
+                < (catalog.published_at, catalog.created_at, catalog.id)
+            )
+            .order_by(
+                Catalog.published_at.desc(),
+                Catalog.created_at.desc(),
+                Catalog.id.desc(),
+            )
             .limit(1)
         )
         return await self.get_one_or_none(statement)
@@ -62,8 +69,15 @@ class CatalogRepository(
             return None
         statement = (
             self._get_published_statement(catalog.organization_id)
-            .where(Catalog.published_at > catalog.published_at)
-            .order_by(Catalog.published_at.asc())
+            .where(
+                tuple_(Catalog.published_at, Catalog.created_at, Catalog.id)
+                > (catalog.published_at, catalog.created_at, catalog.id)
+            )
+            .order_by(
+                Catalog.published_at.asc(),
+                Catalog.created_at.asc(),
+                Catalog.id.asc(),
+            )
             .limit(1)
         )
         return await self.get_one_or_none(statement)

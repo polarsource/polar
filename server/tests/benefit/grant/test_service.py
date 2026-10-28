@@ -590,6 +590,43 @@ class TestEnqueueBenefitsGrants:
         )
         group_mock.return_value.run.assert_called_once()
 
+    async def test_revoke_pending_action_required_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        customer: Customer,
+    ) -> None:
+        group_mock = mocker.patch("polar.benefit.grant.service.group")
+        broker_mock = mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        revoke_actor = MagicMock()
+        broker_mock.return_value.get_actor.side_effect = lambda name: (
+            revoke_actor if name == "benefit.revoke" else MagicMock()
+        )
+
+        order = await create_order(save_fixture, customer=customer, product=product)
+        grant = BenefitGrant(order=order, customer=customer, benefit=benefits[0])
+        grant.set_grant_failed(BenefitActionRequiredError("Connect GitHub"))
+        await save_fixture(grant)
+
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "revoke", customer, product, order=order
+        )
+
+        revoke_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            benefit_id=benefits[0].id,
+            member_id=None,
+            order_id=order.id,
+        )
+        group_mock.return_value.run.assert_called_once()
+
     async def test_revoke_no_grants_enqueues_nothing(
         self,
         mocker: MockerFixture,

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import Unpack
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import ColumnElement, Select, exists, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -18,14 +18,31 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
+    Dispute,
     Member,
     Product,
     ProductBenefit,
+    Refund,
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
+from polar.models.dispute import DisputeStatus
+from polar.models.refund import RefundStatus
 
 from .sorting import BenefitGrantSortProperty
+
+
+def _order_benefits_revoked_clause() -> ColumnElement[bool]:
+    revoking_refund = exists().where(
+        Refund.order_id == BenefitGrant.order_id,
+        Refund.revoke_benefits.is_(True),
+        Refund.status.in_([RefundStatus.pending, RefundStatus.succeeded]),
+    )
+    revoking_dispute = exists().where(
+        Dispute.order_id == BenefitGrant.order_id,
+        Dispute.status.in_(DisputeStatus.closed_statuses()),
+    )
+    return or_(revoking_refund, revoking_dispute)
 
 
 class BenefitGrantRepository(
@@ -222,6 +239,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
+                ~_order_benefits_revoked_clause(),
             )
         )
         return await self.get_all(statement)
@@ -243,6 +261,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
+                ~_order_benefits_revoked_clause(),
             )
         )
         return await self.get_all(statement)

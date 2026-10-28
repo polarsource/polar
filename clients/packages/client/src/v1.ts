@@ -17004,6 +17004,11 @@ export interface components {
       /** Benefits */
       benefits: string[]
       metadata: components['schemas']['MetadataOutputType']
+      /**
+       * Deprecated
+       * @description Set on products that are no longer in the catalog but still have customers, and left out otherwise.
+       */
+      deprecated?: true | null
     }
     /** ConfigPrune */
     ConfigPrune: {

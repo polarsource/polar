@@ -699,6 +699,14 @@ class ConfigProductRead(_ConfigRead):
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
     metadata: MetadataOutputType
+    deprecated: Literal[True] | None = Field(
+        default=None,
+        exclude_if=lambda deprecated: deprecated is None,
+        description=(
+            "Set on products that are no longer in the catalog but still have "
+            "customers, and left out otherwise."
+        ),
+    )
 
 
 class ConfigSettingsPaymentsRead(_ConfigRead):

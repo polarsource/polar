@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Collection, Iterable, Sequence
 from typing import Any, Protocol, cast
 from uuid import UUID
 
@@ -145,6 +145,8 @@ def _product_entry(
     product: Product,
     meter_external_ids: dict[str, str],
     benefit_external_ids: dict[str, str],
+    *,
+    deprecated: bool,
 ) -> ConfigProductRead | None:
     if any(
         isinstance(price, ProductPriceMeteredTiers) and price.tiers is None
@@ -172,7 +174,9 @@ def _product_entry(
             "metadata": product.user_metadata,
         }
     )
-    return ConfigProductRead.model_validate(_dump(config))
+    return ConfigProductRead.model_validate(
+        {**_dump(config), "deprecated": True if deprecated else None}
+    )
 
 
 def _settings(organization: Organization) -> ConfigSettingsRead:
@@ -185,6 +189,28 @@ def _settings(organization: Organization) -> ConfigSettingsRead:
         }
     )
     return ConfigSettingsRead.model_validate(_dump(settings))
+
+
+async def get_deprecated_products(
+    session: AsyncReadSession,
+    organization: Organization,
+    catalog_external_ids: Collection[str],
+) -> Sequence[Product]:
+    """Latest version of each product outside the catalog that customers still use.
+
+    Config keeps them as deprecated, so existing customers can still reference
+    them, until no customer is left.
+    """
+    repository = ProductRepository.from_session(session)
+    in_use = await repository.get_external_ids_in_use(organization.id, None)
+    return await repository.get_latest_by_external_ids(
+        organization.id, sorted(in_use - set(catalog_external_ids))
+    )
+
+
+async def _iterate[T](items: Iterable[T]) -> AsyncIterator[T]:
+    for item in items:
+        yield item
 
 
 async def export_config(
@@ -230,9 +256,27 @@ async def export_config(
         name=lambda product: product.name,
         archived=lambda product: product.is_archived,
         entry=lambda product: _product_entry(
-            product, meter_external_ids, benefit_external_ids
+            product, meter_external_ids, benefit_external_ids, deprecated=False
         ),
     )
+    deprecated_products, _ = await _export_section(
+        ConfigResource.product,
+        _iterate(
+            await get_deprecated_products(
+                session,
+                organization,
+                await product_repository.get_current_external_ids(organization.id),
+            )
+        ),
+        MAXIMUM_PRODUCTS - len(products),
+        skipped,
+        name=lambda product: product.name,
+        archived=lambda product: False,
+        entry=lambda product: _product_entry(
+            product, meter_external_ids, benefit_external_ids, deprecated=True
+        ),
+    )
+    products.extend(deprecated_products)
 
     return ConfigExport(
         config=ConfigExportDocument(

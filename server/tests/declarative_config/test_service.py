@@ -3370,6 +3370,60 @@ class TestExport:
         assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_exports_deprecated_products_while_in_use(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        [old_pro] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        subscription = await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer
+        )
+        for products in (
+            [MONTHLY_PRO_25, PACK_PRODUCT],
+            [{**MONTHLY_PRO_25, "deprecated": True}, PACK_PRODUCT],
+        ):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"products": products}),
+            )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        document = exported.config.model_dump(mode="json")
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate(document)
+        )
+
+        pack, pro = document["products"]
+        assert (pack["external_id"], pro["external_id"]) == ("pack", "pro")
+        assert "deprecated" not in pack
+        assert pro["deprecated"] is True
+        assert pro["prices"][0]["price_amount"] == 2500
+        assert (plan.issues, plan.removed, plan.catalog) == ([], [], None)
+        assert [(change.external_id, change.action) for change in plan.changes] == [
+            ("pack", ConfigAction.unchanged)
+        ]
+
+        subscription.status = SubscriptionStatus.canceled
+        await save_fixture(subscription)
+        again = await declarative_config_service.export(session, auth_subject, None)
+        assert [product.external_id for product in again.config.products] == ["pack"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_skips_what_config_cannot_express(
         self,
         save_fixture: SaveFixture,

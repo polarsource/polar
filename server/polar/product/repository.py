@@ -103,15 +103,17 @@ class ProductRepository(
         return await self.get_all(statement)
 
     async def get_external_ids_in_use(
-        self, organization_id: UUID, external_ids: Sequence[str]
+        self, organization_id: UUID, external_ids: Sequence[str] | None
     ) -> set[str]:
         """Return the external IDs that a billable subscription is on, or is
-        scheduled to change to, in any of their versions."""
-        if not external_ids:
+        scheduled to change to, in any of their versions. `None` checks them all."""
+        if external_ids is not None and not external_ids:
             return set()
         products = (
             Product.organization_id == organization_id,
-            Product.external_id.in_(external_ids),
+            Product.external_id.is_not(None)
+            if external_ids is None
+            else Product.external_id.in_(external_ids),
         )
         subscribed = (
             select(Product.external_id)
@@ -132,6 +134,34 @@ class ProductRepository(
         )
         result = await self.session.execute(union(subscribed, scheduled))
         return set(cast(Sequence[str], result.scalars().all()))
+
+    async def get_current_external_ids(self, organization_id: UUID) -> set[str]:
+        statement = select(Product.external_id).where(
+            Product.organization_id == organization_id,
+            Product.external_id.is_not(None),
+            Product.is_current,
+            ~Product.is_deleted,
+        )
+        result = await self.session.execute(statement)
+        return set(cast(Sequence[str], result.scalars().all()))
+
+    async def get_latest_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> Sequence[Product]:
+        """Return the most recent version of each product, current or not."""
+        if not external_ids:
+            return []
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id.in_(external_ids),
+            )
+            .distinct(Product.external_id)
+            .order_by(Product.external_id, Product.created_at.desc(), Product.id.desc())
+            .options(undefer(Product.external_id))
+        )
+        return await self.get_all(statement)
 
     def get_organization_statement(
         self, organization_id: UUID

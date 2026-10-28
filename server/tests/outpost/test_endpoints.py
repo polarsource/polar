@@ -25,6 +25,7 @@ from polar.models import (
     StagedEvent,
 )
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.outpost.schemas import to_epoch_microseconds
 from polar.outpost.service import SYNCED_LOOKBACK
 from polar.outpost.stream import publish
@@ -79,9 +80,12 @@ class TestOutpost:
         organization: Organization,
         meter: Meter,
     ) -> None:
-        reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[meter]
-        )
+        reducers = {
+            kind: await create_reducer(
+                save_fixture, organization=organization, meters=[meter], kind=kind
+            )
+            for kind in ReducerKind
+        }
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
             await websocket.receive_json()
@@ -89,13 +93,16 @@ class TestOutpost:
             response = await websocket.receive_json()
 
             assert response["type"] == "configuration"
-            [reducer_payload] = response["payload"]["reducers"]
-            assert reducer_payload["id"] == str(reducer.id)
-            assert reducer_payload["meter_ids"] == [str(meter.id)]
-            assert reducer_payload["filter"] == meter.filter.model_dump(mode="json")
-            assert reducer_payload["aggregation"] == meter.aggregation.model_dump(
-                mode="json"
-            )
+            payloads = response["payload"]["reducers"]
+            assert {payload["kind"]: payload["id"] for payload in payloads} == {
+                kind: str(reducer.id) for kind, reducer in reducers.items()
+            }
+            for reducer_payload in payloads:
+                assert reducer_payload["meter_ids"] == [str(meter.id)]
+                assert reducer_payload["filter"] == meter.filter.model_dump(mode="json")
+                assert reducer_payload["aggregation"] == meter.aggregation.model_dump(
+                    mode="json"
+                )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])

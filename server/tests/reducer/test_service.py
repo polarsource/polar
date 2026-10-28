@@ -28,6 +28,7 @@ from polar.models import (
     StagedEvent,
 )
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.bucket_repository import ReducerBucketRepository
@@ -1260,7 +1261,7 @@ class TestSeal:
 
 @pytest.mark.anyio
 class TestBill:
-    async def test_seals_then_bills_the_meters_reducers(
+    async def test_seals_then_bills_the_meters_usage_reducer(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -1271,6 +1272,12 @@ class TestBill:
     ) -> None:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
+        )
+        await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
         )
         seal = mocker.patch.object(reducer_service, "_seal_buckets")
         bill = mocker.patch.object(

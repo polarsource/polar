@@ -40499,6 +40499,17 @@ export interface components {
       /** Scopes */
       scopes: components['schemas']['Scope'][]
     }
+    /** UserUnavailable */
+    UserUnavailable: {
+      /**
+       * Error
+       * @example UserUnavailable
+       * @constant
+       */
+      error: 'UserUnavailable'
+      /** Detail */
+      detail: string
+    }
     /** UserUpdate */
     UserUpdate: {
       /** First Name */
@@ -44287,6 +44298,15 @@ export interface operations {
           'application/json': components['schemas']['OrganizationMember']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserUnavailable']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -47547,13 +47567,15 @@ export interface operations {
           'application/json': components['schemas']['AuthenticationSession']
         }
       }
-      /** @description Invalid or expired OTP */
+      /** @description Invalid or expired OTP, or account unavailable. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['UserUnavailable']
         }
       }
       /** @description Validation Error */

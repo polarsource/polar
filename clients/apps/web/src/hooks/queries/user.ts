@@ -7,20 +7,12 @@ import { defaultRetry } from './retry'
 export const usePersonalAccessTokens = () =>
   useQuery({
     queryKey: ['personalAccessTokens'],
-    queryFn: async () => {
-      const items: schemas['PersonalAccessToken'][] = []
-      for (let page = 1; ; page++) {
-        const result = await unwrap(
-          api.GET('/v1/personal_access_tokens/', {
-            params: { query: { page, limit: 100 } },
-          }),
-        )
-        items.push(...result.items)
-        if (page >= result.pagination.max_page) {
-          return { ...result, items }
-        }
-      }
-    },
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/personal_access_tokens/', {
+          params: { query: { limit: 100 } },
+        }),
+      ),
     retry: defaultRetry,
   })
 

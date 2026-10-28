@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock, call
 from zoneinfo import ZoneInfo
@@ -20,7 +21,7 @@ from polar.event.schemas import (
 )
 from polar.event.service import event as event_service
 from polar.event.sorting import EventNamesSortProperty
-from polar.event.system import SystemEvent
+from polar.event.system import SystemEvent, build_system_event
 from polar.event_type.repository import EventTypeRepository
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.tinybird.service import TinybirdEventTypeStats
@@ -45,6 +46,7 @@ from polar.models import (
     Organization,
     Product,
     Reducer,
+    ReducerBucket,
     StagedEvent,
     User,
     UserOrganization,
@@ -53,6 +55,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import CustomerCancellationReason
 from polar.models.user_organization import OrganizationRole
 from polar.order.service import order as order_service
@@ -63,6 +66,7 @@ from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
     get_reducer_bucket_start,
 )
+from polar.reducer.service import reducer as reducer_service
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.auth import AuthSubjectFixture
@@ -1575,6 +1579,40 @@ class TestIngest:
         assert len(events) == 1
         assert events[0].member_id is None
         assert events[0].external_member_id is None
+
+
+@pytest.mark.anyio
+class TestCreateEvent:
+    async def test_meter_credited_adds_to_the_credit_reducer(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.meter_credited,
+                customer,
+                organization,
+                {"meter_id": str(meter.id), "units": 10, "rollover": False},
+            ),
+        )
+
+        bucket = (
+            await session.scalars(
+                select(ReducerBucket)
+                .join(Reducer)
+                .where(Reducer.kind == ReducerKind.credit)
+            )
+        ).one()
+        assert bucket.customer_id == customer.id
+        assert bucket.external_customer_id is None
+        assert bucket.bucket_start <= event.timestamp < bucket.bucket_end
+        assert (bucket.count, bucket.sum) == (1, Decimal(10))
 
 
 @pytest.mark.anyio

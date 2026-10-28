@@ -47,7 +47,7 @@ const find = (source: string, pattern: RegExp, from: number, to: number) => {
     : { offset: from + match.index, length: match[0].length }
 }
 
-type Range = { start: number; end: number }
+export type Range = { start: number; end: number }
 
 const findAll = (source: string, pattern: RegExp, from: number) =>
   [...source.slice(from).matchAll(new RegExp(pattern.source, 'gm'))].map(
@@ -72,7 +72,7 @@ const sectionKey = (source: string, section: string) => {
   return own[columns.indexOf(Math.min(...columns))]
 }
 
-const sectionRange = (source: string, section: string): Range => {
+export const sectionRange = (source: string, section: string): Range => {
   const whole = { start: 0, end: source.length }
   const column = ({ offset }: { offset: number }) => columnOf(source, offset)
   const start = sectionKey(source, section)

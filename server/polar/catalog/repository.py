@@ -33,6 +33,14 @@ class CatalogRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def count_by_organization(self, organization_id: UUID) -> int:
+        """Count the organization's catalogs, soft-deleted ones included."""
+        return await self.count(
+            self.get_base_statement(include_deleted=True).where(
+                Catalog.organization_id == organization_id
+            )
+        )
+
     async def get_version_hashes(self, ids: Sequence[UUID]) -> dict[UUID, str | None]:
         statement = select(Catalog.id, Catalog.version_hash).where(Catalog.id.in_(ids))
         result = await self.session.execute(statement)

@@ -77,6 +77,24 @@ export const PlanResponse = Schema.Struct({
   issues: Schema.Array(ServerError),
 })
 
+export const PruneEntry = Schema.Struct({
+  resource: ConfigResource,
+  external_id: Schema.String,
+  in_use: Schema.Boolean,
+  referenced_by: Schema.Array(Schema.String),
+})
+export type PruneEntry = typeof PruneEntry.Type
+
+export const PruneResponse = Schema.Struct({
+  entries: Schema.Array(PruneEntry),
+})
+
+export const PruneOutput = Schema.Struct({
+  file: Schema.String,
+  entries: Schema.Array(PruneEntry),
+  removed: Schema.Boolean,
+})
+
 export const SourceLocation = Schema.Struct({
   line: Schema.Finite,
   column: Schema.Finite,

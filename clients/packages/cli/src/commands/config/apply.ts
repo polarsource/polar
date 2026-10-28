@@ -1,11 +1,15 @@
 import { Duration, Effect, Option, Stdio } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import { changeCount, tally } from '@/utils/billing-config/entries'
-import { formatProblems, plural } from '@/utils/billing-config/problems'
+import { plural } from '@/utils/billing-config/problems'
 import {
-  changes,
   errors,
+  fixErrors,
   found,
+  next,
+  nextOpen,
+  overview,
+  sections,
   target,
   unchanged,
 } from '@/utils/billing-config/review'
@@ -18,6 +22,7 @@ import {
   type ApplyResult,
   BillingConfigError,
   type LoadedConfig,
+  type PlanResult,
   ApplyOutput,
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
@@ -42,41 +47,72 @@ const render = (
   result: ApplyResult,
 ) =>
   result.status === 'rejected'
-    ? [
+    ? [ui.blank]
+    : [
+        ...(unchanged(result.entries) ? [ui.blank] : []),
+        applied(config, organization, result.entries),
         ui.blank,
-        formatProblems(config, result.issues),
-        ui.blank,
-        `${ui.INDENT}Found ${plural(result.issues.length, 'error')}.`,
       ]
-    : unchanged(result.entries)
-      ? [ui.blank, applied(config, organization, result.entries)]
-      : [applied(config, organization, result.entries)]
 
 const interactive = Effect.gen(function* () {
   const stdio = yield* Stdio.Stdio
   return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
 })
 
+const keypress = (frame: string) =>
+  Prompt.Custom<boolean, boolean>(false, {
+    render: (_, action) =>
+      Effect.succeed(
+        action._tag === 'NextFrame'
+          ? frame
+          : action._tag === 'Submit'
+            ? `${frame}\n`
+            : '',
+      ),
+    process: (input) =>
+      Effect.succeed(
+        input.key.name === 'y'
+          ? { _tag: 'Submit', value: true }
+          : input.key.name === 'n' || input.key.name === 'escape'
+            ? { _tag: 'Submit', value: false }
+            : { _tag: 'Beep' },
+      ),
+    clear: () => Effect.succeed(ui.clearLines(frame.split('\n').length)),
+  })
+
 const approve = (
+  config: LoadedConfig,
   organization: ActiveOrganization,
+  plan: PlanResult,
   json: boolean,
   confirmed: boolean,
   say: Say['say'],
 ) =>
   Effect.gen(function* () {
+    yield* say(overview(config, organization, plan))
     if (confirmed) return true
     if (json || !(yield* interactive)) {
+      yield* say(
+        next(
+          `${ui.INDENT}Review the plan, then run ${ui.command('polar config apply --confirm')}.`,
+        ),
+      )
       return yield* new BillingConfigError({
         message: `Confirmation needed to apply to ${target(organization)}`,
         hint: 'Pass --confirm to apply without asking, after reviewing polar config plan.',
       })
     }
-    yield* say([ui.blank])
+    yield* say(nextOpen())
     return yield* Prompt.run(
-      Prompt.Confirm({
-        message: `Apply these changes to ${target(organization)}?`,
-      }),
-    ).pipe(Effect.orElseSucceed(() => false))
+      keypress(
+        [
+          ...ui.boxRows(
+            `${ui.INDENT}${ui.green('y')} to apply  ${ui.red('n')} to cancel`,
+          ),
+          ui.boxBottom(),
+        ].join('\n'),
+      ),
+    ).pipe(Effect.catch(() => say([ui.blank]).pipe(Effect.as(false))))
   })
 
 export const apply = Command.make('apply', { file, org, confirmed }).pipe(
@@ -117,6 +153,7 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
         return yield* withProgress(
           (progress) =>
             Effect.gen(function* () {
+              yield* progress.open('Preflight')
               yield* progress.start('Reading')
               const config = yield* billing.load(Option.getOrUndefined(file))
               yield* progress.finish(config.file)
@@ -133,7 +170,13 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
                 }),
               )
               yield* progress.finish(milliseconds(planned))
+              yield* progress.close
               if (errors(plan.issues) > 0) {
+                yield* say([
+                  ...sections(config, plan),
+                  ...overview(config, organization, plan),
+                  ...next(fixErrors(plan.issues)),
+                ])
                 return {
                   config,
                   organization,
@@ -142,7 +185,7 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
               }
               if (unchanged(plan.entries)) {
                 if (plan.issues.length > 0) {
-                  yield* say([ui.blank, formatProblems(config, plan.issues)])
+                  yield* say(sections(config, plan))
                 }
                 return {
                   config,
@@ -154,13 +197,22 @@ export const apply = Command.make('apply', { file, org, confirmed }).pipe(
                   } as const,
                 }
               }
-              yield* say(changes(config, organization, plan))
-              if (!(yield* approve(organization, json, confirmed, say))) {
+              yield* say(sections(config, plan))
+              if (
+                !(yield* approve(
+                  config,
+                  organization,
+                  plan,
+                  json,
+                  confirmed,
+                  say,
+                ))
+              ) {
                 return yield* new BillingConfigError({
                   message: 'Apply cancelled, nothing changed',
                 })
               }
-              yield* say([ui.blank])
+              yield* progress.open('Apply')
               yield* progress.start(
                 `Applying ${plural(changeCount(plan.entries), 'change')}`,
               )

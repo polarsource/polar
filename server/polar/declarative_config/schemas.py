@@ -19,7 +19,7 @@ from polar.benefit.strategies.base.schemas import (
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
-from polar.kit.schemas import Int32, Schema, SetSchemaReference
+from polar.kit.schemas import IDSchema, Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
@@ -357,7 +357,10 @@ class Config(Schema):
         max_length=256,
         description=(
             "Name of the catalog version this apply publishes, if it publishes one. "
-            "It doesn't change the version hash."
+            "Defaults to `v{n}`, n being the version's position in the "
+            "organization's catalog history. Numbers never go backwards: "
+            "applying an older config again publishes a new version with the "
+            "next number."
         ),
     )
 
@@ -458,11 +461,30 @@ class ConfigSettingsResult(Schema):
     action: ConfigAction = Field(description="What applying the config does.")
 
 
+class ConfigCatalog(IDSchema):
+    name: str | None = Field(description="Name of the catalog.")
+
+
 class ConfigCatalogChange(Schema):
-    before: str | None = Field(
-        description="Version hash of the live catalog before applying."
+    before: ConfigCatalog | None = Field(
+        description="The live catalog before applying. `None` if no catalog exists to replace."
     )
-    after: str = Field(description="Version hash of the live catalog after applying.")
+    after: ConfigCatalog = Field(description="The catalog applying published.")
+
+
+class ConfigCatalogPlan(Schema):
+    before: ConfigCatalog | None = Field(
+        description=(
+            "The live catalog that applying replaces. "
+            "`None` if the organization has no catalog yet."
+        )
+    )
+    name: str = Field(
+        description=(
+            "Name of the catalog applying publishes. A default `v{n}` name moves "
+            "to the next number if another apply publishes first."
+        )
+    )
 
 
 class ConfigApplyResult(Schema):
@@ -498,7 +520,7 @@ class ConfigSettingsChange(ConfigSettingsResult):
 
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
-    catalog: ConfigCatalogChange | None = Field(
+    catalog: ConfigCatalogPlan | None = Field(
         description="The catalog that applying publishes, if any."
     )
     settings: ConfigSettingsChange | None = Field(

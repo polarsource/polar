@@ -3,11 +3,13 @@
 import { useMemo } from 'react'
 
 import {
+  NativeSelect,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  useCoarsePointer,
 } from './Select'
 
 const CountryPicker = ({
@@ -48,6 +50,28 @@ const CountryPicker = ({
       }))
       .sort((a, b) => a.name.localeCompare(b.name, locale))
   }, [allowedCountries, locale])
+  const coarsePointer = useCoarsePointer()
+
+  if (coarsePointer) {
+    return (
+      <NativeSelect
+        className={className}
+        data-testid={testId}
+        name={name}
+        autoComplete={autoComplete}
+        disabled={disabled}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {countryList.map(({ code, name }) => (
+          <option key={code} value={code}>
+            {name}
+          </option>
+        ))}
+      </NativeSelect>
+    )
+  }
 
   return (
     <Select

@@ -15,12 +15,12 @@ import {
   TooltipTrigger,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, Copy, HistoryRounded } from '@polar-sh/orbit/icons'
+import { HistoryRounded } from '@polar-sh/orbit/icons'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import { useSearchParams } from 'next/navigation'
 import { parseAsInteger, useQueryState } from 'nuqs'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 const PAGE_SIZE = 20
 
@@ -28,50 +28,6 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 const publishedAt = (catalog: schemas['Catalog']) =>
   catalog.published_at ?? catalog.created_at
-
-const CopyHashButton = ({ hash }: { hash: string }) => {
-  const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (!copied) return
-    const timeout = setTimeout(() => setCopied(false), 1200)
-    return () => clearTimeout(timeout)
-  }, [copied])
-
-  return (
-    <button
-      type="button"
-      aria-label={copied ? 'Copied' : 'Copy version hash'}
-      className="group/copy"
-      onClick={() =>
-        navigator.clipboard.writeText(hash).then(() => setCopied(true))
-      }
-    >
-      <Box
-        as="span"
-        display="flex"
-        alignItems="center"
-        columnGap="xs"
-        color={{ base: 'text-tertiary', hover: 'text-primary' }}
-        transitionProperty="colors"
-        transitionDuration="fast"
-      >
-        <Text as="span" variant="body" color="inherit" monospace>
-          {hash.slice(0, 7)}
-        </Text>
-        <span
-          className={
-            copied
-              ? 'flex'
-              : 'flex opacity-0 transition-opacity group-hover/row:opacity-100 group-focus-visible/copy:opacity-100'
-          }
-        >
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-        </span>
-      </Box>
-    </button>
-  )
-}
 
 const CurrentBadge = () => (
   <Box
@@ -113,16 +69,11 @@ const PublishedAt = ({ catalog }: { catalog: schemas['Catalog'] }) => {
 const VersionRow = ({ catalog }: { catalog: schemas['Catalog'] }) => (
   <ListItem className="px-6 py-5">
     <Grid
-      templateColumns="88px minmax(0, 1fr) auto 130px"
+      templateColumns="minmax(0, 1fr) auto 130px"
       columnGap="xl"
       alignItems="center"
       width="100%"
     >
-      <Box>
-        {catalog.version_hash ? (
-          <CopyHashButton hash={catalog.version_hash} />
-        ) : null}
-      </Box>
       <Text variant="body" color={catalog.name ? 'default' : 'muted'} truncate>
         {catalog.name ?? 'Untitled'}
       </Text>

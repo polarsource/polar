@@ -1,7 +1,7 @@
 """Add reducer kind
 
 Revision ID: 046b436207ff
-Revises: 3ea325a76aee
+Revises: a78f3131b283
 Create Date: 2026-10-28 10:51:22.272059
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "046b436207ff"
-down_revision = "3ea325a76aee"
+down_revision = "a78f3131b283"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

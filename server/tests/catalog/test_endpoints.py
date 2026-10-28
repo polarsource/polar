@@ -27,6 +27,7 @@ async def catalogs(
         version_hash="b" * 64,
         status=CatalogStatus.live,
         published_at=now,
+        parent=archived,
     )
     draft = Catalog(organization=organization, status=CatalogStatus.draft)
     for catalog in (archived, live, draft):
@@ -77,12 +78,24 @@ class TestList:
         json = response.json()
         assert json["pagination"]["total_count"] == 3
         assert [
-            (item["id"], item["name"], item["status"], item["version_hash"])
+            (
+                item["id"],
+                item["name"],
+                item["status"],
+                item["version_hash"],
+                item["parent_id"],
+            )
             for item in json["items"]
         ] == [
-            (str(draft.id), None, "draft", None),
-            (str(live.id), "Spring pricing", "live", live.version_hash),
-            (str(archived.id), None, "archived", archived.version_hash),
+            (str(draft.id), None, "draft", None, None),
+            (
+                str(live.id),
+                "Spring pricing",
+                "live",
+                live.version_hash,
+                str(archived.id),
+            ),
+            (str(archived.id), None, "archived", archived.version_hash, None),
         ]
 
     @pytest.mark.auth

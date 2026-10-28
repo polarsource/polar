@@ -181,6 +181,7 @@ class CatalogService:
                 organization=organization,
                 name=name,
                 version_hash=version_hash,
+                parent=live,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
             ),

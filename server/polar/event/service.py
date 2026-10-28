@@ -1084,7 +1084,7 @@ class EventService:
         ):
             assert event.customer_id is not None
             customer = await CustomerRepository.from_session(session).get_by_id(
-                event.customer_id
+                event.customer_id, include_deleted=True
             )
             assert customer is not None
             await reducer_service.seal_credits(

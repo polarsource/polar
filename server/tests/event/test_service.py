@@ -1663,6 +1663,29 @@ class TestCreateEvent:
         assert sum(b.sum for b in buckets if b.sealed_at is not None) == 10
         assert sum(b.sum for b in buckets if b.sealed_at is None) == 4
 
+    async def test_meter_reset_of_a_deleted_customer(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        customer.set_deleted_at()
+        await session.flush()
+
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.meter_reset,
+                customer,
+                organization,
+                {"meter_id": str(meter.id)},
+            ),
+        )
+
+        assert event.id is not None
+
 
 @pytest.mark.anyio
 class TestMoveStagedEvents:

@@ -22,7 +22,17 @@ def upgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration.
     # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
     op.execute("SET LOCAL lock_timeout = '5s'")
-    op.add_column("catalogs", sa.Column("parent_id", sa.Uuid(), nullable=True))
+    op.add_column(
+        "catalogs",
+        sa.Column("parent_id", sa.Uuid(), nullable=True),
+        if_not_exists=True,
+    )
+    op.drop_constraint(
+        op.f("catalogs_parent_id_fkey"),
+        "catalogs",
+        type_="foreignkey",
+        if_exists=True,
+    )
     op.create_foreign_key(
         op.f("catalogs_parent_id_fkey"),
         "catalogs",

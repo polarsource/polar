@@ -10,6 +10,7 @@ from typing import Any, Self
 import dramatiq
 import structlog
 from dramatiq.common import dq_name
+from redis.exceptions import RedisError
 
 from polar.config import settings
 from polar.logging import CorrelationID, Logger
@@ -93,18 +94,13 @@ class JobQueueManager:
         self._published.append((channel, message))
 
     async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
-        if self._published:
-            async with redis.pipeline(transaction=False) as pipeline:
-                for channel, payload in self._published:
-                    pipeline.publish(channel, payload)
-                await pipeline.execute()
-
         for chunk in itertools.batched(
             self._ingested_events, EVENT_INGESTED_CHUNK_SIZE
         ):
             self.enqueue_job("event.ingested", list(chunk))
 
         if not self._enqueued_jobs:
+            await self._publish(redis)
             self.reset()
             return
 
@@ -197,7 +193,21 @@ class JobQueueManager:
                 )
             await _sqs.send_jobs(prepared_sqs_jobs)
 
+        await self._publish(redis)
         self.reset()
+
+    async def _publish(self, redis: Redis) -> None:
+        """Publish last and never raise: a lost message must not drop or replay the
+        jobs of a committed transaction."""
+        if not self._published:
+            return
+        try:
+            async with redis.pipeline(transaction=False) as pipeline:
+                for channel, payload in self._published:
+                    pipeline.publish(channel, payload)
+                await pipeline.execute()
+        except RedisError:
+            log.warning("polar.worker.publish_failed", count=len(self._published))
 
     async def _batch_hset_messages(
         self,

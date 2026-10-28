@@ -16226,7 +16226,7 @@ export interface components {
       benefits?: components['schemas']['ConfigBenefit'][]
       /**
        * Products
-       * @description Products to create or update, matched by `external_id`. Deprecated products are never created or updated. They, and live products that aren't listed, are left out of the next catalog. A product that isn't listed but still has active subscriptions is an error: mark it `deprecated` instead. Products that pulling the config doesn't export, and all products when `products` is omitted, are left untouched.
+       * @description Products to create or update, matched by `external_id`. Deprecated products are never created or updated. They, and live products that aren't listed, are left out of the next catalog. A product that isn't listed but still has a billable subscription, or a scheduled subscription change to it, is an error: mark it `deprecated` instead. Products that pulling the config doesn't export, and all products when `products` is omitted, are left untouched.
        */
       products?: components['schemas']['ConfigProduct'][]
       /**

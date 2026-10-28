@@ -63,9 +63,9 @@ async def products(
             type=ConfigIssueType.removed_in_use,
             loc=["body", "products"],
             msg=(
-                f'Product "{external_id}" still has active subscriptions, '
-                "so it can't be removed. Keep it in the config and mark it "
-                "deprecated instead."
+                f'Product "{external_id}" still has subscriptions, or a '
+                "scheduled subscription change to it, so it can't be removed. "
+                "Keep it in the config and mark it deprecated instead."
             ),
             input=external_id,
         )

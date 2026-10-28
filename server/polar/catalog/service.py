@@ -205,11 +205,9 @@ class CatalogService:
             }
         )
         for external_id in removed:
-            removed_product = members.pop(external_id, None)
-            if removed_product is not None:
-                await product_repository.update(
-                    removed_product, update_dict={"is_current": False}
-                )
+            await product_repository.update(
+                members.pop(external_id), update_dict={"is_current": False}
+            )
         if live is not None:
             await repository.update(
                 live, update_dict={"status": CatalogStatus.archived}, flush=True

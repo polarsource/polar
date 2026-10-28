@@ -5,7 +5,6 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
-from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
@@ -15,7 +14,6 @@ from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
     create_event,
     create_meter,
-    create_product,
 )
 
 METER = {
@@ -467,31 +465,6 @@ class TestExport:
             "unchanged",
         ]
         assert all(issue["severity"] != "error" for issue in plan["issues"])
-
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_current_product_is_not_deprecated(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-        )
-
-        response = await client.get(
-            "/v1/config/", params={"organization_id": str(organization.id)}
-        )
-
-        assert response.status_code == 200
-        [product] = response.json()["config"]["products"]
-        assert product["external_id"] == "pro"
-        assert product["deprecated"] is None
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

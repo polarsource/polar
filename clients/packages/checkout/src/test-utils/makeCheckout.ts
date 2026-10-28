@@ -198,7 +198,7 @@ const defaults: ProductCheckoutPublic = {
     allow_customer_updates: true,
   },
   attached_custom_fields: null,
-  payment_method_types: null,
+  payment_method_types: ['card'],
 
   // ProductCheckoutMixin fields
   product: {

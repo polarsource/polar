@@ -259,6 +259,7 @@ jobs:
           platforms: linux/amd64
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
+            TAILSCALE_VERSION=${{ vars.TAILSCALE_VERSION }}
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 
@@ -332,6 +333,7 @@ jobs:
           sbom: false
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
+            TAILSCALE_VERSION=${{ vars.TAILSCALE_VERSION }}
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 

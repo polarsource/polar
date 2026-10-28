@@ -48,12 +48,6 @@ variable "advertise_exit_node" {
   default     = false
 }
 
-variable "tailscale_version" {
-  description = "Tailscale version to install"
-  type        = string
-  default     = "1.104.2"
-}
-
 variable "plan" {
   description = "Render service plan"
   type        = string

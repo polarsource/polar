@@ -576,16 +576,12 @@ export const GenericChart = <T extends Record<string, unknown>>({
   // Injected via cloneElement so chartBase stays stable on hover.
   const chartContent = useMemo(() => {
     if (!chartBase) return null
-    const activeX =
-      activeCursorIndex != null
-        ? (data[activeCursorIndex]?.[xAxisKey as string] as
-            | string
-            | number
-            | undefined)
-        : undefined
-    if (activeX === undefined) return chartBase
+    const activeRow =
+      activeCursorIndex != null ? data[activeCursorIndex] : undefined
+    if (!activeRow) return chartBase
+    const activeX = activeRow[xAxisKey as string] as string | number
     const activeMarkerColor = isDark ? '#A1A1AA' : '#52525B'
-    const overlays = markers?.some((m) => m.x === activeX) ? (
+    const cursorLine = markers?.some((m) => m.x === activeX) ? (
       <ReferenceLine
         key="active-marker"
         x={activeX}
@@ -598,7 +594,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
         x={activeX}
         stroke={isDark ? '#27282A' : '#E5E7EB'}
         strokeWidth={1}
-        // Below series lines and catalog markers (both 400), above areas (100).
+        // Below series lines and markers (both 400), above areas (100).
         zIndex={350}
       />
     )
@@ -611,7 +607,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
       ...(Array.isArray(originalChildren)
         ? originalChildren
         : [originalChildren]),
-      overlays,
+      cursorLine,
     )
   }, [chartBase, activeCursorIndex, data, xAxisKey, isDark, markers])
 

@@ -9,7 +9,14 @@ from pytest_codspeed import BenchmarkFixture
 
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import Event, Meter, Organization, Reducer, ReducerBucket
+from polar.models import (
+    CustomerMeter,
+    Event,
+    Meter,
+    Organization,
+    Reducer,
+    ReducerBucket,
+)
 from polar.models.event import EventSource
 from polar.outpost.schemas import (
     ConfirmedOutgoingMessage,
@@ -19,7 +26,12 @@ from polar.outpost.schemas import (
 from polar.outpost.service import outpost as outpost_service
 from polar.reducer.service import REDUCER_BUCKET_SIZE, get_reducer_bucket_start
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import METER_TEST_EVENT, create_meter, create_reducer
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_customer,
+    create_meter,
+    create_reducer,
+)
 
 from .conftest import Run
 
@@ -41,6 +53,19 @@ def test_confirm_pending(
         meter = await create_meter(save_fixture, organization=organization)
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
+        )
+        # The customer exists, so the snapshot also reads its credits.
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="customer-0"
+        )
+        session.add(
+            CustomerMeter(
+                customer=customer,
+                meter=meter,
+                consumed_units=Decimal(1000),
+                credited_units=2000,
+                balance=Decimal(1000),
+            )
         )
         session.add(
             ReducerBucket(
@@ -98,4 +123,6 @@ def test_confirm_pending(
     message = confirm()
     assert isinstance(message, ConfirmedOutgoingMessage)
     assert len(message.payload.ids) == ids
+    assert message.payload.snapshot.customer_exists
+    assert message.payload.snapshot.credited_units == 2000
     benchmark(confirm)

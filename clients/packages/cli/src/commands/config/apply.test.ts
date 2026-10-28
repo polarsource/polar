@@ -140,6 +140,7 @@ const run = async (
           plan: () => Effect.succeed(plan),
           apply: applied,
           pull: () => Effect.die('unused'),
+          prune: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),

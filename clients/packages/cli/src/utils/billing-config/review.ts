@@ -25,7 +25,7 @@ export const unchanged = (entries: ReadonlyArray<AppliedEntry>) =>
 export const target = (organization: ActiveOrganization) =>
   `${organization.name} (${organization.environment})`
 
-const NOUNS = [
+export const NOUNS = [
   ['meters', 'meter'],
   ['benefits', 'benefit'],
   ['products', 'product'],
@@ -58,7 +58,7 @@ const gutter = (text: string) =>
     )
     .join('\n')
 
-const box = (title: string, text: string) =>
+export const box = (title: string, text: string) =>
   [
     `${ui.INDENT}${ui.dim('╭─')} ${title}`,
     `${ui.INDENT}${ui.dim('│')}`,

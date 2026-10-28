@@ -152,6 +152,26 @@ class ReducerService:
                 at=at.isoformat(),
             )
 
+    async def add_credit(self, session: AsyncSession, event: Event) -> None:
+        """Adds a `meter.credited` event to its meter's credit reducer."""
+        meter_id = UUID(event.user_metadata["meter_id"])
+        try:
+            async with session.begin_nested():
+                reducer = await ReducerRepository.from_session(
+                    session
+                ).get_by_meter_and_kind(meter_id, ReducerKind.credit)
+                if reducer is None:
+                    return
+                await self._add_to_closed_buckets(
+                    session, _reduce_events_to_bucket_contributions([reducer], [event])
+                )
+        except Exception:
+            log.exception(
+                "Failed to add credit to reducer buckets",
+                event_id=event.id,
+                meter_id=meter_id,
+            )
+
     async def bill(
         self,
         session: AsyncSession,

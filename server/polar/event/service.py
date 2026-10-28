@@ -1077,6 +1077,8 @@ class EventService:
         event = await repository.create(event, flush=True)
         # Temporarily
         await self._create_meter_events(session, [event])
+        if event.is_meter_credit:
+            await reducer_service.add_credit(session, event)
 
         enqueue_events(event.id)
 

@@ -99,8 +99,7 @@ class UserService:
             if user is None:
                 raise
             if user.deleted_at is not None or user.blocked_at is not None:
-                # `from None` keeps the IntegrityError, whose message contains
-                # the email, out of the traceback sent to Logfire and Sentry.
+                # We're using from None because the IntegrityError contains the user's email which leaks into logs
                 raise UserUnavailable() from None
             log.info("user.get_by_email_or_create.concurrent_creation", user_id=user.id)
             return (user, False)

@@ -3021,7 +3021,7 @@ requires-dist = [
     { name = "fastapi", specifier = "==0.143.0" },
     { name = "firecrawl-py", specifier = ">=4.31.0" },
     { name = "fpdf2", specifier = ">=2.8.3" },
-    { name = "genai-prices", specifier = ">=0.0.67" },
+    { name = "genai-prices", specifier = ">=0.1.13" },
     { name = "githubkit", specifier = "==0.16.1" },
     { name = "google-auth", extras = ["requests"], specifier = ">=2.38.0" },
     { name = "greenlet", specifier = ">=3.5.5" },

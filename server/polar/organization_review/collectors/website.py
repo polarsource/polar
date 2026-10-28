@@ -90,7 +90,9 @@ class WebsiteDeps:
 @functools.cache
 def _get_website_agent() -> tuple[Agent[WebsiteDeps, str], str, str]:
     """Build the agent lazily so importing this module doesn't touch gateway config."""
-    model_instance, model_provider, model_name = settings.get_pydantic_gateway_model()
+    model_instance, model_provider, model_name = settings.get_pydantic_gateway_model(
+        settings.PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL
+    )
     agent: Agent[WebsiteDeps, str] = Agent(
         model_instance,
         output_type=str,

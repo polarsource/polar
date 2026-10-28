@@ -424,6 +424,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             statement = statement.where(Event.timestamp < cutoff)
         return await self.get_one_or_none(statement)
 
+    async def get_meter_credit_timestamps(
+        self, customer: Customer, meter_id: UUID, *, since: datetime | None
+    ) -> Sequence[datetime]:
+        statement = select(Event.timestamp).where(
+            Event.organization_id == customer.organization_id,
+            Event.customer_id == customer.id,
+            Event.is_meter_credit,
+            Event.user_metadata["meter_id"].as_string() == str(meter_id),
+        )
+        if since is not None:
+            statement = statement.where(Event.timestamp >= since)
+        return (await self.session.scalars(statement)).all()
+
     async def has_meter_reset_ingested_after(
         self, customer: Customer, meter_id: UUID, ingested_after: datetime
     ) -> bool:

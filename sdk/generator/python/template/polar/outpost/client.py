@@ -23,7 +23,7 @@ from httpx_ws import (
 )
 from opentelemetry import context as otel_context
 from opentelemetry import trace
-from opentelemetry.metrics import Counter, Histogram
+from opentelemetry.metrics import Counter, Histogram, _Gauge
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, StatusCode
@@ -411,6 +411,8 @@ class Outpost:
         self._ingest_duration: Histogram | None = None
         self._ingest_buckets: Counter | None = None
         self._read_duration: Histogram | None = None
+        self._redis_memory: _Gauge | None = None
+        self._redis_keys: _Gauge | None = None
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
@@ -463,6 +465,8 @@ class Outpost:
             self._read_duration = meter.create_histogram(
                 "outpost.read.duration", unit="s"
             )
+            self._redis_memory = meter.create_gauge("outpost.redis.memory", unit="By")
+            self._redis_keys = meter.create_gauge("outpost.redis.keys")
         try:
             with self._span("outpost.redis.connect"):
                 self._redis = await self._stack.enter_async_context(
@@ -881,6 +885,8 @@ class Outpost:
         self._ingest_duration = None
         self._ingest_buckets = None
         self._read_duration = None
+        self._redis_memory = None
+        self._redis_keys = None
         with anyio.CancelScope(shield=True):
             if tracer_provider is not None:
                 await anyio.to_thread.run_sync(tracer_provider.shutdown)
@@ -999,6 +1005,24 @@ class Outpost:
                 local.state = await self._load_state(customer)
                 local.notify()
 
+    async def _report_redis_size(self) -> None:
+        """Includes whatever else the merchant keeps in that Redis."""
+        redis, memory_gauge, keys_gauge = (
+            self._redis,
+            self._redis_memory,
+            self._redis_keys,
+        )
+        if redis is None or memory_gauge is None or keys_gauge is None:
+            return
+        try:
+            memory = await redis.info("memory")
+            keys = await redis.dbsize()
+        except RedisError:
+            # A Redis that refuses INFO or DBSIZE reports nothing.
+            return
+        memory_gauge.set(memory["used_memory"])
+        keys_gauge.set(keys)
+
     async def _listen_redis(
         self,
         *,
@@ -1031,6 +1055,8 @@ class Outpost:
                         await self._receive_redis(message["data"])
                     if anyio.current_time() >= next_refresh:
                         self._report_sync()
+                        assert self._tasks is not None
+                        self._tasks.start_soon(self._report_redis_size)
                         await self._refresh_states()
                         next_refresh = anyio.current_time() + SYNC_INTERVAL
 

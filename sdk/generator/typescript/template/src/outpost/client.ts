@@ -25,6 +25,7 @@ import {
   reduce,
   withMatchers,
   getBucketStart,
+  BUCKET_SIZE,
   type Aggregation,
   type Reducer,
   type ReducerMatchers,
@@ -101,7 +102,11 @@ interface Confirmation {
   snapshot: Snapshot;
   customer: string;
   identity: string;
+  started: number;
+  age: number;
+  superseded: boolean;
   awaited: number;
+  messages: number;
   asked: number;
   confirmed: Map<number, string[]>;
   timer?: ReturnType<typeof setTimeout>;
@@ -1122,6 +1127,7 @@ export class Outpost {
     customer: string,
     snapshot: Snapshot,
   ): Promise<boolean> {
+    const started = performance.now();
     const key = `${identity}:${snapshot.meter_id}`;
     const superseded = this.confirmations.get(key);
     if (superseded) {
@@ -1138,7 +1144,12 @@ export class Outpost {
       snapshot,
       customer,
       identity,
+      started,
+      // Seconds since the oldest bucket asked ended.
+      age: (Date.now() * 1_000 - Math.min(...sealed) - BUCKET_SIZE) / 1_000_000,
+      superseded: superseded !== undefined,
       awaited: 0,
+      messages: 0,
       asked: 0,
       confirmed: new Map(),
     };
@@ -1164,6 +1175,7 @@ export class Outpost {
           return false;
         }
         confirmation.awaited += 1;
+        confirmation.messages += 1;
         confirmation.asked += batch.length;
       }
     }
@@ -1198,6 +1210,7 @@ export class Outpost {
     confirmation?: Confirmation,
     answered = false,
   ): Promise<void> {
+    const confirmDuration = confirmation && (performance.now() - confirmation.started) / 1_000;
     const key = `${KEY_VERSION}:state:${identity}`;
     const snapshotArguments: (string | number)[] = [
       identity,
@@ -1247,6 +1260,10 @@ export class Outpost {
             "outpost.pending.asked": confirmation.asked,
             "outpost.pending.confirmed": confirmed.reduce((sum, [, ids]) => sum + ids.length, 0),
             "outpost.pending.answered": answered,
+            "outpost.pending.messages": confirmation.messages,
+            "outpost.pending.age": confirmation.age,
+            "outpost.pending.superseded": confirmation.superseded,
+            "outpost.confirm.duration": confirmDuration,
           });
         }
         await this.receiveState(identity, decodeState(state));

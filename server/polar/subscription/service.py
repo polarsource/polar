@@ -1728,6 +1728,7 @@ class SubscriptionService:
                     product_id=update.product_id,
                     proration_behavior=update.proration_behavior,
                     discount=update.discount,
+                    trial_end=update.trial_end,
                 )
             # Only update discount if product is not being updated,
             # otherwise it will be handled in update_product()
@@ -2046,6 +2047,7 @@ class SubscriptionService:
         product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
         discount: uuid.UUID | Literal["unset"] | None = None,
+        trial_end: datetime | Literal["now"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> Subscription:
         previous_product = subscription.product
@@ -2065,7 +2067,10 @@ class SubscriptionService:
         new_trial_end: datetime | None = None
         ends_trial = False
         if was_trialing:
-            new_trial_end = self._resolve_trial_end(subscription, product)
+            if isinstance(trial_end, datetime):
+                new_trial_end = trial_end
+            else:
+                new_trial_end = self._resolve_trial_end(subscription, product)
             ends_trial = new_trial_end is None
 
         # Add event for the subscription plan change

@@ -7,6 +7,7 @@ import {
   trace,
   type Attributes,
   type Counter,
+  type Gauge,
   type Histogram,
   type Span,
   type Tracer,
@@ -357,6 +358,8 @@ export class Outpost {
   private ingestDuration?: Histogram;
   private ingestBuckets?: Counter;
   private readDuration?: Histogram;
+  private redisMemory?: Gauge;
+  private redisKeys?: Gauge;
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
@@ -412,6 +415,8 @@ export class Outpost {
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
       this.readDuration = meter.createHistogram("outpost.read.duration", { unit: "s" });
+      this.redisMemory = meter.createGauge("outpost.redis.memory", { unit: "By" });
+      this.redisKeys = meter.createGauge("outpost.redis.keys");
     }
     try {
       this.redis = new Redis(this.redisUrl, {
@@ -483,6 +488,7 @@ export class Outpost {
       await this.connectWebsocket();
       this.refreshTimer = setInterval(() => {
         this.reportSync();
+        void this.reportRedisSize();
         if (this.synchronizing) return;
         void this.synchronize();
       }, SYNC_INTERVAL);
@@ -538,6 +544,8 @@ export class Outpost {
     this.ingestDuration = undefined;
     this.ingestBuckets = undefined;
     this.readDuration = undefined;
+    this.redisMemory = undefined;
+    this.redisKeys = undefined;
     await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
   }
 
@@ -937,6 +945,20 @@ export class Outpost {
     }).end();
     this.syncReceived = 0;
     this.syncApplied = 0;
+  }
+
+  // Includes whatever else the merchant keeps in that Redis.
+  private async reportRedisSize(): Promise<void> {
+    const redis = this.redis;
+    if (!this.redisMemory || !this.redisKeys || redis?.status !== "ready") return;
+    try {
+      const [memory, keys] = await Promise.all([redis.info("memory"), redis.dbsize()]);
+      const used = /^used_memory:(\d+)/m.exec(memory);
+      if (used) this.redisMemory?.record(Number(used[1]));
+      this.redisKeys?.record(keys);
+    } catch {
+      // A Redis that refuses INFO or DBSIZE reports nothing.
+    }
   }
 
   private synchronize(): Promise<void> {

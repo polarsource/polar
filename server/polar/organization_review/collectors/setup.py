@@ -4,7 +4,11 @@ from urllib.parse import urlparse
 import httpx
 import structlog
 
-from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
+from polar.kit.http import (
+    SSRFBlockedError,
+    SSRFSafeTransport,
+    resolve_and_validate_ip,
+)
 from polar.models.checkout_link import CheckoutLink
 from polar.models.webhook_endpoint import WebhookEndpoint
 
@@ -213,6 +217,7 @@ async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
 
     # Pass 1: GET requests (fast)
     async with httpx.AsyncClient(
+        transport=SSRFSafeTransport(),
         follow_redirects=False,  # We follow manually to validate each hop
         timeout=_REDIRECT_TIMEOUT,
         headers={"User-Agent": "Mozilla/5.0 (compatible; PolarReviewBot/1.0)"},

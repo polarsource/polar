@@ -1,4 +1,5 @@
 import asyncio
+import socket
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -8,7 +9,7 @@ import pytest
 from pydantic_ai.models.test import TestModel
 
 from polar.config import settings
-from polar.kit.http import SSRFBlockedError
+from polar.kit.http import SSRFBlockedError, SSRFSafeTransport
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.website import (
     MAX_CHARS_PER_PAGE,
@@ -25,12 +26,6 @@ from polar.organization_review.collectors.website import (
     fetch_page,
 )
 from polar.organization_review.schemas import WebsiteData
-
-# Shorthand for patching resolve_and_validate_ip to allow all IPs
-_PATCH_SSRF = patch(
-    "polar.organization_review.collectors.website.resolve_and_validate_ip",
-    new_callable=AsyncMock,
-)
 
 
 def _make_client(
@@ -279,8 +274,7 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/")
+        result = await fetch_page(ctx, "https://example.com/")
 
         assert deps.pages_navigated == 1
         assert len(deps.pages_visited) == 1
@@ -295,8 +289,7 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/missing")
+        result = await fetch_page(ctx, "https://example.com/missing")
 
         assert "Error: HTTP 404" in result
         assert deps.pages_navigated == 1
@@ -311,8 +304,7 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/")
+        result = await fetch_page(ctx, "https://example.com/")
 
         assert "Error fetching" in result
         assert deps.pages_navigated == 1
@@ -327,8 +319,7 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/")
+        result = await fetch_page(ctx, "https://example.com/")
 
         assert deps.pages_visited[0].content_truncated is True
         assert len(deps.pages_visited[0].content) <= MAX_CHARS_PER_PAGE
@@ -347,8 +338,7 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/Koffi.dmg")
+        result = await fetch_page(ctx, "https://example.com/Koffi.dmg")
 
         assert "unsupported content type" in result
         assert deps.pages_visited == []
@@ -366,8 +356,7 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/big")
+        result = await fetch_page(ctx, "https://example.com/big")
 
         assert "response too large" in result
         assert deps.pages_visited == []
@@ -390,8 +379,7 @@ class TestFetchPage:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/chunked")
+        result = await fetch_page(ctx, "https://example.com/chunked")
 
         assert "response too large" in result
         assert deps.pages_visited == []
@@ -497,50 +485,51 @@ class TestFetchPageSSRF:
     @pytest.mark.anyio
     async def test_blocks_initial_ssrf(self) -> None:
         """fetch_page should block a URL that resolves to a private IP."""
-        client, requests = _make_client(lambda request: httpx.Response(200))
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
+        async with httpx.AsyncClient(transport=SSRFSafeTransport()) as client:
+            deps = WebsiteDeps(client=client, allowed_domain="example.com")
+            ctx = MagicMock()
+            ctx.deps = deps
 
-        with patch(
-            "polar.organization_review.collectors.website.resolve_and_validate_ip",
-            new_callable=AsyncMock,
-            side_effect=SSRFBlockedError("resolves to private IP 10.0.0.1"),
-        ):
-            result = await fetch_page(ctx, "https://example.com/")
+            with patch(
+                "anyio.getaddrinfo",
+                new=AsyncMock(
+                    return_value=[
+                        (
+                            socket.AF_INET,
+                            socket.SOCK_STREAM,
+                            socket.IPPROTO_TCP,
+                            "",
+                            ("10.0.0.1", 0),
+                        )
+                    ]
+                ),
+            ):
+                result = await fetch_page(ctx, "https://example.com/")
 
-        assert "private IP" in result
-        assert deps.pages_navigated == 0
-        assert requests == []
+        assert "private/reserved IP 10.0.0.1" in result
+        assert deps.pages_visited == []
 
     @pytest.mark.anyio
     async def test_blocks_redirect_to_private_ip(self) -> None:
         """Redirect targets that resolve to private IPs should be blocked."""
-        client, requests = _make_client(
-            lambda request: httpx.Response(
-                302, headers={"location": "https://example.com/internal"}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.host == "internal.example.com":
+                # What `SSRFSafeTransport` raises for a private IP
+                raise SSRFBlockedError("Blocked: resolves to private IP")
+            return httpx.Response(
+                302, headers={"location": "https://internal.example.com/"}
             )
-        )
+
+        client, requests = _make_client(handler)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
 
-        call_count = 0
-
-        async def _validate_side_effect(hostname: str) -> None:
-            nonlocal call_count
-            call_count += 1
-            if call_count > 1:
-                raise SSRFBlockedError(f"Blocked: {hostname} resolves to private IP")
-
-        with patch(
-            "polar.organization_review.collectors.website.resolve_and_validate_ip",
-            new_callable=AsyncMock,
-            side_effect=_validate_side_effect,
-        ):
-            result = await fetch_page(ctx, "https://example.com/")
+        result = await fetch_page(ctx, "https://example.com/")
 
         assert "private IP" in result
+        assert deps.pages_visited == []
 
     @pytest.mark.anyio
     async def test_blocks_redirect_to_different_domain(self) -> None:
@@ -554,8 +543,7 @@ class TestFetchPageSSRF:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/")
+        result = await fetch_page(ctx, "https://example.com/")
 
         assert "off-origin" in result
 
@@ -578,8 +566,7 @@ class TestFetchPageSSRF:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/old-page")
+        result = await fetch_page(ctx, "https://example.com/old-page")
 
         assert len(requests) == 2
         assert "Page: New" in result
@@ -603,8 +590,7 @@ class TestFetchPageSSRF:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://www.example.com/")
+        result = await fetch_page(ctx, "https://www.example.com/")
 
         assert len(requests) == 2
         assert "Page: Home" in result
@@ -621,8 +607,7 @@ class TestFetchPageSSRF:
         ctx = MagicMock()
         ctx.deps = deps
 
-        with _PATCH_SSRF:
-            result = await fetch_page(ctx, "https://example.com/start")
+        result = await fetch_page(ctx, "https://example.com/start")
 
         assert "too many redirects" in result
         assert len(requests) == MAX_REDIRECTS

@@ -10,7 +10,7 @@ import trafilatura
 from pydantic_ai import Agent, RunContext
 
 from polar.config import settings
-from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
+from polar.kit.http import SSRFBlockedError, SSRFSafeTransport
 from polar.observability.baggage import organization_baggage
 
 from ..schemas import UsageInfo, WebsiteData, WebsitePage
@@ -194,17 +194,10 @@ with server-side rendering. Use this by default."""
     if not _is_allowed_origin(url, deps.allowed_domain):
         return f"Error: URL is off-origin (only {deps.allowed_domain} is allowed)"
 
-    # SSRF check on initial URL
-    initial_host = urlparse(url).hostname
-    if initial_host:
-        try:
-            await resolve_and_validate_ip(initial_host)
-        except SSRFBlockedError as e:
-            return f"Error: {e}"
-
     deps.pages_navigated += 1
 
-    # Manual redirect loop with domain + SSRF validation
+    # Manual redirect loop with domain validation; `SSRFSafeTransport` blocks
+    # private/reserved IPs on every hop
     current_url = url
     try:
         for _ in range(MAX_REDIRECTS):
@@ -223,10 +216,6 @@ with server-side rendering. Use this by default."""
                     f"Error: redirect to off-origin URL blocked "
                     f"(only {deps.allowed_domain} is allowed)"
                 )
-
-            redirect_host = urlparse(redirect_url).hostname
-            if redirect_host:
-                await resolve_and_validate_ip(redirect_host)
 
             current_url = redirect_url
         else:
@@ -412,6 +401,7 @@ async def _run_website_agent(
     allowed_domain = allowed_domain.removeprefix("www.")
 
     async with httpx.AsyncClient(
+        transport=SSRFSafeTransport(),
         follow_redirects=False,
         timeout=PAGE_TIMEOUT_MS / 1000,
         headers={"User-Agent": _USER_AGENT},

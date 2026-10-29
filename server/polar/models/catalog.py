@@ -18,7 +18,7 @@ from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
-    from polar.models import CatalogProduct, Organization
+    from polar.models import CatalogBenefit, CatalogProduct, Organization
 
 
 class CatalogStatus(StrEnum):
@@ -78,5 +78,18 @@ class Catalog(RecordModel):
                 "CatalogProduct.deleted_at.is_(None))"
             ),
             order_by="CatalogProduct.external_id",
+            viewonly=True,
+        )
+
+    @declared_attr
+    def benefit_members(cls) -> Mapped[list["CatalogBenefit"]]:
+        return relationship(
+            "CatalogBenefit",
+            lazy="raise",
+            primaryjoin=(
+                "and_(CatalogBenefit.catalog_id == Catalog.id, "
+                "CatalogBenefit.deleted_at.is_(None))"
+            ),
+            order_by="CatalogBenefit.external_id",
             viewonly=True,
         )

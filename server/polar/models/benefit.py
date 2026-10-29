@@ -19,7 +19,7 @@ from polar.kit.visibility import Visibility, VisibilityMixin
 
 if TYPE_CHECKING:
     from polar.benefit.strategies import BenefitProperties
-    from polar.models import BenefitGrant, Organization
+    from polar.models import BenefitGrant, Catalog, Organization
 
 
 class TaxApplicationMustBeSpecified(PolarError):
@@ -111,7 +111,9 @@ class Benefit(VisibilityMixin, MetadataMixin, ExternalIDMixin, RecordModel):
             "organization_id",
             "external_id",
             unique=True,
-            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
+            postgresql_where=text(
+                "deleted_at IS NULL AND external_id IS NOT NULL AND is_current"
+            ),
         ),
     )
 
@@ -132,6 +134,16 @@ class Benefit(VisibilityMixin, MetadataMixin, ExternalIDMixin, RecordModel):
         nullable=False,
         index=True,
     )
+    catalog_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("catalogs.id", ondelete="restrict"),
+        nullable=True,
+        default=None,
+    )
+    # Nullable during the expand phase (ADR-0006); NOT NULL is enforced later.
+    is_current: Mapped[bool] = mapped_column(
+        Boolean, nullable=True, default=True, server_default=text("true")
+    )
 
     @declared_attr
     def properties(cls) -> Mapped["BenefitProperties"]:
@@ -140,6 +152,10 @@ class Benefit(VisibilityMixin, MetadataMixin, ExternalIDMixin, RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def catalog(cls) -> Mapped["Catalog | None"]:
+        return relationship("Catalog", lazy="raise")
 
     @declared_attr
     def grants(cls) -> Mapped["list[BenefitGrant]"]:

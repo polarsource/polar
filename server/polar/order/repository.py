@@ -44,6 +44,7 @@ from polar.metrics.fx import (
     usd_settled_payment_clauses,
 )
 from polar.models import (
+    BenefitGrant,
     Customer,
     Discount,
     Dispute,
@@ -89,6 +90,34 @@ class OrderRepository(
     RepositoryBase[Order],
 ):
     model = Order
+
+    def get_benefits_move_statement(
+        self, organization_id: UUID, product_external_id: str
+    ) -> Select[tuple[Order]]:
+        """Paid one-time orders of any version of a product, except those whose
+        benefits were revoked, after a refund or a dispute."""
+        granted = exists().where(
+            BenefitGrant.order_id == Order.id, BenefitGrant.granted_at.is_not(None)
+        )
+        revoked = exists().where(
+            BenefitGrant.order_id == Order.id, BenefitGrant.revoked_at.is_not(None)
+        )
+        return (
+            select(Order)
+            .join(Order.customer)
+            .join(Product, Order.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id == product_external_id,
+                ~Order.is_deleted,
+                Order.subscription_id.is_(None),
+                Order.seats.is_(None),
+                Order.status.in_(OrderStatus.paid_statuses()),
+                ~Customer.is_deleted,
+                or_(granted, ~revoked),
+            )
+            .options(joinedload(Order.customer))
+        )
 
     async def get_revenue_by_customer(
         self,

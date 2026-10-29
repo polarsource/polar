@@ -2770,7 +2770,7 @@ class OrderService:
         organization_id: uuid.UUID,
         source_external_id: str,
         target_product: Product,
-    ) -> int:
+    ) -> None:
         """Give one-time orders of any version of a product the benefits of
         `target_product`.
 
@@ -2778,23 +2778,12 @@ class OrderService:
         `external_id` are updated in place, added benefits are granted and
         removed ones are revoked.
         """
-        base_statement = (
-            select(Order)
-            .join(Order.customer)
-            .join(Product, Order.product_id == Product.id)
-            .where(
-                Product.organization_id == organization_id,
-                Product.external_id == source_external_id,
-                ~Order.is_deleted,
-                Order.subscription_id.is_(None),
-                Order.seats.is_(None),
-                Order.status.in_(OrderStatus.paid_statuses()),
-                ~Customer.is_deleted,
-            )
-            .options(joinedload(Order.customer))
-        )
-        return await self._enqueue_orders_benefits_grants(
-            session, base_statement, target_product
+        await self._enqueue_orders_benefits_grants(
+            session,
+            OrderRepository.from_session(session).get_benefits_move_statement(
+                organization_id, source_external_id
+            ),
+            target_product,
         )
 
     async def _enqueue_orders_benefits_grants(
@@ -2802,7 +2791,7 @@ class OrderService:
         session: AsyncSession,
         base_statement: Select[tuple[Order]],
         product: Product,
-    ) -> int:
+    ) -> None:
         count_result = await session.execute(
             base_statement.with_only_columns(func.count())
         )
@@ -2824,7 +2813,6 @@ class OrderService:
                 delay=calculate_delay(index),
             )
             index += 1
-        return total_count
 
     async def update_refunds(
         self,

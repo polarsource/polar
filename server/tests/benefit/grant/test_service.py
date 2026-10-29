@@ -743,15 +743,16 @@ class TestEnqueueBenefitsGrants:
         organization.feature_settings = {"config_as_code_enabled": config_as_code}
         await save_fixture(organization)
         previous = await create_benefit(
-            save_fixture, organization=organization, external_id="license"
+            save_fixture,
+            organization=organization,
+            external_id="license",
+            is_current=False,
         )
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=previous
         )
         grant.set_granted()
         await save_fixture(grant)
-        previous.is_current = False
-        await save_fixture(previous)
         current = await create_benefit(
             save_fixture, organization=organization, external_id="license"
         )
@@ -839,6 +840,7 @@ class TestEnqueueBenefitsGrants:
                 organization=organization,
                 type=type,
                 external_id=external_id,
+                is_current=False,
             )
             if type == BenefitType.license_keys:
                 record: LicenseKey | Downloadable = LicenseKey(
@@ -868,8 +870,6 @@ class TestEnqueueBenefitsGrants:
             )
             grant.set_granted()
             await save_fixture(grant)
-            previous.is_current = False
-            await save_fixture(previous)
             records.append(record)
             benefits.append(
                 await create_benefit(
@@ -911,14 +911,13 @@ class TestEnqueueBenefitsGrants:
             organization=organization,
             type=BenefitType.downloadables,
             external_id="files",
+            is_current=False,
         )
         grant = BenefitGrant(
             subscription=subscription, customer=customer, benefit=previous
         )
         grant.set_granted()
         await save_fixture(grant)
-        previous.is_current = False
-        await save_fixture(previous)
         current = await create_benefit(
             save_fixture,
             organization=organization,

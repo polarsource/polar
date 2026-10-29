@@ -125,6 +125,7 @@ from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
+    create_benefit_grant,
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
@@ -6579,17 +6580,54 @@ class TestMoveBenefits:
         )
         await create_order(save_fixture, product=other, customer=customer)
 
-        count = await order_service.move_benefits(
-            session, organization.id, "pro", current
-        )
+        await order_service.move_benefits(session, organization.id, "pro", current)
 
-        assert count == 1
         enqueue_job_mock.assert_called_once_with(
             "benefit.enqueue_benefits_grants",
             task="grant",
             customer_id=customer.id,
             product_id=current.id,
             order_id=order.id,
+            delay=ANY,
+        )
+
+    async def test_skips_orders_with_revoked_benefits(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+        granted = await create_order(save_fixture, product=product, customer=customer)
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, order=granted
+        )
+        revoked = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.partially_refunded,
+        )
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=False, order=revoked
+        )
+
+        await order_service.move_benefits(session, organization.id, "pro", product)
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=granted.id,
             delay=ANY,
         )
 

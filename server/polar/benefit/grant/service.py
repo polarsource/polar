@@ -527,8 +527,6 @@ class BenefitGrantService:
             repointed.add(target.id)
             enqueue_job("benefit.update", benefit_grant_id=grant.id)
 
-        if repointed:
-            await session.flush()
         return repointed
 
     async def _repoint_benefit_records(

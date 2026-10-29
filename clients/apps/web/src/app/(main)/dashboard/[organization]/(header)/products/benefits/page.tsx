@@ -1,4 +1,4 @@
-import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
+import { ManagedAsCodeNotice } from '@/components/Dashboard/ManagedAsCodeNotice'
 import { MasterDetailIndex } from '@/components/Layout/MasterDetailIndex'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
@@ -54,7 +54,7 @@ export default async function Page(props: {
             Add benefits in <code>polar.config.ts</code>, then run{' '}
             <code>polar config apply</code>.
           </p>
-          <ManagedAsCodeBadge />
+          <ManagedAsCodeNotice />
         </>
       ) : (
         <>

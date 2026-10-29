@@ -6,6 +6,7 @@ import {
 import { Effect } from 'effect'
 import { HttpClient, HttpClientRequest, type HttpMethod } from 'effect/http'
 import generatedTools from '../generated/tools.json'
+import { intentJsonSchema } from '../intent'
 import { RequestLog } from '../log'
 import type { PolarApiOutboundProps } from '../outbound'
 import { makeToolRunner, ToolError } from '../results'
@@ -24,10 +25,15 @@ interface OperationTool {
   inputSchema: JsonSchemaType
 }
 
+const withIntent = (schema: JsonSchemaType): JsonSchemaType => ({
+  ...schema,
+  properties: { ...schema.properties, intent: intentJsonSchema },
+})
+
 const operationTools = (generatedTools as unknown as OperationTool[]).map(
   (tool) => ({
     definition: tool,
-    inputSchema: fromJsonSchema<Arguments>(tool.inputSchema),
+    inputSchema: fromJsonSchema<Arguments>(withIntent(tool.inputSchema)),
     annotations: {
       readOnlyHint: tool.annotations.includes('read_only'),
       destructiveHint: tool.annotations.includes('destructive'),

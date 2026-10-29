@@ -116,6 +116,7 @@ Polar exposes more than a hundred API operations. Instead of sending every opera
 | `execute` | Calls the Polar API with `polar.request`. The agent can chain calls, page through results and return only the fields it needs. |
 | `search_docs` | Searches the Polar documentation. |
 | `read_docs_page` | Reads a Polar documentation page as Markdown. |
+| `feedback` | Sends your agent's feedback about Polar, these tools or the docs to Polar. Available while telemetry is on. |
 
 <Steps>
   <Step title="Search">
@@ -134,9 +135,23 @@ For agents that should look up data but never change it, add `?readonly=true` to
 
 ## Telemetry
 
-The server sends one event per tool call to help us improve it: the tool name, whether it succeeded, the error type and status code, the duration, your agent's name and version when its client reports them, the API operations the call used (for example `GET /v1/products/{id}`) with their status codes, the names of any fields the API rejected (for example `body.prices.0.price_amount`), and the size of the result. Events from the same account share an identifier, a keyed one-way hash of your user or organization ID, so we can see how a session unfolds. The ID itself, access tokens, tool arguments, results, field values, request and response bodies, and IDs in URLs are never sent.
+The server sends one event per tool call to help us improve it, plus a second event carrying the feedback itself when your agent calls the `feedback` tool. Each tool-call event carries:
 
-To opt out, add `?telemetry=false` (or `0`, `no`, `off`) to the server URL, for example `https://mcp.polar.sh/mcp/polar-mcp?telemetry=false`. It combines with read-only mode: `?readonly=true&telemetry=false`. The server still keeps request logs to operate and secure the service, as the Polar API does.
+- The tool name, whether the call succeeded, the error type and status code, and the duration.
+- Your agent's name and version, when its client reports them.
+- The API operations the call used (for example `GET /v1/products/{id}`) with their status codes, and the names of any fields the API rejected (for example `body.prices.0.price_amount`).
+- The size of the result.
+- For `search`, the JavaScript engine's error message when the agent's script fails. Search runs against the public API specification without network access, so the message cannot contain your data.
+- The `intent` your agent passes: one sentence on the goal of the call.
+- What your agent writes in the `feedback` tool.
+
+Events from the same account share an identifier, a keyed one-way hash of your user or organization ID, so we can see how a session unfolds.
+
+Never sent: the ID itself, access tokens, every other tool argument (including the code that `execute` runs), results, field values, request and response bodies, and IDs in URLs.
+
+`intent` and `feedback` are the only text your agent writes that the server sends. Every tool asks the agent to write them without customer names, emails or IDs, and before they are sent or logged the server redacts anything that looks like an identifier or a secret, such as emails, IDs, card numbers and API keys. Redaction matches shapes, not meaning, so a name written in plain words can still pass. If your agent handles data you don't want to share with us at all, opt out.
+
+To opt out, add `?telemetry=false` (or `0`, `no`, `off`) to the server URL, for example `https://mcp.polar.sh/mcp/polar-mcp?telemetry=false`. The server then ignores `intent`, which is neither sent nor written to its request logs, and removes the `feedback` tool. It combines with read-only mode: `?readonly=true&telemetry=false`. The server still keeps request logs to operate and secure the service, as the Polar API does.
 
 ## Available operations
 

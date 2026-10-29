@@ -11,6 +11,7 @@ from polar.auth.scope import Scope
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
+from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_order, create_product_unit_based
@@ -965,3 +966,35 @@ class TestFinalizeOrderEndpoint:
         )
         response = await client.post(f"/v1/orders/{order.id}/finalize", json={})
         assert response.status_code == 402
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestMoveOrderBenefits:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product_one_time: Product,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
+
+        response = await client.post(
+            "/v1/orders/benefits/move",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(product_one_time.id),
+            },
+        )
+
+        assert response.status_code == 202
+        enqueue_job_mock.assert_called_once_with(
+            "order.move_benefits",
+            organization_id=organization.id,
+            source_external_id="pro",
+            target_product_id=product_one_time.id,
+        )

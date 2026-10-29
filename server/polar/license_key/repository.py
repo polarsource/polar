@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, update
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import (
@@ -25,6 +25,14 @@ class LicenseKeyRepository(
     RepositoryBase[LicenseKey],
 ):
     model = LicenseKey
+
+    async def repoint_benefit(self, license_key_id: UUID, benefit_id: UUID) -> None:
+        statement = (
+            update(LicenseKey)
+            .where(LicenseKey.id == license_key_id)
+            .values(benefit_id=benefit_id)
+        )
+        await self.session.execute(statement)
 
     async def get_by_organization_and_key(
         self,

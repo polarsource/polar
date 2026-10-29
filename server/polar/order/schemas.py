@@ -7,6 +7,7 @@ from pydantic import (
     AliasChoices,
     AliasPath,
     BeforeValidator,
+    ConfigDict,
     Field,
     computed_field,
     field_serializer,
@@ -25,6 +26,7 @@ from polar.kit.address import Address, AddressInput
 from polar.kit.currency import format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
+    PRODUCT_ID_EXAMPLE,
     IDSchema,
     Int32,
     MergeJSONSchema,
@@ -418,3 +420,21 @@ class OrderReceipt(Schema):
     """Order's receipt data."""
 
     url: str = Field(..., description="The URL to the receipt PDF.")
+
+
+class OrderBenefitsMove(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    product_external_id: str = Field(
+        min_length=1,
+        description=(
+            "`external_id` of the product whose one-time orders move, in any version."
+        ),
+    )
+    target_product_id: UUID4 = Field(
+        description=(
+            "ID of the product whose benefits the orders get. "
+            "Must be a current version."
+        ),
+        examples=[PRODUCT_ID_EXAMPLE],
+    )

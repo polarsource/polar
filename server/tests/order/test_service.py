@@ -6544,6 +6544,56 @@ class TestCustomerBasedInvoiceNumbering:
 
 
 @pytest.mark.anyio
+class TestMoveBenefits:
+    async def test_one_time_orders_of_any_version(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        previous = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        previous.is_current = False
+        await save_fixture(previous)
+        current = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        other = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        order = await create_order(save_fixture, product=previous, customer=customer)
+        await create_order(
+            save_fixture,
+            product=previous,
+            customer=customer,
+            status=OrderStatus.refunded,
+        )
+        await create_order(save_fixture, product=other, customer=customer)
+
+        count = await order_service.move_benefits(
+            session, organization.id, "pro", current
+        )
+
+        assert count == 1
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=current.id,
+            order_id=order.id,
+            delay=ANY,
+        )
+
+
 @pytest.mark.anyio
 class TestUpdateProductBenefitsGrants:
     async def test_enqueues_jobs_for_one_time_orders(

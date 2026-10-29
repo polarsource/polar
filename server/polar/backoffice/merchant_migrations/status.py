@@ -45,9 +45,7 @@ STEP_LABELS: dict[MerchantMigrationStep, str] = {
 }
 
 STEP_ORDER: list[MerchantMigrationStep] = [
-    step
-    for step in MerchantMigrationStep
-    if step not in (MerchantMigrationStep.cleanup, MerchantMigrationStep.closed)
+    step for step in MerchantMigrationStep if step != MerchantMigrationStep.closed
 ]
 
 
@@ -206,9 +204,7 @@ def is_finished(migration: MerchantMigration) -> bool:
 
 
 def visible_step(step: MerchantMigrationStep) -> MerchantMigrationStep:
-    """The step ops should read. Legacy `cleanup` rows display as completed."""
-    if step == MerchantMigrationStep.cleanup:
-        return MerchantMigrationStep.completed
+    """The step ops should read."""
     return step
 
 

@@ -27150,7 +27150,6 @@ export interface components {
       | 'create_catalog'
       | 'copy_cards'
       | 'activate_subscriptions'
-      | 'cleanup'
       | 'completed'
       | 'closed'
     /** MerchantMigrationTaxBehaviorUpdateResult */
@@ -73843,7 +73842,6 @@ export const merchantMigrationStepValues: ReadonlyArray<
   'create_catalog',
   'copy_cards',
   'activate_subscriptions',
-  'cleanup',
   'completed',
   'closed',
 ]

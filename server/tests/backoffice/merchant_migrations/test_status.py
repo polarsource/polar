@@ -8,7 +8,6 @@ from polar.backoffice.merchant_migrations.status import (
     progress,
     step_inputs,
     step_position,
-    visible_step,
 )
 from polar.kit.utils import utc_now
 from polar.merchant_migration import pan_transfer
@@ -181,15 +180,6 @@ class TestAttention:
         assert result.level == AttentionLevel.done
         assert not result.needs_ops
 
-    def test_cleanup_migration_is_done(self) -> None:
-        migration = _migration(step=MerchantMigrationStep.cleanup, steps=_finish_all())
-
-        result = attention(migration, NO_FAILURES)
-
-        assert result.level == AttentionLevel.done
-        assert result.label == "Done"
-        assert not result.needs_ops
-
     def test_partial_cutover_waits_on_the_merchant(self) -> None:
         migration = _migration(
             step=MerchantMigrationStep.activate_subscriptions, steps=_finish_all()
@@ -202,22 +192,12 @@ class TestAttention:
 
 
 class TestFinished:
-    def test_cleanup_completed_and_closed_count_as_finished(self) -> None:
-        assert is_finished(_migration(step=MerchantMigrationStep.cleanup))
+    def test_completed_and_closed_count_as_finished(self) -> None:
         assert is_finished(_migration(step=MerchantMigrationStep.completed))
         assert is_finished(_migration(step=MerchantMigrationStep.closed))
 
     def test_an_in_progress_step_is_not_finished(self) -> None:
         assert not is_finished(_migration(step=MerchantMigrationStep.copy_cards))
-
-    def test_cleanup_displays_as_completed(self) -> None:
-        assert (
-            visible_step(MerchantMigrationStep.cleanup)
-            == MerchantMigrationStep.completed
-        )
-        assert step_position(MerchantMigrationStep.cleanup) == step_position(
-            MerchantMigrationStep.completed
-        )
 
     def test_closed_displays_on_the_last_step(self) -> None:
         assert step_position(MerchantMigrationStep.closed) == step_position(

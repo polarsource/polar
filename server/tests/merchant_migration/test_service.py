@@ -4549,17 +4549,15 @@ class TestStartCutover:
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
-        ("step", "keeps_key", "reached_switch"),
+        ("step", "reached_switch"),
         [
-            (MerchantMigrationStep.cleanup, True, True),
-            (MerchantMigrationStep.completed, False, True),
-            (MerchantMigrationStep.closed, False, False),
+            (MerchantMigrationStep.completed, True),
+            (MerchantMigrationStep.closed, False),
         ],
     )
     async def test_finished_migration_cannot_retry(
         self,
         step: MerchantMigrationStep,
-        keeps_key: bool,
         reached_switch: bool,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -4576,8 +4574,7 @@ class TestStartCutover:
                 migration.pan_transfer_method, None
             )
         migration.step = step
-        if not keeps_key:
-            migration.source_credentials = {"stripe_user_id": "acct_123"}
+        migration.source_credentials = {"stripe_user_id": "acct_123"}
         await save_fixture(migration)
         failed = await _imported_subscription(
             save_fixture,

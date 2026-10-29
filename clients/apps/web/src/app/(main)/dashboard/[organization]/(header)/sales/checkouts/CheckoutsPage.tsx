@@ -17,6 +17,7 @@ import {
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Input, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -156,11 +157,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             {products.map((product, index) => (
               <React.Fragment key={product.id}>
                 {index > 0 && ', '}
-                {product.name}
-                <ProductVersionLabel
-                  organization={organization}
-                  product={product}
-                />
+                <Box
+                  as="span"
+                  display="inline-flex"
+                  alignItems="center"
+                  columnGap="s"
+                >
+                  {product.name}
+                  <ProductVersionLabel
+                    organization={organization}
+                    product={product}
+                  />
+                </Box>
               </React.Fragment>
             ))}
           </span>

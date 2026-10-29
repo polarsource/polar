@@ -234,10 +234,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         const tier = getValue() as schemas['Product']
         return (
           <div className="flex flex-row items-center gap-2">
-            <span>
-              {tier.name}
-              <ProductVersionLabel organization={organization} product={tier} />
-            </span>
+            {tier.name}
+            <ProductVersionLabel organization={organization} product={tier} />
             {tier.is_archived && (
               <Status status="Archived" color="red" size="small" />
             )}

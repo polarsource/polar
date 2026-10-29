@@ -28,13 +28,6 @@ variable "tailscale_version" {
   }
 }
 
-variable "tailscale_oauth_client_id" {
-  description = "ID of the OAuth client whose secret is stored in tailscale_oauth_secret_arn. Required when split DNS is enabled."
-  type        = string
-  default     = ""
-  nullable    = false
-}
-
 variable "tailscale_oauth_secret_kms_key_arn" {
   description = "Customer-managed KMS key encrypting the OAuth client secret, if used."
   type        = string
@@ -85,13 +78,6 @@ variable "advertise_routes" {
 variable "advertise_tags" {
   description = "Tailscale tags assigned to the router. The OAuth client must have Auth Keys write permission for these tags."
   type        = list(string)
-}
-
-variable "split_dns_domain" {
-  description = "Domain the router resolves through the VPC resolver on its tailnet IP and registers as tailnet split DNS. The OAuth client also needs the dns scope."
-  type        = string
-  default     = ""
-  nullable    = false
 }
 
 variable "permissions_boundary_arn" {

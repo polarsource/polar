@@ -1,4 +1,4 @@
-import { Console, Duration, Effect, Exit, Stdio } from 'effect'
+import { Cause, Console, Duration, Effect, Exit, Stdio } from 'effect'
 import yoctoSpinner from 'yocto-spinner'
 import { isJson } from '@/utils/output'
 import * as ui from '@/utils/ui'
@@ -31,7 +31,7 @@ const line = (mark: string, text: string, detail?: string) =>
 const boxedSpinnerText = (label: string, elapsed: string) => {
   const used =
     ui.INDENT.length + column(label).length + 2 + Bun.stringWidth(elapsed)
-  return `${elapsed}${' '.repeat(Math.max(ui.boxInner() - used, 0))}${ui.dim('│')}`
+  return `${elapsed}${' '.repeat(Math.max(ui.boxInner() - used, 0))}${ui.dim('│')}\n${ui.boxBottom()}`
 }
 
 const make = (interactive: boolean, layout: Layout) => {
@@ -121,7 +121,10 @@ const make = (interactive: boolean, layout: Layout) => {
     finish: (detail) => settle(false, detail),
     close,
   }
-  return { progress, fail: Effect.andThen(settle(true), close) }
+  return {
+    progress,
+    fail: (detail: string) => Effect.andThen(settle(true, detail), close),
+  }
 }
 
 const silent: Progress = {
@@ -140,7 +143,15 @@ export const withProgress = <A, E, R>(
     const stdio = yield* Stdio.Stdio
     const { progress, fail } = make(yield* stdio.stdoutIsTerminal, layout)
     return yield* run(progress).pipe(
-      Effect.onExit((exit) => (Exit.isSuccess(exit) ? progress.close : fail)),
+      Effect.onExit((exit) =>
+        Exit.isSuccess(exit)
+          ? progress.close
+          : fail(
+              ui.dim(
+                Cause.hasInterruptsOnly(exit.cause) ? 'cancelled' : 'failed',
+              ),
+            ),
+      ),
     )
   })
 

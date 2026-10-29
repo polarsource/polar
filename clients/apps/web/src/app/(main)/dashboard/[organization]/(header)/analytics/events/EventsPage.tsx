@@ -2,39 +2,45 @@
 
 import { EventDetailPanel } from '@/components/Events/EventDetailPanel'
 import { EventLog } from '@/components/Events/EventLog'
+import { EventLogHeader } from '@/components/Events/EventLogRow'
+import { EventLogSkeleton } from '@/components/Events/EventLogSkeleton'
 import { EventSearch } from '@/components/Events/EventSearch'
 import { EventsHistogram } from '@/components/Events/EventsHistogram'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { EmptyState } from '@/components/Shared/EmptyState'
-import { useInfiniteEvents } from '@/hooks/queries/events'
+import {
+  DateRangeInterval,
+  dateRangeIntervals,
+} from '@/components/Metrics/DateRangePicker'
+import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { useInViewport } from '@/hooks/utils'
+import { COST_EVENTS_FILTER } from '@/utils/event'
 import useDebounce from '@/utils/useDebounce'
 import { schemas } from '@polar-sh/client'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Spinner,
-} from '@polar-sh/orbit'
+import { Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Search } from '@polar-sh/orbit/icons'
-import { endOfToday } from 'date-fns'
-import { useRouter, useSearchParams } from 'next/navigation'
 import {
   parseAsArrayOf,
+  parseAsBoolean,
   parseAsIsoDateTime,
   parseAsJson,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import z from 'zod'
 import { EventsSidebar } from './EventsSidebar'
+import { DEFAULT_RANGE, recentRangeIntervals } from './rangePresets'
 
 const PAGE_SIZE = 100
+
+const formatEventCount = (count: number) =>
+  new Intl.NumberFormat('en-US', {
+    notation: count < 100_000 ? 'standard' : 'compact',
+    maximumFractionDigits: 1,
+  }).format(count)
 
 const ClientPage = ({
   organization,
@@ -52,14 +58,27 @@ const ClientPage = ({
     'eventTypes',
     parseAsArrayOf(parseAsString),
   )
-  const [startDate, setStartDate] = useQueryState(
+  const [costOnly, setCostOnly] = useQueryState('costOnly', parseAsBoolean)
+  const costFilter = costOnly ? COST_EVENTS_FILTER : null
+  const [range, setRange] = useQueryState('range', parseAsString)
+  const [customStartDate, setStartDate] = useQueryState(
     'startDate',
-    parseAsIsoDateTime.withDefault(new Date(organization.created_at)),
+    parseAsIsoDateTime,
   )
-  const [endDate, setEndDate] = useQueryState(
+  const [customEndDate, setEndDate] = useQueryState(
     'endDate',
-    parseAsIsoDateTime.withDefault(endOfToday()),
+    parseAsIsoDateTime,
   )
+  const [rangeAnchor, setRangeAnchor] = useState(() => new Date())
+  const rangeIntervals = recentRangeIntervals(rangeAnchor)
+  const isCustomRange = customStartDate !== null && customEndDate !== null
+  const selectedRange = isCustomRange ? null : (range ?? DEFAULT_RANGE)
+  const preset =
+    [...rangeIntervals, ...dateRangeIntervals(organization)].find(
+      (interval) => interval.slug === selectedRange,
+    ) ?? rangeIntervals[0]
+  const startDate = isCustomRange ? customStartDate : preset.value[0]
+  const endDate = isCustomRange ? customEndDate : preset.value[1]
   const [selectedCustomerIds, setSelectedCustomerIds] = useQueryState(
     'customerIds',
     parseAsArrayOf(parseAsString),
@@ -80,15 +99,13 @@ const ClientPage = ({
     parseAsString,
   )
 
-  const router = useRouter()
-  const searchParams = useSearchParams()
-
   const debouncedQuery = useDebounce(query, 500)
   const debouncedMetadata = useDebounce(metadata, 500)
 
   const {
     data: events,
     isFetching,
+    isLoading,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -99,6 +116,7 @@ const ClientPage = ({
         : null,
     customer_id: selectedCustomerIds ?? null,
     source: source ?? null,
+    filter: costFilter,
     limit: PAGE_SIZE,
     sorting: [sorting],
     start_timestamp: startDate.toISOString(),
@@ -122,32 +140,91 @@ const ClientPage = ({
     )
   }
 
-  const onDateRangeChange = (range: { from: Date; to: Date }) => {
-    setStartDate(range.from)
-    setEndDate(range.to)
+  const onDateRangeChange = (
+    dateRange: { from: Date; to: Date },
+    interval?: DateRangeInterval,
+  ) => {
+    if (interval) {
+      setRange(interval.slug === DEFAULT_RANGE ? null : interval.slug)
+      setStartDate(null)
+      setEndDate(null)
+      setRangeAnchor(new Date())
+      return
+    }
+    setRange(null)
+    setStartDate(dateRange.from)
+    setEndDate(dateRange.to)
   }
 
-  const filterParams = new URLSearchParams(searchParams)
-  filterParams.delete('event')
-  const hasActiveFilters = filterParams.size > 0
+  const hasActiveFilters =
+    sorting !== '-timestamp' ||
+    [
+      query,
+      selectedEventTypes,
+      costOnly,
+      range,
+      customStartDate,
+      customEndDate,
+      selectedCustomerIds,
+      metadata,
+      source,
+    ].some((value) => value !== null)
+
+  const resetFilters = () => {
+    setSorting(null)
+    setQuery(null)
+    setSelectedEventTypes(null)
+    setCostOnly(null)
+    setRange(null)
+    setStartDate(null)
+    setEndDate(null)
+    setSelectedCustomerIds(null)
+    setMetadata(null)
+    setSource(null)
+    setRangeAnchor(new Date())
+  }
 
   const items = events?.pages.flatMap((page) => page.items) ?? []
+  const firstPagination = events?.pages[0]?.pagination
+  const totalCount =
+    firstPagination && 'total_count' in firstPagination
+      ? firstPagination.total_count
+      : null
   const selectedIndex = items.findIndex((e) => e.id === selectedEventId)
   const previousEvent = selectedIndex > 0 ? items[selectedIndex - 1] : null
   const nextEvent = selectedIndex >= 0 ? items[selectedIndex + 1] : null
 
-  const selectEvent = (id: string) => {
-    if (window.matchMedia('(min-width: 1024px)').matches) {
-      setSelectedEventId(id)
-    } else {
-      router.push(`/dashboard/${organization.slug}/analytics/events/${id}`)
+  const { data: selectedEvent } = useEvent(
+    organization.id,
+    selectedEventId ?? '',
+  )
+  const lastLoadedEvent = items.at(-1)
+  const lastLoadedTime = lastLoadedEvent
+    ? new Date(lastLoadedEvent.timestamp).getTime()
+    : null
+  const selectedTime = selectedEvent
+    ? new Date(selectedEvent.timestamp).getTime()
+    : null
+  const isBeforeSelectedEvent =
+    lastLoadedTime !== null &&
+    selectedTime !== null &&
+    (sorting === '-timestamp'
+      ? lastLoadedTime >= selectedTime
+      : lastLoadedTime <= selectedTime)
+  const shouldLoadUntilSelected =
+    selectedIndex < 0 && isBeforeSelectedEvent && hasNextPage
+
+  useEffect(() => {
+    if (shouldLoadUntilSelected && !isFetchingNextPage) {
+      fetchNextPage()
     }
-  }
+  }, [shouldLoadUntilSelected, isFetchingNextPage, fetchNextPage])
 
   return (
     <DashboardBody
       title={null}
       wrapperClassName="pt-4 md:gap-0 md:pt-6"
+      className="min-h-0 flex-1 md:pb-0"
       contextViewPlacement="left"
       contextViewTitle="Filters"
       contextViewClassName="w-full lg:max-w-[300px] xl:max-w-[300px] h-full overflow-y-hidden"
@@ -155,9 +232,17 @@ const ClientPage = ({
         <EventsSidebar
           organization={organization}
           dateRange={{ from: startDate, to: endDate }}
+          rangeIntervals={rangeIntervals}
+          selectedRange={selectedRange}
           onDateRangeChange={onDateRangeChange}
+          sorting={sorting}
+          onSortingChange={setSorting}
           selectedEventTypes={selectedEventTypes ?? []}
           onToggleEventType={toggleEventType}
+          costOnly={costOnly ?? false}
+          onCostOnlyChange={(value) => setCostOnly(value || null)}
+          source={source}
+          onSourceChange={setSource}
           selectedCustomerIds={selectedCustomerIds}
           onSelectCustomerIds={(ids) => {
             setSelectedCustomerIds(ids)
@@ -167,9 +252,7 @@ const ClientPage = ({
             setMetadata(Object.keys(value).length > 0 ? value : null)
           }}
           hasActiveFilters={hasActiveFilters}
-          onReset={() =>
-            router.replace(`/dashboard/${organization.slug}/analytics/events`)
-          }
+          onReset={resetFilters}
         />
       }
       detailView={
@@ -193,7 +276,17 @@ const ClientPage = ({
       }
       wide
     >
-      <Box flexDirection="column" gap="xl">
+      <Box flexDirection="column" gap="xl" flexGrow={1} minHeight={0}>
+        <Box alignItems="baseline" justifyContent="between" gap="s">
+          <Text as="h1" variant="heading-xxs">
+            Events
+          </Text>
+          {totalCount !== null && (
+            <Text variant="heading-xxs" color="muted" tabularNums>
+              {formatEventCount(totalCount)}
+            </Text>
+          )}
+        </Box>
         <EventsHistogram
           organizationId={organization.id}
           startDate={startDate}
@@ -201,9 +294,10 @@ const ClientPage = ({
           eventNames={selectedEventTypes}
           customerIds={selectedCustomerIds}
           source={source}
+          filter={costFilter}
           onSelectRange={onDateRangeChange}
         />
-        <Box alignItems="center" gap="s">
+        <Box alignItems="start" gap="s">
           <div className="min-w-0 flex-1">
             <EventSearch
               organizationId={organization.id}
@@ -227,23 +321,8 @@ const ClientPage = ({
               onMetadataChange={(value) => {
                 setMetadata(value)
               }}
+              onOpenEvent={setSelectedEventId}
             />
-          </div>
-          <div className="w-32 shrink-0">
-            <Select
-              value={sorting}
-              onValueChange={(value) => {
-                setSorting(value as '-timestamp' | 'timestamp')
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="-timestamp">Newest</SelectItem>
-                <SelectItem value="timestamp">Oldest</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </Box>
         {items.length === 0 && !isFetching ? (
@@ -253,20 +332,33 @@ const ClientPage = ({
             description="Try widening the timeline or clearing filters"
           />
         ) : (
-          <>
-            <EventLog
-              events={items}
-              selectedEventId={selectedEventId}
-              onSelect={selectEvent}
-              onClose={() => setSelectedEventId(null)}
-            />
-            <div ref={loadMoreRef} />
-            {isFetchingNextPage && (
-              <Box justifyContent="center" paddingVertical="l">
-                <Spinner />
-              </Box>
-            )}
-          </>
+          <Box flexDirection="column" flexGrow={1} minHeight={0}>
+            <EventLogHeader />
+            <Box
+              flexDirection="column"
+              flexGrow={1}
+              minHeight={0}
+              overflowY={{ base: 'visible', md: 'auto' }}
+              paddingBottom={{ md: 'xl' }}
+            >
+              {isLoading ? (
+                <EventLogSkeleton />
+              ) : (
+                <EventLog
+                  events={items}
+                  selectedEventId={selectedEventId}
+                  onSelect={setSelectedEventId}
+                  onClose={() => setSelectedEventId(null)}
+                />
+              )}
+              <div ref={loadMoreRef} />
+              {isFetchingNextPage && (
+                <Box justifyContent="center" paddingVertical="l">
+                  <Spinner />
+                </Box>
+              )}
+            </Box>
+          </Box>
         )}
       </Box>
     </DashboardBody>

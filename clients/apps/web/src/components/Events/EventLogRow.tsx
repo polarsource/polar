@@ -63,7 +63,7 @@ export const EventLogRow = ({
         borderColor="border-secondary"
       >
         <Box width={128} flexShrink={0}>
-          <Text variant="caption" color="muted" tabularNums truncate>
+          <Text color="muted" tabularNums truncate>
             {formatEventTimestamp(event.timestamp)}
           </Text>
         </Box>
@@ -74,22 +74,20 @@ export const EventLogRow = ({
           alignItems="center"
           gap="s"
         >
-          <Text variant="caption" truncate>
-            {event.label}
-          </Text>
+          <Text truncate>{event.label}</Text>
           {event.child_count > 0 && (
-            <Text variant="caption" color="muted" tabularNums>
+            <Text color="muted" tabularNums>
               +{event.child_count}
             </Text>
           )}
         </Box>
         <Box flexGrow={1} flexBasis={0} minWidth={0}>
-          <Text variant="caption" color="muted" truncate>
+          <Text color="muted" truncate>
             {customer ?? '—'}
           </Text>
         </Box>
         <Box width={88} flexShrink={0} justifyContent="end">
-          <Text variant="caption" color="muted" tabularNums>
+          <Text color="muted" tabularNums>
             {cost ?? ''}
           </Text>
         </Box>
@@ -108,24 +106,16 @@ export const EventLogHeader = () => (
     borderColor="border-primary"
   >
     <Box width={128} flexShrink={0}>
-      <Text variant="caption" color="muted">
-        Time
-      </Text>
+      <Text color="muted">Time</Text>
     </Box>
     <Box flexGrow={2} flexBasis={0} minWidth={120}>
-      <Text variant="caption" color="muted">
-        Event
-      </Text>
+      <Text color="muted">Event</Text>
     </Box>
     <Box flexGrow={1} flexBasis={0} minWidth={0}>
-      <Text variant="caption" color="muted">
-        Customer
-      </Text>
+      <Text color="muted">Customer</Text>
     </Box>
     <Box width={88} flexShrink={0} justifyContent="end">
-      <Text variant="caption" color="muted">
-        Cost
-      </Text>
+      <Text color="muted">Cost</Text>
     </Box>
   </Box>
 )

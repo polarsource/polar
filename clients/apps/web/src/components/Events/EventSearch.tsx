@@ -11,7 +11,7 @@ type Metadata = Record<string, string | number | boolean>
 type EventSource = schemas['EventSource']
 
 interface Suggestion {
-  section: 'Suggestions' | 'Filters'
+  section: 'Suggestions' | 'Filters' | 'Event'
   token: string
   hint?: string
   apply: () => void
@@ -25,6 +25,8 @@ const FILTER_PREFIXES = [
 ]
 
 const TOKEN_PATTERN = /^([a-z]+(?:\.[^:\s]+)?):(.*)$/i
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const Token = ({
   children,
@@ -32,34 +34,44 @@ const Token = ({
 }: {
   children: string
   onRemove?: () => void
-}) => (
-  <Box
-    as="span"
-    display="inline-flex"
-    alignItems="center"
-    gap="xs"
-    paddingHorizontal="xs"
-    borderRadius="s"
-    borderWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-    minWidth={0}
-  >
-    <Text as="span" variant="caption" truncate>
-      {children}
-    </Text>
-    {onRemove && (
-      <button
-        type="button"
-        className="cursor-pointer opacity-50 hover:opacity-100"
-        aria-label={`Remove ${children}`}
-        onClick={onRemove}
-      >
-        <X className="h-3 w-3" />
-      </button>
-    )}
-  </Box>
-)
+}) => {
+  const separator = children.indexOf(':')
+  const field = separator >= 0 ? children.slice(0, separator) : children
+  const value = separator >= 0 ? children.slice(separator + 1) : ''
+
+  return (
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      gap="xs"
+      paddingLeft="s"
+      paddingRight={onRemove ? 'xs' : 's'}
+      paddingVertical="xs"
+      borderRadius="s"
+      backgroundColor="background-secondary"
+      minWidth={0}
+    >
+      <Text as="span" truncate>
+        <Text as="span" color="muted">
+          {field}
+          {separator >= 0 ? ':' : ''}
+        </Text>
+        {value}
+      </Text>
+      {onRemove && (
+        <button
+          type="button"
+          className="dark:text-polar-500 dark:hover:text-polar-200 flex cursor-pointer items-center text-gray-400 hover:text-gray-700"
+          aria-label={`Remove ${children}`}
+          onClick={onRemove}
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </Box>
+  )
+}
 
 export const EventSearch = ({
   organizationId,
@@ -73,6 +85,7 @@ export const EventSearch = ({
   onSourceChange,
   metadata,
   onMetadataChange,
+  onOpenEvent,
 }: {
   organizationId: string
   query: string | null
@@ -85,11 +98,12 @@ export const EventSearch = ({
   onSourceChange: (source: EventSource | null) => void
   metadata: Metadata
   onMetadataChange: (metadata: Metadata | null) => void
+  onOpenEvent: (id: string) => void
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [input, setInput] = useState(query ?? '')
   const [open, setOpen] = useState(false)
-  const [highlighted, setHighlighted] = useState(0)
+  const [highlighted, setHighlighted] = useState(-1)
 
   const match = TOKEN_PATTERN.exec(input.trim())
   const field = match?.[1].toLowerCase() ?? null
@@ -109,7 +123,7 @@ export const EventSearch = ({
 
   const commit = (next: string) => {
     setInput(next)
-    setHighlighted(0)
+    setHighlighted(-1)
   }
 
   const addEventType = (name: string) => {
@@ -137,6 +151,20 @@ export const EventSearch = ({
       }))
 
   const suggestions: Suggestion[] = (() => {
+    const trimmed = input.trim()
+    if (UUID_PATTERN.test(trimmed)) {
+      return [
+        {
+          section: 'Event',
+          token: `id:${trimmed}`,
+          hint: 'Open event',
+          apply: () => {
+            onOpenEvent(trimmed)
+            commit('')
+          },
+        },
+      ]
+    }
     if (field === 'event') return eventSuggestions(value, 8)
     if (field === 'customer') {
       return customers
@@ -219,9 +247,14 @@ export const EventSearch = ({
 
   const onChange = (next: string) => {
     setInput(next)
-    setHighlighted(0)
+    setHighlighted(-1)
     setOpen(true)
-    onQueryChange(TOKEN_PATTERN.test(next.trim()) ? null : next || null)
+    const trimmed = next.trim()
+    onQueryChange(
+      TOKEN_PATTERN.test(trimmed) || UUID_PATTERN.test(trimmed)
+        ? null
+        : next || null,
+    )
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -229,9 +262,13 @@ export const EventSearch = ({
       e.preventDefault()
       setOpen(true)
       const step = e.key === 'ArrowDown' ? 1 : -1
-      setHighlighted(
-        (index) =>
-          (index + step + suggestions.length) % Math.max(suggestions.length, 1),
+      setHighlighted((index) =>
+        index < 0
+          ? step > 0
+            ? 0
+            : suggestions.length - 1
+          : (index + step + suggestions.length) %
+            Math.max(suggestions.length, 1),
       )
     } else if (e.key === 'Enter' && open && suggestions[highlighted]) {
       e.preventDefault()
@@ -259,7 +296,7 @@ export const EventSearch = ({
           ref={inputRef}
           value={input}
           placeholder={chips.length > 0 ? '' : 'Search events or filter…'}
-          className="dark:placeholder:text-polar-500 min-w-40 flex-1 border-0 bg-transparent p-0 py-1 text-sm shadow-none ring-0 outline-none placeholder:text-gray-400 focus:ring-0 focus:outline-none dark:text-white"
+          className="dark:placeholder:text-polar-500 min-w-24 flex-1 border-0 bg-transparent p-0 py-1 text-sm shadow-none ring-0 outline-none placeholder:text-gray-400 focus:ring-0 focus:outline-none dark:text-white"
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
           onFocus={() => setOpen(true)}
@@ -268,7 +305,11 @@ export const EventSearch = ({
       </div>
       {open && suggestions.length > 0 && (
         <div className="dark:bg-polar-900 dark:border-polar-700 absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
-          <Box flexDirection="column" paddingVertical="s">
+          <Box
+            flexDirection="column"
+            paddingVertical="s"
+            onMouseLeave={() => setHighlighted(-1)}
+          >
             {suggestions.map((suggestion, index) => (
               <Box key={suggestion.token} flexDirection="column">
                 {suggestion.section !== suggestions[index - 1]?.section && (

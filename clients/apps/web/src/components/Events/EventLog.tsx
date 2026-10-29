@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { useEffect } from 'react'
-import { EventLogHeader, EventLogRow } from './EventLogRow'
+import { EventLogRow } from './EventLogRow'
 
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
@@ -45,9 +45,16 @@ export const EventLog = ({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [events, selectedEventId, onSelect, onClose])
 
+  const isSelectedLoaded = events.some((event) => event.id === selectedEventId)
+  useEffect(() => {
+    if (!isSelectedLoaded) return
+    document
+      .querySelector(`[data-event-id="${selectedEventId}"]`)
+      ?.scrollIntoView({ block: 'nearest' })
+  }, [selectedEventId, isSelectedLoaded])
+
   return (
     <Box flexDirection="column">
-      <EventLogHeader />
       {events.map((event) => (
         <EventLogRow
           key={event.id}

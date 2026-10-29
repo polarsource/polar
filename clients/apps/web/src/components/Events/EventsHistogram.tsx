@@ -8,6 +8,7 @@ import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const TARGET_BARS = 150
+const HEIGHT = 49
 const HOURLY_MAX_DAYS = 35
 // The API caps hourly ranges at 7 days and daily ranges at 366 days.
 const CHUNK_DAYS = { hour: 7, day: 366 }
@@ -61,6 +62,7 @@ export const EventsHistogram = ({
   eventNames,
   customerIds,
   source,
+  filter,
   onSelectRange,
 }: {
   organizationId: string
@@ -69,6 +71,7 @@ export const EventsHistogram = ({
   eventNames: string[] | null
   customerIds: string[] | null
   source: schemas['EventSource'] | null
+  filter: string | null
   onSelectRange: (range: { from: Date; to: Date }) => void
 }) => {
   const [hovered, setHovered] = useState<number | null>(null)
@@ -83,6 +86,7 @@ export const EventsHistogram = ({
       name: eventNames && eventNames.length > 0 ? eventNames : undefined,
       customer_id: customerIds ?? undefined,
       source: source ?? undefined,
+      filter: filter ?? undefined,
     },
   )
 
@@ -94,6 +98,7 @@ export const EventsHistogram = ({
       end: new Date(period.period_end),
       count: period.stats.reduce((sum, stat) => sum + stat.occurrences, 0),
     }))
+    .filter((period) => period.end > startDate && period.start < endDate)
     .filter((period) => {
       const key = period.start.getTime()
       if (seen.has(key)) return false
@@ -107,7 +112,7 @@ export const EventsHistogram = ({
   const labels = [bars[0], bars[Math.floor(bars.length / 2)], bars.at(-1)]
 
   return (
-    <Box flexDirection="column" gap="s">
+    <Box flexDirection="column" gap="s" height={HEIGHT} flexShrink={0}>
       <div onMouseLeave={() => setHovered(null)}>
         <Box
           borderBottomWidth={1}
@@ -116,30 +121,36 @@ export const EventsHistogram = ({
         >
           <div
             className={twMerge(
-              'flex h-12 w-full items-end',
+              'flex h-6 w-full items-end',
               bars.length > 60 ? 'gap-0.5' : 'gap-1',
             )}
           >
-            {bars.map((bar, index) => (
-              <Tooltip key={bar.start.toISOString()} delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Box
-                    flexGrow={1}
-                    flexBasis={0}
-                    height="100%"
-                    alignItems="end"
-                    backgroundColor={
-                      index === hovered
-                        ? 'background-card'
-                        : 'background-secondary'
-                    }
-                    cursor="pointer"
-                    onMouseEnter={() => setHovered(index)}
-                    onClick={() =>
-                      onSelectRange({ from: bar.start, to: bar.end })
-                    }
-                  >
-                    {bar.count > 0 && (
+            {bars.map((bar, index) =>
+              bar.count === 0 ? (
+                <Box
+                  key={bar.start.toISOString()}
+                  flexGrow={1}
+                  flexBasis={0}
+                  height="100%"
+                  onMouseEnter={() => setHovered(null)}
+                />
+              ) : (
+                <Tooltip key={bar.start.toISOString()} delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Box
+                      flexGrow={1}
+                      flexBasis={0}
+                      height="100%"
+                      alignItems="end"
+                      backgroundColor={
+                        index === hovered ? 'background-secondary' : undefined
+                      }
+                      cursor="pointer"
+                      onMouseEnter={() => setHovered(index)}
+                      onClick={() =>
+                        onSelectRange({ from: bar.start, to: bar.end })
+                      }
+                    >
                       <Box
                         width="100%"
                         height={`${(bar.count / max) * 100}%`}
@@ -147,30 +158,28 @@ export const EventsHistogram = ({
                         backgroundColor="background-inverse"
                         opacity={index === hovered ? 0.8 : 0.35}
                       />
-                    )}
-                  </Box>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  <Text variant="caption" tabularNums>
-                    {formatBarStart(bar.start, hourly)} ·{' '}
-                    {bar.count.toLocaleString('en-US')}{' '}
-                    {bar.count === 1 ? 'event' : 'events'}
-                  </Text>
-                </TooltipContent>
-              </Tooltip>
-            ))}
+                    </Box>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <Text variant="caption" tabularNums>
+                      {formatBarStart(bar.start, hourly)} ·{' '}
+                      {bar.count.toLocaleString('en-US')}{' '}
+                      {bar.count === 1 ? 'event' : 'events'}
+                    </Text>
+                  </TooltipContent>
+                </Tooltip>
+              ),
+            )}
           </div>
         </Box>
       </div>
-      {bars.length > 0 && (
-        <Box justifyContent="between">
-          {labels.map((bar, index) => (
-            <Text key={index} variant="caption" color="muted" tabularNums>
-              {bar ? formatBarStart(bar.start, hourly) : ''}
-            </Text>
-          ))}
-        </Box>
-      )}
+      <Box justifyContent="between" height={16}>
+        {labels.map((bar, index) => (
+          <Text key={index} variant="caption" color="muted" tabularNums>
+            {bar ? formatBarStart(bar.start, hourly) : ''}
+          </Text>
+        ))}
+      </Box>
     </Box>
   )
 }

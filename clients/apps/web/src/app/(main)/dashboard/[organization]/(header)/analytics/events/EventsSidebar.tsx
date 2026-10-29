@@ -1,29 +1,47 @@
 'use client'
 
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
-import { EventMetadataFilter } from '@/components/Events/EventMetadataFilter'
+import { EventMetadataFields } from '@/components/Events/EventMetadataFields'
 import { EventTypeFilter } from '@/components/Events/EventTypeFilter'
-import DateRangePicker from '@/components/Metrics/DateRangePicker'
+import DateRangePicker, {
+  DateRangeInterval,
+  DateRangeIntervalSlug,
+} from '@/components/Metrics/DateRangePicker'
 import { useEventNames } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import {
   Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Text,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { RotateCcw } from '@polar-sh/orbit/icons'
+import { FunnelX } from '@polar-sh/orbit/icons'
 
 type Metadata = Record<string, string | number | boolean>
+
+type Sorting = '-timestamp' | 'timestamp'
 
 export const EventsSidebar = ({
   organization,
   dateRange,
+  rangeIntervals,
+  selectedRange,
   onDateRangeChange,
+  sorting,
+  onSortingChange,
   selectedEventTypes,
   onToggleEventType,
+  costOnly,
+  onCostOnlyChange,
+  source,
+  onSourceChange,
   selectedCustomerIds,
   onSelectCustomerIds,
   metadata,
@@ -33,9 +51,20 @@ export const EventsSidebar = ({
 }: {
   organization: schemas['Organization']
   dateRange: { from: Date; to: Date }
-  onDateRangeChange: (range: { from: Date; to: Date }) => void
+  rangeIntervals: DateRangeInterval[]
+  selectedRange: DateRangeIntervalSlug | null
+  onDateRangeChange: (
+    range: { from: Date; to: Date },
+    interval?: DateRangeInterval,
+  ) => void
+  sorting: Sorting
+  onSortingChange: (sorting: Sorting) => void
   selectedEventTypes: string[]
   onToggleEventType: (name: string) => void
+  costOnly: boolean
+  onCostOnlyChange: (costOnly: boolean) => void
+  source: schemas['EventSource'] | null
+  onSourceChange: (source: schemas['EventSource'] | null) => void
   selectedCustomerIds: string[] | null
   onSelectCustomerIds: (ids: string[] | null) => void
   metadata: Metadata | null
@@ -69,11 +98,11 @@ export const EventsSidebar = ({
               <Button
                 size="icon"
                 variant="ghost"
-                className="h-6 w-6"
+                className="h-6 w-6 [&_svg]:size-3!"
                 onClick={onReset}
                 aria-label="Reset filters"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <FunnelX />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Reset filters</TooltipContent>
@@ -93,6 +122,8 @@ export const EventsSidebar = ({
           <DateRangePicker
             date={dateRange}
             onDateChange={onDateRangeChange}
+            additionalIntervals={rangeIntervals}
+            selectedInterval={selectedRange}
             className="w-full"
           />
         </Box>
@@ -109,7 +140,42 @@ export const EventsSidebar = ({
           selectedCustomerIds={selectedCustomerIds}
           onSelectCustomerIds={onSelectCustomerIds}
         />
-        <EventMetadataFilter
+        <Box flexDirection="column" gap="s">
+          <h3 className="text-sm">Source</h3>
+          <Select
+            value={source ?? 'all'}
+            onValueChange={(value) =>
+              onSourceChange(
+                value === 'all' ? null : (value as schemas['EventSource']),
+              )
+            }
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All sources</SelectItem>
+              <SelectItem value="user">User</SelectItem>
+              <SelectItem value="system">System</SelectItem>
+            </SelectContent>
+          </Select>
+        </Box>
+        <Box flexDirection="column" gap="s">
+          <h3 className="text-sm">Cost</h3>
+          <Select
+            value={costOnly ? 'withCost' : 'all'}
+            onValueChange={(value) => onCostOnlyChange(value === 'withCost')}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All events</SelectItem>
+              <SelectItem value="withCost">Only with cost</SelectItem>
+            </SelectContent>
+          </Select>
+        </Box>
+        <EventMetadataFields
           metadata={metadataEntries}
           onChange={(entries) =>
             onMetadataChange(
@@ -119,6 +185,21 @@ export const EventsSidebar = ({
             )
           }
         />
+        <Box flexDirection="column" gap="s">
+          <h3 className="text-sm">Sorting</h3>
+          <Select
+            value={sorting}
+            onValueChange={(value) => onSortingChange(value as Sorting)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="-timestamp">Newest</SelectItem>
+              <SelectItem value="timestamp">Oldest</SelectItem>
+            </SelectContent>
+          </Select>
+        </Box>
       </Box>
     </Box>
   )

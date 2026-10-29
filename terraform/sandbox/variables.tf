@@ -117,6 +117,12 @@ variable "lambda_worker_tailscale_token" {
   sensitive   = true
 }
 
+variable "ec2_tailscale_oauth_client_id" {
+  description = "ID of the Tailscale OAuth client used by the EC2 router"
+  type        = string
+  nullable    = false
+}
+
 variable "ec2_tailscale_oauth_client_secret" {
   description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:sandbox"
   type        = string

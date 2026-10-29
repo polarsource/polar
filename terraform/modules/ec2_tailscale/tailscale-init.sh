@@ -9,6 +9,7 @@ advertise_routes="$5"
 advertise_tags="$6"
 tailscale_version="$7"
 split_dns_domain="$8"
+oauth_client_id="$9"
 
 if [[ -n "$advertise_routes" ]]; then
   sysctl -p /etc/sysctl.d/99-tailscale.conf
@@ -68,7 +69,7 @@ EOF
 
   access_token=$(curl --fail --silent --show-error --retry 5 \
     --data grant_type=client_credentials \
-    --data client_id=unused \
+    --data-urlencode "client_id=$oauth_client_id" \
     --data-urlencode "client_secret@$client_secret_file" \
     https://api.tailscale.com/api/v2/oauth/token |
     jq --raw-output --exit-status .access_token)

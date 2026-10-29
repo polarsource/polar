@@ -280,7 +280,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
         </div>
       }
     >
-      <Box flexDirection="column" rowGap="3xl">
+      <Box flexDirection="column" rowGap="2xl">
         <Subnav label="Product sections">
           {(['overview', 'metrics'] as const).map((value) => (
             <SubnavItem key={value} active={tab === value}>

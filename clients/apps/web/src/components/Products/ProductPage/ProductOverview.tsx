@@ -1,7 +1,5 @@
-import { StatisticCard } from '@/components/Shared/StatisticCard'
-import { formatHumanFriendlyScalar } from '@/utils/formatters'
+import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
 import { Grid } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ProductBenefits } from './ProductBenefits'
@@ -16,16 +14,6 @@ export interface ProductOverviewProps {
   todayMetrics?: schemas['MetricsResponse']
 }
 
-const formatMetric = (
-  metric?: schemas['Metric'] | null,
-  value?: number | null,
-) => {
-  if (!metric) return '—'
-  return metric.type === 'scalar'
-    ? formatHumanFriendlyScalar(value ?? 0)
-    : formatCurrency('statistics')(value ?? 0, 'usd')
-}
-
 export const ProductOverview = ({
   organization,
   product,
@@ -34,49 +22,45 @@ export const ProductOverview = ({
 }: ProductOverviewProps) => {
   return (
     <Box flexDirection="column" rowGap="3xl">
-      <Box
-        display={{ base: 'grid', xl: 'flex' }}
-        gridTemplateColumns="repeat(2, 1fr)"
-        gap={{ base: 'l', md: 'xl' }}
+      <Grid
+        templateColumns={{
+          base: '1fr',
+          md: 'repeat(2, 1fr)',
+          lg: 'repeat(3, 1fr)',
+        }}
+        gap="xl"
       >
         {product.is_recurring ? (
           <>
-            <StatisticCard title="Active Subscriptions" size="lg">
-              {formatMetric(
-                metrics?.metrics.active_subscriptions,
-                metrics?.totals.active_subscriptions,
-              )}
-            </StatisticCard>
-            <StatisticCard title="Monthly Recurring Revenue" size="lg">
-              {formatMetric(
-                metrics?.metrics.monthly_recurring_revenue,
-                metrics?.totals.monthly_recurring_revenue,
-              )}
-            </StatisticCard>
+            <MiniMetricChartBox
+              title="Active Subscriptions"
+              metric={metrics?.metrics.active_subscriptions}
+              value={metrics?.totals.active_subscriptions}
+            />
+            <MiniMetricChartBox
+              title="Monthly Recurring Revenue"
+              metric={metrics?.metrics.monthly_recurring_revenue}
+              value={metrics?.totals.monthly_recurring_revenue}
+            />
           </>
         ) : (
           <>
-            <StatisticCard title="One-Time Products" size="lg">
-              {formatMetric(
-                metrics?.metrics.one_time_products,
-                metrics?.totals.one_time_products,
-              )}
-            </StatisticCard>
-            <StatisticCard title="Today's Revenue" size="lg">
-              {formatMetric(
-                todayMetrics?.metrics.revenue,
-                todayMetrics?.periods.at(-1)?.revenue,
-              )}
-            </StatisticCard>
+            <MiniMetricChartBox
+              metric={metrics?.metrics.one_time_products}
+              value={metrics?.totals.one_time_products}
+            />
+            <MiniMetricChartBox
+              title="Today's Revenue"
+              metric={todayMetrics?.metrics.revenue}
+              value={todayMetrics?.periods.at(-1)?.revenue}
+            />
           </>
         )}
-        <StatisticCard title="Cumulative Revenue" size="lg">
-          {formatMetric(
-            metrics?.metrics.cumulative_revenue,
-            metrics?.periods.at(-1)?.cumulative_revenue,
-          )}
-        </StatisticCard>
-      </Box>
+        <MiniMetricChartBox
+          metric={metrics?.metrics.cumulative_revenue}
+          value={metrics?.periods.at(-1)?.cumulative_revenue}
+        />
+      </Grid>
       {product.is_recurring && (
         <ProductSubscriptions organization={organization} product={product} />
       )}

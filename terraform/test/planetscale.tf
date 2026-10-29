@@ -9,6 +9,12 @@ module "planetscale" {
   cluster_size       = "PS_10_AWS_ARM"
   deletion_protected = false
 
+  storage = {
+    storage_iops            = 3000
+    storage_throughput_mibs = 125
+    storage_autoscaling     = true
+  }
+
   parameters = {
     pgconf = {
       max_connections = "50"

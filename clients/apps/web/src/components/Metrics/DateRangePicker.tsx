@@ -112,9 +112,10 @@ export type DateRange = {
 
 interface DateRangePickerProps extends React.HTMLAttributes<HTMLDivElement> {
   date: DateRange | undefined
-  onDateChange: (v: DateRange) => void
+  onDateChange: (v: DateRange, interval?: DateRangeInterval) => void
   minDate?: Date
   additionalIntervals?: DateRangeInterval[]
+  selectedInterval?: DateRangeIntervalSlug | null
 }
 
 const DateRangePicker: React.FC<DateRangePickerProps> = ({
@@ -123,11 +124,18 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   onDateChange,
   minDate,
   additionalIntervals,
+  selectedInterval,
 }) => {
   const { organization } = useContext(OrganizationContext)
-  const interval = date
-    ? dateRangeToMatchingInterval(date, organization)
-    : undefined
+  const interval =
+    selectedInterval !== undefined
+      ? [
+          ...(additionalIntervals ?? []),
+          ...dateRangeIntervals(organization),
+        ].find((int) => int.slug === selectedInterval)
+      : date
+        ? dateRangeToMatchingInterval(date, organization)
+        : undefined
 
   return (
     <div
@@ -179,10 +187,13 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
             interval={interval}
             additionalIntervals={additionalIntervals}
             onIntervalChange={(int) => {
-              onDateChange({
-                from: int.value[0],
-                to: int.value[1],
-              })
+              onDateChange(
+                {
+                  from: int.value[0],
+                  to: int.value[1],
+                },
+                int,
+              )
             }}
           />
         </PopoverContent>

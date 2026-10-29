@@ -499,8 +499,7 @@ class BenefitGrantService:
         ]
         if not targets or not candidates:
             return set()
-        # Downloadables move only when no other grant still holds the previous
-        # version, so concurrent jobs for the customer must not both skip them.
+        # Concurrent jobs for the customer must not both skip moving downloadables.
         await BenefitGrantRepository.from_session(session).lock_customer(customer.id)
 
         previous_benefits = {

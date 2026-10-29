@@ -514,6 +514,7 @@ async def create_product(
     trial_interval_count: int | None = None,
     is_tax_applicable: bool = True,
     external_id: str | None = None,
+    is_current: bool = True,
 ) -> Product:
     recurring_interval_count = (
         None if recurring_interval is None else recurring_interval_count
@@ -535,6 +536,7 @@ async def create_product(
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
         external_id=external_id,
+        is_current=is_current,
         all_prices=[],
         prices=[],
         product_benefits=[],
@@ -2048,6 +2050,7 @@ async def create_refund(
     processor_reason: str = "requested_by_customer",
     processor_balance_transaction_id: str = "STRIPE_BALANCE_TRANSACTION_ID",
     dispute: Dispute | None = None,
+    revoke_benefits: bool = False,
 ) -> Refund:
     refund = Refund(
         status=status,
@@ -2061,6 +2064,7 @@ async def create_refund(
         customer=order.customer,
         organization=order.organization,
         dispute=dispute,
+        revoke_benefits=revoke_benefits,
         processor=processor,
         processor_id=processor_id,
         processor_reason=processor_reason,

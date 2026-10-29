@@ -6561,9 +6561,8 @@ class TestMoveBenefits:
             organization=organization,
             recurring_interval=None,
             external_id="pro",
+            is_current=False,
         )
-        previous.is_current = False
-        await save_fixture(previous)
         current = await create_product(
             save_fixture,
             organization=organization,
@@ -6616,9 +6615,7 @@ class TestMoveBenefits:
         )
         disputed = await create_order(save_fixture, product=product, customer=customer)
         payment = await create_payment(save_fixture, organization)
-        refund = await create_refund(save_fixture, refunded, payment)
-        refund.revoke_benefits = True
-        await save_fixture(refund)
+        await create_refund(save_fixture, refunded, payment, revoke_benefits=True)
         await create_dispute(save_fixture, disputed, payment, status=DisputeStatus.lost)
 
         await order_service.move_benefits(session, organization.id, "pro", product)

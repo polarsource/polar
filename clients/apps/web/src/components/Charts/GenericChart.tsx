@@ -16,6 +16,8 @@ import {
   YAxis,
   type MouseHandlerDataParam,
 } from '@polar-sh/ui/components/ui/chart'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useTheme } from 'next-themes'
 import React, {
   useCallback,
@@ -63,6 +65,59 @@ const MinHeightBar = (props: {
   )
 }
 
+const MarkerDot = ({
+  viewBox,
+  fill,
+  stroke,
+  r = 3,
+}: {
+  viewBox?: { x?: number; y?: number }
+  fill: string
+  stroke?: string
+  r?: number
+}) => (
+  <circle cx={viewBox?.x} cy={viewBox?.y} r={r} fill={fill} stroke={stroke} />
+)
+
+export interface ChartMarker {
+  x: string | number
+  items: { prefix?: string; label: string }[]
+}
+
+const MAX_TOOLTIP_MARKER_ITEMS = 3
+
+const MarkerTooltipRows = ({ marker }: { marker: ChartMarker }) => {
+  const hidden = marker.items.length - MAX_TOOLTIP_MARKER_ITEMS
+  return (
+    <Box
+      flexDirection="column"
+      rowGap="xs"
+      paddingTop="s"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+    >
+      {marker.items.slice(0, MAX_TOOLTIP_MARKER_ITEMS).map((item, index) => (
+        <Box key={index} alignItems="baseline" columnGap="xs">
+          {item.prefix && (
+            <Text variant="caption" color="muted">
+              {item.prefix}
+            </Text>
+          )}
+          <Text variant="label" truncate>
+            {item.label}
+          </Text>
+        </Box>
+      ))}
+      {hidden > 0 && (
+        <Text variant="caption" color="muted">
+          +{hidden} more
+        </Text>
+      )}
+    </Box>
+  )
+}
+
 export interface GenericChartSeries {
   key: string
   label: string
@@ -89,6 +144,7 @@ interface GenericChartProps<T extends Record<string, unknown>> {
   simple?: boolean
   ticks?: AxisTick[]
   activeCursorIndex?: number | null
+  markers?: ChartMarker[]
 }
 
 export const GenericChart = <T extends Record<string, unknown>>({
@@ -109,9 +165,11 @@ export const GenericChart = <T extends Record<string, unknown>>({
   simple = false,
   ticks: customTicks,
   activeCursorIndex,
+  markers,
 }: GenericChartProps<T>) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
+  const guideLineColor = isDark ? '#27272A' : '#E4E4E7'
   const [activeSeries, setActiveSeries] = useState<string | null>(null)
 
   const id = useId()
@@ -308,6 +366,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
       />
     ) : undefined
 
+    const markerRingColor = isDark ? '#3F3F46' : '#D4D4D8'
     const tooltip = (
       <ChartTooltip
         cursor={false}
@@ -318,22 +377,48 @@ export const GenericChart = <T extends Record<string, unknown>>({
           coordinate,
           accessibilityLayer,
           activeIndex,
-        }) => (
-          <ChartTooltipContent
-            active={active}
-            payload={payload}
-            label={label}
-            coordinate={coordinate}
-            accessibilityLayer={accessibilityLayer}
-            activeIndex={activeIndex}
-            className="text-black dark:text-white"
-            indicator="dot"
-            labelFormatter={tooltipLabelFormatter}
-            formatter={formatter}
-          />
-        )}
+        }) => {
+          const marker = markers?.find(
+            (m) => m.x === payload?.[0]?.payload?.[xAxisKey as string],
+          )
+          return (
+            <ChartTooltipContent
+              active={active}
+              payload={payload}
+              label={label}
+              coordinate={coordinate}
+              accessibilityLayer={accessibilityLayer}
+              activeIndex={activeIndex}
+              className="text-black dark:text-white"
+              indicator="dot"
+              labelFormatter={tooltipLabelFormatter}
+              formatter={formatter}
+              footer={marker && <MarkerTooltipRows marker={marker} />}
+            />
+          )
+        }}
       />
     )
+
+    const markerReferenceLines = markers?.flatMap((marker) => [
+      <ReferenceLine
+        key={`marker-line-${marker.x}`}
+        x={marker.x}
+        stroke={guideLineColor}
+        strokeDasharray="6 6"
+        shapeRendering="crispEdges"
+        // Below areas (100), whose layer also draws the series stroke.
+        zIndex={50}
+      />,
+      <ReferenceLine
+        key={`marker-${marker.x}`}
+        x={marker.x}
+        stroke="none"
+        // Card fill hides the line and area behind the ring.
+        label={<MarkerDot fill="var(--card)" stroke={markerRingColor} />}
+        zIndex={350}
+      />,
+    ])
 
     const legend = showLegend ? (
       <ChartLegend
@@ -375,6 +460,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
+          {markerReferenceLines}
           {series
             .slice()
             .reverse()
@@ -403,6 +489,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
+          {markerReferenceLines}
           {series.map((s) => (
             <Line
               key={s.key}
@@ -466,6 +553,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
         {yAxis}
         {tooltip}
         {legend}
+        {markerReferenceLines}
         <Area
           dataKey={primarySeries.key}
           stroke={`var(--color-${primarySeries.key})`}
@@ -497,22 +585,37 @@ export const GenericChart = <T extends Record<string, unknown>>({
     handleMouseMove,
     handleMouseLeave,
     id,
+    markers,
+    guideLineColor,
   ])
 
   // Cursor line is cheap and only depends on the active index.
   // Injected via cloneElement so chartBase stays stable on hover.
   const chartContent = useMemo(() => {
     if (!chartBase) return null
-    const cursorLine =
-      activeCursorIndex != null && data[activeCursorIndex] ? (
-        <ReferenceLine
-          key="cursor"
-          x={data[activeCursorIndex][xAxisKey as string] as string | number}
-          stroke={isDark ? '#27282A' : '#E5E7EB'}
-          strokeWidth={1}
-        />
-      ) : null
-    if (!cursorLine) return chartBase
+    const activeRow =
+      activeCursorIndex != null ? data[activeCursorIndex] : undefined
+    if (!activeRow) return chartBase
+    const activeX = activeRow[xAxisKey as string] as string | number
+    const activeMarkerColor = isDark ? '#A1A1AA' : '#52525B'
+    const cursorLine = markers?.some((m) => m.x === activeX) ? (
+      <ReferenceLine
+        key="active-marker"
+        x={activeX}
+        stroke={activeMarkerColor}
+        shapeRendering="crispEdges"
+        label={<MarkerDot fill={activeMarkerColor} r={4} />}
+      />
+    ) : (
+      <ReferenceLine
+        key="cursor"
+        x={activeX}
+        stroke={guideLineColor}
+        strokeWidth={1}
+        // Below series lines (400), above areas (100).
+        zIndex={350}
+      />
+    )
     // Spread the original children without React.Children.toArray so that
     // existing keys are preserved and Recharts doesn't remount/re-animate.
     const originalChildren: React.ReactNode = chartBase.props.children
@@ -524,7 +627,15 @@ export const GenericChart = <T extends Record<string, unknown>>({
         : [originalChildren]),
       cursorLine,
     )
-  }, [chartBase, activeCursorIndex, data, xAxisKey, isDark])
+  }, [
+    chartBase,
+    activeCursorIndex,
+    data,
+    xAxisKey,
+    isDark,
+    markers,
+    guideLineColor,
+  ])
 
   return (
     <ChartContainer

@@ -47,6 +47,7 @@ function MetricSection({
           {metricKeys.map((metricKey, index) => (
             <MetricChartBox
               key={String(metricKey)}
+              showCatalogVersions
               data={data}
               interval={interval}
               metric={metricKey}

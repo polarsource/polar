@@ -2,6 +2,7 @@
 
 import { Spinner } from '@polar-sh/orbit'
 import { ParsedMetricsResponse } from '@/hooks/queries'
+import { useCatalogMarkers } from '@/hooks/queries/catalogs'
 import { getFormattedMetricValue } from '@/utils/metrics'
 import { ArrowOutwardOutlined, MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
@@ -57,6 +58,7 @@ interface MetricChartBoxProps {
   /** Controlled hover index — syncs cursor across charts in a group. */
   hoveredPeriodIndex?: number | null
   onHoverPeriodChange?: (index: number | null) => void
+  showCatalogVersions?: boolean
 }
 
 const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
@@ -90,10 +92,16 @@ const MetricChartBox = ({
   availableMetrics,
   hoveredPeriodIndex: hoveredPeriodIndexProp,
   onHoverPeriodChange,
+  showCatalogVersions = false,
 }: MetricChartBoxProps & {
   ref?: React.RefObject<HTMLDivElement>
 }) => {
   const { isShown: isModalOpen, show: showModal, hide: hideModal } = useModal()
+  const markers = useCatalogMarkers(
+    data?.periods,
+    interval,
+    showCatalogVersions,
+  )
 
   const startDate = useMemo(() => {
     if (!data || !data.periods.length) return null
@@ -397,6 +405,7 @@ const MetricChartBox = ({
             simple={simple}
             chartType={chartType}
             activeCursorIndex={hoveredPeriodIndex}
+            markers={markers}
           />
         ) : (
           <div

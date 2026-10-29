@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
 import { Suspense, useMemo } from 'react'
 import type { AxisTick } from 'recharts/types/util/types'
+import type { ChartMarker } from '../Charts/GenericChart'
 
 const GenericChart = dynamic(() =>
   import('../Charts/GenericChart').then((m) => m.GenericChart),
@@ -24,6 +25,7 @@ interface MetricChartProps {
   showYAxis?: boolean
   chartType?: 'line' | 'bar'
   activeCursorIndex?: number | null
+  markers?: ChartMarker[]
 }
 
 const MetricChart = ({
@@ -40,6 +42,7 @@ const MetricChart = ({
   showYAxis = false,
   chartType = 'line',
   activeCursorIndex,
+  markers,
 }: MetricChartProps) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -119,6 +122,7 @@ const MetricChart = ({
         simple={simple}
         ticks={ticks}
         activeCursorIndex={activeCursorIndex}
+        markers={markers}
       />
     </Suspense>
   )

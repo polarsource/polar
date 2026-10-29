@@ -1,7 +1,9 @@
+import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
+from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 from sqlalchemy import Select
 
@@ -1566,3 +1568,87 @@ class TestCreateOrderItemsFromPending:
             )
         else:
             bill.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("reducer_credits", "match"), [(Decimal(13), True), (Decimal(16), False)]
+    )
+    async def test_compares_net_usage_with_the_reducer(
+        self,
+        reducer_credits: Decimal,
+        match: bool,
+        capfire: CaptureLogfire,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.billing_entry.service.reducer_service.bill",
+            return_value={meter.id: (Decimal(15), reducer_credits)},
+        )
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],
+        )
+        # Legacy nets each price on its own: max(0, 10 - 8) + max(0, 5 - 8) = 2.
+        for price, tokens in ((product_old.prices[0], 10), (product_new.prices[0], 5)):
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=subscription,
+                tokens=tokens,
+            )
+            await create_credit_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=subscription,
+                meter=meter,
+                units=8,
+            )
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(product_new.prices[0])
+        ]
+        await save_fixture(subscription)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 2
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        [span] = [
+            span
+            for span in capfire.exporter.exported_spans
+            if span.name == "Bill and compare reducer usage"
+            and span.attributes is not None
+            and span.attributes.get("logfire.span_type") == "span"
+        ]
+        assert span.attributes is not None
+        assert json.loads(str(span.attributes["quantities"])) == {
+            str(meter.id): {
+                "legacy": {"usage": "15.0", "credits": "16", "net": "2.0"},
+                "reducer": {
+                    "usage": "15",
+                    "credits": str(reducer_credits),
+                    "net": str(max(Decimal(15) - reducer_credits, Decimal(0))),
+                },
+            }
+        }
+        assert span.attributes["match"] is match

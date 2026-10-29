@@ -47,6 +47,7 @@ from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
+    BUCKET_SIZE,
     BucketStatistics,
     Reducer,
     ReducerMatcher,
@@ -382,7 +383,11 @@ class _Confirmation:
     snapshot: "Snapshot"
     customer: str
     identity: str
+    started: float
+    age: float
+    superseded: bool
     awaited: int = 0
+    messages: int = 0
     asked: int = 0
     confirmed: dict[int, list[str]] = dataclasses.field(default_factory=dict)
     timer: anyio.CancelScope | None = None
@@ -1182,6 +1187,7 @@ class Outpost:
         """Asks Polar which of the pending events in the buckets the snapshot seals it
         counts. The snapshot Polar answers with applies once it did, or the asking one
         after confirm_timeout with the events still pending."""
+        started = time.perf_counter()
         key = f"{identity}:{snapshot['meter_id']}"
         superseded = self._confirmations.pop(key, None)
         if superseded is not None and superseded.timer is not None:
@@ -1199,7 +1205,16 @@ class Outpost:
         ]
         if not sealed:
             return False
-        confirmation = _Confirmation(key, snapshot, customer, identity)
+        confirmation = _Confirmation(
+            key,
+            snapshot,
+            customer,
+            identity,
+            started=started,
+            # Seconds since the oldest bucket asked ended.
+            age=(time.time_ns() / 1_000 - min(sealed) - BUCKET_SIZE) / 1_000_000,
+            superseded=superseded is not None,
+        )
         reducer_id = identity[len(customer) + 1 :]
         assert self._redis is not None
         for bucket_start in sealed:
@@ -1230,6 +1245,7 @@ class Outpost:
                     # Not connected: the events stay pending until the next snapshot.
                     return False
                 confirmation.awaited += 1
+                confirmation.messages += 1
                 confirmation.asked += len(batch)
         if not confirmation.awaited:
             return False
@@ -1273,6 +1289,7 @@ class Outpost:
         """Settles the confirmed events and applies the snapshot in one transaction: a
         read sees the bucket either fully local or as Polar's total plus what is still
         pending."""
+        applying = time.perf_counter()
         assert self._redis is not None
         assert self._apply_snapshot is not None
         assert self._confirm_script is not None
@@ -1341,6 +1358,10 @@ class Outpost:
                             len(ids) for ids in confirmed.values()
                         ),
                         "outpost.pending.answered": answered,
+                        "outpost.pending.messages": confirmation.messages,
+                        "outpost.pending.age": confirmation.age,
+                        "outpost.pending.superseded": confirmation.superseded,
+                        "outpost.confirm.duration": applying - confirmation.started,
                     }
                 )
             await self._receive_state(identity, decode_state(state))

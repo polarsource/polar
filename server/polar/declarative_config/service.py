@@ -316,7 +316,6 @@ class DeclarativeConfigService:
             session, organization, config, catalog=archived_base
         )
         issues.extend(removal_issues)
-        live = None if archived_base is not None else base
         catalog: ConfigCatalogPlan | None = None
         # Apply publishes on top of live, so planning against an archived
         # catalog has no next catalog.
@@ -326,20 +325,20 @@ class DeclarativeConfigService:
             else await catalog_service.get_next_version_hash(
                 session,
                 organization,
-                live,
+                base,
                 catalogs.product_definitions(changes),
                 [removal.external_id for removal in removed],
             )
         )
         if catalog_after is not None and catalog_after != catalog_before:
             catalog = ConfigCatalogPlan(
-                before=None if live is None else ConfigCatalog.model_validate(live),
+                before=None if base is None else ConfigCatalog.model_validate(base),
                 name=config.catalog_name
                 if config.catalog_name is not None
                 else await catalog_service.get_default_name(
                     session,
                     organization,
-                    after_baseline=live is None and catalog_before is not None,
+                    after_baseline=base is None and catalog_before is not None,
                 ),
             )
         return ConfigPlan(

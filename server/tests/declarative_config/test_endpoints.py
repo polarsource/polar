@@ -388,7 +388,7 @@ class TestPlan:
     ) -> None:
         response = await client.post(
             "/v1/config/plan",
-            params={"catalog": str(uuid.uuid4())},
+            params={"catalog_id": str(uuid.uuid4())},
             json={"meters": [METER], "organization_id": str(organization.id)},
         )
 
@@ -603,7 +603,7 @@ class TestExport:
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     @pytest.mark.parametrize(
-        ("catalog", "status_code"),
+        ("catalog_id", "status_code"),
         [("00000000-0000-4000-8000-000000000000", 404), ("live", 422)],
     )
     async def test_catalog_selector(
@@ -611,12 +611,12 @@ class TestExport:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        catalog: str,
+        catalog_id: str,
         status_code: int,
     ) -> None:
         response = await client.get(
             "/v1/config/",
-            params={"organization_id": str(organization.id), "catalog": catalog},
+            params={"organization_id": str(organization.id), "catalog_id": catalog_id},
         )
 
         assert response.status_code == status_code

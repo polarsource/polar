@@ -68,13 +68,13 @@ async def export(
             "**Required unless you use an organization token.**"
         ),
     ),
-    catalog: CatalogQuery = None,
+    catalog_id: CatalogQuery = None,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ConfigExport:
     """
     Export the organization's current config as a declarative config document.
 
-    With `catalog`, products come from that catalog version. Settings, meters
+    With `catalog_id`, products come from that catalog version. Settings, meters
     and benefits aren't versioned, so they're always the current ones.
 
     `config` has the shape plan and apply accept, without `organization_id`:
@@ -87,7 +87,7 @@ async def export(
     Requires the read or write scope of every exported section.
     """
     return await declarative_config_service.export(
-        session, auth_subject, organization_id, catalog
+        session, auth_subject, organization_id, catalog_id
     )
 
 
@@ -168,7 +168,7 @@ async def apply(
 async def plan(
     config: Config,
     auth_subject: ConfigRead,
-    catalog: CatalogQuery = None,
+    catalog_id: CatalogQuery = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ConfigPlan:
     """
@@ -177,13 +177,15 @@ async def plan(
     Returns the action for each resource, and every issue: `error` issues make
     apply fail, `warning` issues don't.
 
-    With an archived `catalog` version, products are compared to that version
+    With the ID of an archived catalog, products are compared to that version
     instead of the live one. The plan then shows the changes from that version,
     not what apply would do, and the response's `catalog` is None.
 
     Each section requires the read or write scope for its resource.
     """
-    return await declarative_config_service.plan(session, auth_subject, config, catalog)
+    return await declarative_config_service.plan(
+        session, auth_subject, config, catalog_id
+    )
 
 
 @router.post(

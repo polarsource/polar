@@ -2,6 +2,7 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
+import { useSafeCopy } from '@/hooks/clipboard'
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDeleteProduct, useMetrics, useUpdateProduct } from '@/hooks/queries'
 import { apiErrorToast, extractApiErrorMessage } from '@/utils/api/errors'
@@ -10,7 +11,8 @@ import { MoreVert } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Status, type StatusColor } from '@polar-sh/orbit'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
+import { Subnav, SubnavItem } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
@@ -79,10 +81,13 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     metrics: ['revenue'],
   })
 
+  const [tab, setTab] = useState<'overview' | 'metrics'>('overview')
+
   const updateProduct = useUpdateProduct(organization)
   const deleteProduct = useDeleteProduct(organization)
   const managedAsCode = useIsManagedAsCode(organization.id)
   const router = useRouter()
+  const safeCopy = useSafeCopy(toast)
 
   const {
     isShown: isArchiveModalShown,
@@ -159,178 +164,179 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
   }, [product, deleteProduct, router, organization])
 
   return (
-    <Tabs defaultValue="overview" className="h-full">
-      <DashboardBody
-        title={
-          <div className="flex min-w-0 flex-col gap-1">
-            <div className="flex min-w-0 flex-row items-center gap-4">
-              <h1 className="truncate text-2xl">{product.name}</h1>
-              <div className="flex shrink-0 flex-row items-center gap-4">
-                <Status
-                  status={
-                    product.is_recurring ? 'Subscription' : 'One-time Product'
-                  }
-                  color={
-                    ProductTypeDisplayColor[
-                      product.is_recurring ? 'subscription' : 'one_time'
-                    ]
-                  }
-                />
-                {product.is_archived && (
-                  <Status status="Archived" color="red" />
-                )}
-              </div>
-            </div>
-            <span className="dark:text-polar-500 text-xl text-gray-400 [&_*]:!text-current">
-              <ProductPriceLabel
-                product={product}
-                currency={organization.default_presentment_currency}
+    <DashboardBody
+      title={
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0 flex-row items-center gap-4">
+            <h1 className="truncate text-2xl">{product.name}</h1>
+            <div className="flex shrink-0 flex-row items-center gap-4">
+              <Status
+                status={
+                  product.is_recurring ? 'Subscription' : 'One-time Product'
+                }
+                color={
+                  ProductTypeDisplayColor[
+                    product.is_recurring ? 'subscription' : 'one_time'
+                  ]
+                }
               />
-            </span>
-          </div>
-        }
-        header={
-          <div className="flex flex-row items-center justify-between gap-2">
-            {product.is_archived || managedAsCode ? null : (
-              <div>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    router.push(
-                      `/dashboard/${organization.slug}/products/${product.id}/edit`,
-                    )
-                  }}
-                >
-                  Edit Product
-                </Button>
-              </div>
-            )}
-            <div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    className="aspect-square h-10 w-10"
-                    variant="secondary"
-                  >
-                    <MoreVert fontSize="small" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      if (typeof navigator !== 'undefined') {
-                        navigator.clipboard.writeText(product.id)
-
-                        toast({
-                          title: 'Product ID Copied',
-                          description: 'Product ID copied to clipboard',
-                        })
-                      }
-                    }}
-                  >
-                    Copy Product ID
-                  </DropdownMenuItem>
-                  {!product.is_archived && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          router.push(
-                            `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
-                          )
-                        }}
-                      >
-                        Integrate Checkout
-                      </DropdownMenuItem>
-                      {!managedAsCode && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => {
-                              router.push(
-                                `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
-                              )
-                            }}
-                          >
-                            Duplicate Product
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            destructive
-                            onClick={showArchiveModal}
-                          >
-                            Archive Product
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </>
-                  )}
-                  {product.is_archived && !managedAsCode && (
-                    <>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={showUnarchiveModal}>
-                        Unarchive Product
-                      </DropdownMenuItem>
-                      {product.is_deletable && (
-                        <DropdownMenuItem destructive onClick={showDeleteModal}>
-                          Delete Permanently
-                        </DropdownMenuItem>
-                      )}
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {product.is_archived && <Status status="Archived" color="red" />}
             </div>
           </div>
-        }
-      >
-        <TabsList className="pb-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="metrics">Metrics</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview">
+          <span className="dark:text-polar-500 text-xl text-gray-400 [&_*]:!text-current">
+            <ProductPriceLabel
+              product={product}
+              currency={organization.default_presentment_currency}
+            />
+          </span>
+        </div>
+      }
+      header={
+        <div className="flex flex-row items-center justify-between gap-2">
+          {product.is_archived || managedAsCode ? null : (
+            <div>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  router.push(
+                    `/dashboard/${organization.slug}/products/${product.id}/edit`,
+                  )
+                }}
+              >
+                Edit Product
+              </Button>
+            </div>
+          )}
+          <div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button className="aspect-square h-10 w-10" variant="secondary">
+                  <MoreVert fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() =>
+                    void safeCopy(product.id).then(() =>
+                      toast({
+                        title: 'Product ID Copied',
+                        description: 'Product ID copied to clipboard',
+                      }),
+                    )
+                  }
+                >
+                  Copy Product ID
+                </DropdownMenuItem>
+                {!product.is_archived && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        router.push(
+                          `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                        )
+                      }}
+                    >
+                      Integrate Checkout
+                    </DropdownMenuItem>
+                    {!managedAsCode && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => {
+                            router.push(
+                              `/dashboard/${organization.slug}/products/new?fromProductId=${product.id}`,
+                            )
+                          }}
+                        >
+                          Duplicate Product
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          destructive
+                          onClick={showArchiveModal}
+                        >
+                          Archive Product
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </>
+                )}
+                {product.is_archived && !managedAsCode && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={showUnarchiveModal}>
+                      Unarchive Product
+                    </DropdownMenuItem>
+                    {product.is_deletable && (
+                      <DropdownMenuItem destructive onClick={showDeleteModal}>
+                        Delete Permanently
+                      </DropdownMenuItem>
+                    )}
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      }
+    >
+      <Box flexDirection="column" rowGap="3xl">
+        <Subnav label="Product sections">
+          {(['overview', 'metrics'] as const).map((value) => (
+            <SubnavItem key={value} active={tab === value}>
+              <button
+                type="button"
+                className="cursor-pointer capitalize"
+                onClick={() => setTab(value)}
+              >
+                {value}
+              </button>
+            </SubnavItem>
+          ))}
+        </Subnav>
+        {tab === 'overview' ? (
           <ProductOverview
             metrics={metrics}
             todayMetrics={todayMetrics}
             organization={organization}
             product={product}
           />
-        </TabsContent>
-        <TabsContent value="metrics">
+        ) : (
           <ProductMetricsView
             data={metrics}
             interval={allTimeInterval}
             loading={metricsLoading}
             product={product}
           />
-        </TabsContent>
-        <ConfirmModal
-          title="Archive Product"
-          description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
-          onConfirm={handleArchiveProduct}
-          isShown={isArchiveModalShown}
-          hide={hideArchiveModal}
-          destructiveText="Archive"
-          destructive
-        />
-        <ConfirmModal
-          title="Unarchive Product"
-          description="Unarchiving this product will make it available for new subscribers and purchases again."
-          onConfirm={handleUnarchiveProduct}
-          isShown={isUnarchiveModalShown}
-          hide={hideUnarchiveModal}
-          destructiveText="Unarchive"
-        />
-        <ConfirmModal
-          title="Delete Product"
-          description="This product has never been sold and will be permanently deleted. This action cannot be undone."
-          onConfirm={handleDeleteProduct}
-          isShown={isDeleteModalShown}
-          hide={hideDeleteModal}
-          confirmPrompt={product.name}
-          destructiveText="Delete"
-          destructive
-        />
-      </DashboardBody>
-    </Tabs>
+        )}
+      </Box>
+      <ConfirmModal
+        title="Archive Product"
+        description="Archiving a product will not affect its current customers, only prevent new subscribers and purchases."
+        onConfirm={handleArchiveProduct}
+        isShown={isArchiveModalShown}
+        hide={hideArchiveModal}
+        destructiveText="Archive"
+        destructive
+      />
+      <ConfirmModal
+        title="Unarchive Product"
+        description="Unarchiving this product will make it available for new subscribers and purchases again."
+        onConfirm={handleUnarchiveProduct}
+        isShown={isUnarchiveModalShown}
+        hide={hideUnarchiveModal}
+        destructiveText="Unarchive"
+      />
+      <ConfirmModal
+        title="Delete Product"
+        description="This product has never been sold and will be permanently deleted. This action cannot be undone."
+        onConfirm={handleDeleteProduct}
+        isShown={isDeleteModalShown}
+        hide={hideDeleteModal}
+        confirmPrompt={product.name}
+        destructiveText="Delete"
+        destructive
+      />
+    </DashboardBody>
   )
 }

@@ -8,7 +8,7 @@ import { getDiscountDisplay } from '@/utils/discount'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronRight, TicketPercent } from '@polar-sh/orbit/icons'
+import { ChevronRight, DiscountOutlined } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
@@ -82,7 +82,7 @@ export const ProductDiscounts = ({
         <LoadingBox height={96} borderRadius="l" />
       ) : discountCount === 0 ? (
         <EmptyState
-          icon={<TicketPercent />}
+          icon={<DiscountOutlined fontSize="medium" />}
           title="No discounts"
           description="No discounts currently apply to this product"
         />
@@ -97,7 +97,19 @@ export const ProductDiscounts = ({
                   alignItems="center"
                   columnGap="m"
                 >
-                  <Box flexDirection="column" minWidth={0} rowGap="xs">
+                  <Box
+                    width={32}
+                    height={32}
+                    flexShrink={0}
+                    alignItems="center"
+                    justifyContent="center"
+                    borderRadius="s"
+                    backgroundColor="background-secondary"
+                    color="text-secondary"
+                  >
+                    <DiscountOutlined fontSize="small" />
+                  </Box>
+                  <Box flexDirection="column" minWidth={0}>
                     <Text truncate>{discount.name}</Text>
                     {discount.code ? (
                       <Box alignItems="center" columnGap="s">
@@ -111,7 +123,11 @@ export const ProductDiscounts = ({
                           {discount.code}
                         </Pill>
                       </Box>
-                    ) : null}
+                    ) : (
+                      <Text variant="caption" color="muted">
+                        No code
+                      </Text>
+                    )}
                   </Box>
                 </Box>
                 <Box flexShrink={0} alignItems="center">

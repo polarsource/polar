@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, delete, select
+from sqlalchemy import Select, delete, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
@@ -34,13 +34,20 @@ class ReducerRepository(RepositoryBase[Reducer]):
         return await self.get_one_or_none(statement)
 
     async def get_meters_without_reducers(self, *, limit: int) -> Sequence[Meter]:
+        """Meters missing a reducer of some kind."""
         statement = (
             select(Meter)
             .where(
                 Meter.deleted_at.is_(None),
-                ~select(MeterReducer.meter_id)
-                .where(MeterReducer.meter_id == Meter.id)
-                .exists(),
+                or_(
+                    *(
+                        ~select(MeterReducer.meter_id)
+                        .join(Reducer)
+                        .where(MeterReducer.meter_id == Meter.id, Reducer.kind == kind)
+                        .exists()
+                        for kind in ReducerKind
+                    )
+                ),
             )
             .order_by(Meter.id)
             .limit(limit)

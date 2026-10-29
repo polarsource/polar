@@ -48,6 +48,7 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection
 from polar.models.customer_seat import SeatStatus
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionProductPriceRepository
 from tests.fixtures.auth import AuthSubjectFixture
@@ -123,7 +124,10 @@ class TestCreate:
             await session.scalars(
                 select(Reducer)
                 .join(MeterReducer)
-                .where(MeterReducer.meter_id == meter.id)
+                .where(
+                    MeterReducer.meter_id == meter.id,
+                    Reducer.kind == ReducerKind.usage,
+                )
             )
         ).one()
         assert reducer.organization_id == meter.organization_id
@@ -327,6 +331,7 @@ class TestUpdate:
         if has_reducer:
             original_reducer = Reducer(
                 organization=organization,
+                kind=ReducerKind.usage,
                 filter=meter.filter,
                 aggregation=meter.aggregation,
             )
@@ -344,7 +349,10 @@ class TestUpdate:
             await session.scalars(
                 select(Reducer)
                 .join(MeterReducer)
-                .where(MeterReducer.meter_id == meter.id)
+                .where(
+                    MeterReducer.meter_id == meter.id,
+                    Reducer.kind == ReducerKind.usage,
+                )
             )
         ).one()
         await session.refresh(reducer)

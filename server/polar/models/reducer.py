@@ -36,9 +36,7 @@ class Reducer(RecordModel):
     )
     filter: Mapped[Filter] = mapped_column(FilterType, nullable=False)
     aggregation: Mapped[Aggregation] = mapped_column(AggregationType, nullable=False)
-    kind: Mapped[ReducerKind] = mapped_column(
-        StringEnum(ReducerKind), nullable=False, default=ReducerKind.usage
-    )
+    kind: Mapped[ReducerKind] = mapped_column(StringEnum(ReducerKind), nullable=False)
 
     organization: Mapped["Organization"] = relationship(lazy="raise")
     meter_reducers: Mapped[list["MeterReducer"]] = relationship(

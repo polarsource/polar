@@ -7,6 +7,7 @@ from typing import Any, cast
 import pytest
 from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.event.system import SystemEvent
 from polar.meter.aggregation import (
@@ -21,6 +22,7 @@ from polar.models import (
     CustomerMeter,
     Event,
     Meter,
+    MeterReducer,
     Order,
     Organization,
     Reducer,
@@ -1567,3 +1569,60 @@ class TestLogCustomerMeterComparison:
         )
 
         assert await session.get(CustomerMeter, customer_meter.id) is not None
+
+
+async def get_meter_reducers(session: AsyncSession, meter: Meter) -> list[Reducer]:
+    return list(
+        await session.scalars(
+            select(Reducer)
+            .join(MeterReducer)
+            .where(MeterReducer.meter_id == meter.id)
+            .order_by(Reducer.kind)
+        )
+    )
+
+
+def build_credit_event(meter_id: uuid.UUID, units: int) -> Event:
+    return Event(
+        name=SystemEvent.meter_credited,
+        source=EventSource.system,
+        user_metadata={"meter_id": str(meter_id), "units": units, "rollover": False},
+    )
+
+
+@pytest.mark.anyio
+class TestSyncMeter:
+    async def test_creates_usage_and_credit_reducers(
+        self, session: AsyncSession, meter: Meter
+    ) -> None:
+        reducer = await reducer_service.sync_meter(session, meter)
+
+        credit, usage = await get_meter_reducers(session, meter)
+        assert reducer == usage
+        assert usage.kind == ReducerKind.usage
+        assert usage.filter == meter.filter
+        assert usage.aggregation == meter.aggregation
+        assert credit.kind == ReducerKind.credit
+        assert isinstance(credit.aggregation, PropertyAggregation)
+        assert credit.filter.matches(build_credit_event(meter.id, 10))
+        assert credit.aggregation.get_value(build_credit_event(meter.id, 10)) == 10
+        assert not credit.filter.matches(build_credit_event(uuid.uuid4(), 10))
+        assert not credit.filter.matches(build_event(meter.organization))
+
+    async def test_updates_only_the_usage_reducer(
+        self, session: AsyncSession, meter: Meter
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        credit_before, _ = await get_meter_reducers(session, meter)
+        meter.aggregation = PropertyAggregation(
+            func=AggregationFunction.sum, property="tokens"
+        )
+
+        await reducer_service.sync_meter(session, meter)
+
+        credit, usage = await get_meter_reducers(session, meter)
+        assert credit.id == credit_before.id
+        assert credit.aggregation == PropertyAggregation(
+            func=AggregationFunction.sum, property="units"
+        )
+        assert usage.aggregation == meter.aggregation

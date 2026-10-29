@@ -131,14 +131,14 @@ class CatalogBenefitRepository(
     model = CatalogBenefit
 
     async def get_first_published_at(self, organization_id: UUID) -> datetime | None:
-        """When the organization's first catalog listing benefits was published."""
+        """When the organization's first catalog listing benefits was published.
+
+        Soft-deleted rows count too, so the boundary never moves.
+        """
         statement = (
             select(func.min(Catalog.published_at))
             .join(CatalogBenefit, CatalogBenefit.catalog_id == Catalog.id)
-            .where(
-                Catalog.organization_id == organization_id,
-                CatalogBenefit.deleted_at.is_(None),
-            )
+            .where(Catalog.organization_id == organization_id)
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()

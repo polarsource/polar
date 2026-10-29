@@ -87,7 +87,7 @@ class BenefitRepository(
         )
 
     async def get_all_versions_by_ids(self, ids: Sequence[UUID]) -> Sequence[Benefit]:
-        """Benefits by ID, including previous versions that were deleted."""
+        """Benefits by ID, including previous versions and deleted ones."""
         statement = (
             self.get_base_statement(include_deleted=True)
             .where(Benefit.id.in_(ids))

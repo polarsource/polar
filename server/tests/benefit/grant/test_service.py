@@ -750,8 +750,7 @@ class TestEnqueueBenefitsGrants:
         )
         grant.set_granted()
         await save_fixture(grant)
-        # Live benefits can't share an external_id until benefits are versioned.
-        previous.set_deleted_at()
+        previous.is_current = False
         await save_fixture(previous)
         current = await create_benefit(
             save_fixture, organization=organization, external_id="license"
@@ -774,6 +773,50 @@ class TestEnqueueBenefitsGrants:
             assert grant.benefit_id == previous.id
             enqueue_job_mock.assert_not_called()
             group_mock.return_value.run.assert_called_once()
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_grant_repoints_owner_member_grant(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        subscription: Subscription,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        mocker.patch("polar.benefit.grant.service.group")
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            external_id="license",
+            is_current=False,
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            previous,
+            granted=True,
+            member=member_owner,
+            subscription=subscription,
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="license"
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[current]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        await session.refresh(grant)
+        assert grant.benefit_id == current.id
+        enqueue_job_mock.assert_any_call("benefit.update", benefit_grant_id=grant.id)
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_grant_repoints_license_keys_and_downloadables(
@@ -825,7 +868,7 @@ class TestEnqueueBenefitsGrants:
             )
             grant.set_granted()
             await save_fixture(grant)
-            previous.set_deleted_at()
+            previous.is_current = False
             await save_fixture(previous)
             records.append(record)
             benefits.append(
@@ -874,7 +917,7 @@ class TestEnqueueBenefitsGrants:
         )
         grant.set_granted()
         await save_fixture(grant)
-        previous.set_deleted_at()
+        previous.is_current = False
         await save_fixture(previous)
         current = await create_benefit(
             save_fixture,

@@ -481,6 +481,14 @@ class BenefitGrantService:
             if benefit.external_id is not None
             and benefit.type != BenefitType.meter_credit
         }
+        if member_id is None and not product.has_seat_based_price:
+            # Grants without a member go to the customer's owner member.
+            owner = await MemberRepository.from_session(
+                session
+            ).get_owner_by_customer_id(customer.id)
+            if owner is not None:
+                member_id = owner.id
+
         product_benefit_ids = {benefit.id for benefit in product.benefits}
         candidates = [
             grant

@@ -37,10 +37,11 @@ jobs:
               - 'docs/openapi/**'
               - 'docs/docs.json'
               - '.github/workflows/test_client.yaml'
+              - '.github/actions/setup-clients/**'
               - '.github/workflows/release_cli.yml'
 
-  build:
-    name: "Client: Tests 🎨"
+  checks:
+    name: "Client: Checks 💅"
     needs: changes
     if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
@@ -55,19 +56,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v7.0.1
 
-      - uses: pnpm/action-setup@v6.1.0
-        with:
-          package_json_file: clients/package.json
-
-      - name: Setup Node.js environment
-        uses: actions/setup-node@v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: "pnpm"
-          cache-dependency-path: "clients/pnpm-lock.yaml"
-
-      - name: 📦 Install dependencies
-        run: pnpm install
+      - uses: ./.github/actions/setup-clients
 
       - name: 💅 Format check
         run: pnpm run format:check
@@ -81,11 +70,47 @@ jobs:
       - name: 👀 Typecheck
         run: pnpm run typecheck
 
-      - name: "🧪 Test: App"
-        run: pnpm --filter @polar-sh/app test
+  test-web:
+    name: "Client: Test Web 🧪"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ENV: "testing"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/setup-clients
 
       - name: "🧪 Test: Web"
         run: pnpm --filter web test
+
+  test-packages:
+    name: "Client: Test Packages 🧪"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ENV: "testing"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/setup-clients
+
+      - name: "🧪 Test: App"
+        run: pnpm --filter @polar-sh/app test
 
       - name: "🧪 Test: @polar-sh/currency"
         run: pnpm --filter @polar-sh/currency test
@@ -112,5 +137,43 @@ jobs:
       - name: "📚 CLI docs are up to date"
         run: pnpm --filter @polar-sh/cli docs:check
 
+  build:
+    name: "Client: Build 🛠️"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ENV: "testing"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/setup-clients
+
       - name: 🛠️ Build
         run: pnpm build
+
+  status:
+    name: "Client: Tests 🎨"
+    needs: [changes, checks, test-web, test-packages, build]
+    if: always()
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Check job results
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            exit 1
+          fi
+          for result in $RESULTS; do
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              exit 1
+            fi
+          done

@@ -27,6 +27,15 @@ class RefundRepository(
 ):
     model = Refund
 
+    async def get_all_by_order(self, order_id: UUID) -> Sequence[Refund]:
+        statement = (
+            self.get_base_statement()
+            .where(Refund.order_id == order_id)
+            .options(joinedload(Refund.credit_note))
+            .order_by(Refund.created_at.desc())
+        )
+        return await self.get_all(statement)
+
     async def get_by_processor_id(
         self, processor_id: str, *, options: Options = ()
     ) -> Refund | None:

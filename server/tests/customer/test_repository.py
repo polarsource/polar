@@ -38,6 +38,24 @@ def repository(session: AsyncSession) -> CustomerRepository:
 
 
 @pytest.mark.anyio
+class TestIncrementCreditNoteNextNumber:
+    async def test_increment_credit_note_next_number(
+        self,
+        repository: CustomerRepository,
+        customer: Customer,
+        customer_organization_second: Customer,
+    ) -> None:
+        assert await repository.increment_credit_note_next_number(customer.id) == 1
+        assert await repository.increment_credit_note_next_number(customer.id) == 2
+        assert (
+            await repository.increment_credit_note_next_number(
+                customer_organization_second.id
+            )
+            == 1
+        )
+
+
+@pytest.mark.anyio
 async def test_get_by_id(
     save_fixture: SaveFixture, customer: Customer, repository: CustomerRepository
 ) -> None:

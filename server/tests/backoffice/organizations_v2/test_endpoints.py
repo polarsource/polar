@@ -700,7 +700,8 @@ class TestOverviewLazyCards:
             f"/organizations/{organization.id}/overview/setup-checklist"
         )
 
-        assert "Not verified" in response.text
+        assert "Other domain verified" in response.text
+        assert "other.com" in response.text
 
     async def test_setup_checklist_website_domain_pending(
         self,

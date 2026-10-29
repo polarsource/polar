@@ -794,7 +794,7 @@ class OverviewSection(ChecklistMixin):
                 self._render_payout_account_row()
                 self._render_shared_payout_account_row(request)
 
-    def _website_domain_badge(self) -> tuple[str, str]:
+    def _website_domain_badge(self) -> tuple[str, str, str | None]:
         host = urlparse(self.org.website or "").hostname or ""
         verified = [d.domain for d in self.organization_domains if d.verified_at]
         pending = [d.domain for d in self.organization_domains if not d.verified_at]
@@ -809,12 +809,14 @@ class OverviewSection(ChecklistMixin):
         )
 
         if is_on_verified_domain(host, verified):
-            return "Verified", "badge-success"
+            return "Verified", "badge-success", None
         if lost_at is not None:
-            return f"Lost on {lost_at.strftime('%Y-%m-%d')}", "badge-error"
+            return f"Lost on {lost_at.strftime('%Y-%m-%d')}", "badge-error", None
         if is_on_verified_domain(host, pending):
-            return "Pending verification", "badge-warning"
-        return "Not verified", "badge-ghost"
+            return "Pending verification", "badge-warning", None
+        if verified:
+            return "Other domain verified", "badge-warning", ", ".join(verified)
+        return "Not verified", "badge-ghost", None
 
     def _render_payout_account_row(self) -> None:
         """Payout status with Stripe's raw `disabled_reason`.

@@ -90,7 +90,7 @@ def render_checklist_row(
     label: str,
     is_set: bool,
     value: str | None,
-    badge: tuple[str, str] | None = None,
+    badge: tuple[str, str, str | None] | None = None,
 ) -> None:
     """Render a single checklist row with a green/red status dot."""
     with tag.div(
@@ -108,9 +108,12 @@ def render_checklist_row(
             ):
                 text((value or "Set") if is_set else "Missing")
             if badge is not None:
-                badge_label, badge_class = badge
-                with tag.span(classes=f"badge badge-sm {badge_class}"):
-                    text(badge_label)
+                badge_label, badge_class, badge_tip = badge
+                with tag.div(
+                    classes="tooltip" if badge_tip else "", data_tip=badge_tip
+                ):
+                    with tag.span(classes=f"badge badge-sm {badge_class}"):
+                        text(badge_label)
 
 
 def render_dimension(dim: DimensionAssessment) -> None:

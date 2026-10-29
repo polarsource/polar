@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import UUID4, Field
 
-from polar.kit.schemas import IDSchema, TimestampedSchema
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 from polar.models.catalog import CatalogStatus
 from polar.organization.schemas import OrganizationID
 
@@ -28,4 +28,18 @@ class Catalog(IDSchema, TimestampedSchema):
     )
     published_at: datetime | None = Field(
         description="When the catalog was published. Null for drafts."
+    )
+
+
+class CatalogProduct(Schema):
+    external_id: str = Field(description="Key of the product in the catalog.")
+    product_id: UUID4 = Field(description="The product version in this catalog.")
+
+
+class CatalogVersion(Catalog):
+    """A catalog version with its products."""
+
+    products: list[CatalogProduct] = Field(
+        validation_alias="product_members",
+        description="The products in this version, ordered by key.",
     )

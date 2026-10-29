@@ -3,9 +3,12 @@ import uuid
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 
+from sqlalchemy.orm import selectinload
+
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -45,15 +48,9 @@ class CatalogService:
         published_before: datetime | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Catalog], int]:
-        org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.products_read
-        )
+        org_ids = await self._get_readable_org_ids(session, auth_subject)
         if organization_id is not None:
             org_ids = {oid for oid in org_ids if oid in set(organization_id)}
-        enabled_org_ids = await OrganizationRepository.from_session(
-            session
-        ).get_ids_with_feature(set(org_ids), "config_as_code_enabled")
-        org_ids = {oid for oid in org_ids if oid in enabled_org_ids}
 
         repository = CatalogRepository.from_session(session)
         statement = repository.get_statement_by_org_ids(org_ids)
@@ -68,6 +65,34 @@ class CatalogService:
             limit=pagination.limit,
             page=pagination.page,
         )
+
+    async def get(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        id: uuid.UUID,
+    ) -> Catalog | None:
+        org_ids = await self._get_readable_org_ids(session, auth_subject)
+        repository = CatalogRepository.from_session(session)
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Catalog.id == id)
+            .options(selectinload(Catalog.product_members))
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def _get_readable_org_ids(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+    ) -> set[AccessibleOrganizationID]:
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        enabled_org_ids = await OrganizationRepository.from_session(
+            session
+        ).get_ids_with_feature(set(org_ids), "config_as_code_enabled")
+        return {oid for oid in org_ids if oid in enabled_org_ids}
 
     async def get_live_entries(
         self,

@@ -54,7 +54,6 @@ const run = async (
           load: () => Effect.succeed(config),
           plan: () => Effect.die('unused'),
           apply: () => Effect.die('unused'),
-          pull: () => Effect.die('unused'),
           prune: (_config, _organization, confirm) =>
             entries.some(
               (entry) => !entry.in_use && entry.referenced_by.length === 0,

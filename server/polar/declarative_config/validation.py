@@ -45,6 +45,7 @@ from .schemas import (
     ConfigAction,
     ConfigBenefit,
     ConfigBenefitLicenseKeys,
+    ConfigBenefitLicenseKeysProperties,
     ConfigBenefitMeterCredit,
     ConfigFieldChange,
     ConfigIssue,
@@ -559,7 +560,7 @@ def benefit_properties(
     if benefit.type == BenefitType.license_keys:
         return {
             key: benefit.properties.get(key)
-            for key in ("prefix", "expires", "activations", "limit_usage")
+            for key in ConfigBenefitLicenseKeysProperties.model_fields
         }
     if benefit.type != BenefitType.meter_credit:
         return {}

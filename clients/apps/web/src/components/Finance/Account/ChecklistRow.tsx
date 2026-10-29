@@ -81,16 +81,20 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
     step.key === 'product_url' && step.status === 'passed' && step.value
       ? websiteHost(step.value)
       : null
+  const websiteDomain =
+    websiteDomainHost && domains
+      ? findWebsiteDomain(websiteDomainHost, domains.items)
+      : undefined
   const isDomainUnverified =
-    !!websiteDomainHost &&
-    !!domains &&
-    !findWebsiteDomain(websiteDomainHost, domains.items)?.verified_at
+    !!websiteDomainHost && !!domains && !websiteDomain?.verified_at
   const status = isDomainUnverified ? 'warning' : step.status
 
   const stepConfig = STEP_CONFIG[step.key]
   const renderSection = stepConfig?.render
-  const label = stepConfig?.label ?? step.key
-  const isOptional = OPTIONAL_STEP_KEYS.has(step.key)
+  const label = isDomainUnverified
+    ? 'Verify your product website'
+    : (stepConfig?.label ?? step.key)
+  const isOptional = OPTIONAL_STEP_KEYS.has(step.key) || isDomainUnverified
   const reasonItems = (step.reasons ?? [])
     .map(
       (reason) =>
@@ -103,9 +107,8 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
       : reasonItems.length > 1
         ? 'Multiple issues need your attention'
         : reasonItems[0]
-  const subtitle = isDomainUnverified
-    ? 'Your domain isn’t verified'
-    : step.status === 'passed'
+  const subtitle =
+    step.status === 'passed'
       ? undefined
       : (reasonText ?? STEP_DESCRIPTIONS[step.key])
   const isActionable = !!renderSection
@@ -118,7 +121,13 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
           <StatusIcon
             status={status}
             reasons={step.reasons}
-            waiting={isDomainUnverified}
+            icon={
+              isDomainUnverified
+                ? websiteDomain
+                  ? 'waiting'
+                  : 'dashed'
+                : undefined
+            }
           />
           <Box flexDirection="column" rowGap="none">
             <Box alignItems="center" columnGap="s">

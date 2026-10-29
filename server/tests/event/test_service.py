@@ -1663,16 +1663,17 @@ class TestCreateEvent:
         assert sum(b.sum for b in buckets if b.sealed_at is not None) == 10
         assert sum(b.sum for b in buckets if b.sealed_at is None) == 4
 
-    async def test_meter_reset_of_a_deleted_customer(
+    async def test_meter_reset_enqueues_the_seal(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
         customer: Customer,
         meter: Meter,
     ) -> None:
-        await reducer_service.sync_meter(session, meter)
-        customer.set_deleted_at()
-        await session.flush()
+        enqueue_seal_mock = mocker.patch(
+            "polar.event.service.reducer_service.enqueue_seal"
+        )
 
         event = await event_service.create_event(
             session,
@@ -1684,7 +1685,39 @@ class TestCreateEvent:
             ),
         )
 
-        assert event.id is not None
+        enqueue_seal_mock.assert_called_once_with(
+            customer.id, meter.id, at=event.timestamp
+        )
+
+    async def test_meter_reset_of_a_deleted_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        enqueue_seal_mock = mocker.patch(
+            "polar.event.service.reducer_service.enqueue_seal"
+        )
+        seal_credits_mock = mocker.patch(
+            "polar.event.service.reducer_service.seal_credits"
+        )
+        customer.set_deleted_at()
+        await session.flush()
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.meter_reset,
+                customer,
+                organization,
+                {"meter_id": str(meter.id)},
+            ),
+        )
+
+        enqueue_seal_mock.assert_not_called()
+        seal_credits_mock.assert_not_called()
 
 
 @pytest.mark.anyio

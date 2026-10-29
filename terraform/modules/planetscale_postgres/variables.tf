@@ -40,6 +40,18 @@ variable "major_version" {
   default     = "18"
 }
 
+variable "storage" {
+  description = "Storage configuration for non-Metal branches. Omitted settings remain managed by PlanetScale."
+  type = object({
+    storage_iops            = optional(number)
+    storage_throughput_mibs = optional(number)
+    minimum_storage_bytes   = optional(number)
+    maximum_storage_bytes   = optional(number)
+    storage_autoscaling     = optional(bool)
+  })
+  default = null
+}
+
 variable "deletion_protected" {
   description = "Whether deletion protection is enabled for the branch."
   type        = bool

@@ -106,7 +106,7 @@ class TestResolve:
 
 @pytest.mark.anyio
 class TestGetCatalogBenefits:
-    async def test_before_and_after_benefits_are_versioned(
+    async def test_published_before_benefits_were_versioned(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -117,20 +117,39 @@ class TestGetCatalogBenefits:
         current = await create_benefit(
             save_fixture, organization=organization, external_id="beta"
         )
+        await save_fixture(
+            CatalogBenefit(catalog=live, benefit=current, external_id="beta")
+        )
+
+        benefits = await catalog_service.get_catalog_benefits(
+            session, organization, archived
+        )
+
+        assert benefits == {"beta": current}
+
+    async def test_published_after_without_benefits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, live, _, _ = catalogs
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="beta"
+        )
+        await save_fixture(
+            CatalogBenefit(catalog=live, benefit=current, external_id="beta")
+        )
         emptied = Catalog(
             organization=organization,
             status=CatalogStatus.archived,
             published_at=live.published_at,
         )
         await save_fixture(emptied)
-        await save_fixture(
-            CatalogBenefit(catalog=live, benefit=current, external_id="beta")
+
+        benefits = await catalog_service.get_catalog_benefits(
+            session, organization, emptied
         )
 
-        assert await catalog_service.get_catalog_benefits(
-            session, organization, archived
-        ) == {"beta": current}
-        assert (
-            await catalog_service.get_catalog_benefits(session, organization, emptied)
-            == {}
-        )
+        assert benefits == {}

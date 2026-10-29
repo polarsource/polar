@@ -1077,6 +1077,21 @@ class EventService:
         event = await repository.create(event, flush=True)
         # Temporarily
         await self._create_meter_events(session, [event])
+        if event.is_meter_credit:
+            await reducer_service.add_credit(session, event)
+        elif (
+            event.source == EventSource.system and event.name == SystemEvent.meter_reset
+        ):
+            assert event.customer_id is not None
+            customer = await CustomerRepository.from_session(session).get_by_id(
+                event.customer_id
+            )
+            if customer is not None:
+                meter_id = uuid.UUID(event.user_metadata["meter_id"])
+                await reducer_service.seal_credits(
+                    session, customer, meter_id, at=event.timestamp
+                )
+                reducer_service.enqueue_seal(customer.id, meter_id, at=event.timestamp)
 
         enqueue_events(event.id)
 

@@ -128,7 +128,6 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
-from polar.reducer.service import reducer as reducer_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -1498,7 +1497,7 @@ class SubscriptionService:
         rollover_units = await customer_meter_service.get_rollover_units(
             session, customer, meter, cutoff=reset_at
         )
-        reset_event = await event_service.create_event(
+        await event_service.create_event(
             session,
             build_system_event(
                 SystemEvent.meter_reset,
@@ -1508,7 +1507,6 @@ class SubscriptionService:
                 timestamp=reset_at,
             ),
         )
-        reducer_service.enqueue_seal(customer.id, meter.id, at=reset_event.timestamp)
         if rollover_units > 0:
             await event_service.create_event(
                 session,

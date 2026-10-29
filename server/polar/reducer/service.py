@@ -133,12 +133,40 @@ class ReducerService:
     ) -> None:
         """Makes `at` a bucket boundary and seals the customer's buckets of every
         reducer of the meter before it."""
+        await self._seal(
+            session,
+            customer,
+            meter_id,
+            [kind for kind in ReducerKind if _is_sealed_on_reset(kind)],
+            at=at,
+        )
+
+    async def seal_credits(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        at: datetime,
+    ) -> None:
+        """Seals the customer's credits before `at` right away: unlike usage, they
+        are all in Postgres already."""
+        await self._seal(session, customer, meter_id, (ReducerKind.credit,), at=at)
+
+    async def _seal(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_id: UUID,
+        kinds: Iterable[ReducerKind],
+        *,
+        at: datetime,
+    ) -> None:
         try:
             async with session.begin_nested():
                 reducers = [
                     reducer
-                    for kind in ReducerKind
-                    if _is_sealed_on_reset(kind)
+                    for kind in kinds
                     for reducer in (
                         await self._get_reducers(session, [meter_id], kind)
                     ).values()
@@ -150,6 +178,26 @@ class ReducerService:
                 customer_id=customer.id,
                 meter_id=meter_id,
                 at=at.isoformat(),
+            )
+
+    async def add_credit(self, session: AsyncSession, event: Event) -> None:
+        """Adds a `meter.credited` event to its meter's credit reducer."""
+        meter_id = UUID(event.user_metadata["meter_id"])
+        try:
+            async with session.begin_nested():
+                reducer = await ReducerRepository.from_session(
+                    session
+                ).get_by_meter_and_kind(meter_id, ReducerKind.credit)
+                if reducer is None:
+                    return
+                await self._add_to_closed_buckets(
+                    session, _reduce_events_to_bucket_contributions([reducer], [event])
+                )
+        except Exception:
+            log.exception(
+                "Failed to add credit to reducer buckets",
+                event_id=event.id,
+                meter_id=meter_id,
             )
 
     async def bill(
@@ -443,7 +491,8 @@ class ReducerService:
         self, session: AsyncReadSession, redis: Redis, customer_meter: CustomerMeter
     ) -> None:
         """Logs the customer meter's consumed units next to the reducer's value
-        since the meter's latest reset."""
+        since the meter's latest reset, and its credited units next to the credit
+        reducer's unsealed total."""
         customer = customer_meter.customer
         with logfire.span(
             "Compare customer meter with reducer",
@@ -452,9 +501,27 @@ class ReducerService:
         ) as span:
             try:
                 async with session.begin_nested():
-                    reducer = await ReducerRepository.from_session(
-                        session
-                    ).get_by_meter_and_kind(customer_meter.meter_id, ReducerKind.usage)
+                    repository = ReducerRepository.from_session(session)
+                    credit = await repository.get_by_meter_and_kind(
+                        customer_meter.meter_id, ReducerKind.credit
+                    )
+                    if credit is not None:
+                        totals = await ReducerBucketRepository.from_session(
+                            session
+                        ).get_unsealed_totals(
+                            credit.organization_id, credit.id, [(customer.id, None)]
+                        )
+                        span.set_attribute(
+                            "legacy_credited", str(customer_meter.credited_units)
+                        )
+                        span.set_attribute("reducer_credited", str(totals.sum))
+                        span.set_attribute(
+                            "credited_match",
+                            math.isclose(totals.sum, customer_meter.credited_units),
+                        )
+                    reducer = await repository.get_by_meter_and_kind(
+                        customer_meter.meter_id, ReducerKind.usage
+                    )
                     if reducer is None or isinstance(
                         reducer.aggregation, UniqueAggregation
                     ):

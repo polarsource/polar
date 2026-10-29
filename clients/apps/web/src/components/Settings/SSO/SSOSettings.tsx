@@ -10,7 +10,7 @@ import {
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getSSOLoginURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
-import { Button, Status } from '@polar-sh/orbit'
+import { Alert, Button, Status } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { LogIn } from '@polar-sh/orbit/icons'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
@@ -41,7 +41,8 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const verifiedDomains = (domains.data?.items ?? []).filter(isVerifiedDomain)
   const updateOrganization = useUpdateOrganization()
 
-  const isAutomatic = org.sso_enforced && verifiedDomains.length > 0
+  const hasVerifiedDomain = verifiedDomains.length > 0
+  const isAutomatic = org.sso_enforced && hasVerifiedDomain
   const hasEnabledConnection = connections.data?.items?.some(
     (connection) => connection.enabled,
   )
@@ -69,6 +70,24 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   return (
     <>
       <Box flexDirection="column" rowGap="2xl">
+        {domains.data && !hasVerifiedDomain && (
+          <Alert
+            variant="info"
+            title="Verify your email domain"
+            description={
+              <>
+                SSO only works for a domain you own.{' '}
+                <Link
+                  href={`/dashboard/${org.slug}/settings/domains`}
+                  className="underline"
+                >
+                  Add and verify it
+                </Link>{' '}
+                before adding a connection.
+              </>
+            }
+          />
+        )}
         {connections.data?.items && connections.data.items.length > 0 ? (
           <SettingsGroup title="Connections">
             {connections.data.items.map((connection) => (
@@ -110,9 +129,11 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
                 ? 'Members must sign in through SSO to access this organization.'
                 : !hasEnabledConnection
                   ? 'Add and enable an SSO connection before enforcing SSO.'
-                  : !canEnforce
-                    ? 'Sign in through this organization’s SSO to enforce it.'
-                    : 'Require members to sign in through SSO to access this organization.'
+                  : !hasVerifiedDomain
+                    ? 'Verify your email domain before enforcing SSO.'
+                    : !canEnforce
+                      ? 'Sign in through this organization’s SSO to enforce it.'
+                      : 'Require members to sign in through SSO to access this organization.'
             }
           >
             <Box alignItems="center" columnGap="m">
@@ -128,7 +149,8 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
                 }
                 loading={updateOrganization.isPending}
                 disabled={
-                  !org.sso_enforced && (!canEnforce || !hasEnabledConnection)
+                  !org.sso_enforced &&
+                  (!canEnforce || !hasEnabledConnection || !hasVerifiedDomain)
                 }
               >
                 {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}

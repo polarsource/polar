@@ -234,13 +234,6 @@ class OrganizationFeatureSettings(Schema):
             "disputes on its behalf. Requires `disputes_enabled`."
         ),
     )
-    compass_enabled: bool = Field(
-        False,
-        description=(
-            "If this organization has the split product navigation "
-            "(Billing / Compass / Customers) enabled in the dashboard"
-        ),
-    )
     merchant_migration_enabled: bool = Field(
         False,
         description=(

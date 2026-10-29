@@ -365,12 +365,6 @@ class TestEndpointRules:
                     "email-update",
                 ),
                 (
-                    ["/v1/compass/assistant"],
-                    "POST",
-                    list(RateLimitGroup),
-                    "compass-assistant",
-                ),
-                (
                     ["/v1/refunds", "/v1/refunds/"],
                     "POST",
                     [

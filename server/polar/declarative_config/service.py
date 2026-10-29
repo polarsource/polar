@@ -14,7 +14,6 @@ from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
-from polar.catalog.service import benefit_entry_key
 from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
@@ -196,10 +195,6 @@ def _removed_external_ids(
     )
 
 
-def _removed_entry_keys(products: Sequence[str], benefits: Sequence[str]) -> list[str]:
-    return [*products, *(benefit_entry_key(external_id) for external_id in benefits)]
-
-
 class DeclarativeConfigService:
     async def apply(
         self,
@@ -245,7 +240,8 @@ class DeclarativeConfigService:
             organization,
             live,
             catalogs.definitions(changes),
-            _removed_entry_keys(removed_products, removed_benefits),
+            removed_products,
+            removed_benefits,
         )
         settings_result = await self._apply_settings(
             session, organization, changes.settings
@@ -356,7 +352,7 @@ class DeclarativeConfigService:
                 organization,
                 base,
                 catalogs.definitions(changes),
-                _removed_entry_keys(*_removed_external_ids(removed)),
+                *_removed_external_ids(removed),
             )
         )
         if catalog_after is not None and catalog_after != catalog_before:

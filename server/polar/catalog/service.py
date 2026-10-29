@@ -1,6 +1,8 @@
 import hashlib
+import json
 import uuid
 from collections.abc import Collection, Mapping, Sequence
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from sqlalchemy.orm import selectinload
@@ -35,18 +37,52 @@ from .repository import (
 )
 
 
-def benefit_entry_key(external_id: str) -> str:
-    """Benefits and products have separate `external_id` namespaces."""
-    return f"benefit:{external_id}"
+@dataclass
+class CatalogEntries:
+    """A catalog's contents by `external_id`. Products and benefits have
+    separate `external_id` namespaces."""
+
+    products: dict[str, str] = field(default_factory=dict)
+    benefits: dict[str, str] = field(default_factory=dict)
+
+    def __bool__(self) -> bool:
+        return bool(self.products or self.benefits)
+
+    def updated(
+        self,
+        definitions: "CatalogEntries",
+        removed_products: Collection[str],
+        removed_benefits: Collection[str],
+    ) -> "CatalogEntries":
+        return CatalogEntries(
+            products={
+                **{k: v for k, v in self.products.items() if k not in removed_products},
+                **definitions.products,
+            },
+            benefits={
+                **{k: v for k, v in self.benefits.items() if k not in removed_benefits},
+                **definitions.benefits,
+            },
+        )
 
 
-def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) -> str:
+def compute_version_hash(
+    parent_hash: str | None,
+    entries: Mapping[str, str],
+    benefits: Mapping[str, str] | None = None,
+) -> str:
     """Hash a catalog like a git commit: its parent's version hash, plus what it contains."""
     lines = [
         parent_hash or "",
         *(f"{key}={value}" for key, value in sorted(entries.items())),
     ]
+    if benefits:
+        lines.append(json.dumps({"benefits": benefits}, sort_keys=True))
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
+
+
+def hash_entries(parent_hash: str | None, entries: CatalogEntries) -> str:
+    return compute_version_hash(parent_hash, entries.products, entries.benefits)
 
 
 class CatalogNotFound(PolarError):
@@ -176,7 +212,7 @@ class CatalogService:
         session: AsyncReadSession,
         organization: Organization,
         live: Catalog | None,
-    ) -> tuple[str | None, dict[str, str]]:
+    ) -> tuple[str | None, CatalogEntries]:
         """Return the live catalog's version hash and contents.
 
         Before the first publish, that's the catalog apply creates from the
@@ -186,45 +222,50 @@ class CatalogService:
             members = await CatalogProductRepository.from_session(
                 session
             ).get_all_by_catalog(live.id)
-            entries = {member.external_id: str(member.product_id) for member in members}
+            products = {
+                member.external_id: str(member.product_id) for member in members
+            }
         else:
-            entries = {
+            products = {
                 product.external_id: str(product.id)
                 for product in await ProductRepository.from_session(
                     session
                 ).get_catalog_baseline(organization.id)
                 if product.external_id is not None
             }
-        for external_id, benefit in (
-            await self.get_catalog_benefits(session, organization, live)
-        ).items():
-            entries[benefit_entry_key(external_id)] = str(benefit.id)
+        entries = CatalogEntries(
+            products=products,
+            benefits={
+                external_id: str(benefit.id)
+                for external_id, benefit in (
+                    await self.get_catalog_benefits(session, organization, live)
+                ).items()
+            },
+        )
         if live is not None:
             return live.version_hash, entries
         if not entries:
-            return None, {}
-        return compute_version_hash(None, entries), entries
+            return None, entries
+        return hash_entries(None, entries), entries
 
     async def get_next_version_hash(
         self,
         session: AsyncReadSession,
         organization: Organization,
         live: Catalog | None,
-        definitions: Mapping[str, str],
-        removed: Collection[str],
+        definitions: CatalogEntries,
+        removed_products: Collection[str],
+        removed_benefits: Collection[str],
     ) -> tuple[str | None, str | None]:
         """Return the live version hash, and the version hash of the catalog these
         new product and benefit definitions, without the removed entries, would
-        publish. Benefit keys go through `benefit_entry_key`."""
+        publish."""
         before, entries = await self.get_live_entries(session, organization, live)
-        if not definitions and not removed:
+        if not definitions and not removed_products and not removed_benefits:
             return before, before
-        kept = {
-            external_id: value
-            for external_id, value in entries.items()
-            if external_id not in removed
-        }
-        return before, compute_version_hash(before, {**kept, **definitions})
+        return before, hash_entries(
+            before, entries.updated(definitions, removed_products, removed_benefits)
+        )
 
     async def get_default_name(
         self,

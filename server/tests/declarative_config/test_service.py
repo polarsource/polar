@@ -14,6 +14,7 @@ from polar.catalog.repository import (
     CatalogProductRepository,
     CatalogRepository,
 )
+from polar.catalog.service import catalog as catalog_service
 from polar.catalog.service import compute_version_hash
 from polar.declarative_config.schemas import (
     Config,
@@ -3196,6 +3197,33 @@ class TestBenefitVersioning:
         )
         assert (plan.issues, plan.removed, plan.catalog) == ([], [], None)
         assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+
+    async def test_product_and_benefit_namespaces_are_separate(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT],
+                    "products": [{**MONTHLY_PRO, "external_id": "benefit:beta"}],
+                }
+            ),
+        )
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+
+        _, entries = await catalog_service.get_live_entries(session, organization, live)
+
+        assert (list(entries.products), list(entries.benefits)) == (
+            ["benefit:beta"],
+            ["beta"],
+        )
 
     async def test_change_skips_removed_products(
         self,

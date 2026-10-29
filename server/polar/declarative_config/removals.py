@@ -39,7 +39,7 @@ async def products(
         _, entries = await catalog_service.get_live_entries(
             session, organization, catalog
         )
-        external_ids = set(entries)
+        external_ids = set(entries.products)
     else:
         external_ids = await CatalogProductRepository.from_session(
             session

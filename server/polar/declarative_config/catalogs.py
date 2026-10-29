@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from polar.catalog.repository import CatalogRepository
-from polar.catalog.service import benefit_entry_key
+from polar.catalog.service import CatalogEntries
 from polar.catalog.service import catalog as catalog_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.repository import DiscountRepository
@@ -36,20 +36,20 @@ def _fingerprint(config: BaseModel) -> str:
     ).hexdigest()
 
 
-def definitions(changes: ConfigChanges) -> dict[str, str]:
+def definitions(changes: ConfigChanges) -> CatalogEntries:
     """Fingerprint the products and benefits this apply publishes as new rows."""
-    return {
-        **{
+    return CatalogEntries(
+        products={
             change.config.external_id: _fingerprint(change.config)
             for change in changes.products
             if _publishes_new_row(change)
         },
-        **{
-            benefit_entry_key(change.config.external_id): _fingerprint(change.config)
+        benefits={
+            change.config.external_id: _fingerprint(change.config)
             for change in changes.benefits
             if change.existing is None or change.update_dict
         },
-    }
+    )
 
 
 async def cascade_benefit_changes(

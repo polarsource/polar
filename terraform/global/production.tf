@@ -929,7 +929,7 @@ resource "tfe_variable" "ec2_tailscale_oauth_client_id_production" {
 resource "tfe_variable" "ec2_tailscale_oauth_client_secret_production" {
   key             = "ec2_tailscale_oauth_client_secret"
   category        = "terraform"
-  description     = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
+  description     = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production, and DNS write permission"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 

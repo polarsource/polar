@@ -394,7 +394,7 @@ variable "ec2_tailscale_oauth_client_id" {
 }
 
 variable "ec2_tailscale_oauth_client_secret" {
-  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
+  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production, and DNS write permission"
   type        = string
   sensitive   = true
 }

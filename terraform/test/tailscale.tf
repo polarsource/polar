@@ -31,6 +31,8 @@ module "ec2_tailscale" {
   subnet_id                  = module.vpc[0].secondary_private_subnet_ids[0]
   advertise_routes           = module.vpc[0].secondary_private_subnet_cidr_blocks
   advertise_tags             = ["tag:router", "tag:test"]
+  split_dns_domain           = module.planetscale.private_host
+  tailscale_oauth_client_id  = var.ec2_tailscale_oauth_client_id
   tailscale_oauth_secret_arn = aws_secretsmanager_secret.ec2_tailscale[0].arn
   tailscale_version          = var.tailscale_version
   permissions_boundary_arn   = data.aws_iam_policy.permission_boundary.arn

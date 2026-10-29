@@ -543,10 +543,11 @@ class RefundService:
                 assert order.billing_address is not None
                 assert order.product is not None
                 refund_repository = RefundRepository.from_session(session)
-                previous_reverted_tax_amount = (
-                    await refund_repository.get_reverted_tax_amount(
-                        order.id, exclude_refund_id=refund.id
-                    )
+                (
+                    previous_reverted_tax_amount,
+                    previous_reverted_amount,
+                ) = await refund_repository.get_reverted_amounts(
+                    order.id, exclude_refund_id=refund.id
                 )
                 try:
                     transaction_id = await tax_calculation_service.revert(
@@ -561,6 +562,7 @@ class RefundService:
                         reverted_amount=refund.total_amount,
                         reverted_tax_amount=refund.tax_amount,
                         previous_reverted_tax_amount=previous_reverted_tax_amount,
+                        previous_reverted_amount=previous_reverted_amount,
                     )
                     refund.tax_transaction_processor_id = transaction_id
                     session.add(refund)

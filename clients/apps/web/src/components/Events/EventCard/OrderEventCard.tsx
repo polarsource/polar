@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useContext, useMemo } from 'react'
 import { EventCardBase } from './EventCardBase'
 
-const BillingReasonDisplayName: Record<schemas['OrderBillingReason'], string> =
+export const BillingReasonDisplayName: Record<schemas['OrderBillingReason'], string> =
   {
     purchase: 'Purchase',
     subscription_create: 'Subscription Creation',

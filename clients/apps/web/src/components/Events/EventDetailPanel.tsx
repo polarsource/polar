@@ -3,22 +3,23 @@ import { buildCustomerDashboardPath } from '@/utils/customer'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  ArrowUpRight,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  X,
-} from '@polar-sh/orbit/icons'
+import { ChevronDown, ChevronRight, ChevronUp, X } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { ReactNode } from 'react'
-import { EventSourceBadge } from './EventSourceBadge'
+import {
+  SyntaxHighlighterClient,
+  SyntaxHighlighterProvider,
+} from '../SyntaxHighlighterShiki/SyntaxHighlighterClient'
+import { CopyButton } from './CopyButton'
+import { Field } from './EventDetailField'
+import { useEventDetailFields } from './EventDetailFields'
+import { EventCostComparison, useEventCostSamples } from './EventCostComparison'
+import { EventDetailSkeleton, SkeletonBar } from './EventDetailSkeleton'
 import {
   eventCost,
   eventCustomerLabel,
   formatEventTimestamp,
 } from './EventLogRow'
-import { useEventCard } from './utils'
 
 const IconButton = ({
   label,
@@ -44,24 +45,13 @@ const IconButton = ({
   </Button>
 )
 
-const Field = ({ label, children }: { label: string; children: ReactNode }) => (
-  <Box justifyContent="between" alignItems="center" gap="l" minHeight={28}>
-    <Box flexShrink={0}>
-      <Text variant="caption" color="muted">
-        {label}
-      </Text>
-    </Box>
-    <Box minWidth={0} justifyContent="end">
-      {children}
-    </Box>
-  </Box>
-)
-
 const Section = ({
   title,
+  action,
   children,
 }: {
   title: string
+  action?: ReactNode
   children: ReactNode
 }) => (
   <Box
@@ -73,13 +63,46 @@ const Section = ({
     borderStyle="solid"
     borderColor="border-secondary"
   >
-    <Text variant="caption">{title}</Text>
+    <Box alignItems="center" justifyContent="between" minHeight={24}>
+      <Text>{title}</Text>
+      {action}
+    </Box>
     {children}
   </Box>
 )
 
-const formatMetadataValue = (value: unknown) =>
-  typeof value === 'object' ? JSON.stringify(value) : String(value)
+const RelatedEventRow = ({
+  event,
+  showTime = false,
+  onSelect,
+}: {
+  event: schemas['Event']
+  showTime?: boolean
+  onSelect: () => void
+}) => (
+  <button
+    type="button"
+    className="group dark:hover:bg-polar-800/50 -mx-4 cursor-pointer px-4 text-left hover:bg-gray-50"
+    onClick={onSelect}
+  >
+    <Box justifyContent="between" gap="s" minHeight={32} alignItems="center">
+      <Box alignItems="center" gap="s" minWidth={0}>
+        <Text truncate>{event.label}</Text>
+        {showTime && (
+          <Text color="muted" tabularNums>
+            {formatEventTimestamp(event.timestamp)}
+          </Text>
+        )}
+      </Box>
+      <Box alignItems="center" gap="xs" flexShrink={0}>
+        <Text color="muted" tabularNums>
+          {eventCost(event) ?? ''}
+        </Text>
+        <ChevronRight className="dark:text-polar-500 h-3.5 w-3.5 text-gray-400 opacity-0 group-hover:opacity-100" />
+      </Box>
+    </Box>
+  </button>
+)
 
 const EventDetails = ({
   event,
@@ -90,48 +113,51 @@ const EventDetails = ({
   organization: schemas['Organization']
   onSelectEvent: (id: string) => void
 }) => {
-  const eventCard = useEventCard(event)
+  const { fields: detailFields, isLoading: isLoadingDetails } =
+    useEventDetailFields(event, organization.slug)
   const customer = eventCustomerLabel(event)
   const cost = eventCost(event)
-  const { data: childrenData } = useInfiniteEvents(organization.id, {
-    parent_id: event.id,
-    depth: 1,
-    limit: 50,
-    sorting: ['timestamp'],
-  })
+  const { data: childrenData, isLoading: isLoadingChildren } =
+    useInfiniteEvents(organization.id, {
+      parent_id: event.id,
+      depth: 1,
+      limit: 50,
+      sorting: ['timestamp'],
+    })
   const children = childrenData?.pages.flatMap((page) => page.items) ?? []
-  const metadata = Object.entries(event.metadata).filter(
-    ([key]) => key !== '_cost',
+  const { data: parent, isLoading: isLoadingParent } = useEvent(
+    organization.id,
+    event.parent_id ?? '',
   )
+  const { data: costSamples, isLoading: isLoadingCostSamples } =
+    useEventCostSamples(event, organization.id)
+  const hasMetadata = Object.keys(event.metadata).length > 0
+
+  if (
+    isLoadingChildren ||
+    isLoadingParent ||
+    isLoadingCostSamples ||
+    isLoadingDetails
+  ) {
+    return <EventDetailSkeleton />
+  }
 
   return (
     <>
       <Box flexDirection="column" paddingHorizontal="l" paddingVertical="m">
-        <Field label="Time">
-          <Text variant="caption" tabularNums>
-            {formatEventTimestamp(event.timestamp)}
+        <Field label="ID" copyValue={event.id}>
+          <Text truncate monospace>
+            {event.id}
           </Text>
+        </Field>
+        <Field label="Time">
+          <Text tabularNums>{formatEventTimestamp(event.timestamp)}</Text>
         </Field>
         <Field label="Source">
-          <EventSourceBadge source={event.source} />
+          <Text>{event.source === 'system' ? 'System' : 'User'}</Text>
         </Field>
         <Field label="Name">
-          <Text variant="caption" truncate>
-            {event.name}
-          </Text>
-        </Field>
-        <Field label="ID">
-          <Box alignItems="center" gap="xs" minWidth={0}>
-            <Text variant="caption" truncate monospace>
-              {event.id}
-            </Text>
-            <IconButton
-              label="Copy ID"
-              onClick={() => navigator.clipboard.writeText(event.id)}
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </IconButton>
-          </Box>
+          <Text truncate>{event.name}</Text>
         </Field>
         {customer && (
           <Field label="Customer">
@@ -141,78 +167,84 @@ const EventDetails = ({
                   organization.slug,
                   event.customer,
                 )}
-                className="min-w-0 truncate text-xs hover:underline"
+                className="min-w-0 truncate text-sm hover:opacity-60"
               >
                 {customer}
               </Link>
             ) : (
-              <Text variant="caption" truncate>
-                {customer}
-              </Text>
+              <Text truncate>{customer}</Text>
             )}
           </Field>
         )}
-        {event.parent_id && (
-          <Field label="Parent">
-            <button
-              type="button"
-              className="cursor-pointer text-xs hover:underline"
-              onClick={() => onSelectEvent(event.parent_id as string)}
-            >
-              View parent
-            </button>
-          </Field>
-        )}
-        {cost && (
-          <Field label="Cost">
-            <Text variant="caption" tabularNums>
-              {cost}
+        {event.external_customer_id && (
+          <Field label="External ID" copyValue={event.external_customer_id}>
+            <Text truncate monospace>
+              {event.external_customer_id}
             </Text>
           </Field>
         )}
       </Box>
 
-      {event.source === 'system' && eventCard && (
+      {detailFields.length > 0 && (
         <Section title="Details">
-          <div className="-mx-3">{eventCard}</div>
+          <Box flexDirection="column">
+            {detailFields.map((field) => (
+              <Field key={field.label} label={field.label}>
+                {field.value}
+              </Field>
+            ))}
+          </Box>
         </Section>
       )}
 
-      {metadata.length > 0 && (
-        <Section title="Metadata">
-          {metadata.map(([key, value]) => (
-            <Field key={key} label={key}>
-              <Text variant="caption" truncate monospace>
-                {formatMetadataValue(value)}
-              </Text>
-            </Field>
-          ))}
+      {cost && (
+        <Section title="Cost" action={<Text>{cost}</Text>}>
+          <EventCostComparison
+            event={event}
+            samples={costSamples?.items ?? []}
+          />
+        </Section>
+      )}
+
+      {parent && (
+        <Section title="Parent">
+          <RelatedEventRow
+            event={parent}
+            showTime
+            onSelect={() => onSelectEvent(parent.id)}
+          />
+        </Section>
+      )}
+
+      {hasMetadata && (
+        <Section
+          title="Metadata"
+          action={
+            <CopyButton
+              value={JSON.stringify(event.metadata, null, 2)}
+              label="Copy metadata"
+            />
+          }
+        >
+          <div className="dark:bg-polar-800 overflow-x-auto rounded-lg bg-gray-50 p-3 font-mono text-xs leading-5 [&_pre]:bg-transparent!">
+            <SyntaxHighlighterProvider>
+              <SyntaxHighlighterClient
+                lang="javascript"
+                code={JSON.stringify(event.metadata, null, 2)}
+              />
+            </SyntaxHighlighterProvider>
+          </div>
         </Section>
       )}
 
       {children.length > 0 && (
         <Section title="Children">
           {children.map((child) => (
-            <button
+            <RelatedEventRow
               key={child.id}
-              type="button"
-              className="cursor-pointer text-left"
-              onClick={() => onSelectEvent(child.id)}
-            >
-              <Box
-                justifyContent="between"
-                gap="l"
-                minHeight={28}
-                alignItems="center"
-              >
-                <Text variant="caption" truncate>
-                  {child.label}
-                </Text>
-                <Text variant="caption" color="muted" tabularNums>
-                  {eventCost(child) ?? ''}
-                </Text>
-              </Box>
-            </button>
+              event={child}
+              onSelect={() => onSelectEvent(child.id)}
+            />
           ))}
         </Section>
       )}
@@ -235,10 +267,10 @@ export const EventDetailPanel = ({
   onNext?: () => void
   onClose: () => void
 }) => {
-  const { data: event } = useEvent(organization.id, eventId)
+  const { data: event, isError } = useEvent(organization.id, eventId)
 
   return (
-    <div className="dark:bg-polar-900 dark:border-polar-800 hidden w-[400px] shrink-0 flex-col overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-xs lg:flex">
+    <div className="dark:bg-polar-900 dark:border-polar-800 fixed inset-0 z-50 flex flex-col overflow-y-auto bg-white lg:static lg:z-auto lg:w-[400px] lg:shrink-0 lg:rounded-2xl lg:border lg:border-gray-200 lg:shadow-xs">
       <Box
         alignItems="center"
         justifyContent="between"
@@ -248,9 +280,13 @@ export const EventDetailPanel = ({
         paddingVertical="m"
       >
         <Box minWidth={0}>
-          <Text variant="body" truncate>
-            {event?.label ?? ''}
-          </Text>
+          {event ? (
+            <Text variant="body" truncate>
+              {event.label}
+            </Text>
+          ) : (
+            !isError && <SkeletonBar width={160} height={16} />
+          )}
         </Box>
         <Box alignItems="center" flexShrink={0}>
           <IconButton
@@ -263,18 +299,17 @@ export const EventDetailPanel = ({
           <IconButton label="Next event" onClick={onNext} disabled={!onNext}>
             <ChevronDown className="h-4 w-4" />
           </IconButton>
-          <Link
-            href={`/dashboard/${organization.slug}/analytics/events/${eventId}`}
-          >
-            <IconButton label="Open event">
-              <ArrowUpRight className="h-4 w-4" />
-            </IconButton>
-          </Link>
           <IconButton label="Close" onClick={onClose}>
             <X className="h-4 w-4" />
           </IconButton>
         </Box>
       </Box>
+      {isError && (
+        <Box paddingHorizontal="l" paddingVertical="m">
+          <Text color="muted">Event not found</Text>
+        </Box>
+      )}
+      {!event && !isError && <EventDetailSkeleton />}
       {event && (
         <EventDetails
           event={event}

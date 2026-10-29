@@ -260,6 +260,21 @@ for payments it processes.
 
   </Accordion>
 
+  <Accordion title="Finished and inactive migrations">
+    Polar deletes the Stripe API key it stored when a migration ends:
+
+    - **Completed:** the switch finished, with every subscription moved,
+      skipped, or failed.
+    - **Closed:** the migration had no activity for 90 days. Polar also removes
+      the records still waiting to be imported. Skipped and failed records are
+      kept.
+
+    The key stays active in Stripe, so revoke it there if you no longer need
+    it. You can no longer switch subscriptions from a completed or closed
+    migration. To move subscriptions still on Stripe, start a new migration.
+
+  </Accordion>
+
   <Accordion title="Checklist for your application">
     Every integration is different. Before removing your Stripe code, confirm:
 

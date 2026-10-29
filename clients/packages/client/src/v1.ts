@@ -16622,8 +16622,12 @@ export interface components {
        * @description Name of the catalog.
        */
       name: string | null
-      /** @description `live` for the catalog new checkouts use, `archived` otherwise. */
-      status: components['schemas']['CatalogStatus']
+      /**
+       * Status
+       * @description `live` for the catalog new checkouts use, `archived` otherwise.
+       * @enum {string}
+       */
+      status: 'live' | 'archived'
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
@@ -72952,6 +72956,9 @@ export const configBenefitMeterCreditTypeValues: ReadonlyArray<
 export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
 > = ['meter_credit']
+export const configExportCatalogStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportCatalog']['status']
+> = ['live', 'archived']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']

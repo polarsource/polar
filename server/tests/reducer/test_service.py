@@ -1226,7 +1226,7 @@ class TestEnqueueSeal:
 
 @pytest.mark.anyio
 class TestSeal:
-    async def test_seals_the_meters_reducer(
+    async def test_seals_the_meters_usage_and_credit_reducers(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -1235,14 +1235,20 @@ class TestSeal:
         customer: Customer,
         meter: Meter,
     ) -> None:
-        reducer = await create_reducer(
+        usage = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
+        )
+        credit = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
         )
         seal = mocker.patch.object(reducer_service, "_seal_buckets")
 
         await reducer_service.seal(session, customer, meter.id, at=CUTOFF)
 
-        seal.assert_called_once_with(session, [reducer], customer, until=CUTOFF)
+        seal.assert_called_once_with(session, [usage, credit], customer, until=CUTOFF)
 
     async def test_logs_failures_without_raising(
         self,

@@ -3,7 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import Any, assert_never
 from uuid import UUID
 
 import logfire
@@ -76,6 +76,14 @@ def _get_credit_filter(meter: Meter) -> Filter:
     )
 
 
+def _is_sealed_on_reset(kind: ReducerKind) -> bool:
+    match kind:
+        case ReducerKind.usage | ReducerKind.credit:
+            return True
+        case _:
+            assert_never(kind)
+
+
 def get_reducer_bucket_start(timestamp: datetime) -> datetime:
     size = int(REDUCER_BUCKET_SIZE.total_seconds())
     epoch = int(timestamp.timestamp())
@@ -123,13 +131,19 @@ class ReducerService:
         *,
         at: datetime,
     ) -> None:
-        """Makes `at` a bucket boundary and seals the customer's usage before it."""
+        """Makes `at` a bucket boundary and seals the customer's buckets of every
+        reducer of the meter before it."""
         try:
             async with session.begin_nested():
-                reducers = await self._get_reducers(session, [meter_id])
-                await self._seal_buckets(
-                    session, list(reducers.values()), customer, until=at
-                )
+                reducers = [
+                    reducer
+                    for kind in ReducerKind
+                    if _is_sealed_on_reset(kind)
+                    for reducer in (
+                        await self._get_reducers(session, [meter_id], kind)
+                    ).values()
+                ]
+                await self._seal_buckets(session, reducers, customer, until=at)
         except Exception:
             log.exception(
                 "Failed to seal reducer buckets",
@@ -153,7 +167,9 @@ class ReducerService:
         meter_ids = sorted(meter_ids)
         try:
             async with session.begin_nested():
-                reducers = await self._get_reducers(session, meter_ids)
+                reducers = await self._get_reducers(
+                    session, meter_ids, ReducerKind.usage
+                )
                 # The meter.reset at `cutoff` should have sealed this usage already.
                 # That task and this run at roughly the same time, so if it
                 # hasn't run already we seal it here. The one that runs
@@ -189,28 +205,40 @@ class ReducerService:
         }
 
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:
-        """Creates the meter's credit reducer, and creates or updates its usage
-        reducer, which it returns."""
+        """Creates the meter's reducer of each kind and updates its usage reducer,
+        which it returns."""
         repository = ReducerRepository.from_session(session)
         meter = await repository.get_meter_for_update(meter.id)
-        if await repository.get_by_meter_and_kind(meter.id, ReducerKind.credit) is None:
-            await self._create_reducer(
-                session,
-                meter,
-                ReducerKind.credit,
-                _get_credit_filter(meter),
-                CREDIT_AGGREGATION,
-            )
-
-        reducer = await repository.get_by_meter_and_kind(meter.id, ReducerKind.usage)
-        if reducer is not None:
-            return await repository.update(
-                reducer,
-                update_dict={"filter": meter.filter, "aggregation": meter.aggregation},
-            )
-        return await self._create_reducer(
-            session, meter, ReducerKind.usage, meter.filter, meter.aggregation
-        )
+        usage: Reducer | None = None
+        for kind in ReducerKind:
+            reducer = await repository.get_by_meter_and_kind(meter.id, kind)
+            match kind:
+                case ReducerKind.usage:
+                    if reducer is None:
+                        usage = await self._create_reducer(
+                            session, meter, kind, meter.filter, meter.aggregation
+                        )
+                    else:
+                        usage = await repository.update(
+                            reducer,
+                            update_dict={
+                                "filter": meter.filter,
+                                "aggregation": meter.aggregation,
+                            },
+                        )
+                case ReducerKind.credit:
+                    if reducer is None:
+                        await self._create_reducer(
+                            session,
+                            meter,
+                            kind,
+                            _get_credit_filter(meter),
+                            CREDIT_AGGREGATION,
+                        )
+                case _:
+                    assert_never(kind)
+        assert usage is not None
+        return usage
 
     async def rollup(
         self,
@@ -521,15 +549,13 @@ class ReducerService:
         return reducer
 
     async def _get_reducers(
-        self, session: AsyncSession, meter_ids: Iterable[UUID]
+        self, session: AsyncSession, meter_ids: Iterable[UUID], kind: ReducerKind
     ) -> dict[UUID, Reducer]:
-        """The meters' reducers with buckets, by meter id."""
+        """The meters' reducers of the kind with buckets, by meter id."""
         repository = ReducerRepository.from_session(session)
         reducers: dict[UUID, Reducer] = {}
         for meter_id in meter_ids:
-            reducer = await repository.get_by_meter_and_kind(
-                meter_id, ReducerKind.usage
-            )
+            reducer = await repository.get_by_meter_and_kind(meter_id, kind)
             if reducer is not None and not isinstance(
                 reducer.aggregation, UniqueAggregation
             ):

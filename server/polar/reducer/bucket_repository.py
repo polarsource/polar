@@ -25,6 +25,7 @@ from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation
 from polar.models import Event, Reducer, ReducerBucket, StagedEvent
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 
 from .redis_store import get_reducer_bucket_key
 
@@ -79,8 +80,9 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         customer_id: UUID | None,
         external_customer_id: str | None,
     ) -> Row[Any]:
-        """count, sum, min and max of the customer identity's user events for the
-        reducer in the range, ingested after its latest sealed bucket."""
+        """count, sum, min and max of the customer identity's events for the
+        reducer in the range, ingested after its latest sealed bucket: system events
+        for a credit reducer, user events otherwise."""
         # Events still waiting in `staged_events` count too: the mover takes each one
         # out of `staged_events` and into `events` in a single transaction, so this
         # one statement sees every event exactly once.
@@ -141,7 +143,12 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             statistics[2].label("max"),
         ).where(
             model.organization_id == reducer.organization_id,
-            model.source == EventSource.user,
+            model.source
+            == (
+                EventSource.system
+                if reducer.kind == ReducerKind.credit
+                else EventSource.user
+            ),
             model.timestamp >= bucket_start,
             model.timestamp < bucket_end,
             _is_customer(model, customer_id, external_customer_id),

@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.repository import BenefitRepository
 from polar.catalog.repository import (
     CatalogBenefitRepository,
@@ -55,6 +56,7 @@ from polar.meter.unit import MeterUnit
 from polar.models import (
     Agent,
     Customer,
+    LicenseKey,
     Organization,
     ProductPriceFixed,
     ProductPriceMeteredTiers,
@@ -3221,6 +3223,146 @@ class TestBenefitVersioning:
             == []
         )
 
+    async def test_license_key_benefit_change(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.enqueue_job")
+        license_benefit = {
+            "type": "license_keys",
+            "external_id": "license",
+            "description": "License key",
+            "properties": {
+                "prefix": "POLAR",
+                "activations": {"limit": 3, "enable_customer_admin": True},
+            },
+        }
+        changed_benefit = {
+            **license_benefit,
+            "properties": {
+                "prefix": "POLAR",
+                "activations": {"limit": 5, "enable_customer_admin": True},
+            },
+        }
+        pro = {**MONTHLY_PRO, "benefits": ["license"]}
+        benefits_repo = BenefitRepository.from_session(session)
+        products_repo = ProductRepository.from_session(session)
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [license_benefit], "products": [pro]}),
+        )
+        [previous] = await benefits_repo.get_all_by_external_ids(
+            organization.id, ["license"]
+        )
+        [old_pro] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer
+        )
+        license_key = LicenseKey(
+            organization=organization, customer=customer, benefit=previous, key="KEY"
+        )
+        await save_fixture(license_key)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            previous,
+            granted=True,
+            properties={"license_key_id": str(license_key.id)},
+            subscription=subscription,
+        )
+
+        changed = Config.model_validate(
+            {"benefits": [changed_benefit], "products": [pro]}
+        )
+        plan = await declarative_config_service.plan(session, auth_subject, changed)
+        [benefit_diff] = plan.changes[0].diff
+        assert benefit_diff.after is not None
+        assert (benefit_diff.field, benefit_diff.after["activations"]["limit"]) == (
+            "properties",
+            5,
+        )
+        await declarative_config_service.apply(session, redis, auth_subject, changed)
+
+        [current] = await benefits_repo.get_all_by_external_ids(
+            organization.id, ["license"]
+        )
+        [new_pro] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        assert current.id != previous.id
+        assert dict(current.properties)["activations"] == {
+            "limit": 5,
+            "enable_customer_admin": True,
+        }
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, new_pro, subscription=subscription
+        )
+        await session.refresh(grant)
+        await session.refresh(license_key)
+        assert (grant.benefit_id, license_key.benefit_id) == (current.id, current.id)
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        [benefit] = exported.config.benefits
+        assert benefit.model_dump(mode="json")["properties"] == {
+            "prefix": "POLAR",
+            "expires": None,
+            "activations": {"limit": 5, "enable_customer_admin": True},
+            "limit_usage": None,
+        }
+
+    async def test_change_skips_removed_products(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        pack = {**PACK_PRODUCT, "benefits": ["beta"]}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT], "products": [pro, pack]}
+            ),
+        )
+        [old_pack] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pack"])
+        config = Config.model_validate(
+            {
+                "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                "products": [pro],
+            }
+        )
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        assert plan.issues == []
+        assert plan.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.product,
+                external_id="pack",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+
+        await declarative_config_service.apply(session, redis, auth_subject, config)
+        await session.refresh(old_pack)
+        assert old_pack.is_current is False
+
     async def test_change_needs_granting_products(
         self,
         session: AsyncSession,
@@ -3792,6 +3934,17 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "properties": {"meter": "sdk-tool-calls", "units": 1000, "rollover": True},
         },
         {**BETA_BENEFIT, "visibility": "private", "metadata": {"tier": 1}},
+        {
+            "type": "license_keys",
+            "external_id": "license",
+            "description": "License key",
+            "properties": {
+                "prefix": "POLAR",
+                "expires": {"ttl": 1, "timeframe": "year"},
+                "activations": {"limit": 3, "enable_customer_admin": False},
+                "limit_usage": 100,
+            },
+        },
     ],
     "products": [
         {

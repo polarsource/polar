@@ -17,6 +17,10 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
+from polar.benefit.strategies.license_keys.schemas import (
+    BenefitLicenseKeysCreateProperties,
+    BenefitLicenseKeysProperties,
+)
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
@@ -151,8 +155,19 @@ class ConfigBenefitMeterCredit(ConfigBenefitBase):
     properties: ConfigBenefitMeterCreditProperties
 
 
+class ConfigBenefitLicenseKeysProperties(BenefitLicenseKeysCreateProperties):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ConfigBenefitLicenseKeys(ConfigBenefitBase):
+    type: Literal[BenefitType.license_keys]
+    properties: ConfigBenefitLicenseKeysProperties = Field(
+        default_factory=ConfigBenefitLicenseKeysProperties
+    )
+
+
 ConfigBenefit = Annotated[
-    ConfigBenefitFeatureFlag | ConfigBenefitMeterCredit,
+    ConfigBenefitFeatureFlag | ConfigBenefitMeterCredit | ConfigBenefitLicenseKeys,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefit"),
 ]
@@ -621,8 +636,19 @@ class ConfigBenefitMeterCreditRead(_ConfigRead):
     properties: ConfigBenefitMeterCreditPropertiesRead
 
 
+class ConfigBenefitLicenseKeysRead(_ConfigRead):
+    type: Literal[BenefitType.license_keys]
+    external_id: str
+    description: str
+    visibility: BenefitVisibility
+    metadata: MetadataOutputType
+    properties: BenefitLicenseKeysProperties
+
+
 ConfigBenefitRead = Annotated[
-    ConfigBenefitFeatureFlagRead | ConfigBenefitMeterCreditRead,
+    ConfigBenefitFeatureFlagRead
+    | ConfigBenefitMeterCreditRead
+    | ConfigBenefitLicenseKeysRead,
     Discriminator("type"),
     SetSchemaReference("ConfigBenefitRead"),
 ]

@@ -2690,6 +2690,35 @@ class TestPrune:
             ("apples", True)
         ]
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefit_in_use_by_previous_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="beta",
+            is_current=False,
+        )
+        await create_benefit_grant(save_fixture, customer, previous, granted=True)
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate({"benefits": [{**BETA_BENEFIT, "deprecated": True}]}),
+        )
+
+        assert [(entry.external_id, entry.in_use) for entry in result.entries] == [
+            ("beta", True)
+        ]
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.products_read})
     )

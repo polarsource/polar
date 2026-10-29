@@ -117,18 +117,26 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
-    async def exists_granted_by_benefit(self, benefit_id: UUID) -> bool:
+    async def get_benefit_external_ids_granted(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> set[str]:
+        """Return the benefit external IDs a customer still has a grant of, in
+        any of their versions."""
+        if not external_ids:
+            return set()
         statement = (
-            select(BenefitGrant.id)
+            select(Benefit.external_id)
+            .join(BenefitGrant, BenefitGrant.benefit_id == Benefit.id)
             .where(
-                BenefitGrant.benefit_id == benefit_id,
+                Benefit.organization_id == organization_id,
+                Benefit.external_id.in_(external_ids),
                 BenefitGrant.is_granted,
                 ~BenefitGrant.is_deleted,
             )
-            .limit(1)
+            .distinct()
         )
         result = await self.session.execute(statement)
-        return result.first() is not None
+        return {external_id for external_id in result.scalars() if external_id}
 
     async def exists_granted_by_meter(self, meter_id: UUID) -> bool:
         statement = (

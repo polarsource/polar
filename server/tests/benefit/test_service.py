@@ -216,11 +216,9 @@ class TestList:
             id_in=[previous.id],
             pagination=PaginationParams(1, 10),
         )
-        fetched = await benefit_service.get(session, auth_subject, previous.id)
 
         assert [benefit.id for benefit in results] == [current.id]
         assert [benefit.id for benefit in by_id] == [previous.id]
-        assert fetched is not None
 
 
 @pytest.mark.anyio
@@ -286,6 +284,24 @@ class TestGet:
             session, auth_subject, benefit_organization.id
         )
         assert organization_benefit is not None
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_previous_version(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        previous = await create_benefit(
+            save_fixture, organization=organization, external_id="a", is_current=False
+        )
+        session.expunge_all()
+
+        benefit = await benefit_service.get(session, auth_subject, previous.id)
+
+        assert benefit is not None
+        assert benefit.id == previous.id
 
 
 @pytest.mark.anyio

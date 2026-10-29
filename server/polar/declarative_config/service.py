@@ -398,7 +398,6 @@ class DeclarativeConfigService:
             session, auth_subject, config, OrganizationPermission.products_read
         )
         meter_repository = MeterRepository.from_session(session)
-        benefit_repository = BenefitRepository.from_session(session)
         product_repository = ProductRepository.from_session(session)
         subscription_repository = SubscriptionRepository.from_session(session)
         grant_repository = BenefitGrantRepository.from_session(session)
@@ -413,12 +412,9 @@ class DeclarativeConfigService:
                 organization.id, [meter.external_id for meter in deprecated_meters]
             )
         }
-        benefit_ids = {
-            benefit.external_id: benefit.id
-            for benefit in await benefit_repository.get_all_by_external_ids(
-                organization.id, [b.external_id for b in deprecated_benefits]
-            )
-        }
+        benefits_in_use = await grant_repository.get_benefit_external_ids_granted(
+            organization.id, [b.external_id for b in deprecated_benefits]
+        )
         products_in_use = await product_repository.get_external_ids_in_use(
             organization.id, [p.external_id for p in deprecated_products]
         )
@@ -442,10 +438,7 @@ class DeclarativeConfigService:
         benefit_entries: list[ConfigPruneEntry] = []
         kept_benefits = [b for b in config.benefits if not b.deprecated]
         for benefit in deprecated_benefits:
-            benefit_id = benefit_ids.get(benefit.external_id)
-            in_use = benefit_id is not None and (
-                await grant_repository.exists_granted_by_benefit(benefit_id)
-            )
+            in_use = benefit.external_id in benefits_in_use
             referenced_by = [
                 product.external_id
                 for product in kept_products

@@ -11,7 +11,7 @@ from polar.catalog.service import catalog as catalog_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.discount.repository import DiscountRepository
 from polar.models import Organization, Product
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 
 from .schemas import (
@@ -53,7 +53,7 @@ def definitions(changes: ConfigChanges) -> dict[str, str]:
 
 
 async def cascade_benefit_changes(
-    session: AsyncSession,
+    session: AsyncReadSession,
     organization: Organization,
     changes: ConfigChanges,
     removed: Sequence[ConfigRemoval],

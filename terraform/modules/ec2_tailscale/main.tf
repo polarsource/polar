@@ -101,17 +101,8 @@ resource "aws_instance" "this" {
       join(",", var.advertise_routes),
       join(",", var.advertise_tags),
       var.tailscale_version,
-      var.split_dns_domain,
-      var.tailscale_oauth_client_id,
     ]]
   })}"
-
-  lifecycle {
-    precondition {
-      condition     = var.split_dns_domain == "" || trimspace(var.tailscale_oauth_client_id) != ""
-      error_message = "tailscale_oauth_client_id is required when split_dns_domain is configured."
-    }
-  }
 
   metadata_options {
     http_endpoint               = "enabled"

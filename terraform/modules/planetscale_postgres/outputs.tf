@@ -52,11 +52,6 @@ output "bouncer_usernames" {
   value       = { for name, _ in planetscale_postgres_bouncer.this : name => "${planetscale_postgres_redacted_branch_role.app.username}|${name}" }
 }
 
-output "private_host" {
-  description = "Connection host over PrivateLink."
-  value       = planetscale_postgres_redacted_branch_role.app.private_access_host_url
-}
-
 output "private_connection_service_name" {
   description = "VPC endpoint service name for PrivateLink to this branch."
   value       = planetscale_postgres_redacted_branch_role.app.private_connection_service_name

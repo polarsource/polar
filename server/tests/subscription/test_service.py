@@ -5866,13 +5866,14 @@ class TestUpdate:
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )
+        current_period_start = subscription.current_period_start
         trial_end = subscription.trial_end
         assert trial_end is not None
 
         new_product = await create_product(
             save_fixture,
             organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.year,
+            recurring_interval=SubscriptionRecurringInterval.month,
         )
 
         async with SubscriptionUpdateContext(
@@ -5890,7 +5891,7 @@ class TestUpdate:
         assert updated.product == new_product
         assert updated.status == SubscriptionStatus.trialing
         assert updated.trial_end == trial_end
-        assert updated.current_period_start < trial_end
+        assert updated.current_period_start == current_period_start
         assert updated.current_period_end == trial_end
         assert not any(
             call.args and call.args[0] == "order.create_subscription_order"

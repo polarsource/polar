@@ -5,6 +5,7 @@ import { construct } from './construct'
 import { FIGURE_PAD, frameCorners } from './kit'
 import type { Piece } from './pages'
 import { useSim } from './simulation'
+import { STATUS, StatusLabel } from './status'
 
 /**
  * Centres each figure's drawing across its frame and fits the frame's height to the drawing, then cuts the view box
@@ -109,6 +110,11 @@ export function Plate({
           <p className="m-0 text-[18px] leading-[1.4] font-[450] text-[#7b7b7b]">
             {piece.sub}
           </p>
+          {STATUS[piece.id] ? (
+            <div className="pt-2">
+              <StatusLabel status={STATUS[piece.id]} />
+            </div>
+          ) : null}
         </header>
       ) : null}
       <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">

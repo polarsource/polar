@@ -1,5 +1,6 @@
 from decimal import Decimal
 from typing import Any, get_args
+from uuid import UUID
 
 import pytest
 from pytest_mock import MockerFixture
@@ -63,6 +64,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.subscription import SubscriptionStatus
@@ -3218,6 +3220,222 @@ class TestProductRemoval:
             session, redis, auth_subject, config
         )
         assert (again.removed, again.catalog) == ([], None)
+
+
+@pytest.fixture
+async def catalog_versions(
+    session: AsyncSession,
+    redis: Redis,
+    auth_subject: AuthSubject[Organization],
+    organization: Organization,
+    config_as_code_enabled: None,
+) -> tuple[UUID, UUID]:
+    catalog_repository = CatalogRepository.from_session(session)
+    await declarative_config_service.apply(
+        session,
+        redis,
+        auth_subject,
+        Config.model_validate({"products": [MONTHLY_PRO]}),
+    )
+    first = await catalog_repository.get_live(organization.id)
+    await declarative_config_service.apply(
+        session,
+        redis,
+        auth_subject,
+        Config.model_validate({"products": [MONTHLY_PRO_25]}),
+    )
+    second = await catalog_repository.get_live(organization.id)
+    assert first is not None
+    assert second is not None
+    return first.id, second.id
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestCatalogSelector:
+    async def test_export_archived_version_deprecates_later_products_in_use(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+        config_as_code_enabled: None,
+    ) -> None:
+        team = {**MONTHLY_PRO, "external_id": "team", "name": "Team"}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        first = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, team, PACK_PRODUCT]}),
+        )
+        [team_product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["team"])
+        await create_active_subscription(
+            save_fixture, product=team_product, customer=customer
+        )
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, first.id
+        )
+
+        assert [
+            (product.external_id, product.deprecated)
+            for product in exported.config.products
+        ] == [("pro", None), ("team", True)]
+
+    async def test_plan_archived_version_removes_relative_to_it(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        config_as_code_enabled: None,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        first = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        config = Config.model_validate({"products": [MONTHLY_PRO]})
+
+        against_first = await declarative_config_service.plan(
+            session, auth_subject, config, first.id
+        )
+        against_live = await declarative_config_service.plan(
+            session, auth_subject, config
+        )
+
+        assert against_first.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.product,
+                external_id="pack",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        assert (against_first.issues, against_first.catalog) == ([], None)
+        assert against_live.removed == []
+
+    async def test_export_archived_version(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        first, _ = catalog_versions
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, first
+        )
+
+        [product] = exported.config.products
+        assert isinstance(product.prices[0], ConfigProductPriceFixedRead)
+        assert product.prices[0].price_amount == 2000
+        assert exported.catalog is not None
+        assert (exported.catalog.id, exported.catalog.status) == (
+            first,
+            CatalogStatus.archived,
+        )
+
+    async def test_export_live(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        _, second = catalog_versions
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.catalog is not None
+        assert (exported.catalog.id, exported.catalog.status) == (
+            second,
+            CatalogStatus.live,
+        )
+
+    async def test_plan_archived_version_unchanged(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        first, _ = catalog_versions
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+            first,
+        )
+
+        assert plan.issues == []
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+        assert plan.catalog is None
+
+    async def test_plan_archived_version_changed(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        first, _ = catalog_versions
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+            first,
+        )
+
+        [change] = plan.changes
+        assert change.action == ConfigAction.updated
+        assert [field.field for field in change.diff] == ["prices"]
+        assert plan.catalog is None
+
+    async def test_plan_archived_version_new_currency_listed_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        first, _ = catalog_versions
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [{**MONTHLY_PRO, "prices": [EUR_PACK_PRICE]}],
+                }
+            ),
+            first,
+        )
+
+        assert [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == []
 
 
 ROUND_TRIP_CONFIG: dict[str, Any] = {

@@ -63772,8 +63772,8 @@ export interface operations {
       query?: {
         /** @description The ID of the organization to export. **Required unless you use an organization token.** */
         organization_id?: string | null
-        /** @description The catalog to use: `live`, or the ID of a published catalog. */
-        catalog?: 'live' | string
+        /** @description ID of a published catalog. Defaults to the live catalog. */
+        catalog?: string | null
       }
       header?: never
       path?: never
@@ -63900,8 +63900,8 @@ export interface operations {
   'config:plan': {
     parameters: {
       query?: {
-        /** @description The catalog to use: `live`, or the ID of a published catalog. */
-        catalog?: 'live' | string
+        /** @description ID of a published catalog. Defaults to the live catalog. */
+        catalog?: string | null
       }
       header?: never
       path?: never

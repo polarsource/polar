@@ -2,7 +2,6 @@ import hashlib
 import uuid
 from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime
-from typing import Literal
 
 from sqlalchemy.orm import selectinload
 
@@ -36,9 +35,6 @@ def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) ->
         *(f"{key}={value}" for key, value in sorted(entries.items())),
     ]
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
-
-
-type CatalogSelector = Literal["live"] | uuid.UUID
 
 
 class CatalogNotFound(PolarError):
@@ -108,18 +104,19 @@ class CatalogService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        selector: CatalogSelector,
+        id: uuid.UUID | None,
     ) -> Catalog | None:
-        """Return the live catalog or the published catalog with this ID.
+        """Return the published catalog with this ID, or the live catalog when
+        `id` is None.
 
-        `live` resolves to `None` before the first publish.
+        The live catalog is None before the first publish.
         """
         repository = CatalogRepository.from_session(session)
-        if selector == "live":
+        if id is None:
             return await repository.get_live(organization.id)
-        catalog = await repository.get_published_by_id(organization.id, selector)
+        catalog = await repository.get_published_by_id(organization.id, id)
         if catalog is None:
-            raise CatalogNotFound(selector)
+            raise CatalogNotFound(id)
         return catalog
 
     async def get_live_entries(

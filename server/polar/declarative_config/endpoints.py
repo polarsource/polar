@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import Depends, Query
 from pydantic import UUID4
@@ -35,9 +35,9 @@ CatalogNotFoundResponse = {
     "model": CatalogNotFound.schema(),
 }
 
-CatalogSelectorQuery = Annotated[
-    Literal["live"] | UUID4,
-    Query(description="The catalog to use: `live`, or the ID of a published catalog."),
+CatalogQuery = Annotated[
+    UUID4 | None,
+    Query(description="ID of a published catalog. Defaults to the live catalog."),
 ]
 
 
@@ -68,7 +68,7 @@ async def export(
             "**Required unless you use an organization token.**"
         ),
     ),
-    catalog: CatalogSelectorQuery = "live",
+    catalog: CatalogQuery = None,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ConfigExport:
     """
@@ -168,7 +168,7 @@ async def apply(
 async def plan(
     config: Config,
     auth_subject: ConfigRead,
-    catalog: CatalogSelectorQuery = "live",
+    catalog: CatalogQuery = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ConfigPlan:
     """

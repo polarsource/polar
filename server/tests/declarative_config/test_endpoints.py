@@ -604,7 +604,7 @@ class TestExport:
     @pytest.mark.usefixtures("config_as_code_enabled")
     @pytest.mark.parametrize(
         ("catalog", "status_code"),
-        [("00000000-0000-4000-8000-000000000000", 404), ("abcd", 422)],
+        [("00000000-0000-4000-8000-000000000000", 404), ("live", 422)],
     )
     async def test_catalog_selector(
         self,

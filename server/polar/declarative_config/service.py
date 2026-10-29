@@ -14,7 +14,6 @@ from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
-from polar.catalog.service import CatalogSelector
 from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
@@ -294,14 +293,14 @@ class DeclarativeConfigService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
-        catalog_selector: CatalogSelector = "live",
+        catalog_id: UUID | None = None,
     ) -> ConfigPlan:
         _assert_section_scopes(auth_subject, config, write=False)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
-        base = await catalog_service.resolve(session, organization, catalog_selector)
+        base = await catalog_service.resolve(session, organization, catalog_id)
         archived_base = (
             base if base is not None and base.status != CatalogStatus.live else None
         )
@@ -477,7 +476,7 @@ class DeclarativeConfigService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: UUID | None,
-        catalog_selector: CatalogSelector = "live",
+        catalog_id: UUID | None = None,
     ) -> ConfigExport:
         _assert_scopes(auth_subject, EXPORTED_SECTIONS, write=False)
         organization = await self._get_organization(
@@ -486,7 +485,7 @@ class DeclarativeConfigService:
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
         )
-        catalog = await catalog_service.resolve(session, organization, catalog_selector)
+        catalog = await catalog_service.resolve(session, organization, catalog_id)
         return await export_config(session, organization, catalog)
 
     def _plan_changes(

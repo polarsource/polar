@@ -48,7 +48,7 @@ class TestResolve:
     async def test_live_before_first_publish(
         self, session: AsyncSession, organization: Organization
     ) -> None:
-        assert await catalog_service.resolve(session, organization, "live") is None
+        assert await catalog_service.resolve(session, organization, None) is None
 
     async def test_live(
         self,
@@ -58,7 +58,7 @@ class TestResolve:
     ) -> None:
         _, live, _, _ = catalogs
 
-        assert await catalog_service.resolve(session, organization, "live") == live
+        assert await catalog_service.resolve(session, organization, None) == live
 
     async def test_archived_by_id(
         self,

@@ -79,14 +79,19 @@ class BillingEntryService:
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
         consumed_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+        credited_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+        net_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
         async for line_item, selector in line_items:
             if (
                 isinstance(line_item, MeteredLineItem)
                 and line_item.price.meter.aggregation.func != AggregationFunction.unique
             ):
-                consumed_units[line_item.price.meter_id] += Decimal(
-                    str(line_item.consumed_units)
-                )
+                meter_id = line_item.price.meter_id
+                units = Decimal(str(line_item.consumed_units))
+                consumed_units[meter_id] += units
+                credited_units[meter_id] += line_item.credited_units
+                # Each line item bills its own net units.
+                net_units[meter_id] += max(Decimal(0), units - line_item.credited_units)
             order_item = OrderItem(
                 id=uuid.uuid4(),
                 label=line_item.label,
@@ -138,26 +143,36 @@ class BillingEntryService:
                     billable_from=billable_from,
                     cutoff=cutoff,
                 )
+                reducer_net_units = {
+                    meter_id: max(Decimal(0), usage - credits)
+                    for meter_id, (usage, credits) in quantities.items()
+                }
                 span.set_attribute(
                     "quantities",
                     {
                         str(meter_id): {
-                            "legacy": str(units),
-                            "reducer": str(
-                                quantities[meter_id][0]
-                                if meter_id in quantities
-                                else None
-                            ),
+                            "legacy": {
+                                "usage": str(consumed_units[meter_id]),
+                                "credits": str(credited_units[meter_id]),
+                                "net": str(net),
+                            },
+                            "reducer": {
+                                "usage": str(quantities[meter_id][0]),
+                                "credits": str(quantities[meter_id][1]),
+                                "net": str(reducer_net_units[meter_id]),
+                            }
+                            if meter_id in quantities
+                            else None,
                         }
-                        for meter_id, units in consumed_units.items()
+                        for meter_id, net in net_units.items()
                     },
                 )
                 span.set_attribute(
                     "match",
                     all(
-                        meter_id in quantities
-                        and math.isclose(quantities[meter_id][0], units)
-                        for meter_id, units in consumed_units.items()
+                        meter_id in reducer_net_units
+                        and math.isclose(reducer_net_units[meter_id], net)
+                        for meter_id, net in net_units.items()
                     ),
                 )
 

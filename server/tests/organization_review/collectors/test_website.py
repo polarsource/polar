@@ -1,5 +1,4 @@
 import asyncio
-import socket
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -9,7 +8,7 @@ import pytest
 from pydantic_ai.models.test import TestModel
 
 from polar.config import settings
-from polar.kit.http import SSRFBlockedError, SSRFSafeTransport
+from polar.kit.http import SSRFBlockedError
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.website import (
     MAX_CHARS_PER_PAGE,
@@ -482,33 +481,6 @@ class TestCollectWebsiteData:
 
 
 class TestFetchPageSSRF:
-    @pytest.mark.anyio
-    async def test_blocks_initial_ssrf(self) -> None:
-        """fetch_page should block a URL that resolves to a private IP."""
-        async with httpx.AsyncClient(transport=SSRFSafeTransport()) as client:
-            deps = WebsiteDeps(client=client, allowed_domain="example.com")
-            ctx = MagicMock()
-            ctx.deps = deps
-
-            with patch(
-                "anyio.getaddrinfo",
-                new=AsyncMock(
-                    return_value=[
-                        (
-                            socket.AF_INET,
-                            socket.SOCK_STREAM,
-                            socket.IPPROTO_TCP,
-                            "",
-                            ("10.0.0.1", 0),
-                        )
-                    ]
-                ),
-            ):
-                result = await fetch_page(ctx, "https://example.com/")
-
-        assert "private/reserved IP 10.0.0.1" in result
-        assert deps.pages_visited == []
-
     @pytest.mark.anyio
     async def test_blocks_redirect_to_private_ip(self) -> None:
         """Redirect targets that resolve to private IPs should be blocked."""

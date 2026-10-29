@@ -2757,6 +2757,22 @@ class OrderService:
         target = await product_service.get_move_target(
             session, auth_subject, benefits_move.target_product_id
         )
+        if (
+            benefits_move.product_external_id
+            not in await ProductRepository.from_session(session).get_external_ids(
+                target.organization_id
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_external_id"),
+                        "msg": "No product has this external ID.",
+                        "input": benefits_move.product_external_id,
+                    }
+                ]
+            )
         enqueue_job(
             "order.move_benefits",
             organization_id=target.organization_id,

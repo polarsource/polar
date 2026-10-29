@@ -6,10 +6,11 @@ import pytest
 from polar.catalog.service import CatalogNotFound
 from polar.catalog.service import catalog as catalog_service
 from polar.kit.utils import utc_now
-from polar.models import Catalog, Organization
+from polar.models import Catalog, CatalogBenefit, Organization
 from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_benefit
 
 
 @pytest.fixture
@@ -101,3 +102,35 @@ class TestResolve:
 
         with pytest.raises(CatalogNotFound):
             await catalog_service.resolve(session, organization, other_organization.id)
+
+
+@pytest.mark.anyio
+class TestGetCatalogBenefits:
+    async def test_before_and_after_benefits_are_versioned(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        archived, live, _, _ = catalogs
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="beta"
+        )
+        emptied = Catalog(
+            organization=organization,
+            status=CatalogStatus.archived,
+            published_at=live.published_at,
+        )
+        await save_fixture(emptied)
+        await save_fixture(
+            CatalogBenefit(catalog=live, benefit=current, external_id="beta")
+        )
+
+        assert await catalog_service.get_catalog_benefits(
+            session, organization, archived
+        ) == {"beta": current}
+        assert (
+            await catalog_service.get_catalog_benefits(session, organization, emptied)
+            == {}
+        )

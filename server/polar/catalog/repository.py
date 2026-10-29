@@ -1,7 +1,8 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -129,13 +130,18 @@ class CatalogBenefitRepository(
 ):
     model = CatalogBenefit
 
-    async def has_members(self, catalog_id: UUID) -> bool:
-        statement = select(CatalogBenefit.id).where(
-            CatalogBenefit.catalog_id == catalog_id,
-            CatalogBenefit.deleted_at.is_(None),
+    async def get_first_published_at(self, organization_id: UUID) -> datetime | None:
+        """When the organization's first catalog listing benefits was published."""
+        statement = (
+            select(func.min(Catalog.published_at))
+            .join(CatalogBenefit, CatalogBenefit.catalog_id == Catalog.id)
+            .where(
+                Catalog.organization_id == organization_id,
+                CatalogBenefit.deleted_at.is_(None),
+            )
         )
-        result = await self.session.execute(statement.limit(1))
-        return result.first() is not None
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
 
     def get_benefits_statement(self, catalog_id: UUID) -> Select[tuple[Benefit]]:
         return (

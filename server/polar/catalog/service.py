@@ -134,6 +134,17 @@ class CatalogService:
             raise CatalogNotFound(id)
         return catalog
 
+    async def lists_benefits(self, session: AsyncReadSession, catalog: Catalog) -> bool:
+        """Whether the catalog records its benefits. Catalogs published before
+        the organization's first one that does were published before benefits
+        were versioned."""
+        first = await CatalogBenefitRepository.from_session(
+            session
+        ).get_first_published_at(catalog.organization_id)
+        return first is not None and (
+            catalog.published_at is None or catalog.published_at >= first
+        )
+
     async def get_catalog_benefits(
         self,
         session: AsyncReadSession,
@@ -142,16 +153,16 @@ class CatalogService:
     ) -> dict[str, Benefit]:
         """Benefits of a catalog, by `external_id`.
 
-        Catalogs published before benefits were versioned have no benefit members,
-        so they have the current benefits, as does no catalog before the first
-        publish.
+        A catalog published before benefits were versioned has the current
+        benefits, as does no catalog before the first publish.
         """
-        if catalog is not None:
-            members = await CatalogBenefitRepository.from_session(
-                session
-            ).get_all_by_catalog(catalog.id)
-            if members:
-                return {member.external_id: member.benefit for member in members}
+        if catalog is not None and await self.lists_benefits(session, catalog):
+            return {
+                member.external_id: member.benefit
+                for member in await CatalogBenefitRepository.from_session(
+                    session
+                ).get_all_by_catalog(catalog.id)
+            }
         return {
             benefit.external_id: benefit
             for benefit in await BenefitRepository.from_session(

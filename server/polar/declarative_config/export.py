@@ -13,6 +13,7 @@ from polar.catalog.repository import (
     CatalogBenefitRepository,
     CatalogProductRepository,
 )
+from polar.catalog.service import catalog as catalog_service
 from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
@@ -247,7 +248,7 @@ async def export_config(
     benefits_statement = benefit_repository.get_organization_statement(organization.id)
     if catalog is not None and catalog.status != CatalogStatus.live:
         catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
-        if await catalog_benefit_repository.has_members(catalog.id):
+        if await catalog_service.lists_benefits(session, catalog):
             benefits_statement = catalog_benefit_repository.get_benefits_statement(
                 catalog.id
             )

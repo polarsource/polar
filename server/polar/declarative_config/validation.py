@@ -13,6 +13,7 @@ from polar.catalog.repository import (
     CatalogBenefitRepository,
     CatalogProductRepository,
 )
+from polar.catalog.service import catalog as catalog_service
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.kit.currency import PresentmentCurrency
@@ -602,7 +603,7 @@ async def diff_benefits(
     repository = BenefitRepository.from_session(session)
     catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
     external_ids = [config.external_id for config in benefit_configs]
-    if catalog is not None and await catalog_benefit_repository.has_members(catalog.id):
+    if catalog is not None and await catalog_service.lists_benefits(session, catalog):
         benefits = await catalog_benefit_repository.get_benefits_by_external_ids(
             catalog.id, external_ids, options=repository.get_eager_options()
         )

@@ -28,6 +28,16 @@ output "app_role_base_username" {
   value       = planetscale_postgres_redacted_branch_role.app.base_username
 }
 
+output "analytics_reader_role_id" {
+  description = "Analytics reader role ID. Reset its password with `pscale role reset`."
+  value       = planetscale_postgres_redacted_branch_role.analytics_reader.id
+}
+
+output "analytics_reader_role_username" {
+  description = "Analytics reader role username."
+  value       = planetscale_postgres_redacted_branch_role.analytics_reader.username
+}
+
 output "database_name" {
   description = "PostgreSQL database name to connect to, distinct from the PlanetScale database slug."
   value       = var.app_database_name

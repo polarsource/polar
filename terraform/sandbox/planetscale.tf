@@ -48,7 +48,7 @@ locals {
     password      = var.planetscale_app_password
     read_host     = module.planetscale.host
     read_port     = "6432"
-    read_user     = module.planetscale.bouncer_usernames["app"]
+    read_user     = module.planetscale.bouncer_usernames["read"]
     read_password = var.planetscale_app_password
     sslmode       = "verify-full"
     sslrootcert   = "/etc/ssl/certs/ca-certificates.crt"

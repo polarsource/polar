@@ -4,8 +4,8 @@ import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useAuth } from '@/hooks/auth'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
+import { useTrackCheckoutOpened } from '@/hooks/queries/checkouts'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
-import { getServerURL } from '@/utils/api'
 import {
   isExpiredCheckoutError,
   isOrderSummaryCollapsible,
@@ -122,6 +122,9 @@ const Checkout = ({
   const collapsedOrderSummary =
     hasProductCheckout(checkout) && isOrderSummaryCollapsible(checkout)
 
+  const { mutate: trackCheckoutOpened } = useTrackCheckoutOpened(
+    checkout.client_secret,
+  )
   const openedTrackedRef = useRef(false)
   useEffect(() => {
     if (openedTrackedRef.current) return
@@ -135,17 +138,8 @@ const Checkout = ({
     )
     const distinctId = distinctIdCookie?.split('=')[1]?.trim()
 
-    fetch(
-      getServerURL(`/v1/checkouts/client/${checkout.client_secret}/opened`),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ distinct_id: distinctId }),
-      },
-    ).catch(() => {
-      // Silently ignore - don't affect checkout experience
-    })
-  }, [checkout.client_secret, posthog])
+    trackCheckoutOpened(distinctId)
+  }, [trackCheckoutOpened, posthog])
 
   const themePreset = getThemePreset(theme)
 

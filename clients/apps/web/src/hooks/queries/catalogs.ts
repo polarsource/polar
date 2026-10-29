@@ -48,7 +48,7 @@ export const useCatalogVersionLabels = (
         }),
       )
       return new Map(
-        data.items.map(({ id, name }) => [id, name]),
+        data.items.map(({ id, name, status }) => [id, { name, status }]),
       )
     },
     retry: defaultRetry,

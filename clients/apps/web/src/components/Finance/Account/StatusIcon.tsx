@@ -46,12 +46,14 @@ const STATUS_APPEARANCE: Record<
 interface Props {
   status: schemas['OrganizationReviewCheckStatus']
   reasons?: schemas['OrganizationReviewCheckReason'][] | null
+  waiting?: boolean
 }
 
-export const StatusIcon = ({ status, reasons }: Props) => {
+export const StatusIcon = ({ status, reasons, waiting = false }: Props) => {
   const isWaiting =
-    status === 'pending' &&
-    (reasons ?? []).some((reason) => WAITING_REASONS.has(reason))
+    waiting ||
+    (status === 'pending' &&
+      (reasons ?? []).some((reason) => WAITING_REASONS.has(reason)))
   const Icon = isWaiting ? ClockIcon : STATUS_ICONS[status]
   const appearance = STATUS_APPEARANCE[status]
 

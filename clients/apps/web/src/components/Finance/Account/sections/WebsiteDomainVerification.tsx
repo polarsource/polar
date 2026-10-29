@@ -11,17 +11,10 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { findWebsiteDomain, websiteHost } from './websiteDomain'
 
 interface Props {
   organization: schemas['Organization']
-}
-
-const websiteHost = (website: string): string | null => {
-  try {
-    return new URL(website).hostname
-  } catch {
-    return null
-  }
 }
 
 export const WebsiteDomainVerification = ({ organization }: Props) => {
@@ -32,10 +25,7 @@ export const WebsiteDomainVerification = ({ organization }: Props) => {
   const host = organization.website ? websiteHost(organization.website) : null
   if (!host || !domains) return null
 
-  const matching = domains.items.filter(
-    (d) => host === d.domain || host.endsWith(`.${d.domain}`),
-  )
-  const domain = matching.find((d) => d.verified_at) ?? matching[0]
+  const domain = findWebsiteDomain(host, domains.items)
   const domainName = domain?.domain ?? host.replace(/^www\./, '')
 
   const onAdd = async () => {

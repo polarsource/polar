@@ -2,6 +2,7 @@ import {
   createMcpHandler,
   getOAuthProtectedResourceMetadataUrl,
 } from '@modelcontextprotocol/server'
+import { withSentry } from '@sentry/cloudflare'
 import { env } from 'cloudflare:workers'
 import { Effect, Layer, ManagedRuntime } from 'effect'
 import { FetchHttpClient, HttpClient } from 'effect/http'
@@ -18,6 +19,7 @@ import {
 import type { PolarApiOutboundProps } from './outbound'
 import { createServer } from './server'
 import { Sandbox } from './sandbox'
+import { sentryOptions } from './sentry'
 import { allScopes, readScopes } from './spec'
 
 export { PolarApiOutbound } from './outbound'
@@ -160,7 +162,7 @@ const handleMcp = Effect.fn('handleMcp')(function* (
   )
 })
 
-export default {
+export default withSentry(sentryOptions, {
   fetch(request: Request) {
     if (request.method === 'OPTIONS') {
       return Promise.resolve(
@@ -171,4 +173,4 @@ export default {
       signal: request.signal,
     })
   },
-} satisfies ExportedHandler<Env>
+} satisfies ExportedHandler<Env>)

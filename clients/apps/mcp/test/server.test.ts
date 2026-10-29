@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto'
 import { runInThisContext } from 'node:vm'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { captureException } from '@sentry/cloudflare'
 import { request, rpc } from './client'
 import scopes from '../src/generated/scopes.json'
 import { toolNames } from '../src/analytics'
@@ -10,6 +11,11 @@ import { env, evaluate, exports, get, waitUntil } from './workers'
 
 const DOCS_TOOLS = ['search_docs', 'read_docs_page']
 
+vi.mock('@sentry/cloudflare', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@sentry/cloudflare')>()),
+  captureException: vi.fn(),
+}))
+
 const fetchMock = vi.fn<typeof fetch>()
 
 beforeEach(() => {
@@ -18,6 +24,36 @@ beforeEach(() => {
   evaluate.mockReset().mockResolvedValue({ result: 'sandbox result' })
   get.mockClear()
   exports.PolarApiOutbound.mockClear()
+  vi.mocked(captureException).mockClear()
+})
+
+test('only sandbox and internal failures are reported to Sentry', async () => {
+  const log = vi.spyOn(console, 'info').mockImplementation(() => {})
+  const execute = () =>
+    rpc('tools/call', { name: 'execute', arguments: { code: 'x' } })
+  evaluate.mockResolvedValueOnce({
+    error: 'Polar API 500: boom',
+    status: 500,
+    requests: 1,
+    calls: [
+      { method: 'GET', url: 'https://api.polar.test/v1/orders/', status: 500 },
+    ],
+  })
+  await execute()
+  evaluate.mockResolvedValueOnce({
+    error: 'TypeError: x is not a function',
+    errorName: 'TypeError',
+  })
+  await execute()
+  expect(captureException).not.toHaveBeenCalled()
+  const limit = new Error('Worker exceeded CPU time limit.')
+  evaluate.mockRejectedValueOnce(limit)
+  await execute()
+  expect(captureException).toHaveBeenCalledTimes(1)
+  expect(captureException).toHaveBeenCalledWith(limit, {
+    tags: { tool: 'execute', kind: 'sandbox' },
+  })
+  log.mockRestore()
 })
 afterEach(() => vi.unstubAllGlobals())
 

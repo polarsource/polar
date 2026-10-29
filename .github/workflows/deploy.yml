@@ -536,6 +536,10 @@ jobs:
 
       - run: pnpm install --filter mcp... --frozen-lockfile --ignore-scripts
       - run: pnpm --filter mcp build
+        env:
+          SENTRY_DSN: ${{ secrets.MCP_SENTRY_DSN }}
+          SENTRY_RELEASE: polar-mcp@${{ github.sha }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
       - name: Deploy to Cloudflare
         working-directory: ./clients/apps/mcp

@@ -16,10 +16,12 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",
+    "@sentry/cloudflare": "^11.9.0",
     "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "2.0.0-beta.sha-52b0dc0e9",
+    "@sentry/vite-plugin": "^11.9.0",
     "@types/node": "catalog:",
     "@typescript/native": "catalog:",
     "cf": "1.0.0-beta.12",

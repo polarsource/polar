@@ -151,7 +151,7 @@ Never sent: the ID itself, access tokens, every other tool argument (including t
 
 `intent` and `feedback` are the only text your agent writes that the server sends. Every tool asks the agent to write them without customer names, emails or IDs, and before they are sent or logged the server redacts anything that looks like an identifier or a secret, such as emails, IDs, card numbers and API keys. Redaction matches shapes, not meaning, so a name written in plain words can still pass. If your agent handles data you don't want to share with us at all, opt out.
 
-To opt out, add `?telemetry=false` (or `0`, `no`, `off`) to the server URL, for example `https://mcp.polar.sh/mcp/polar-mcp?telemetry=false`. The server then ignores `intent`, which is neither sent nor written to its request logs, and removes the `feedback` tool. It combines with read-only mode: `?readonly=true&telemetry=false`. The server still keeps request logs to operate and secure the service, as the Polar API does.
+To opt out, add `?telemetry=false` (or `0`, `no`, `off`) to the server URL, for example `https://mcp.polar.sh/mcp/polar-mcp?telemetry=false`. The server then ignores `intent`, which is neither sent nor written to its request logs, and removes the `feedback` tool. It combines with read-only mode: `?readonly=true&telemetry=false`. The server still keeps request logs to operate and secure the service, as the Polar API does, and reports failures of its own code to Sentry with the same redaction and without your request's arguments or results.
 
 ## Available operations
 

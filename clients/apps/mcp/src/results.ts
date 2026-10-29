@@ -1,5 +1,6 @@
 import { Effect, Schema } from 'effect'
 import { RequestLog } from './log'
+import { reportCrash, reportToolFailure } from './sentry'
 
 const ToolErrorKind = Schema.Literals([
   'api',
@@ -86,6 +87,7 @@ export const makeToolRunner = Effect.gen(function* () {
     if (error.kind === 'sandbox') {
       log.errorMessage = error.message
     }
+    reportToolFailure(error, log.tool)
     return toolError(error)
   }
   return (
@@ -101,6 +103,9 @@ export const makeToolRunner = Effect.gen(function* () {
     ).catch((cause: unknown) => {
       log.isError = true
       log.errorKind = signal.aborted ? 'cancelled' : 'internal'
+      if (!signal.aborted) {
+        reportCrash(cause, log.tool)
+      }
       throw cause
     })
 })

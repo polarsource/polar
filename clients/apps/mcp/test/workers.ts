@@ -26,6 +26,9 @@ export const env = {
   MINTLIFY_SEARCH_KEY: 'mint_dsc_test',
   MCP_ANALYTICS_SECRET: 'analytics-secret-test',
   POSTHOG_PROJECT_KEY: '',
+  SENTRY_DSN: '',
+  SENTRY_ENVIRONMENT: 'test',
+  SENTRY_RELEASE: '',
 }
 export const waitUntil = vi.fn<(promise: Promise<unknown>) => void>()
 export const exports = {

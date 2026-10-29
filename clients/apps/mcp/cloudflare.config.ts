@@ -26,6 +26,11 @@ export default defineConfig(({ mode }) => ({
           ? (process.env.POSTHOG_PROJECT_KEY ?? '')
           : 'phc_H2ajVAY4cy0uQpcgN5fzpv8JC3yP8VZOjx2EXiFBbgz',
       ),
+      SENTRY_DSN: bindings.text(process.env.SENTRY_DSN ?? ''),
+      SENTRY_RELEASE: bindings.text(process.env.SENTRY_RELEASE ?? ''),
+      SENTRY_ENVIRONMENT: bindings.text(
+        mode === 'development' ? 'development' : 'production',
+      ),
       POLAR_SERVERS: bindings.json(
         mode === 'development'
           ? { ...POLAR_SERVERS, ...LOCAL_POLAR_SERVERS }

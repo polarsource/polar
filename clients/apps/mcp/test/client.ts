@@ -1,8 +1,22 @@
 import { expect } from 'vitest'
 import worker from '../src/index'
+import { env } from './workers'
+
+const context = {
+  waitUntil: () => {},
+  passThroughOnException: () => {},
+  props: {},
+} as unknown as ExecutionContext
 
 export const request = (path: string, init?: RequestInit) =>
-  worker.fetch(new Request(`https://mcp.polar.test${path}`, init))
+  (worker as ExportedHandler<Env>).fetch!(
+    new Request(`https://mcp.polar.test${path}`, init) as unknown as Request<
+      unknown,
+      IncomingRequestCfProperties
+    >,
+    env as unknown as Env,
+    context,
+  )
 
 export const rpc = async (
   method: string,

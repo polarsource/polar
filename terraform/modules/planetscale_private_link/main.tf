@@ -33,3 +33,8 @@ resource "aws_vpc_endpoint" "this" {
   private_dns_enabled = true
   tags                = merge(var.tags, { Name = var.name })
 }
+
+data "aws_network_interface" "this" {
+  count = length(var.subnet_ids)
+  id    = tolist(aws_vpc_endpoint.this.network_interface_ids)[count.index]
+}

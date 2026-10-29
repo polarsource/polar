@@ -163,6 +163,9 @@ jobs:
     needs: [changes, checks, test-web, test-packages, build]
     if: always()
     runs-on: blacksmith-4vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: .
     steps:
       - name: Check job results
         env:

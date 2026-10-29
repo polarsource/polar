@@ -13,21 +13,19 @@ import {
   Grid,
   List,
   ListItem,
-  Status,
   Text,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowBackOutlined, Check, Copy } from '@polar-sh/orbit/icons'
+import { ArrowBackOutlined, Check, Circle, Copy } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ReactNode, useEffect, useState } from 'react'
-import { CurrentBadge, PublishedAt } from '../VersionsPage'
+import { PublishedAt } from '../VersionsPage'
 
 type Organization = schemas['Organization']
-type CatalogVersion = schemas['CatalogVersion']
 type CatalogProduct = schemas['CatalogProduct']
 type Product = schemas['Product']
 type Change = (typeof changes)[number]
@@ -42,10 +40,10 @@ const changes = ['added', 'changed', 'removed'] as const
 // Temporary: subscriber counts cost one request per product, so large catalogs skip them.
 const MAX_PRODUCTS_WITH_SUBSCRIBERS = 25
 
-const changeStatus = {
-  added: { status: 'Added', color: 'green' },
-  changed: { status: 'Changed', color: 'blue' },
-  removed: { status: 'Removed', color: 'red' },
+const changeText = {
+  added: { label: 'Added', color: 'success' },
+  changed: { label: 'Changed', color: 'muted' },
+  removed: { label: 'Removed', color: 'danger' },
 } as const
 
 const diffCatalog = (
@@ -108,82 +106,44 @@ const Diff = ({
   </Box>
 )
 
-const PublishStatus = ({ catalog }: { catalog: CatalogVersion }) => {
-  if (!catalog.published_at) return 'Draft'
-  return (
-    <>
-      Published{' '}
-      <Text as="span" color="default">
-        <PublishedAt catalog={catalog} />
-      </Text>
-    </>
-  )
-}
+const statusLabel = {
+  live: 'Current',
+  archived: 'Archived',
+  draft: 'Draft',
+} as const
 
-const VersionTitle = ({
-  catalog,
-  parent,
-  versionsPath,
-}: {
-  catalog: CatalogVersion
-  parent?: CatalogVersion
-  versionsPath: string
-}) => (
-  <Box flexDirection="column" rowGap="l" minWidth={0}>
-    <Box alignItems="center" columnGap="l" minWidth={0}>
-      <Link href={versionsPath} aria-label="All versions">
-        <Box
-          as="span"
-          display="flex"
-          color={{ base: 'text-tertiary', hover: 'text-primary' }}
-          transitionProperty="colors"
-          transitionDuration="fast"
-        >
-          <ArrowBackOutlined fontSize="small" />
-        </Box>
-      </Link>
-      <Text variant="heading-xs" as="h1" truncate>
-        {catalog.name ?? 'Untitled'}
-      </Text>
-      {catalog.status === 'live' ? <CurrentBadge /> : null}
+const BackLink = ({ versionsPath }: { versionsPath: string }) => (
+  <Link href={versionsPath} aria-label="All versions">
+    <Box
+      as="span"
+      display="flex"
+      color={{ base: 'text-tertiary', hover: 'text-primary' }}
+      transitionProperty="colors"
+      transitionDuration="fast"
+    >
+      <ArrowBackOutlined fontSize="small" />
     </Box>
-    <Box alignItems="center" columnGap="m" flexWrap="wrap">
-      <Text color="muted">
-        <PublishStatus catalog={catalog} />
-      </Text>
-      {parent ? (
-        <Text color="muted">
-          Based on{' '}
-          <Link href={`${versionsPath}/${parent.id}`}>
-            <Box
-              as="span"
-              color={{ base: 'text-primary', hover: 'text-secondary' }}
-              transitionProperty="colors"
-              transitionDuration="fast"
-            >
-              {parent.name ?? 'Untitled'}
-            </Box>
-          </Link>
-        </Text>
-      ) : null}
-    </Box>
-  </Box>
+  </Link>
 )
 
-const Section = ({
-  title,
-  aside,
+const Field = ({
+  label,
+  first,
   children,
 }: {
-  title: string
-  aside?: string
+  label: string
+  first?: boolean
   children: ReactNode
 }) => (
-  <Box flexDirection="column" rowGap="m">
-    <Box alignItems="baseline" justifyContent="between">
-      <Text variant="heading-xxs">{title}</Text>
-      {aside ? <Text color="muted">{aside}</Text> : null}
-    </Box>
+  <Box
+    flexDirection="column"
+    rowGap="xs"
+    borderTopWidth={first ? 0 : 1}
+    borderStyle="solid"
+    borderColor="border-primary"
+    paddingTop={first ? 'none' : 'l'}
+  >
+    <Text color="muted">{label}</Text>
     {children}
   </Box>
 )
@@ -324,7 +284,9 @@ const ProductRow = ({
             minWidth={0}
           >
             {showStatus && change ? (
-              <Status size="small" {...changeStatus[change]} />
+              <Text variant="title" color={changeText[change].color}>
+                {changeText[change].label}
+              </Text>
             ) : null}
             <Diff before={priceBefore}>
               <Text color={removed ? 'disabled' : 'default'}>
@@ -376,27 +338,28 @@ export default function VersionPage({
     `--org ${organization.slug}`,
     ...(catalog.status === 'live' ? [] : [`--version ${catalog.id}`]),
   ]
-  const summary = [
-    plural(catalog.products.length, 'product'),
-    ...changes.flatMap((change) => {
+  const changeSummary = changes
+    .flatMap((change) => {
       const count = entries.filter((entry) => entry.change === change).length
       return count ? [`${count} ${change}`] : []
-    }),
-  ].join(' · ')
+    })
+    .join(' · ')
 
   return (
-    <DashboardBody
-      title={
-        <VersionTitle
-          catalog={catalog}
-          parent={parent}
-          versionsPath={versionsPath}
-        />
-      }
-      header={<PullCommand flags={pullFlags} />}
-    >
-      <Box flexDirection="column" rowGap="2xl">
-        <Section title="Products" aside={summary}>
+    <DashboardBody title={null}>
+      <Box flexDirection={{ base: 'column', md: 'row' }} gap="2xl">
+        <Box flex={3} flexDirection="column" rowGap="xl" minWidth={0}>
+          <Box alignItems="center" justifyContent="between" columnGap="l">
+            <Box alignItems="center" columnGap="l" minWidth={0}>
+              <BackLink versionsPath={versionsPath} />
+              <Text variant="heading-xs" as="h1" truncate>
+                {catalog.name ?? 'Untitled'}
+              </Text>
+            </Box>
+            <Text variant="heading-xs" color="muted">
+              {plural(catalog.products.length, 'product')}
+            </Text>
+          </Box>
           <List size="small">
             {entries.map((entry) => (
               <ProductRow
@@ -416,7 +379,53 @@ export default function VersionPage({
               />
             ))}
           </List>
-        </Section>
+        </Box>
+        <Box flex={1} flexDirection="column" rowGap="l" minWidth={0}>
+          <Field label="Status" first>
+            {catalog.status === 'live' ? (
+              <>
+                <Box alignItems="center" columnGap="s">
+                  <Box as="span" display="flex" color="text-success">
+                    <Circle size={8} fill="currentColor" strokeWidth={0} />
+                  </Box>
+                  <Text>{statusLabel.live}</Text>
+                </Box>
+                <Text color="muted">New checkouts use this version</Text>
+              </>
+            ) : (
+              <Text>{statusLabel[catalog.status]}</Text>
+            )}
+          </Field>
+          <Field label="Published">
+            <Text>
+              {catalog.published_at ? (
+                <PublishedAt catalog={catalog} />
+              ) : (
+                'Not published'
+              )}
+            </Text>
+          </Field>
+          {parent ? (
+            <Field label="Based on">
+              <Link href={`${versionsPath}/${parent.id}`}>
+                <Box
+                  as="span"
+                  color={{ base: 'text-primary', hover: 'text-secondary' }}
+                  transitionProperty="colors"
+                  transitionDuration="fast"
+                >
+                  {parent.name ?? 'Untitled'}
+                </Box>
+              </Link>
+              <Text color="muted">{changeSummary || 'No changes'}</Text>
+            </Field>
+          ) : null}
+          <Field label="Pull with CLI">
+            <Box>
+              <PullCommand flags={pullFlags} />
+            </Box>
+          </Field>
+        </Box>
       </Box>
     </DashboardBody>
   )

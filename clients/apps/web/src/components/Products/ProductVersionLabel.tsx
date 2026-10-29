@@ -12,7 +12,12 @@ export const ProductVersionLabel = ({
   // Every table row calls this, but React Query sends one request per organization and all rows share it.
   const { data: labels } = useCatalogVersionLabels(organization)
   const catalog = product.catalog_id && labels?.get(product.catalog_id)
-  if (!catalog || catalog.status !== 'archived' || !catalog.name) {
+  if (
+    !organization.feature_settings?.config_as_code_enabled ||
+    !catalog ||
+    catalog.status !== 'archived' ||
+    !catalog.name
+  ) {
     return null
   }
   return (

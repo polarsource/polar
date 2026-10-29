@@ -153,6 +153,34 @@ class ReducerService:
         are all in Postgres already."""
         await self._seal(session, customer, meter_id, (ReducerKind.credit,), at=at)
 
+    async def sync_credits(
+        self, session: AsyncSession, customer: Customer, meter_id: UUID
+    ) -> None:
+        """Rebuilds the customer's credit buckets from its credit events: seals
+        the credits before the latest reset and recomputes the slots after it."""
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter_id, ReducerKind.credit
+        )
+        if reducer is None:
+            return
+        event_repository = EventRepository.from_session(session)
+        reset = await event_repository.get_latest_meter_reset(customer, meter_id)
+        if reset is not None:
+            await self.seal_credits(session, customer, meter_id, at=reset.timestamp)
+        timestamps = await event_repository.get_meter_credit_timestamps(
+            customer, meter_id, since=reset.timestamp if reset is not None else None
+        )
+        bucket_ids = {
+            (reducer, get_reducer_bucket_start(timestamp), customer.id, None)
+            for timestamp in timestamps
+        }
+        repository = ReducerBucketRepository.from_session(session)
+        await self._lock_buckets(repository, bucket_ids)
+        for _, bucket_start, customer_id, external_customer_id in bucket_ids:
+            await self._sync_bucket_intervals(
+                repository, reducer, bucket_start, customer_id, external_customer_id
+            )
+
     async def _seal(
         self,
         session: AsyncSession,

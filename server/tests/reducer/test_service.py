@@ -1459,7 +1459,7 @@ class TestBill:
             cutoff=NEXT_BUCKET_START,
         )
 
-        assert quantities == {meter.id: Decimal(3)}
+        assert quantities == {meter.id: (Decimal(3), Decimal(0))}
         assert [
             (bucket.bucket_start, bucket.bucket_end, bucket.order_id)
             for bucket in await get_buckets(session)

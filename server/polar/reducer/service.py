@@ -237,9 +237,10 @@ class ReducerService:
         order_id: UUID,
         billable_from: datetime,
         cutoff: datetime,
-    ) -> dict[UUID, Decimal]:
-        """Marks the customer's usage within [billable_from, cutoff] as billed by
-        the order, and returns its quantity per meter."""
+    ) -> dict[UUID, tuple[Decimal, Decimal]]:
+        """Marks the customer's usage within [billable_from, cutoff] and its credits
+        since the latest reset as billed by the order, and returns their quantities
+        per meter."""
         meter_ids = sorted(meter_ids)
         try:
             async with session.begin_nested():
@@ -265,6 +266,32 @@ class ReducerService:
                     since=billable_from,
                     until=cutoff,
                 )
+                credit_reducers = await self._get_reducers(
+                    session, meter_ids, ReducerKind.credit
+                )
+                event_repository = EventRepository.from_session(session)
+                credits: dict[UUID, Decimal] = {}
+                for meter_id, credit_reducer in credit_reducers.items():
+                    reset = await event_repository.get_latest_meter_reset(
+                        customer, meter_id, cutoff=cutoff
+                    )
+                    since = (
+                        billable_from
+                        if reset is None
+                        else max(billable_from, reset.timestamp)
+                    )
+                    await self._seal_buckets(
+                        session, [credit_reducer], customer, since=since, until=cutoff
+                    )
+                    billed = await self._bill_buckets(
+                        session,
+                        [credit_reducer],
+                        customer,
+                        order_id=order_id,
+                        since=since,
+                        until=cutoff,
+                    )
+                    credits[meter_id] = billed[credit_reducer.id]
         except Exception:
             log.exception(
                 "Failed to bill reducer buckets",
@@ -275,7 +302,10 @@ class ReducerService:
             )
             return {}
         return {
-            meter_id: quantities[reducer.id]
+            meter_id: (
+                quantities[reducer.id],
+                max(credits.get(meter_id, Decimal(0)), Decimal(0)),
+            )
             for meter_id, reducer in reducers.items()
             if reducer.id in quantities
         }

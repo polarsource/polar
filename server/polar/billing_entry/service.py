@@ -143,7 +143,11 @@ class BillingEntryService:
                     {
                         str(meter_id): {
                             "legacy": str(units),
-                            "reducer": str(quantities.get(meter_id)),
+                            "reducer": str(
+                                quantities[meter_id][0]
+                                if meter_id in quantities
+                                else None
+                            ),
                         }
                         for meter_id, units in consumed_units.items()
                     },
@@ -152,7 +156,7 @@ class BillingEntryService:
                     "match",
                     all(
                         meter_id in quantities
-                        and math.isclose(quantities[meter_id], units)
+                        and math.isclose(quantities[meter_id][0], units)
                         for meter_id, units in consumed_units.items()
                     ),
                 )

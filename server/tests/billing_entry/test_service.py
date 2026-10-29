@@ -1534,7 +1534,7 @@ class TestCreateOrderItemsFromPending:
     ) -> None:
         bill = mocker.patch(
             "polar.billing_entry.service.reducer_service.bill",
-            return_value={meter.id: Decimal(10)},
+            return_value={meter.id: (Decimal(10), Decimal(0))},
         )
         await create_metered_event_billing_entry(
             save_fixture,

@@ -26,13 +26,13 @@ export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
     enabled,
   })
 
-export const useCatalogVersionHashes = (
+export const useCatalogVersionLabels = (
   organization: schemas['Organization'],
 ) =>
   useQuery({
     queryKey: [
       'catalogs',
-      'version_hashes',
+      'version_labels',
       { organizationId: organization.id },
     ],
     queryFn: async () => {
@@ -48,7 +48,7 @@ export const useCatalogVersionHashes = (
         }),
       )
       return new Map(
-        data.items.map(({ id, version_hash }) => [id, version_hash]),
+        data.items.map(({ id, name }) => [id, name]),
       )
     },
     retry: defaultRetry,

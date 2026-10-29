@@ -62,7 +62,9 @@ export const captureToolCall = (entry: RequestLogEntry) => {
     return
   const product = USER_AGENT_PRODUCT.exec(entry.userAgent ?? '')
   const context = {
-    intent: entry.intent,
+    $mcp_source: 'posthog_mcp_analytics',
+    $mcp_intent: entry.intent,
+    $mcp_intent_source: entry.intent && 'context_parameter',
     $mcp_client_name: entry.client?.name ?? product?.[1],
     $mcp_client_version: entry.client?.version ?? product?.[2],
     user_agent: entry.userAgent,
@@ -79,6 +81,7 @@ export const captureToolCall = (entry: RequestLogEntry) => {
     api_key: apiKey,
     event: '$mcp_tool_call',
     distinct_id,
+    timestamp: new Date(Date.now() - (entry.durationMs ?? 0)).toISOString(),
     properties: {
       $mcp_tool_name:
         entry.tool && toolNames.has(entry.tool) ? entry.tool : 'unknown',
@@ -110,6 +113,18 @@ export const captureToolCall = (entry: RequestLogEntry) => {
       distinct_id,
       properties: { ...entry.feedback, ...context },
     })
+    if (entry.feedback.category === 'missing_capability') {
+      send({
+        api_key: apiKey,
+        event: '$mcp_missing_capability',
+        distinct_id,
+        properties: {
+          ...context,
+          $mcp_intent: entry.feedback.summary,
+          $mcp_intent_source: 'context_parameter',
+        },
+      })
+    }
   }
 }
 

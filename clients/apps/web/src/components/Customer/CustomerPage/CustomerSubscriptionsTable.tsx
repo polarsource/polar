@@ -1,5 +1,6 @@
 'use client'
 
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import { useSubscriptions } from '@/hooks/queries'
@@ -38,7 +39,18 @@ export const CustomerSubscriptionsTable = ({
             header: 'Product Name',
             accessorKey: 'product.name',
             cell: ({ row: { original } }) => (
-              <span>{original.product.name}</span>
+              <Box
+                as="span"
+                display="inline-flex"
+                alignItems="center"
+                columnGap="s"
+              >
+                {original.product.name}
+                <ProductVersionLabel
+                  organization={organization}
+                  product={original.product}
+                />
+              </Box>
             ),
           },
           {

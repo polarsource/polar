@@ -2334,6 +2334,12 @@ export interface components {
        */
       dispute_auto_accept_enabled: boolean
       /**
+       * Compass Enabled
+       * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
+       * @default false
+       */
+      compass_enabled: boolean
+      /**
        * Merchant Migration Enabled
        * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
        * @default false

@@ -3011,10 +3011,6 @@ SUPPORT_BENEFIT = {
 }
 
 
-def _by_external_id(rows: Any) -> dict[str, Any]:
-    return {row.external_id: row for row in rows}
-
-
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 @pytest.mark.usefixtures("config_as_code_enabled")
@@ -3050,11 +3046,12 @@ class TestBenefitVersioning:
         [old_beta] = await benefits_repo.get_all_by_external_ids(
             organization.id, ["beta"]
         )
-        old_products = _by_external_id(
-            await products_repo.get_all_by_external_ids(
+        old_products = {
+            product.external_id: product
+            for product in await products_repo.get_all_by_external_ids(
                 organization.id, ["pro", "pack"]
             )
-        )
+        }
         first = await catalogs_repo.get_live(organization.id)
         assert first is not None
         assert old_beta.catalog_id == first.id
@@ -3083,11 +3080,12 @@ class TestBenefitVersioning:
         [new_beta] = await benefits_repo.get_all_by_external_ids(
             organization.id, ["beta"]
         )
-        new_products = _by_external_id(
-            await products_repo.get_all_by_external_ids(
+        new_products = {
+            product.external_id: product
+            for product in await products_repo.get_all_by_external_ids(
                 organization.id, ["pro", "pack"]
             )
-        )
+        }
         live = await catalogs_repo.get_live(organization.id)
         assert live is not None
         assert result.catalog == ConfigCatalogChange(

@@ -281,7 +281,7 @@ class CatalogService:
         new_benefits: Mapping[str, Benefit],
         version_hash: str,
         removed: Collection[str],
-        removed_benefits: Collection[str] = (),
+        removed_benefits: Collection[str],
         name: str | None = None,
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)

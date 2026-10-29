@@ -9,7 +9,10 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
-from polar.catalog.repository import CatalogProductRepository
+from polar.catalog.repository import (
+    CatalogBenefitRepository,
+    CatalogProductRepository,
+)
 from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
@@ -241,18 +244,36 @@ async def export_config(
     )
 
     benefit_repository = BenefitRepository.from_session(session)
+    benefits_statement = benefit_repository.get_organization_statement(organization.id)
+    if catalog is not None and catalog.status != CatalogStatus.live:
+        catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
+        if await catalog_benefit_repository.has_members(catalog.id):
+            benefits_statement = catalog_benefit_repository.get_benefits_statement(
+                catalog.id
+            )
     benefits: list[ConfigBenefitRead]
     benefits, benefit_external_ids = await _export_section(
         ConfigResource.benefit,
-        benefit_repository.stream(
-            benefit_repository.get_organization_statement(organization.id)
-        ),
+        benefit_repository.stream(benefits_statement),
         MAXIMUM_BENEFITS,
         skipped,
         name=lambda benefit: benefit.description,
         archived=lambda benefit: False,
         entry=lambda benefit: _benefit_entry(benefit, meter_external_ids),
     )
+
+    # Products still in use may grant previous versions of the exported benefits.
+    exported_benefits = set(benefit_external_ids.values())
+    benefit_external_ids = {
+        **{
+            id: external_id
+            for id, external_id in (
+                await benefit_repository.get_external_ids_by_id(organization.id)
+            ).items()
+            if external_id in exported_benefits
+        },
+        **benefit_external_ids,
+    }
 
     product_repository = ProductRepository.from_session(session)
     if catalog is None or catalog.status == CatalogStatus.live:

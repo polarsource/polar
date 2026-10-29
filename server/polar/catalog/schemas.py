@@ -36,10 +36,22 @@ class CatalogProduct(Schema):
     product_id: UUID4 = Field(description="The product version in this catalog.")
 
 
+class CatalogBenefit(Schema):
+    external_id: str = Field(description="Key of the benefit in the catalog.")
+    benefit_id: UUID4 = Field(description="The benefit version in this catalog.")
+
+
 class CatalogVersion(Catalog):
-    """A catalog version with its products."""
+    """A catalog version with its products and benefits."""
 
     products: list[CatalogProduct] = Field(
         validation_alias="product_members",
         description="The products in this version, ordered by key.",
+    )
+    benefits: list[CatalogBenefit] = Field(
+        validation_alias="benefit_members",
+        description=(
+            "The benefits in this version, ordered by key. Empty for versions "
+            "published before benefits were versioned."
+        ),
     )

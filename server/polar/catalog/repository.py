@@ -12,7 +12,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Catalog, CatalogProduct, Product
+from polar.models import Benefit, Catalog, CatalogBenefit, CatalogProduct, Product
 from polar.models.catalog import CatalogStatus
 
 
@@ -118,5 +118,56 @@ class CatalogProductRepository(
             self.get_base_statement()
             .where(CatalogProduct.catalog_id == catalog_id)
             .options(joinedload(CatalogProduct.product))
+        )
+        return await self.get_all(statement)
+
+
+class CatalogBenefitRepository(
+    RepositorySoftDeletionIDMixin[CatalogBenefit, UUID],
+    RepositorySoftDeletionMixin[CatalogBenefit],
+    RepositoryBase[CatalogBenefit],
+):
+    model = CatalogBenefit
+
+    async def has_members(self, catalog_id: UUID) -> bool:
+        statement = select(CatalogBenefit.id).where(
+            CatalogBenefit.catalog_id == catalog_id,
+            CatalogBenefit.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement.limit(1))
+        return result.first() is not None
+
+    def get_benefits_statement(self, catalog_id: UUID) -> Select[tuple[Benefit]]:
+        return (
+            select(Benefit)
+            .join(CatalogBenefit, CatalogBenefit.benefit_id == Benefit.id)
+            .where(
+                CatalogBenefit.catalog_id == catalog_id,
+                CatalogBenefit.deleted_at.is_(None),
+                Benefit.deleted_at.is_(None),
+            )
+            .order_by(Benefit.created_at, Benefit.id)
+        )
+
+    async def get_benefits_by_external_ids(
+        self,
+        catalog_id: UUID,
+        external_ids: Sequence[str],
+        *,
+        options: Options,
+    ) -> Sequence[Benefit]:
+        statement = (
+            self.get_benefits_statement(catalog_id)
+            .where(CatalogBenefit.external_id.in_(external_ids))
+            .options(*options)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().unique().all()
+
+    async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogBenefit]:
+        statement = (
+            self.get_base_statement()
+            .where(CatalogBenefit.catalog_id == catalog_id)
+            .options(joinedload(CatalogBenefit.benefit))
         )
         return await self.get_all(statement)

@@ -15,6 +15,7 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies import BenefitRetriableError
 from polar.customer.repository import CustomerRepository
 from polar.customer_portal.repository.downloadable import DownloadableRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.event.service import event as event_service
 from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
@@ -358,6 +359,17 @@ class BenefitGrantService:
     ) -> None:
         repository = BenefitGrantRepository.from_session(session)
 
+        # A refund or dispute may have revoked the order since this was enqueued
+        order = scope.get("order")
+        if (
+            task == "grant"
+            and order is not None
+            and await CustomerSeatRepository.from_session(
+                session
+            ).are_order_benefits_revoked(order.id)
+        ):
+            return
+
         # Get existing grants to avoid redundant jobs
         # When a member_id is provided, only check that member's grants
         if member_id is not None:
@@ -523,7 +535,7 @@ class BenefitGrantService:
             await self._repoint_benefit_records(
                 session, grant, customer, previous, target
             )
-            grant.benefit_id = target.id
+            grant.benefit = target
             session.add(grant)
             taken.add(target.id)
             repointed.add(target.id)

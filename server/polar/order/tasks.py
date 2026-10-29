@@ -330,9 +330,13 @@ async def move_benefits(
     async with AsyncSessionMaker() as session:
         product_repository = ProductRepository.from_session(session)
         target_product = await product_repository.get_by_id(target_product_id)
-        if target_product is None:
+        if (
+            target_product is None
+            or not target_product.is_current
+            or target_product.is_archived
+        ):
             log.warning(
-                "Order benefits move target no longer exists",
+                "Order benefits move target is no longer a current version",
                 target_product_id=target_product_id,
             )
             return

@@ -333,6 +333,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 
+  // Events: /dashboard/{org}/analytics/events/{id} -> /dashboard/{org}/analytics/events?event={id}
+  const eventDetailMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/analytics\/events\/([^/]+)$/,
+  )
+  if (eventDetailMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${eventDetailMatch[1]}/analytics/events`
+    redirectURL.searchParams.set('event', eventDetailMatch[2])
+    return NextResponse.redirect(redirectURL, { status: 308 })
+  }
+
   // Benefits: /dashboard/{org}/benefits/* -> /dashboard/{org}/products/benefits/*
   const benefitsPathMatch = request.nextUrl.pathname.match(
     /^\/dashboard\/([^/]+)\/benefits(\/.*)?$/,

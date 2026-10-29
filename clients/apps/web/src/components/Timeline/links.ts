@@ -1,4 +1,5 @@
 import { buildCustomerDashboardPath } from '@/utils/customer'
+import { buildEventDashboardPath } from '@/utils/event'
 import { schemas } from '@polar-sh/client'
 
 const asId = (value: unknown): string | undefined =>
@@ -59,7 +60,7 @@ export const resolveTimelineEventHref = (
   event: schemas['Event'],
   organizationSlug: string,
 ): string => {
-  const fallback = `/dashboard/${organizationSlug}/analytics/events/${event.id}`
+  const fallback = buildEventDashboardPath(organizationSlug, event.id)
   if (event.source !== 'system') {
     return fallback
   }

@@ -1,3 +1,4 @@
+import { buildEventDashboardPath } from '@/utils/event'
 import { getMetricGroupSlug } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 
@@ -30,7 +31,7 @@ export const resolveInsightActionHref = (
       // metrics-dashboard slug. Deep-link to the specific outlier event's span
       // when named, else land on the costs overview.
       return action.event_id
-        ? `${dashboard}/analytics/events/${action.event_id}`
+        ? buildEventDashboardPath(organization.slug, action.event_id)
         : `${dashboard}/analytics/costs`
     case 'adjust_price':
       return `${dashboard}/products/${action.product_id}`

@@ -364,22 +364,33 @@ class DeclarativeConfigService:
             )
         }
 
+        product_customers = (
+            await subscription_repository.count_billable_customers_by_products(
+                list(product_ids.values())
+            )
+        )
+        benefit_customers = await grant_repository.count_granted_customers_by_benefits(
+            list(benefit_ids.values())
+        )
+        meter_customers = await subscription_repository.count_customers_by_meters(
+            organization.id, list(meter_ids.values())
+        )
+
         # Products first: a deprecated benefit or meter stays while a kept product uses it
         product_entries: list[ConfigPruneEntry] = []
         kept_products = [p for p in config.products if not p.deprecated]
         for product in deprecated_products:
             product_id = product_ids.get(product.external_id)
-            in_use = (
-                product_id is not None
-                and await subscription_repository.exists_billable_by_product(product_id)
+            customers = (
+                0 if product_id is None else product_customers.get(product_id, 0)
             )
-            if in_use:
+            if customers:
                 kept_products.append(product)
             product_entries.append(
                 ConfigPruneEntry(
                     resource=ConfigResource.product,
                     external_id=product.external_id,
-                    in_use=in_use,
+                    customer_count=customers,
                     referenced_by=[],
                 )
             )
@@ -388,21 +399,21 @@ class DeclarativeConfigService:
         kept_benefits = [b for b in config.benefits if not b.deprecated]
         for benefit in deprecated_benefits:
             benefit_id = benefit_ids.get(benefit.external_id)
-            in_use = benefit_id is not None and (
-                await grant_repository.exists_granted_by_benefit(benefit_id)
+            customers = (
+                0 if benefit_id is None else benefit_customers.get(benefit_id, 0)
             )
             referenced_by = [
                 product.external_id
                 for product in kept_products
                 if benefit.external_id in product.benefits
             ]
-            if in_use or referenced_by:
+            if customers or referenced_by:
                 kept_benefits.append(benefit)
             benefit_entries.append(
                 ConfigPruneEntry(
                     resource=ConfigResource.benefit,
                     external_id=benefit.external_id,
-                    in_use=in_use,
+                    customer_count=customers,
                     referenced_by=referenced_by,
                 )
             )
@@ -410,10 +421,7 @@ class DeclarativeConfigService:
         meter_entries: list[ConfigPruneEntry] = []
         for meter in deprecated_meters:
             meter_id = meter_ids.get(meter.external_id)
-            in_use = meter_id is not None and (
-                await subscription_repository.exists_billable_by_meter(meter_id)
-                or await grant_repository.exists_granted_by_meter(meter_id)
-            )
+            customers = 0 if meter_id is None else meter_customers.get(meter_id, 0)
             products_on_meter = [
                 product.external_id
                 for product in kept_products
@@ -437,7 +445,7 @@ class DeclarativeConfigService:
                 ConfigPruneEntry(
                     resource=ConfigResource.meter,
                     external_id=meter.external_id,
-                    in_use=in_use,
+                    customer_count=customers,
                     referenced_by=referenced_by,
                 )
             )

@@ -39,6 +39,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    Benefit,
     BenefitGrant,
     Customer,
     CustomerSeat,
@@ -51,6 +52,7 @@ from polar.models import (
     SubscriptionProductPrice,
     SubscriptionUpdate,
 )
+from polar.models.benefit import BenefitType
 from polar.models.customer_seat import SeatStatus
 from polar.models.email_log import EmailLog
 from polar.models.subscription import SubscriptionStatus
@@ -332,34 +334,70 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalars().all()
 
-    async def exists_billable_by_product(self, product_id: UUID) -> bool:
+    async def count_billable_customers_by_products(
+        self, product_ids: Sequence[UUID]
+    ) -> dict[UUID, int]:
+        if not product_ids:
+            return {}
         statement = (
-            select(Subscription.id)
+            select(
+                Subscription.product_id, func.count(Subscription.customer_id.distinct())
+            )
             .where(
-                Subscription.product_id == product_id,
+                Subscription.product_id.in_(product_ids),
                 Subscription.status.in_(SubscriptionStatus.billable_statuses()),
                 ~Subscription.is_deleted,
             )
-            .limit(1)
+            .group_by(Subscription.product_id)
         )
         result = await self.session.execute(statement)
-        return result.first() is not None
+        return {product_id: count for product_id, count in result.tuples()}
 
-    async def exists_billable_by_meter(self, meter_id: UUID) -> bool:
-        statement = (
-            select(Subscription.id)
+    async def count_customers_by_meters(
+        self, organization_id: UUID, meter_ids: Sequence[UUID]
+    ) -> dict[UUID, int]:
+        if not meter_ids:
+            return {}
+        subscribed = (
+            select(
+                SubscriptionMeter.meter_id.label("meter_id"),
+                Subscription.customer_id.label("customer_id"),
+            )
             .join(
                 SubscriptionMeter, SubscriptionMeter.subscription_id == Subscription.id
             )
             .where(
-                SubscriptionMeter.meter_id == meter_id,
+                Subscription.organization_id == organization_id,
+                SubscriptionMeter.meter_id.in_(meter_ids),
                 Subscription.status.in_(SubscriptionStatus.billable_statuses()),
                 ~Subscription.is_deleted,
             )
-            .limit(1)
+        )
+        granted = (
+            select(
+                sa.cast(Benefit.properties["meter_id"].as_string(), sa.Uuid).label(
+                    "meter_id"
+                ),
+                BenefitGrant.customer_id.label("customer_id"),
+            )
+            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.type == BenefitType.meter_credit,
+                Benefit.properties["meter_id"]
+                .as_string()
+                .in_([str(meter_id) for meter_id in meter_ids]),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+            )
+        )
+        # The union keeps each (meter, customer) pair once, so a customer with both counts once
+        customers = sa.union(subscribed, granted).subquery()
+        statement = select(customers.c.meter_id, func.count()).group_by(
+            customers.c.meter_id
         )
         result = await self.session.execute(statement)
-        return result.first() is not None
+        return {meter_id: count for meter_id, count in result.tuples()}
 
     async def get_by_id_and_organization(
         self,

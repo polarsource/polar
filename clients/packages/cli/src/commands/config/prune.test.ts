@@ -15,7 +15,11 @@ import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 const config: LoadedConfig = {
   file: 'polar.json',
   source: '{}',
-  input: { meters: [{ external_id: 'apples' }] },
+  input: {
+    meters: [{ external_id: 'apples' }],
+    benefits: [{ external_id: 'beta' }],
+    products: [{ external_id: 'legacy' }],
+  },
   generated: false,
 }
 
@@ -29,14 +33,20 @@ const acme = {
 const apples: PruneEntry = {
   resource: 'meter',
   external_id: 'apples',
-  in_use: false,
+  customer_count: 0,
   referenced_by: [],
 }
 const beta: PruneEntry = {
   resource: 'benefit',
   external_id: 'beta',
-  in_use: true,
+  customer_count: 3,
   referenced_by: ['legacy'],
+}
+const legacy: PruneEntry = {
+  resource: 'product',
+  external_id: 'legacy',
+  customer_count: 1,
+  referenced_by: [],
 }
 
 const run = async (
@@ -57,7 +67,8 @@ const run = async (
           pull: () => Effect.die('unused'),
           prune: (_config, _organization, confirm) =>
             entries.some(
-              (entry) => !entry.in_use && entry.referenced_by.length === 0,
+              (entry) =>
+                entry.customer_count === 0 && entry.referenced_by.length === 0,
             )
               ? confirm(entries).pipe(
                   Effect.tap(() => Effect.sync(() => removed())),
@@ -91,13 +102,22 @@ const message = (exit: Exit.Exit<unknown, unknown>) =>
 
 describe('polar config prune', () => {
   test('removes only the unused entries with --confirm', async () => {
-    const { output, removed, exit } = await run([apples, beta], ['--confirm'])
+    const { output, removed, exit } = await run(
+      [apples, beta, legacy],
+      ['--confirm'],
+    )
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(removed).toBe(1)
     expect(output).toMatch(/ {2}Deprecated Acme \(sandbox\)\n {2}╭─+╮\n/)
-    expect(output).toMatch(/│ {2}meters *│\n {2}│ {2}- apples *│\n/)
+    expect(output).toMatch(/│ {2}Remove *│\n {2}│ {2}- meter {4}apples *│\n/)
     expect(output).toMatch(
-      /│ {2}benefits *│\n {2}│ {2}= beta {2}has customers, used by legacy *│\n/,
+      new RegExp(
+        [
+          '│ {2}Keep, still in use *│',
+          ' {2}│ {2}= benefit {2}beta {4}3 customers, used by legacy \\(product\\) *│',
+          ' {2}│ {2}= product {2}legacy {2}1 customer *│',
+        ].join('\n'),
+      ),
     )
     expect(output).toContain(
       'polar.json: 1 entry removed, nothing changed on Polar',

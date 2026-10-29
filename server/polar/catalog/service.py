@@ -77,7 +77,7 @@ class CatalogService:
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Catalog.id == id)
-            .options(selectinload(Catalog.products))
+            .options(selectinload(Catalog.product_members))
         )
         return await repository.get_one_or_none(statement)
 

@@ -40,5 +40,6 @@ class CatalogVersion(Catalog):
     """A catalog version with its products."""
 
     products: list[CatalogProduct] = Field(
-        description="The products in this version, ordered by key."
+        validation_alias="product_members",
+        description="The products in this version, ordered by key.",
     )

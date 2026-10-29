@@ -69,7 +69,7 @@ class Catalog(RecordModel):
         return relationship("Catalog", remote_side="Catalog.id", lazy="raise")
 
     @declared_attr
-    def products(cls) -> Mapped[list["CatalogProduct"]]:
+    def product_members(cls) -> Mapped[list["CatalogProduct"]]:
         return relationship(
             "CatalogProduct",
             lazy="raise",

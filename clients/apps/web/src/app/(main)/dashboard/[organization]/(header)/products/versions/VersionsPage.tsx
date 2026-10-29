@@ -18,6 +18,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { HistoryRounded } from '@polar-sh/orbit/icons'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { parseAsInteger, useQueryState } from 'nuqs'
 import { useState } from 'react'
@@ -29,7 +30,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const publishedAt = (catalog: schemas['Catalog']) =>
   catalog.published_at ?? catalog.created_at
 
-const CurrentBadge = () => (
+export const CurrentBadge = () => (
   <Box
     as="span"
     display="inline-flex"
@@ -44,7 +45,7 @@ const CurrentBadge = () => (
   </Box>
 )
 
-const PublishedAt = ({ catalog }: { catalog: schemas['Catalog'] }) => {
+export const PublishedAt = ({ catalog }: { catalog: schemas['Catalog'] }) => {
   const [now] = useState(() => Date.now())
   const datetime = publishedAt(catalog)
 
@@ -66,23 +67,37 @@ const PublishedAt = ({ catalog }: { catalog: schemas['Catalog'] }) => {
   )
 }
 
-const VersionRow = ({ catalog }: { catalog: schemas['Catalog'] }) => (
-  <ListItem className="px-6 py-5">
-    <Grid
-      templateColumns="minmax(0, 1fr) auto 130px"
-      columnGap="xl"
-      alignItems="center"
-      width="100%"
-    >
-      <Text variant="body" color={catalog.name ? 'default' : 'muted'} truncate>
-        {catalog.name ?? 'Untitled'}
-      </Text>
-      <Box>{catalog.status === 'live' ? <CurrentBadge /> : null}</Box>
-      <Text variant="body" color="muted" align="right">
-        <PublishedAt catalog={catalog} />
-      </Text>
-    </Grid>
-  </ListItem>
+const VersionRow = ({
+  organization,
+  catalog,
+}: {
+  organization: schemas['Organization']
+  catalog: schemas['Catalog']
+}) => (
+  <Link
+    href={`/dashboard/${organization.slug}/products/versions/${catalog.id}`}
+  >
+    <ListItem className="px-6 py-5">
+      <Grid
+        templateColumns="minmax(0, 1fr) auto 130px"
+        columnGap="xl"
+        alignItems="center"
+        width="100%"
+      >
+        <Text
+          variant="body"
+          color={catalog.name ? 'default' : 'muted'}
+          truncate
+        >
+          {catalog.name ?? 'Untitled'}
+        </Text>
+        <Box>{catalog.status === 'live' ? <CurrentBadge /> : null}</Box>
+        <Text variant="body" color="muted" align="right">
+          <PublishedAt catalog={catalog} />
+        </Text>
+      </Grid>
+    </ListItem>
+  </Link>
 )
 
 export default function VersionsPage({
@@ -110,7 +125,11 @@ export default function VersionsPage({
         >
           <List size="small">
             {catalogs.items.map((catalog) => (
-              <VersionRow key={catalog.id} catalog={catalog} />
+              <VersionRow
+                key={catalog.id}
+                organization={organization}
+                catalog={catalog}
+              />
             ))}
           </List>
         </Pagination>

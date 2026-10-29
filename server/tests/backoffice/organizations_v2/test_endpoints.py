@@ -659,7 +659,6 @@ class TestOverviewLazyCards:
             f"/organizations/{organization.id}/overview/setup-checklist"
         )
 
-        assert "Website Domain" in response.text
         assert "Not verified" in response.text
 
     async def test_setup_checklist_website_domain_verified(
@@ -680,7 +679,7 @@ class TestOverviewLazyCards:
             f"/organizations/{organization.id}/overview/setup-checklist"
         )
 
-        assert "Website Domain" in response.text
+        assert "Verified" in response.text
         assert "Not verified" not in response.text
 
     async def test_setup_checklist_website_domain_other_verified(

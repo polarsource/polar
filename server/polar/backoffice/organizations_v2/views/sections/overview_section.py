@@ -744,9 +744,8 @@ class OverviewSection(ChecklistMixin):
                     "Website URL",
                     self.has_website,
                     self.org.website if self.has_website else None,
+                    self._website_domain_badge() if self.has_website else None,
                 )
-
-                self._render_website_domain_row()
 
                 if self.has_socials:
                     social_count = len(self.org.socials)
@@ -795,7 +794,7 @@ class OverviewSection(ChecklistMixin):
                 self._render_payout_account_row()
                 self._render_shared_payout_account_row(request)
 
-    def _render_website_domain_row(self) -> None:
+    def _website_domain_badge(self) -> tuple[str, str]:
         host = urlparse(self.org.website or "").hostname or ""
         verified = [d.domain for d in self.organization_domains if d.verified_at]
         pending = [d.domain for d in self.organization_domains if not d.verified_at]
@@ -809,19 +808,13 @@ class OverviewSection(ChecklistMixin):
             default=None,
         )
 
+        if is_on_verified_domain(host, verified):
+            return "Verified", "badge-success"
         if lost_at is not None:
-            missing = f"Lost on {lost_at.strftime('%Y-%m-%d')}"
-        elif is_on_verified_domain(host, pending):
-            missing = "Pending verification"
-        else:
-            missing = "Not verified"
-
-        render_checklist_row(
-            "Website Domain",
-            is_on_verified_domain(host, verified),
-            ", ".join(verified),
-            missing,
-        )
+            return f"Lost on {lost_at.strftime('%Y-%m-%d')}", "badge-error"
+        if is_on_verified_domain(host, pending):
+            return "Pending verification", "badge-warning"
+        return "Not verified", "badge-ghost"
 
     def _render_payout_account_row(self) -> None:
         """Payout status with Stripe's raw `disabled_reason`.

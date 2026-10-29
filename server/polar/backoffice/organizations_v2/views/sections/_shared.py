@@ -87,7 +87,10 @@ def render_review_context_badge(review_type: str | None) -> None:
 
 
 def render_checklist_row(
-    label: str, is_set: bool, value: str | None, missing: str = "Missing"
+    label: str,
+    is_set: bool,
+    value: str | None,
+    badge: tuple[str, str] | None = None,
 ) -> None:
     """Render a single checklist row with a green/red status dot."""
     with tag.div(
@@ -99,10 +102,15 @@ def render_checklist_row(
                 pass
             with tag.span(classes="text-sm font-medium"):
                 text(label)
-        with tag.span(
-            classes="text-sm" + (" text-base-content/60" if not is_set else "")
-        ):
-            text((value or "Set") if is_set else missing)
+        with tag.div(classes="flex items-center gap-2"):
+            with tag.span(
+                classes="text-sm" + (" text-base-content/60" if not is_set else "")
+            ):
+                text((value or "Set") if is_set else "Missing")
+            if badge is not None:
+                badge_label, badge_class = badge
+                with tag.span(classes=f"badge badge-sm {badge_class}"):
+                    text(badge_label)
 
 
 def render_dimension(dim: DimensionAssessment) -> None:

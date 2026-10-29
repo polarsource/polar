@@ -69,6 +69,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.dispute import DisputeStatus
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
@@ -125,13 +126,13 @@ from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
-    create_benefit_grant,
     create_billing_entry,
     create_canceled_subscription,
     create_checkout,
     create_custom_field,
     create_customer,
     create_discount,
+    create_dispute,
     create_event,
     create_meter,
     create_order,
@@ -140,6 +141,7 @@ from tests.fixtures.random_objects import (
     create_product,
     create_product_fixed_and_seat,
     create_product_unit_based,
+    create_refund,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -6605,20 +6607,19 @@ class TestMoveBenefits:
             recurring_interval=None,
             external_id="pro",
         )
-        benefit = await create_benefit(save_fixture, organization=organization)
-        granted = await create_order(save_fixture, product=product, customer=customer)
-        await create_benefit_grant(
-            save_fixture, customer, benefit, granted=True, order=granted
-        )
-        revoked = await create_order(
+        kept = await create_order(save_fixture, product=product, customer=customer)
+        refunded = await create_order(
             save_fixture,
             product=product,
             customer=customer,
             status=OrderStatus.partially_refunded,
         )
-        await create_benefit_grant(
-            save_fixture, customer, benefit, granted=False, order=revoked
-        )
+        disputed = await create_order(save_fixture, product=product, customer=customer)
+        payment = await create_payment(save_fixture, organization)
+        refund = await create_refund(save_fixture, refunded, payment)
+        refund.revoke_benefits = True
+        await save_fixture(refund)
+        await create_dispute(save_fixture, disputed, payment, status=DisputeStatus.lost)
 
         await order_service.move_benefits(session, organization.id, "pro", product)
 
@@ -6627,7 +6628,7 @@ class TestMoveBenefits:
             task="grant",
             customer_id=customer.id,
             product_id=product.id,
-            order_id=granted.id,
+            order_id=kept.id,
             delay=ANY,
         )
 

@@ -21,6 +21,9 @@ permissions:
 jobs:
   changes:
     name: "Detect changes"
+    # The merge queue already ran these checks on the commit. Only `/emergency` merges skip
+    # the queue, so on main run them for those alone (see emergency_merge_test_failure_alert.yml).
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, 'Emergency-Merge:')
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       clients: ${{ steps.filter.outputs.clients }}

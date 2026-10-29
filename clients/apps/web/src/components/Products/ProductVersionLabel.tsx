@@ -21,14 +21,8 @@ export const ProductVersionLabel = ({
     return null
   }
   return (
-    <>
-      {' '}
-      <Pill
-        color="gray"
-        className="text-xxs! ml-1 rounded-sm px-2 py-0.5 font-normal"
-      >
-        {catalog.name}
-      </Pill>
-    </>
+    <Pill color="gray" className="text-xxs! rounded-sm px-2 py-0.5 font-normal">
+      {catalog.name}
+    </Pill>
   )
 }

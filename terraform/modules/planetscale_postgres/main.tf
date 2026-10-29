@@ -24,6 +24,14 @@ resource "planetscale_postgres_redacted_branch_role" "app" {
   successor       = "postgres"
 }
 
+resource "planetscale_postgres_redacted_branch_role" "analytics_reader" {
+  organization    = var.organization
+  database        = var.database
+  branch          = planetscale_postgres_branch.this.name
+  name            = "analytics_reader"
+  inherited_roles = ["pg_read_all_data"]
+}
+
 resource "planetscale_postgres_bouncer" "this" {
   for_each = var.bouncers
 

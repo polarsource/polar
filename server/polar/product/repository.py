@@ -1,7 +1,8 @@
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, and_, case, func, select
+from sqlalchemy import Select, and_, case, func, select, union
 from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
@@ -23,6 +24,8 @@ from polar.models import (
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    Subscription,
+    SubscriptionUpdate,
 )
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
 from polar.postgres import sql
@@ -98,6 +101,65 @@ class ProductRepository(
         if for_update:
             statement = statement.with_for_update(of=Product, key_share=True)
         return await self.get_all(statement)
+
+    async def get_external_ids_in_use(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> set[str]:
+        """Return the external IDs that a billable subscription is on, or is
+        scheduled to change to, in any of their versions."""
+        if not external_ids:
+            return set()
+        products = (
+            Product.organization_id == organization_id,
+            Product.external_id.in_(external_ids),
+        )
+        subscribed = (
+            select(Product.external_id)
+            .join(Subscription, Subscription.product_id == Product.id)
+            .where(*products, Subscription.billable, ~Subscription.is_deleted)
+        )
+        scheduled = (
+            select(Product.external_id)
+            .join(SubscriptionUpdate, SubscriptionUpdate.product_id == Product.id)
+            .join(Subscription, Subscription.id == SubscriptionUpdate.subscription_id)
+            .where(
+                *products,
+                SubscriptionUpdate.applied_at.is_(None),
+                ~SubscriptionUpdate.is_deleted,
+                Subscription.billable,
+                ~Subscription.is_deleted,
+            )
+        )
+        result = await self.session.execute(union(subscribed, scheduled))
+        return set(cast(Sequence[str], result.scalars().all()))
+
+    async def get_external_ids(
+        self, organization_id: UUID, *, current: bool = False
+    ) -> set[str]:
+        statement = select(Product.external_id).where(
+            Product.organization_id == organization_id,
+            Product.external_id.is_not(None),
+            ~Product.is_deleted,
+        )
+        if current:
+            statement = statement.where(Product.is_current)
+        result = await self.session.execute(statement.distinct())
+        return set(cast(Sequence[str], result.scalars().all()))
+
+    def get_latest_by_external_ids_statement(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> Select[tuple[Product]]:
+        """Select the most recent version of each product, current or not."""
+        return (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id.in_(external_ids),
+            )
+            .distinct(Product.external_id)
+            .order_by(Product.external_id, Product.created_at.desc(), Product.id.desc())
+            .options(undefer(Product.external_id))
+        )
 
     def get_organization_statement(
         self, organization_id: UUID

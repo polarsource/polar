@@ -110,8 +110,14 @@ async def apply(
     Apply a declarative config document to the organization.
 
     Meters, benefits, products and webhook endpoints are matched by
-    `external_id`: missing ones are created, changed ones are updated, and ones
-    not listed are left untouched.
+    `external_id`: missing ones are created, and changed ones are updated.
+    Deprecated products are neither created nor updated.
+    Deprecated products, and products that `config pull` exports but the config
+    doesn't list, are left out of the published catalog. Other products, and all
+    products when `products` is omitted, are left untouched. A product that
+    isn't listed but has a billable subscription or a pending subscription
+    update must be marked deprecated instead, or nothing is applied.
+    Other resources that aren't listed are left untouched.
     `settings` are applied first, so products can be priced in a new
     `payments.currency` in the same config. Every active product must have a price in
     the resulting currency, or nothing is applied.

@@ -332,19 +332,6 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalars().all()
 
-    async def exists_billable_by_product(self, product_id: UUID) -> bool:
-        statement = (
-            select(Subscription.id)
-            .where(
-                Subscription.product_id == product_id,
-                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
-                ~Subscription.is_deleted,
-            )
-            .limit(1)
-        )
-        result = await self.session.execute(statement)
-        return result.first() is not None
-
     async def exists_billable_by_meter(self, meter_id: UUID) -> bool:
         statement = (
             select(Subscription.id)

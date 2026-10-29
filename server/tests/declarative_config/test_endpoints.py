@@ -10,7 +10,11 @@ from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import METER_TEST_EVENT, create_event, create_meter
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_event,
+    create_meter,
+)
 
 METER = {
     "external_id": "sdk-tool-calls",
@@ -78,6 +82,7 @@ class TestApply:
                     "action": "created",
                 }
             ],
+            "removed": [],
             "catalog": None,
             "settings": None,
         }
@@ -293,6 +298,7 @@ class TestPlan:
         assert response.status_code == 200
         assert response.json() == {
             "changes": [],
+            "removed": [],
             "catalog": None,
             "settings": None,
             "issues": [],

@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Self
 from annotated_types import Gt
 from pydantic import (
     UUID4,
+    AfterValidator,
     BaseModel,
     ConfigDict,
     Discriminator,
@@ -55,12 +56,13 @@ MAXIMUM_WEBHOOK_ENDPOINTS = 25
 
 
 class ConfigDeprecationMixin(BaseModel):
-    deprecated: bool = Field(
+    deprecated: Annotated[bool | None, AfterValidator(bool)] = Field(
         default=False,
         exclude=True,
         description=(
             "Keeps the resource for customers who still use it, "
-            "but active products and benefits can't reference it."
+            "but active products and benefits can't reference it. "
+            "Leaving it empty is the same as `false`."
         ),
     )
 
@@ -388,7 +390,13 @@ class Config(Schema):
         max_length=MAXIMUM_PRODUCTS,
         description=(
             "Products to create or update, matched by `external_id`. "
-            "Existing products that aren't listed are left untouched."
+            "Deprecated products are never created or updated. They, and live "
+            "products that aren't listed, are left out of the next catalog. "
+            "A product that isn't listed but still has a billable subscription, "
+            "or a scheduled subscription change to it, is an error: mark it "
+            "`deprecated` instead. Products that pulling the "
+            "config doesn't export, and all products when `products` is "
+            "omitted, are left untouched."
         ),
     )
     webhooks: list[ConfigWebhookEndpoint] = Field(
@@ -421,6 +429,7 @@ class ConfigIssueType(StrEnum):
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
     not_supported = "not_supported"
+    removed_in_use = "removed_in_use"
     type_changed = "type_changed"
     unknown_event = "unknown_event"
     unknown_reference = "unknown_reference"
@@ -487,8 +496,27 @@ class ConfigCatalogPlan(Schema):
     )
 
 
+class ConfigRemovalReason(StrEnum):
+    missing = "missing"
+    deprecated = "deprecated"
+
+
+class ConfigRemoval(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
+    external_id: str = Field(description="The resource's `external_id`.")
+    reason: ConfigRemovalReason = Field(
+        description=(
+            "`missing` when the config doesn't list the resource, "
+            "`deprecated` when it's marked deprecated."
+        )
+    )
+
+
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
+    removed: list[ConfigRemoval] = Field(
+        description="Resources left out of the published catalog."
+    )
     catalog: ConfigCatalogChange | None = Field(
         description="The published catalog, if applying published a new one."
     )
@@ -520,6 +548,9 @@ class ConfigSettingsChange(ConfigSettingsResult):
 
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
+    removed: list[ConfigRemoval] = Field(
+        description="Resources that applying leaves out of the next catalog."
+    )
     catalog: ConfigCatalogPlan | None = Field(
         description="The catalog that applying publishes, if any."
     )
@@ -671,6 +702,12 @@ class ConfigProductRead(_ConfigRead):
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
     metadata: MetadataOutputType
+    deprecated: Literal[True] | None = Field(
+        description=(
+            "`true` for products that are no longer in the catalog but still "
+            "have customers."
+        ),
+    )
 
 
 class ConfigSettingsPaymentsRead(_ConfigRead):

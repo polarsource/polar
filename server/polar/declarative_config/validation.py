@@ -173,18 +173,17 @@ def _meter_loc(index: int, *path: str | int) -> Loc:
 
 
 def unique_external_ids(
-    resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
+    resource: ConfigResource, external_ids: Sequence[str]
 ) -> list[ConfigIssue]:
     seen: set[str] = set()
     issues: list[ConfigIssue] = []
-    for change in changes:
-        external_id = change.config.external_id
+    for index, external_id in enumerate(external_ids):
         if external_id in seen:
             issues.append(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
                     type=ConfigIssueType.duplicate_external_id,
-                    loc=_loc(resource, change.index, "external_id"),
+                    loc=_loc(resource, index, "external_id"),
                     msg=f"Another {resource} in this config has the same external_id.",
                     input=external_id,
                 )
@@ -762,6 +761,8 @@ async def diff_products(
     benefit_external_ids = _external_ids_by_id(benefits)
     changes: list[ProductChange] = []
     for index, product_config in enumerate(product_configs):
+        if product_config.deprecated:
+            continue
         product = existing_products.get(product_config.external_id)
         if product is None:
             create_dict = _create_update_dict(product_config)
@@ -889,10 +890,18 @@ async def check(
         session, organization, config.products, meters, benefits, for_update=for_update
     )
     issues = [
-        *unique_external_ids(ConfigResource.webhook, webhooks),
-        *unique_external_ids(ConfigResource.meter, meters),
-        *unique_external_ids(ConfigResource.benefit, benefits),
-        *unique_external_ids(ConfigResource.product, products),
+        *unique_external_ids(
+            ConfigResource.webhook, [webhook.external_id for webhook in config.webhooks]
+        ),
+        *unique_external_ids(
+            ConfigResource.meter, [meter.external_id for meter in config.meters]
+        ),
+        *unique_external_ids(
+            ConfigResource.benefit, [benefit.external_id for benefit in config.benefits]
+        ),
+        *unique_external_ids(
+            ConfigResource.product, [product.external_id for product in config.products]
+        ),
         *invalid_references(config),
         *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),

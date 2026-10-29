@@ -11,18 +11,19 @@ Sandbox data is a database on the production `db` instance. Test runs on PlanetS
   These instances hold live data. Confirm the database name before running anything that writes. Use a read replica when you only need to inspect rows.
 </Warning>
 
-## Prerequisites
+## Render 
+### Prerequisites
 
 - Tailscale is connected to the company tailnet, with Tailscale DNS enabled. The hostname below resolves only through that DNS.
 - Access to the database in the [Render Dashboard](https://dashboard.render.com/).
 
-## 1. Copy the internal credentials
+### 1. Copy the internal credentials
 
 On the instance's **Connect** or **Info** page, copy the **internal** user, password, port, and database name.
 
 The internal host is a bare id such as `dpg-xxxxxxxx-c`. The trailing letter is part of the id and differs per instance, so copy the whole thing from the page you are on. Do not use the external hostname (`*.render.com`).
 
-## 2. Build the Tailscale hostname
+### 2. Build the Tailscale hostname
 
 Append `.usr-cgvspcgdh87jokuesjfg.svc.cluster.local` to that id:
 
@@ -32,7 +33,7 @@ dpg-xxxxxxxx-c.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
 
 Each read replica has its own `dpg-` id. Use that id with the same `.usr-...svc.cluster.local` suffix.
 
-## 3. Connect
+### 3. Connect
 
 Use the internal port, `5432`. Leave SSH tunneling off.
 
@@ -43,3 +44,9 @@ psql "host=dpg-xxxxxxxx-c.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 u
 `psql` prompts for the password. TablePlus and Postico take the same host, port, user, and database.
 
 Sandbox is the `polar_sandbox` database on this same host. Production application data is the database name in the production service's internal URL.
+
+## PlanetScale
+
+Credentials are in 1Password in the Engineering Team. 
+
+Connect over Tailscale to `db.internal.polar.sh`, `db.internal.sandbox.polar.sh` or `db.internal.test.polar.sh` with `sslmode=require`.

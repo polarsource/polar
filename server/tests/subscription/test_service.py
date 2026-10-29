@@ -4818,9 +4818,6 @@ class TestResetMeters:
             "polar.subscription.service.customer_meter_service.get_rollover_units",
             return_value=25,
         )
-        enqueue_seal_mock = mocker.patch(
-            "polar.subscription.service.reducer_service.enqueue_seal"
-        )
 
         await subscription_service.reset_meters(
             session, subscription, reset_at=reset_at
@@ -4828,9 +4825,6 @@ class TestResetMeters:
 
         get_rollover_units_mock.assert_awaited_once_with(
             session, customer, subscription_meter.meter, cutoff=reset_at
-        )
-        enqueue_seal_mock.assert_called_once_with(
-            customer.id, subscription_meter.meter_id, at=reset_at
         )
         reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
         assert len(reset_events) == 1

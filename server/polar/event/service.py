@@ -1084,15 +1084,14 @@ class EventService:
         ):
             assert event.customer_id is not None
             customer = await CustomerRepository.from_session(session).get_by_id(
-                event.customer_id, include_deleted=True
+                event.customer_id
             )
-            assert customer is not None
-            await reducer_service.seal_credits(
-                session,
-                customer,
-                uuid.UUID(event.user_metadata["meter_id"]),
-                at=event.timestamp,
-            )
+            if customer is not None:
+                meter_id = uuid.UUID(event.user_metadata["meter_id"])
+                await reducer_service.seal_credits(
+                    session, customer, meter_id, at=event.timestamp
+                )
+                reducer_service.enqueue_seal(customer.id, meter_id, at=event.timestamp)
 
         enqueue_events(event.id)
 

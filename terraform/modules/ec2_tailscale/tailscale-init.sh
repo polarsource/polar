@@ -7,6 +7,7 @@ hostname="$3"
 tailscale_ssh="$4"
 advertise_routes="$5"
 advertise_tags="$6"
+tailscale_version="$7"
 
 if [[ -n "$advertise_routes" ]]; then
   sysctl -p /etc/sysctl.d/99-tailscale.conf
@@ -24,7 +25,7 @@ update-ca-trust
 curl --fail --silent --show-error --location --retry 5 \
   https://pkgs.tailscale.com/stable/amazon-linux/2023/tailscale.repo \
   --output /etc/yum.repos.d/tailscale.repo
-dnf install -y tailscale
+dnf install -y "tailscale-${tailscale_version}"
 systemctl enable --now tailscaled
 
 umask 077

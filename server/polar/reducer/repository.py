@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
 from polar.models import Meter, MeterReducer, Reducer
+from polar.models.reducer import ReducerKind
 
 
 class ReducerRepository(RepositoryBase[Reducer]):
@@ -22,11 +23,13 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return (await self.session.execute(statement)).scalar_one()
 
-    async def get_by_meter_id(self, meter_id: UUID) -> Reducer | None:
+    async def get_by_meter_and_kind(
+        self, meter_id: UUID, kind: ReducerKind
+    ) -> Reducer | None:
         statement = (
             self.get_base_statement()
             .join(MeterReducer)
-            .where(MeterReducer.meter_id == meter_id)
+            .where(MeterReducer.meter_id == meter_id, Reducer.kind == kind)
         )
         return await self.get_one_or_none(statement)
 
@@ -65,13 +68,15 @@ class ReducerRepository(RepositoryBase[Reducer]):
         return len((await self.session.scalars(statement)).all())
 
     def get_active_statement(self) -> Select[tuple[Reducer]]:
-        """Reducers used by at least one active meter."""
+        """Usage reducers used by at least one active meter."""
         active_reducer_ids = (
             select(MeterReducer.reducer_id)
             .join(MeterReducer.meter)
             .where(Meter.archived_at.is_(None), Meter.deleted_at.is_(None))
         )
-        return self.get_base_statement().where(Reducer.id.in_(active_reducer_ids))
+        return self.get_base_statement().where(
+            Reducer.kind == ReducerKind.usage, Reducer.id.in_(active_reducer_ids)
+        )
 
     async def get_active_by_id(
         self, id: UUID, *, options: Options = ()

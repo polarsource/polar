@@ -15,6 +15,7 @@ from polar.meter.aggregation import (
 )
 from polar.meter.repository import MeterRepository
 from polar.models import Meter, Organization, Reducer
+from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer import cache
@@ -103,6 +104,28 @@ class TestGetActiveReducers:
         )
         await invalidate_cache(organization.id)
         [cached] = await cache.get_active_reducers(session, redis, organization.id)
+        assert cached.id == reducer.id
+
+    async def test_credit_reducers(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+
+        [cached] = await cache.get_active_reducers(session, redis, organization.id)
+
         assert cached.id == reducer.id
 
     @pytest.mark.parametrize("failure", ["get", "set", "invalid_json"])

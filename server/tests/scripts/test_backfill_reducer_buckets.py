@@ -248,7 +248,7 @@ class TestBackfillBuckets:
             billable_from=SUBSCRIPTION_START,
             cutoff=END,
         )
-        assert quantities == {meter.id: Decimal(13)}
+        assert quantities == {meter.id: (Decimal(13), Decimal(0))}
         buckets = (
             await session.scalars(
                 select(ReducerBucket)

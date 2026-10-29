@@ -68,12 +68,16 @@ const MinHeightBar = (props: {
 const MarkerDot = ({
   viewBox,
   fill,
+  stroke,
   r = 3,
 }: {
   viewBox?: { x?: number; y?: number }
   fill: string
+  stroke?: string
   r?: number
-}) => <circle cx={viewBox?.x} cy={viewBox?.y} r={r} fill={fill} />
+}) => (
+  <circle cx={viewBox?.x} cy={viewBox?.y} r={r} fill={fill} stroke={stroke} />
+)
 
 export interface ChartMarker {
   x: string | number
@@ -165,6 +169,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
 }: GenericChartProps<T>) => {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
+  const guideLineColor = isDark ? '#27272A' : '#E4E4E7'
   const [activeSeries, setActiveSeries] = useState<string | null>(null)
 
   const id = useId()
@@ -361,7 +366,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
       />
     ) : undefined
 
-    const markerColor = isDark ? '#52525B' : '#A1A1AA'
+    const markerRingColor = isDark ? '#3F3F46' : '#D4D4D8'
     const tooltip = (
       <ChartTooltip
         cursor={false}
@@ -395,14 +400,25 @@ export const GenericChart = <T extends Record<string, unknown>>({
       />
     )
 
-    const markerLines = markers?.map((marker) => (
+    const markerReferenceLines = markers?.flatMap((marker) => [
+      <ReferenceLine
+        key={`marker-line-${marker.x}`}
+        x={marker.x}
+        stroke={guideLineColor}
+        strokeDasharray="6 6"
+        shapeRendering="crispEdges"
+        // Below areas (100), whose layer also draws the series stroke.
+        zIndex={50}
+      />,
       <ReferenceLine
         key={`marker-${marker.x}`}
         x={marker.x}
-        stroke={markerColor}
-        label={<MarkerDot fill={markerColor} />}
-      />
-    ))
+        stroke="none"
+        // Card fill hides the line and area behind the ring.
+        label={<MarkerDot fill="var(--card)" stroke={markerRingColor} />}
+        zIndex={350}
+      />,
+    ])
 
     const legend = showLegend ? (
       <ChartLegend
@@ -444,7 +460,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
-          {markerLines}
+          {markerReferenceLines}
           {series
             .slice()
             .reverse()
@@ -473,7 +489,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
           {yAxis}
           {tooltip}
           {legend}
-          {markerLines}
+          {markerReferenceLines}
           {series.map((s) => (
             <Line
               key={s.key}
@@ -537,7 +553,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
         {yAxis}
         {tooltip}
         {legend}
-        {markerLines}
+        {markerReferenceLines}
         <Area
           dataKey={primarySeries.key}
           stroke={`var(--color-${primarySeries.key})`}
@@ -570,6 +586,7 @@ export const GenericChart = <T extends Record<string, unknown>>({
     handleMouseLeave,
     id,
     markers,
+    guideLineColor,
   ])
 
   // Cursor line is cheap and only depends on the active index.
@@ -586,15 +603,16 @@ export const GenericChart = <T extends Record<string, unknown>>({
         key="active-marker"
         x={activeX}
         stroke={activeMarkerColor}
+        shapeRendering="crispEdges"
         label={<MarkerDot fill={activeMarkerColor} r={4} />}
       />
     ) : (
       <ReferenceLine
         key="cursor"
         x={activeX}
-        stroke={isDark ? '#27282A' : '#E5E7EB'}
+        stroke={guideLineColor}
         strokeWidth={1}
-        // Below series lines and markers (both 400), above areas (100).
+        // Below series lines (400), above areas (100).
         zIndex={350}
       />
     )
@@ -609,7 +627,15 @@ export const GenericChart = <T extends Record<string, unknown>>({
         : [originalChildren]),
       cursorLine,
     )
-  }, [chartBase, activeCursorIndex, data, xAxisKey, isDark, markers])
+  }, [
+    chartBase,
+    activeCursorIndex,
+    data,
+    xAxisKey,
+    isDark,
+    markers,
+    guideLineColor,
+  ])
 
   return (
     <ChartContainer

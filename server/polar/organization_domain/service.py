@@ -10,6 +10,7 @@ from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain
+from polar.organization.embed_hosts import WILDCARD_PREFIX, is_shared_host
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import OrganizationDomainRepository
@@ -101,7 +102,10 @@ class OrganizationDomainService:
         await repository.soft_delete(organization_domain)
 
     async def verify(
-        self, session: AsyncSession, organization_domain: OrganizationDomain
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_domain: OrganizationDomain,
     ) -> OrganizationDomain:
         if organization_domain.verified_at is not None:
             return organization_domain
@@ -113,7 +117,7 @@ class OrganizationDomainService:
         repository = OrganizationDomainRepository.from_session(session)
         try:
             async with session.begin_nested():
-                return await repository.update(
+                organization_domain = await repository.update(
                     organization_domain,
                     update_dict={"verified_at": utc_now()},
                     flush=True,
@@ -121,6 +125,17 @@ class OrganizationDomainService:
         except IntegrityError as e:
             await session.refresh(organization_domain)
             raise OrganizationDomainVerifiedElsewhere(organization_domain.domain) from e
+
+        domain = organization_domain.domain
+        hosts = [domain]
+        if not is_shared_host(f"{WILDCARD_PREFIX}{domain}"):
+            hosts.append(f"{WILDCARD_PREFIX}{domain}")
+        await session.refresh(organization, with_for_update=True)
+        organization.embed_hosts = [
+            *organization.embed_hosts,
+            *(host for host in hosts if host not in organization.embed_hosts),
+        ]
+        return organization_domain
 
 
 organization_domain = OrganizationDomainService()

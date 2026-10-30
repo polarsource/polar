@@ -234,9 +234,14 @@ def resolve_proration_behavior(
     A product change is an upgrade when it lengthens the billing interval or, at
     equal interval, doesn't lower the static amount. Switching to seat- or
     unit-based pricing is always an upgrade, since it must apply immediately.
+    Trialing subscriptions always resolve to `invoice`: nothing is billed during
+    a trial, so every change applies immediately.
     """
     if isinstance(proration_behavior, SubscriptionProrationBehavior):
         return proration_behavior
+
+    if subscription.trialing:
+        return SubscriptionProrationBehavior.invoice
 
     if product is not None:
         is_upgrade = _is_product_upgrade(subscription, product)

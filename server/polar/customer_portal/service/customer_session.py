@@ -24,6 +24,7 @@ from polar.member_session.service import member_session as member_session_servic
 from polar.models import (
     CustomerSession,
     CustomerSessionCode,
+    Member,
     MemberSession,
     Organization,
 )
@@ -90,20 +91,24 @@ class CustomerSessionService:
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        customer_session_code, code = await self._request_with_member_lookup(
-            session, email, organization, customer_id
-        )
+        member = await self.get_member(session, email, organization, customer_id)
 
+        code, code_hash = self._generate_code_hash()
+        customer_session_code = CustomerSessionCode(
+            code=code_hash,
+            email=member.email,
+            customer=member.customer,
+        )
         session.add(customer_session_code)
         return customer_session_code, code
 
-    async def _request_with_member_lookup(
+    async def get_member(
         self,
         session: AsyncSession,
         email: str,
         organization: Organization,
         customer_id: uuid.UUID | None,
-    ) -> tuple[CustomerSessionCode, str]:
+    ) -> Member:
         """
         Member-based lookup with disambiguation.
 
@@ -138,22 +143,15 @@ class CustomerSessionService:
             )
             if target_member is None:
                 raise CustomerDoesNotExist(email, organization)
-            member = target_member
-        elif len(members) == 1:
-            member = members[0]
-        else:
-            customer_options = [
-                CustomerOption(id=m.customer.id, name=m.customer.name) for m in members
-            ]
-            raise CustomerSelectionRequired(customer_options)
+            return target_member
 
-        code, code_hash = self._generate_code_hash()
-        customer_session_code = CustomerSessionCode(
-            code=code_hash,
-            email=member.email,
-            customer=member.customer,
-        )
-        return customer_session_code, code
+        if len(members) == 1:
+            return members[0]
+
+        customer_options = [
+            CustomerOption(id=m.customer.id, name=m.customer.name) for m in members
+        ]
+        raise CustomerSelectionRequired(customer_options)
 
     async def send(
         self,
@@ -168,8 +166,20 @@ class CustomerSessionService:
         assert organization is not None
 
         delta = customer_session_code.expires_at - utc_now()
-        code_lifetime_minutes = ceil(delta.seconds / 60)
+        self.send_code(
+            organization,
+            customer_session_code.email,
+            code,
+            ceil(delta.seconds / 60),
+        )
 
+    def send_code(
+        self,
+        organization: Organization,
+        email: str,
+        code: str,
+        code_lifetime_minutes: int,
+    ) -> None:
         domain = settings.frontend_hostname
 
         # Recipient is the login email (member.email in the member flow); the
@@ -178,7 +188,7 @@ class CustomerSessionService:
             CustomerSessionCodeEmail(
                 props=CustomerSessionCodeProps.model_validate(
                     {
-                        "email": customer_session_code.email,
+                        "email": email,
                         "organization": organization,
                         "code": code,
                         "code_lifetime_minutes": code_lifetime_minutes,
@@ -190,7 +200,7 @@ class CustomerSessionService:
                 )
             ),
             **organization.email_from_reply,
-            to_email_addr=customer_session_code.email,
+            to_email_addr=email,
             subject=f"Access your {organization.name} purchases",
         )
 

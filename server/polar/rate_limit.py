@@ -44,7 +44,7 @@ _AUTHENTICATION_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/auth/backup-codes": [
         Rule(minute=6, hour=12, block_time=900, zone="auth-backup-codes"),
     ],
-    "^/v1/customer-portal/customer-session/(request|authenticate)": [
+    "^/v1/customer-portal/customer-session/(request|authenticate|start|email-otp)": [
         Rule(minute=6, hour=12, block_time=900, zone="customer-session-login"),
     ],
 }

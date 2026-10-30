@@ -35,6 +35,25 @@ CustomerSessionCodeInvalidOrExpiredResponse = {
 }
 
 
+class CustomerSessionAuthenticationStart(Schema):
+    organization_id: UUID4
+
+
+class CustomerSessionEmailOTPRequest(Schema):
+    email: EmailStrDNS
+    customer_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "Optional customer ID for disambiguation when multiple customers "
+            "share the same email."
+        ),
+    )
+
+
+class CustomerSessionEmailOTPVerify(Schema):
+    code: str
+
+
 class CustomerCustomerSession(Schema):
     expires_at: datetime
     return_url: str | None

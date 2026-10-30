@@ -1,7 +1,7 @@
 """drop customer_session_codes
 
 Revision ID: 63f5f40b47d9
-Revises: f49a44e66c0c
+Revises: 8675636fe905
 Create Date: 2026-10-27 14:03:24.750045
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "63f5f40b47d9"
-down_revision = "f49a44e66c0c"
+down_revision = "8675636fe905"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

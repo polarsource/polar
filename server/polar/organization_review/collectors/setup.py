@@ -104,13 +104,12 @@ async def _resolve_redirect(
 ) -> UrlRedirectInfo:
     """Follow redirects on a URL and return where it ultimately lands.
 
-    Validates scheme and checks for SSRF before making the request.
-    Uses a manual redirect loop to validate each hop against private IPs.
+    Uses a manual redirect loop to validate each hop's scheme. The client's
+    `SSRFSafeTransport` blocks hops that resolve to private IPs.
     """
     try:
         _validate_url_scheme(url)
-        await _validate_url_host(url)
-    except ValueError, SSRFBlockedError:
+    except ValueError:
         return UrlRedirectInfo(original_url=url, error="blocked")
 
     async with semaphore:
@@ -120,17 +119,19 @@ async def _resolve_redirect(
             current_url = url
             hops: list[str] = []
             for _ in range(10):  # max redirect hops
-                response = await client.get(current_url)
+                try:
+                    response = await client.get(current_url)
+                except SSRFBlockedError:
+                    error = "redirect_blocked" if hops else "blocked"
+                    return UrlRedirectInfo(original_url=url, error=error)
                 if response.is_redirect and response.has_redirect_location:
                     next_url = str(response.headers["location"])
                     # Resolve relative redirects
                     if not next_url.startswith(("http://", "https://")):
                         next_url = str(response.url.join(next_url))
-                    # Validate next hop
                     try:
                         _validate_url_scheme(next_url)
-                        await _validate_url_host(next_url)
-                    except ValueError, SSRFBlockedError:
+                    except ValueError:
                         return UrlRedirectInfo(
                             original_url=url, error="redirect_blocked"
                         )
@@ -153,8 +154,6 @@ async def _resolve_redirect(
             )
         except httpx.TimeoutException:
             return UrlRedirectInfo(original_url=url, error="timeout")
-        except SSRFBlockedError:
-            return UrlRedirectInfo(original_url=url, error="blocked")
         except Exception:
             return UrlRedirectInfo(original_url=url, error="connection_error")
 

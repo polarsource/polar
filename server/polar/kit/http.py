@@ -10,7 +10,7 @@ import anyio
 import httpcore
 import httpx
 from fastapi import Depends, Query, Request
-from pydantic import AfterValidator, HttpUrl, PlainSerializer, ValidationError
+from pydantic import AfterValidator, HttpUrl, PlainSerializer
 from safe_redirect_url import url_has_allowed_host_and_scheme
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -146,39 +146,6 @@ class SSRFSafeTransport(httpx.AsyncHTTPTransport):
         )
 
 
-class UnsafeCrawlableUrl(Exception):
-    """A URL that may point to private/reserved IPs, which we will validate manually."""
-
-
-async def validate_crawlable_url(url: HttpUrl | str) -> HttpUrl:
-    """
-    Validate that the URL is crawlable (not private/reserved).
-
-    Args:
-        url: The URL to validate.
-
-    Returns:
-        The original URL if it's valid.
-
-    Raises:
-        UnsafeCrawlableUrl: If the URL is invalid or points to a private/reserved
-    """
-    if not isinstance(url, HttpUrl):
-        try:
-            url = HttpUrl(url)
-        except ValidationError as e:
-            raise UnsafeCrawlableUrl(f"Invalid URL: {e}") from e
-
-    if url.host is None:
-        raise UnsafeCrawlableUrl("URL must have a host")
-
-    try:
-        await resolve_and_validate_ip(url.host)
-    except SSRFBlockedError as e:
-        raise UnsafeCrawlableUrl(str(e)) from e
-    return url
-
-
 @dataclass
 class UrlReachability:
     reachable: bool
@@ -189,17 +156,12 @@ class UrlReachability:
 async def check_url_reachable(
     url: HttpUrl | str, *, timeout: float = 5.0
 ) -> UrlReachability:
-    """Validate the URL and GET it, following redirects.
+    """GET the URL, following redirects.
 
     The check rejects URLs that resolve to private/reserved IPs (including any
     redirect target, see `SSRFSafeTransport`) and treats HTTP 2xx/3xx as
     reachable. We use GET rather than HEAD because some sites block HEAD requests.
     """
-    try:
-        validated_url = await validate_crawlable_url(url)
-    except UnsafeCrawlableUrl as e:
-        return UrlReachability(reachable=False, error=str(e))
-
     try:
         async with httpx.AsyncClient(
             transport=SSRFSafeTransport(),
@@ -207,7 +169,7 @@ async def check_url_reachable(
             timeout=timeout,
             headers={"User-Agent": settings.POLAR_USER_AGENT},
         ) as client:
-            response = await client.get(str(validated_url))
+            response = await client.get(str(url))
         return UrlReachability(
             reachable=200 <= response.status_code < 400,
             status=response.status_code,
@@ -216,6 +178,8 @@ async def check_url_reachable(
         return UrlReachability(reachable=False, error=str(e))
     except httpx.TimeoutException:
         return UrlReachability(reachable=False, error="Request timed out")
+    except httpx.InvalidURL as e:
+        return UrlReachability(reachable=False, error=f"Invalid URL: {e}")
     except httpx.HTTPError:
         return UrlReachability(reachable=False, error="Unable to reach URL")
 

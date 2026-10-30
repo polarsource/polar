@@ -215,13 +215,12 @@ class TestCheckUrlReachable:
     async def test_dns_rebinding(self) -> None:
         """The connection goes to the IP we validated, not a fresh lookup.
 
-        A rebinding host answers a public IP to the check and a private one
-        afterwards; the second answer must never be used.
+        A rebinding host answers a public IP to the first lookup and a private
+        one afterwards; the second answer must never be used.
         """
         backend = _RecordingBackend(_response(200))
         getaddrinfo = AsyncMock(
             side_effect=[
-                _fake_getaddrinfo("93.184.216.34"),
                 _fake_getaddrinfo("93.184.216.34"),
                 _fake_getaddrinfo("127.0.0.1"),
             ]
@@ -233,19 +232,16 @@ class TestCheckUrlReachable:
 
         assert result.reachable is True
         assert backend.connected_hosts == ["93.184.216.34"]
-        assert getaddrinfo.await_count == 2
+        assert getaddrinfo.await_count == 1
 
     @pytest.mark.anyio
-    async def test_dns_rebinding_to_private_ip_at_connection(self) -> None:
+    async def test_blocks_private_host(self) -> None:
         backend = _RecordingBackend(_response(200))
-        getaddrinfo = AsyncMock(
-            side_effect=[
-                _fake_getaddrinfo("93.184.216.34"),
-                _fake_getaddrinfo("127.0.0.1"),
-            ]
-        )
 
-        with patch("anyio.getaddrinfo", new=getaddrinfo):
+        with patch(
+            "anyio.getaddrinfo",
+            new=AsyncMock(return_value=_fake_getaddrinfo("127.0.0.1")),
+        ):
             with _mock_network(backend):
                 result = await check_url_reachable("http://rebind.example.com:8000")
 

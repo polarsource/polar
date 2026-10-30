@@ -796,30 +796,6 @@ class PolarSelfClient:
             usage_id=usage_id,
         )
 
-    async def track_compass_assistant_usage(
-        self,
-        *,
-        external_customer_id: str,
-        vendor: str,
-        model: str,
-        input_tokens: int,
-        output_tokens: int,
-        cost_usd: Decimal,
-        usage_id: str,
-    ) -> None:
-        await self._track_llm_span_usage(
-            operation="track_compass_assistant_usage",
-            root_name="compass_assistant",
-            child_name="compass_assistant.chat",
-            external_customer_id=external_customer_id,
-            vendor=vendor,
-            model=model,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            cost_usd=cost_usd,
-            usage_id=usage_id,
-        )
-
     # Customer-portal-scoped operations: create a per-call customer session
     # and act AS THE CUSTOMER. Used for fields the admin API doesn't expose.
 

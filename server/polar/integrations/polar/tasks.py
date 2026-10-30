@@ -238,30 +238,6 @@ async def track_organization_review_usage(
 
 
 @actor(
-    actor_name="polar_self.track_compass_assistant_usage",
-    priority=TaskPriority.LOW,
-)
-async def track_compass_assistant_usage(
-    external_customer_id: Annotated[str, LoggableField],
-    vendor: Annotated[str, LoggableField],
-    model: Annotated[str, LoggableField],
-    input_tokens: Annotated[int, LoggableField],
-    output_tokens: Annotated[int, LoggableField],
-    cost_usd: Annotated[str, LoggableField],
-    usage_id: Annotated[str, LoggableField],
-) -> None:
-    await get_client().track_compass_assistant_usage(
-        external_customer_id=external_customer_id,
-        vendor=vendor,
-        model=model,
-        input_tokens=input_tokens,
-        output_tokens=output_tokens,
-        cost_usd=Decimal(cost_usd),
-        usage_id=usage_id,
-    )
-
-
-@actor(
     actor_name="polar_self.webhook.benefit_grant.created",
     priority=TaskPriority.LOW,
 )

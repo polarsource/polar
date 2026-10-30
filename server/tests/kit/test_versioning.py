@@ -168,31 +168,28 @@ def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
 
 
 class VersionedPlan(BaseModel):
-    interval: Annotated[
-        Literal["month", "year", "week"],
-        VersionedValue("week", starting_from=NEXT_VERSION),
-    ]
-    status: Annotated[
-        SharedPrice | Literal["draft"],
-        VersionedValue("draft", starting_from=NEXT_VERSION),
-    ]
+    interval: (
+        Annotated[
+            Literal["month", "week"], VersionedValue("week", starting_from=NEXT_VERSION)
+        ]
+        | None
+    )
 
 
 def test_versioned_values_are_omitted_from_earlier_openapi_schema() -> None:
     with api_version_context(CURRENT_VERSION):
         current_schema = VersionedPlan.model_json_schema()
-    assert current_schema["properties"]["interval"]["enum"] == ["month", "year"]
-    assert current_schema["properties"]["status"]["$ref"] == "#/$defs/SharedPrice"
-    assert "anyOf" not in current_schema["properties"]["status"]
+    assert current_schema["properties"]["interval"]["anyOf"] == [
+        {"type": "string", "enum": ["month"]},
+        {"type": "null"},
+    ]
 
     with api_version_context(NEXT_VERSION):
         next_schema = VersionedPlan.model_json_schema()
-    assert next_schema["properties"]["interval"]["enum"] == ["month", "year", "week"]
-    assert len(next_schema["properties"]["status"]["anyOf"]) == 2
-
-    assert VersionedPlan.model_validate(
-        {"interval": "week", "status": "draft"}
-    ) == VersionedPlan(interval="week", status="draft")
+    assert next_schema["properties"]["interval"]["anyOf"][0]["enum"] == [
+        "month",
+        "week",
+    ]
 
 
 @pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])

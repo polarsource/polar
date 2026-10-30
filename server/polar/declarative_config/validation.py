@@ -44,6 +44,8 @@ from .schemas import (
     Config,
     ConfigAction,
     ConfigBenefit,
+    ConfigBenefitLicenseKeys,
+    ConfigBenefitLicenseKeysProperties,
     ConfigBenefitMeterCredit,
     ConfigFieldChange,
     ConfigIssue,
@@ -555,6 +557,11 @@ def _create_update_dict(
 def benefit_properties(
     benefit: Benefit, meter_external_ids: dict[str, str]
 ) -> dict[str, Any]:
+    if benefit.type == BenefitType.license_keys:
+        return {
+            key: benefit.properties.get(key)
+            for key in ConfigBenefitLicenseKeysProperties.model_fields
+        }
     if benefit.type != BenefitType.meter_credit:
         return {}
     properties = cast(BenefitMeterCreditProperties, benefit.properties)
@@ -567,7 +574,7 @@ def benefit_properties(
 
 
 def _config_benefit_properties(benefit_config: ConfigBenefit) -> dict[str, Any]:
-    if isinstance(benefit_config, ConfigBenefitMeterCredit):
+    if isinstance(benefit_config, (ConfigBenefitMeterCredit, ConfigBenefitLicenseKeys)):
         return benefit_config.properties.model_dump()
     return {}
 

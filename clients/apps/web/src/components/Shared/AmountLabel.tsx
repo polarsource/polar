@@ -9,6 +9,7 @@ interface AmountLabelProps {
   intervalCount?: number | null
   oneTime?: boolean
   verbose?: boolean
+  unit?: string
 }
 
 const ordinalRules = new Intl.PluralRules('en', { type: 'ordinal' })
@@ -35,6 +36,7 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   intervalCount,
   oneTime,
   verbose,
+  unit,
 }: AmountLabelProps) => {
   const intervalDisplay = useMemo(() => {
     if (!interval) {
@@ -62,7 +64,10 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   return (
     <span className="inline-flex flex-row items-baseline gap-x-1">
       {formatCurrency('compact')(amount, currency)}
-      <span className="text-[max(12px,0.5em)]">{intervalDisplay}</span>
+      <span className="text-[max(12px,0.5em)]">
+        {unit && ` / ${unit}`}
+        {intervalDisplay}
+      </span>
     </span>
   )
 }

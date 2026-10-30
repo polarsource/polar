@@ -63,10 +63,8 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
             intervalCount={product.recurring_interval_count}
             oneTime={!product.recurring_interval}
             verbose={verbose}
+            unit="seat"
           />
-          <span className="dark:text-polar-500 text-xs text-gray-500">
-            / seat
-          </span>
         </span>
       )
     }
@@ -92,10 +90,8 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
             intervalCount={product.recurring_interval_count}
             oneTime={!product.recurring_interval}
             verbose={verbose}
+            unit={getUnitLabels(staticPrice).unitLabel}
           />
-          <span className="dark:text-polar-500 text-xs text-gray-500">
-            / {getUnitLabels(staticPrice).unitLabel}
-          </span>
         </span>
       )
     }

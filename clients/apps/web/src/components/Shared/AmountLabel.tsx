@@ -7,6 +7,7 @@ interface AmountLabelProps {
   currency: string
   interval?: schemas['RecurringInterval']
   intervalCount?: number | null
+  oneTime?: boolean
 }
 
 const ordinalRules = new Intl.PluralRules('en', { type: 'ordinal' })
@@ -31,10 +32,11 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   currency,
   interval,
   intervalCount,
+  oneTime,
 }: AmountLabelProps) => {
   const intervalDisplay = useMemo(() => {
     if (!interval) {
-      return ''
+      return oneTime ? ' one-time' : ''
     }
     const prefix =
       intervalCount && intervalCount > 1
@@ -43,17 +45,17 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
 
     switch (interval) {
       case 'day':
-        return ` /${prefix} dy`
+        return ` /${prefix} day`
       case 'week':
-        return ` /${prefix} wk`
+        return ` /${prefix} week`
       case 'month':
-        return ` /${prefix} mo`
+        return ` /${prefix} month`
       case 'year':
-        return ` /${prefix} yr`
+        return ` /${prefix} year`
       default:
         return ``
     }
-  }, [interval, intervalCount])
+  }, [interval, intervalCount, oneTime])
 
   return (
     <span className="inline-flex flex-row items-baseline gap-x-1">

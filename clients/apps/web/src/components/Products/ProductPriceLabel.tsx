@@ -36,6 +36,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         interval={product.recurring_interval || undefined}
         intervalCount={product.recurring_interval_count}
         oneTime={!product.recurring_interval}
+        fullIntervalNames
       />
     )
   } else if (staticPrice && isSeatBasedPrice(staticPrice)) {

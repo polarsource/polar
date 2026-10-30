@@ -575,9 +575,12 @@ class ReducerService:
                     if credit is not None:
                         totals = await self.get_credits(session, credit, customer.id)
                         span.set_attribute(
-                            "legacy_credited", str(customer_meter.credited_units)
+                            "legacy_credited",
+                            _format_units(customer_meter.credited_units),
                         )
-                        span.set_attribute("reducer_credited", str(totals.sum))
+                        span.set_attribute(
+                            "reducer_credited", _format_units(totals.sum)
+                        )
                         span.set_attribute(
                             "credited_match",
                             math.isclose(totals.sum, customer_meter.credited_units),
@@ -608,8 +611,10 @@ class ReducerService:
                         customer.external_id,
                         since=since,
                     )
-                    span.set_attribute("legacy", str(customer_meter.consumed_units))
-                    span.set_attribute("reducer", str(value))
+                    span.set_attribute(
+                        "legacy", _format_units(customer_meter.consumed_units)
+                    )
+                    span.set_attribute("reducer", _format_units(value))
                     span.set_attribute(
                         "match", math.isclose(value, customer_meter.consumed_units)
                     )
@@ -1010,6 +1015,10 @@ def _enqueue_outpost_event(
             "external_customer_id": external_customer_id,
         },
     )
+
+
+def _format_units(units: Decimal | int) -> str:
+    return f"{Decimal(units).normalize():f}"
 
 
 def _get_bucket_key(bucket_id: redis_store.BucketId) -> str:

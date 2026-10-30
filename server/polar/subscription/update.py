@@ -3,7 +3,7 @@ from datetime import datetime
 
 from parse import Decimal
 
-from polar.enums import SubscriptionProrationBehavior
+from polar.enums import OrganizationProrationBehavior, SubscriptionProrationBehavior
 from polar.kit.utils import utc_now
 from polar.models import (
     BillingEntry,
@@ -220,19 +220,24 @@ def _is_product_upgrade(subscription: Subscription, product: Product) -> bool:
     return new_amount >= current_amount
 
 
-def resolve_auto_proration_behavior(
+def resolve_proration_behavior(
     subscription: Subscription,
+    proration_behavior: OrganizationProrationBehavior,
     *,
     product: Product | None = None,
     seats: int | None = None,
     units: int | None = None,
 ) -> SubscriptionProrationBehavior:
-    """Resolve `auto` to `invoice` for upgrades and `next_period` for downgrades.
+    """Resolve the organization's proration behavior for a change.
 
+    `auto` resolves to `invoice` for upgrades and `next_period` for downgrades.
     A product change is an upgrade when it lengthens the billing interval or, at
     equal interval, doesn't lower the static amount. Switching to seat- or
     unit-based pricing is always an upgrade, since it must apply immediately.
     """
+    if isinstance(proration_behavior, SubscriptionProrationBehavior):
+        return proration_behavior
+
     if product is not None:
         is_upgrade = _is_product_upgrade(subscription, product)
     elif seats is not None:

@@ -28,12 +28,21 @@ export default function Index() {
   const theme = useTheme()
   const router = useRouter()
 
-  const { mutateAsync: withdrawFunds } = useCreatePayout(organization?.id)
+  const {
+    mutateAsync: withdrawFunds,
+    isPending: isWithdrawPending,
+    isSuccess: isWithdrawSuccess,
+  } = useCreatePayout(organization?.id)
   const { requestReview, shouldShow } = useStoreReview()
 
   const hasOrders = useMemo(() => {
     return (orders?.pages?.[0]?.items?.length ?? 0) > 0
   }, [orders])
+
+  const showWithdrawSlider =
+    isWithdrawPending ||
+    isWithdrawSuccess ||
+    (nextPayoutAt === null && !isNextPayoutAtFetching)
 
   return (
     <>
@@ -79,7 +88,7 @@ export default function Index() {
             )}
           />
         </Details>
-        {nextPayoutAt !== null || isNextPayoutAtFetching ? null : (
+        {showWithdrawSlider ? (
           <SlideToAction
             text="Slide To Withdraw"
             loadingText="Withdrawing..."
@@ -96,7 +105,7 @@ export default function Index() {
               router.replace('/finance')
             }}
           />
-        )}
+        ) : null}
       </SafeAreaView>
     </>
   )

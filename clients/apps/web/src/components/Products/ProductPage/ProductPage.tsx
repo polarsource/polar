@@ -169,6 +169,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
             <ProductPriceLabel
               product={product}
               currency={organization.default_presentment_currency}
+              fullInterval
             />
           </span>
         </div>

@@ -16,11 +16,13 @@ interface ProductPriceLabelProps {
     'prices' | 'recurring_interval' | 'recurring_interval_count'
   >
   currency: string
+  fullInterval?: boolean
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   currency,
+  fullInterval = false,
 }: ProductPriceLabelProps) => {
   const staticPrice = product.prices.find(
     ({ amount_type, price_currency }) =>
@@ -35,6 +37,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         currency={staticPrice.price_currency}
         interval={product.recurring_interval || undefined}
         intervalCount={product.recurring_interval_count}
+        fullInterval={fullInterval}
       />
     )
   } else if (staticPrice && isSeatBasedPrice(staticPrice)) {
@@ -56,6 +59,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
             amount={Number(firstTier.unit_amount)}
             currency={staticPrice.price_currency}
             interval={product.recurring_interval || undefined}
+            fullInterval={fullInterval}
           />
           <span className="dark:text-polar-500 text-xs text-gray-500">
             / seat
@@ -82,6 +86,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
             amount={Number(firstTier.unit_amount)}
             currency={staticPrice.price_currency}
             interval={product.recurring_interval || undefined}
+            fullInterval={fullInterval}
           />
           <span className="dark:text-polar-500 text-xs text-gray-500">
             / {getUnitLabels(staticPrice).unitLabel}

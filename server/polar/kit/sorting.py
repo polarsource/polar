@@ -1,25 +1,41 @@
+from collections.abc import Awaitable, Callable
 from enum import StrEnum
-from inspect import Parameter, Signature
-from typing import Any
+from typing import Annotated
 
 from fastapi import Query
-from makefun import with_signature
+from pydantic import BaseModel, Field
 
 from polar.exceptions import PolarRequestValidationError
 
 type Sorting[PE] = tuple[PE, bool]
 
 
-class _SortingGetter[PE: StrEnum]:
-    def __init__(
-        self, sort_property_enum: type[PE], default_sorting: list[str]
-    ) -> None:
-        self.sort_property_enum = sort_property_enum
-        self.default_sorting = default_sorting
+def SortingGetter[PE: StrEnum](
+    sort_property_enum: type[PE], default_sorting: list[str]
+) -> Callable[..., Awaitable[list[Sorting[PE]]]]:
+    sort_property_full_enum = StrEnum(  # type: ignore[misc]
+        sort_property_enum.__name__,
+        [
+            value
+            for member in sort_property_enum
+            for value in (member.value, f"-{member.value}")
+        ],
+    )
 
-    async def __call__(self, sorting: list[str] | None) -> list[Sorting[PE]]:
-        if sorting is None:
-            sorting = self.default_sorting
+    class SortingParams(BaseModel):
+        sorting: list[sort_property_full_enum] | None = Field(  # type: ignore[assignment]
+            default_sorting,
+            description=(
+                "Sorting criterion. "
+                "Several criteria can be used simultaneously and will be applied in order. "
+                "Add a minus sign `-` before the criteria name to sort by descending order."
+            ),
+        )
+
+    async def get_sorting(
+        params: Annotated[SortingParams, Query()],
+    ) -> list[Sorting[PE]]:
+        sorting = params.sorting if params.sorting is not None else default_sorting
 
         parsed_sorting: list[tuple[PE, bool]] = []
         for criteria in sorting:
@@ -28,7 +44,7 @@ class _SortingGetter[PE: StrEnum]:
                 desc = True
                 criteria = criteria[1:]
             try:
-                parsed_sorting.append((self.sort_property_enum(criteria), desc))
+                parsed_sorting.append((sort_property_enum(criteria), desc))
             except ValueError:
                 raise PolarRequestValidationError(
                     [
@@ -42,49 +58,4 @@ class _SortingGetter[PE: StrEnum]:
                 )
         return parsed_sorting
 
-
-def SortingGetter[PE: StrEnum](
-    sort_property_enum: type[PE], default_sorting: list[str]
-) -> _SortingGetter[PE]:
-    """
-    Here comes some blood magic 🧙‍♂️
-
-    Generate a version of `_SortingGetter` with an overriden `__call__` signature.
-
-    By doing so, we can dynamically inject the allowed sorting properties into FastAPI
-    dependency, so they are properrly detected by the OpenAPI generator.
-    """
-    enum_values = []
-    for value in sort_property_enum:
-        enum_values.append(value.value)
-        enum_values.append(f"-{value.value}")
-
-    sort_property_full_enum = StrEnum(  # type: ignore[misc]
-        sort_property_enum.__name__,
-        enum_values,
-    )
-
-    parameters: list[Parameter] = [
-        Parameter(name="self", kind=Parameter.POSITIONAL_OR_KEYWORD),
-        Parameter(
-            name="sorting",
-            kind=Parameter.POSITIONAL_OR_KEYWORD,
-            default=Query(
-                default_sorting,
-                description=(
-                    "Sorting criterion. "
-                    "Several criteria can be used simultaneously and will be applied in order. "
-                    "Add a minus sign `-` before the criteria name to sort by descending order."
-                ),
-            ),
-            annotation=list[sort_property_full_enum] | None,
-        ),
-    ]
-    signature = Signature(parameters)
-
-    class _SortingGetterSignature(_SortingGetter[Any]):
-        @with_signature(signature)
-        async def __call__(self, sorting: Any) -> list[Sorting[Any]]:
-            return await super().__call__(sorting)
-
-    return _SortingGetterSignature(sort_property_enum, default_sorting)
+    return get_sorting

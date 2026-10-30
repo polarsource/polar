@@ -5854,6 +5854,89 @@ class TestUpdate:
             updated,
         )
 
+    async def test_combined_update_no_trial_product_trial_end_keeps_trialing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        current_period_start = subscription.current_period_start
+        trial_end = subscription.trial_end
+        assert trial_end is not None
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=new_product.id, trial_end=trial_end
+                ),
+            )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == trial_end
+        assert updated.current_period_start == current_period_start
+        assert updated.current_period_end == trial_end
+        assert not any(
+            call.args and call.args[0] == "order.create_subscription_order"
+            for call in enqueue_job_mock.call_args_list
+        )
+
+    async def test_combined_update_trial_product_trial_end_overrides_product_trial(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        trial_end = subscription.trial_end + timedelta(days=10)
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=14,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=new_product.id, trial_end=trial_end
+                ),
+            )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == trial_end
+        assert updated.current_period_end == trial_end
+
     async def test_product_and_discount_update_with_discount_for_new_product(
         self,
         session: AsyncSession,

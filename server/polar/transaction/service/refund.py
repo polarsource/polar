@@ -125,6 +125,7 @@ class RefundTransactionService(BaseTransactionService):
         )
         refund_transaction.incurred_transactions = transaction_fees
         session.add(refund_transaction)
+        await session.flush()
 
         # Create reversal balances if it was already balanced
         refund_amount = settlement_amount - settlement_tax_amount

@@ -95,6 +95,7 @@ from polar.support_case.schemas import (
 from polar.support_case.schemas import (
     SupportCase as SupportCaseSchema,
 )
+from polar.user.service import UserUnavailable
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import (
     OrganizationMember,
@@ -617,6 +618,7 @@ async def roles(authz: AuthorizeOrgAccess) -> list[OrganizationRoleDefinition]:
 @router.post(
     "/{id}/members/invite",
     response_model=OrganizationMember,
+    responses={403: {"model": UserUnavailable.schema()}},
     tags=[APITag.private],
 )
 async def invite_member(

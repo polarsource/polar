@@ -68,6 +68,12 @@ class InvalidAccount(UserError):
         super().__init__(message)
 
 
+class UserUnavailable(UserError):
+    def __init__(self) -> None:
+        message = "This account is unavailable. Please contact support."
+        super().__init__(message, 403)
+
+
 class UserService:
     async def get_by_email_or_create(
         self,
@@ -87,9 +93,14 @@ class UserService:
                     session, email, signup_attribution=signup_attribution
                 )
         except IntegrityError:
-            user = await repository.get_by_email(email)
+            user = await repository.get_by_email(
+                email, include_deleted=True, included_blocked=True
+            )
             if user is None:
                 raise
+            if user.deleted_at is not None or user.blocked_at is not None:
+                # We're using from None because the IntegrityError contains the user's email which leaks into logs
+                raise UserUnavailable() from None
             log.info("user.get_by_email_or_create.concurrent_creation", user_id=user.id)
             return (user, False)
 

@@ -93,7 +93,6 @@ export type ProductVersion = {
   name: string | null
   published_at: string | null
   is_current: boolean
-  active_subscriptions_count: number
 }
 
 const listAllPages = async <T>(
@@ -111,7 +110,7 @@ const listAllPages = async <T>(
   }
 }
 
-// Versions without active subscriptions are left out, except the current one and the one being viewed.
+// The current version and the 10 most recent previous ones, plus the one being viewed.
 export const useProductVersions = (
   organizationId: string,
   product: schemas['Product'],
@@ -129,7 +128,7 @@ export const useProductVersions = (
     ],
     queryFn: async (): Promise<ProductVersion[]> => {
       const externalId = product.external_id ?? ''
-      const [currentProducts, catalogs, subscriptions] = await Promise.all([
+      const [currentProducts, previousProducts, catalogs] = await Promise.all([
         unwrap(
           api.GET('/v1/products/', {
             params: {
@@ -137,6 +136,18 @@ export const useProductVersions = (
                 organization_id: organizationId,
                 external_id: externalId,
                 limit: 1,
+              },
+            },
+          }),
+        ),
+        unwrap(
+          api.GET('/v1/products/', {
+            params: {
+              query: {
+                organization_id: organizationId,
+                external_id: externalId,
+                is_current: false,
+                limit: 10,
               },
             },
           }),
@@ -155,35 +166,13 @@ export const useProductVersions = (
             }),
           ),
         ),
-        listAllPages((page) =>
-          unwrap(
-            api.GET('/v1/subscriptions/', {
-              params: {
-                query: {
-                  organization_id: organizationId,
-                  external_product_id: externalId,
-                  status: ['active', 'trialing'],
-                  page,
-                  limit: 100,
-                },
-              },
-            }),
-          ),
-        ),
       ])
       const current = currentProducts.items[0]
-      const products = new Map([[product.id, product]])
-      if (current) {
-        products.set(current.id, current)
-      }
-      const counts = new Map<string, number>()
-      for (const subscription of subscriptions) {
-        products.set(subscription.product_id, subscription.product)
-        counts.set(
-          subscription.product_id,
-          (counts.get(subscription.product_id) ?? 0) + 1,
-        )
-      }
+      const products = new Map(
+        [product, ...currentProducts.items, ...previousProducts.items].map(
+          (version) => [version.id, version],
+        ),
+      )
       const catalogsById = new Map(
         catalogs.map((catalog) => [catalog.id, catalog]),
       )
@@ -197,7 +186,6 @@ export const useProductVersions = (
             name: catalog?.name ?? null,
             published_at: catalog?.published_at ?? null,
             is_current: version.id === current?.id,
-            active_subscriptions_count: counts.get(version.id) ?? 0,
           }
         })
         .sort((a, b) =>

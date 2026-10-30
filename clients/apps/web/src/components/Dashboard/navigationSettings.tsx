@@ -129,7 +129,7 @@ const settingsGroupsList = (
           title: 'Migrations',
           link: `${base}/migrations`,
           icon: <Download size="1em" />,
-          if: !!org?.feature_settings?.merchant_migration_enabled,
+          if: true,
         },
       ],
     },

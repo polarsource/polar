@@ -765,10 +765,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.feature_settings.get("compass_enabled", False)
 
     @property
-    def is_merchant_migration_enabled(self) -> bool:
-        return self.feature_settings.get("merchant_migration_enabled", False)
-
-    @property
     def is_config_as_code_enabled(self) -> bool:
         return self.feature_settings.get("config_as_code_enabled", False)
 

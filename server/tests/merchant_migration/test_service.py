@@ -200,16 +200,6 @@ class _FakeAdapter:
         self.stopped.append(source_id)
 
 
-async def _enable_feature(
-    save_fixture: SaveFixture, organization: Organization
-) -> None:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "merchant_migration_enabled": True,
-    }
-    await save_fixture(organization)
-
-
 def _create_schema(organization: Organization) -> MerchantMigrationCreate:
     return MerchantMigrationCreate(
         organization_id=organization.id,
@@ -225,12 +215,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         stripe_adapter = mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(),
@@ -275,13 +263,11 @@ class TestCreate:
         status: OrganizationStatus,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         organization.status = status
-        await _enable_feature(save_fixture, organization)
         stripe_adapter = mocker.patch("polar.merchant_migration.service.StripeAdapter")
 
         with pytest.raises(OrganizationNotOnboarded):
@@ -299,13 +285,11 @@ class TestCreate:
         status: OrganizationStatus,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         organization.status = status
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(),
@@ -323,12 +307,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(_catalog()),
@@ -364,7 +346,6 @@ class TestCreate:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(),
@@ -396,12 +377,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(),
@@ -437,7 +416,6 @@ class TestCreate:
         organization_second: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         await build_connected_migration(save_fixture, organization_second)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
@@ -459,7 +437,6 @@ class TestCreate:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         existing = await build_connected_migration(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
@@ -484,7 +461,6 @@ class TestCreate:
         organization_second: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         existing = await build_connected_migration(save_fixture, organization_second)
         repository = MerchantMigrationRepository.from_session(session)
         await repository.soft_delete(existing)
@@ -504,12 +480,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(account_id=None),
@@ -526,12 +500,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
@@ -552,12 +524,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
@@ -578,12 +548,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
@@ -605,12 +573,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
@@ -630,12 +596,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
@@ -653,14 +617,12 @@ class TestCreate:
     async def test_sandbox_rejects_a_live_key(
         self,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         # The test environment is not production, so a live-mode key is rejected
         # before Stripe is ever contacted.
-        await _enable_feature(save_fixture, organization)
         with pytest.raises(SourceKeyModeMismatch):
             await service.create(
                 session,
@@ -677,12 +639,10 @@ class TestCreate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_feature(save_fixture, organization)
         mocker.patch.object(settings, "is_production", return_value=True)
         # `get_key_provider` is cached, so faking production would otherwise reach
         # for KMS whenever this test happens to be the first caller in the process.

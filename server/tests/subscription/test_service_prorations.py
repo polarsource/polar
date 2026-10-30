@@ -2253,3 +2253,232 @@ class TestProrationDiscountProductApplicability:
         pro_debit = (_fixed_price_id(pro), BillingEntryDirection.debit)
         assert discounts[pro_debit] == 10_00
         assert amounts[pro_debit] == int((PRO_AMOUNT - 10_00) * 0.5)
+
+
+@pytest.mark.anyio
+class TestAutoProrationBehavior:
+    @pytest.mark.parametrize(
+        ("old_interval", "old_amount", "new_interval", "new_amount", "immediate"),
+        [
+            pytest.param(
+                SubscriptionRecurringInterval.month,
+                100_00,
+                SubscriptionRecurringInterval.month,
+                300_00,
+                True,
+                id="same-interval-higher-price",
+            ),
+            pytest.param(
+                SubscriptionRecurringInterval.month,
+                100_00,
+                SubscriptionRecurringInterval.month,
+                100_00,
+                True,
+                id="same-interval-same-price",
+            ),
+            pytest.param(
+                SubscriptionRecurringInterval.month,
+                300_00,
+                SubscriptionRecurringInterval.month,
+                100_00,
+                False,
+                id="same-interval-lower-price",
+            ),
+            pytest.param(
+                SubscriptionRecurringInterval.month,
+                100_00,
+                SubscriptionRecurringInterval.year,
+                1000_00,
+                True,
+                id="longer-interval",
+            ),
+            pytest.param(
+                SubscriptionRecurringInterval.year,
+                1000_00,
+                SubscriptionRecurringInterval.month,
+                100_00,
+                False,
+                id="shorter-interval",
+            ),
+        ],
+    )
+    async def test_product_change(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        old_interval: SubscriptionRecurringInterval,
+        old_amount: int,
+        new_interval: SubscriptionRecurringInterval,
+        new_amount: int,
+        immediate: bool,
+    ) -> None:
+        order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=old_interval,
+            prices=[(old_amount, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=new_interval,
+            prices=[(new_amount, "usd")],
+        )
+
+        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
+            subscription = await create_active_subscription(
+                save_fixture, product=old_product, customer=customer
+            )
+            frozen_time.move_to(datetime(2025, 6, 16, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.auto,
+                )
+            await session.flush()
+
+        pending = await SubscriptionUpdateRepository.from_session(
+            session
+        ).get_unapplied_by_subscription_id(subscription.id)
+        events = await get_all_by_name(session, SystemEvent.subscription_updated)
+        assert len(events) == 1
+
+        if immediate:
+            order_mock.assert_awaited_once_with(session, subscription)
+            assert updated.product_id == new_product.id
+            assert pending is None
+            assert (
+                events[0].user_metadata["proration_behavior"]
+                == SubscriptionProrationBehavior.invoice
+            )
+        else:
+            order_mock.assert_not_awaited()
+            assert updated.product_id == old_product.id
+            assert pending is not None
+            assert pending.product_id == new_product.id
+            assert (
+                events[0].user_metadata["proration_behavior"]
+                == SubscriptionProrationBehavior.next_period
+            )
+
+    async def test_organization_default(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": SubscriptionProrationBehavior.auto,
+        }
+        await save_fixture(organization)
+
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(300_00, "usd")],
+        )
+
+        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
+            subscription = await create_active_subscription(
+                save_fixture, product=old_product, customer=customer
+            )
+            frozen_time.move_to(datetime(2025, 6, 16, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
+            await session.flush()
+
+        order_mock.assert_awaited_once_with(session, subscription)
+        assert updated.product_id == new_product.id
+
+    @pytest.mark.parametrize(
+        ("new_seats", "immediate"),
+        [
+            pytest.param(100, True, id="seat-increase"),
+            pytest.param(60, False, id="seat-decrease"),
+        ],
+    )
+    async def test_seat_change(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        new_seats: int,
+        immediate: bool,
+    ) -> None:
+        order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=99900,
+            tiers=GRADUATED_SEAT_TIERS,
+            seat_tier_type=SeatTierType.graduated,
+        )
+
+        with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
+            subscription = await create_subscription_with_seats(
+                save_fixture, product=product, customer=customer, seats=80
+            )
+            frozen_time.move_to(datetime(2024, 1, 16, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=new_seats,
+                    proration_behavior=SubscriptionProrationBehavior.auto,
+                )
+            await session.flush()
+
+        pending = await SubscriptionUpdateRepository.from_session(
+            session
+        ).get_unapplied_by_subscription_id(subscription.id)
+
+        if immediate:
+            order_mock.assert_awaited_once_with(session, subscription)
+            assert updated.seats == new_seats
+            assert pending is None
+        else:
+            order_mock.assert_not_awaited()
+            assert updated.seats == 80
+            assert pending is not None
+            assert pending.seats == new_seats

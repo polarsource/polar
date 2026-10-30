@@ -178,6 +178,77 @@ def next_cycle_bounds(start: datetime, product: Product) -> tuple[datetime, date
     return start, end
 
 
+def _static_amount(prices: list[ProductPrice], subscription: Subscription) -> int:
+    return sum(
+        base_amount
+        for _, base_amount in _collect_proratable_amounts(
+            prices, seats=subscription.seats, units=subscription.units
+        )
+    )
+
+
+def _is_product_upgrade(subscription: Subscription, product: Product) -> bool:
+    assert is_recurring_product(product)
+    new_prices = PriceSet.from_product(product, subscription.currency)
+
+    if (
+        any(is_seat_price(p) for p in new_prices)
+        and not any(is_seat_price(p) for p in subscription.prices)
+    ) or (
+        any(is_unit_price(p) for p in new_prices)
+        and not any(is_unit_price(p) for p in subscription.prices)
+    ):
+        return True
+
+    start = subscription.current_period_start
+    current_end = subscription.recurring_interval.get_next_period(
+        start, start.day, subscription.recurring_interval_count
+    )
+    new_end = product.recurring_interval.get_next_period(
+        start, start.day, product.recurring_interval_count
+    )
+    if new_end != current_end:
+        return new_end > current_end
+
+    current_amount = _static_amount(
+        PriceSet.from_prices(
+            subscription.prices, subscription.currency
+        ).get_static_prices(),
+        subscription,
+    )
+    new_amount = _static_amount(new_prices.get_static_prices(), subscription)
+    return new_amount >= current_amount
+
+
+def resolve_auto_proration_behavior(
+    subscription: Subscription,
+    *,
+    product: Product | None = None,
+    seats: int | None = None,
+    units: int | None = None,
+) -> SubscriptionProrationBehavior:
+    """Resolve `auto` to `invoice` for upgrades and `next_period` for downgrades.
+
+    A product change is an upgrade when it lengthens the billing interval or, at
+    equal interval, doesn't lower the static amount. Switching to seat- or
+    unit-based pricing is always an upgrade, since it must apply immediately.
+    """
+    if product is not None:
+        is_upgrade = _is_product_upgrade(subscription, product)
+    elif seats is not None:
+        is_upgrade = seats > (subscription.seats or 1)
+    elif units is not None:
+        is_upgrade = units > (subscription.units or 1)
+    else:
+        raise NotImplementedError("Only product, seats and units updates are supported")
+
+    return (
+        SubscriptionProrationBehavior.invoice
+        if is_upgrade
+        else SubscriptionProrationBehavior.next_period
+    )
+
+
 def _generate_product_subscription_update(
     subscription_update: SubscriptionUpdate,
 ) -> tuple[SubscriptionUpdate, list[BillingEntry]]:

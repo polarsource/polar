@@ -54,6 +54,8 @@ export const CustomerSeatQuantityManager = ({
         return 'The seat update will be applied on your next billing cycle.'
       case 'reset':
         return "You'll be charged the full new amount immediately, and your billing period restarts today."
+      case 'auto':
+        return 'Adding seats is charged immediately, with a proration for the current period. Removing seats is applied on your next billing cycle.'
     }
   }, [prorationBehavior])
 

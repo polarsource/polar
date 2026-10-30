@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from sqlalchemy import Select, UnaryExpression, and_, asc, desc, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member, is_customer, is_member
 from polar.customer.repository import CustomerRepository
@@ -121,7 +122,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         if member_id is not None:
             statement = statement.where(BenefitGrant.member_id.in_(member_id))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CustomerBenefitGrantSortProperty.granted_at:
@@ -245,7 +246,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
     def _get_readable_benefit_grant_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[BenefitGrant]]:
+    ) -> Select[BenefitGrant]:
         statement = (
             select(BenefitGrant)
             .join(Benefit, onclause=Benefit.id == BenefitGrant.benefit_id)

@@ -66,9 +66,7 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_catalog_baseline_statement(
-        self, organization_id: UUID
-    ) -> Select[tuple[Product]]:
+    def get_catalog_baseline_statement(self, organization_id: UUID) -> Select[Product]:
         return self.get_base_statement().where(
             Product.organization_id == organization_id,
             Product.external_id.is_not(None),
@@ -148,7 +146,7 @@ class ProductRepository(
 
     def get_latest_by_external_ids_statement(
         self, organization_id: UUID, external_ids: Sequence[str]
-    ) -> Select[tuple[Product]]:
+    ) -> Select[Product]:
         """Select the most recent version of each product, current or not."""
         return (
             self.get_base_statement()
@@ -161,9 +159,7 @@ class ProductRepository(
             .options(undefer(Product.external_id))
         )
 
-    def get_organization_statement(
-        self, organization_id: UUID
-    ) -> Select[tuple[Product]]:
+    def get_organization_statement(self, organization_id: UUID) -> Select[Product]:
         return (
             self.get_base_statement()
             .where(
@@ -273,7 +269,7 @@ class ProductRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Product]]:
+    ) -> Select[Product]:
         statement = self.get_base_statement()
         statement = statement.where(Product.organization_id.in_(org_ids))
         return statement
@@ -388,7 +384,7 @@ class ProductPriceRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[ProductPrice]]:
+    ) -> Select[ProductPrice]:
         return (
             self.get_base_statement()
             .join(Product, Product.id == ProductPrice.product_id)

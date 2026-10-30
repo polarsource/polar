@@ -181,5 +181,5 @@ class MemberRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Member]]:
+    ) -> Select[Member]:
         return self.get_base_statement().where(Member.organization_id.in_(org_ids))

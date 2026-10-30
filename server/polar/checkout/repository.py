@@ -157,7 +157,7 @@ class CheckoutRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Checkout]]:
+    ) -> Select[Checkout]:
         return self.get_base_statement().where(Checkout.organization_id.in_(org_ids))
 
     def get_eager_options(self) -> Options:

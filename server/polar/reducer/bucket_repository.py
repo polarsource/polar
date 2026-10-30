@@ -79,7 +79,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         bucket_end: datetime,
         customer_id: UUID | None,
         external_customer_id: str | None,
-    ) -> Row[Any]:
+    ) -> Row[Any, Any, Any, Any]:
         """count, sum, min and max of the customer identity's events for the
         reducer in the range, ingested after its latest sealed bucket: system events
         for a credit reducer, user events otherwise."""
@@ -114,7 +114,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         bucket_end: datetime,
         customer_id: UUID | None,
         external_customer_id: str | None,
-    ) -> Select[Any]:
+    ) -> Select[*tuple[Any, ...]]:
         sealed_at = (
             select(func.max(ReducerBucket.sealed_at))
             .where(
@@ -203,7 +203,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         identities: Sequence[tuple[UUID | None, str | None]],
         *,
         before: datetime | None = None,
-    ) -> Row[Any]:
+    ) -> Row[Any, Any, Any, Any]:
         """count, sum, min and max of the identities' unsealed buckets, starting
         before `before` if given."""
         return await self._get_totals(
@@ -221,7 +221,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         identities: Sequence[tuple[UUID | None, str | None]],
         start: datetime | None,
         end: datetime,
-    ) -> Row[Any]:
+    ) -> Row[Any, Any, Any, Any]:
         """count, sum, min and max of the identities' buckets of every generation
         starting in [start, end)."""
         clauses = [ReducerBucket.bucket_start < end]
@@ -235,7 +235,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         reducer_id: UUID,
         identities: Sequence[tuple[UUID | None, str | None]],
         *clauses: ColumnElement[bool],
-    ) -> Row[Any]:
+    ) -> Row[Any, Any, Any, Any]:
         statement = select(
             func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
             func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),

@@ -386,7 +386,7 @@ class OrganizationRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Organization]]:
+    ) -> Select[Organization]:
         return self.get_base_statement().where(
             Organization.id.in_(org_ids),
             Organization.status != OrganizationStatus.BLOCKED,

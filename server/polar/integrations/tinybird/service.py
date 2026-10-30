@@ -504,7 +504,7 @@ def _finite(value: Any, default: float = 0.0) -> float:
     return result if math.isfinite(result) else default
 
 
-def _compile(statement: Select[Any]) -> tuple[str, dict[str, Any]]:
+def _compile(statement: Select[*tuple[Any, ...]]) -> tuple[str, dict[str, Any]]:
     compiled = statement.compile(
         dialect=clickhouse_dialect, compile_kwargs={"render_postcompile": True}
     )

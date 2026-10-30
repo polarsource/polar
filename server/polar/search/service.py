@@ -71,7 +71,7 @@ class SearchService:
             Organization.id.in_(select_accessible_org_ids(auth_subject)),
         )
 
-        subqueries: list[Select[Any]] = []
+        subqueries: list[Select[*tuple[Any, ...]]] = []
         if self._has_products_scope(auth_subject):
             products_subquery = self._build_products_subquery(
                 organization_subquery, query_uuid, ts_query_english
@@ -118,10 +118,10 @@ class SearchService:
 
     def _build_products_subquery(
         self,
-        organization_subquery: Select[tuple[uuid.UUID]],
+        organization_subquery: Select[uuid.UUID],
         query_uuid: uuid.UUID | None,
         ts_query_english: ColumnElement[Any],
-    ) -> Select[Any]:
+    ) -> Select[*tuple[Any, ...]]:
         rank_expr = func.ts_rank(Product.search_vector, ts_query_english)
 
         stmt = select(
@@ -151,11 +151,11 @@ class SearchService:
 
     def _build_customers_subquery(
         self,
-        organization_subquery: Select[tuple[uuid.UUID]],
+        organization_subquery: Select[uuid.UUID],
         query_uuid: uuid.UUID | None,
         ts_query_simple: ColumnElement[Any],
         query: str,
-    ) -> Select[Any]:
+    ) -> Select[*tuple[Any, ...]]:
         rank_expr = func.ts_rank(Customer.search_vector, ts_query_simple)
 
         stmt = select(
@@ -190,12 +190,12 @@ class SearchService:
 
     def _build_orders_subquery(
         self,
-        organization_subquery: Select[tuple[uuid.UUID]],
+        organization_subquery: Select[uuid.UUID],
         query_uuid: uuid.UUID | None,
         ts_query_simple: ColumnElement[Any],
         ts_query_english: ColumnElement[Any],
         query: str,
-    ) -> Select[Any]:
+    ) -> Select[*tuple[Any, ...]]:
         rank_expr = func.greatest(
             func.ts_rank(Order.search_vector, ts_query_simple),
             func.ts_rank(Customer.search_vector, ts_query_simple),
@@ -241,12 +241,12 @@ class SearchService:
 
     def _build_subscriptions_subquery(
         self,
-        organization_subquery: Select[tuple[uuid.UUID]],
+        organization_subquery: Select[uuid.UUID],
         query_uuid: uuid.UUID | None,
         ts_query_simple: ColumnElement[Any],
         ts_query_english: ColumnElement[Any],
         query: str,
-    ) -> Select[Any]:
+    ) -> Select[*tuple[Any, ...]]:
         rank_expr = func.greatest(
             func.ts_rank(Customer.search_vector, ts_query_simple),
             func.ts_rank(Product.search_vector, ts_query_english),

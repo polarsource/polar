@@ -349,7 +349,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[CustomerSeat]]:
+    ) -> Select[CustomerSeat]:
         """
         Get a statement filtered by organization IDs.
 
@@ -446,7 +446,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     def get_claimed_by_product_via_subscriptions(
         self, product_id: UUID
-    ) -> Select[tuple[CustomerSeat]]:
+    ) -> Select[CustomerSeat]:
         """Get statement for claimed seats linked to a product via active subscriptions."""
         return (
             select(CustomerSeat)
@@ -462,7 +462,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     def get_claimed_by_product_via_orders(
         self, product_id: UUID
-    ) -> Select[tuple[CustomerSeat]]:
+    ) -> Select[CustomerSeat]:
         """Get statement for claimed seats linked to a product via orders."""
         return (
             select(CustomerSeat)

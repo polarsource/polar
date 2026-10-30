@@ -1,9 +1,11 @@
 from collections.abc import Sequence
 from datetime import date, timedelta
+from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, case, func, select, tuple_
+from sqlalchemy import Select, UnaryExpression, case, func, select, tuple_
 from sqlalchemy.dialects.postgresql import aggregate_order_by
+from sqlalchemy.sql.elements import OrderByList
 from sqlalchemy.sql.expression import asc, desc
 
 from polar.kit.repository import RepositoryBase
@@ -37,7 +39,7 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
         start_date: date | None = None,
         end_date: date | None = None,
         sorting: list[Sorting[TaxJurisdictionSortProperty]],
-    ) -> Select[tuple[str, str | None, str, int, int]]:
+    ) -> Select[str, str | None, str, int, int]:
         # Only US and Canada are reported at the state level; everywhere else is
         # aggregated to the country. Transactions already store `tax_state` as
         # NULL outside US/CA (see transaction.service.payment), but we guard
@@ -86,7 +88,7 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
                 Transaction.created_at < end_date + timedelta(days=1)
             )
 
-        order_by_clauses = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == TaxJurisdictionSortProperty.tax_amount:
@@ -105,7 +107,7 @@ class TaxJurisdictionRepository(RepositoryBase[Transaction]):
         *,
         start_date: date | None = None,
         end_date: date | None = None,
-    ) -> Select[tuple[str | None, int, int, int]]:
+    ) -> Select[str | None, int, int, int]:
         # Aggregate the per-jurisdiction breakdown into a single net total so
         # the summary reflects the full filtered dataset rather than whatever
         # page the breakdown is currently showing.

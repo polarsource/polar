@@ -578,7 +578,7 @@ class CustomerMeterService:
         cutoff: datetime | None = None,
         *,
         include_system_events: bool = True,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         """Build statement for events by customer_id or external_id (no LIMIT)."""
         statement = event_repository.get_base_statement().where(
             Event.organization_id == meter.organization_id,
@@ -623,7 +623,7 @@ class CustomerMeterService:
         by_external_id: bool = False,
         ingested_at_lower_bound: datetime | None = None,
         cutoff: datetime | None = None,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         """Build a LIMIT 1 statement for getting the latest event."""
         statement = self._build_events_statement(
             event_repository,

@@ -9,6 +9,7 @@ from sqlalchemy import (
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    NotNullable,
     Select,
     String,
     and_,
@@ -56,7 +57,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         statement = self.get_base_statement()
         statement = statement.where(Event.organization_id.in_(org_ids))
         return statement
@@ -379,7 +380,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         or still staged."""
         statement = union_all(
             *(
-                select(model.external_id).where(
+                select(NotNullable(model.external_id)).where(
                     model.organization_id == organization_id,
                     model.external_id.in_(external_ids),
                     model.timestamp >= timestamp_from,
@@ -499,7 +500,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.user_metadata["meter_id"].as_string() == str(meter.id),
         )
 
-    def get_meter_statement(self, meter: Meter) -> Select[tuple[Event]]:
+    def get_meter_statement(self, meter: Meter) -> Select[Event]:
         return self.get_base_statement().where(
             Event.organization_id == meter.organization_id,
             self.get_meter_clause(meter),
@@ -597,7 +598,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         price: UUID,
         *,
         cutoff: datetime,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
@@ -668,7 +669,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         meter: UUID,
         *,
         cutoff: datetime,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         """
         Get events for pending billing entries grouped by meter.
         Used for non-summable aggregations where we need to compute across all events

@@ -82,7 +82,7 @@ class WebhookEventRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[WebhookEvent]]:
+    ) -> Select[WebhookEvent]:
         return (
             self.get_base_statement()
             .join(
@@ -182,12 +182,14 @@ class WebhookDeliveryRepository(
             .where(WebhookDelivery.id.in_(ids))
             .values(response=None)
         )
-        result = cast(CursorResult[Any], await self.session.execute(statement))
+        result = cast(
+            CursorResult[*tuple[Any, ...]], await self.session.execute(statement)
+        )
         return result.rowcount
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[WebhookDelivery]]:
+    ) -> Select[WebhookDelivery]:
         return (
             self.get_base_statement()
             .join(
@@ -208,7 +210,7 @@ class WebhookEndpointRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[WebhookEndpoint]]:
+    ) -> Select[WebhookEndpoint]:
         return self.get_base_statement().where(
             WebhookEndpoint.organization_id.in_(org_ids)
         )

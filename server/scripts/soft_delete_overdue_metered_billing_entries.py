@@ -45,7 +45,7 @@ cli = typer.Typer()
 console = Console()
 
 
-def candidate_statement(cutoff: datetime) -> Select[tuple[UUID]]:
+def candidate_statement(cutoff: datetime) -> Select[UUID]:
     active_price = (
         select(SubscriptionProductPrice.id)
         .where(
@@ -107,7 +107,7 @@ async def soft_delete_batch(
         .values(deleted_at=func.now())
         .execution_options(synchronize_session=False)
     )
-    return cast(CursorResult[Any], result).rowcount
+    return cast(CursorResult[*tuple[Any, ...]], result).rowcount
 
 
 @cli.command()

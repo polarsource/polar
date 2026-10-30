@@ -21,6 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -133,7 +134,7 @@ class MeterService:
         if metadata is not None:
             statement = apply_metadata_clause(Meter, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == MeterSortProperty.created_at:
@@ -750,7 +751,7 @@ class MeterService:
         self,
         session: AsyncSession,
         meter: Meter,
-        events_statement: Select[tuple[Event]],
+        events_statement: Select[Event],
     ) -> float:
         statement = (
             events_statement.where(meter.aggregation.get_sql_clause(Event))

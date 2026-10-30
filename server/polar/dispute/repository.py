@@ -135,7 +135,7 @@ class DisputeRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Dispute]]:
+    ) -> Select[Dispute]:
         return (
             self.get_base_statement()
             .join(Dispute.payment)

@@ -26,7 +26,7 @@ cli = typer.Typer()
 configure_script_logging()
 
 
-def _pairs() -> Select[tuple[UUID, str]]:
+def _pairs() -> Select[UUID, str]:
     return (
         select(
             Benefit.organization_id,

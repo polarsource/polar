@@ -36,7 +36,7 @@ class TestPaginateHasMore:
     )
     async def test_join_matching_several_rows_per_entity(
         self,
-        build_statement: Callable[[], Select[Any]],
+        build_statement: Callable[[], Select[*tuple[Any, ...]]],
         save_fixture: SaveFixture,
         session: AsyncSession,
     ) -> None:

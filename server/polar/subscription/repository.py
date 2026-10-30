@@ -92,7 +92,7 @@ class SubscriptionRepository(
         *,
         exclude_product_id: UUID,
         after_id: UUID | None = None,
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         """Active subscriptions of any version of a product that a bulk update can
         move: not canceling, and without a pending change."""
         statement = (
@@ -196,7 +196,7 @@ class SubscriptionRepository(
 
     def get_billable_by_organization_statement(
         self, organization_id: UUID, *, options: Options = ()
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         return (
             self.get_base_statement()
             .where(
@@ -423,7 +423,7 @@ class SubscriptionRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         statement = self.get_base_statement()
 
         if is_user(auth_subject):
@@ -455,7 +455,7 @@ class SubscriptionRepository(
 
     def get_claimed_subscriptions_statement(
         self, auth_subject: AuthSubject[AuthCustomer | Member]
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         """Get subscriptions where the customer has a claimed seat."""
         statement = self.get_base_statement().join(
             CustomerSeat, CustomerSeat.subscription_id == Subscription.id
@@ -944,7 +944,7 @@ class SubscriptionBulkUpdateRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[SubscriptionBulkUpdate]]:
+    ) -> Select[SubscriptionBulkUpdate]:
         statement = self.get_base_statement()
         if is_user(auth_subject):
             statement = statement.where(

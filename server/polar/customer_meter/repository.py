@@ -136,7 +136,7 @@ class CustomerMeterRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[CustomerMeter]]:
+    ) -> Select[CustomerMeter]:
         return (
             self.get_base_statement()
             .join(CustomerMeter.customer)

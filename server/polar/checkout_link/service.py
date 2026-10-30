@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -80,7 +81,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 CheckoutLink.checkout_link_products
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CheckoutLinkSortProperty.created_at:

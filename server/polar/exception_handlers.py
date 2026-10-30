@@ -1,6 +1,7 @@
+from typing import overload
 from urllib.parse import urlencode
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.requests import HTTPConnection
@@ -14,15 +15,35 @@ from polar.exceptions import (
 )
 
 
+@overload
+async def polar_exception_handler(
+    connection: Request, exc: Exception
+) -> JSONResponse: ...
+
+
+@overload
+async def polar_exception_handler(connection: WebSocket, exc: Exception) -> None: ...
+
+
+@overload
 async def polar_exception_handler(
     connection: HTTPConnection, exc: Exception
-) -> JSONResponse:
+) -> JSONResponse | None: ...
+
+
+async def polar_exception_handler(
+    connection: HTTPConnection, exc: Exception
+) -> JSONResponse | None:
     assert isinstance(exc, PolarError)
-    return JSONResponse(
+    response = JSONResponse(
         status_code=exc.status_code,
         content={"error": type(exc).__name__, "detail": jsonable_encoder(exc.detail)},
         headers=exc.headers,
     )
+    if isinstance(connection, WebSocket):
+        await connection.send_denial_response(response)
+        return None
+    return response
 
 
 async def request_validation_exception_handler(

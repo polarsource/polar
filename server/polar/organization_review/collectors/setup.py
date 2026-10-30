@@ -53,6 +53,13 @@ def same_registrable_domain(host_a: str, host_b: str) -> bool:
     return a == b or a.endswith("." + b) or b.endswith("." + a)
 
 
+def is_same_or_subdomain(host: str, domain: str) -> bool:
+    """Whether `host` is `domain` or one of its subdomains, ignoring `www.` and ports."""
+    host = (urlparse(f"//{host}").hostname or "").removeprefix("www.")
+    domain = domain.lower().removeprefix("www.")
+    return bool(host) and (host == domain or host.endswith("." + domain))
+
+
 def _is_cross_domain(original_url: str, final_url: str) -> bool:
     """Return True if two URLs' hosts don't share a registrable domain.
 

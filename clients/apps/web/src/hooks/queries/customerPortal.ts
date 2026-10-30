@@ -127,24 +127,39 @@ export const useCustomerPortalSessionRequest = (
     mutationFn: async ({
       email,
       customer_id,
+      turnstileToken,
     }: {
       email: string
       customer_id?: string
-    }) =>
-      api.POST('/v1/customer-portal/customer-session/request', {
-        body: {
-          email,
-          organization_id: organizationId,
-          ...(customer_id && { customer_id }),
+      turnstileToken: string
+    }) => {
+      const start = await api.POST(
+        '/v1/customer-portal/customer-session/start',
+        {
+          body: { organization_id: organizationId },
         },
-      }),
+      )
+      if (start.error) {
+        return start
+      }
+      return api.POST(
+        '/v1/customer-portal/customer-session/email-otp/request',
+        {
+          body: {
+            email,
+            ...(customer_id && { customer_id }),
+            'cf-turnstile-response': turnstileToken,
+          },
+        },
+      )
+    },
   })
 
 export const useCustomerPortalSessionAuthenticate = (api: Client) =>
   useMutation({
     mutationFn: ({ code }: { code: string }) =>
       api
-        .POST('/v1/customer-portal/customer-session/authenticate', {
+        .POST('/v1/customer-portal/customer-session/email-otp/verify', {
           body: { code },
         })
         .then((res) => {
@@ -153,6 +168,21 @@ export const useCustomerPortalSessionAuthenticate = (api: Client) =>
               data: undefined,
               error: {
                 detail: 'Too many attempts. Please try again in 15 minutes.',
+              },
+              response: res.response,
+            }
+          }
+
+          if (
+            res.error &&
+            'error' in res.error &&
+            res.error.error === 'InvalidAuthenticationSession'
+          ) {
+            return {
+              data: undefined,
+              error: {
+                detail:
+                  'This code has expired or was requested from another browser. Please request a new one.',
               },
               response: res.response,
             }

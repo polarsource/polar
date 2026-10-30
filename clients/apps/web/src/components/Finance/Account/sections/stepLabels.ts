@@ -42,7 +42,7 @@ export const STEP_ACTION_LABELS: Partial<
     passed: 'View',
   },
   product_description: { pending: 'Write' },
-  product_url: { pending: 'Add' },
+  product_url: { pending: 'Add', warning: 'Verify' },
   payout_account: { pending: 'Connect', passed: 'Manage' },
   product_configuration: { pending: 'Create', passed: 'View' },
   setup_readiness: { pending: 'Set up', passed: 'View' },

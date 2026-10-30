@@ -7,6 +7,7 @@ import {
   trace,
   type Attributes,
   type Counter,
+  type Gauge,
   type Histogram,
   type Span,
   type Tracer,
@@ -25,6 +26,7 @@ import {
   reduce,
   withMatchers,
   getBucketStart,
+  BUCKET_SIZE,
   type Aggregation,
   type Reducer,
   type ReducerMatchers,
@@ -98,7 +100,11 @@ interface Confirmation {
   snapshot: Snapshot;
   customer: string;
   identity: string;
+  started: number;
+  age: number;
+  superseded: boolean;
   awaited: number;
+  messages: number;
   asked: number;
   confirmed: Map<number, string[]>;
   timer?: ReturnType<typeof setTimeout>;
@@ -345,6 +351,8 @@ export class Outpost {
   private ingestDuration?: Histogram;
   private ingestBuckets?: Counter;
   private readDuration?: Histogram;
+  private redisMemory?: Gauge;
+  private redisKeys?: Gauge;
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
@@ -400,6 +408,8 @@ export class Outpost {
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
       this.readDuration = meter.createHistogram("outpost.read.duration", { unit: "s" });
+      this.redisMemory = meter.createGauge("outpost.redis.memory", { unit: "By" });
+      this.redisKeys = meter.createGauge("outpost.redis.keys");
     }
     try {
       this.redis = new Redis(this.redisUrl, {
@@ -471,6 +481,7 @@ export class Outpost {
       await this.connectWebsocket();
       this.refreshTimer = setInterval(() => {
         this.reportSync();
+        void this.reportRedisSize();
         if (this.synchronizing) return;
         void this.synchronize();
       }, SYNC_INTERVAL);
@@ -526,6 +537,8 @@ export class Outpost {
     this.ingestDuration = undefined;
     this.ingestBuckets = undefined;
     this.readDuration = undefined;
+    this.redisMemory = undefined;
+    this.redisKeys = undefined;
     await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
   }
 
@@ -930,6 +943,20 @@ export class Outpost {
     this.syncApplied = 0;
   }
 
+  // Includes whatever else the merchant keeps in that Redis.
+  private async reportRedisSize(): Promise<void> {
+    const redis = this.redis;
+    if (!this.redisMemory || !this.redisKeys || redis?.status !== "ready") return;
+    try {
+      const [memory, keys] = await Promise.all([redis.info("memory"), redis.dbsize()]);
+      const used = /^used_memory:(\d+)/m.exec(memory);
+      if (used) this.redisMemory?.record(Number(used[1]));
+      this.redisKeys?.record(keys);
+    } catch {
+      // A Redis that refuses INFO or DBSIZE reports nothing.
+    }
+  }
+
   private synchronize(): Promise<void> {
     if (this.synchronizing) return this.synchronizing;
     const generation = this.generation;
@@ -1112,6 +1139,7 @@ export class Outpost {
     customer: string,
     snapshot: Snapshot,
   ): Promise<boolean> {
+    const started = performance.now();
     const superseded = this.confirmations.get(identity);
     if (superseded) {
       clearTimeout(superseded.timer);
@@ -1126,7 +1154,12 @@ export class Outpost {
       snapshot,
       customer,
       identity,
+      started,
+      // Seconds since the oldest bucket asked ended.
+      age: (Date.now() * 1_000 - Math.min(...sealed) - BUCKET_SIZE) / 1_000_000,
+      superseded: superseded !== undefined,
       awaited: 0,
+      messages: 0,
       asked: 0,
       confirmed: new Map(),
     };
@@ -1150,6 +1183,7 @@ export class Outpost {
           return false;
         }
         confirmation.awaited += 1;
+        confirmation.messages += 1;
         confirmation.asked += batch.length;
       }
     }
@@ -1184,6 +1218,7 @@ export class Outpost {
     confirmation?: Confirmation,
     answered = false,
   ): Promise<void> {
+    const confirmDuration = confirmation && (performance.now() - confirmation.started) / 1_000;
     const key = `${KEY_VERSION}:state:${identity}`;
     const snapshotArguments: (string | number)[] = [
       identity,
@@ -1231,6 +1266,10 @@ export class Outpost {
             "outpost.pending.asked": confirmation.asked,
             "outpost.pending.confirmed": confirmed.reduce((sum, [, ids]) => sum + ids.length, 0),
             "outpost.pending.answered": answered,
+            "outpost.pending.messages": confirmation.messages,
+            "outpost.pending.age": confirmation.age,
+            "outpost.pending.superseded": confirmation.superseded,
+            "outpost.confirm.duration": confirmDuration,
           });
         }
         await this.receiveState(identity, decodeState(state));

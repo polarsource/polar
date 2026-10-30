@@ -9,6 +9,7 @@ import {
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
 import { output } from '@/utils/command'
+import { banner } from '@/utils/logo'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
@@ -131,7 +132,10 @@ export const polar = Command.make('polar', {}).pipe(
       Effect.map(session, (session): Home => ({ version: VERSION, session })),
     render: ({ version, session }) => [
       ui.blank,
-      `  ${ui.bold('Polar CLI')} ${ui.dim(version)}`,
+      ...banner([
+        `${ui.bold('Polar CLI')} ${ui.dim(version)}`,
+        ui.dim('Polar from your terminal'),
+      ]),
       ui.blank,
       ...sessionLines(session),
       ui.blank,

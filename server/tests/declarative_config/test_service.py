@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.repository import BenefitRepository
 from polar.catalog.repository import (
@@ -3233,7 +3234,7 @@ class TestBenefitVersioning:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        mocker.patch("polar.benefit.grant.service.enqueue_job")
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
         license_benefit = {
             "type": "license_keys",
             "external_id": "license",
@@ -3309,9 +3310,22 @@ class TestBenefitVersioning:
         await benefit_grant_service.enqueue_benefits_grants(
             session, "grant", customer, new_pro, subscription=subscription
         )
-        await session.refresh(grant)
+        enqueue_job_mock.assert_any_call("benefit.update", benefit_grant_id=grant.id)
+
+        grant_repository = BenefitGrantRepository.from_session(session)
+        repointed_grant = await grant_repository.get_by_id(
+            grant.id, options=grant_repository.get_eager_options()
+        )
+        assert repointed_grant is not None
+        await benefit_grant_service.update_benefit_grant(
+            session, redis, repointed_grant
+        )
         await session.refresh(license_key)
-        assert (grant.benefit_id, license_key.benefit_id) == (current.id, current.id)
+        assert (repointed_grant.benefit_id, license_key.benefit_id) == (
+            current.id,
+            current.id,
+        )
+        assert (license_key.key, license_key.limit_activations) == ("KEY", 5)
 
         exported = await declarative_config_service.export(session, auth_subject, None)
         [benefit] = exported.config.benefits

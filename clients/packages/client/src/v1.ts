@@ -32254,11 +32254,8 @@ export interface components {
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
       allow_multiple_subscriptions: boolean
-      /**
-       * PublicSubscriptionProrationBehavior
-       * @enum {string}
-       */
-      proration_behavior: 'invoice' | 'prorate' | 'next_period' | 'auto'
+      /** Proration Behavior */
+      proration_behavior: ('invoice' | 'prorate' | 'next_period') | 'auto'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
       /** Prevent Trial Abuse */
@@ -75061,9 +75058,9 @@ export const organizationStatusValues: ReadonlyArray<
   'offboarding',
   'offboarded',
 ]
-export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
+export const organizationSubscriptionSettingsProration_behaviorAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
-> = ['invoice', 'prorate', 'next_period', 'auto']
+> = ['invoice', 'prorate', 'next_period']
 export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationUpdate']['country']
 > = [

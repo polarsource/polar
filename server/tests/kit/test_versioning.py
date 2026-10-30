@@ -19,7 +19,6 @@ from pydantic import (
 from polar.kit.versioning import (
     APIVersion,
     Version,
-    VersionedValue,
     add_versioned_routers,
     api_version_context,
     prune_version_omitted_schemas,
@@ -165,31 +164,6 @@ def test_versioned_fields_are_included_in_versioned_openapi_schema() -> None:
         == "Only available in the next API version."
     )
     assert set(next_product["required"]) == {"name", "shared_field", "next_field"}
-
-
-class VersionedPlan(BaseModel):
-    interval: (
-        Annotated[
-            Literal["month", "week"], VersionedValue("week", starting_from=NEXT_VERSION)
-        ]
-        | None
-    )
-
-
-def test_versioned_values_are_omitted_from_earlier_openapi_schema() -> None:
-    with api_version_context(CURRENT_VERSION):
-        current_schema = VersionedPlan.model_json_schema()
-    assert current_schema["properties"]["interval"]["anyOf"] == [
-        {"type": "string", "enum": ["month"]},
-        {"type": "null"},
-    ]
-
-    with api_version_context(NEXT_VERSION):
-        next_schema = VersionedPlan.model_json_schema()
-    assert next_schema["properties"]["interval"]["anyOf"][0]["enum"] == [
-        "month",
-        "week",
-    ]
 
 
 @pytest.mark.parametrize("api_version", [CURRENT_VERSION, NEXT_VERSION])

@@ -31,7 +31,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version, VersionedValue
+from polar.kit.versioning import Version
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -441,10 +441,7 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     avatar_url: str | None = Field(
         description="Avatar URL shown in checkout, customer portal, emails etc."
     )
-    proration_behavior: Annotated[
-        ProrationBehaviorSetting,
-        VersionedValue("auto", starting_from=V2027_01),
-    ] = Field(
+    proration_behavior: ProrationBehaviorSetting = Field(
         description="Proration behavior applied when customer updates their subscription from the portal.",
     )
     allow_customer_updates: bool = Field(

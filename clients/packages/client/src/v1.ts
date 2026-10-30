@@ -46193,6 +46193,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */
@@ -46301,6 +46303,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by subscription status. */
         status?:
           | components['schemas']['SubscriptionStatus']

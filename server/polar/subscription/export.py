@@ -10,7 +10,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
-from polar.models import Subscription
+from polar.models import Product, Subscription
 from polar.models.subscription import SubscriptionStatus
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
@@ -161,6 +161,7 @@ async def generate_csv(
     *,
     organization_id: Sequence[OrganizationID] | None,
     product_id: Sequence[ProductID] | None,
+    external_product_id: Sequence[str] | None = None,
     status: Sequence[SubscriptionStatus] | None,
     cancel_at_period_end: bool | None,
     started_after: datetime | None,
@@ -189,6 +190,10 @@ async def generate_csv(
         statement = statement.where(Subscription.organization_id.in_(organization_id))
     if product_id is not None:
         statement = statement.where(Subscription.product_id.in_(product_id))
+    if external_product_id is not None:
+        statement = statement.where(
+            Subscription.product.has(Product.external_id.in_(external_product_id))
+        )
     if status is not None:
         statement = statement.where(Subscription.status.in_(status))
     if cancel_at_period_end is not None:

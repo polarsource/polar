@@ -9,6 +9,10 @@ import dns.resolver
 import structlog
 from sqlalchemy.exc import IntegrityError
 
+from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
+from polar.config import settings
+from polar.email.schemas import DomainVerificationLostEmail, DomainVerificationLostProps
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
@@ -16,6 +20,9 @@ from polar.logging import Logger
 from polar.models import Organization, OrganizationDomain
 from polar.organization.embed_hosts import WILDCARD_PREFIX, is_shared_host
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .repository import OrganizationDomainRepository
 from .schemas import OrganizationDomainCreate
@@ -200,7 +207,40 @@ class OrganizationDomainService:
                         "verification_lost_at": utc_now(),
                     },
                 )
+                await self._send_lost_email(session, organization, organization_domain)
         return organization_domains
+
+    async def _send_lost_email(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_domain: OrganizationDomain,
+    ) -> None:
+        assert organization_domain.verification_record_value is not None
+        settings_url = settings.generate_frontend_url(
+            f"/dashboard/{organization.slug}/settings#domains"
+        )
+        members = await user_organization_service.list_by_org(session, organization.id)
+        for member in members:
+            if (
+                OrganizationPermission.organization_manage
+                not in ROLE_PERMISSIONS[member.role]
+            ):
+                continue
+            enqueue_email_template(
+                DomainVerificationLostEmail(
+                    props=DomainVerificationLostProps(
+                        email=member.user.email,
+                        domain=organization_domain.domain,
+                        organization_name=organization.name,
+                        settings_url=settings_url,
+                        record_name=organization_domain.verification_record_name,
+                        record_value=organization_domain.verification_record_value,
+                    )
+                ),
+                to_email_addr=member.user.email,
+                subject=f"{organization_domain.domain} is no longer verified",
+            )
 
 
 organization_domain = OrganizationDomainService()

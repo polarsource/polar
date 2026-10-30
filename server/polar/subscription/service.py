@@ -159,7 +159,11 @@ from .schemas import (
     SubscriptionUpdateUnits,
 )
 from .sorting import SubscriptionSortProperty
-from .update import generate_subscription_update, next_cycle_bounds
+from .update import (
+    generate_subscription_update,
+    next_cycle_bounds,
+    resolve_auto_proration_behavior,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -2158,6 +2162,10 @@ class SubscriptionService:
 
             if proration_behavior is None:
                 proration_behavior = organization.proration_behavior
+            if proration_behavior == SubscriptionProrationBehavior.auto:
+                proration_behavior = resolve_auto_proration_behavior(
+                    subscription, product=product
+                )
 
             is_initial_seat_transition = self._promote_seats_for_seat_transition(
                 subscription, currency_prices, proration_behavior, product_id
@@ -2561,6 +2569,10 @@ class SubscriptionService:
 
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
+        if proration_behavior == SubscriptionProrationBehavior.auto:
+            proration_behavior = resolve_auto_proration_behavior(
+                subscription, seats=seats
+            )
 
         old_seats = subscription.seats or 1
         old_amount = subscription.amount
@@ -2680,6 +2692,10 @@ class SubscriptionService:
 
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
+        if proration_behavior == SubscriptionProrationBehavior.auto:
+            proration_behavior = resolve_auto_proration_behavior(
+                subscription, units=units
+            )
 
         old_units = subscription.units or 1
         old_amount = subscription.amount
@@ -3498,6 +3514,13 @@ class SubscriptionService:
         assert organization is not None
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
+        if (
+            proration_behavior == SubscriptionProrationBehavior.auto
+            and product_id is None
+        ):
+            proration_behavior = resolve_auto_proration_behavior(
+                subscription, seats=seats, units=units
+            )
 
         product: Product | None = None
         if product_id is not None:
@@ -3507,6 +3530,10 @@ class SubscriptionService:
                 product_id=product_id,
                 allowed_visibilities=allowed_visibilities,
             )
+            if proration_behavior == SubscriptionProrationBehavior.auto:
+                proration_behavior = resolve_auto_proration_behavior(
+                    subscription, product=product
+                )
             self._promote_seats_for_seat_transition(
                 subscription, currency_prices, proration_behavior, product_id
             )

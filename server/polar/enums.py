@@ -108,6 +108,8 @@ class SubscriptionProrationBehavior(StrEnum):
     """Don't invoice immediately, but add prorations to the next invoice."""
     next_period = "next_period"
     """Don't invoice immediately, and don't add prorations. The new price will be applied at the start of the next period."""
+    auto = "auto"
+    """Apply upgrades immediately like `invoice`, and schedule downgrades for the next period like `next_period`."""
     reset = "reset"
     """
     Invoice the full amount of the new plan immediately and reset the billing cycle to now. No proration.
@@ -126,6 +128,7 @@ PublicSubscriptionProrationBehavior = Literal[
     SubscriptionProrationBehavior.invoice,
     SubscriptionProrationBehavior.prorate,
     SubscriptionProrationBehavior.next_period,
+    SubscriptionProrationBehavior.auto,
 ]
 
 

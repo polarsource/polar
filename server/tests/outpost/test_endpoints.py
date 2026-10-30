@@ -5,6 +5,7 @@ from decimal import Decimal
 import httpx
 import httpx_ws
 import pytest
+from fastapi import FastAPI
 from logfire._internal.forwarding import ForwardExportRequestResponse
 from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
     ExportMetricsServiceRequest,
@@ -15,6 +16,8 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
 from opentelemetry.proto.common.v1.common_pb2 import AnyValue
 from pytest_mock import MockerFixture
 
+from polar.auth.dependencies import _get_auth_subject_factory
+from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
@@ -41,15 +44,45 @@ from tests.fixtures.random_objects import (
 @pytest.mark.anyio
 @pytest.mark.websocket
 class TestOutpost:
-    async def test_anonymous(self, client: httpx.AsyncClient, meter: Meter) -> None:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="anonymous"),
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="customer"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_unauthorized_subject(self, client: httpx.AsyncClient) -> None:
         with pytest.raises(httpx_ws.WebSocketUpgradeError) as exc:
             async with httpx_ws.aconnect_ws("/v1/outpost/", client=client):
                 pass
         assert exc.value.response.status_code == 401
+        assert exc.value.response.json() == {
+            "error": "Unauthorized",
+            "detail": "Unauthorized",
+        }
+        assert exc.value.response.headers["WWW-Authenticate"].startswith("Bearer ")
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_connection(self, client: httpx.AsyncClient) -> None:
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.events_read})
+    )
+    async def test_insufficient_scope(self, client: httpx.AsyncClient) -> None:
+        with pytest.raises(httpx_ws.WebSocketUpgradeError) as exc:
+            async with httpx_ws.aconnect_ws("/v1/outpost/", client=client):
+                pass
+        assert exc.value.response.status_code == 403
+        assert exc.value.response.json()["error"] == "insufficient_scope"
+        assert 'scope="events:write"' in exc.value.response.headers["WWW-Authenticate"]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.events_write})
+    )
+    async def test_connection(self, app: FastAPI, client: httpx.AsyncClient) -> None:
+        app.dependency_overrides.pop(
+            _get_auth_subject_factory(frozenset({Organization}))
+        )
+        websocket: httpx_ws.AsyncWebSocketSession
+        async with httpx_ws.aconnect_ws(
+            "/v1/outpost/", client=client, headers={"Authorization": "Bearer test"}
+        ) as websocket:
             message = await websocket.receive_json()
 
             assert message["type"] == "connection"
@@ -781,6 +814,20 @@ class TestTelemetry:
         )
 
         assert response.status_code == 401
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.events_read})
+    )
+    async def test_insufficient_scope(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/telemetry",
+            content=_export_request().SerializeToString(),
+            headers={"Content-Type": "application/x-protobuf"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+        assert 'scope="events:write"' in response.headers["WWW-Authenticate"]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_invalid_body(self, client: httpx.AsyncClient) -> None:

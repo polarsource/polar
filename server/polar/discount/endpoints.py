@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Body, Depends, Path, Query
+from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
@@ -137,10 +137,8 @@ async def get(
 )
 async def create(
     auth_subject: auth.DiscountWrite,
-    # This is a workaround for FastAPI bug: https://github.com/fastapi/fastapi/discussions/12941
     discount_create: Annotated[
         legacy_schemas.DiscountCreate,
-        Body(...),
         SetSchemaReference("DiscountCreate"),
     ],
     session: AsyncSession = Depends(get_db_session),
@@ -160,10 +158,8 @@ async def create(
 @version(starting_from=V2027_01)
 async def create_v2027_01(
     auth_subject: auth.DiscountWrite,
-    # This is a workaround for FastAPI bug: https://github.com/fastapi/fastapi/discussions/12941
     discount_create: Annotated[
         DiscountCreate,
-        Body(...),
         SetSchemaReference("DiscountCreate"),
     ],
     session: AsyncSession = Depends(get_db_session),

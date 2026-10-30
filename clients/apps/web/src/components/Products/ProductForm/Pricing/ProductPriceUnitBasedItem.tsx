@@ -104,8 +104,8 @@ export const ProductPriceUnitBasedItem: React.FC<
               <SelectItem value="fixed">
                 Fixed price per {singularNoun}
               </SelectItem>
-              <SelectItem value="volume">Volume</SelectItem>
               <SelectItem value="graduated">Graduated</SelectItem>
+              <SelectItem value="volume">Volume</SelectItem>
             </SelectContent>
           </Select>
         </Box>

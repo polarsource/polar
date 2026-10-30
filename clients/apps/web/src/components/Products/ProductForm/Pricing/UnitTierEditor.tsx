@@ -53,7 +53,7 @@ export const UnitTierEditor: React.FC<UnitTierEditorProps> = ({
     const previousBound = Number(
       currentTiers?.[(currentTiers?.length ?? 0) - 2]?.bound ?? 0,
     )
-    const newBound = previousBound > 0 ? previousBound * 2 : 1000
+    const newBound = previousBound > 0 ? previousBound * 2 : 10
 
     if (currentTiers && currentTiers.length > 0 && lastTier?.bound == null) {
       setValue(

@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.exceptions import NotPermitted
 from polar.member_session.service import member_session as member_session_service
 from polar.models import Customer, Member, Organization
 from polar.models.member import MemberRole
@@ -38,6 +39,13 @@ def send_code(mocker: MockerFixture) -> MagicMock:
     )
 
 
+@pytest.fixture(autouse=True)
+def verify_turnstile(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "polar.customer_portal.auth.endpoints.verify_turnstile", autospec=True
+    )
+
+
 def sent_code(send_code: MagicMock) -> str:
     return send_code.call_args.args[2]
 
@@ -60,6 +68,7 @@ async def request_code(
         "/v1/customer-portal/customer-session/email-otp/request",
         json={
             "email": email,
+            "cf-turnstile-response": "turnstile-token",
             **({"customer_id": str(customer.id)} if customer else {}),
         },
     )
@@ -80,6 +89,23 @@ class TestEmailOTPRequest:
         response = await request_code(portal_client, "customer@example.com")
 
         assert response.status_code == 401
+
+    async def test_turnstile_failed(
+        self,
+        portal_client: httpx.AsyncClient,
+        organization: Organization,
+        member_owner: Member,
+        send_code: MagicMock,
+        verify_turnstile: MagicMock,
+    ) -> None:
+        verify_turnstile.side_effect = NotPermitted("Turnstile verification failed")
+        await start(portal_client, organization)
+
+        response = await request_code(portal_client, member_owner.email)
+
+        assert response.status_code == 403
+        assert verify_turnstile.call_args.args[0] == "turnstile-token"
+        send_code.assert_not_called()
 
     async def test_unknown_organization(
         self, portal_client: httpx.AsyncClient, send_code: MagicMock

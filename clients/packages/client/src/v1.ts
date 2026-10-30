@@ -21138,6 +21138,8 @@ export interface components {
        * @description Optional customer ID for disambiguation when multiple customers share the same email.
        */
       customer_id?: string | null
+      /** Cf-Turnstile-Response */
+      'cf-turnstile-response': string
     }
     /** CustomerSessionEmailOTPVerify */
     CustomerSessionEmailOTPVerify: {
@@ -57021,6 +57023,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Turnstile verification failed */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Multiple customers found for this email. */

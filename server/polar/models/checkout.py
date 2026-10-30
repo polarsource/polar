@@ -23,6 +23,7 @@ from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, Mapper, declared_attr, mapped_column, relationship
 
+from polar.checkout.payment_methods import get_payment_method_types, get_payment_mode
 from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import PaymentProcessor, TaxBehavior, TaxProcessor
@@ -402,6 +403,20 @@ class Checkout(
     @property
     def is_payment_form_required(self) -> bool:
         return self.is_payment_required or self.is_payment_setup_required
+
+    @property
+    def payment_method_types(self) -> list[str]:
+        return get_payment_method_types(
+            mode=get_payment_mode(
+                is_payment_required=self.is_payment_required,
+                is_payment_setup_required=self.is_payment_setup_required,
+            ),
+            country=self.customer_billing_address.country
+            if self.customer_billing_address
+            else None,
+            currency=self.currency,
+            amount=self.total_amount,
+        )
 
     @property
     def url(self) -> str:

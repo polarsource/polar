@@ -15769,6 +15769,11 @@ export interface components {
       attached_custom_fields:
         | components['schemas']['AttachedCustomField'][]
         | null
+      /**
+       * Payment Method Types
+       * @description Payment method types to offer in the payment form.
+       */
+      payment_method_types: string[]
     }
     /**
      * CheckoutPublicConfirmed
@@ -16043,6 +16048,11 @@ export interface components {
       attached_custom_fields:
         | components['schemas']['AttachedCustomField'][]
         | null
+      /**
+       * Payment Method Types
+       * @description Payment method types to offer in the payment form.
+       */
+      payment_method_types: string[]
       /** Customer Session Token */
       customer_session_token: string | null
     }

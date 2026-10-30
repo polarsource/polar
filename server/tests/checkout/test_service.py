@@ -5456,6 +5456,68 @@ class TestConfirm:
         assert len(updated_discount.discount_redemptions) == 1
         assert updated_discount.discount_redemptions[0].checkout_id == checkout.id
 
+    async def test_payment_method_types(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        params = stripe_service_mock.create_payment_intent.call_args.kwargs
+        assert params["payment_method_types"] == ["card", "link"]
+        assert "automatic_payment_methods" not in params
+
+    async def test_setup_intent_payment_method_types(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_discount_percentage_100: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_discount_percentage_100,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "BE"},
+                }
+            ),
+        )
+
+        params = stripe_service_mock.create_setup_intent.call_args.kwargs
+        assert params["payment_method_types"] == ["card", "link"]
+        assert "automatic_payment_methods" not in params
+
     async def test_valid_fully_discounted_forever_subscription(
         self,
         stripe_service_mock: MagicMock,

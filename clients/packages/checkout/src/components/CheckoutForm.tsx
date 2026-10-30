@@ -950,10 +950,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
       stripe={stripePromise}
       options={{
         ...elementsOptions,
-        excludedPaymentMethodTypes:
-          elementsOptions.mode === 'payment'
-            ? undefined
-            : ['bancontact', 'ideal', 'sepa_debit', 'sofort'],
+        paymentMethodTypes: checkout.payment_method_types,
         locale: locale ? convertLocaleToStripeElementLocale(locale) : undefined,
         customerSessionClientSecret: (
           checkout.payment_processor_metadata as {

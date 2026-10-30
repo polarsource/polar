@@ -90,11 +90,6 @@ const ProductsCommandGroup = ({
     </CommandGroup>
   )
 }
-const getProductValue = (
-  product: schemas['Product'],
-  filterByExternalId: boolean,
-): string | null => (filterByExternalId ? product.external_id : product.id)
-
 interface ProductSelectProps {
   organization: schemas['Organization']
   value: string[]
@@ -156,9 +151,9 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         }
       }
     }
-    return products.filter((product) =>
-      getProductValue(product, filterByExternalId),
-    )
+    return filterByExternalId
+      ? products.filter((product) => product.external_id)
+      : products
   }, [queriedProducts, selectedProducts, query, filterByExternalId])
 
   // Group displayed products by product price type
@@ -192,7 +187,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
 
   const onSelectProduct = useCallback(
     (product: schemas['Product']) => {
-      const productValue = getProductValue(product, filterByExternalId)
+      const productValue = filterByExternalId ? product.external_id : product.id
       if (!productValue) {
         return
       }
@@ -208,7 +203,8 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   const onSelectProductType = useCallback(
     (productPriceType: ProductPriceType) => {
       const productValues = groupedProducts[productPriceType].flatMap(
-        (product) => getProductValue(product, filterByExternalId) ?? [],
+        (product) =>
+          (filterByExternalId ? product.external_id : product.id) ?? [],
       )
       const selectedValues = new Set(value)
       const allSelected = productValues.every((v) => selectedValues.has(v))

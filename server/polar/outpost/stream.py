@@ -7,7 +7,7 @@ import anyio
 
 from polar.kit.json import json_obj_serializer
 from polar.redis import Redis
-from polar.worker import enqueue_job
+from polar.worker import JobQueueManager
 
 
 class ReducerBucketOutpostEvent(typing.TypedDict):
@@ -20,22 +20,25 @@ class ReducerBucketOutpostEvent(typing.TypedDict):
 type OutpostEvent = ReducerBucketOutpostEvent
 
 
+def _get_channel(organization_id: uuid.UUID) -> str:
+    return f"outpost:{organization_id}"
+
+
+def _encode(event: OutpostEvent) -> str:
+    return json.dumps(event, default=json_obj_serializer)
+
+
 async def publish(
     redis: Redis,
     organization_id: uuid.UUID,
     event: OutpostEvent,
 ) -> None:
-    await redis.publish(
-        f"outpost:{organization_id}", json.dumps(event, default=json_obj_serializer)
-    )
+    await redis.publish(_get_channel(organization_id), _encode(event))
 
 
 def enqueue(organization_id: uuid.UUID, event: OutpostEvent) -> None:
-    enqueue_job(
-        "outpost.publish",
-        organization_id=organization_id,
-        **event,  # pyright: ignore
-    )
+    """Publish the event once the transaction committed."""
+    JobQueueManager.get().publish(_get_channel(organization_id), _encode(event))
 
 
 async def subscribe(
@@ -44,7 +47,7 @@ async def subscribe(
 ) -> collections.abc.AsyncGenerator[OutpostEvent]:
     pubsub = redis.pubsub()
     try:
-        await pubsub.subscribe(f"outpost:{organization_id}")
+        await pubsub.subscribe(_get_channel(organization_id))
         while True:
             message = await pubsub.get_message(
                 ignore_subscribe_messages=True, timeout=1.0

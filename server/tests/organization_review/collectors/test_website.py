@@ -1,14 +1,16 @@
 import asyncio
+import socket
 from collections.abc import AsyncIterator, Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpcore
 import httpx
 import pytest
 from pydantic_ai.models.test import TestModel
 
 from polar.config import settings
-from polar.kit.http import SSRFBlockedError
+from polar.kit.http import SSRFSafeTransport
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.website import (
     MAX_CHARS_PER_PAGE,
@@ -484,24 +486,42 @@ class TestFetchPageSSRF:
     @pytest.mark.anyio
     async def test_blocks_redirect_to_private_ip(self) -> None:
         """Redirect targets that resolve to private IPs should be blocked."""
+        backend = httpcore.AsyncMockBackend(
+            [
+                (
+                    b"HTTP/1.1 302 Found\r\n"
+                    b"Location: https://internal.example.com/\r\n"
+                    b"Content-Length: 0\r\n\r\n"
+                )
+            ]
+        )
+        connect_tcp = AsyncMock(wraps=backend.connect_tcp)
 
-        def handler(request: httpx.Request) -> httpx.Response:
-            if request.url.host == "internal.example.com":
-                # What `SSRFSafeTransport` raises for a private IP
-                raise SSRFBlockedError("Blocked: resolves to private IP")
-            return httpx.Response(
-                302, headers={"location": "https://internal.example.com/"}
-            )
+        async def fake_getaddrinfo(
+            host: str, *args: object, **kwargs: object
+        ) -> list[tuple[int, int, int, str, tuple[str, int]]]:
+            ip = "10.0.0.1" if host == "internal.example.com" else "93.184.216.34"
+            return [
+                (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (ip, 0))
+            ]
 
-        client, requests = _make_client(handler)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
+        with (
+            patch("anyio.getaddrinfo", new=fake_getaddrinfo),
+            patch.object(backend, "connect_tcp", new=connect_tcp),
+            patch("polar.kit.http.httpcore.AnyIOBackend", return_value=backend),
+        ):
+            async with httpx.AsyncClient(transport=SSRFSafeTransport()) as client:
+                deps = WebsiteDeps(client=client, allowed_domain="example.com")
+                ctx = MagicMock()
+                ctx.deps = deps
 
-        result = await fetch_page(ctx, "https://example.com/")
+                result = await fetch_page(ctx, "https://example.com/")
 
-        assert "private IP" in result
+        assert "private/reserved IP 10.0.0.1" in result
         assert deps.pages_visited == []
+        assert [call.args[0] for call in connect_tcp.await_args_list] == [
+            "93.184.216.34"
+        ]
 
     @pytest.mark.anyio
     async def test_blocks_redirect_to_different_domain(self) -> None:

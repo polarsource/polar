@@ -268,6 +268,18 @@ class TestCheckUrlReachable:
         assert result.error is not None
 
     @pytest.mark.anyio
+    async def test_invalid_url(self) -> None:
+        backend = _RecordingBackend(_response(200))
+
+        with _mock_network(backend):
+            result = await check_url_reachable("ftp://example.com")
+
+        assert result.reachable is False
+        assert result.error is not None
+        assert result.error.startswith("Invalid URL")
+        assert backend.connected_hosts == []
+
+    @pytest.mark.anyio
     async def test_unreachable_on_4xx(self) -> None:
         backend = _RecordingBackend(_response(404))
 

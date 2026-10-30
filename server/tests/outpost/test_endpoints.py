@@ -18,13 +18,13 @@ from pytest_mock import MockerFixture
 from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
-    CustomerMeter,
     Meter,
     Organization,
     ReducerBucket,
     StagedEvent,
 )
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.outpost.schemas import to_epoch_microseconds
 from polar.outpost.service import SYNCED_LOOKBACK
 from polar.outpost.stream import publish
@@ -36,22 +36,6 @@ from tests.fixtures.random_objects import (
     create_event,
     create_reducer,
 )
-
-
-@pytest.fixture
-async def customer_meter(
-    save_fixture: SaveFixture, customer_external_id: Customer, meter: Meter
-) -> CustomerMeter:
-    customer_meter = CustomerMeter(
-        customer=customer_external_id,
-        meter=meter,
-        consumed_units=Decimal(90),
-        credited_units=100,
-        balance=Decimal(10),
-        last_balanced_event=None,
-    )
-    await save_fixture(customer_meter)
-    return customer_meter
 
 
 @pytest.mark.anyio
@@ -79,9 +63,12 @@ class TestOutpost:
         organization: Organization,
         meter: Meter,
     ) -> None:
-        reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[meter]
-        )
+        reducers = {
+            kind: await create_reducer(
+                save_fixture, organization=organization, meters=[meter], kind=kind
+            )
+            for kind in ReducerKind
+        }
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
             await websocket.receive_json()
@@ -89,13 +76,16 @@ class TestOutpost:
             response = await websocket.receive_json()
 
             assert response["type"] == "configuration"
-            [reducer_payload] = response["payload"]["reducers"]
-            assert reducer_payload["id"] == str(reducer.id)
-            assert reducer_payload["meter_ids"] == [str(meter.id)]
-            assert reducer_payload["filter"] == meter.filter.model_dump(mode="json")
-            assert reducer_payload["aggregation"] == meter.aggregation.model_dump(
-                mode="json"
-            )
+            payloads = response["payload"]["reducers"]
+            assert {payload["kind"]: payload["id"] for payload in payloads} == {
+                kind: str(reducer.id) for kind, reducer in reducers.items()
+            }
+            for reducer_payload in payloads:
+                assert reducer_payload["meter_ids"] == [str(meter.id)]
+                assert reducer_payload["filter"] == meter.filter.model_dump(mode="json")
+                assert reducer_payload["aggregation"] == meter.aggregation.model_dump(
+                    mode="json"
+                )
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
@@ -104,12 +94,13 @@ class TestOutpost:
         save_fixture: SaveFixture,
         client: httpx.AsyncClient,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
         customer_key: str,
     ) -> None:
-        customer = customer_meter.customer
+        customer = customer_external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         bucket_start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
         bucket_end = bucket_start + timedelta(minutes=5)
@@ -139,11 +130,11 @@ class TestOutpost:
                     "type": "meter_usage",
                     "payload": {
                         customer_key: customer_value,
-                        "meter_id": str(customer_meter.meter_id),
+                        "reducer_id": str(reducer.id),
                     },
                 }
             )
-            responses = [await websocket.receive_json() for _ in range(3)]
+            responses = [await websocket.receive_json(timeout=2) for _ in range(3)]
 
         payloads = {
             (payload["customer_id"], payload["external_customer_id"]): payload
@@ -154,7 +145,7 @@ class TestOutpost:
             (None, customer.external_id),
             (str(customer.id), customer.external_id),
         }
-        assert all(p["credited_units"] == 100 for p in payloads.values())
+        assert all(p["reducer_id"] == str(reducer.id) for p in payloads.values())
         assert all(p["customer_exists"] for p in payloads.values())
         external = payloads[(None, customer.external_id)]
         assert external["cold_until"] == to_epoch_microseconds(bucket_end)
@@ -167,6 +158,76 @@ class TestOutpost:
         assert (internal["count"], internal["sum"]) == (0, 0.0)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
+    async def test_request_credit_usage(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+        customer_key: str,
+    ) -> None:
+        customer = customer_external_id
+        reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        current = get_reducer_bucket_start(utc_now())
+        for bucket_start, units, sealed in (
+            # Before the latest reset.
+            (current - timedelta(hours=3), 100, True),
+            # Older than the synced lookback.
+            (current - SYNCED_LOOKBACK - timedelta(hours=1), 10, False),
+            (current, 5, False),
+        ):
+            bucket_end = bucket_start + timedelta(minutes=5)
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_end,
+                    count=1,
+                    sum=Decimal(units),
+                    min=Decimal(units),
+                    max=Decimal(units),
+                    sealed_at=bucket_end if sealed else None,
+                )
+            )
+        customer_value = {
+            "customer_id": str(customer.id),
+            "external_customer_id": customer.external_id,
+        }[customer_key]
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "meter_usage",
+                    "payload": {
+                        customer_key: customer_value,
+                        "reducer_id": str(reducer.id),
+                    },
+                }
+            )
+            responses = [await websocket.receive_json(timeout=2) for _ in range(3)]
+
+        payloads = [response["payload"] for response in responses]
+        assert {(p["customer_id"], p["external_customer_id"]) for p in payloads} == {
+            (str(customer.id), None),
+            (None, customer.external_id),
+            (str(customer.id), customer.external_id),
+        }
+        for payload in payloads:
+            assert payload["reducer_id"] == str(reducer.id)
+            assert payload["cold_until"] == payload["version"]
+            assert (payload["count"], payload["sum"]) == (2, 15.0)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_meter_usage_unknown_customer(
         self,
         save_fixture: SaveFixture,
@@ -174,7 +235,9 @@ class TestOutpost:
         organization: Organization,
         meter: Meter,
     ) -> None:
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
 
         async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
             await websocket.receive_json()
@@ -183,11 +246,11 @@ class TestOutpost:
                     "type": "meter_usage",
                     "payload": {
                         "external_customer_id": "unknown",
-                        "meter_id": str(meter.id),
+                        "reducer_id": str(reducer.id),
                     },
                 }
             )
-            response = await websocket.receive_json()
+            response = await websocket.receive_json(timeout=2)
 
         assert response["payload"]["external_customer_id"] == "unknown"
         assert response["payload"]["customer_exists"] is False
@@ -199,12 +262,13 @@ class TestOutpost:
         client: httpx.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        customer = customer_meter.customer
+        customer = customer_external_id
         external_id = customer.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
         cold_until = start + timedelta(minutes=10)
@@ -255,18 +319,17 @@ class TestOutpost:
                 },
             )
 
-            response = await websocket.receive_json()
+            response = await websocket.receive_json(timeout=2)
 
         payload = response["payload"]
         assert isinstance(payload.pop("version"), int)
         assert response == {
             "type": "meter_usage",
             "payload": {
-                "meter_id": str(customer_meter.meter_id),
+                "reducer_id": str(reducer.id),
                 "customer_id": None,
                 "external_customer_id": external_id,
                 "customer_exists": True,
-                "credited_units": 100,
                 "cold_until": to_epoch_microseconds(cold_until),
                 "count": 2,
                 "sum": 7.0,
@@ -276,17 +339,72 @@ class TestOutpost:
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_event_credit_reducer_bucket(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        customer = customer_external_id
+        reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        bucket_start = get_reducer_bucket_start(utc_now())
+        await save_fixture(
+            ReducerBucket(
+                organization=organization,
+                reducer=reducer,
+                customer=customer,
+                bucket_start=bucket_start,
+                bucket_end=bucket_start + timedelta(minutes=5),
+                count=1,
+                sum=Decimal(10),
+                min=Decimal(10),
+                max=Decimal(10),
+            )
+        )
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await publish(
+                redis,
+                organization.id,
+                {
+                    "type": "reducer_bucket",
+                    "reducer_id": reducer.id,
+                    "customer_id": customer.id,
+                    "external_customer_id": None,
+                },
+            )
+            responses = [await websocket.receive_json(timeout=2) for _ in range(3)]
+
+        payloads = [response["payload"] for response in responses]
+        assert {(p["customer_id"], p["external_customer_id"]) for p in payloads} == {
+            (str(customer.id), None),
+            (None, customer.external_id),
+            (str(customer.id), customer.external_id),
+        }
+        assert all((p["count"], p["sum"]) == (1, 10.0) for p in payloads)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_event_reducer_bucket_split_half_synced(
         self,
         save_fixture: SaveFixture,
         client: httpx.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        external_id = customer_meter.customer.external_id
+        external_id = customer_external_id.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         start = get_reducer_bucket_start(utc_now()) - timedelta(minutes=30)
         split_at = start + timedelta(minutes=7)
@@ -324,7 +442,7 @@ class TestOutpost:
                     "external_customer_id": external_id,
                 },
             )
-            response = await websocket.receive_json()
+            response = await websocket.receive_json(timeout=2)
 
         payload = response["payload"]
         assert payload["cold_until"] == to_epoch_microseconds(
@@ -340,11 +458,12 @@ class TestOutpost:
         client: httpx.AsyncClient,
         redis: Redis,
         organization: Organization,
-        customer_meter: CustomerMeter,
+        customer_external_id: Customer,
+        meter: Meter,
     ) -> None:
-        external_id = customer_meter.customer.external_id
+        external_id = customer_external_id.external_id
         reducer = await create_reducer(
-            save_fixture, organization=organization, meters=[customer_meter.meter]
+            save_fixture, organization=organization, meters=[meter]
         )
         # The bucket the lookback starts in.
         bucket_start = get_reducer_bucket_start(utc_now() - SYNCED_LOOKBACK)
@@ -377,7 +496,7 @@ class TestOutpost:
                 },
             )
 
-            response = await websocket.receive_json()
+            response = await websocket.receive_json(timeout=2)
 
         payload = response["payload"]
         assert payload["cold_until"] == to_epoch_microseconds(bucket_end)
@@ -441,7 +560,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
                         "ids": ["counted", "unknown", "staged"],
                     },
                 }
@@ -458,11 +576,10 @@ class TestOutpost:
                 "bucket_start": to_epoch_microseconds(bucket_start),
                 "ids": ["counted", "staged"],
                 "snapshot": {
-                    "meter_id": str(meter.id),
+                    "reducer_id": str(reducer.id),
                     "customer_id": None,
                     "external_customer_id": "alice",
                     "customer_exists": False,
-                    "credited_units": 0,
                     "cold_until": to_epoch_microseconds(synced_at),
                     "count": 2,
                     "sum": 2.0,
@@ -526,7 +643,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
                         "ids": ["early", "late"],
                     },
                 }
@@ -567,7 +683,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
                         "ids": ["ingested"],
                     },
                 }
@@ -603,7 +718,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": 10**24,
-                        "meter_id": str(meter.id),
                         "ids": ["event"],
                     },
                 }
@@ -636,7 +750,6 @@ class TestOutpost:
                         "reducer_id": str(reducer.id),
                         "external_customer_id": "alice",
                         "bucket_start": to_epoch_microseconds(bucket_start),
-                        "meter_id": str(meter.id),
                         "ids": [f"event-{index}" for index in range(1001)],
                     },
                 }

@@ -39,11 +39,7 @@ from polar.meter.aggregation import (
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
-from polar.models.reducer import ReducerKind
-from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
-from polar.reducer.repository import ReducerRepository
-from polar.reducer.service import get_customer_identities
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
@@ -222,22 +218,6 @@ class CustomerMeterService:
             customer_meter.credited_units - customer_meter.consumed_units
         )
         customer_meter.last_balanced_event = last_event
-
-        # Temporary: reducer values carry the credits until credits are reducers.
-        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
-            meter.id, ReducerKind.usage
-        )
-        if reducer is not None:
-            for customer_id, external_customer_id in get_customer_identities(customer):
-                enqueue_outpost_event(
-                    customer.organization_id,
-                    {
-                        "type": "reducer_bucket",
-                        "reducer_id": reducer.id,
-                        "customer_id": customer_id,
-                        "external_customer_id": external_customer_id,
-                    },
-                )
 
         return await repository.update(customer_meter), True
 

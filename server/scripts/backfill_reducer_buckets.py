@@ -38,6 +38,7 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.postgres import create_async_engine
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import REDUCER_BUCKET_SIZE, get_reducer_bucket_start
@@ -163,7 +164,7 @@ async def _get_organization_ids(
         return [organization_id]
     statement = (
         ReducerRepository.from_session(session)
-        .get_active_statement()
+        .get_active_statement((ReducerKind.usage,))
         .with_only_columns(Reducer.organization_id)
         .distinct()
         .order_by(Reducer.organization_id)
@@ -179,7 +180,7 @@ async def _get_reducers(
     """The organization's active reducers with a mergeable aggregation."""
     reducers = await ReducerRepository.from_session(
         session
-    ).get_all_active_by_organization(organization_id)
+    ).get_all_active_by_organization_and_kinds(organization_id, (ReducerKind.usage,))
     return [
         reducer
         for reducer in reducers

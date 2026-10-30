@@ -838,7 +838,7 @@ class ReducerService:
         """Locks the buckets in one global order, so transactions locking several
         can't deadlock each other."""
         for bucket_id in sorted(bucket_ids, key=_get_bucket_key):
-            await repository.lock_buckets(*bucket_id)
+            await repository.lock_customer_buckets(*bucket_id)
 
     async def _get_intervals(
         self,

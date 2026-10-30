@@ -55,7 +55,7 @@ def _is_any_customer(
 class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     model = ReducerBucket
 
-    async def lock_buckets(
+    async def lock_customer_buckets(
         self,
         reducer: Reducer,
         bucket_start: datetime,

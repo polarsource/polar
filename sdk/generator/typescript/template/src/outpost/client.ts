@@ -1277,6 +1277,7 @@ export class Outpost {
       {
         "outpost.customer": customer,
         "outpost.reducer_id": snapshot.reducer_id,
+        "outpost.reducer_kind": this.reducers.find((item) => item.id === snapshot.reducer_id)?.kind,
         "outpost.snapshot_version": snapshot.version,
       },
     );

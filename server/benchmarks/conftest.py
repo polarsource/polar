@@ -9,6 +9,7 @@ import typing
 import uuid
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession as SQLAlchemyAsyncSession
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -128,6 +129,11 @@ def organization(run: Run[typing.Any], save_fixture: SaveFixture) -> Organizatio
         return await create_organization(save_fixture, account)
 
     return run(seed())
+
+
+def analyze(run: Run[typing.Any], session: AsyncSession) -> None:
+    """Gives the planner statistics of the rows seeded so far, as production tables have."""
+    run(session.execute(text("ANALYZE")))
 
 
 async def create_metered_reducer(

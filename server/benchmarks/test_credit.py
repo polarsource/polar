@@ -10,7 +10,7 @@ from polar.models import Customer, Organization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
 
-from .conftest import Run, create_metered_reducer
+from .conftest import Run, analyze, create_metered_reducer
 
 pytestmark = pytest.mark.benchmark
 
@@ -38,6 +38,7 @@ def test_create_meter_credited_event(
     customer_meter: tuple[Customer, str],
 ) -> None:
     customer, meter_id = customer_meter
+    analyze(run, session)
     benchmark(
         lambda: run(
             event_service.create_event(
@@ -66,6 +67,7 @@ def test_create_meter_reset_event(
     customer_meter: tuple[Customer, str],
 ) -> None:
     customer, meter_id = customer_meter
+    analyze(run, session)
     benchmark(
         lambda: run(
             event_service.create_event(

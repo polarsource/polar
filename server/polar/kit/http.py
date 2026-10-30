@@ -10,7 +10,7 @@ import anyio
 import httpcore
 import httpx
 from fastapi import Depends, Query, Request
-from pydantic import AfterValidator, HttpUrl, PlainSerializer, ValidationError
+from pydantic import AfterValidator, HttpUrl, PlainSerializer
 from safe_redirect_url import url_has_allowed_host_and_scheme
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -163,11 +163,6 @@ async def check_url_reachable(
     reachable. We use GET rather than HEAD because some sites block HEAD requests.
     """
     try:
-        url = HttpUrl(str(url))
-    except ValidationError as e:
-        return UrlReachability(reachable=False, error=f"Invalid URL: {e}")
-
-    try:
         async with httpx.AsyncClient(
             transport=SSRFSafeTransport(),
             follow_redirects=True,
@@ -183,6 +178,8 @@ async def check_url_reachable(
         return UrlReachability(reachable=False, error=str(e))
     except httpx.TimeoutException:
         return UrlReachability(reachable=False, error="Request timed out")
+    except httpx.InvalidURL as e:
+        return UrlReachability(reachable=False, error=f"Invalid URL: {e}")
     except httpx.HTTPError:
         return UrlReachability(reachable=False, error="Unable to reach URL")
 

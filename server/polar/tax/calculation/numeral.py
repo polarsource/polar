@@ -92,6 +92,10 @@ class NumeralTaxTransactionResponse(TypedDict):
     line_items: list[NumeralLineItem]
 
 
+class NumeralTaxTransactionListResponse(TypedDict):
+    transactions: list[NumeralTaxTransactionResponse]
+
+
 class NumeralTaxRefundResponse(TypedDict):
     id: str
     object: Literal["tax.refund"]
@@ -349,7 +353,19 @@ class NumeralTaxService(TaxServiceProtocol):
                 )
                 raise TaxRecordError() from e
             error_response: NumeralErrorResponse = e.response.json()
-            if error_response.get("type") == "CALCULATION_EXPIRED":
+            error_type = error_response.get("type")
+            if error_type in {
+                "TRANSACTION_ALREADY_EXISTS",
+                "REFERENCE_ORDER_ID_ALREADY_EXISTS",
+                "CALCULATION_EXPIRED",
+            }:
+                existing_transaction = await self._get_existing_transaction(reference)
+                if existing_transaction is not None:
+                    trace.get_current_span().set_attribute(
+                        "numeral.transaction_id", existing_transaction["id"]
+                    )
+                    return existing_transaction["id"]
+            if error_type == "CALCULATION_EXPIRED":
                 raise CalculationExpiredError() from e
             log.warning(
                 "Numeral tax record error",
@@ -364,6 +380,25 @@ class NumeralTaxService(TaxServiceProtocol):
             "numeral.transaction_id", transaction["id"]
         )
         return transaction["id"]
+
+    async def _get_existing_transaction(
+        self, reference: str
+    ) -> NumeralTaxTransactionResponse | None:
+        try:
+            response = await self.client.get(
+                "/tax/transactions", params={"reference_order_id": reference}
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            raise TaxRecordError() from e
+
+        result: NumeralTaxTransactionListResponse = response.json()
+        transactions = result["transactions"]
+        if not transactions:
+            return None
+        if len(transactions) != 1:
+            raise TaxRecordError()
+        return transactions[0]
 
     @logfire.instrument("numeral.revert")
     async def revert(

@@ -36,6 +36,18 @@ _MetadataValueString = Annotated[
 ]
 MetadataValue = _MetadataValueString | int | float | bool
 
+# Meters sum numeric event metadata as double precision; this keeps sums from overflowing.
+MAXIMUM_EVENT_NUMERIC_VALUE = 2**53 - 1
+_EventMetadataValueInt = Annotated[
+    int, Field(ge=-MAXIMUM_EVENT_NUMERIC_VALUE, le=MAXIMUM_EVENT_NUMERIC_VALUE)
+]
+_EventMetadataValueFloat = Annotated[
+    float, Field(ge=-MAXIMUM_EVENT_NUMERIC_VALUE, le=MAXIMUM_EVENT_NUMERIC_VALUE)
+]
+EventMetadataValue = (
+    _MetadataValueString | _EventMetadataValueInt | _EventMetadataValueFloat | bool
+)
+
 METADATA_DESCRIPTION = inspect.cleandoc(
     f"""
     {{heading}}

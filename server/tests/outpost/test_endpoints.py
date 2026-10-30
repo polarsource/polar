@@ -5,7 +5,7 @@ from decimal import Decimal
 import httpx
 import httpx_ws
 import pytest
-from logfire.experimental.forwarding import ForwardExportRequestResponse
+from logfire._internal.forwarding import ForwardExportRequestResponse
 from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
     ExportMetricsServiceRequest,
 )

@@ -257,6 +257,7 @@ class TaxCalculationService:
         reverted_amount: int,
         reverted_tax_amount: int,
         previous_reverted_tax_amount: int = 0,
+        previous_reverted_amount: int = 0,
     ) -> str | None:
         """Reverse a recorded tax transaction for a customer refund.
 
@@ -286,6 +287,10 @@ class TaxCalculationService:
                 minor units. Pass ``Refund.tax_amount``.
             previous_reverted_tax_amount: Tax on other succeeded refunds with a
                 recorded processor reversal, in currency minor units.
+            previous_reverted_amount: Total including tax of those same refunds,
+                in currency minor units. The reversal never exceeds
+                ``total_amount`` minus this amount, the processor's remaining
+                balance when earlier reversals matched their refund totals.
 
         Returns:
             The processor's reversal ID, or a ``backfill_``-prefixed record ID
@@ -301,7 +306,9 @@ class TaxCalculationService:
             previous_reverted_tax_amount + reverted_tax_amount, tax_amount
         )
         target = round(cumulative_tax_amount * total_amount / tax_amount)
-        reverted_amount = target - previous_target
+        reverted_amount = min(
+            target - previous_target, total_amount - previous_reverted_amount
+        )
         if reverted_amount <= 0:
             return None
         reverted_tax_amount = cumulative_tax_amount - previous_reverted_tax_amount

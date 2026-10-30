@@ -57,16 +57,20 @@ class RefundRepository(
         )
         return await self.get_all(statement)
 
-    async def get_reverted_tax_amount(
+    async def get_reverted_amounts(
         self, order_id: UUID, *, exclude_refund_id: UUID
-    ) -> int:
-        statement = select(func.coalesce(func.sum(Refund.tax_amount), 0)).where(
+    ) -> tuple[int, int]:
+        statement = select(
+            func.coalesce(func.sum(Refund.tax_amount), 0),
+            func.coalesce(func.sum(Refund.amount + Refund.tax_amount), 0),
+        ).where(
             Refund.order_id == order_id,
             Refund.id != exclude_refund_id,
             Refund.status == RefundStatus.succeeded,
             Refund.tax_transaction_processor_id.is_not(None),
         )
-        return int((await self.session.execute(statement)).scalar_one())
+        tax_amount, total_amount = (await self.session.execute(statement)).one()
+        return int(tax_amount), int(total_amount)
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

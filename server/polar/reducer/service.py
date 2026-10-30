@@ -633,7 +633,7 @@ class ReducerService:
         # Locks are all taken before writing any row, and rows are written in
         # chronological order like seal locks them, so a seal can't deadlock with us.
         bucket_ids = sorted(contributions, key=_get_bucket_key)
-        await repository.lock_buckets(bucket_ids)
+        await self._lock_buckets(repository, bucket_ids)
         buckets_by_slot: dict[
             tuple[UUID, datetime, UUID | None, str | None], list[ReducerBucket]
         ] = defaultdict(list)
@@ -876,8 +876,7 @@ class ReducerService:
     ) -> None:
         """Locks the buckets in one global order, so transactions locking several
         can't deadlock each other."""
-        for bucket_id in sorted(bucket_ids, key=_get_bucket_key):
-            await repository.lock_customer_buckets(*bucket_id)
+        await repository.lock_buckets(sorted(bucket_ids, key=_get_bucket_key))
 
     async def _get_intervals(
         self,

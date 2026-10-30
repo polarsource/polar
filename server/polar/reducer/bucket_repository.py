@@ -25,7 +25,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import insert
 
-from polar.kit.db.locking import pg_advisory_xact_lock, pg_advisory_xact_locks
+from polar.kit.db.locking import pg_advisory_xact_locks
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation
@@ -61,26 +61,9 @@ def _is_any_customer(
 class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     model = ReducerBucket
 
-    async def lock_customer_buckets(
-        self,
-        reducer: Reducer,
-        bucket_start: datetime,
-        customer_id: UUID | None,
-        external_customer_id: str | None,
-    ) -> None:
-        """Locks the reducer's buckets of the customer identity starting at
-        `bucket_start` exclusively until the transaction ends."""
-        await pg_advisory_xact_lock(
-            self.session,
-            "reducer_bucket.buckets",
-            get_reducer_bucket_key(
-                reducer.id, bucket_start, customer_id, external_customer_id
-            ),
-        )
-
     async def lock_buckets(self, bucket_ids: Sequence[BucketId]) -> None:
-        """Takes the locks of `lock_customer_buckets` for each bucket, in one round
-        trip and in the order of `bucket_ids`."""
+        """Locks the buckets of each bucket id exclusively until the transaction
+        ends, in one round trip and in the order of `bucket_ids`."""
         await pg_advisory_xact_locks(
             self.session,
             "reducer_bucket.buckets",

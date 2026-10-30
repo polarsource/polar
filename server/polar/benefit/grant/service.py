@@ -358,6 +358,10 @@ class BenefitGrantService:
         **scope: Unpack[BenefitGrantScope],
     ) -> None:
         repository = BenefitGrantRepository.from_session(session)
+        if task == "grant":
+            # Repointing reads the customer's other grants, so concurrent jobs for
+            # the customer must not act on the same snapshot.
+            await repository.lock_customer(customer.id)
 
         # A refund or dispute may have revoked the order since this was enqueued
         order = scope.get("order")
@@ -493,26 +497,26 @@ class BenefitGrantService:
             if benefit.external_id is not None
             and benefit.type != BenefitType.meter_credit
         }
+        members: set[UUID | None] = {member_id}
         if member_id is None and not product.has_seat_based_price:
-            # Grants without a member go to the customer's owner member.
+            # Grants without a member go to the customer's owner member, and
+            # older ones may still have none.
             owner = await MemberRepository.from_session(
                 session
             ).get_owner_by_customer_id(customer.id)
             if owner is not None:
-                member_id = owner.id
+                members.add(owner.id)
 
         product_benefit_ids = {benefit.id for benefit in product.benefits}
         candidates = [
             grant
             for grant in grants
             if grant.is_granted
-            and grant.member_id == member_id
+            and grant.member_id in members
             and grant.benefit_id not in product_benefit_ids
         ]
         if not targets or not candidates:
             return set()
-        # Concurrent jobs for the customer must not both skip moving downloadables.
-        await BenefitGrantRepository.from_session(session).lock_customer(customer.id)
 
         previous_benefits = {
             benefit.id: benefit
@@ -520,7 +524,7 @@ class BenefitGrantService:
                 session
             ).get_all_versions_by_ids([grant.benefit_id for grant in candidates])
         }
-        taken = {grant.benefit_id for grant in grants if grant.member_id == member_id}
+        taken = {grant.benefit_id for grant in grants if grant.member_id in members}
 
         repointed: set[UUID] = set()
         for grant in candidates:

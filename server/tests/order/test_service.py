@@ -6577,7 +6577,7 @@ class TestMoveBenefits:
             save_fixture,
             product=previous,
             customer=customer,
-            status=OrderStatus.refunded,
+            status=OrderStatus.pending,
         )
         await create_order(save_fixture, product=other, customer=customer)
 
@@ -6626,6 +6626,40 @@ class TestMoveBenefits:
             customer_id=customer.id,
             product_id=product.id,
             order_id=kept.id,
+            delay=ANY,
+        )
+
+    async def test_moves_refunded_orders_that_kept_benefits(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        refunded = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.refunded,
+        )
+        payment = await create_payment(save_fixture, organization)
+        await create_refund(save_fixture, refunded, payment)
+
+        await order_service.move_benefits(session, organization.id, "pro", product)
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=refunded.id,
             delay=ANY,
         )
 

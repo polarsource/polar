@@ -2757,6 +2757,18 @@ class OrderService:
         target = await product_service.get_move_target(
             session, auth_subject, benefits_move.target_product_id
         )
+        if target.is_recurring or target.has_seat_based_price:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "target_product_id"),
+                        "msg": "One-time orders can only move to a one-time product "
+                        "without seats.",
+                        "input": benefits_move.target_product_id,
+                    }
+                ]
+            )
         if (
             benefits_move.product_external_id
             not in await ProductRepository.from_session(session).get_external_ids(

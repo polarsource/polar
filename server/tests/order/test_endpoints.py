@@ -1004,6 +1004,26 @@ class TestMoveOrderBenefits:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_recurring_target(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.order.service.enqueue_job")
+
+        response = await client.post(
+            "/v1/orders/benefits/move",
+            json={"product_external_id": "pro", "target_product_id": str(product.id)},
+        )
+
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "target_product_id"]
+        enqueue_job_mock.assert_not_called()
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unknown_source(
         self,
         mocker: MockerFixture,

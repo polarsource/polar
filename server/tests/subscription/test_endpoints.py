@@ -692,6 +692,31 @@ class TestSubscriptionProductUpdate:
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
+    async def test_auto_proration_behavior_rejected(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        product: Product,
+        product_second: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={
+                "product_id": str(product_second.id),
+                "proration_behavior": "auto",
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
     async def test_next_period_with_discount(
         self,
         client: AsyncClient,

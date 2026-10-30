@@ -38449,7 +38449,6 @@ export interface components {
       | 'invoice'
       | 'prorate'
       | 'next_period'
-      | 'auto'
       | 'reset'
     /**
      * SubscriptionReactivatedEvent
@@ -76118,7 +76117,7 @@ export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<
 > = ['subscription.product_updated']
 export const subscriptionProrationBehaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionProrationBehavior']
-> = ['invoice', 'prorate', 'next_period', 'auto', 'reset']
+> = ['invoice', 'prorate', 'next_period', 'reset']
 export const subscriptionReactivatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionReactivatedEvent']['name']
 > = ['subscription.reactivated']

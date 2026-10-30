@@ -127,9 +127,11 @@ export const useCustomerPortalSessionRequest = (
     mutationFn: async ({
       email,
       customer_id,
+      turnstileToken,
     }: {
       email: string
       customer_id?: string
+      turnstileToken: string
     }) => {
       const start = await api.POST(
         '/v1/customer-portal/customer-session/start',
@@ -146,6 +148,7 @@ export const useCustomerPortalSessionRequest = (
           body: {
             email,
             ...(customer_id && { customer_id }),
+            'cf-turnstile-response': turnstileToken,
           },
         },
       )

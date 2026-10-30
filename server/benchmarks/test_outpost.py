@@ -34,7 +34,7 @@ from tests.fixtures.random_objects import (
     create_reducer,
 )
 
-from .conftest import Run
+from .conftest import Run, analyze
 
 pytestmark = pytest.mark.benchmark
 
@@ -114,6 +114,7 @@ def test_confirm_pending(
     assert isinstance(message, ConfirmedOutgoingMessage)
     assert len(message.payload.ids) == ids
     assert message.payload.snapshot.customer_exists
+    analyze(run, session)
     benchmark(confirm)
 
 

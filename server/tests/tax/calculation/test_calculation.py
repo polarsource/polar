@@ -98,6 +98,32 @@ class TestRevert:
             mocker.call("transaction_123", "refund_2", 34, 1),
         ]
 
+    @pytest.mark.parametrize("processor", [TaxProcessor.stripe, TaxProcessor.numeral])
+    async def test_capped_at_remaining_balance(
+        self, mocker: MockerFixture, processor: TaxProcessor
+    ) -> None:
+        provider = mocker.patch(
+            f"polar.tax.calculation.{processor.value}_tax_service.revert",
+            return_value="refund_123",
+        )
+
+        await tax_calculation.revert(
+            processor,
+            "transaction_123",
+            reference="refund_123",
+            address=Address(country=CountryAlpha2("GB")),
+            tax_code=TaxCode.general_electronically_supplied_services,
+            currency="usd",
+            total_amount=1200,
+            tax_amount=200,
+            reverted_amount=983,
+            reverted_tax_amount=164,
+            previous_reverted_tax_amount=36,
+            previous_reverted_amount=217,
+        )
+
+        provider.assert_awaited_once_with("transaction_123", "refund_123", 983, 164)
+
     async def test_backfilled_cumulative_reversal(self, mocker: MockerFixture) -> None:
         provider = mocker.patch(
             "polar.tax.calculation.numeral_tax_service.backfill",

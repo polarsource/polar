@@ -1,5 +1,11 @@
 # @polar-sh/ui
 
+## 0.1.3
+
+### Patch Changes
+
+- 873039e: `useFormField` subscribes to its field's state with `useFormState`, so `FormMessage` keeps updating when the consuming component is compiled with the React Compiler.
+
 ## 0.1.2
 
 ### Patch Changes

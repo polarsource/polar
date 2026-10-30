@@ -937,7 +937,7 @@ class OrderService:
                 currency=checkout.currency,
                 address=order.billing_address,
                 tax_code=order.product.tax_code,
-                reference=str(order.id),
+                reference=f"checkout:{checkout.id}",
                 transaction_date=order.created_at,
             )
             await repository.update(

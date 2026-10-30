@@ -1,5 +1,6 @@
 from polar.routing import APIRouter
 
+from ..auth.endpoints import router as customer_session_auth_router
 from .benefit_grant import router as benefit_grant_router
 from .customer import router as customer_router
 from .customer_email_update import router as customer_email_update_router
@@ -23,6 +24,7 @@ router.include_router(customer_email_update_router)
 router.include_router(customer_meter_router)
 router.include_router(customer_seat_router)
 router.include_router(customer_session_router)
+router.include_router(customer_session_auth_router)
 router.include_router(downloadables_router)
 router.include_router(license_keys_router)
 router.include_router(member_router)

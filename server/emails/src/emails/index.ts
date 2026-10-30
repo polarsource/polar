@@ -2,6 +2,7 @@ import { ChargebackPreventionRefund } from './chargeback_prevention_refund'
 import { CustomerEmailChangedNotification } from './customer_email_changed_notification'
 import { CustomerEmailUpdateVerification } from './customer_email_update_verification'
 import { CustomerSessionCode } from './customer_session_code'
+import { DomainVerificationLost } from './domain_verification_lost'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
 import { NotificationCreditsGranted } from './notification_credits_granted'
@@ -81,6 +82,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   notification_subscription_cancellation: NotificationSubscriptionCancellation,
   notification_credits_granted: NotificationCreditsGranted,
   notification_file_flagged_malicious: NotificationFileFlaggedMalicious,
+  domain_verification_lost: DomainVerificationLost,
   chargeback_prevention_refund: ChargebackPreventionRefund,
   polar_self_subscription_cancellation: PolarSelfSubscriptionCancellation,
   polar_self_subscription_confirmation: PolarSelfSubscriptionConfirmation,

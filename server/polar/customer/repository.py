@@ -607,3 +607,13 @@ class CustomerRepository(
         result = await self.session.execute(stmt)
         next_number = result.scalar_one()
         return next_number - 1
+
+    async def increment_credit_note_next_number(self, customer_id: UUID) -> int:
+        statement = (
+            update(Customer)
+            .where(Customer.id == customer_id)
+            .values(credit_note_next_number=Customer.credit_note_next_number + 1)
+            .returning(Customer.credit_note_next_number)
+        )
+        next_number = (await self.session.execute(statement)).scalar_one()
+        return next_number - 1

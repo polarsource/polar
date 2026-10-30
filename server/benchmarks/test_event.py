@@ -15,7 +15,7 @@ from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import METER_TEST_EVENT, create_meter, create_reducer
 
-from .conftest import Run
+from .conftest import Run, analyze
 
 pytestmark = pytest.mark.benchmark
 
@@ -49,6 +49,7 @@ def test_ingest_100_events(
         return response.inserted
 
     assert ingest_batch() == 100
+    analyze(run, session)
     benchmark(ingest_batch)
 
 
@@ -84,4 +85,5 @@ def test_ingest_varying_batches(
         return response.inserted
 
     assert 20 <= ingest_batch() < 220
+    analyze(run, session)
     benchmark(ingest_batch)

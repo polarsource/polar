@@ -17,6 +17,7 @@ from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import version
 from polar.models import Order
 from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
@@ -32,6 +33,7 @@ from polar.postgres import (
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 from polar.subscription.schemas import SubscriptionID
+from polar.version import V2027_01
 
 from . import auth, sorting
 from .export import (
@@ -221,6 +223,167 @@ async def export(
             auth_subject,
             organization_id=organization_id,
             product_id=product_id,
+            status=status,
+            created_after=created_after,
+            created_before=created_before,
+            timezone=tzinfo,
+            columns=columns,
+        ),
+        get_filename(created_after, created_before, tzinfo),
+    )
+
+
+@router.get(
+    "/",
+    name="list",
+    summary="List Orders",
+    response_model=ListResource[OrderSchema],
+    tags=[APITag.mcp, APITag.cli],
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+)
+@version(starting_from=V2027_01)
+async def list_v2027_01(
+    auth_subject: auth.OrdersRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    metadata: MetadataQuery,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    product_id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="ProductID Filter", description="Filter by product ID."
+    ),
+    external_product_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    ),
+    product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Query(
+        None,
+        title="ProductBillingType Filter",
+        description=(
+            "Filter by product billing type. "
+            "`recurring` will filter data corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will filter data corresponding to one-time purchases."
+        ),
+    ),
+    discount_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="DiscountID Filter", description="Filter by discount ID."
+    ),
+    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    ),
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    ),
+    checkout_id: MultipleQueryFilter[UUID4] | None = Query(
+        None, title="CheckoutID Filter", description="Filter by checkout ID."
+    ),
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
+    ),
+    status: MultipleQueryFilter[OrderStatus] | None = Query(
+        None, title="Status Filter", description="Filter by order status."
+    ),
+    created_after: datetime | None = Query(
+        None,
+        description="Only include orders created after this date",
+    ),
+    created_before: datetime | None = Query(
+        None,
+        description="Only include orders created before this date",
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[OrderSchema]:
+    """List orders."""
+    results, count = await order_service.list(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        product_id=product_id,
+        external_product_id=external_product_id,
+        product_billing_type=product_billing_type,
+        discount_id=discount_id,
+        customer_id=customer_id,
+        external_customer_id=external_customer_id,
+        checkout_id=checkout_id,
+        subscription_id=subscription_id,
+        status=status,
+        created_after=created_after,
+        created_before=created_before,
+        metadata=metadata,
+        pagination=pagination,
+        sorting=sorting,
+    )
+
+    return ListResource.from_paginated_results(
+        [OrderSchema.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.get(
+    "/export",
+    name="export",
+    summary="Export Orders",
+    response_class=CSVStreamingResponse,
+)
+@version(starting_from=V2027_01)
+async def export_v2027_01(
+    auth_subject: auth.OrdersRead,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    product_id: MultipleQueryFilter[ProductID] | None = Query(
+        None, title="ProductID Filter", description="Filter by product ID."
+    ),
+    external_product_id: MultipleQueryFilter[str] | None = Query(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    ),
+    status: MultipleQueryFilter[OrderStatus] | None = Query(
+        None, title="Status Filter", description="Filter by order status."
+    ),
+    created_after: AwareDatetime | None = Query(
+        None,
+        description=(
+            "Only include orders created after this date. Must include a UTC offset."
+        ),
+    ),
+    created_before: AwareDatetime | None = Query(
+        None,
+        description=(
+            "Only include orders created before this date. Must include a UTC offset."
+        ),
+    ),
+    timezone: Annotated[
+        OrderExportTimezone,
+        Query(description="Time zone used to render dates in the CSV."),
+    ] = "UTC",
+    columns: MultipleQueryFilter[OrderExportColumn] | None = Query(
+        None,
+        description=(
+            "Columns to include in the CSV, in order. "
+            "Defaults to email, created_at, product, net_amount, "
+            "currency, status and invoice_number."
+        ),
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> CSVStreamingResponse:
+    """Export orders as a CSV file."""
+    tzinfo = ZoneInfo(timezone)
+    return CSVStreamingResponse(
+        generate_csv(
+            session,
+            auth_subject,
+            organization_id=organization_id,
+            product_id=product_id,
+            external_product_id=external_product_id,
             status=status,
             created_after=created_after,
             created_before=created_before,

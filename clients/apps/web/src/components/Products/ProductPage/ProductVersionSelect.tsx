@@ -6,12 +6,7 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  PeopleAltOutlined,
-} from '@polar-sh/orbit/icons'
+import { Check, ChevronDown, ChevronRight } from '@polar-sh/orbit/icons'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,9 +16,6 @@ import {
 import Link from 'next/link'
 import { ReactNode } from 'react'
 import { formatPublishedAt } from './ProductVersionBanner'
-
-const pluralize = (count: number, noun: string) =>
-  `${count.toLocaleString()} ${count === 1 ? noun : `${noun}s`}`
 
 const SectionLabel = ({
   children,
@@ -54,46 +46,28 @@ const VersionRow = ({
   organization: schemas['Organization']
   version: ProductVersion
   selected: boolean
-}) => {
-  const count = version.active_subscriptions_count
-  return (
-    <DropdownMenuItem
-      asChild
-      className="dark:focus:bg-polar-800 gap-3 rounded-md px-2 py-2 focus:bg-gray-100"
+}) => (
+  <DropdownMenuItem
+    asChild
+    className="dark:focus:bg-polar-800 gap-3 rounded-md px-2 py-2 focus:bg-gray-100"
+  >
+    <Link
+      href={`/dashboard/${organization.slug}/products/${version.product_id}`}
     >
-      <Link
-        href={`/dashboard/${organization.slug}/products/${version.product_id}`}
-      >
-        <Box alignItems="center" columnGap="s" flex={1} minWidth={0}>
-          <Text truncate variant={selected ? 'title' : 'default'}>
-            {version.name ?? 'Untitled'}
-          </Text>
-          {selected ? <Check className="size-3.5! shrink-0" /> : null}
-        </Box>
-        <Box
-          alignItems="center"
-          columnGap="xs"
-          aria-label={pluralize(count, 'subscription')}
-        >
-          <Text as="span" color={count ? 'muted' : 'disabled'}>
-            <PeopleAltOutlined sx={{ fontSize: 14, display: 'block' }} />
-          </Text>
-          {/* Fixed widths keep the icon and date columns aligned across rows. */}
-          <Box width={16} justifyContent="end">
-            <Text tabularNums color={count ? 'default' : 'disabled'}>
-              {count}
-            </Text>
-          </Box>
-        </Box>
-        <Box width={44} justifyContent="end">
-          <Text variant="caption" color="muted" tabularNums wrap="nowrap">
-            {formatPublishedAt(version.published_at)}
-          </Text>
-        </Box>
-      </Link>
-    </DropdownMenuItem>
-  )
-}
+      <Box alignItems="center" columnGap="s" flex={1} minWidth={0}>
+        <Text truncate variant={selected ? 'title' : 'default'}>
+          {version.name ?? 'Untitled'}
+        </Text>
+        {selected ? <Check className="size-3.5! shrink-0" /> : null}
+      </Box>
+      <Box width={44} justifyContent="end">
+        <Text variant="caption" color="muted" tabularNums wrap="nowrap">
+          {formatPublishedAt(version.published_at)}
+        </Text>
+      </Box>
+    </Link>
+  </DropdownMenuItem>
+)
 
 export const ProductVersionSelect = ({
   organization,

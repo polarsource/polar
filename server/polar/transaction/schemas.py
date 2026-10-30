@@ -4,6 +4,7 @@ from pydantic import UUID4, Field
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.versioning import QuerySchema
 from polar.models.pledge import PledgeState
 from polar.models.transaction import PlatformFeeType, Processor, TransactionType
 
@@ -109,3 +110,10 @@ class TransactionsSummary(Schema):
     available_balance: TransactionsBalance
     held_balance: TransactionsHeldBalance
     payout: TransactionsBalance
+
+
+class TransactionSearchParams(QuerySchema):
+    type: TransactionType | None = Field(None)
+    account_id: UUID4 | None = Field(None)
+    payment_customer_id: UUID4 | None = Field(None)
+    exclude_platform_fees: bool = Field(False)

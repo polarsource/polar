@@ -22,6 +22,7 @@ from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import IDSchema, Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
+from polar.kit.versioning import QuerySchema
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
@@ -766,4 +767,14 @@ class ConfigExport(Schema):
         description=(
             "The catalog version the products come from. None before the first publish."
         )
+    )
+
+
+class DeclarativeConfigExportParams(QuerySchema):
+    organization_id: OrganizationID | None = Field(
+        None,
+        description=(
+            "The ID of the organization to export. "
+            "**Required unless you use an organization token.**"
+        ),
     )

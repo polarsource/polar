@@ -4,17 +4,19 @@ from pydantic import UUID4, AliasChoices, AliasPath, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import PaymentProcessor
-from polar.kit.schemas import Schema
-from polar.kit.versioning import Version
+from polar.kit.schemas import MultipleQueryFilter, Schema
+from polar.kit.versioning import QuerySchema, Version
+from polar.models.product import ProductBillingType
 from polar.order.schemas import OrderBase, OrderItemSchema, OrderUpdateBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
+    ProductID,
     ProductMediaList,
     ProductPrice,
     ProductPriceList,
 )
-from polar.subscription.schemas import SubscriptionBase
+from polar.subscription.schemas import SubscriptionBase, SubscriptionID
 from polar.version import V2026_10
 
 from .organization import CustomerOrganization
@@ -120,3 +122,25 @@ class CustomerOrderPaymentConfirmation(Schema):
         None, description="Client secret for handling additional actions."
     )
     error: str | None = Field(None, description="Error message if confirmation failed.")
+
+
+class CustomerPortalOrderListParams(QuerySchema):
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Field(
+        None,
+        title="ProductBillingType Filter",
+        description=(
+            "Filter by product billing type. "
+            "`recurring` will filter data corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will filter data corresponding to one-time purchases."
+        ),
+    )
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Field(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
+    )
+    query: str | None = Field(
+        None, description="Search by product or organization name."
+    )

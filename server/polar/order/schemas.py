@@ -18,7 +18,7 @@ from polar.custom_field.data import (
     CustomFieldDataInputMixin,
     CustomFieldDataOutputMixin,
 )
-from polar.customer.schemas.customer import CustomerBase
+from polar.customer.schemas.customer import CustomerBase, CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
@@ -28,19 +28,26 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     TimestampedSchema,
     empty_str_to_none,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
     OrderStatus,
 )
+from polar.models.product import ProductBillingType
 from polar.organization.schemas import OrganizationID
-from polar.product.schemas import ProductBase, ProductPrice, ProductVersionOutputMixin
-from polar.subscription.schemas import SubscriptionBase
+from polar.product.schemas import (
+    ProductBase,
+    ProductID,
+    ProductPrice,
+    ProductVersionOutputMixin,
+)
+from polar.subscription.schemas import SubscriptionBase, SubscriptionID
 from polar.version import V2026_10
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]
@@ -418,3 +425,50 @@ class OrderReceipt(Schema):
     """Order's receipt data."""
 
     url: str = Field(..., description="The URL to the receipt PDF.")
+
+
+class OrderListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Field(
+        None,
+        title="ProductBillingType Filter",
+        description=(
+            "Filter by product billing type. "
+            "`recurring` will filter data corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will filter data corresponding to one-time purchases."
+        ),
+    )
+    discount_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="DiscountID Filter", description="Filter by discount ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    )
+    checkout_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="CheckoutID Filter", description="Filter by checkout ID."
+    )
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Field(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
+    )
+    status: MultipleQueryFilter[OrderStatus] | None = Field(
+        None, title="Status Filter", description="Filter by order status."
+    )
+    created_after: datetime | None = Field(
+        None,
+        description="Only include orders created after this date",
+    )
+    created_before: datetime | None = Field(
+        None,
+        description="Only include orders created before this date",
+    )

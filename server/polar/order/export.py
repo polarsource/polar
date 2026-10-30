@@ -4,12 +4,14 @@ from enum import StrEnum
 from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AfterValidator
+from pydantic import AfterValidator, AwareDatetime, Field
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
+from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import QuerySchema
 from polar.models import Order
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.organization.schemas import OrganizationID
@@ -157,3 +159,38 @@ async def generate_csv(
     async for order in repository.stream(statement):
         row = _row(order, timezone)
         yield csv_writer.getrow(tuple(row[column] for column in export_columns))
+
+
+class OrderExportParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    status: MultipleQueryFilter[OrderStatus] | None = Field(
+        None, title="Status Filter", description="Filter by order status."
+    )
+    created_after: AwareDatetime | None = Field(
+        None,
+        description=(
+            "Only include orders created after this date. Must include a UTC offset."
+        ),
+    )
+    created_before: AwareDatetime | None = Field(
+        None,
+        description=(
+            "Only include orders created before this date. Must include a UTC offset."
+        ),
+    )
+    timezone: OrderExportTimezone = Field(
+        "UTC", description="Time zone used to render dates in the CSV."
+    )
+    columns: MultipleQueryFilter[OrderExportColumn] | None = Field(
+        None,
+        description=(
+            "Columns to include in the CSV, in order. "
+            "Defaults to email, created_at, product, net_amount, "
+            "currency, status and invoice_number."
+        ),
+    )

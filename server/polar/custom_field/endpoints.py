@@ -5,11 +5,8 @@ from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.models import CustomField
-from polar.models.custom_field import CustomFieldType
 from polar.openapi import APITag, cli_preview
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -20,7 +17,12 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import CustomField as CustomFieldSchema
-from .schemas import CustomFieldAdapter, CustomFieldCreate, CustomFieldUpdate
+from .schemas import (
+    CustomFieldAdapter,
+    CustomFieldCreate,
+    CustomFieldListParams,
+    CustomFieldUpdate,
+)
 from .service import custom_field as custom_field_service
 
 router = APIRouter(
@@ -40,25 +42,19 @@ CustomFieldNotFound = {
     "/", summary="List Custom Fields", response_model=ListResource[CustomFieldSchema]
 )
 async def list(
+    filters: Annotated[CustomFieldListParams, Query()],
     auth_subject: auth.CustomFieldRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    query: str | None = Query(None, description="Filter by custom field name or slug."),
-    type: MultipleQueryFilter[CustomFieldType] | None = Query(
-        None, title="CustomFieldType Filter", description="Filter by custom field type."
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CustomFieldSchema]:
     """List custom fields."""
     results, count = await custom_field_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        query=query,
-        type=type,
+        organization_id=filters.organization_id,
+        query=filters.query,
+        type=filters.type,
         pagination=pagination,
         sorting=sorting,
     )

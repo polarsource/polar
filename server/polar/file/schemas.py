@@ -11,8 +11,10 @@ from polar.integrations.aws.s3.schemas import (
     S3FileUpload,
     S3FileUploadCompleted,
 )
-from polar.kit.schemas import ClassName, Schema, SetSchemaReference
+from polar.kit.schemas import ClassName, MultipleQueryFilter, Schema, SetSchemaReference
+from polar.kit.versioning import QuerySchema
 from polar.models.file import File, FileServiceTypes
+from polar.organization.schemas import OrganizationID
 
 from .s3 import S3_SERVICES
 
@@ -210,3 +212,12 @@ class FileUpdate(Schema):
 class FilePatch(Schema):
     name: str | None = None
     version: str | None = None
+
+
+class FileListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    ids: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="FileID Filter", description="Filter by file ID."
+    )

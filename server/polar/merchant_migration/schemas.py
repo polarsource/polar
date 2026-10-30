@@ -8,6 +8,7 @@ from pydantic import UUID4, ConfigDict, Field, model_validator
 from polar.enums import TaxBehavior
 from polar.kit.address import Address, AddressInput
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.versioning import QuerySchema
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -20,6 +21,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
 )
+from polar.organization.schemas import OrganizationID
 
 from .canonical import CanonicalPaymentMethodType
 from .pan_transfer import PanTransferMethod, PanTransferStep
@@ -482,3 +484,7 @@ class MerchantMigration(IDSchema, TimestampedSchema):
             "Background work for the current step, if any. None until a run starts."
         ),
     )
+
+
+class MerchantMigrationListParams(QuerySchema):
+    organization_id: OrganizationID = Field()

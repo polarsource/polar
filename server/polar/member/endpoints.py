@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, Query
@@ -7,7 +8,6 @@ from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models.member import MemberRole
 from polar.openapi import APITag, cli_preview, destructive
 from polar.postgres import (
     AsyncReadSession,
@@ -18,6 +18,7 @@ from polar.postgres import (
 from polar.routing import APIRouter
 
 from . import auth, sorting
+from .query import MemberCustomerListParams, MemberListParams
 from .schemas import (
     ExternalMemberID,
     Member,
@@ -105,21 +106,17 @@ def _validate_customer_id_params(
     response_model=ListResource[Member],
 )
 async def list_members(
+    filters: Annotated[MemberListParams, Query()],
     auth_subject: auth.MemberRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    customer_id: str | None = Query(None, description="Filter by customer ID."),
-    external_customer_id: ExternalCustomerID | None = Query(
-        None, description="Filter by customer external ID."
-    ),
-    role: MemberRole | None = Query(None, description="Filter by member role."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[Member]:
     """List members with optional customer ID filter."""
     parsed_customer_id = None
-    if customer_id is not None:
+    if filters.customer_id is not None:
         try:
-            parsed_customer_id = UUID(customer_id)
+            parsed_customer_id = UUID(filters.customer_id)
         except ValueError:
             raise ResourceNotFound("Invalid customer ID format")
 
@@ -127,8 +124,8 @@ async def list_members(
         session,
         auth_subject,
         customer_id=parsed_customer_id,
-        external_customer_id=external_customer_id,
-        role=role,
+        external_customer_id=filters.external_customer_id,
+        role=filters.role,
         pagination=pagination,
         sorting=sorting,
     )
@@ -154,11 +151,11 @@ async def list_members(
     },
 )
 async def list(
+    filters: Annotated[MemberCustomerListParams, Query()],
     id: CustomerID,
     auth_subject: auth.MemberRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    role: MemberRole | None = Query(None, description="Filter by member role."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[Member]:
     """List the members of a customer."""
@@ -166,7 +163,7 @@ async def list(
         session,
         auth_subject,
         customer_id=id,
-        role=role,
+        role=filters.role,
         pagination=pagination,
         sorting=sorting,
     )
@@ -189,11 +186,11 @@ async def list(
     },
 )
 async def list_external(
+    filters: Annotated[MemberCustomerListParams, Query()],
     external_id: ExternalCustomerID,
     auth_subject: auth.MemberRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    role: MemberRole | None = Query(None, description="Filter by member role."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[Member]:
     """List the members of a customer identified by its external ID."""
@@ -201,7 +198,7 @@ async def list_external(
         session,
         auth_subject,
         external_customer_id=external_id,
-        role=role,
+        role=filters.role,
         pagination=pagination,
         sorting=sorting,
     )

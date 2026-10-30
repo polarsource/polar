@@ -1,16 +1,12 @@
 from collections.abc import AsyncGenerator
-from datetime import date
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Path, Query
 from pydantic import UUID4
-from pydantic_extra_types.timezone_name import TimeZoneName
 
-from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
-from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import (
     MAX_INTERVAL_DAYS,
     MIN_DATE,
@@ -18,16 +14,13 @@ from polar.kit.time_queries import (
     TimeInterval,
     is_under_limits,
 )
-from polar.models.product import ProductBillingType
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
     get_db_read_session,
     get_db_session,
 )
-from polar.product.schemas import ProductID
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -37,7 +30,10 @@ from .schemas import (
     MetricDashboardCreate,
     MetricDashboardSchema,
     MetricDashboardUpdate,
+    MetricsDashboardListParams,
+    MetricsExportParams,
     MetricsLimits,
+    MetricsParams,
     MetricsResponse,
 )
 from .service import metrics as metrics_service
@@ -57,45 +53,8 @@ MetricDashboardID = Annotated[UUID4, Path(description="The metric dashboard ID."
     response_model_exclude_none=True,
 )
 async def get(
+    filters: Annotated[MetricsParams, Query()],
     auth_subject: auth.MetricsRead,
-    start_date: date = Query(
-        ...,
-        description="Start date.",
-    ),
-    end_date: date = Query(..., description="End date."),
-    timezone: TimeZoneName = Query(
-        default="UTC",
-        description="Timezone to use for the timestamps. Default is UTC.",
-    ),
-    interval: TimeInterval = Query(..., description="Interval between two timestamps."),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    billing_type: MultipleQueryFilter[ProductBillingType] | None = Query(
-        None,
-        title="ProductBillingType Filter",
-        description=(
-            "Filter by billing type. "
-            "`recurring` will filter data corresponding "
-            "to subscriptions creations or renewals. "
-            "`one_time` will filter data corresponding to one-time purchases."
-        ),
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    metrics: list[str] | None = Query(
-        None,
-        title="Metrics",
-        description=(
-            "List of metric slugs to focus on. "
-            "When provided, only the queries needed for these metrics will be executed, "
-            "improving performance. If not provided, all metrics are returned."
-        ),
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis | None = Depends(get_redis),
 ) -> MetricsResponse:
@@ -104,9 +63,9 @@ async def get(
 
     Currency values are output in cents.
     """
-    if metrics is not None:
+    if filters.metrics is not None:
         valid_slugs = {m.slug for m in METRICS}
-        invalid_slugs = set(metrics) - valid_slugs
+        invalid_slugs = set(filters.metrics) - valid_slugs
         if invalid_slugs:
             raise PolarRequestValidationError(
                 [
@@ -114,12 +73,12 @@ async def get(
                         "loc": ("query", "metrics"),
                         "msg": f"Invalid metric slugs: {', '.join(sorted(invalid_slugs))}",
                         "type": "value_error",
-                        "input": metrics,
+                        "input": filters.metrics,
                     }
                 ]
             )
 
-    if not is_under_limits(start_date, end_date, interval):
+    if not is_under_limits(filters.start_date, filters.end_date, filters.interval):
         raise PolarRequestValidationError(
             [
                 {
@@ -129,7 +88,7 @@ async def get(
                         "Use a larger interval or reduce the date range."
                     ),
                     "type": "value_error",
-                    "input": (start_date, end_date, interval),
+                    "input": (filters.start_date, filters.end_date, filters.interval),
                 }
             ]
         )
@@ -137,62 +96,29 @@ async def get(
     return await metrics_service.get_metrics(
         session,
         auth_subject,
-        start_date=start_date,
-        end_date=end_date,
-        timezone=ZoneInfo(timezone),
-        interval=interval,
-        organization_id=organization_id,
-        product_id=product_id,
-        billing_type=billing_type,
-        customer_id=customer_id,
-        metrics=metrics,
+        start_date=filters.start_date,
+        end_date=filters.end_date,
+        timezone=ZoneInfo(filters.timezone),
+        interval=filters.interval,
+        organization_id=filters.organization_id,
+        product_id=filters.product_id,
+        billing_type=filters.billing_type,
+        customer_id=filters.customer_id,
+        metrics=filters.metrics,
         redis=redis,
     )
 
 
 @router.get("/export", summary="Export Metrics", response_class=CSVStreamingResponse)
 async def export(
+    filters: Annotated[MetricsExportParams, Query()],
     auth_subject: auth.MetricsRead,
-    start_date: date = Query(..., description="Start date."),
-    end_date: date = Query(..., description="End date."),
-    timezone: TimeZoneName = Query(
-        default="UTC",
-        description="Timezone to use for the timestamps. Default is UTC.",
-    ),
-    interval: TimeInterval = Query(..., description="Interval between two timestamps."),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    billing_type: MultipleQueryFilter[ProductBillingType] | None = Query(
-        None,
-        title="ProductBillingType Filter",
-        description=(
-            "Filter by billing type. "
-            "`recurring` will filter data corresponding "
-            "to subscriptions creations or renewals. "
-            "`one_time` will filter data corresponding to one-time purchases."
-        ),
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    metrics: list[str] | None = Query(
-        None,
-        title="Metrics",
-        description=(
-            "List of metric slugs to include in the export. "
-            "If not provided, all metrics are exported."
-        ),
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis | None = Depends(get_redis),
 ) -> CSVStreamingResponse:
     """Export metrics as a CSV file."""
-    if metrics is not None:
-        invalid_slugs = set(metrics) - VALID_METRIC_SLUGS
+    if filters.metrics is not None:
+        invalid_slugs = set(filters.metrics) - VALID_METRIC_SLUGS
         if invalid_slugs:
             raise PolarRequestValidationError(
                 [
@@ -200,12 +126,12 @@ async def export(
                         "loc": ("query", "metrics"),
                         "msg": f"Invalid metric slugs: {', '.join(sorted(invalid_slugs))}",
                         "type": "value_error",
-                        "input": metrics,
+                        "input": filters.metrics,
                     }
                 ]
             )
 
-    if not is_under_limits(start_date, end_date, interval):
+    if not is_under_limits(filters.start_date, filters.end_date, filters.interval):
         raise PolarRequestValidationError(
             [
                 {
@@ -215,7 +141,7 @@ async def export(
                         "Use a larger interval or reduce the date range."
                     ),
                     "type": "value_error",
-                    "input": (start_date, end_date, interval),
+                    "input": (filters.start_date, filters.end_date, filters.interval),
                 }
             ]
         )
@@ -224,15 +150,15 @@ async def export(
         response = await metrics_service.get_metrics(
             session,
             auth_subject,
-            start_date=start_date,
-            end_date=end_date,
-            timezone=ZoneInfo(timezone),
-            interval=interval,
-            organization_id=organization_id,
-            product_id=product_id,
-            billing_type=billing_type,
-            customer_id=customer_id,
-            metrics=metrics,
+            start_date=filters.start_date,
+            end_date=filters.end_date,
+            timezone=ZoneInfo(filters.timezone),
+            interval=filters.interval,
+            organization_id=filters.organization_id,
+            product_id=filters.product_id,
+            billing_type=filters.billing_type,
+            customer_id=filters.customer_id,
+            metrics=filters.metrics,
             redis=redis,
         )
 
@@ -285,17 +211,15 @@ async def limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
     response_model=list[MetricDashboardSchema],
 )
 async def list_dashboards(
+    filters: Annotated[MetricsDashboardListParams, Query()],
     auth_subject: auth.MetricsRead,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> list[MetricDashboardSchema]:
     """List user-defined metric dashboards."""
     dashboards = await metrics_service.list_dashboards(
         session,
         auth_subject,
-        organization_id=organization_id,
+        organization_id=filters.organization_id,
     )
     return [MetricDashboardSchema.model_validate(d) for d in dashboards]
 

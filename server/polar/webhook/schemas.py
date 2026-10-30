@@ -1,12 +1,13 @@
 import ipaddress
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 import idna
 from pydantic import (
     UUID4,
     AfterValidator,
     AnyUrl,
+    AwareDatetime,
     BeforeValidator,
     Field,
     GetCoreSchemaHandler,
@@ -20,10 +21,11 @@ from polar.kit.external_id import ExternalIDOutputMixin
 from polar.kit.schemas import (
     HttpsUrl,
     IDSchema,
+    MultipleQueryFilter,
     Schema,
     TimestampedSchema,
 )
-from polar.kit.versioning import _ACTIVE_API_VERSION, APIVersion
+from polar.kit.versioning import _ACTIVE_API_VERSION, APIVersion, QuerySchema
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
@@ -290,4 +292,35 @@ class WebhookDelivery(IDSchema, TimestampedSchema):
     )
     webhook_event: WebhookEvent = Field(
         description="The webhook event sent by this delivery."
+    )
+
+
+class WebhookEndpointListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, description="Filter by organization ID."
+    )
+
+
+class WebhookDeliveryListParams(QuerySchema):
+    endpoint_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, description="Filter by webhook endpoint ID."
+    )
+    start_timestamp: AwareDatetime | None = Field(
+        None, description="Filter deliveries after this timestamp."
+    )
+    end_timestamp: AwareDatetime | None = Field(
+        None, description="Filter deliveries before this timestamp."
+    )
+    succeeded: bool | None = Field(
+        None, description="Filter by delivery success status."
+    )
+    query: str | None = Field(
+        None,
+        description="Query to filter webhook deliveries.",
+    )
+    http_code_class: Literal["2xx", "3xx", "4xx", "5xx"] | None = Field(
+        None, description="Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx)."
+    )
+    event_type: MultipleQueryFilter[WebhookEventType] | None = Field(
+        None, description="Filter by webhook event type."
     )

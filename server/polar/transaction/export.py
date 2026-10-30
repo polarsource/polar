@@ -3,12 +3,16 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 from zoneinfo import ZoneInfo
 
+from pydantic import AwareDatetime, Field
+from pydantic_extra_types.timezone_name import TimeZoneName
 from sqlalchemy.orm import selectinload
 
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.currency import get_currency_decimal_factor
 from polar.kit.db.postgres import AsyncReadSession
+from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.utils import utc_now
+from polar.kit.versioning import QuerySchema
 from polar.models import Account, Order, Transaction
 from polar.models.transaction import TransactionType
 
@@ -193,3 +197,34 @@ async def generate_csv(
     async for transaction in repository.stream(statement):
         row = _row(transaction, timezone, now, delay)
         yield csv_writer.getrow(tuple(row[column] for column in export_columns))
+
+
+class TransactionExportParams(QuerySchema):
+    type: TransactionType | None = Field(None)
+    exclude_platform_fees: bool = Field(False)
+    created_after: AwareDatetime | None = Field(
+        None,
+        description=(
+            "Only include transactions created after this date. "
+            "Must include a UTC offset."
+        ),
+    )
+    created_before: AwareDatetime | None = Field(
+        None,
+        description=(
+            "Only include transactions created before this date. "
+            "Must include a UTC offset."
+        ),
+    )
+    timezone: TimeZoneName = Field(
+        default=TimeZoneName("UTC"),
+        description="Time zone used to render dates in the CSV.",
+    )
+    columns: MultipleQueryFilter[TransactionExportColumn] | None = Field(
+        None,
+        description=(
+            "Columns to include in the CSV, in order. "
+            "Defaults to created_at, type, product, gross_amount, fees, "
+            "tax_amount, net_amount, currency, status and paid_out_at."
+        ),
+    )

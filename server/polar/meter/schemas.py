@@ -2,19 +2,24 @@ from datetime import datetime
 from typing import Annotated, Self
 
 from fastapi import Path
-from pydantic import UUID4, Field, model_validator
+from pydantic import UUID4, AwareDatetime, Field, model_validator
+from pydantic_extra_types.timezone_name import TimeZoneName
 
+from polar.customer.schemas.customer import CustomerID
 from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
 )
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
-from polar.meter.aggregation import Aggregation
+from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
+from polar.kit.time_queries import MIN_DATETIME, TimeInterval
+from polar.kit.versioning import QuerySchema, Version
+from polar.meter.aggregation import Aggregation, AggregationFunction
 from polar.meter.filter import Filter
 from polar.meter.unit import MeterUnit
 from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
+from polar.version import V2027_01
 
 NAME_DESCRIPTION = (
     "The name of the meter. Will be shown on customer's invoices and usage."
@@ -137,4 +142,47 @@ class MeterQuantities(Schema):
     quantities: list[MeterQuantity]
     total: float = Field(
         description="The total quantity for the period.", examples=[100.0]
+    )
+
+
+class MeterListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalID Filter", description="Filter by meter external ID."
+    )
+    query: str | None = Field(None, description="Filter by name.")
+    is_archived: bool | None = Field(None, description="Filter on archived meters.")
+
+
+class MeterQuantitiesParams(QuerySchema):
+    start_timestamp: AwareDatetime = Field(
+        ...,
+        description="Start timestamp.",
+        ge=MIN_DATETIME,
+    )
+    end_timestamp: AwareDatetime = Field(..., description="End timestamp.")
+    interval: TimeInterval = Field(..., description="Interval between two timestamps.")
+    timezone: TimeZoneName = Field(
+        default=TimeZoneName("UTC"),
+        description="Timezone to use for the timestamps. Default is UTC.",
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[str] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    )
+    customer_aggregation_function: AggregationFunction | None = Field(
+        None,
+        description=(
+            "If set, will first compute the quantities per customer before aggregating "
+            "them using the given function. "
+            "If not set, the quantities will be aggregated across all events."
+        ),
     )

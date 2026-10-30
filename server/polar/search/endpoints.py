@@ -1,12 +1,13 @@
+from typing import Annotated
+
 from fastapi import Depends, Query
-from pydantic import UUID4
 
 from polar.openapi import APITag
 from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from . import auth
-from .schemas import SearchResults
+from .schemas import SearchResults, SearchSearchParams
 from .service import search as search_service
 
 router = APIRouter(tags=["search", APITag.private])
@@ -14,10 +15,8 @@ router = APIRouter(tags=["search", APITag.private])
 
 @router.get("/search", response_model=SearchResults)
 async def search(
+    filters: Annotated[SearchSearchParams, Query()],
     auth_subject: auth.SearchRead,
-    organization_id: UUID4 = Query(..., description="Organization ID to search within"),
-    query: str = Query(..., max_length=200, description="Search query string"),
-    limit: int = Query(20, ge=1, le=50, description="Maximum number of results"),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> SearchResults:
     """
@@ -26,9 +25,9 @@ async def search(
     results = await search_service.search(
         session,
         auth_subject,
-        organization_id=organization_id,
-        query=query,
-        limit=limit,
+        organization_id=filters.organization_id,
+        query=filters.query,
+        limit=filters.limit,
     )
 
     return SearchResults(results=results)

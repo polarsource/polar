@@ -58,6 +58,10 @@ API consumers always see `metadata`; the internal column name `user_metadata` is
 
 Add `MetadataQuery` to your list endpoint and service, then call `apply_metadata_clause` to filter results:
 
+Keep `MetadataQuery` separate from the endpoint's `QuerySchema` filter model: it
+parses bracket notation directly from the request rather than ordinary model
+fields.
+
 ```python
 # endpoints.py
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema

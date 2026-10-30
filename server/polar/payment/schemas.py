@@ -3,17 +3,21 @@ from typing import Annotated, Any, Literal
 from fastapi import Path
 from pydantic import UUID4, Field, TypeAdapter
 
+from polar.customer.schemas.customer import CustomerID
 from polar.enums import PaymentProcessor
 from polar.kit.schemas import (
     CHECKOUT_ID_EXAMPLE,
     ORGANIZATION_ID_EXAMPLE,
     ClassName,
     IDSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import QuerySchema
 from polar.models.payment import PaymentStatus, PaymentTrigger
+from polar.organization.schemas import OrganizationID
 
 PaymentID = Annotated[UUID4, Path(description="The payment ID.")]
 
@@ -121,3 +125,27 @@ Payment = Annotated[
 ]
 
 PaymentAdapter: TypeAdapter[Payment] = TypeAdapter(Payment)
+
+
+class PaymentListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    checkout_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="CheckoutID Filter", description="Filter by checkout ID."
+    )
+    order_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="OrderID Filter", description="Filter by order ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    status: MultipleQueryFilter[PaymentStatus] | None = Field(
+        None, title="Status Filter", description="Filter by payment status."
+    )
+    method: MultipleQueryFilter[str] | None = Field(
+        None, title="Method Filter", description="Filter by payment method."
+    )
+    customer_email: MultipleQueryFilter[str] | None = Field(
+        None, title="CustomerEmail Filter", description="Filter by customer email."
+    )

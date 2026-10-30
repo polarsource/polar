@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import Depends, Query
 from pydantic import UUID4
 from sqlalchemy.orm import joinedload
@@ -8,10 +10,8 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.locker import Locker, get_locker
 from polar.models import Organization, Payout
-from polar.models.payout import PayoutStatus
 from polar.openapi import APITag
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
@@ -20,7 +20,13 @@ from polar.routing import APIRouter
 from . import auth as payouts_auth
 from . import sorting
 from .schemas import Payout as PayoutSchema
-from .schemas import PayoutCreate, PayoutEstimate, PayoutGenerateInvoice, PayoutInvoice
+from .schemas import (
+    PayoutCreate,
+    PayoutEstimate,
+    PayoutGenerateInvoice,
+    PayoutInvoice,
+    PayoutListParams,
+)
 from .service import InsufficientBalance
 from .service import payout as payout_service
 
@@ -29,23 +35,18 @@ router = APIRouter(prefix="/payouts", tags=["payouts", APITag.private])
 
 @router.get("/", response_model=ListResource[PayoutSchema])
 async def list(
+    filters: Annotated[PayoutListParams, Query()],
     auth_subject: payouts_auth.PayoutsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    account_id: MultipleQueryFilter[UUID4] | None = Query(
-        None, title="Account ID Filter", description="Filter by account ID."
-    ),
-    status: MultipleQueryFilter[PayoutStatus] | None = Query(
-        None, title="Status Filter", description="Filter by payout status."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[PayoutSchema]:
     """List payouts."""
     results, count = await payout_service.list(
         session,
         auth_subject,
-        account_id=account_id,
-        status=status,
+        account_id=filters.account_id,
+        status=filters.status,
         pagination=pagination,
         sorting=sorting,
     )

@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, Query, Request, Response, status
@@ -124,6 +125,7 @@ from .schemas import (
     OrganizationEmbedStatus,
     OrganizationID,
     OrganizationKYC,
+    OrganizationListParams,
     OrganizationPaymentStatus,
     OrganizationPayoutAccountSet,
     OrganizationReviewState,
@@ -159,17 +161,17 @@ OrganizationNotFound = {
     operation_id="organizations:list",
 )
 async def list_organizations(
+    filters: Annotated[OrganizationListParams, Query()],
     auth_subject: auth.OrganizationsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    slug: str | None = Query(None, description="Filter by slug."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationSchema]:
     """List organizations."""
     results, count = await organization_service.list(
         session,
         auth_subject,
-        slug=slug,
+        slug=filters.slug,
         pagination=pagination,
         sorting=sorting,
     )

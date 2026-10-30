@@ -14,7 +14,7 @@ from polar.models.discount import (
     DiscountType,
 )
 from polar.postgres import AsyncSession
-from polar.version import V2026_10, V2027_01
+from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_discount
@@ -109,9 +109,10 @@ class TestListDiscounts:
         assert isinstance(fixed_discount, DiscountFixed)
 
     @pytest.mark.auth
-    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.api_version(V2026_04, V2026_10, V2027_01)
     async def test_filter_by_external_id(
         self,
+        api_version: APIVersion,
         save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
@@ -135,7 +136,7 @@ class TestListDiscounts:
             organization=organization,
             external_id="launch",
         )
-        await create_discount(
+        partner_discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
             basis_points=2000,
@@ -150,8 +151,14 @@ class TestListDiscounts:
 
         assert response.status_code == 200
         json = response.json()
-        assert [item["id"] for item in json["items"]] == [str(discount.id)]
-        assert json["items"][0]["external_id"] == "launch"
+        if api_version == V2027_01:
+            assert [item["id"] for item in json["items"]] == [str(discount.id)]
+            assert json["items"][0]["external_id"] == "launch"
+        else:
+            assert {item["id"] for item in json["items"]} == {
+                str(discount.id),
+                str(partner_discount.id),
+            }
 
 
 @pytest.mark.anyio

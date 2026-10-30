@@ -27,10 +27,13 @@ from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     IDSchema,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.time_queries import TimeInterval
+from polar.kit.versioning import QuerySchema
 from polar.member import MemberOwnerCreate
 from polar.models.customer import CustomerType
 from polar.organization.schemas import OrganizationID
@@ -328,3 +331,48 @@ CustomerPaymentMethod = Annotated[
 CustomerPaymentMethodTypeAdapter: TypeAdapter[CustomerPaymentMethod] = TypeAdapter(
     CustomerPaymentMethod
 )
+
+
+class CustomerListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    email: str | None = Field(None, description="Filter by exact email.")
+    query: str | None = Field(
+        None, description="Filter by name, email, or external ID."
+    )
+    active: bool | None = Field(
+        None,
+        description=(
+            "Filter by active customers, i.e. customers with at least one "
+            "trialing, active or past_due subscription."
+        ),
+    )
+
+
+class CustomerExportParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, description="Filter by organization ID."
+    )
+
+
+class CustomerGrowthParams(QuerySchema):
+    organization_id: OrganizationID = Field(
+        description="The organization ID to compute growth for."
+    )
+    start: datetime = Field(description="The start of the period.")
+    end: datetime = Field(description="The end of the period.")
+    interval: TimeInterval = Field(description="The interval between each period.")
+
+
+class CustomerTopParams(QuerySchema):
+    organization_id: OrganizationID = Field(
+        description="The organization ID to rank customers for."
+    )
+    start: datetime | None = Field(
+        None, description="Only count orders created at or after this timestamp."
+    )
+    end: datetime | None = Field(
+        None, description="Only count orders created before this timestamp."
+    )
+    limit: int = Field(10, ge=1, le=50, description="How many customers to rank.")

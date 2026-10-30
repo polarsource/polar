@@ -266,33 +266,41 @@ class ReducerState:
 
 
 def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
-    decoded = [
-        value.decode() if isinstance(value, bytes) else value for value in values
-    ]
     epoch = ""
     revision = 0
     cold_until: int | None = None
     cold = BucketStatistics()
     buckets: dict[int, BucketStatistics] = {}
     pending: dict[int, BucketStatistics] = {}
-    for field, value in zip(decoded[::2], decoded[1::2], strict=True):
-        if field.startswith(("bucket:", "pending:")):
-            prefix, _, rest = field.partition(":")
-            timestamp, _, statistic = rest.partition(":")
-            statistics = buckets if prefix == "bucket" else pending
-            start = int(timestamp)
-            bucket = statistics.get(start)
-            if bucket is None:
-                bucket = statistics[start] = BucketStatistics()
-            setattr(bucket, statistic, _number(value))
-        elif field.startswith("cold:"):
-            setattr(cold, field.removeprefix("cold:"), _number(value))
-        elif field == "epoch":
-            epoch = value
-        elif field == "revision":
-            revision = int(value)
-        elif field == "cold_until":
-            cold_until = int(value)
+    # The statistics each `<group>:<statistic>` field writes to, by group: `cold` and every
+    # `bucket:<start>` or `pending:<start>` seen so far.
+    groups: dict[str, BucketStatistics] = {"cold": cold}
+    # Fields and values alternate: zipping one iterator with itself reads them in pairs.
+    pairs = iter(values)
+    for field, value in zip(pairs, pairs, strict=True):
+        if isinstance(field, bytes):
+            field = field.decode()
+        if isinstance(value, bytes):
+            value = value.decode()
+        group, separator, statistic = field.rpartition(":")
+        bucket = groups.get(group)
+        if bucket is None:
+            if not separator:
+                if field == "epoch":
+                    epoch = value
+                elif field == "revision":
+                    revision = int(value)
+                elif field == "cold_until":
+                    cold_until = int(value)
+                continue
+            kind, _, timestamp = group.partition(":")
+            if kind == "bucket" or kind == "pending":
+                bucket = BucketStatistics()
+                (buckets if kind == "bucket" else pending)[int(timestamp)] = bucket
+                groups[group] = bucket
+            else:
+                continue
+        setattr(bucket, statistic, int(value) if value.isdecimal() else _number(value))
     return ReducerState(
         epoch=epoch,
         revision=revision,

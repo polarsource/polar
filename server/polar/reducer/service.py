@@ -40,7 +40,7 @@ from polar.redis import Redis
 from polar.worker import enqueue_job
 
 from . import cache, redis_store
-from .bucket_repository import ReducerBucketRepository
+from .bucket_repository import ReducerBucketRepository, get_customer_identities
 from .repository import ReducerRepository
 
 log: Logger = structlog.get_logger()
@@ -88,26 +88,6 @@ def get_reducer_bucket_start(timestamp: datetime) -> datetime:
     size = int(REDUCER_BUCKET_SIZE.total_seconds())
     epoch = int(timestamp.timestamp())
     return datetime.fromtimestamp(epoch - epoch % size, tz=UTC)
-
-
-def get_customer_identities(
-    customer: Customer,
-) -> list[tuple[UUID | None, str | None]]:
-    """The (customer_id, external_customer_id) pairs the customer's buckets use."""
-    return _get_identities(customer.id, customer.external_id)
-
-
-def _get_identities(
-    customer_id: UUID | None, external_customer_id: str | None
-) -> list[tuple[UUID | None, str | None]]:
-    identities: list[tuple[UUID | None, str | None]] = []
-    if customer_id is not None:
-        identities.append((customer_id, None))
-    if external_customer_id is not None:
-        identities.append((None, external_customer_id))
-    if customer_id is not None and external_customer_id is not None:
-        identities.append((customer_id, external_customer_id))
-    return identities
 
 
 class ReducerService:
@@ -511,118 +491,106 @@ class ReducerService:
     async def get_database_now(self, session: AsyncReadSession) -> datetime:
         return await ReducerBucketRepository.from_session(session).get_database_now()
 
-    async def get_customer_value(
+    async def get_customer_meter_units(
         self,
         session: AsyncReadSession,
         redis: Redis,
-        reducer: Reducer,
-        customer_id: UUID | None,
-        external_customer_id: str | None,
-        *,
-        since: datetime | None = None,
-    ) -> Decimal:
-        """The customer's usage in the buckets starting at or after `since`."""
-        identities = _get_identities(customer_id, external_customer_id)
-        if not identities:
-            raise ValueError("customer_id or external_customer_id is required")
+        customer: Customer,
+        meter_id: UUID,
+    ) -> tuple[Decimal | None, Decimal | None]:
+        """The customer's consumed and credited units since the meter's latest reset."""
+        identities = get_customer_identities(customer)
         current_bucket_start = get_reducer_bucket_start(utc_now())
         previous_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
+        rows = await ReducerBucketRepository.from_session(
+            session
+        ).get_customer_meter_totals(
+            customer, meter_id, usage_closed_before=previous_bucket_start
+        )
+        usage: tuple[UUID, Aggregation, datetime | None] | None = None
+        usage_cold_agg_values: list[tuple[Any, ...]] = []
+        credited_units: Decimal | None = None
+        for reducer_id, kind, aggregation, since, *cold_agg_values in rows:
+            match kind:
+                case ReducerKind.credit:
+                    # credits are always sums and never rolled up in redis
+                    credited_units = Decimal(cold_agg_values[1])
+                case ReducerKind.usage:
+                    usage = (reducer_id, aggregation, since)
+                    usage_cold_agg_values.append(tuple(cold_agg_values))
 
-        totals: list[tuple[Any, ...]] = []
+        if usage is None or isinstance(usage[1], UniqueAggregation):
+            return None, credited_units
 
-        if since is None or since < previous_bucket_start:
-            closed = await ReducerBucketRepository.from_session(
-                session
-            ).get_totals_starting_within(
-                reducer.organization_id,
-                reducer.id,
-                identities,
-                since,
-                previous_bucket_start,
-            )
-            totals.append(tuple(closed))
-
+        reducer_id, aggregation, since = usage
         active_bucket_starts = [
             bucket_start
             for bucket_start in (previous_bucket_start, current_bucket_start)
             if since is None or bucket_start >= since
         ]
-        if active_bucket_starts:
-            totals += await redis_store.get_bucket_totals(
-                redis, reducer, active_bucket_starts, identities
+        hot_agg_values = (
+            await redis_store.get_bucket_totals(
+                redis, reducer_id, aggregation.func, active_bucket_starts, identities
             )
-
-        return _get_quantity(reducer.aggregation.func, totals)
+            if active_bucket_starts
+            else []
+        )
+        consumed_units = _get_quantity(
+            aggregation.func, [*usage_cold_agg_values, *hot_agg_values]
+        )
+        return consumed_units, credited_units
 
     async def log_customer_meter_comparison(
         self, session: AsyncReadSession, redis: Redis, customer_meter: CustomerMeter
     ) -> None:
-        """Logs the customer meter's consumed units next to the reducer's value
-        since the meter's latest reset, and its credited units next to the credit
-        reducer's unsealed total."""
+        if isinstance(customer_meter.meter.aggregation, UniqueAggregation):
+            return
         customer = customer_meter.customer
         with logfire.span(
             "Compare customer meter with reducer",
             organization_id=str(customer.organization_id),
             customer_meter_id=str(customer_meter.id),
+            aggregation=str(customer_meter.meter.aggregation.func),
         ) as span:
             try:
                 async with session.begin_nested():
-                    repository = ReducerRepository.from_session(session)
-                    credit = await repository.get_by_meter_and_kind(
-                        customer_meter.meter_id, ReducerKind.credit
-                    )
-                    if credit is not None:
-                        totals = await self.get_credits(session, credit, customer.id)
-                        span.set_attribute(
-                            "legacy_credited",
-                            _format_units(customer_meter.credited_units),
-                        )
-                        span.set_attribute(
-                            "reducer_credited", _format_units(totals.sum)
-                        )
-                        span.set_attribute(
-                            "credited_match",
-                            math.isclose(totals.sum, customer_meter.credited_units),
-                        )
-                    reducer = await repository.get_by_meter_and_kind(
-                        customer_meter.meter_id, ReducerKind.usage
-                    )
-                    if reducer is None or isinstance(
-                        reducer.aggregation, UniqueAggregation
-                    ):
-                        return
-                    meter_reset_event = await EventRepository.from_session(
-                        session
-                    ).get_latest_meter_reset(customer, customer_meter.meter_id)
-                    since = (
-                        meter_reset_event.timestamp
-                        if meter_reset_event is not None
-                        else None
-                    )
-                    span.set_attribute("reducer_id", str(reducer.id))
-                    span.set_attribute("aggregation", str(reducer.aggregation.func))
-                    span.set_attribute("since", since)
-                    value = await self.get_customer_value(
-                        session,
-                        redis,
-                        reducer,
-                        customer.id,
-                        customer.external_id,
-                        since=since,
-                    )
-                    span.set_attribute(
-                        "legacy", _format_units(customer_meter.consumed_units)
-                    )
-                    span.set_attribute("reducer", _format_units(value))
-                    span.set_attribute(
-                        "match", math.isclose(value, customer_meter.consumed_units)
+                    (
+                        consumed_units,
+                        credited_units,
+                    ) = await self.get_customer_meter_units(
+                        session, redis, customer, customer_meter.meter_id
                     )
             except Exception:
                 log.exception(
                     "Failed to compare customer meter with reducer",
                     customer_meter_id=customer_meter.id,
                 )
+                return
+            span.set_attribute(
+                "legacy",
+                {
+                    "consumed_units": _format_units(customer_meter.consumed_units),
+                    "credited_units": _format_units(customer_meter.credited_units),
+                },
+            )
+            span.set_attribute(
+                "reducer",
+                {
+                    "consumed_units": _format_units(consumed_units)
+                    if consumed_units is not None
+                    else None,
+                    "credited_units": _format_units(credited_units)
+                    if credited_units is not None
+                    else None,
+                },
+            )
+            span.set_attribute(
+                "match",
+                consumed_units is not None
+                and credited_units is not None
+                and math.isclose(consumed_units, customer_meter.consumed_units)
+                and math.isclose(credited_units, customer_meter.credited_units),
+            )
 
     async def _add_to_closed_buckets(
         self, session: AsyncSession, contributions: Contributions

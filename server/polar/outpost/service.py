@@ -27,11 +27,9 @@ from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
 from polar.models import Customer, Organization, Reducer
 from polar.models.reducer import ReducerKind
+from polar.reducer.bucket_repository import get_customer_identities
 from polar.reducer.repository import ReducerRepository
-from polar.reducer.service import (
-    get_customer_identities,
-    get_reducer_bucket_start,
-)
+from polar.reducer.service import get_reducer_bucket_start
 from polar.reducer.service import reducer as reducer_service
 
 from .schemas import (

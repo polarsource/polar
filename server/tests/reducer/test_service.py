@@ -6,7 +6,6 @@ from typing import Any, cast
 from unittest.mock import call
 
 import pytest
-from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -20,7 +19,6 @@ from polar.meter.aggregation import (
 )
 from polar.models import (
     Customer,
-    CustomerMeter,
     Event,
     Meter,
     MeterReducer,
@@ -34,12 +32,14 @@ from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.redis import Redis
-from polar.reducer.bucket_repository import ReducerBucketRepository
+from polar.reducer.bucket_repository import (
+    ReducerBucketRepository,
+    get_customer_identities,
+)
 from polar.reducer.redis_store import get_reducer_bucket_key
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
-    get_customer_identities,
     get_reducer_bucket_start,
 )
 from polar.reducer.service import reducer as reducer_service
@@ -1648,14 +1648,12 @@ async def rollup_tokens(
     redis: Redis,
     organization: Organization,
     aggregation: Aggregation,
-) -> Reducer:
+) -> Meter:
     """Rolls up 2, 3 and 4 tokens into the buckets T-2, T-1 and T."""
     meter = await create_meter(
         save_fixture, organization=organization, aggregation=aggregation
     )
-    reducer = await create_reducer(
-        save_fixture, organization=organization, meters=[meter]
-    )
+    await create_reducer(save_fixture, organization=organization, meters=[meter])
     events = [
         build_event(organization, timestamp=timestamp, metadata={"tokens": tokens})
         for timestamp, tokens in (
@@ -1665,11 +1663,11 @@ async def rollup_tokens(
         )
     ]
     await reducer_service.rollup(session, redis, organization.id, events)
-    return reducer
+    return meter
 
 
 @pytest.mark.anyio
-class TestGetCustomerValue:
+class TestGetCustomerMeterUnits:
     @pytest.fixture(autouse=True)
     def now(self, mocker: MockerFixture) -> None:
         mocker.patch(
@@ -1697,15 +1695,18 @@ class TestGetCustomerValue:
         aggregation: Aggregation,
         expected: int,
     ) -> None:
-        reducer = await rollup_tokens(
+        meter = await rollup_tokens(
             save_fixture, session, redis, organization, aggregation
         )
-
-        value = await reducer_service.get_customer_value(
-            session, redis, reducer, uuid.uuid4(), "external"
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="external"
         )
 
-        assert value == expected
+        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
+            session, redis, customer, meter.id
+        )
+
+        assert consumed_units == expected
 
     @pytest.mark.parametrize(
         ("since", "expected"),
@@ -1717,7 +1718,7 @@ class TestGetCustomerValue:
             (BUCKET_START + timedelta(seconds=1), 0),
         ],
     )
-    async def test_since(
+    async def test_since_latest_reset(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1726,15 +1727,28 @@ class TestGetCustomerValue:
         since: datetime,
         expected: int,
     ) -> None:
-        reducer = await rollup_tokens(
+        meter = await rollup_tokens(
             save_fixture, session, redis, organization, SUM_TOKENS
         )
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="external"
+        )
+        for timestamp in (since - REDUCER_BUCKET_SIZE, since):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                source=EventSource.system,
+                name=SystemEvent.meter_reset,
+                timestamp=timestamp,
+                metadata={"meter_id": str(meter.id)},
+            )
 
-        value = await reducer_service.get_customer_value(
-            session, redis, reducer, None, "external", since=since
+        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
+            session, redis, customer, meter.id
         )
 
-        assert value == expected
+        assert consumed_units == expected
 
     async def test_other_customer(
         self,
@@ -1743,97 +1757,69 @@ class TestGetCustomerValue:
         redis: Redis,
         organization: Organization,
     ) -> None:
-        reducer = await rollup_tokens(
+        meter = await rollup_tokens(
             save_fixture, session, redis, organization, SUM_TOKENS
         )
-
-        value = await reducer_service.get_customer_value(
-            session, redis, reducer, None, "other"
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="other"
         )
 
-        assert value == 0
+        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
+            session, redis, customer, meter.id
+        )
 
+        assert consumed_units == 0
 
-@pytest.fixture
-async def customer_meter(
-    save_fixture: SaveFixture, organization: Organization, customer: Customer
-) -> CustomerMeter:
-    meter = await create_meter(save_fixture, organization=organization)
-    await create_reducer(save_fixture, organization=organization, meters=[meter])
-    customer_meter = CustomerMeter(
-        customer=customer,
-        meter=meter,
-        consumed_units=Decimal(5),
-        credited_units=0,
-        balance=Decimal(-5),
-    )
-    await save_fixture(customer_meter)
-    return customer_meter
-
-
-@pytest.mark.anyio
-class TestLogCustomerMeterComparison:
-    async def test_logs_values_since_latest_reset(
+    async def test_unique_aggregation(
         self,
-        capfire: CaptureLogfire,
-        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
         organization: Organization,
         customer: Customer,
-        customer_meter: CustomerMeter,
     ) -> None:
-        reset = await create_event(
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            aggregation=UniqueAggregation(property="user_id"),
+        )
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+
+        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
+            session, redis, customer, meter.id
+        )
+
+        assert consumed_units is None
+        assert credited_units is None
+
+    async def test_credits_since_latest_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        credit = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        await create_event(
             save_fixture,
             organization=organization,
             customer=customer,
             source=EventSource.system,
             name=SystemEvent.meter_reset,
-            metadata={"meter_id": str(customer_meter.meter_id)},
+            timestamp=BUCKET_START,
+            metadata={"meter_id": str(meter.id)},
         )
-        get_customer_value = mocker.patch.object(
-            reducer_service, "get_customer_value", return_value=Decimal(4)
-        )
-
-        await reducer_service.log_customer_meter_comparison(
-            session, redis, customer_meter
-        )
-
-        assert get_customer_value.call_args.kwargs == {"since": reset.timestamp}
-        [span] = [
-            span
-            for span in capfire.exporter.exported_spans
-            if span.name == "Compare customer meter with reducer"
-            and span.attributes is not None
-            and span.attributes.get("logfire.span_type") == "span"
-        ]
-        assert span.attributes is not None
-        assert span.attributes["legacy"] == "5"
-        assert span.attributes["reducer"] == "4"
-        assert span.attributes["match"] is False
-        assert span.attributes["aggregation"] == "count"
-
-    async def test_logs_unsealed_credits(
-        self,
-        capfire: CaptureLogfire,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        redis: Redis,
-        organization: Organization,
-        customer: Customer,
-        customer_meter: CustomerMeter,
-    ) -> None:
-        credit = await create_reducer(
-            save_fixture,
-            organization=organization,
-            meters=[customer_meter.meter],
-            kind=ReducerKind.credit,
-        )
-        for bucket_start, units, sealed_at in (
-            (BUCKET_START, 100, CLOSED),
-            (NEXT_BUCKET_START, 7, None),
+        for bucket_start, credited, sealed_at in (
+            (BUCKET_START - REDUCER_BUCKET_SIZE, 100, CLOSED),
+            (BUCKET_START, 7, CLOSED),
+            (NEXT_BUCKET_START, 3, None),
         ):
             await save_fixture(
                 ReducerBucket(
@@ -1843,46 +1829,17 @@ class TestLogCustomerMeterComparison:
                     bucket_start=bucket_start,
                     bucket_end=bucket_start + REDUCER_BUCKET_SIZE,
                     count=1,
-                    sum=Decimal(units),
+                    sum=Decimal(credited),
                     sealed_at=sealed_at,
                 )
             )
-        mocker.patch.object(
-            reducer_service, "get_customer_value", return_value=Decimal(5)
+
+        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
+            session, redis, customer, meter.id
         )
 
-        await reducer_service.log_customer_meter_comparison(
-            session, redis, customer_meter
-        )
-
-        [span] = [
-            span
-            for span in capfire.exporter.exported_spans
-            if span.name == "Compare customer meter with reducer"
-            and span.attributes is not None
-            and span.attributes.get("logfire.span_type") == "span"
-        ]
-        assert span.attributes is not None
-        assert span.attributes["legacy_credited"] == "0"
-        assert span.attributes["reducer_credited"] == "7"
-        assert span.attributes["credited_match"] is False
-
-    async def test_swallows_failure(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        redis: Redis,
-        customer_meter: CustomerMeter,
-    ) -> None:
-        mocker.patch.object(
-            reducer_service, "get_customer_value", side_effect=RuntimeError
-        )
-
-        await reducer_service.log_customer_meter_comparison(
-            session, redis, customer_meter
-        )
-
-        assert await session.get(CustomerMeter, customer_meter.id) is not None
+        assert consumed_units is None
+        assert credited_units == 10
 
 
 async def get_meter_reducers(session: AsyncSession, meter: Meter) -> list[Reducer]:

@@ -90,6 +90,29 @@ class OrderRepository(
 ):
     model = Order
 
+    def get_benefits_move_statement(
+        self, organization_id: UUID, product_external_id: str
+    ) -> Select[tuple[Order]]:
+        """Paid or refunded one-time orders of any version of a product, except
+        those whose benefits were revoked by a refund or a dispute."""
+        return (
+            select(Order)
+            .join(Order.customer)
+            .join(Product, Order.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id == product_external_id,
+                ~Order.is_deleted,
+                Order.subscription_id.is_(None),
+                Order.seats.is_(None),
+                # A refunded order keeps its benefits unless the refund revoked them
+                Order.status.in_({*OrderStatus.paid_statuses(), OrderStatus.refunded}),
+                ~Customer.is_deleted,
+                ~order_benefits_revoked_clause(Order.id),
+            )
+            .options(joinedload(Order.customer))
+        )
+
     async def get_revenue_by_customer(
         self,
         organization_id: UUID,

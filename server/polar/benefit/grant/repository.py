@@ -6,6 +6,7 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -36,6 +37,10 @@ class BenefitGrantRepository(
     RepositoryBase[BenefitGrant],
 ):
     model = BenefitGrant
+
+    async def lock_customer(self, customer_id: UUID) -> None:
+        """Serialize grant changes of a customer that read their other grants."""
+        await pg_advisory_xact_lock(self.session, "benefit_grant", customer_id)
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

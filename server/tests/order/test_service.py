@@ -69,6 +69,7 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.dispute import DisputeStatus
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
@@ -131,6 +132,7 @@ from tests.fixtures.random_objects import (
     create_custom_field,
     create_customer,
     create_discount,
+    create_dispute,
     create_event,
     create_meter,
     create_order,
@@ -139,6 +141,7 @@ from tests.fixtures.random_objects import (
     create_product,
     create_product_fixed_and_seat,
     create_product_unit_based,
+    create_refund,
     create_subscription,
     create_trialing_subscription,
     create_wallet,
@@ -6544,6 +6547,123 @@ class TestCustomerBasedInvoiceNumbering:
 
 
 @pytest.mark.anyio
+class TestMoveBenefits:
+    async def test_one_time_orders_of_any_version(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        previous = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+            is_current=False,
+        )
+        current = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        other = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        order = await create_order(save_fixture, product=previous, customer=customer)
+        await create_order(
+            save_fixture,
+            product=previous,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        await create_order(save_fixture, product=other, customer=customer)
+
+        await order_service.move_benefits(session, organization.id, "pro", current)
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=current.id,
+            order_id=order.id,
+            delay=ANY,
+        )
+
+    async def test_skips_orders_with_revoked_benefits(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        kept = await create_order(save_fixture, product=product, customer=customer)
+        refunded = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.partially_refunded,
+        )
+        disputed = await create_order(save_fixture, product=product, customer=customer)
+        payment = await create_payment(save_fixture, organization)
+        await create_refund(save_fixture, refunded, payment, revoke_benefits=True)
+        await create_dispute(save_fixture, disputed, payment, status=DisputeStatus.lost)
+
+        await order_service.move_benefits(session, organization.id, "pro", product)
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=kept.id,
+            delay=ANY,
+        )
+
+    async def test_moves_refunded_orders_that_kept_benefits(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        refunded = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.refunded,
+        )
+        payment = await create_payment(save_fixture, organization)
+        await create_refund(save_fixture, refunded, payment)
+
+        await order_service.move_benefits(session, organization.id, "pro", product)
+
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=refunded.id,
+            delay=ANY,
+        )
+
+
 @pytest.mark.anyio
 class TestUpdateProductBenefitsGrants:
     async def test_enqueues_jobs_for_one_time_orders(

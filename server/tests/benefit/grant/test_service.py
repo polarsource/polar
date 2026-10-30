@@ -16,20 +16,29 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
+    Downloadable,
+    LicenseKey,
     Member,
     Organization,
     Product,
     Subscription,
 )
+from polar.models.benefit import BenefitType
+from polar.models.downloadable import DownloadableStatus
+from polar.models.file import FileServiceTypes
 from polar.models.member import MemberRole
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
     create_benefit_grant,
     create_customer,
     create_order,
+    create_payment,
+    create_refund,
     create_subscription,
+    create_support_case_attachment_file,
     set_product_benefits,
 )
 
@@ -717,6 +726,346 @@ class TestEnqueueBenefitsGrants:
             enqueue_grants_actor.message.return_value
         )
         group_mock.return_value.run.assert_called_once()
+
+    async def test_grant_skips_order_with_revoked_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        group_mock = mocker.patch("polar.benefit.grant.service.group")
+        benefit = await create_benefit(save_fixture, organization=organization)
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[benefit]
+        )
+        order = await create_order(save_fixture, product=product, customer=customer)
+        payment = await create_payment(save_fixture, organization)
+        await create_refund(save_fixture, order, payment, revoke_benefits=True)
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, order=order
+        )
+
+        enqueue_job_mock.assert_not_called()
+        group_mock.assert_not_called()
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_grant_repoints_previous_benefit_version(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        subscription: Subscription,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        group_mock = mocker.patch("polar.benefit.grant.service.group")
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            external_id="license",
+            is_current=False,
+        )
+        grant = await create_benefit_grant(
+            save_fixture, customer, previous, granted=True, subscription=subscription
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="license"
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[current]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        await session.refresh(grant)
+        assert grant.benefit_id == current.id
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.update", benefit_grant_id=grant.id
+        )
+        group_mock.return_value.run.assert_not_called()
+
+    async def test_grant_keeps_previous_version_without_config_as_code(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        subscription: Subscription,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        group_mock = mocker.patch("polar.benefit.grant.service.group")
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            external_id="license",
+            is_current=False,
+        )
+        grant = await create_benefit_grant(
+            save_fixture, customer, previous, granted=True, subscription=subscription
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="license"
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[current]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        await session.refresh(grant)
+        assert grant.benefit_id == previous.id
+        enqueue_job_mock.assert_not_called()
+        group_mock.return_value.run.assert_called_once()
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_grant_repoints_grant_without_member(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        subscription: Subscription,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        mocker.patch("polar.benefit.grant.service.group")
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            external_id="license",
+            is_current=False,
+        )
+        grant = await create_benefit_grant(
+            save_fixture, customer, previous, granted=True, subscription=subscription
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="license"
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[current]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        await session.refresh(grant)
+        assert (grant.benefit_id, grant.member_id) == (current.id, None)
+        enqueue_job_mock.assert_any_call("benefit.update", benefit_grant_id=grant.id)
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_grant_repoints_owner_member_grant(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        subscription: Subscription,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        mocker.patch("polar.benefit.grant.service.group")
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            external_id="license",
+            is_current=False,
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            previous,
+            granted=True,
+            member=member_owner,
+            subscription=subscription,
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="license"
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[current]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        await session.refresh(grant)
+        assert grant.benefit_id == current.id
+        enqueue_job_mock.assert_any_call("benefit.update", benefit_grant_id=grant.id)
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_grant_repoints_license_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        subscription: Subscription,
+        customer: Customer,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.enqueue_job")
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            external_id="x",
+            is_current=False,
+        )
+        record = LicenseKey(
+            organization=organization, customer=customer, benefit=previous, key="key"
+        )
+        await save_fixture(record)
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            previous,
+            granted=True,
+            properties={"license_key_id": str(record.id)},
+            subscription=subscription,
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, type=previous.type, external_id="x"
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[current]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        await session.refresh(record)
+        assert record.benefit_id == current.id
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_grant_repoints_downloadables(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        subscription: Subscription,
+        customer: Customer,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.enqueue_job")
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+            external_id="x",
+            is_current=False,
+        )
+        file = await create_support_case_attachment_file(
+            save_fixture, organization, service=FileServiceTypes.downloadable
+        )
+        record = Downloadable(
+            file=file,
+            customer=customer,
+            benefit=previous,
+            status=DownloadableStatus.granted,
+        )
+        await save_fixture(record)
+        await create_benefit_grant(
+            save_fixture, customer, previous, granted=True, subscription=subscription
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, type=previous.type, external_id="x"
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[current]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        await session.refresh(record)
+        assert record.benefit_id == current.id
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_grant_repoint_keeps_existing_downloadable(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        subscription: Subscription,
+        customer: Customer,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.enqueue_job")
+        file = await create_support_case_attachment_file(
+            save_fixture, organization, service=FileServiceTypes.downloadable
+        )
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+            external_id="files",
+            is_current=False,
+        )
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=previous
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+        current = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+            external_id="files",
+        )
+        previous_downloadable = Downloadable(
+            file=file,
+            customer=customer,
+            benefit=previous,
+            status=DownloadableStatus.granted,
+        )
+        await save_fixture(previous_downloadable)
+        current_downloadable = Downloadable(
+            file=file,
+            customer=customer,
+            benefit=current,
+            status=DownloadableStatus.granted,
+        )
+        await save_fixture(current_downloadable)
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[current]
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        await session.refresh(previous_downloadable)
+        await session.refresh(current_downloadable)
+        assert previous_downloadable.benefit_id == previous.id
+        assert previous_downloadable.deleted_at is not None
+        assert current_downloadable.deleted_at is None
 
 
 @pytest.mark.anyio

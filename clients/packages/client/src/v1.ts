@@ -2752,6 +2752,33 @@ export interface paths {
     patch: operations['orders:update']
     trace?: never
   }
+  '/v1/orders/benefits/move': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Move Order Benefits
+     * @description Give the one-time orders of a product, in any version, the benefits of
+     *     another product.
+     *
+     *     The orders don't change. Benefits with the same `external_id` are updated in
+     *     place, without reissuing license keys or roles. Added benefits are granted and
+     *     removed ones are revoked, in the background.
+     *
+     *     **Scopes**: `orders:write`
+     */
+    post: operations['orders:move_benefits']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/orders/{id}/finalize': {
     parameters: {
       query?: never
@@ -28796,6 +28823,21 @@ export interface components {
        */
       readonly refundable_tax_amount: number
     }
+    /** OrderBenefitsMove */
+    OrderBenefitsMove: {
+      /**
+       * Product External Id
+       * @description `external_id` of the product whose one-time orders move, in any version.
+       */
+      product_external_id: string
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product whose benefits the orders get. Must be a current version.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      target_product_id: string
+    }
     /**
      * OrderBillingReason
      * @enum {string}
@@ -49662,6 +49704,48 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'orders:move_benefits': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrderBenefitsMove']
+      }
+    }
+    responses: {
+      /** @description Move started. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description You don't have the permission to manage sales, or the organization doesn't use catalog versioning. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */

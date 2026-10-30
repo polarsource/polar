@@ -86,6 +86,15 @@ class BenefitRepository(
             .order_by(Benefit.created_at, Benefit.id)
         )
 
+    async def get_all_versions_by_ids(self, ids: Sequence[UUID]) -> Sequence[Benefit]:
+        """Benefits by ID, including previous versions and deleted ones."""
+        statement = (
+            self.get_base_statement(include_deleted=True)
+            .where(Benefit.id.in_(ids))
+            .options(undefer(Benefit.external_id))
+        )
+        return await self.get_all(statement)
+
     async def list_by_organization_and_type(
         self, organization_id: UUID, benefit_type: BenefitType
     ) -> Sequence[Benefit]:

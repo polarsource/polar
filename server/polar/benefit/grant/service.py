@@ -11,14 +11,18 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies import BenefitRetriableError
 from polar.customer.repository import CustomerRepository
+from polar.customer_portal.repository.downloadable import DownloadableRepository
+from polar.customer_seat.repository import CustomerSeatRepository
 from polar.event.service import event as event_service
 from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
+from polar.license_key.repository import LicenseKeyRepository
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.models import (
@@ -30,8 +34,10 @@ from polar.models import (
     Product,
     User,
 )
+from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
@@ -352,6 +358,21 @@ class BenefitGrantService:
         **scope: Unpack[BenefitGrantScope],
     ) -> None:
         repository = BenefitGrantRepository.from_session(session)
+        if task == "grant":
+            # Repointing reads the customer's other grants, so concurrent jobs for
+            # the customer must not act on the same snapshot.
+            await repository.lock_customer(customer.id)
+
+        # A refund or dispute may have revoked the order since this was enqueued
+        order = scope.get("order")
+        if (
+            task == "grant"
+            and order is not None
+            and await CustomerSeatRepository.from_session(
+                session
+            ).are_order_benefits_revoked(order.id)
+        ):
+            return
 
         # Get existing grants to avoid redundant jobs
         # When a member_id is provided, only check that member's grants
@@ -369,7 +390,16 @@ class BenefitGrantService:
                 customer, **scope
             )
 
-        granted_benefit_ids = {g.benefit_id for g in existing_grants if g.is_granted}
+        repointed_benefit_ids = (
+            await self._repoint_grants(
+                session, existing_grants, customer, product, member_id
+            )
+            if task == "grant"
+            else set()
+        )
+        granted_benefit_ids = {
+            g.benefit_id for g in existing_grants if g.is_granted
+        } | repointed_benefit_ids
         # Don't retry grants that failed due to required customer action
         errored_benefit_ids = {
             g.benefit_id
@@ -439,6 +469,117 @@ class BenefitGrantService:
                 member_id=member_id,
                 **scope_args,
             )
+
+    async def _repoint_grants(
+        self,
+        session: AsyncSession,
+        grants: Sequence[BenefitGrant],
+        customer: Customer,
+        product: Product,
+        member_id: UUID | None,
+    ) -> set[UUID]:
+        """Point grants of a previous benefit version at the product's version.
+
+        With catalog versioning, editing a benefit creates a new row with the same
+        `external_id`. Revoking and granting again would reissue license keys or
+        remove Discord roles, so the grant is kept and updated in place instead.
+        Meter credits are consumed, so they're revoked and granted as usual.
+        """
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            product.organization_id
+        )
+        if organization is None or not organization.is_config_as_code_enabled:
+            return set()
+
+        targets = {
+            benefit.external_id: benefit
+            for benefit in product.benefits
+            if benefit.external_id is not None
+            and benefit.type != BenefitType.meter_credit
+        }
+        members: set[UUID | None] = {member_id}
+        if member_id is None and not product.has_seat_based_price:
+            # Grants without a member go to the customer's owner member, and
+            # older ones may still have none.
+            owner = await MemberRepository.from_session(
+                session
+            ).get_owner_by_customer_id(customer.id)
+            if owner is not None:
+                members.add(owner.id)
+
+        product_benefit_ids = {benefit.id for benefit in product.benefits}
+        candidates = [
+            grant
+            for grant in grants
+            if grant.is_granted
+            and grant.member_id in members
+            and grant.benefit_id not in product_benefit_ids
+        ]
+        if not targets or not candidates:
+            return set()
+
+        previous_benefits = {
+            benefit.id: benefit
+            for benefit in await BenefitRepository.from_session(
+                session
+            ).get_all_versions_by_ids([grant.benefit_id for grant in candidates])
+        }
+        taken = {grant.benefit_id for grant in grants if grant.member_id in members}
+
+        repointed: set[UUID] = set()
+        for grant in candidates:
+            previous = previous_benefits[grant.benefit_id]
+            target = (
+                targets.get(previous.external_id)
+                if previous.external_id is not None
+                else None
+            )
+            if target is None or target.type != previous.type or target.id in taken:
+                continue
+            await self._repoint_benefit_records(
+                session, grant, customer, previous, target
+            )
+            grant.benefit = target
+            session.add(grant)
+            taken.add(target.id)
+            repointed.add(target.id)
+            enqueue_job("benefit.update", benefit_grant_id=grant.id)
+
+        return repointed
+
+    async def _repoint_benefit_records(
+        self,
+        session: AsyncSession,
+        grant: BenefitGrant,
+        customer: Customer,
+        previous: Benefit,
+        target: Benefit,
+    ) -> None:
+        """Move what the strategy looks up by benefit, so its update finds it."""
+        match target.type:
+            case BenefitType.license_keys:
+                license_key_id = grant.properties.get("license_key_id")
+                if isinstance(license_key_id, str):
+                    await LicenseKeyRepository.from_session(session).repoint_benefit(
+                        UUID(license_key_id), target.id
+                    )
+            case BenefitType.downloadables:
+                # Downloadables are shared by every grant of the benefit, so they
+                # stay with the previous version while another grant still has it.
+                other_grants = [
+                    other
+                    for other in await BenefitGrantRepository.from_session(
+                        session
+                    ).list_granted_by_benefit_and_customer(previous, customer)
+                    if other.id != grant.id and other.member_id == grant.member_id
+                ]
+                if not other_grants:
+                    await DownloadableRepository.from_session(session).repoint_benefit(
+                        customer_id=customer.id,
+                        member_id=grant.member_id,
+                        benefit_id=previous.id,
+                        new_benefit_id=target.id,
+                    )
 
     async def enqueue_benefit_grant_updates(
         self,

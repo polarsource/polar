@@ -40,6 +40,7 @@ from polar.email.schemas import EmailAdapter, EmailTemplate
 from polar.email.sender import enqueue_email_template
 from polar.enums import (
     PaymentMode,
+    ProrationBehaviorSetting,
     SubscriptionProrationBehavior,
     TaxBehavior,
 )
@@ -2048,7 +2049,7 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         product_id: uuid.UUID,
-        proration_behavior: SubscriptionProrationBehavior | None = None,
+        proration_behavior: ProrationBehaviorSetting | None = None,
         discount: uuid.UUID | Literal["unset"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> Subscription:
@@ -2100,10 +2101,11 @@ class SubscriptionService:
             # which is_recurring_product asserts.
             assert previous_product.is_recurring
 
-            if proration_behavior is None:
-                proration_behavior = resolve_proration_behavior(
-                    subscription, organization.proration_behavior, product=product
-                )
+            proration_behavior = resolve_proration_behavior(
+                subscription,
+                proration_behavior or organization.proration_behavior,
+                product=product,
+            )
 
             is_initial_seat_transition = self._promote_seats_for_seat_transition(
                 subscription, currency_prices, proration_behavior, product_id
@@ -2487,7 +2489,7 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         seats: int,
-        proration_behavior: SubscriptionProrationBehavior | None = None,
+        proration_behavior: ProrationBehaviorSetting | None = None,
     ) -> Subscription:
         await self.validate_seats_change(session, subscription, seats=seats)
 
@@ -2497,10 +2499,11 @@ class SubscriptionService:
         )
         assert organization is not None
 
-        if proration_behavior is None:
-            proration_behavior = resolve_proration_behavior(
-                subscription, organization.proration_behavior, seats=seats
-            )
+        proration_behavior = resolve_proration_behavior(
+            subscription,
+            proration_behavior or organization.proration_behavior,
+            seats=seats,
+        )
 
         old_seats = subscription.seats or 1
         old_amount = subscription.amount
@@ -2608,7 +2611,7 @@ class SubscriptionService:
         subscription: Subscription,
         *,
         units: int,
-        proration_behavior: SubscriptionProrationBehavior | None = None,
+        proration_behavior: ProrationBehaviorSetting | None = None,
     ) -> Subscription:
         await self.validate_units_change(session, subscription, units=units)
 
@@ -2618,10 +2621,11 @@ class SubscriptionService:
         )
         assert organization is not None
 
-        if proration_behavior is None:
-            proration_behavior = resolve_proration_behavior(
-                subscription, organization.proration_behavior, units=units
-            )
+        proration_behavior = resolve_proration_behavior(
+            subscription,
+            proration_behavior or organization.proration_behavior,
+            units=units,
+        )
 
         old_units = subscription.units or 1
         old_amount = subscription.amount
@@ -3396,7 +3400,7 @@ class SubscriptionService:
         product_id: uuid.UUID | None = None,
         seats: int | None = None,
         units: int | None = None,
-        proration_behavior: SubscriptionProrationBehavior | None = None,
+        proration_behavior: ProrationBehaviorSetting | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> SubscriptionChargePreview:
         # The change is applied inside a savepoint: the preview prices the rows the
@@ -3423,7 +3427,7 @@ class SubscriptionService:
         product_id: uuid.UUID | None,
         seats: int | None,
         units: int | None,
-        proration_behavior: SubscriptionProrationBehavior | None,
+        proration_behavior: ProrationBehaviorSetting | None,
         allowed_visibilities: frozenset[Visibility],
     ) -> SubscriptionChargePreview:
         provided = [product_id is not None, seats is not None, units is not None]
@@ -3445,14 +3449,13 @@ class SubscriptionService:
                 allowed_visibilities=allowed_visibilities,
             )
 
-        if proration_behavior is None:
-            proration_behavior = resolve_proration_behavior(
-                subscription,
-                organization.proration_behavior,
-                product=product,
-                seats=seats,
-                units=units,
-            )
+        proration_behavior = resolve_proration_behavior(
+            subscription,
+            proration_behavior or organization.proration_behavior,
+            product=product,
+            seats=seats,
+            units=units,
+        )
 
         if product is not None and currency_prices is not None:
             self._promote_seats_for_seat_transition(

@@ -2429,6 +2429,60 @@ class TestAutoProrationBehavior:
         order_mock.assert_awaited_once_with(session, subscription)
         assert updated.product_id == new_product.id
 
+    async def test_explicit_auto_overrides_organization_setting(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": SubscriptionProrationBehavior.invoice,
+        }
+        await save_fixture(organization)
+
+        old_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(300_00, "usd")],
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(100_00, "usd")],
+        )
+
+        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
+            subscription = await create_active_subscription(
+                save_fixture, product=old_product, customer=customer
+            )
+            frozen_time.move_to(datetime(2025, 6, 16, tzinfo=UTC))
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated = await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    proration_behavior="auto",
+                )
+            await session.flush()
+
+        order_mock.assert_not_awaited()
+        assert updated.product_id == old_product.id
+        assert updated.pending_update is not None
+        assert updated.pending_update.product_id == new_product.id
+
     @pytest.mark.parametrize(
         ("new_seats", "immediate"),
         [

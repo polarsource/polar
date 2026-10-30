@@ -128,7 +128,7 @@ PublicSubscriptionProrationBehavior = Literal[
     SubscriptionProrationBehavior.next_period,
 ]
 
-OrganizationProrationBehavior = SubscriptionProrationBehavior | Literal["auto"]
+ProrationBehaviorSetting = SubscriptionProrationBehavior | Literal["auto"]
 
 
 class InvoiceNumbering(StrEnum):

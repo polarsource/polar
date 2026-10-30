@@ -3,7 +3,7 @@ from datetime import datetime
 
 from parse import Decimal
 
-from polar.enums import OrganizationProrationBehavior, SubscriptionProrationBehavior
+from polar.enums import ProrationBehaviorSetting, SubscriptionProrationBehavior
 from polar.kit.utils import utc_now
 from polar.models import (
     BillingEntry,
@@ -222,7 +222,7 @@ def _is_product_upgrade(subscription: Subscription, product: Product) -> bool:
 
 def resolve_proration_behavior(
     subscription: Subscription,
-    proration_behavior: OrganizationProrationBehavior,
+    proration_behavior: ProrationBehaviorSetting,
     *,
     product: Product | None = None,
     seats: int | None = None,

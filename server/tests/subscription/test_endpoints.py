@@ -28,7 +28,7 @@ from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
-from polar.version import V2027_01
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -690,9 +690,9 @@ class TestSubscriptionProductUpdate:
         assert "above the maximum of 10 seats" in error["detail"][0]["msg"]
         assert error["detail"][0]["input"] == str(new_seat_product.id)
 
-    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.api_version(V2026_10, V2027_01)
     @pytest.mark.auth
-    async def test_auto_proration_behavior_rejected(
+    async def test_auto_proration_behavior_downgrade(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -702,18 +702,18 @@ class TestSubscriptionProductUpdate:
         product_second: Product,
     ) -> None:
         subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
+            save_fixture, product=product_second, customer=customer
         )
 
         response = await client.patch(
             f"/v1/subscriptions/{subscription.id}",
-            json={
-                "product_id": str(product_second.id),
-                "proration_behavior": "auto",
-            },
+            json={"product_id": str(product.id), "proration_behavior": "auto"},
         )
 
-        assert response.status_code == 422
+        assert response.status_code == 200
+        json = response.json()
+        assert json["product_id"] == str(product_second.id)
+        assert json["pending_update"]["product_id"] == str(product.id)
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth

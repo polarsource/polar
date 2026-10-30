@@ -79,11 +79,8 @@ export default function Index() {
   // Set default proration behavior from organization settings
   useEffect(() => {
     if (organization) {
-      const prorationBehavior =
-        organization.subscription_settings.proration_behavior
       resetField('proration_behavior', {
-        defaultValue:
-          prorationBehavior === 'auto' ? undefined : prorationBehavior,
+        defaultValue: organization.subscription_settings.proration_behavior,
       })
     }
   }, [organization, resetField])
@@ -203,14 +200,16 @@ export default function Index() {
   )
 }
 
-const PRORATION_BEHAVIOR_LABELS: Record<
-  schemas['SubscriptionProrationBehavior'],
-  string
-> = {
+type ProrationBehaviorSetting = NonNullable<
+  schemas['SubscriptionUpdateBase']['proration_behavior']
+>
+
+const PRORATION_BEHAVIOR_LABELS: Record<ProrationBehaviorSetting, string> = {
   invoice: 'Prorate & charge now',
   prorate: 'Prorate on next invoice',
   next_period: 'Schedule for next cycle',
   reset: 'Charge full amount & reset cycle',
+  auto: 'Prorate upgrades, schedule downgrades',
 }
 
 const ProrationBehaviorSelector = ({
@@ -244,13 +243,9 @@ const ProrationBehaviorSelector = ({
             activeOpacity={0.6}
             style={{ flex: 1 }}
             onPress={() => {
-              setValue(
-                'proration_behavior',
-                key as schemas['SubscriptionProrationBehavior'],
-                {
-                  shouldDirty: true,
-                },
-              )
+              setValue('proration_behavior', key as ProrationBehaviorSetting, {
+                shouldDirty: true,
+              })
             }}
           >
             <Box

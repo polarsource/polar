@@ -40,7 +40,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.config import settings
 from polar.enums import (
     InvoiceNumbering,
-    OrganizationProrationBehavior,
+    ProrationBehaviorSetting,
     SubscriptionProrationBehavior,
     TaxBehaviorOption,
 )
@@ -91,7 +91,7 @@ class OrganizationDetails(TypedDict, total=False):
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
     proration_behavior: Annotated[
-        OrganizationProrationBehavior,
+        ProrationBehaviorSetting,
         WithJsonSchema(
             {
                 "enum": ["invoice", "prorate", "next_period", "auto"],
@@ -927,7 +927,7 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.subscription_settings["allow_multiple_subscriptions"]
 
     @property
-    def proration_behavior(self) -> OrganizationProrationBehavior:
+    def proration_behavior(self) -> ProrationBehaviorSetting:
         value = self.subscription_settings["proration_behavior"]
         if value == "auto":
             return "auto"

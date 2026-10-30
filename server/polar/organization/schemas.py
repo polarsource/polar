@@ -18,7 +18,7 @@ from pydantic.networks import HttpUrl
 
 from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.config import settings
-from polar.enums import OrganizationProrationBehavior, TaxBehaviorOption
+from polar.enums import ProrationBehaviorSetting, TaxBehaviorOption
 from polar.kit.address import CountryAlpha2, CountryAlpha2Input
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.email import EmailStrDNS
@@ -442,7 +442,7 @@ class OrganizationBase(IDSchema, TimestampedSchema):
         description="Avatar URL shown in checkout, customer portal, emails etc."
     )
     proration_behavior: Annotated[
-        OrganizationProrationBehavior,
+        ProrationBehaviorSetting,
         VersionedValue("auto", starting_from=V2027_01),
     ] = Field(
         description="Proration behavior applied when customer updates their subscription from the portal.",

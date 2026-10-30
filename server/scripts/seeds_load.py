@@ -1400,9 +1400,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
             "website": "https://acme-corp.com",
             "bio": "Leading provider of innovative solutions for modern businesses.",
             "status": OrganizationStatus.ACTIVE,
-            "feature_settings": {
-                "compass_enabled": True,
-            },
             "details": {
                 "about": "We provide business intelligence dashboard",
                 "switching": False,

@@ -252,7 +252,10 @@ export default function VersionPage({
   const productIds = entries.flatMap(({ row, previousProductId }) =>
     previousProductId ? [row.product_id, previousProductId] : [row.product_id],
   )
-  const { data: products } = useSelectedProducts([...new Set(productIds)], true)
+  const { data: products } = useSelectedProducts(
+    { id: [...new Set(productIds)] },
+    true,
+  )
   const productsById = new Map(
     products?.map((product) => [product.id, product]),
   )

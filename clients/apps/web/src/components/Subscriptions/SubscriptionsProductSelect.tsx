@@ -1,4 +1,4 @@
-import { schemas } from '@polar-sh/client'
+import { FilterOption } from '@/components/Shared/FilterPopover'
 import {
   Select,
   SelectContent,
@@ -9,14 +9,19 @@ import {
 } from '@polar-sh/orbit'
 import React from 'react'
 
-interface SubscriptionTiersSelectProps {
-  products: schemas['Product'][]
+export interface ProductFilter {
+  product_id: string | null
+  external_product_id: string | null
+}
+
+interface SubscriptionsProductSelectProps {
+  options: FilterOption[]
   value: string | null
   onChange: (value: string | null) => void
 }
 
-const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
-  products,
+const SubscriptionsProductSelect: React.FC<SubscriptionsProductSelectProps> = ({
+  options,
   value,
   onChange,
 }) => {
@@ -33,9 +38,9 @@ const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
           <span className="whitespace-nowrap">All products</span>
         </SelectItem>
         <SelectSeparator />
-        {products.map((product) => (
-          <SelectItem key={product.id} value={product.id}>
-            {product.name}
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
           </SelectItem>
         ))}
       </SelectContent>
@@ -43,4 +48,4 @@ const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
   )
 }
 
-export default SubscriptionTiersSelect
+export default SubscriptionsProductSelect

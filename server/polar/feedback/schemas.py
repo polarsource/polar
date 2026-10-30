@@ -9,7 +9,7 @@ from polar.models.feedback import FeedbackStatus, FeedbackType
 
 class FeedbackCreate(Schema):
     type: FeedbackType
-    message: str = Field(min_length=10, max_length=5000)
+    message: str = Field(min_length=10, max_length=9000)
     organization_id: UUID
     client_context: dict[str, Any] = Field(default_factory=dict)
 

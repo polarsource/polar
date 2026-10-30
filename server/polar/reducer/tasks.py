@@ -38,7 +38,9 @@ async def seal(
     at: Annotated[str, LoggableField],
 ) -> None:
     async with AsyncSessionMaker() as session:
-        customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
+        customer = await CustomerRepository.from_session(session).get_by_id(
+            customer_id, include_deleted=True
+        )
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
         seal_at = datetime.fromisoformat(at)

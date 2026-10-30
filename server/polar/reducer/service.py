@@ -627,16 +627,47 @@ class ReducerService:
     async def _add_to_closed_buckets(
         self, session: AsyncSession, contributions: Contributions
     ) -> None:
+        """Adds the contributions in a fixed number of statements, whatever the
+        number of buckets."""
         repository = ReducerBucketRepository.from_session(session)
         # Locks are all taken before writing any row, and rows are written in
         # chronological order like seal locks them, so a seal can't deadlock with us.
         bucket_ids = sorted(contributions, key=_get_bucket_key)
-        await self._lock_buckets(repository, bucket_ids)
+        await repository.lock_buckets(bucket_ids)
+        buckets_by_slot: dict[
+            tuple[UUID, datetime, UUID | None, str | None], list[ReducerBucket]
+        ] = defaultdict(list)
+        for bucket in await repository.get_all_starting_within_for_update(
+            [
+                (
+                    reducer,
+                    bucket_start,
+                    bucket_start + REDUCER_BUCKET_SIZE,
+                    customer_id,
+                    external_customer_id,
+                )
+                for reducer, bucket_start, customer_id, external_customer_id in (
+                    bucket_ids
+                )
+            ]
+        ):
+            buckets_by_slot[
+                (
+                    bucket.reducer_id,
+                    get_reducer_bucket_start(bucket.bucket_start),
+                    bucket.customer_id,
+                    bucket.external_customer_id,
+                )
+            ].append(bucket)
+
+        additions: list[tuple[UUID, int, Decimal, Decimal | None, Decimal | None]] = []
+        new_buckets: list[dict[str, Any]] = []
         for bucket_id in bucket_ids:
             reducer, bucket_start, customer_id, external_customer_id = bucket_id
-            for start, end in await self._get_intervals(
-                repository, reducer, bucket_start, customer_id, external_customer_id
-            ):
+            slot_buckets = buckets_by_slot[
+                (reducer.id, bucket_start, customer_id, external_customer_id)
+            ]
+            for start, end in _get_slot_intervals(slot_buckets, bucket_start):
                 values = [
                     value
                     for timestamp, value in contributions[bucket_id]
@@ -644,25 +675,33 @@ class ReducerService:
                 ]
                 if not values:
                     continue
-                statistics = (
-                    {
-                        "total": sum(values, Decimal(0)),
-                        "minimum": min(values),
-                        "maximum": max(values),
-                    }
-                    if isinstance(reducer.aggregation, PropertyAggregation)
-                    else {}
+                count, total, minimum, maximum = _get_statistics(reducer, values)
+                latest = max(
+                    (bucket for bucket in slot_buckets if bucket.bucket_start == start),
+                    key=lambda bucket: bucket.generation,
+                    default=None,
                 )
-                await repository.add_contribution(
-                    reducer,
-                    start,
-                    end,
-                    customer_id,
-                    external_customer_id,
-                    count=len(values),
-                    **statistics,
+                if latest is not None and latest.sealed_at is None:
+                    additions.append((latest.id, count, total, minimum, maximum))
+                    continue
+                new_buckets.append(
+                    {
+                        "organization_id": reducer.organization_id,
+                        "reducer_id": reducer.id,
+                        "customer_id": customer_id,
+                        "external_customer_id": external_customer_id,
+                        "bucket_start": start,
+                        "bucket_end": end,
+                        "count": count,
+                        "sum": total,
+                        "min": minimum,
+                        "max": maximum,
+                        "generation": 1 if latest is None else latest.generation + 1,
+                    }
                 )
             _enqueue_outpost_event(reducer, customer_id, external_customer_id)
+        await repository.add_contributions(additions)
+        await repository.insert_all(new_buckets)
 
     async def _create_reducer(
         self,
@@ -857,9 +896,7 @@ class ReducerService:
             customer_id,
             external_customer_id,
         )
-        return sorted(
-            {(bucket.bucket_start, bucket.bucket_end) for bucket in buckets}
-        ) or [(bucket_start, bucket_start + REDUCER_BUCKET_SIZE)]
+        return _get_slot_intervals(buckets, bucket_start)
 
     async def _sync_bucket_intervals(
         self,
@@ -1026,6 +1063,23 @@ def _get_bucket_key(bucket_id: redis_store.BucketId) -> str:
     return redis_store.get_reducer_bucket_key(
         reducer.id, bucket_start, customer_id, external_customer_id
     )
+
+
+def _get_slot_intervals(
+    buckets: Iterable[ReducerBucket], bucket_start: datetime
+) -> list[tuple[datetime, datetime]]:
+    return sorted({(bucket.bucket_start, bucket.bucket_end) for bucket in buckets}) or [
+        (bucket_start, bucket_start + REDUCER_BUCKET_SIZE)
+    ]
+
+
+def _get_statistics(
+    reducer: Reducer, values: Sequence[Decimal]
+) -> tuple[int, Decimal, Decimal | None, Decimal | None]:
+    """count, total, minimum and maximum of the values a reducer's bucket gets."""
+    if isinstance(reducer.aggregation, PropertyAggregation):
+        return len(values), sum(values, Decimal(0)), min(values), max(values)
+    return len(values), Decimal(0), None, None
 
 
 def _get_quantity(

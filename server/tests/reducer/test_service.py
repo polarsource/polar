@@ -187,6 +187,28 @@ class TestRollup:
         )
         assert enqueue_outpost_event.call_count == 2
 
+    async def test_adds_to_closed_buckets_of_count_reducer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+        previous_start = BUCKET_START - REDUCER_BUCKET_SIZE
+        for _ in range(2):
+            await reducer_service.rollup(
+                session,
+                redis,
+                organization.id,
+                [build_event(organization, timestamp=previous_start)],
+            )
+
+        [bucket] = await get_buckets(session)
+        await session.refresh(bucket)
+        assert (bucket.count, bucket.min, bucket.max) == (2, None, None)
+
     async def test_adds_float_values_to_open_bucket(
         self,
         session: AsyncSession,
@@ -242,6 +264,72 @@ class TestRollup:
         first, second = await get_buckets(session)
         assert (first.generation, first.sum) == (1, Decimal(3))
         assert (second.generation, second.sum) == (2, Decimal(4))
+
+    async def test_adds_to_several_closed_buckets_at_once(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        sum_reducer: Reducer,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        older_start = BUCKET_START - 2 * REDUCER_BUCKET_SIZE
+        previous_start = BUCKET_START - REDUCER_BUCKET_SIZE
+        await reducer_service.rollup(
+            session,
+            redis,
+            organization.id,
+            [
+                build_event(
+                    organization, timestamp=older_start, metadata={"tokens": 1}
+                ),
+                build_event(
+                    organization, timestamp=previous_start, metadata={"tokens": 2}
+                ),
+            ],
+        )
+        older, _ = await get_buckets(session)
+        older.sealed_at = BILLED_AT
+        await save_fixture(older)
+
+        await reducer_service.rollup(
+            session,
+            redis,
+            organization.id,
+            [
+                build_event(
+                    organization, timestamp=older_start, metadata={"tokens": 3}
+                ),
+                build_event(
+                    organization, timestamp=previous_start, metadata={"tokens": 4}
+                ),
+                build_event(
+                    organization,
+                    timestamp=previous_start,
+                    external_customer_id="other",
+                    metadata={"tokens": 5},
+                ),
+            ],
+        )
+
+        buckets = await get_buckets(session)
+        for bucket in buckets:
+            await session.refresh(bucket)
+        assert sorted(
+            (
+                bucket.bucket_start,
+                bucket.external_customer_id,
+                bucket.generation,
+                bucket.count,
+                bucket.sum,
+            )
+            for bucket in buckets
+        ) == [
+            (older_start, "external", 1, 1, Decimal(1)),
+            (older_start, "external", 2, 1, Decimal(3)),
+            (previous_start, "external", 1, 2, Decimal(6)),
+            (previous_start, "other", 1, 1, Decimal(5)),
+        ]
 
     async def test_skips_organizations_without_syncable_reducers(
         self,

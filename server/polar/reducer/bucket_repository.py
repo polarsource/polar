@@ -5,10 +5,15 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
+    BigInteger,
     ColumnElement,
+    Numeric,
     Row,
     Select,
+    Uuid,
     and_,
+    cast,
+    column,
     func,
     literal,
     null,
@@ -16,10 +21,11 @@ from sqlalchemy import (
     select,
     true,
     update,
+    values,
 )
 from sqlalchemy.dialects.postgresql import insert
 
-from polar.kit.db.locking import pg_advisory_xact_lock
+from polar.kit.db.locking import pg_advisory_xact_lock, pg_advisory_xact_locks
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation
@@ -27,7 +33,7 @@ from polar.models import Event, Reducer, ReducerBucket, StagedEvent
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 
-from .redis_store import get_reducer_bucket_key
+from .redis_store import BucketId, get_reducer_bucket_key
 
 
 def _is_customer(
@@ -70,6 +76,22 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             get_reducer_bucket_key(
                 reducer.id, bucket_start, customer_id, external_customer_id
             ),
+        )
+
+    async def lock_buckets(self, bucket_ids: Sequence[BucketId]) -> None:
+        """Takes the locks of `lock_customer_buckets` for each bucket, in one round
+        trip and in the order of `bucket_ids`."""
+        await pg_advisory_xact_locks(
+            self.session,
+            "reducer_bucket.buckets",
+            [
+                get_reducer_bucket_key(
+                    reducer.id, bucket_start, customer_id, external_customer_id
+                )
+                for reducer, bucket_start, customer_id, external_customer_id in (
+                    bucket_ids
+                )
+            ],
         )
 
     async def aggregate_events(
@@ -171,6 +193,36 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             ReducerBucket.bucket_start >= start,
             ReducerBucket.bucket_start < end,
             _is_customer(ReducerBucket, customer_id, external_customer_id),
+        )
+        return await self.get_all(statement)
+
+    async def get_all_starting_within_for_update(
+        self,
+        slots: Sequence[tuple[Reducer, datetime, datetime, UUID | None, str | None]],
+    ) -> Sequence[ReducerBucket]:
+        """The buckets of each (reducer, start, end, customer identity) slot, like
+        `get_all_starting_within`, locked."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                or_(
+                    *(
+                        and_(
+                            ReducerBucket.organization_id == reducer.organization_id,
+                            ReducerBucket.reducer_id == reducer.id,
+                            ReducerBucket.bucket_start >= start,
+                            ReducerBucket.bucket_start < end,
+                            _is_customer(
+                                ReducerBucket, customer_id, external_customer_id
+                            ),
+                        )
+                        for reducer, start, end, customer_id, external_customer_id in (
+                            slots
+                        )
+                    )
+                )
+            )
+            .with_for_update()
         )
         return await self.get_all(statement)
 
@@ -298,53 +350,42 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         result = await self.session.execute(select(func.now()))
         return result.scalar_one()
 
-    async def add_contribution(
+    async def add_contributions(
         self,
-        reducer: Reducer,
-        bucket_start: datetime,
-        bucket_end: datetime,
-        customer_id: UUID | None,
-        external_customer_id: str | None,
-        *,
-        count: int,
-        total: Decimal = Decimal(0),
-        minimum: Decimal | None = None,
-        maximum: Decimal | None = None,
+        contributions: Sequence[
+            tuple[UUID, int, Decimal, Decimal | None, Decimal | None]
+        ],
     ) -> None:
-        """Adds to the customer identity's latest bucket, or to the next generation
-        once it's sealed."""
-        latest = await self.get_latest_for_update(
-            reducer, bucket_start, customer_id, external_customer_id
-        )
-        if latest is not None and latest.sealed_at is None:
-            await self.session.execute(
-                update(ReducerBucket)
-                .where(ReducerBucket.id == latest.id)
-                .values(
-                    count=ReducerBucket.count + count,
-                    sum=ReducerBucket.sum + total,
-                    min=func.least(ReducerBucket.min, minimum),
-                    max=func.greatest(ReducerBucket.max, maximum),
-                    modified_at=utc_now(),
-                )
-                .execution_options(synchronize_session=False)
-            )
+        """Adds each (bucket id, count, total, minimum, maximum) to its bucket, in
+        one statement."""
+        if not contributions:
             return
+        added = values(
+            column("id", Uuid),
+            column("count", BigInteger),
+            column("sum", Numeric),
+            column("min", Numeric),
+            column("max", Numeric),
+            name="added",
+        ).data(list(contributions))
         await self.session.execute(
-            insert(ReducerBucket).values(
-                organization_id=reducer.organization_id,
-                reducer_id=reducer.id,
-                customer_id=customer_id,
-                external_customer_id=external_customer_id,
-                bucket_start=bucket_start,
-                bucket_end=bucket_end,
-                count=count,
-                sum=total,
-                min=minimum,
-                max=maximum,
-                generation=1 if latest is None else latest.generation + 1,
+            update(ReducerBucket)
+            .where(ReducerBucket.id == added.c.id)
+            .values(
+                count=ReducerBucket.count + added.c.count,
+                sum=ReducerBucket.sum + added.c.sum,
+                # A column of NULLs only (count reducers) would be typed as text.
+                min=func.least(ReducerBucket.min, cast(added.c.min, Numeric)),
+                max=func.greatest(ReducerBucket.max, cast(added.c.max, Numeric)),
+                modified_at=utc_now(),
             )
+            .execution_options(synchronize_session=False)
         )
+
+    async def insert_all(self, buckets: Sequence[dict[str, Any]]) -> None:
+        if not buckets:
+            return
+        await self.session.execute(insert(ReducerBucket), buckets)
 
     async def mark_as_sealed(
         self,

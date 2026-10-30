@@ -26,6 +26,7 @@ const sharedTest = {
   fsModuleCache: true,
   exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
   env: {
+    TZ: 'UTC',
     NEXT_PUBLIC_API_URL: 'http://api.polar.test',
     NEXT_PUBLIC_FRONTEND_BASE_URL: 'https://polar.sh',
     NEXT_PUBLIC_SANDBOX_FRONTEND_BASE_URL: 'https://sandbox.polar.sh',

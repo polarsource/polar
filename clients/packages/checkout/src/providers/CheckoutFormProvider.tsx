@@ -269,7 +269,11 @@ export const CheckoutFormProvider = ({
         throw new Error('Stripe elements not provided')
       }
 
-      setLoadingLabel(t('checkout.loading.processingPayment'))
+      setLoadingLabel(
+        checkout.is_payment_required
+          ? t('checkout.loading.processingPayment')
+          : t('checkout.loading.processingOrder'),
+      )
 
       const { error: submitError } = await elements.submit()
       if (submitError) {
@@ -363,7 +367,9 @@ export const CheckoutFormProvider = ({
         }
       }
 
-      setLoadingLabel(t('checkout.loading.paymentSuccessful'))
+      if (checkout.is_payment_required) {
+        setLoadingLabel(t('checkout.loading.paymentSuccessful'))
+      }
       setLoading(false)
       return updatedCheckout
     },

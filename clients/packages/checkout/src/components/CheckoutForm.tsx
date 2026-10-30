@@ -431,6 +431,42 @@ const BaseCheckoutForm = ({
                       {t('checkout.form.billingAddress.label')}
                     </FormLabel>
                     {isDisplayedField(
+                      checkout.billing_address_fields.country,
+                    ) && (
+                      <FormControl>
+                        <FormField
+                          control={control}
+                          name="customer_billing_address.country"
+                          rules={{
+                            required: isRequiredField(
+                              checkout.billing_address_fields.country,
+                            )
+                              ? t('checkout.form.fieldRequired')
+                              : false,
+                          }}
+                          render={({ field }) => (
+                            <>
+                              <CountryPicker
+                                data-testid="billing-country"
+                                allowedCountries={
+                                  enums.addressInputCountryValues
+                                }
+                                name={field.name}
+                                autoComplete="billing country"
+                                value={field.value || undefined}
+                                onChange={field.onChange}
+                                placeholder={t(
+                                  'checkout.form.billingAddress.country',
+                                )}
+                                locale={locale}
+                              />
+                              <FormMessage />
+                            </>
+                          )}
+                        />
+                      </FormControl>
+                    )}
+                    {isDisplayedField(
                       checkout.billing_address_fields.line1,
                     ) && (
                       <FormControl>
@@ -594,42 +630,6 @@ const BaseCheckoutForm = ({
                                 fallbackPlaceholder={t(
                                   'checkout.form.billingAddress.stateProvince',
                                 )}
-                              />
-                              <FormMessage />
-                            </>
-                          )}
-                        />
-                      </FormControl>
-                    )}
-                    {isDisplayedField(
-                      checkout.billing_address_fields.country,
-                    ) && (
-                      <FormControl>
-                        <FormField
-                          control={control}
-                          name="customer_billing_address.country"
-                          rules={{
-                            required: isRequiredField(
-                              checkout.billing_address_fields.country,
-                            )
-                              ? t('checkout.form.fieldRequired')
-                              : false,
-                          }}
-                          render={({ field }) => (
-                            <>
-                              <CountryPicker
-                                data-testid="billing-country"
-                                allowedCountries={
-                                  enums.addressInputCountryValues
-                                }
-                                name={field.name}
-                                autoComplete="billing country"
-                                value={field.value || undefined}
-                                onChange={field.onChange}
-                                placeholder={t(
-                                  'checkout.form.billingAddress.country',
-                                )}
-                                locale={locale}
                               />
                               <FormMessage />
                             </>

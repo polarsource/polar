@@ -1335,6 +1335,16 @@ class Outpost:
                 "outpost.snapshot_version": snapshot["version"],
             },
         ) as span:
+            reducer_kind = next(
+                (
+                    reducer["kind"]
+                    for reducer in self._reducers
+                    if reducer["id"] == snapshot["reducer_id"]
+                ),
+                None,
+            )
+            if reducer_kind is not None:
+                span.set_attribute("outpost.reducer_kind", reducer_kind)
             if confirmed:
                 async with self._redis.pipeline(transaction=True) as pipeline:
                     for bucket_start, ids in confirmed.items():

@@ -17,8 +17,10 @@ from polar.models import (
     ReducerBucket,
 )
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.outpost.schemas import (
     ConfirmedOutgoingMessage,
+    MeterUsageOutgoingMessage,
     OutgoingMessage,
     to_epoch_microseconds,
 )
@@ -114,3 +116,77 @@ def test_confirm_pending(
     assert message.payload.snapshot.customer_exists
     analyze(run, session)
     benchmark(confirm)
+
+
+# A customer's credits since its latest reset, after a long period of sealed ones.
+def test_request_credit_usage(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    current = get_reducer_bucket_start(utc_now())
+
+    async def seed() -> Reducer:
+        meter = await create_meter(save_fixture, organization=organization)
+        reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        # Ten customers' credits, so the query has to select one of them.
+        for index in range(10):
+            customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=f"customer-{index}@example.com",
+                external_id=f"customer-{index}",
+            )
+            session.add_all(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=current - (slot + 1) * REDUCER_BUCKET_SIZE,
+                    bucket_end=current - slot * REDUCER_BUCKET_SIZE,
+                    count=1,
+                    sum=Decimal(1),
+                    min=Decimal(1),
+                    max=Decimal(1),
+                    sealed_at=None if slot < 100 else current,
+                )
+                for slot in range(1100)
+            )
+        await session.flush()
+        return reducer
+
+    reducer = run(seed())
+    payload = json.dumps(
+        {
+            "type": "meter_usage",
+            "payload": {
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "customer-0",
+            },
+        }
+    )
+    send_stream, receive_stream = create_memory_object_stream[OutgoingMessage](3)
+
+    def request() -> list[OutgoingMessage]:
+        run(
+            outpost_service.handle_incoming_message(
+                session, organization, payload, send_stream
+            )
+        )
+        return [receive_stream.receive_nowait() for _ in range(3)]
+
+    messages = request()
+    assert all(
+        isinstance(message, MeterUsageOutgoingMessage)
+        and (message.payload.count, message.payload.sum) == (100, 100)
+        for message in messages
+    )
+    analyze(run, session)
+    benchmark(request)

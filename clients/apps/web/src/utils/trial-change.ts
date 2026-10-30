@@ -23,25 +23,36 @@ export type TrialChangeOutcome =
   | { kind: 'ends' }
   | null
 
+export const addInterval = (
+  start: string,
+  interval: schemas['TrialInterval'] | schemas['RecurringInterval'],
+  count: number,
+): Date => {
+  // UTCDate keeps date-fns arithmetic in UTC, matching the backend's
+  // `dateutil.relativedelta` semantics (e.g. Jan 31 + 1 month → Feb 28/29).
+  const date = new UTCDate(start)
+  switch (interval) {
+    case 'day':
+      return addDays(date, count)
+    case 'week':
+      return addWeeks(date, count)
+    case 'month':
+      return addMonths(date, count)
+    case 'year':
+      return addYears(date, count)
+  }
+}
+
 export const computeTrialEnd = (
   trialStart: string,
   product: TrialConfig,
 ): Date | null => {
   if (!product.trial_interval || !product.trial_interval_count) return null
-  // UTCDate keeps date-fns arithmetic in UTC, matching the backend's
-  // `dateutil.relativedelta` semantics (e.g. Jan 31 + 1 month → Feb 28/29).
-  const start = new UTCDate(trialStart)
-  const count = product.trial_interval_count
-  switch (product.trial_interval) {
-    case 'day':
-      return addDays(start, count)
-    case 'week':
-      return addWeeks(start, count)
-    case 'month':
-      return addMonths(start, count)
-    case 'year':
-      return addYears(start, count)
-  }
+  return addInterval(
+    trialStart,
+    product.trial_interval,
+    product.trial_interval_count,
+  )
 }
 
 export const formatTrialEnd = (date: Date): string =>

@@ -4801,40 +4801,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/customer-portal/customer-session/request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Customer Portal.Customer Session.Request */
-    post: operations['customer_portal:customer-session:customer_portal.customer_session.request']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/customer-portal/customer-session/authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Customer Portal.Customer Session.Authenticate */
-    post: operations['customer_portal:customer-session:customer_portal.customer_session.authenticate']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/customer-portal/customer-session/introspect': {
     parameters: {
       query?: never
@@ -21089,11 +21055,6 @@ export interface components {
        */
       organization_id: string
     }
-    /** CustomerSessionCodeAuthenticateRequest */
-    CustomerSessionCodeAuthenticateRequest: {
-      /** Code */
-      code: string
-    }
     /** CustomerSessionCodeAuthenticateResponse */
     CustomerSessionCodeAuthenticateResponse: {
       /** Token */
@@ -21109,24 +21070,6 @@ export interface components {
       error: 'CustomerSessionCodeInvalidOrExpired'
       /** Detail */
       detail: string
-    }
-    /** CustomerSessionCodeRequest */
-    CustomerSessionCodeRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
-      /**
-       * Customer Id
-       * @description Optional customer ID for disambiguation when multiple customers share the same email.
-       */
-      customer_id?: string | null
     }
     /**
      * CustomerSessionCustomerExternalIDCreate
@@ -56969,90 +56912,6 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'customer_portal:customer-session:customer_portal.customer_session.request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CustomerSessionCodeRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Multiple customers found for this email. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'customer_portal:customer-session:customer_portal.customer_session.authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CustomerSessionCodeAuthenticateRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
-        }
-      }
-      /** @description Invalid or expired verification code. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSessionCodeInvalidOrExpired']
-        }
       }
       /** @description Validation Error */
       422: {

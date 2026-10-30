@@ -26,8 +26,9 @@ _AUTHENTICATION_PATHS = [
     "/v1/auth/email-otp/verify",
     "/v1/auth/totp/verify",
     "/v1/auth/backup-codes/verify",
-    "/v1/customer-portal/customer-session/request",
-    "/v1/customer-portal/customer-session/authenticate",
+    "/v1/customer-portal/customer-session/start",
+    "/v1/customer-portal/customer-session/email-otp/request",
+    "/v1/customer-portal/customer-session/email-otp/verify",
 ]
 
 

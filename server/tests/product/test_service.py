@@ -250,6 +250,60 @@ class TestList:
         assert results[0].id == archived_product.id
 
     @pytest.mark.auth
+    async def test_filter_is_current(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        previous_version = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        previous_version.is_current = False
+        await save_fixture(previous_version)
+        current_version = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        session.expunge_all()
+
+        results, _ = await product_service.list(
+            session,
+            auth_subject,
+            organization_id=[organization.id],
+            pagination=PaginationParams(1, 10),
+        )
+        assert [result.id for result in results] == [current_version.id]
+
+        results, _ = await product_service.list(
+            session,
+            auth_subject,
+            organization_id=[organization.id],
+            is_current=False,
+            pagination=PaginationParams(1, 10),
+        )
+        assert [result.id for result in results] == [previous_version.id]
+
+        results, _ = await product_service.list(
+            session,
+            auth_subject,
+            id=[previous_version.id],
+            pagination=PaginationParams(1, 10),
+        )
+        assert [result.id for result in results] == [previous_version.id]
+
+        results, _ = await product_service.list(
+            session,
+            auth_subject,
+            id=[previous_version.id],
+            is_current=True,
+            pagination=PaginationParams(1, 10),
+        )
+        assert results == []
+
+    @pytest.mark.auth
     async def test_filter_benefit_id(
         self,
         save_fixture: SaveFixture,

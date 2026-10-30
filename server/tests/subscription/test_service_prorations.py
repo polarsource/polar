@@ -2257,6 +2257,16 @@ class TestProrationDiscountProductApplicability:
 
 @pytest.mark.anyio
 class TestAutoProrationBehavior:
+    @pytest.fixture(autouse=True)
+    async def auto_proration(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": "auto",
+        }
+        await save_fixture(organization)
+
     @pytest.mark.parametrize(
         ("old_interval", "old_amount", "new_interval", "new_amount", "immediate"),
         [
@@ -2346,7 +2356,6 @@ class TestAutoProrationBehavior:
                     ctx,
                     subscription,
                     product_id=new_product.id,
-                    proration_behavior=SubscriptionProrationBehavior.auto,
                 )
             await session.flush()
 
@@ -2374,7 +2383,7 @@ class TestAutoProrationBehavior:
                 == SubscriptionProrationBehavior.next_period
             )
 
-    async def test_organization_default(
+    async def test_explicit_proration_behavior_overrides_auto(
         self,
         session: AsyncSession,
         mocker: MockerFixture,
@@ -2386,23 +2395,17 @@ class TestAutoProrationBehavior:
         order_mock = mocker.patch.object(
             subscription_service, "_create_subscription_update_order", new=AsyncMock()
         )
-        organization.subscription_settings = {
-            **organization.subscription_settings,
-            "proration_behavior": SubscriptionProrationBehavior.auto,
-        }
-        await save_fixture(organization)
-
         old_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(100_00, "usd")],
+            prices=[(300_00, "usd")],
         )
         new_product = await create_product(
             save_fixture,
             organization=organization,
             recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(300_00, "usd")],
+            prices=[(100_00, "usd")],
         )
 
         with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
@@ -2415,7 +2418,11 @@ class TestAutoProrationBehavior:
                 session, subscription, subscription_service
             ) as ctx:
                 updated = await subscription_service.update_product(
-                    session, ctx, subscription, product_id=new_product.id
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
                 )
             await session.flush()
 
@@ -2465,7 +2472,6 @@ class TestAutoProrationBehavior:
                     ctx,
                     subscription,
                     seats=new_seats,
-                    proration_behavior=SubscriptionProrationBehavior.auto,
                 )
             await session.flush()
 

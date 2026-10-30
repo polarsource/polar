@@ -154,7 +154,7 @@ from .sorting import SubscriptionSortProperty
 from .update import (
     generate_subscription_update,
     next_cycle_bounds,
-    resolve_auto_proration_behavior,
+    resolve_proration_behavior,
 )
 
 log: Logger = structlog.get_logger()
@@ -2110,10 +2110,8 @@ class SubscriptionService:
             assert previous_product.is_recurring
 
             if proration_behavior is None:
-                proration_behavior = organization.proration_behavior
-            if proration_behavior == SubscriptionProrationBehavior.auto:
-                proration_behavior = resolve_auto_proration_behavior(
-                    subscription, product=product
+                proration_behavior = resolve_proration_behavior(
+                    subscription, organization.proration_behavior, product=product
                 )
 
             is_initial_seat_transition = self._promote_seats_for_seat_transition(
@@ -2509,10 +2507,8 @@ class SubscriptionService:
         assert organization is not None
 
         if proration_behavior is None:
-            proration_behavior = organization.proration_behavior
-        if proration_behavior == SubscriptionProrationBehavior.auto:
-            proration_behavior = resolve_auto_proration_behavior(
-                subscription, seats=seats
+            proration_behavior = resolve_proration_behavior(
+                subscription, organization.proration_behavior, seats=seats
             )
 
         old_seats = subscription.seats or 1
@@ -2632,10 +2628,8 @@ class SubscriptionService:
         assert organization is not None
 
         if proration_behavior is None:
-            proration_behavior = organization.proration_behavior
-        if proration_behavior == SubscriptionProrationBehavior.auto:
-            proration_behavior = resolve_auto_proration_behavior(
-                subscription, units=units
+            proration_behavior = resolve_proration_behavior(
+                subscription, organization.proration_behavior, units=units
             )
 
         old_units = subscription.units or 1
@@ -3449,17 +3443,9 @@ class SubscriptionService:
             subscription.product.organization_id
         )
         assert organization is not None
-        if proration_behavior is None:
-            proration_behavior = organization.proration_behavior
-        if (
-            proration_behavior == SubscriptionProrationBehavior.auto
-            and product_id is None
-        ):
-            proration_behavior = resolve_auto_proration_behavior(
-                subscription, seats=seats, units=units
-            )
 
         product: Product | None = None
+        currency_prices: PriceSet | None = None
         if product_id is not None:
             product, currency_prices = await self.validate_product_change(
                 session,
@@ -3467,15 +3453,22 @@ class SubscriptionService:
                 product_id=product_id,
                 allowed_visibilities=allowed_visibilities,
             )
-            if proration_behavior == SubscriptionProrationBehavior.auto:
-                proration_behavior = resolve_auto_proration_behavior(
-                    subscription, product=product
-                )
+
+        if proration_behavior is None:
+            proration_behavior = resolve_proration_behavior(
+                subscription,
+                organization.proration_behavior,
+                product=product,
+                seats=seats,
+                units=units,
+            )
+
+        if product is not None and currency_prices is not None:
             self._promote_seats_for_seat_transition(
-                subscription, currency_prices, proration_behavior, product_id
+                subscription, currency_prices, proration_behavior, product.id
             )
             self._promote_units_for_unit_transition(
-                subscription, currency_prices, proration_behavior, product_id
+                subscription, currency_prices, proration_behavior, product.id
             )
             event = build_system_event(
                 SystemEvent.subscription_product_updated,

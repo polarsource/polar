@@ -99,7 +99,7 @@ class TestRevert:
         ]
 
     @pytest.mark.parametrize("processor", [TaxProcessor.stripe, TaxProcessor.numeral])
-    async def test_capped_at_remaining_after_legacy_reversal(
+    async def test_capped_at_remaining_balance(
         self, mocker: MockerFixture, processor: TaxProcessor
     ) -> None:
         provider = mocker.patch(

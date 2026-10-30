@@ -288,9 +288,9 @@ class TaxCalculationService:
             previous_reverted_tax_amount: Tax on other succeeded refunds with a
                 recorded processor reversal, in currency minor units.
             previous_reverted_amount: Total including tax of those same refunds,
-                in currency minor units. Reversals recorded before cumulative
-                targets reversed exactly this amount, so the reversal is capped
-                at what remains of ``total_amount`` after it.
+                in currency minor units. The reversal never exceeds
+                ``total_amount`` minus this amount, the processor's remaining
+                balance when earlier reversals matched their refund totals.
 
         Returns:
             The processor's reversal ID, or a ``backfill_``-prefixed record ID

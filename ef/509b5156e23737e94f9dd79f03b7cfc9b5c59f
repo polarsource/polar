@@ -9,6 +9,7 @@ server/polar/reducer/bucket_repository.py
   s_d8ff38491769f9::t_7200a70ccd2c69 248-250
   s_d8ff38491769f9::t_596570e11af6af 246-247
   s_d8ff38491769f9::t_c86615795b733e 30-37,239,241-243,251,255-256,293,298-308,312-313,316
+  s_d8ff38491769f9::t_77ee2fa8fb982b 245,289
 server/polar/reducer/service.py
   s_d8ff38491769f9::t_ccd69e6cee5c75 546-547
   s_d8ff38491769f9::t_ce79522baaeeb6 500,523,541,557-560
@@ -25,6 +26,7 @@ server/polar/reducer/redis_store.py
   s_d8ff38491769f9::t_f07b0b00567e19 73-74,83
 server/polar/event/repository.py
   s_d8ff38491769f9::t_f07b0b00567e19 405-406,408-415,424
+  s_d8ff38491769f9::t_c8f63311b70b01 407
 server/tests/reducer/test_service.py
   s_d8ff38491769f9::t_8298cf4f5d5640 35-38
   s_d8ff38491769f9::t_ce79522baaeeb6 1617,1621,1659,1663,1679,1683,1700,1704-1705,1749,1753-1754

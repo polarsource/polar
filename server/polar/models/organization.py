@@ -48,6 +48,8 @@ from polar.exceptions import PolarError
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
+from polar.kit.versioning import VersionedValue
+from polar.version import V2027_01
 
 from .account import Account
 
@@ -97,6 +99,7 @@ class OrganizationSubscriptionSettings(TypedDict):
                 "type": "string",
             }
         ),
+        VersionedValue("auto", starting_from=V2027_01),
     ]
     benefit_revocation_grace_period: int
     prevent_trial_abuse: bool

@@ -7,7 +7,13 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.observability.task_logging import LoggableField
-from polar.worker import AsyncSessionMaker, TaskPriority, actor, get_message_timestamp
+from polar.worker import (
+    AsyncSessionMaker,
+    RedisMiddleware,
+    TaskPriority,
+    actor,
+    get_message_timestamp,
+)
 
 from .service import customer_meter as customer_meter_service
 
@@ -58,4 +64,6 @@ async def update_customer(customer_id: Annotated[uuid.UUID, LoggableField]) -> N
         span = trace.get_current_span()
         span.set_attribute("organization_id", str(customer.organization_id))
 
-        await customer_meter_service.update_customer(session, customer)
+        await customer_meter_service.update_customer(
+            session, RedisMiddleware.get(), customer
+        )

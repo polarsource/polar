@@ -12,8 +12,6 @@ from polar.kit.versioning import version
 from polar.models import CustomerMeter, Event
 from polar.openapi import APITag, destructive
 from polar.postgres import AsyncSession, get_db_session
-from polar.redis import Redis, get_redis
-from polar.reducer.service import reducer as reducer_service
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
@@ -79,15 +77,12 @@ async def get(
     id: CustomerMeterID,
     auth_subject: auth.CustomerMeterRead,
     session: AsyncSession = Depends(get_db_session),
-    redis: Redis = Depends(get_redis),
 ) -> CustomerMeter:
     """Get a customer meter by ID."""
     customer_meter = await customer_meter_service.get(session, auth_subject, id)
 
     if customer_meter is None:
         raise ResourceNotFound()
-
-    await reducer_service.log_customer_meter_comparison(session, redis, customer_meter)
 
     return customer_meter
 

@@ -40,6 +40,8 @@ from polar.meter.repository import MeterRepository
 from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
+from polar.redis import Redis
+from polar.reducer.service import reducer as reducer_service
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
@@ -123,7 +125,9 @@ class CustomerMeterService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def update_customer(self, session: AsyncSession, customer: Customer) -> None:
+    async def update_customer(
+        self, session: AsyncSession, redis: Redis, customer: Customer
+    ) -> None:
         repository = MeterRepository.from_session(session)
         statement = (
             repository.get_base_statement()
@@ -136,9 +140,13 @@ class CustomerMeterService:
 
         updated = False
         async for meter in repository.stream(statement):
-            _, meter_updated = await self.update_customer_meter(
+            customer_meter, meter_updated = await self.update_customer_meter(
                 session, customer, meter
             )
+            if meter_updated and customer_meter is not None:
+                await reducer_service.log_customer_meter_comparison(
+                    session, redis, customer_meter
+                )
             updated = updated or meter_updated
 
         if updated:

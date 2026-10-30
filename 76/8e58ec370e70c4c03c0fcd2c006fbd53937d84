@@ -1,0 +1,19 @@
+server/polar/reducer/bucket_repository.py
+  s_5e97bff582c28f::t_13485ef66c3d9b 60-75,189,201
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "768e58ec370e70c4c03c0fcd2c006fbd53937d84",
+  "prompts": {},
+  "sessions": {
+    "s_5e97bff582c28f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e3027eb1-9ab9-4b5f-9a1a-7aecdf9dbb88",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

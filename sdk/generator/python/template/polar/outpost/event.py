@@ -31,22 +31,12 @@ def get_property_reader(property: str) -> PropertyReader:
         case "timestamp":
             return lambda event: int(event.timestamp.timestamp())
     path = property.removeprefix("metadata.").split(".")
-    if len(path) == 1:
-        key = path[0]
-
-        def read_key(event: Event) -> typing.Any:
-            metadata: typing.Any = event.metadata
-            # A dict is the usual case: test it before the slower ABC check.
-            if type(metadata) is dict or isinstance(metadata, collections.abc.Mapping):
-                return metadata.get(key)
-            return None
-
-        return read_key
 
     def read(event: Event) -> typing.Any:
         value: typing.Any = event.metadata
         for part in path:
-            # A dict is the usual case: test it before the slower ABC check.
+            # Metadata is almost always a dict: checking its type first is cheaper
+            # than isinstance against collections.abc.Mapping.
             if type(value) is not dict and not isinstance(
                 value, collections.abc.Mapping
             ):

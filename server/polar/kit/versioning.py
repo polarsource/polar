@@ -213,6 +213,58 @@ def Version(
     return field_info
 
 
+def _omit_value(json_schema: JsonSchemaValue, value: str) -> JsonSchemaValue:
+    if "enum" in json_schema:
+        json_schema = {
+            **json_schema,
+            "enum": [member for member in json_schema["enum"] if member != value],
+        }
+    if "anyOf" in json_schema:
+        members = [
+            member for member in json_schema["anyOf"] if member.get("const") != value
+        ]
+        if len(members) == 1:
+            json_schema = {
+                **{key: v for key, v in json_schema.items() if key != "anyOf"},
+                **members[0],
+            }
+        else:
+            json_schema = {**json_schema, "anyOf": members}
+    return json_schema
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class _VersionedValue:
+    value: str
+    version_range: _VersionRange
+
+    def __get_pydantic_json_schema__(
+        self, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        json_schema = handler(core_schema)
+        version = _ACTIVE_API_VERSION.get()
+        if version is None or self.version_range.includes(version):
+            return json_schema
+        return _omit_value(json_schema, self.value)
+
+
+def VersionedValue(
+    value: str,
+    *,
+    starting_from: APIVersion | None = None,
+    up_to: APIVersion | None = None,
+) -> _VersionedValue:
+    """
+    Hide an enum or literal value from the JSON schema outside a version range.
+
+    Like `Version`, it only affects schema generation: validation and
+    serialization still accept the value in every version.
+    """
+    return _VersionedValue(
+        value, _VersionRange(starting_from=starting_from, up_to=up_to)
+    )
+
+
 def _iter_model_classes(
     cls: type[BaseModel] = BaseModel,
 ) -> Generator[type[BaseModel]]:

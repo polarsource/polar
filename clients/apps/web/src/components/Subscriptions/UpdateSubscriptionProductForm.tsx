@@ -40,7 +40,10 @@ export const UpdateSubscriptionProductForm = ({
 
   const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
-      proration_behavior: defaultProrationBehavior,
+      proration_behavior:
+        defaultProrationBehavior === 'auto'
+          ? undefined
+          : defaultProrationBehavior,
     },
   })
   const { control, handleSubmit, setError } = form
@@ -148,7 +151,10 @@ export const UpdateSubscriptionProductForm = ({
                       <ProrationBehavior
                         organization={organization}
                         value={field.value || defaultProrationBehavior}
-                        onValueChange={field.onChange}
+                        onValueChange={(value) =>
+                          field.onChange(value === 'auto' ? undefined : value)
+                        }
+                        allowAuto={defaultProrationBehavior === 'auto'}
                       />
                     </div>
                   </FormControl>

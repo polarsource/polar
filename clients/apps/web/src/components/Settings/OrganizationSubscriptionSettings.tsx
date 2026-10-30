@@ -136,6 +136,7 @@ const OrganizationSubscriptionSettings: React.FC<
                         organization={organization}
                         value={field.value}
                         onValueChange={field.onChange}
+                        allowAuto
                         disabled={readOnly}
                       />
                     </FormControl>

@@ -36988,9 +36988,13 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionChangePreviewSeats */
@@ -37000,9 +37004,13 @@ export interface components {
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionChangePreviewUnits */
@@ -37012,9 +37020,13 @@ export interface components {
        * @description Preview a change of the subscription to this number of units.
        */
       units: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /**
@@ -38721,9 +38733,13 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id?: string | null
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
       /**
        * Discount Id
@@ -38846,9 +38862,13 @@ export interface components {
        * @description Update the number of seats for this subscription.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionUpdateUnits */
@@ -38858,9 +38878,13 @@ export interface components {
        * @description Update the number of units for this subscription.
        */
       units: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /**

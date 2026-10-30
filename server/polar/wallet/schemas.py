@@ -3,8 +3,18 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, Field
 
+from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
-from polar.kit.schemas import CUSTOMER_ID_EXAMPLE, IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    CUSTOMER_ID_EXAMPLE,
+    IDSchema,
+    MultipleQueryFilter,
+    Schema,
+    TimestampedSchema,
+)
+from polar.kit.versioning import QuerySchema
+from polar.models.wallet import WalletType
+from polar.organization.schemas import OrganizationID
 
 WalletID = Annotated[UUID4, Path(description="The wallet ID.")]
 
@@ -47,4 +57,21 @@ class WalletTopUpCreate(Schema):
             "The currency. Currently, only `usd` is supported. "
             "It should match the wallet's currency."
         ),
+    )
+
+
+class WalletListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    type: MultipleQueryFilter[WalletType] | None = Field(
+        None, title="Wallet Type Filter", description="Filter by wallet type."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
     )

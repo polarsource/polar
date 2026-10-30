@@ -23,6 +23,7 @@ from .repository import CustomerSeatRepository
 from .schemas import CustomerSeat as CustomerSeatSchema
 from .schemas import (
     CustomerSeatClaimResponse,
+    CustomerSeatListParams,
     SeatAssign,
     SeatClaim,
     SeatClaimInfo,
@@ -117,23 +118,22 @@ async def assign_seat(
     },
 )
 async def list_seats(
+    filters: Annotated[CustomerSeatListParams, Query()],
     auth_subject: SeatRead,
     session: AsyncSession = Depends(get_db_session),
-    subscription_id: Annotated[UUID4 | None, Query()] = None,
-    order_id: Annotated[UUID4 | None, Query()] = None,
 ) -> SeatsList:
     """List seats for a subscription or order."""
     subscription: Subscription | None = None
     order: Order | None = None
     total_seats = 0
 
-    if subscription_id:
+    if filters.subscription_id:
         subscription_repository = SubscriptionRepository.from_session(session)
 
         statement = (
             subscription_repository.get_readable_statement(auth_subject)
             .options(*subscription_repository.get_eager_options())
-            .where(Subscription.id == subscription_id)
+            .where(Subscription.id == filters.subscription_id)
         )
         subscription = await subscription_repository.get_one_or_none(statement)
 
@@ -142,13 +142,13 @@ async def list_seats(
 
         total_seats = subscription.seats or 0
 
-    elif order_id:
+    elif filters.order_id:
         order_repository = OrderRepository.from_session(session)
 
         order_statement = (
             order_repository.get_readable_statement(auth_subject)
             .options(*order_repository.get_eager_options())
-            .where(Order.id == order_id)
+            .where(Order.id == filters.order_id)
         )
         order = await order_repository.get_one_or_none(order_statement)
 

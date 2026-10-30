@@ -14,8 +14,8 @@ from pydantic import (
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.custom_field.data import CustomFieldDataOutputMixin
-from polar.customer.schemas.customer import CustomerBase
-from polar.discount.schemas import DiscountMinimal
+from polar.customer.schemas.customer import CustomerBase, CustomerID, ExternalCustomerID
+from polar.discount.schemas import DiscountID, DiscountMinimal
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.kit.currency import PresentmentCurrency, format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
@@ -26,15 +26,17 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
-from polar.product.schemas import Product, ProductPrice
+from polar.organization.schemas import OrganizationID
+from polar.product.schemas import Product, ProductID, ProductPrice
 from polar.version import V2026_10, V2027_01
 
 SubscriptionID = Annotated[UUID4, Path(description="The subscription ID.")]
@@ -759,4 +761,60 @@ class SubscriptionBulkUpdate(IDSchema, TimestampedSchema):
     )
     completed_at: datetime | None = Field(
         description="When every subscription was handled. `None` while running."
+    )
+
+
+class SubscriptionListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    )
+    discount_id: MultipleQueryFilter[DiscountID] | None = Field(
+        None, title="DiscountID Filter", description="Filter by discount ID."
+    )
+    active: bool | None = Field(
+        None, description="Filter by active or inactive subscription.", deprecated=True
+    )
+    status: MultipleQueryFilter[SubscriptionStatus] | None = Field(
+        None, title="Status Filter", description="Filter by subscription status."
+    )
+    cancel_at_period_end: bool | None = Field(
+        None,
+        description="Filter by subscriptions that are set to cancel at period end.",
+    )
+    customer_cancellation_reason: (
+        MultipleQueryFilter[CustomerCancellationReason] | None
+    ) = Field(
+        None,
+        title="CustomerCancellationReason Filter",
+        description="Filter by customer cancellation reason.",
+    )
+    canceled_at_after: datetime | None = Field(
+        None, description="Filter by cancellation date (after or equal to)."
+    )
+    canceled_at_before: datetime | None = Field(
+        None, description="Filter by cancellation date (before or equal to)."
+    )
+    started_after: datetime | None = Field(
+        None, description="Only include subscriptions started after this date."
+    )
+    started_before: datetime | None = Field(
+        None, description="Only include subscriptions started before this date."
     )

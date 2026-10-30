@@ -1,20 +1,15 @@
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query
-from pydantic import AwareDatetime
-from pydantic_extra_types.timezone_name import TimeZoneName
 
-from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
-from polar.kit.time_queries import MIN_DATETIME, TimeInterval, is_under_limits
+from polar.kit.time_queries import is_under_limits
 from polar.kit.versioning import version
-from polar.meter.aggregation import AggregationFunction
 from polar.models import Meter
 from polar.openapi import APITag, cli_preview
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -26,7 +21,14 @@ from polar.version import V2027_01
 
 from . import auth, sorting
 from .schemas import Meter as MeterSchema
-from .schemas import MeterCreate, MeterID, MeterQuantities, MeterUpdate
+from .schemas import (
+    MeterCreate,
+    MeterID,
+    MeterListParams,
+    MeterQuantities,
+    MeterQuantitiesParams,
+    MeterUpdate,
+)
 from .service import AmbiguousExternalMeterID
 from .service import meter as meter_service
 
@@ -58,72 +60,23 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    query: str | None = Query(None, description="Filter by name."),
-    is_archived: bool | None = Query(None, description="Filter on archived meters."),
+    filters: Annotated[MeterListParams, Query()],
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[MeterSchema]:
     """List meters."""
     results, count = await meter_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
+        organization_id=filters.organization_id,
+        external_id=filters.external_id,
         metadata=metadata,
-        query=query,
-        is_archived=is_archived,
+        query=filters.query,
+        is_archived=filters.is_archived,
         pagination=pagination,
         sorting=sorting,
     )
-
     return ListResource.from_paginated_results(
-        [MeterSchema.model_validate(result) for result in results],
-        count,
-        pagination,
-    )
-
-
-@router.get(
-    "/",
-    name="list",
-    summary="List Meters",
-    response_model=ListResource[MeterSchema],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
-)
-@version(starting_from=V2027_01)
-async def list_v2027_01(
-    auth_subject: auth.MeterRead,
-    pagination: PaginationParamsQuery,
-    sorting: sorting.ListSorting,
-    metadata: MetadataQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    external_id: MultipleQueryFilter[str] | None = Query(
-        None, title="ExternalID Filter", description="Filter by meter external ID."
-    ),
-    query: str | None = Query(None, description="Filter by name."),
-    is_archived: bool | None = Query(None, description="Filter on archived meters."),
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[MeterSchema]:
-    """List meters."""
-    results, count = await meter_service.list(
-        session,
-        auth_subject,
-        organization_id=organization_id,
-        external_id=external_id,
-        metadata=metadata,
-        query=query,
-        is_archived=is_archived,
-        pagination=pagination,
-        sorting=sorting,
-    )
-
-    return ListResource.from_paginated_results(
-        [MeterSchema.model_validate(result) for result in results],
-        count,
-        pagination,
+        [MeterSchema.model_validate(result) for result in results], count, pagination
     )
 
 
@@ -178,36 +131,10 @@ async def get(
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def quantities(
+    filters: Annotated[MeterQuantitiesParams, Query()],
     id: MeterID,
     auth_subject: auth.MeterRead,
     metadata: MetadataQuery,
-    start_timestamp: AwareDatetime = Query(
-        ...,
-        description="Start timestamp.",
-        ge=MIN_DATETIME,  # type: ignore
-    ),
-    end_timestamp: AwareDatetime = Query(..., description="End timestamp."),
-    interval: TimeInterval = Query(..., description="Interval between two timestamps."),
-    timezone: TimeZoneName = Query(
-        default="UTC",
-        description="Timezone to use for the timestamps. Default is UTC.",
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by external customer ID.",
-    ),
-    customer_aggregation_function: AggregationFunction | None = Query(
-        None,
-        description=(
-            "If set, will first compute the quantities per customer before aggregating "
-            "them using the given function. "
-            "If not set, the quantities will be aggregated across all events."
-        ),
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> MeterQuantities:
     """Get quantities of a meter over a time period."""
@@ -216,7 +143,9 @@ async def quantities(
     if meter is None:
         raise ResourceNotFound()
 
-    if not is_under_limits(start_timestamp, end_timestamp, interval):
+    if not is_under_limits(
+        filters.start_timestamp, filters.end_timestamp, filters.interval
+    ):
         raise PolarRequestValidationError(
             [
                 {
@@ -226,7 +155,11 @@ async def quantities(
                         "Use a larger interval or reduce the date range."
                     ),
                     "type": "value_error",
-                    "input": (start_timestamp, end_timestamp, interval),
+                    "input": (
+                        filters.start_timestamp,
+                        filters.end_timestamp,
+                        filters.interval,
+                    ),
                 }
             ]
         )
@@ -234,14 +167,14 @@ async def quantities(
     return await meter_service.get_quantities(
         session,
         meter,
-        start_timestamp=start_timestamp,
-        end_timestamp=end_timestamp,
-        interval=interval,
-        timezone=ZoneInfo(timezone),
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
+        start_timestamp=filters.start_timestamp,
+        end_timestamp=filters.end_timestamp,
+        interval=filters.interval,
+        timezone=ZoneInfo(filters.timezone),
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
         metadata=metadata,
-        customer_aggregation_function=customer_aggregation_function,
+        customer_aggregation_function=filters.customer_aggregation_function,
     )
 
 

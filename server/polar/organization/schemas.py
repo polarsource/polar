@@ -31,7 +31,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -1020,3 +1020,7 @@ class OrganizationPayoutAccountSet(Schema):
     payout_account_id: UUID4 = Field(
         description="ID of the payout account to set on the organization."
     )
+
+
+class OrganizationListParams(QuerySchema):
+    slug: str | None = Field(None, description="Filter by slug.")

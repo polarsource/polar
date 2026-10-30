@@ -1,13 +1,13 @@
+from typing import Annotated
+
 from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.auth.exceptions import SessionNotFreshError
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.models import OrganizationAccessToken
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -23,6 +23,7 @@ from .schemas import (
 from .schemas import (
     OrganizationAccessTokenCreate,
     OrganizationAccessTokenCreateResponse,
+    OrganizationAccessTokenListParams,
     OrganizationAccessTokenUpdate,
 )
 from .service import organization_access_token as organization_access_token_service
@@ -35,19 +36,17 @@ router = APIRouter(
 
 @router.get("/", response_model=ListResource[OrganizationAccessTokenSchema])
 async def list(
+    filters: Annotated[OrganizationAccessTokenListParams, Query()],
     auth_subject: OrganizationAccessTokensRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[OrganizationAccessTokenSchema]:
     """List organization access tokens."""
     results, count = await organization_access_token_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
+        organization_id=filters.organization_id,
         pagination=pagination,
         sorting=sorting,
     )

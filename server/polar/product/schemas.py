@@ -50,13 +50,14 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
@@ -1232,4 +1233,32 @@ class ProductNameCheck(Schema):
     )
     phrase: str | None = Field(
         description="The exact phrase that matched, when a word-list rule flagged it."
+    )
+
+
+class ProductListParams(QuerySchema):
+    id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalID Filter", description="Filter by product external ID."
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    query: str | None = Field(None, description="Filter by product name.")
+    is_archived: bool | None = Field(None, description="Filter on archived products.")
+    is_recurring: bool | None = Field(
+        None,
+        description="Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. ",
+    )
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Field(
+        None,
+        title="BenefitID Filter",
+        description="Filter products granting specific benefit.",
+    )
+    visibility: builtins.list[ProductVisibility] | None = Field(
+        default=None, description="Filter by visibility."
     )

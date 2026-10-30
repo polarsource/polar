@@ -20,7 +20,11 @@ from polar.custom_field.data import (
     CustomFieldDataOutputMixin,
 )
 from polar.custom_field.schemas import AttachedCustomField
-from polar.customer.schemas.customer import CustomerNameInput
+from polar.customer.schemas.customer import (
+    CustomerID,
+    CustomerNameInput,
+    ExternalCustomerID,
+)
 from polar.discount.schemas import (
     DiscountFixedBase,
     DiscountOnceForeverDurationBase,
@@ -45,6 +49,7 @@ from polar.kit.schemas import (
     HttpUrlToStr,
     IDSchema,
     Int32,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     StripValidator,
@@ -55,17 +60,18 @@ from polar.kit.trial import (
     TrialConfigurationOutputMixin,
     TrialInterval,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
     CheckoutStatus,
 )
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.organization.schemas import OrganizationPublicBase
+from polar.organization.schemas import OrganizationID, OrganizationPublicBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
+    ProductID,
     ProductMediaList,
     ProductPrice,
     ProductPriceCreateList,
@@ -899,3 +905,26 @@ class CheckoutEmbedPolicy(Schema):
     """The `frame-ancestors` sources admitting the hosts allowed to embed."""
 
     frame_ancestors: list[str]
+
+
+class CheckoutListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    )
+    status: MultipleQueryFilter[CheckoutStatus] | None = Field(
+        None,
+        title="Status Filter",
+        description="Filter by checkout session status.",
+    )
+    query: str | None = Field(None, description="Filter by customer email.")

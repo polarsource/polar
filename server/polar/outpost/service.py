@@ -6,7 +6,7 @@ import logfire
 import structlog
 from anyio.streams.memory import MemoryObjectSendStream
 from google.protobuf.message import DecodeError
-from logfire.experimental.forwarding import ForwardExportRequestResponse
+from logfire._internal.forwarding import ForwardExportRequestResponse
 from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
     ExportMetricsServiceRequest,
 )

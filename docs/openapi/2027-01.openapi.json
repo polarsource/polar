@@ -71427,12 +71427,6 @@
             "description": "If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`.",
             "default": false
           },
-          "compass_enabled": {
-            "type": "boolean",
-            "title": "Compass Enabled",
-            "description": "If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard",
-            "default": false
-          },
           "merchant_migration_enabled": {
             "type": "boolean",
             "title": "Merchant Migration Enabled",

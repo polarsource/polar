@@ -27,10 +27,16 @@ import React, { useMemo, useState } from 'react'
 
 const CUSTOM_DATE_RANGE = 'custom'
 
+export interface ProductFilter {
+  product_id: string[] | null
+  external_product_id: string[] | null
+}
+
 interface SalesFiltersProps {
   organization: schemas['Organization']
   productId: string[] | null
-  onProductSelect: (value: string[]) => void
+  externalProductId: string[] | null
+  onProductSelect: (value: ProductFilter) => void
   status: schemas['OrderStatus'] | null
   onStatusSelect: (value: schemas['OrderStatus'] | null) => void
   dateRange: DateRange
@@ -41,6 +47,7 @@ interface SalesFiltersProps {
 const SalesFilters: React.FC<SalesFiltersProps> = ({
   organization,
   productId,
+  externalProductId,
   onProductSelect,
   status,
   onStatusSelect,
@@ -49,8 +56,18 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
   onExport,
 }) => {
   const [productQuery, setProductQuery] = useState('')
+  // A product_id link keeps filtering by ID until the selection is cleared
   const filterByExternalId =
-    !!organization.feature_settings?.config_as_code_enabled
+    !!organization.feature_settings?.config_as_code_enabled && !productId
+  const productFilter = filterByExternalId ? externalProductId : productId
+  const onProductFilterChange = (value: string[]) => {
+    const selected = value.length > 0 ? value : null
+    onProductSelect(
+      filterByExternalId
+        ? { product_id: null, external_product_id: selected }
+        : { product_id: selected, external_product_id: null },
+    )
+  }
 
   const { data: products, isPending: productsPending } = useProducts(
     organization.id,
@@ -63,8 +80,8 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
   )
   const { data: selectedProducts } = useSelectedProducts(
     filterByExternalId
-      ? { organization_id: organization.id, external_id: productId ?? [] }
-      : { id: productId ?? [] },
+      ? { organization_id: organization.id, external_id: productFilter ?? [] }
+      : { id: productFilter ?? [] },
     true,
   )
 
@@ -90,71 +107,56 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
     })
   }, [products, selectedProducts, productQuery, filterByExternalId])
 
-  const mobileFilters = useMemo<Filter[]>(() => {
-    const intervals = dateRangeIntervals(organization)
-    const intervalSlug = dateRangeToMatchingInterval(
-      dateRange,
-      organization,
-    )?.slug
-    return [
-      {
-        key: 'product',
-        label: 'Product',
-        icon: <HiveOutlined fontSize="inherit" />,
-        type: 'multi',
-        options: productOptions,
-        loading: productsPending,
-        searchPlaceholder: 'Search products…',
-        searchQuery: productQuery,
-        onSearchQueryChange: setProductQuery,
-        value: productId ?? [],
-        onChange: onProductSelect,
-      },
-      {
-        key: 'status',
-        label: 'Status',
-        icon: <DonutLargeOutlined fontSize="inherit" />,
-        type: 'single',
-        options: enums.orderStatusValues.map((value) => ({
-          value,
-          label: OrderStatusDisplayTitle[value],
-        })),
-        value: status,
-        onChange: (value) =>
-          onStatusSelect(value as schemas['OrderStatus'] | null),
-      },
-      {
-        key: 'date',
-        label: 'Date',
-        icon: <CalendarMonthOutlined fontSize="inherit" />,
-        type: 'single',
-        options: intervals.map(({ slug, label }) => ({ value: slug, label })),
-        value:
-          intervalSlug === 'allTime'
-            ? null
-            : (intervalSlug ?? CUSTOM_DATE_RANGE),
-        onChange: (slug) => {
-          const interval =
-            intervals.find((interval) => interval.slug === slug) ??
-            intervals.find(({ slug }) => slug === 'allTime')
-          if (interval) {
-            onDateChange({ from: interval.value[0], to: interval.value[1] })
-          }
-        },
-      },
-    ]
-  }, [
-    organization,
-    productOptions,
-    productsPending,
-    productQuery,
-    productId,
-    onProductSelect,
-    status,
-    onStatusSelect,
+  const intervals = dateRangeIntervals(organization)
+  const intervalSlug = dateRangeToMatchingInterval(
     dateRange,
-    onDateChange,
-  ])
+    organization,
+  )?.slug
+  const mobileFilters: Filter[] = [
+    {
+      key: 'product',
+      label: 'Product',
+      icon: <HiveOutlined fontSize="inherit" />,
+      type: 'multi',
+      options: productOptions,
+      loading: productsPending,
+      searchPlaceholder: 'Search products…',
+      searchQuery: productQuery,
+      onSearchQueryChange: setProductQuery,
+      value: productFilter ?? [],
+      onChange: onProductFilterChange,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      icon: <DonutLargeOutlined fontSize="inherit" />,
+      type: 'single',
+      options: enums.orderStatusValues.map((value) => ({
+        value,
+        label: OrderStatusDisplayTitle[value],
+      })),
+      value: status,
+      onChange: (value) =>
+        onStatusSelect(value as schemas['OrderStatus'] | null),
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      icon: <CalendarMonthOutlined fontSize="inherit" />,
+      type: 'single',
+      options: intervals.map(({ slug, label }) => ({ value: slug, label })),
+      value:
+        intervalSlug === 'allTime' ? null : (intervalSlug ?? CUSTOM_DATE_RANGE),
+      onChange: (slug) => {
+        const interval =
+          intervals.find((interval) => interval.slug === slug) ??
+          intervals.find(({ slug }) => slug === 'allTime')
+        if (interval) {
+          onDateChange({ from: interval.value[0], to: interval.value[1] })
+        }
+      },
+    },
+  ]
 
   return (
     <Box
@@ -173,8 +175,8 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         <Box width={{ base: '100%', md: 300 }} flexGrow={{ sm: 1, md: 0 }}>
           <ProductSelect
             organization={organization}
-            value={productId ?? []}
-            onChange={onProductSelect}
+            value={productFilter ?? []}
+            onChange={onProductFilterChange}
             className="w-full"
             includeArchived
             filterByExternalId={filterByExternalId}

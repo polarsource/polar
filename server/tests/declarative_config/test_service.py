@@ -9,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
 from polar.catalog.repository import (
+    CatalogBenefitRepository,
     CatalogProductRepository,
     CatalogRepository,
 )
@@ -589,7 +590,7 @@ class TestApply:
         meter = await create_meter(
             save_fixture, organization=organization, external_id="sdk-tool-calls"
         )
-        await create_benefit(
+        previous = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.meter_credit,
@@ -601,12 +602,21 @@ class TestApply:
             {"meters": [TOOL_CALLS_METER], "benefits": [CREDITS_BENEFIT]}
         )
 
-        with pytest.raises(ConfigInvalid) as error:
-            await declarative_config_service.apply(session, redis, auth_subject, config)
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
 
-        [issue] = error.value.errors
-        assert issue.type == ConfigIssueType.not_supported
-        assert issue.loc == ["body", "benefits", 0]
+        [benefit] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["tool-call-credits"])
+        assert benefit.id != previous.id
+        assert dict(benefit.properties)["units"] == 1000
+        await session.refresh(previous)
+        assert (previous.is_current, dict(previous.properties)["units"]) == (
+            False,
+            10,
+        )
+        assert result.catalog is not None
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_benefit_visibility(
@@ -632,16 +642,16 @@ class TestApply:
             (change.field, change.before, change.after)
             for change in plan.changes[0].diff
         ] == [("visibility", Visibility.private, Visibility.public)]
-        assert [issue.type for issue in plan.issues] == [ConfigIssueType.not_supported]
+        assert plan.issues == []
 
-        with pytest.raises(ConfigInvalid) as error:
-            await declarative_config_service.apply(
-                session, redis, auth_subject, default
-            )
-
-        [issue] = error.value.errors
-        assert issue.type == ConfigIssueType.not_supported
-        assert issue.loc == ["body", "benefits", 0]
+        await declarative_config_service.apply(session, redis, auth_subject, default)
+        [current] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["beta"])
+        assert (current.id != benefit.id, current.visibility) == (
+            True,
+            Visibility.public,
+        )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_concurrent_benefit_create(
@@ -799,7 +809,9 @@ class TestApply:
             ConfigResource.benefit,
             ConfigResource.benefit,
         ]
-        assert (result.removed, result.catalog) == ([], None)
+        assert result.removed == []
+        assert result.catalog is not None
+        assert result.catalog.before is None
         assert (
             await ProductRepository.from_session(session).get_all_by_external_ids(
                 organization.id, ["pro"]
@@ -2676,6 +2688,35 @@ class TestPrune:
             ("apples", True)
         ]
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefit_in_use_by_previous_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="beta",
+            is_current=False,
+        )
+        await create_benefit_grant(save_fixture, customer, previous, granted=True)
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate({"benefits": [{**BETA_BENEFIT, "deprecated": True}]}),
+        )
+
+        assert [(entry.external_id, entry.in_use) for entry in result.entries] == [
+            ("beta", True)
+        ]
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.products_read})
     )
@@ -2987,6 +3028,310 @@ class TestCatalogVersioning:
         assert (
             await CatalogRepository.from_session(session).get_live(organization.id)
             is None
+        )
+
+
+SUPPORT_BENEFIT = {
+    "type": "feature_flag",
+    "external_id": "support",
+    "description": "Priority support",
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestBenefitVersioning:
+    async def test_change_creates_new_rows(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        initial = Config.model_validate(
+            {"benefits": [BETA_BENEFIT], "products": [pro, PACK_PRODUCT]}
+        )
+        changed = Config.model_validate(
+            {
+                "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                "products": [pro, PACK_PRODUCT],
+            }
+        )
+        benefits_repo = BenefitRepository.from_session(session)
+        products_repo = ProductRepository.from_session(session)
+        catalogs_repo = CatalogRepository.from_session(session)
+
+        await declarative_config_service.apply(session, redis, auth_subject, initial)
+        [old_beta] = await benefits_repo.get_all_by_external_ids(
+            organization.id, ["beta"]
+        )
+        old_products = {
+            product.external_id: product
+            for product in await products_repo.get_all_by_external_ids(
+                organization.id, ["pro", "pack"]
+            )
+        }
+        first = await catalogs_repo.get_live(organization.id)
+        assert first is not None
+        assert old_beta.catalog_id == first.id
+
+        plan = await declarative_config_service.plan(session, auth_subject, changed)
+        diffs = {
+            change.external_id: [
+                (field.field, field.before, field.after) for field in change.diff
+            ]
+            for change in plan.changes
+        }
+        assert diffs == {
+            "beta": [("description", "Beta access", "Early access")],
+            "pro": [("benefits", ["beta"], ["beta"])],
+            "pack": [],
+        }
+        assert (plan.issues, plan.removed) == ([], [])
+        assert plan.catalog == ConfigCatalogPlan(
+            before=ConfigCatalog(id=first.id, name=first.name), name="v2"
+        )
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, changed
+        )
+
+        [new_beta] = await benefits_repo.get_all_by_external_ids(
+            organization.id, ["beta"]
+        )
+        new_products = {
+            product.external_id: product
+            for product in await products_repo.get_all_by_external_ids(
+                organization.id, ["pro", "pack"]
+            )
+        }
+        live = await catalogs_repo.get_live(organization.id)
+        assert live is not None
+        assert result.catalog == ConfigCatalogChange(
+            before=ConfigCatalog(id=first.id, name=first.name),
+            after=ConfigCatalog(id=live.id, name="v2"),
+        )
+        assert new_beta.id != old_beta.id
+        assert new_beta.catalog_id == live.id
+        assert new_products["pro"].id != old_products["pro"].id
+        assert new_products["pack"].id == old_products["pack"].id
+        assert [b.id for b in new_products["pro"].benefits] == [new_beta.id]
+        await session.refresh(old_beta)
+        await session.refresh(old_products["pro"], ["product_benefits"])
+        assert old_beta.is_current is False
+        assert [b.id for b in old_products["pro"].benefits] == [old_beta.id]
+        assert [
+            member.benefit_id
+            for member in await CatalogBenefitRepository.from_session(
+                session
+            ).get_all_by_catalog(live.id)
+        ] == [new_beta.id]
+
+    async def test_export_and_plan_previous_catalog(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        initial = Config.model_validate({"benefits": [BETA_BENEFIT], "products": [pro]})
+        await declarative_config_service.apply(session, redis, auth_subject, initial)
+        first = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                    "products": [pro],
+                }
+            ),
+        )
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, catalog_id=first.id
+        )
+        [benefit] = exported.config.benefits
+        [product] = exported.config.products
+        assert (benefit.description, product.benefits) == ("Beta access", ["beta"])
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, initial, catalog_id=first.id
+        )
+        assert (plan.issues, plan.removed, plan.catalog) == ([], [], None)
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+
+    async def test_change_keeps_metadata_left_out(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [{**BETA_BENEFIT, "metadata": {"tier": 1}}]}
+            ),
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [{**BETA_BENEFIT, "description": "Early access"}]}
+            ),
+        )
+
+        [benefit] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["beta"])
+        assert (benefit.description, benefit.user_metadata) == (
+            "Early access",
+            {"tier": 1},
+        )
+
+    async def test_deprecated_new_benefit_not_created(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [{**BETA_BENEFIT, "deprecated": True}]}),
+        )
+
+        assert (result.changes, result.catalog) == ([], None)
+        assert (
+            await BenefitRepository.from_session(session).get_all_by_external_ids(
+                organization.id, ["beta"]
+            )
+            == []
+        )
+
+    async def test_change_needs_granting_products(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT],
+                    "products": [{**MONTHLY_PRO, "benefits": ["beta"]}],
+                }
+            ),
+        )
+        benefits_only = Config.model_validate(
+            {"benefits": [{**BETA_BENEFIT, "description": "Early access"}]}
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, benefits_only
+        )
+
+        [issue] = plan.issues
+        assert (issue.type, issue.loc, issue.input) == (
+            ConfigIssueType.not_supported,
+            ["body", "benefits", 0],
+            "beta",
+        )
+        with pytest.raises(ConfigInvalid):
+            await declarative_config_service.apply(
+                session, redis, auth_subject, benefits_only
+            )
+
+    async def test_removes_benefits_left_out(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT, SUPPORT_BENEFIT], "products": [pro]}
+            ),
+        )
+        [support] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["support"])
+        config = Config.model_validate({"benefits": [BETA_BENEFIT], "products": [pro]})
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        assert plan.issues == []
+        assert plan.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.benefit,
+                external_id="support",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        assert plan.catalog is not None
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert result.removed == plan.removed
+        await session.refresh(support)
+        assert support.is_current is False
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert [
+            member.external_id
+            for member in await CatalogBenefitRepository.from_session(
+                session
+            ).get_all_by_catalog(live.id)
+        ] == ["beta"]
+
+    async def test_removed_benefit_granted_by_unlisted_product(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT, SUPPORT_BENEFIT],
+                    "products": [{**MONTHLY_PRO, "benefits": ["support"]}],
+                }
+            ),
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"benefits": [BETA_BENEFIT]})
+        )
+
+        [issue] = plan.issues
+        assert (issue.type, issue.loc, issue.input) == (
+            ConfigIssueType.not_supported,
+            ["body", "benefits"],
+            "support",
         )
 
 

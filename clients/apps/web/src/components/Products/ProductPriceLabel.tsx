@@ -16,11 +16,13 @@ interface ProductPriceLabelProps {
     'prices' | 'recurring_interval' | 'recurring_interval_count'
   >
   currency: string
+  verbose?: boolean
 }
 
 const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
   product,
   currency,
+  verbose,
 }: ProductPriceLabelProps) => {
   const staticPrice = product.prices.find(
     ({ amount_type, price_currency }) =>
@@ -35,8 +37,8 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
         currency={staticPrice.price_currency}
         interval={product.recurring_interval || undefined}
         intervalCount={product.recurring_interval_count}
-        oneTime={!product.recurring_interval}
-        fullIntervalNames
+        oneTime={verbose && !product.recurring_interval}
+        fullIntervalNames={verbose}
       />
     )
   } else if (staticPrice && isSeatBasedPrice(staticPrice)) {

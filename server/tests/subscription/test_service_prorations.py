@@ -18,6 +18,7 @@ from polar.enums import (
     SubscriptionRecurringInterval,
 )
 from polar.event.system import SystemEvent
+from polar.kit.trial import TrialInterval
 from polar.models import (
     BillingEntry,
     Customer,
@@ -50,6 +51,7 @@ from tests.fixtures.random_objects import (
     create_product_price_fixed,
     create_subscription,
     create_subscription_with_seats,
+    create_trialing_subscription,
 )
 
 MONTH = SubscriptionRecurringInterval.month
@@ -2383,11 +2385,57 @@ class TestAutoProrationBehavior:
             assert updated.pending_update is not None
             assert updated.pending_update.product_id == new_product.id
 
+    async def test_trialing_product_downgrade(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        order_mock = mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+        old_product, new_product = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=MONTH,
+                prices=[(amount, "usd")],
+                trial_interval=TrialInterval.month,
+                trial_interval_count=1,
+            )
+            for amount in (300_00, 100_00)
+        ]
+        subscription = await create_trialing_subscription(
+            save_fixture, product=old_product, customer=customer
+        )
+        trial_end = subscription.trial_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior="auto",
+            )
+        await session.flush()
+
+        order_mock.assert_not_awaited()
+        assert updated.product_id == new_product.id
+        assert updated.pending_update is None
+        assert updated.trial_end == trial_end
+
     @pytest.mark.parametrize(
-        ("new_seats", "immediate"),
+        ("new_seats", "trialing", "immediate"),
         [
-            pytest.param(100, True, id="seat-increase"),
-            pytest.param(60, False, id="seat-decrease"),
+            pytest.param(100, False, True, id="seat-increase"),
+            pytest.param(60, False, False, id="seat-decrease"),
+            pytest.param(60, True, True, id="trialing-seat-decrease"),
         ],
     )
     async def test_seat_change(
@@ -2399,6 +2447,7 @@ class TestAutoProrationBehavior:
         organization: Organization,
         customer: Customer,
         new_seats: int,
+        trialing: bool,
         immediate: bool,
     ) -> None:
         order_mock = mocker.patch.object(
@@ -2414,7 +2463,19 @@ class TestAutoProrationBehavior:
 
         with freezegun.freeze_time(datetime(2024, 1, 1, tzinfo=UTC)) as frozen_time:
             subscription = await create_subscription_with_seats(
-                save_fixture, product=product, customer=customer, seats=80
+                save_fixture,
+                product=product,
+                customer=customer,
+                seats=80,
+                **(
+                    {
+                        "status": SubscriptionStatus.trialing,
+                        "trial_start": datetime(2024, 1, 1, tzinfo=UTC),
+                        "trial_end": datetime(2024, 2, 1, tzinfo=UTC),
+                    }
+                    if trialing
+                    else {}
+                ),
             )
             frozen_time.move_to(datetime(2024, 1, 16, tzinfo=UTC))
 
@@ -2430,7 +2491,7 @@ class TestAutoProrationBehavior:
                 )
             await session.flush()
 
-        assert order_mock.await_count == int(immediate)
+        assert order_mock.await_count == int(immediate and not trialing)
         if immediate:
             assert updated.seats == new_seats
             assert updated.pending_update is None

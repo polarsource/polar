@@ -38,6 +38,7 @@ import SalesFilters from './SalesFilters'
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
+  external_product_id: parseAsArrayOf(parseAsString),
   status: parseAsStringLiteral(enums.orderStatusValues),
   metadata: parseAsArrayOf(parseAsString),
 }
@@ -55,13 +56,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       defaultPageSize: 50,
     })
 
-  const [{ product_id: productId, status, metadata }, setFilters] =
-    useQueryStates(filterParsers)
+  const [
+    {
+      product_id: productId,
+      external_product_id: externalProductId,
+      status,
+      metadata,
+    },
+    setFilters,
+  ] = useQueryStates(filterParsers)
+  const filterByExternalId =
+    !!organization.feature_settings?.config_as_code_enabled
 
   const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
 
   const onProductSelect = (value: string[]) => {
-    setFilters({ product_id: value.length > 0 ? value : null })
+    const selected = value.length > 0 ? value : null
+    setFilters(
+      filterByExternalId
+        ? { product_id: null, external_product_id: selected }
+        : { product_id: selected, external_product_id: null },
+    )
     resetPage()
   }
 
@@ -79,6 +94,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
     status: status ? [status] : undefined,
     created_after: startDate.toISOString(),
     created_before: endDate.toISOString(),
@@ -248,7 +264,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       <div className="flex flex-col gap-8">
         <SalesFilters
           organization={organization}
-          productId={productId}
+          productId={filterByExternalId ? externalProductId : productId}
           onProductSelect={onProductSelect}
           status={status}
           onStatusSelect={onStatusSelect}
@@ -296,6 +312,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       <ExportOrdersModal
         organization={organization}
         productId={productId ?? undefined}
+        externalProductId={externalProductId ?? undefined}
         status={status}
         isShown={isExportModalShown}
         hide={hideExportModal}

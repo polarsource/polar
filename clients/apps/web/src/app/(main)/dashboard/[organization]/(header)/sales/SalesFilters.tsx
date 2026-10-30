@@ -49,6 +49,9 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
   onExport,
 }) => {
   const [productQuery, setProductQuery] = useState('')
+  const valueKey = organization.feature_settings?.config_as_code_enabled
+    ? 'external_id'
+    : 'id'
 
   const { data: products, isPending: productsPending } = useProducts(
     organization.id,
@@ -60,7 +63,9 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
     },
   )
   const { data: selectedProducts } = useSelectedProducts(
-    { id: productId ?? [] },
+    valueKey === 'external_id'
+      ? { organization_id: organization.id, external_id: productId ?? [] }
+      : { id: productId ?? [] },
     true,
   )
 
@@ -73,11 +78,18 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         }
       }
     }
-    return items.map((product) => ({
-      value: product.id,
-      label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
-    }))
-  }, [products, selectedProducts, productQuery])
+    return items.flatMap((product) => {
+      const value = product[valueKey]
+      return value
+        ? [
+            {
+              value,
+              label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
+            },
+          ]
+        : []
+    })
+  }, [products, selectedProducts, productQuery, valueKey])
 
   const mobileFilters = useMemo<Filter[]>(() => {
     const intervals = dateRangeIntervals(organization)
@@ -166,6 +178,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
             onChange={onProductSelect}
             className="w-full"
             includeArchived
+            valueKey={valueKey}
           />
         </Box>
         <Box

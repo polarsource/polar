@@ -188,4 +188,5 @@ def test_request_credit_usage(
         and (message.payload.count, message.payload.sum) == (100, 100)
         for message in messages
     )
+    analyze(run, session)
     benchmark(request)

@@ -88,12 +88,18 @@ def _number(value: str) -> int | float:
     return number
 
 
+def _decode(value: str | bytes) -> str:
+    return value.decode() if isinstance(value, bytes) else value
+
+
 def _report_local_value(
-    span: Span, snapshot: "Snapshot", replaced: collections.abc.Sequence[str | bytes]
+    span: Span,
+    snapshot: "Snapshot",
+    replaced: collections.abc.Sequence[str | bytes],
+    # The state before the transaction settled confirmed events out of the pending part.
+    before: collections.abc.Mapping[str | bytes, str | bytes] | None = None,
 ) -> None:
-    decoded = [
-        value.decode() if isinstance(value, bytes) else value for value in replaced
-    ]
+    decoded = [_decode(value) for value in replaced]
     fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
     if "cold_until" not in fields:
         return
@@ -101,7 +107,12 @@ def _report_local_value(
     local = BucketStatistics()
     buckets: dict[str, BucketStatistics] = {}
     pending: dict[str, BucketStatistics] = {}
-    for field, value in fields.items():
+    source = (
+        fields
+        if before is None
+        else {_decode(field): _decode(value) for field, value in before.items()}
+    )
+    for field, value in source.items():
         if field.startswith("cold:"):
             setattr(local, field.removeprefix("cold:"), _number(value))
             continue
@@ -109,6 +120,8 @@ def _report_local_value(
         if kind not in ("bucket", "pending"):
             continue
         start, _, statistic = rest.partition(":")
+        if int(start) >= snapshot["cold_until"]:
+            continue
         group = buckets if kind == "bucket" else pending
         setattr(group.setdefault(start, BucketStatistics()), statistic, _number(value))
     # A bucket already cold before this snapshot was read by its pending part only.
@@ -1345,8 +1358,10 @@ class Outpost:
             )
             if reducer_kind is not None:
                 span.set_attribute("outpost.reducer_kind", reducer_kind)
+            before = None
             if confirmed:
                 async with self._redis.pipeline(transaction=True) as pipeline:
+                    pipeline.hgetall(key)
                     for bucket_start, ids in confirmed.items():
                         await self._confirm_script(
                             keys=[
@@ -1367,12 +1382,12 @@ class Outpost:
                         keys=[key], args=snapshot_arguments, client=pipeline
                     )
                     results = await pipeline.execute()
-                state, replaced = results[-1]
+                before, (state, replaced) = results[0], results[-1]
             else:
                 state, replaced = await self._apply_snapshot(
                     keys=[key], args=snapshot_arguments
                 )
-            _report_local_value(span, snapshot, replaced)
+            _report_local_value(span, snapshot, replaced, before)
             if confirmation is not None:
                 span.set_attributes(
                     {

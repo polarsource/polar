@@ -35,7 +35,7 @@ import {
   useQueryStates,
 } from 'nuqs'
 import React from 'react'
-import SalesFilters from './SalesFilters'
+import SalesFilters, { type ProductFilter } from './SalesFilters'
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
@@ -66,18 +66,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     },
     setFilters,
   ] = useQueryStates(filterParsers)
-  const filterByExternalId =
-    !!organization.feature_settings?.config_as_code_enabled
 
   const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
 
-  const onProductSelect = (value: string[]) => {
-    const selected = value.length > 0 ? value : null
-    setFilters(
-      filterByExternalId
-        ? { product_id: null, external_product_id: selected }
-        : { product_id: selected, external_product_id: null },
-    )
+  const onProductSelect = (value: ProductFilter) => {
+    setFilters(value)
     resetPage()
   }
 
@@ -273,7 +266,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       <div className="flex flex-col gap-8">
         <SalesFilters
           organization={organization}
-          productId={filterByExternalId ? externalProductId : productId}
+          productId={productId}
+          externalProductId={externalProductId}
           onProductSelect={onProductSelect}
           status={status}
           onStatusSelect={onStatusSelect}

@@ -23,7 +23,7 @@ from httpx_ws import (
 )
 from opentelemetry import context as otel_context
 from opentelemetry import trace
-from opentelemetry.metrics import Counter, Histogram
+from opentelemetry.metrics import Counter, Histogram, _Gauge
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, StatusCode
@@ -47,6 +47,7 @@ from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
+    BUCKET_SIZE,
     BucketStatistics,
     Reducer,
     ReducerMatcher,
@@ -382,7 +383,11 @@ class _Confirmation:
     snapshot: "Snapshot"
     customer: str
     identity: str
+    started: float
+    age: float
+    superseded: bool
     awaited: int = 0
+    messages: int = 0
     asked: int = 0
     confirmed: dict[int, list[str]] = dataclasses.field(default_factory=dict)
     timer: anyio.CancelScope | None = None
@@ -406,6 +411,8 @@ class Outpost:
         self._ingest_duration: Histogram | None = None
         self._ingest_buckets: Counter | None = None
         self._read_duration: Histogram | None = None
+        self._redis_memory: _Gauge | None = None
+        self._redis_keys: _Gauge | None = None
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
@@ -458,6 +465,8 @@ class Outpost:
             self._read_duration = meter.create_histogram(
                 "outpost.read.duration", unit="s"
             )
+            self._redis_memory = meter.create_gauge("outpost.redis.memory", unit="By")
+            self._redis_keys = meter.create_gauge("outpost.redis.keys")
         try:
             with self._span("outpost.redis.connect"):
                 self._redis = await self._stack.enter_async_context(
@@ -876,6 +885,8 @@ class Outpost:
         self._ingest_duration = None
         self._ingest_buckets = None
         self._read_duration = None
+        self._redis_memory = None
+        self._redis_keys = None
         with anyio.CancelScope(shield=True):
             if tracer_provider is not None:
                 await anyio.to_thread.run_sync(tracer_provider.shutdown)
@@ -994,6 +1005,24 @@ class Outpost:
                 local.state = await self._load_state(customer)
                 local.notify()
 
+    async def _report_redis_size(self) -> None:
+        """Includes whatever else the merchant keeps in that Redis."""
+        redis, memory_gauge, keys_gauge = (
+            self._redis,
+            self._redis_memory,
+            self._redis_keys,
+        )
+        if redis is None or memory_gauge is None or keys_gauge is None:
+            return
+        try:
+            memory = await redis.info("memory")
+            keys = await redis.dbsize()
+        except RedisError:
+            # A Redis that refuses INFO or DBSIZE reports nothing.
+            return
+        memory_gauge.set(memory["used_memory"])
+        keys_gauge.set(keys)
+
     async def _listen_redis(
         self,
         *,
@@ -1026,6 +1055,8 @@ class Outpost:
                         await self._receive_redis(message["data"])
                     if anyio.current_time() >= next_refresh:
                         self._report_sync()
+                        assert self._tasks is not None
+                        self._tasks.start_soon(self._report_redis_size)
                         await self._refresh_states()
                         next_refresh = anyio.current_time() + SYNC_INTERVAL
 
@@ -1182,6 +1213,7 @@ class Outpost:
         """Asks Polar which of the pending events in the buckets the snapshot seals it
         counts. The snapshot Polar answers with applies once it did, or the asking one
         after confirm_timeout with the events still pending."""
+        started = time.perf_counter()
         key = f"{identity}:{snapshot['meter_id']}"
         superseded = self._confirmations.pop(key, None)
         if superseded is not None and superseded.timer is not None:
@@ -1199,7 +1231,16 @@ class Outpost:
         ]
         if not sealed:
             return False
-        confirmation = _Confirmation(key, snapshot, customer, identity)
+        confirmation = _Confirmation(
+            key,
+            snapshot,
+            customer,
+            identity,
+            started=started,
+            # Seconds since the oldest bucket asked ended.
+            age=(time.time_ns() / 1_000 - min(sealed) - BUCKET_SIZE) / 1_000_000,
+            superseded=superseded is not None,
+        )
         reducer_id = identity[len(customer) + 1 :]
         assert self._redis is not None
         for bucket_start in sealed:
@@ -1230,6 +1271,7 @@ class Outpost:
                     # Not connected: the events stay pending until the next snapshot.
                     return False
                 confirmation.awaited += 1
+                confirmation.messages += 1
                 confirmation.asked += len(batch)
         if not confirmation.awaited:
             return False
@@ -1273,6 +1315,7 @@ class Outpost:
         """Settles the confirmed events and applies the snapshot in one transaction: a
         read sees the bucket either fully local or as Polar's total plus what is still
         pending."""
+        applying = time.perf_counter()
         assert self._redis is not None
         assert self._apply_snapshot is not None
         assert self._confirm_script is not None
@@ -1341,6 +1384,10 @@ class Outpost:
                             len(ids) for ids in confirmed.values()
                         ),
                         "outpost.pending.answered": answered,
+                        "outpost.pending.messages": confirmation.messages,
+                        "outpost.pending.age": confirmation.age,
+                        "outpost.pending.superseded": confirmation.superseded,
+                        "outpost.confirm.duration": applying - confirmation.started,
                     }
                 )
             await self._receive_state(identity, decode_state(state))

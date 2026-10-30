@@ -1,5 +1,6 @@
 import asyncio
 import functools
+from urllib.parse import urlparse
 
 import structlog
 from pydantic_ai import Agent
@@ -8,6 +9,7 @@ from polar.config import settings
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.observability.baggage import organization_baggage
 
+from .collectors.setup import is_on_verified_domain
 from .known_domains import known_domains_for_prompt, match_known_domain
 from .policy import fetch_policy_content
 from .schemas import (
@@ -651,12 +653,17 @@ POLICY_NOTE = (
 )
 
 
-def _annotate_domains(domains: list[str]) -> str:
-    """Join domain names, tagging known service domains for the AI agent."""
+_VERIFIED_DOMAIN_TAG = "(domain verified via DNS by this organization)"
+
+
+def _annotate_domains(domains: list[str], verified_domains: list[str]) -> str:
+    """Join domain names, tagging known service and verified domains for the AI agent."""
     parts = []
     for d in domains:
         if match_known_domain(d) is not None:
             parts.append(f"{d} (known service)")
+        elif is_on_verified_domain(d, verified_domains):
+            parts.append(f"{d} {_VERIFIED_DOMAIN_TAG}")
         else:
             parts.append(d)
     return ", ".join(parts)
@@ -789,7 +796,12 @@ class ReviewAnalyzer:
         parts.append(f"Name: {org.name}")
         parts.append(f"Slug: {org.slug}")
         if org.website:
-            parts.append(f"Website: {org.website}")
+            if is_on_verified_domain(
+                urlparse(org.website).hostname or "", snapshot.verified_domains
+            ):
+                parts.append(f"Website: {org.website} {_VERIFIED_DOMAIN_TAG}")
+            else:
+                parts.append(f"Website: {org.website}")
         if org.email:
             parts.append(f"Org Support Email: {org.email}")
         if org.about:
@@ -846,7 +858,7 @@ class ReviewAnalyzer:
             for url in setup.checkout_success_urls.unique_urls:
                 parts.append(f"  - {url}")
             parts.append(
-                f"Success URL Domains: {_annotate_domains(setup.checkout_success_urls.domains)}"
+                f"Success URL Domains: {_annotate_domains(setup.checkout_success_urls.domains, snapshot.verified_domains)}"
             )
             if setup.checkout_success_urls.redirect_results:
                 redirected = [
@@ -871,7 +883,7 @@ class ReviewAnalyzer:
             for url in setup.checkout_return_urls.unique_urls:
                 parts.append(f"  - {url}")
             parts.append(
-                f"Return URL Domains: {_annotate_domains(setup.checkout_return_urls.domains)}"
+                f"Return URL Domains: {_annotate_domains(setup.checkout_return_urls.domains, snapshot.verified_domains)}"
             )
             if setup.checkout_return_urls.redirect_results:
                 redirected = [
@@ -913,7 +925,10 @@ class ReviewAnalyzer:
                 status = "enabled" if ep.enabled else "DISABLED"
                 parts.append(f"  - {ep.url} ({status})")
             parts.append(
-                f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
+                "Webhook Domains: "
+                + _annotate_domains(
+                    setup.integration.webhook_domains, snapshot.verified_domains
+                )
             )
         else:
             parts.append("No webhook endpoints configured.")

@@ -190,6 +190,9 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_TTL: timedelta = timedelta(hours=1)
     CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
+    CUSTOMER_SESSION_AUTHENTICATION_SESSION_COOKIE_KEY: str = (
+        "polar_customer_auth_session"
+    )
 
     # Impersonation session
     IMPERSONATION_COOKIE_KEY: str = "polar_original_session"

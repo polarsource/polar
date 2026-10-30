@@ -9,15 +9,18 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
+from polar.catalog.repository import CatalogProductRepository
 from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
+    Catalog,
     Meter,
     Organization,
     Product,
     ProductPriceMeteredTiers,
 )
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
 
@@ -28,6 +31,7 @@ from .schemas import (
     ConfigBenefit,
     ConfigBenefitRead,
     ConfigExport,
+    ConfigExportCatalog,
     ConfigExportDocument,
     ConfigMeter,
     ConfigMeterRead,
@@ -219,7 +223,7 @@ async def _chain[T](*iterators: AsyncIterator[T]) -> AsyncIterator[T]:
 
 
 async def export_config(
-    session: AsyncReadSession, organization: Organization
+    session: AsyncReadSession, organization: Organization, catalog: Catalog | None
 ) -> ConfigExport:
     skipped: list[ConfigSkippedResource] = []
 
@@ -251,31 +255,41 @@ async def export_config(
     )
 
     product_repository = ProductRepository.from_session(session)
-    current_external_ids = await product_repository.get_external_ids(
-        organization.id, current=True
-    )
+    if catalog is None or catalog.status == CatalogStatus.live:
+        products_statement = product_repository.get_organization_statement(
+            organization.id
+        )
+        catalog_external_ids = await product_repository.get_external_ids(
+            organization.id, current=True
+        )
+    else:
+        catalog_product_repository = CatalogProductRepository.from_session(session)
+        products_statement = catalog_product_repository.get_products_statement(
+            catalog.id
+        )
+        catalog_external_ids = await catalog_product_repository.get_external_ids(
+            catalog.id
+        )
     deprecated_statement = await get_deprecated_products_statement(
-        session, organization, current_external_ids
+        session, organization, catalog_external_ids
     )
     products, _ = await _export_section(
         ConfigResource.product,
         _chain(
-            product_repository.stream(
-                product_repository.get_organization_statement(organization.id)
-            ),
+            product_repository.stream(products_statement),
             product_repository.stream(deprecated_statement),
         ),
         MAXIMUM_PRODUCTS,
         skipped,
         name=lambda product: product.name,
         archived=lambda product: (
-            product.is_archived and product.external_id in current_external_ids
+            product.is_archived and product.external_id in catalog_external_ids
         ),
         entry=lambda product: _product_entry(
             product,
             meter_external_ids,
             benefit_external_ids,
-            deprecated=product.external_id not in current_external_ids,
+            deprecated=product.external_id not in catalog_external_ids,
         ),
     )
 
@@ -287,4 +301,7 @@ async def export_config(
             products=products,
         ),
         skipped=skipped,
+        catalog=None
+        if catalog is None
+        else ConfigExportCatalog.model_validate(catalog),
     )

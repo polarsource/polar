@@ -2,27 +2,16 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
-import { toast } from '@/components/Toast/use-toast'
-import { useSafeCopy } from '@/hooks/clipboard'
 import { useCatalog } from '@/hooks/queries/catalogs'
 import { useSelectedProducts } from '@/hooks/queries/products'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
-import {
-  Button,
-  Grid,
-  List,
-  ListItem,
-  Text,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@polar-sh/orbit'
+import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowBackOutlined, Check, Circle, Copy } from '@polar-sh/orbit/icons'
+import { ArrowBackOutlined, Circle } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode } from 'react'
 import { PublishedAt } from '../VersionsPage'
 
 type Organization = schemas['Organization']
@@ -147,64 +136,6 @@ const Field = ({
     {children}
   </Box>
 )
-
-const PullCommand = ({ flags }: { flags: string[] }) => {
-  const [copied, setCopied] = useState(false)
-  const safeCopy = useSafeCopy(toast)
-  const lines = ['polar config pull', ...flags]
-  const command = lines.join(' ')
-
-  useEffect(() => {
-    if (!copied) return
-    const timeout = setTimeout(() => setCopied(false), 1200)
-    return () => clearTimeout(timeout)
-  }, [copied])
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="secondary"
-          size="sm"
-          aria-label={copied ? 'Copied' : `Copy ${command}`}
-          onClick={() => void safeCopy(command).then(() => setCopied(true))}
-        >
-          <Box as="span" display="flex" alignItems="center" columnGap="s">
-            <Text as="span" color="inherit" monospace>
-              <Text as="span" color="muted" monospace>
-                ${' '}
-              </Text>
-              {lines[0]}
-            </Text>
-            <Box as="span" display="flex" color="text-tertiary">
-              {copied ? <Check size={14} /> : <Copy size={14} />}
-            </Box>
-          </Box>
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent align="end">
-        <Box flexDirection="column">
-          {lines.map((line, index) => (
-            <Box key={line} paddingLeft={index ? 'l' : 'none'}>
-              <Text
-                variant="caption"
-                monospace
-                color={index ? 'default' : 'muted'}
-              >
-                {line}
-                {index < lines.length - 1 ? (
-                  <Text as="span" variant="caption" color="disabled" monospace>
-                    {' \\'}
-                  </Text>
-                ) : null}
-              </Text>
-            </Box>
-          ))}
-        </Box>
-      </TooltipContent>
-    </Tooltip>
-  )
-}
 
 const Subscribers = ({
   organizationId,
@@ -334,10 +265,6 @@ export default function VersionPage({
   }
 
   const versionsPath = `/dashboard/${organization.slug}/products/versions`
-  const pullFlags = [
-    `--org ${organization.slug}`,
-    ...(catalog.status === 'live' ? [] : [`--version ${catalog.id}`]),
-  ]
   const changeSummary = changes
     .flatMap((change) => {
       const count = entries.filter((entry) => entry.change === change).length
@@ -420,11 +347,6 @@ export default function VersionPage({
               <Text color="muted">{changeSummary || 'No changes'}</Text>
             </Field>
           ) : null}
-          <Field label="Pull with CLI">
-            <Box>
-              <PullCommand flags={pullFlags} />
-            </Box>
-          </Field>
         </Box>
       </Box>
     </DashboardBody>

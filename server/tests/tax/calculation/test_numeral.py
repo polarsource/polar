@@ -510,7 +510,67 @@ class TestNumeralRecord:
         respx_mock.post("/tax/transactions").respond(
             400, json={"code": 400, "type": error_type, "message": "Error"}
         )
+        if error_type == "CALCULATION_EXPIRED":
+            respx_mock.get("/tax/transactions").respond(json={"transactions": []})
         with pytest.raises(expected_error):
+            await numeral_tax_service.record("calc_123", "order_123")
+
+    @pytest.mark.parametrize(
+        "error_type",
+        [
+            "TRANSACTION_ALREADY_EXISTS",
+            "REFERENCE_ORDER_ID_ALREADY_EXISTS",
+            "CALCULATION_EXPIRED",
+        ],
+    )
+    async def test_retry_recovers_recorded_transaction(
+        self,
+        respx_mock: respx.MockRouter,
+        error_type: str,
+    ) -> None:
+        recorded_transaction = {"id": "tr_123"}
+        record = respx_mock.post("/tax/transactions")
+        record.side_effect = [
+            httpx.Response(200, json=recorded_transaction),
+            httpx.Response(400, json={"type": error_type}),
+        ]
+        lookup = respx_mock.get(
+            "/tax/transactions", params={"reference_order_id": "order_123"}
+        ).respond(json={"transactions": [recorded_transaction]})
+
+        first = await numeral_tax_service.record("calc_123", "order_123")
+        retry = await numeral_tax_service.record(
+            "calc_123" if error_type == "TRANSACTION_ALREADY_EXISTS" else "calc_retry",
+            "order_123",
+        )
+
+        assert first == retry == "tr_123"
+        assert record.call_count == 2
+        assert lookup.call_count == 1
+
+    @pytest.mark.parametrize("transaction_count", [0, 2])
+    async def test_duplicate_requires_one_existing_transaction(
+        self,
+        respx_mock: respx.MockRouter,
+        transaction_count: int,
+    ) -> None:
+        respx_mock.post("/tax/transactions").respond(
+            400, json={"type": "TRANSACTION_ALREADY_EXISTS"}
+        )
+        respx_mock.get("/tax/transactions").respond(
+            json={"transactions": [{"id": "tr_123"}] * transaction_count}
+        )
+        with pytest.raises(TaxRecordError):
+            await numeral_tax_service.record("calc_123", "order_123")
+
+    async def test_lookup_failure_does_not_recalculate(
+        self, respx_mock: respx.MockRouter
+    ) -> None:
+        respx_mock.post("/tax/transactions").respond(
+            400, json={"type": "CALCULATION_EXPIRED"}
+        )
+        respx_mock.get("/tax/transactions").respond(503)
+        with pytest.raises(TaxRecordError):
             await numeral_tax_service.record("calc_123", "order_123")
 
 

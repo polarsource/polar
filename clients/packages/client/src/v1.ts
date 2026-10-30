@@ -4801,40 +4801,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/customer-portal/customer-session/request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Customer Portal.Customer Session.Request */
-    post: operations['customer_portal:customer-session:customer_portal.customer_session.request']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/customer-portal/customer-session/authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Customer Portal.Customer Session.Authenticate */
-    post: operations['customer_portal:customer-session:customer_portal.customer_session.authenticate']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/customer-portal/customer-session/introspect': {
     parameters: {
       query?: never
@@ -4873,6 +4839,57 @@ export interface paths {
     get: operations['customer_portal:customer-session:get_authenticated_user']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Start */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.start']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/email-otp/request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Email Otp Request */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.email_otp_request']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/email-otp/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Email Otp Verify */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.email_otp_verify']
     delete?: never
     options?: never
     head?: never
@@ -6289,6 +6306,9 @@ export interface paths {
      * Export Config
      * @description Export the organization's current config as a declarative config document.
      *
+     *     With `catalog_id`, products come from that catalog version. Settings, meters
+     *     and benefits aren't versioned, so they're always the current ones.
+     *
      *     `config` has the shape plan and apply accept, without `organization_id`:
      *     planning it for the same organization without edits reports no changes.
      *     Resources without an `external_id`, archived ones, ones config can't express
@@ -6362,6 +6382,10 @@ export interface paths {
      *
      *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
+     *
+     *     With the ID of an archived catalog, products are compared to that version
+     *     instead of the live one. The plan then shows the changes from that version,
+     *     not what apply would do, and the response's `catalog` is None.
      *
      *     Each section requires the read or write scope for its resource.
      *
@@ -13845,6 +13869,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** CatalogNotFound */
+    CatalogNotFound: {
+      /**
+       * Error
+       * @example CatalogNotFound
+       * @constant
+       */
+      error: 'CatalogNotFound'
+      /** Detail */
+      detail: string
+    }
     /** CatalogProduct */
     CatalogProduct: {
       /**
@@ -16588,6 +16623,28 @@ export interface components {
        * @description Resources left out of the exported config. At most the section's config limit is listed.
        */
       skipped: components['schemas']['ConfigSkippedResource'][]
+      /** @description The catalog version the products come from. None before the first publish. */
+      catalog: components['schemas']['ConfigExportCatalog'] | null
+    }
+    /** ConfigExportCatalog */
+    ConfigExportCatalog: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Name of the catalog.
+       */
+      name: string | null
+      /**
+       * Status
+       * @description `live` for the catalog new checkouts use, `archived` otherwise.
+       * @enum {string}
+       */
+      status: 'live' | 'archived'
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
@@ -20990,10 +21047,13 @@ export interface components {
       customer_id: string
       customer: components['schemas']['Customer']
     }
-    /** CustomerSessionCodeAuthenticateRequest */
-    CustomerSessionCodeAuthenticateRequest: {
-      /** Code */
-      code: string
+    /** CustomerSessionAuthenticationStart */
+    CustomerSessionAuthenticationStart: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
     }
     /** CustomerSessionCodeAuthenticateResponse */
     CustomerSessionCodeAuthenticateResponse: {
@@ -21010,24 +21070,6 @@ export interface components {
       error: 'CustomerSessionCodeInvalidOrExpired'
       /** Detail */
       detail: string
-    }
-    /** CustomerSessionCodeRequest */
-    CustomerSessionCodeRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
-      /**
-       * Customer Id
-       * @description Optional customer ID for disambiguation when multiple customers share the same email.
-       */
-      customer_id?: string | null
     }
     /**
      * CustomerSessionCustomerExternalIDCreate
@@ -21083,6 +21125,26 @@ export interface components {
        * @description ID of the customer to create a session for.
        */
       customer_id: string
+    }
+    /** CustomerSessionEmailOTPRequest */
+    CustomerSessionEmailOTPRequest: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string
+      /**
+       * Customer Id
+       * @description Optional customer ID for disambiguation when multiple customers share the same email.
+       */
+      customer_id?: string | null
+      /** Cf-Turnstile-Response */
+      'cf-turnstile-response': string
+    }
+    /** CustomerSessionEmailOTPVerify */
+    CustomerSessionEmailOTPVerify: {
+      /** Code */
+      code: string
     }
     /**
      * CustomerSortProperty
@@ -36103,6 +36165,17 @@ export interface components {
       /** Redirect Url */
       redirect_url: string
     }
+    /** SSORequiresVerifiedDomain */
+    SSORequiresVerifiedDomain: {
+      /**
+       * Error
+       * @example SSORequiresVerifiedDomain
+       * @constant
+       */
+      error: 'SSORequiresVerifiedDomain'
+      /** Detail */
+      detail: string
+    }
     /**
      * Scope
      * @enum {string}
@@ -43974,13 +44047,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Cannot enforce SSO without an enabled connection. */
+      /** @description Cannot enforce SSO without an enabled connection and a verified domain. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SSOEnforcementRequiresConnection']
+          'application/json':
+            | components['schemas']['SSOEnforcementRequiresConnection']
+            | components['schemas']['SSORequiresVerifiedDomain']
         }
       }
       /** @description Validation Error */
@@ -45691,6 +45766,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The organization has no verified domain. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SSORequiresVerifiedDomain']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -46111,6 +46195,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */
@@ -46219,6 +46305,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by subscription status. */
         status?:
           | components['schemas']['SubscriptionStatus']
@@ -56842,90 +56930,6 @@ export interface operations {
       }
     }
   }
-  'customer_portal:customer-session:customer_portal.customer_session.request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CustomerSessionCodeRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Multiple customers found for this email. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'customer_portal:customer-session:customer_portal.customer_session.authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CustomerSessionCodeAuthenticateRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
-        }
-      }
-      /** @description Invalid or expired verification code. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSessionCodeInvalidOrExpired']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'customer_portal:customer-session:introspect': {
     parameters: {
       query?: never
@@ -56962,6 +56966,134 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['PortalAuthenticatedUser']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionAuthenticationStart']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.email_otp_request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionEmailOTPRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Turnstile verification failed */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Multiple customers found for this email. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.email_otp_verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionEmailOTPVerify']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
+        }
+      }
+      /** @description Invalid or expired verification code, or invalid authentication session. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CustomerSessionCodeInvalidOrExpired']
+            | components['schemas']['InvalidAuthenticationSession']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }
@@ -63732,6 +63864,8 @@ export interface operations {
       query?: {
         /** @description The ID of the organization to export. **Required unless you use an organization token.** */
         organization_id?: string | null
+        /** @description ID of a published catalog. Defaults to the live catalog. */
+        catalog_id?: string | null
       }
       header?: never
       path?: never
@@ -63766,6 +63900,15 @@ export interface operations {
           'application/json':
             | components['schemas']['NotPermitted']
             | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description No published catalog has this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
         }
       }
       /** @description Validation Error */
@@ -63848,7 +63991,10 @@ export interface operations {
   }
   'config:plan': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description ID of a published catalog. Defaults to the live catalog. */
+        catalog_id?: string | null
+      }
       header?: never
       path?: never
       cookie?: never
@@ -63886,6 +64032,15 @@ export interface operations {
           'application/json':
             | components['schemas']['NotPermitted']
             | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description No published catalog has this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
         }
       }
       /** @description Validation Error */
@@ -72893,6 +73048,9 @@ export const configBenefitMeterCreditTypeValues: ReadonlyArray<
 export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
 > = ['meter_credit']
+export const configExportCatalogStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportCatalog']['status']
+> = ['live', 'archived']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']

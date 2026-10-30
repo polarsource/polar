@@ -50,7 +50,11 @@ from polar.event.system import (
     SubscriptionUpdatedMetadata,
 )
 from polar.event.system import SystemEvent as SystemEventEnum
-from polar.kit.metadata import METADATA_DESCRIPTION, MetadataValue
+from polar.kit.metadata import (
+    MAXIMUM_EVENT_NUMERIC_VALUE,
+    METADATA_DESCRIPTION,
+    EventMetadataValue,
+)
 from polar.kit.schemas import (
     ClassName,
     IDSchema,
@@ -111,28 +115,42 @@ class LLMMetadata(TypedDict):
     ]
     input_tokens: Annotated[
         int,
-        Field(description="The number of LLM input tokens used for the event."),
+        Field(
+            ge=-MAXIMUM_EVENT_NUMERIC_VALUE,
+            le=MAXIMUM_EVENT_NUMERIC_VALUE,
+            description="The number of LLM input tokens used for the event.",
+        ),
     ]
     cached_input_tokens: Annotated[
         NotRequired[int],
         Field(
+            ge=-MAXIMUM_EVENT_NUMERIC_VALUE,
+            le=MAXIMUM_EVENT_NUMERIC_VALUE,
             description="The number of LLM cached tokens that were used for the event.",
         ),
     ]
     output_tokens: Annotated[
         int,
-        Field(description="The number of LLM output tokens used for the event."),
+        Field(
+            ge=-MAXIMUM_EVENT_NUMERIC_VALUE,
+            le=MAXIMUM_EVENT_NUMERIC_VALUE,
+            description="The number of LLM output tokens used for the event.",
+        ),
     ]
     total_tokens: Annotated[
         int,
-        Field(description="The total number of LLM tokens used for the event."),
+        Field(
+            ge=-MAXIMUM_EVENT_NUMERIC_VALUE,
+            le=MAXIMUM_EVENT_NUMERIC_VALUE,
+            description="The total number of LLM tokens used for the event.",
+        ),
     ]
 
 
 class EventMetadataInput(  # type: ignore[call-arg]
     TypedDict,
     total=False,
-    extra_items=MetadataValue,
+    extra_items=EventMetadataValue,
 ):
     _cost: CostMetadata
     _llm: LLMMetadata

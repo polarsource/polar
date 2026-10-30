@@ -22,7 +22,7 @@ from .schemas import (
     OrganizationSSOConnectionCreate,
     OrganizationSSOConnectionUpdate,
 )
-from .service import LastSSOConnectionRequired
+from .service import LastSSOConnectionRequired, SSORequiresVerifiedDomain
 from .service import (
     organization_sso_connection as organization_sso_connection_service,
 )
@@ -45,6 +45,11 @@ SSOConnectionNotFound = {
 NotPermittedResponse = {
     "description": "The user doesn't have the permission to manage the organization.",
     "model": NotPermitted.schema(),
+}
+
+SSORequiresVerifiedDomainResponse = {
+    "description": "The organization has no verified domain.",
+    "model": SSORequiresVerifiedDomain.schema(),
 }
 
 LastSSOConnectionResponse = {
@@ -98,7 +103,11 @@ async def get_sso_connection(
     summary="Create SSO Connection",
     response_model=OrganizationSSOConnectionSchema,
     status_code=201,
-    responses={403: NotPermittedResponse, 404: OrganizationNotFound},
+    responses={
+        403: NotPermittedResponse,
+        404: OrganizationNotFound,
+        409: SSORequiresVerifiedDomainResponse,
+    },
 )
 async def create_sso_connection(
     create: OrganizationSSOConnectionCreate,

@@ -5,6 +5,9 @@ from uuid import UUID
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Organization, OrganizationSSOConnection
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import OrganizationSSOConnectionRepository
@@ -29,6 +32,13 @@ class LastSSOConnectionRequired(PolarError):
             "This organization enforces SSO. Disable SSO enforcement before "
             "removing its last enabled connection.",
             409,
+        )
+
+
+class SSORequiresVerifiedDomain(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization must verify a domain before setting up SSO.", 409
         )
 
 
@@ -67,6 +77,8 @@ class OrganizationSSOConnectionService:
     ) -> OrganizationSSOConnection:
         if not organization.is_sso_enabled:
             raise SSONotEnabled(organization)
+        if not await organization_domain_service.has_verified(session, organization):
+            raise SSORequiresVerifiedDomain()
         repository = OrganizationSSOConnectionRepository.from_session(session)
         connection = OrganizationSSOConnection(
             organization=organization,

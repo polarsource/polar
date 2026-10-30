@@ -160,6 +160,7 @@ services:
       S3_UPLOAD_ORIGINS: http://localhost:9000
     volumes:
       - ../../clients:/app/clients:cached
+      - ../../sdk:/app/sdk:cached
       - ../../dev:/app/dev:cached
       - web_node_modules:/app/clients/node_modules
       - web_next_cache:/app/clients/apps/web/.next

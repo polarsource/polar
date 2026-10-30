@@ -9,6 +9,7 @@ from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
+from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -34,6 +35,11 @@ def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) ->
         *(f"{key}={value}" for key, value in sorted(entries.items())),
     ]
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
+
+
+class CatalogNotFound(PolarError):
+    def __init__(self, id: uuid.UUID) -> None:
+        super().__init__(f"No published catalog with ID {id}.", 404)
 
 
 class CatalogService:
@@ -93,6 +99,25 @@ class CatalogService:
             session
         ).get_ids_with_feature(set(org_ids), "config_as_code_enabled")
         return {oid for oid in org_ids if oid in enabled_org_ids}
+
+    async def resolve(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        id: uuid.UUID | None,
+    ) -> Catalog | None:
+        """Return the published catalog with this ID, or the live catalog when
+        `id` is None.
+
+        The live catalog is None before the first publish.
+        """
+        repository = CatalogRepository.from_session(session)
+        if id is None:
+            return await repository.get_live(organization.id)
+        catalog = await repository.get_published_by_id(organization.id, id)
+        if catalog is None:
+            raise CatalogNotFound(id)
+        return catalog
 
     async def get_live_entries(
         self,

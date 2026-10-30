@@ -30,7 +30,6 @@ from .customer_session import CustomerSession
 from .customer_session_authentication_session import (
     CustomerSessionAuthenticationSession,
 )
-from .customer_session_code import CustomerSessionCode
 from .customer_session_email_otp import CustomerSessionEmailOTP
 from .discord_guild_connection import DiscordGuildConnection
 from .discount import Discount
@@ -174,7 +173,6 @@ __all__ = [
     "CustomerSeat",
     "CustomerSession",
     "CustomerSessionAuthenticationSession",
-    "CustomerSessionCode",
     "CustomerSessionEmailOTP",
     "DiscordGuildConnection",
     "Discount",

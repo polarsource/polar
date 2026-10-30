@@ -675,7 +675,16 @@ class ReducerService:
                 ]
                 if not values:
                     continue
-                count, total, minimum, maximum = _get_statistics(reducer, values)
+                count = len(values)
+                total = Decimal(0)
+                minimum: Decimal | None = None
+                maximum: Decimal | None = None
+                if isinstance(reducer.aggregation, PropertyAggregation):
+                    total, minimum, maximum = (
+                        sum(values, Decimal(0)),
+                        min(values),
+                        max(values),
+                    )
                 latest = max(
                     (bucket for bucket in slot_buckets if bucket.bucket_start == start),
                     key=lambda bucket: bucket.generation,
@@ -1070,15 +1079,6 @@ def _get_slot_intervals(
     return sorted({(bucket.bucket_start, bucket.bucket_end) for bucket in buckets}) or [
         (bucket_start, bucket_start + REDUCER_BUCKET_SIZE)
     ]
-
-
-def _get_statistics(
-    reducer: Reducer, values: Sequence[Decimal]
-) -> tuple[int, Decimal, Decimal | None, Decimal | None]:
-    """count, total, minimum and maximum of the values a reducer's bucket gets."""
-    if isinstance(reducer.aggregation, PropertyAggregation):
-        return len(values), sum(values, Decimal(0)), min(values), max(values)
-    return len(values), Decimal(0), None, None
 
 
 def _get_quantity(

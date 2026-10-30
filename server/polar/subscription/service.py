@@ -1832,6 +1832,9 @@ class SubscriptionService:
         product_id: uuid.UUID,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> tuple[Product, PriceSet]:
+        if subscription.status == SubscriptionStatus.past_due:
+            raise InactiveSubscription(subscription)
+
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
@@ -1968,6 +1971,9 @@ class SubscriptionService:
         *,
         units: int,
     ) -> None:
+        if subscription.status == SubscriptionStatus.past_due:
+            raise InactiveSubscription(subscription)
+
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
@@ -2021,6 +2027,9 @@ class SubscriptionService:
         *,
         seats: int,
     ) -> None:
+        if subscription.status == SubscriptionStatus.past_due:
+            raise InactiveSubscription(subscription)
+
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
@@ -2333,6 +2342,9 @@ class SubscriptionService:
         *,
         discount: uuid.UUID | Literal["unset"],
     ) -> Subscription:
+        if subscription.status == SubscriptionStatus.past_due:
+            raise InactiveSubscription(subscription)
+
         repository = SubscriptionRepository.from_session(session)
         async with self.resolve_discount(
             session, ctx, subscription, discount=discount, product=subscription.product

@@ -100,6 +100,7 @@ from polar.subscription.service import (
     BelowMinimumSeats,
     CannotPauseSubscription,
     CannotReinstateSubscription,
+    InactiveSubscription,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
@@ -3559,6 +3560,29 @@ class TestCancel:
             ) as ctx:
                 await subscription_service.cancel(session, ctx, subscription)
 
+    async def test_past_due_stays_past_due(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cancel(session, ctx, subscription)
+
+        assert updated.cancel_at_period_end is True
+        assert updated.status == SubscriptionStatus.past_due
+        assert updated.past_due_at is not None
+
     async def test_clears_scheduled_pause(
         self,
         session: AsyncSession,
@@ -6116,6 +6140,34 @@ class TestUpdate:
 
 @pytest.mark.anyio
 class TestUpdateProduct:
+    async def test_past_due_blocked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        with pytest.raises(InactiveSubscription):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=new_product.id
+                )
+
     @pytest.mark.parametrize(
         ("proration_behavior", "expects_previous_product"),
         [

@@ -60,7 +60,7 @@ dependencies = [
   "asgi-ratelimit>=0.10.0",
   "aiocsv>=1.4.1",
   "alembic-utils>=0.8.8",
-  "clickhouse-connect[async]>=1.4.1",
+  "clickhouse-connect[async]>=1.7.1",
   "trafilatura>=2.1.0",
   "firecrawl-py>=4.31.0",
   "polar-sdk==1.0.3a4",

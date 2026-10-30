@@ -82,11 +82,13 @@ class _ChBindCompiler(ChStatementCompiler):
         return f"{{{name}:{ch_type}}}"
 
     def _literal_execute_expanding_parameter(
-        self, name: str, parameter: Any, values: Any
+        self, name: str, parameter: Any, values: Any, *, taken_names: set[str]
     ) -> Any:
         self._expanding_ch_type = _ch_bind_type(parameter.type)
         try:
-            return super()._literal_execute_expanding_parameter(name, parameter, values)
+            return super()._literal_execute_expanding_parameter(
+                name, parameter, values, taken_names=taken_names
+            )
         finally:
             self._expanding_ch_type = "String"
 

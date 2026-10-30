@@ -60,6 +60,10 @@ def is_same_or_subdomain(host: str, domain: str) -> bool:
     return bool(host) and (host == domain or host.endswith("." + domain))
 
 
+def is_on_verified_domain(host: str, verified_domains: list[str]) -> bool:
+    return any(is_same_or_subdomain(host, d) for d in verified_domains)
+
+
 def _is_cross_domain(original_url: str, final_url: str) -> bool:
     """Return True if two URLs' hosts don't share a registrable domain.
 

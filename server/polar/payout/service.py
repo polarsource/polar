@@ -62,6 +62,8 @@ _STRIPE_PAYOUT_ZERO_DECIMAL_CURRENCIES: frozenset[str] = frozenset(
     {"isk", "huf", "twd", "ugx"}
 )
 
+_STRIPE_PAYOUT_AMOUNT_LIMIT: dict[str, int] = {"uzs": 9_999_999_999}
+
 
 def _adjust_payout_amount_for_zero_decimal_currency(
     amount: int, currency: str
@@ -87,6 +89,45 @@ def _adjust_payout_amount_for_zero_decimal_currency(
     remainder = amount % 100
     adjusted_amount = amount - remainder
     return adjusted_amount, remainder
+
+
+def _stripe_payout_chunk_amounts(amount: int, currency: str) -> list[int]:
+    limit = _STRIPE_PAYOUT_AMOUNT_LIMIT.get(currency.lower())
+    if limit is None or amount <= limit:
+        return [amount]
+
+    chunk_count, remainder = divmod(amount, limit)
+    chunks = [limit] * chunk_count
+    if remainder:
+        chunks.append(remainder)
+    return chunks
+
+
+def _status_for_attempts(payout: Payout) -> PayoutStatus:
+    attempts = payout.attempts
+    if not attempts:
+        return PayoutStatus.pending
+
+    succeeded_amount = 0
+    in_transit = False
+    all_failed = True
+    any_succeeded = False
+    for attempt in attempts:
+        if attempt.status != PayoutAttemptStatus.failed:
+            all_failed = False
+        if attempt.status == PayoutAttemptStatus.succeeded:
+            any_succeeded = True
+            succeeded_amount += attempt.amount
+        elif attempt.status == PayoutAttemptStatus.in_transit:
+            in_transit = True
+
+    if any_succeeded and succeeded_amount >= payout.account_amount:
+        return PayoutStatus.succeeded
+    if in_transit:
+        return PayoutStatus.in_transit
+    if all_failed:
+        return PayoutStatus.failed
+    return PayoutStatus.pending
 
 
 class PayoutError(PolarError): ...
@@ -682,7 +723,27 @@ class PayoutService:
                 stripe_payout.arrival_date, datetime.UTC
             )
 
-        return await attempt_repository.update(attempt, update_dict=update_dict)
+        attempt = await attempt_repository.update(attempt, update_dict=update_dict)
+        await self._reconcile_payout_status(session, attempt.payout_id)
+        return attempt
+
+    async def _reconcile_payout_status(
+        self, session: AsyncSession, payout_id: uuid.UUID
+    ) -> None:
+        repository = PayoutRepository.from_session(session)
+        payout = await repository.get_by_id(payout_id)
+        if payout is None:
+            return
+        if payout.account_currency.lower() not in _STRIPE_PAYOUT_AMOUNT_LIMIT:
+            return
+
+        await session.refresh(payout, attribute_names=["status", "attempts"])
+        if payout.status in {PayoutStatus.canceled, PayoutStatus.held}:
+            return
+
+        status = _status_for_attempts(payout)
+        if payout.status != status:
+            await repository.update(payout, update_dict={"status": status}, flush=True)
 
     async def sync_with_provider(
         self, session: AsyncSession, payout: Payout
@@ -770,50 +831,67 @@ class PayoutService:
             )
             raise PayoutAccountInsufficientBalance(payout)
 
-        # Create a new payout attempt
+        chunks = _stripe_payout_chunk_amounts(account_amount, payout.account_currency)
+        if len(chunks) > 1:
+            log.info(
+                "Splitting Stripe payout above the per-payout limit",
+                payout_id=str(payout.id),
+                account_amount=account_amount,
+                currency=payout.account_currency,
+                chunk_count=len(chunks),
+            )
+
+        chunk_index_start = len(payout.attempts)
         attempt_repository = PayoutAttemptRepository.from_session(session)
-        attempt = await attempt_repository.create(
-            PayoutAttempt(
-                payout=payout,
-                processor=payout_account.type,
-                amount=account_amount,
-                currency=payout.account_currency,
-                status=PayoutAttemptStatus.pending,
-            ),
-            flush=True,
-        )
+        last_attempt: PayoutAttempt | None = None
+        for offset, chunk_amount in enumerate(chunks):
+            attempt = await attempt_repository.create(
+                PayoutAttempt(
+                    payout=payout,
+                    processor=payout_account.type,
+                    amount=chunk_amount,
+                    currency=payout.account_currency,
+                    status=PayoutAttemptStatus.pending,
+                ),
+                flush=True,
+            )
 
-        # Trigger a payout on the Stripe Connect account
-        try:
-            stripe_payout = await stripe_service.create_payout(
-                stripe_account=payout_account.stripe_id,
-                amount=account_amount,
-                currency=payout.account_currency,
-                metadata={
-                    "payout_id": str(payout.id),
-                    "payout_attempt_id": str(attempt.id),
-                },
-            )
-        except stripe_lib.InvalidRequestError as e:
-            # Capture exception in Sentry for debugging purposes
-            sentry_sdk.capture_exception(
-                e,
-                extras={"payout_id": str(payout.id)},
-            )
-            # Do not raise an error here: we know it happens often, because Stripe
-            # has many hidden rules on payout creation that we cannot control.
-            return await attempt_repository.update(
+            try:
+                stripe_payout = await stripe_service.create_payout(
+                    stripe_account=payout_account.stripe_id,
+                    amount=chunk_amount,
+                    currency=payout.account_currency,
+                    metadata={
+                        "payout_id": str(payout.id),
+                        "payout_attempt_id": str(attempt.id),
+                    },
+                    idempotency_key=f"payout-{payout.id}-{chunk_index_start + offset}",
+                )
+            except stripe_lib.InvalidRequestError as e:
+                # Capture exception in Sentry for debugging purposes
+                sentry_sdk.capture_exception(
+                    e,
+                    extras={"payout_id": str(payout.id)},
+                )
+                # Do not raise an error here: we know it happens often, because Stripe
+                # has many hidden rules on payout creation that we cannot control.
+                last_attempt = await attempt_repository.update(
+                    attempt,
+                    update_dict={
+                        "status": PayoutAttemptStatus.failed,
+                        "failed_reason": str(e),
+                    },
+                )
+                continue
+
+            last_attempt = await attempt_repository.update(
                 attempt,
-                update_dict={
-                    "status": PayoutAttemptStatus.failed,
-                    "failed_reason": str(e),
-                },
+                update_dict={"processor_id": stripe_payout.id},
             )
 
-        return await attempt_repository.update(
-            attempt,
-            update_dict={"processor_id": stripe_payout.id},
-        )
+        assert last_attempt is not None
+        await self._reconcile_payout_status(session, payout.id)
+        return last_attempt
 
     async def mark_manual_as_paid(
         self, session: AsyncSession, payout: Payout

@@ -365,12 +365,14 @@ class StripeService:
         amount: int,
         currency: str,
         metadata: dict[str, str] | None = None,
+        idempotency_key: str | None = None,
     ) -> stripe_lib.Payout:
         log.info(
             "stripe.payout.create",
             account_id=stripe_account,
             amount=amount,
             currency=currency,
+            idempotency_key=idempotency_key,
         )
         return await stripe_lib.Payout.create_async(
             stripe_account=stripe_account,
@@ -378,6 +380,7 @@ class StripeService:
             currency=currency,
             statement_descriptor=settings.STRIPE_STATEMENT_DESCRIPTOR,
             metadata=metadata or {},
+            idempotency_key=idempotency_key,
         )
 
     async def create_payment_intent(

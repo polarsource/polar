@@ -11,6 +11,7 @@ from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.config import settings
@@ -712,6 +713,81 @@ class TestTriggerStripePayout:
 
         stripe_service_mock.retrieve_balance.assert_not_called()
         stripe_service_mock.create_payout.assert_not_called()
+
+    async def test_splits_uzs_above_stripe_payout_limit(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        limit = 9_999_999_999
+        remainder = 100
+        account_amount = limit * 2 + remainder
+        stripe_service_mock.retrieve_balance.return_value = ("uzs", account_amount)
+        stripe_payout_ids = (f"po_{index}" for index in range(3))
+        stripe_service_mock.create_payout.side_effect = lambda **kwargs: (
+            SimpleNamespace(id=next(stripe_payout_ids))
+        )
+
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            account_currency="uzs",
+            account_amount=account_amount,
+            status=PayoutStatus.pending,
+        )
+
+        await payout_service.trigger_stripe_payout(session, payout)
+
+        await session.refresh(payout, attribute_names=["attempts", "status"])
+        chunk_amounts = [
+            call.kwargs["amount"]
+            for call in stripe_service_mock.create_payout.call_args_list
+        ]
+        assert chunk_amounts == [limit, limit, remainder]
+        assert [
+            call.kwargs["idempotency_key"]
+            for call in stripe_service_mock.create_payout.call_args_list
+        ] == [
+            f"payout-{payout.id}-0",
+            f"payout-{payout.id}-1",
+            f"payout-{payout.id}-2",
+        ]
+        assert [attempt.amount for attempt in payout.attempts] == chunk_amounts
+        assert all(attempt.currency == "uzs" for attempt in payout.attempts)
+        status_after_create = payout.status
+        assert status_after_create == PayoutStatus.pending
+
+        paid_at = int(utc_now().timestamp())
+        processor_ids = [attempt.processor_id for attempt in payout.attempts]
+        assert all(processor_id is not None for processor_id in processor_ids)
+        for processor_id in processor_ids:
+            await payout_service.update_from_stripe(
+                session,
+                cast(
+                    stripe_lib.Payout,
+                    SimpleNamespace(
+                        id=processor_id,
+                        status="paid",
+                        arrival_date=paid_at,
+                        failure_code=None,
+                        failure_message=None,
+                    ),
+                ),
+            )
+            await session.refresh(payout, attribute_names=["status"])
+            status_after_attempt = payout.status
+            if processor_id != processor_ids[-1]:
+                assert status_after_attempt != PayoutStatus.succeeded
+
+        assert payout.status == PayoutStatus.succeeded
 
 
 @pytest.mark.anyio

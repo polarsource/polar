@@ -6,6 +6,7 @@ from typing import Any, Literal
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -95,7 +96,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 )
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == DiscountSortProperty.created_at:
@@ -619,7 +620,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization | Agent]
-    ) -> Select[tuple[Discount]]:
+    ) -> Select[Discount]:
         statement = select(Discount).where(~Discount.is_deleted)
 
         if is_user(auth_subject) or is_agent(auth_subject):

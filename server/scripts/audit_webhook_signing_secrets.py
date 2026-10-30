@@ -82,7 +82,7 @@ async def clear_secret_generated_at(
         .values(secret_generated_at=None)
     )
     result = await session.execute(statement)
-    return cast(CursorResult[Any], result).rowcount
+    return cast(CursorResult[*tuple[Any, ...]], result).rowcount
 
 
 def validate_secret(secret: str) -> None:

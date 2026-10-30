@@ -6,12 +6,11 @@ from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
 from datetime import datetime
 from decimal import Decimal
-from typing import cast
+from typing import Literal, cast
 
 import logfire
 import structlog
 from babel.dates import format_date
-from sqlalchemy.util.typing import Literal
 
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent

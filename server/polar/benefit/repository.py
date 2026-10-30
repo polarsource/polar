@@ -77,9 +77,7 @@ class BenefitRepository(
             statement = statement.with_for_update(of=Benefit, key_share=True)
         return await self.get_all(statement)
 
-    def get_organization_statement(
-        self, organization_id: UUID
-    ) -> Select[tuple[Benefit]]:
+    def get_organization_statement(self, organization_id: UUID) -> Select[Benefit]:
         return (
             self.get_base_statement()
             .where(Benefit.organization_id == organization_id)
@@ -100,7 +98,7 @@ class BenefitRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Benefit]]:
+    ) -> Select[Benefit]:
         statement = self.get_base_statement()
         statement = statement.where(Benefit.organization_id.in_(org_ids))
         return statement

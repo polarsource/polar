@@ -59,7 +59,7 @@ class CatalogRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Catalog]]:
+    ) -> Select[Catalog]:
         return (
             self.get_base_statement()
             .where(Catalog.organization_id.in_(org_ids))
@@ -86,7 +86,7 @@ class CatalogProductRepository(
         result = await self.session.execute(statement)
         return set(result.scalars().all())
 
-    def get_products_statement(self, catalog_id: UUID) -> Select[tuple[Product]]:
+    def get_products_statement(self, catalog_id: UUID) -> Select[Product]:
         return (
             select(Product)
             .join(CatalogProduct, CatalogProduct.product_id == Product.id)

@@ -111,7 +111,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
 
     def _get_readable_order_statement(
         self, auth_subject: AuthSubject[User]
-    ) -> Select[tuple[PersonalAccessToken]]:
+    ) -> Select[PersonalAccessToken]:
         return select(PersonalAccessToken).where(
             PersonalAccessToken.user_id == auth_subject.subject.id,
             ~PersonalAccessToken.is_deleted,

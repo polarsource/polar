@@ -77,10 +77,10 @@ class TestStreamStalePaymentLock:
     async def test_predicate_stays_indexable(
         self, mocker: MockerFixture, session: AsyncSession
     ) -> None:
-        captured: list[Select[tuple[Order]]] = []
+        captured: list[Select[Order]] = []
 
         async def capture(
-            self: OrderRepository, statement: Select[tuple[Order]]
+            self: OrderRepository, statement: Select[Order]
         ) -> AsyncGenerator[Order]:
             captured.append(statement)
             empty: list[Order] = []

@@ -11,7 +11,6 @@ import stripe as stripe_lib
 from babel.dates import format_date
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
-from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
@@ -4735,7 +4734,7 @@ async def create_event_billing_entry(
     return billing_entry
 
 
-UpdateMetersFixture: TypeAlias = tuple[Meter, Product, MeteredPrice, Subscription]
+type UpdateMetersFixture = tuple[Meter, Product, MeteredPrice, Subscription]
 
 
 @pytest.fixture

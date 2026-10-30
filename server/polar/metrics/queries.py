@@ -101,7 +101,7 @@ def _get_readable_orders_statement(
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
-) -> Select[tuple[uuid.UUID]]:
+) -> Select[uuid.UUID]:
     statement = select(Order.id).join(
         Product, onclause=Order.product_id == Product.id, isouter=True
     )
@@ -343,7 +343,7 @@ def _get_readable_subscriptions_statement(
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
-) -> Select[tuple[uuid.UUID]]:
+) -> Select[uuid.UUID]:
     statement = select(Subscription.id).join(
         Product, onclause=Subscription.product_id == Product.id
     )
@@ -680,7 +680,7 @@ def _get_readable_seats_statement(
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
-) -> Select[tuple[uuid.UUID]]:
+) -> Select[uuid.UUID]:
     statement = (
         select(CustomerSeat.id)
         .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)

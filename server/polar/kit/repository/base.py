@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, select
 from sqlalchemy.orm import Mapped, class_mapper
 from sqlalchemy.sql.base import ExecutableOption
-from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList
+from sqlalchemy.sql.elements import BinaryExpression, BooleanClauseList, OrderByList
 from sqlalchemy.sql.expression import ColumnExpressionArgument
 from sqlalchemy.sql.operators import and_, eq
 from sqlalchemy.sql.selectable import Alias, FromClause, Join, TableClause
@@ -41,7 +41,7 @@ class ModelExternalIDProtocol(Protocol):
 type Options = Sequence[ExecutableOption]
 
 
-def _may_duplicate_rows(statement: Select[Any], table: FromClause) -> bool:
+def _may_duplicate_rows(statement: Select[*tuple[Any, ...]], table: FromClause) -> bool:
     froms = statement.get_final_froms()
     return len(froms) != 1 or not _keeps_rows_unique(froms[0], table)
 
@@ -83,21 +83,21 @@ def _is_joined_on_primary_key(join: Join) -> bool:
 class RepositoryProtocol[M](Protocol):
     model: type[M]
 
-    async def get_one(self, statement: Select[tuple[M]]) -> M: ...
+    async def get_one(self, statement: Select[M]) -> M: ...
 
-    async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None: ...
+    async def get_one_or_none(self, statement: Select[M]) -> M | None: ...
 
-    async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]: ...
+    async def get_all(self, statement: Select[M]) -> Sequence[M]: ...
 
     async def paginate(
-        self, statement: Select[tuple[M]], *, limit: int, page: int
+        self, statement: Select[M], *, limit: int, page: int
     ) -> tuple[list[M], int]: ...
 
     async def paginate_has_more(
-        self, statement: Select[tuple[M]], *, limit: int, page: int
+        self, statement: Select[M], *, limit: int, page: int
     ) -> tuple[list[M], bool]: ...
 
-    def get_base_statement(self) -> Select[tuple[M]]: ...
+    def get_base_statement(self) -> Select[M]: ...
 
     async def create(self, object: M, *, flush: bool = False) -> M: ...
 
@@ -116,19 +116,19 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
     def __init__(self, session: AsyncSession | AsyncReadSession) -> None:
         self.session = session
 
-    async def get_one(self, statement: Select[tuple[M]]) -> M:
+    async def get_one(self, statement: Select[M]) -> M:
         result = await self.session.execute(statement)
         return result.unique().scalar_one()
 
-    async def get_one_or_none(self, statement: Select[tuple[M]]) -> M | None:
+    async def get_one_or_none(self, statement: Select[M]) -> M | None:
         result = await self.session.execute(statement)
         return result.unique().scalar_one_or_none()
 
-    async def get_all(self, statement: Select[tuple[M]]) -> Sequence[M]:
+    async def get_all(self, statement: Select[M]) -> Sequence[M]:
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
 
-    async def stream(self, statement: Select[tuple[M]]) -> AsyncGenerator[M]:
+    async def stream(self, statement: Select[M]) -> AsyncGenerator[M]:
         """
         Stream results from the database using the given statement.
 
@@ -156,7 +156,7 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
             await results.close()
 
     async def paginate(
-        self, statement: Select[tuple[M]], *, limit: int, page: int
+        self, statement: Select[M], *, limit: int, page: int
     ) -> tuple[list[M], int]:
         offset = (page - 1) * limit
 
@@ -171,7 +171,7 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         return items, count
 
     async def paginate_has_more(
-        self, statement: Select[tuple[M]], *, limit: int, page: int
+        self, statement: Select[M], *, limit: int, page: int
     ) -> tuple[list[M], bool]:
         """
         Paginate without counting the total number of rows.
@@ -202,7 +202,7 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
         items = list(results.unique().scalars().all())
         return items[:limit], len(items) > limit
 
-    def get_base_statement(self) -> Select[tuple[M]]:
+    def get_base_statement(self) -> Select[M]:
         return select(self.model)
 
     async def create(self, object: M, *, flush: bool = False) -> M:
@@ -231,7 +231,7 @@ class RepositoryBase[M: ModelIDProtocol[Any]]:
 
         return object
 
-    async def count(self, statement: Select[tuple[M]]) -> int:
+    async def count(self, statement: Select[M]) -> int:
         count_statement = statement.with_only_columns(func.count()).order_by(None)
         result = await self.session.execute(count_statement)
         return result.scalar_one()
@@ -246,7 +246,7 @@ class RepositorySoftDeletionProtocol[MODEL_DELETED_AT: ModelDeletedAtProtocol](
 ):
     def get_base_statement(
         self, *, include_deleted: bool = False
-    ) -> Select[tuple[MODEL_DELETED_AT]]: ...
+    ) -> Select[MODEL_DELETED_AT]: ...
 
     async def soft_delete(
         self, object: MODEL_DELETED_AT, *, flush: bool = False
@@ -258,7 +258,7 @@ class RepositorySoftDeletionMixin[MODEL_DELETED_AT: ModelDeletedAtProtocol]:
         self: RepositoryProtocol[MODEL_DELETED_AT],
         *,
         include_deleted: bool = False,
-    ) -> Select[tuple[MODEL_DELETED_AT]]:
+    ) -> Select[MODEL_DELETED_AT]:
         statement = super().get_base_statement()  # type: ignore[safe-super]
         if not include_deleted:
             statement = statement.where(self.model.deleted_at.is_(None))
@@ -376,10 +376,10 @@ class RepositorySortingMixin[M, PE: StrEnum]:
 
     def apply_sorting(
         self,
-        statement: Select[tuple[M]],
+        statement: Select[M],
         sorting: Sequence[Sorting[PE]],
-    ) -> Select[tuple[M]]:
-        order_by_clauses: list[UnaryExpression[Any]] = []
+    ) -> Select[M]:
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             order_by_clauses.append(clause_function(self.get_sorting_clause(criterion)))

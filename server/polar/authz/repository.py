@@ -24,7 +24,7 @@ def select_user_org_ids(
     user_id: UUID,
     *,
     permission: OrganizationPermission | None = None,
-) -> Select[tuple[UUID]]:
+) -> Select[UUID]:
     """SQL `SELECT` of organization IDs a user is a member of.
 
     Joins ``Organization`` so soft-deleted orgs and orgs without ``api_access``
@@ -56,7 +56,7 @@ def _select_agent_org_ids(
     agent: Agent,
     *,
     permission: OrganizationPermission | None = None,
-) -> Select[tuple[UUID]]:
+) -> Select[UUID]:
     """SQL `SELECT` of the agent's organization ID, while the agent is unclaimed.
 
     When ``permission`` is provided, the result is empty unless the agent's fixed
@@ -76,7 +76,7 @@ def select_accessible_org_ids(
     auth_subject: AuthSubject[User | Agent],
     *,
     permission: OrganizationPermission | None = None,
-) -> Select[tuple[UUID]]:
+) -> Select[UUID]:
     """SQL `SELECT` of organization IDs the subject can access.
 
     The SQL-subquery sibling of ``get_accessible_org_ids``: use it inside

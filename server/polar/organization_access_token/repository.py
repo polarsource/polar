@@ -61,7 +61,7 @@ class OrganizationAccessTokenRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[OrganizationAccessToken]]:
+    ) -> Select[OrganizationAccessToken]:
         return self.get_base_statement().where(
             OrganizationAccessToken.organization_id.in_(org_ids)
         )

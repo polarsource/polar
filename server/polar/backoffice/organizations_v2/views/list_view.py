@@ -39,9 +39,7 @@ MIN_SEARCH_LENGTH = 3
 DeletedFilter = Literal["exclude", "include", "only"]
 
 
-def apply_deleted_filter[T: tuple[Any, ...]](
-    stmt: Select[T], deleted: DeletedFilter
-) -> Select[T]:
+def apply_deleted_filter[*Ts](stmt: Select[*Ts], deleted: DeletedFilter) -> Select[*Ts]:
     if deleted == "only":
         return stmt.where(Organization.deleted_at.is_not(None))
     if deleted == "exclude":

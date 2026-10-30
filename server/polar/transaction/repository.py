@@ -72,7 +72,7 @@ class TransactionRepository(
 
     def get_paid_transactions_statement(
         self, payout_transaction_id: UUID
-    ) -> Select[tuple[Transaction]]:
+    ) -> Select[Transaction]:
         return (
             self.get_base_statement()
             .where(
@@ -125,7 +125,7 @@ class PaymentTransactionRepository(TransactionRepository):
 
     def get_base_statement(
         self, *, include_deleted: bool = False
-    ) -> Select[tuple[Transaction]]:
+    ) -> Select[Transaction]:
         return (
             super()
             .get_base_statement(include_deleted=include_deleted)
@@ -144,7 +144,7 @@ class BalanceTransactionRepository(TransactionRepository):
 
     def get_base_statement(
         self, *, include_deleted: bool = False
-    ) -> Select[tuple[Transaction]]:
+    ) -> Select[Transaction]:
         return (
             super()
             .get_base_statement(include_deleted=include_deleted)
@@ -159,7 +159,7 @@ class RefundTransactionRepository(TransactionRepository):
 
     def get_base_statement(
         self, *, include_deleted: bool = False
-    ) -> Select[tuple[Transaction]]:
+    ) -> Select[Transaction]:
         return (
             super()
             .get_base_statement(include_deleted=include_deleted)
@@ -176,7 +176,7 @@ class DisputeTransactionRepository(TransactionRepository):
 
     def get_base_statement(
         self, *, include_deleted: bool = False
-    ) -> Select[tuple[Transaction]]:
+    ) -> Select[Transaction]:
         return (
             super()
             .get_base_statement(include_deleted=include_deleted)
@@ -191,7 +191,7 @@ class PayoutTransactionRepository(TransactionRepository):
 
     def get_base_statement(
         self, *, include_deleted: bool = False
-    ) -> Select[tuple[Transaction]]:
+    ) -> Select[Transaction]:
         return (
             super()
             .get_base_statement(include_deleted=include_deleted)
@@ -206,7 +206,7 @@ class PayoutReversalTransactionRepository(TransactionRepository):
 
     def get_base_statement(
         self, *, include_deleted: bool = False
-    ) -> Select[tuple[Transaction]]:
+    ) -> Select[Transaction]:
         return (
             super()
             .get_base_statement(include_deleted=include_deleted)

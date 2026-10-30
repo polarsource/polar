@@ -1,8 +1,7 @@
 import contextlib
 from collections.abc import Generator
-from typing import Any
+from typing import Any, Literal
 
-from sqlalchemy.util.typing import Literal
 from tagflow import classes as _classes
 from tagflow import tag
 

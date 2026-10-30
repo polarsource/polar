@@ -8,6 +8,7 @@ from pydantic import TypeAdapter
 from sqlalchemy import UnaryExpression, asc, desc, func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -120,7 +121,7 @@ class CustomerService:
         if active is not None:
             statement = statement.where(repository.get_active_clause(active))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CustomerSortProperty.created_at:

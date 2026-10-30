@@ -85,7 +85,7 @@ def _diverged(revoke: bool) -> ColumnElement[bool]:
     )
 
 
-def diverged_count_statement(*, revoke: bool) -> Select[tuple[int]]:
+def diverged_count_statement(*, revoke: bool) -> Select[int]:
     return select(func.count()).select_from(BenefitGrant).where(_diverged(revoke))
 
 

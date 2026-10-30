@@ -74,9 +74,7 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return len((await self.session.scalars(statement)).all())
 
-    def get_active_statement(
-        self, kinds: Collection[ReducerKind]
-    ) -> Select[tuple[Reducer]]:
+    def get_active_statement(self, kinds: Collection[ReducerKind]) -> Select[Reducer]:
         """Reducers of the kinds used by at least one active meter."""
         active_reducer_ids = (
             select(MeterReducer.reducer_id)

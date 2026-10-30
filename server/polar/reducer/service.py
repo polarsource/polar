@@ -446,7 +446,7 @@ class ReducerService:
         external_customer_id: str | None,
         *,
         since: datetime,
-    ) -> tuple[datetime, Row[Any]]:
+    ) -> tuple[datetime, Row[Any, Any, Any, Any]]:
         """The end of the customer identity's last fully synced slot starting from
         `since`, or `since`, with the count, sum, min and max of its usage not
         billed yet before it. Clients count whole slots: a slot a seal split, with
@@ -470,7 +470,7 @@ class ReducerService:
 
     async def get_credits(
         self, session: AsyncReadSession, reducer: Reducer, customer_id: UUID
-    ) -> Row[Any]:
+    ) -> Row[Any, Any, Any, Any]:
         """count, sum, min and max of the customer's credits since the meter's
         latest reset: the credit reducer's unsealed buckets."""
         return await ReducerBucketRepository.from_session(session).get_unsealed_totals(

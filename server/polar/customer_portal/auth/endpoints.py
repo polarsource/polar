@@ -6,7 +6,10 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.authentication_session import InvalidAuthenticationSession
 from polar.auth.exceptions import UnavailableFactorError
+from polar.auth.turnstile import verify_turnstile
 from polar.customer.repository import CustomerRepository
+from polar.exceptions import NotPermitted
+from polar.kit.http import get_ip_address
 from polar.member.repository import MemberRepository
 from polar.member_session.service import member_session as member_session_service
 from polar.models import Member
@@ -68,6 +71,10 @@ async def start(
     response_model=None,
     tags=[APITag.private],
     responses={
+        403: {
+            "description": "Turnstile verification failed",
+            "model": NotPermitted.schema(),
+        },
         409: {
             "description": "Multiple customers found for this email.",
             "model": CustomerSelectionRequiredResponse,
@@ -76,12 +83,15 @@ async def start(
 )
 async def email_otp_request(
     email_otp_request: CustomerSessionEmailOTPRequest,
+    request: Request,
     authentication_session: AuthenticationSession = Depends(get_authentication_session),
     authentication_session_service: CustomerSessionAuthenticationSessionService = (
         Depends(get_authentication_session_service)
     ),
     email_otp_factor: CustomerSessionEmailOTPFactor = Depends(get_email_otp_factor),
 ) -> Response | None:
+    await verify_turnstile(email_otp_request.turnstile_token, get_ip_address(request))
+
     factors = await authentication_session_service.get_available_factors(
         authentication_session
     )

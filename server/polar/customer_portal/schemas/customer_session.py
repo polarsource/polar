@@ -23,6 +23,7 @@ class CustomerSessionEmailOTPRequest(Schema):
             "share the same email."
         ),
     )
+    turnstile_token: str = Field(alias="cf-turnstile-response")
 
 
 class CustomerSessionEmailOTPVerify(Schema):

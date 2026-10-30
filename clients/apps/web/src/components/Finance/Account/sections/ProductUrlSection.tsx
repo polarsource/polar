@@ -12,6 +12,7 @@ import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
 import { useForm, useFormState } from 'react-hook-form'
 import { PathCardBanner } from './PathCardBanner'
 import { SectionLayout } from './SectionLayout'
+import { WebsiteDomainVerification } from './WebsiteDomainVerification'
 
 interface Props {
   organization: schemas['Organization']
@@ -122,6 +123,7 @@ export const ProductUrlSection = ({
           ))}
         </SectionLayout>
       </form>
+      <WebsiteDomainVerification organization={organization} />
     </Form>
   )
 }

@@ -10,6 +10,9 @@ import structlog
 from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 from polar.models.organization import Organization
 from polar.organization.repository import OrganizationRepository
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.organization_review.collectors.payout_account import (
     collect_payout_account_data,
 )
@@ -77,6 +80,8 @@ async def run_organization_review(
         slug=organization.slug,
         context=context.value,
     )
+
+    await organization_domain_service.reverify(session, organization)
 
     try:
         snapshot = await _collect_data(organization, context)

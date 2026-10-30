@@ -1,20 +1,26 @@
+import contextlib
 import secrets
 from collections.abc import Sequence
 from uuid import UUID
 
 import dns.asyncresolver
 import dns.exception
+import dns.resolver
+import structlog
 from sqlalchemy.exc import IntegrityError
 
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import Organization, OrganizationDomain
 from polar.organization.embed_hosts import WILDCARD_PREFIX, is_shared_host
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import OrganizationDomainRepository
 from .schemas import OrganizationDomainCreate
+
+log: Logger = structlog.get_logger()
 
 
 class OrganizationDomainAlreadyExists(PolarError):
@@ -47,7 +53,7 @@ class OrganizationDomainVerifiedElsewhere(PolarError):
 async def _lookup_txt(name: str) -> set[str]:
     try:
         answer = await dns.asyncresolver.resolve(name, "TXT", lifetime=5)
-    except dns.exception.DNSException:
+    except dns.resolver.NXDOMAIN, dns.resolver.NoAnswer:
         return set()
     return {b"".join(record.strings).decode() for record in answer}
 
@@ -117,7 +123,10 @@ class OrganizationDomainService:
         if organization_domain.verified_at is not None:
             return organization_domain
 
-        records = await _lookup_txt(organization_domain.verification_record_name)
+        try:
+            records = await _lookup_txt(organization_domain.verification_record_name)
+        except dns.exception.DNSException as e:
+            raise OrganizationDomainVerificationFailed(organization_domain) from e
         if organization_domain.verification_record_value not in records:
             raise OrganizationDomainVerificationFailed(organization_domain)
 
@@ -126,7 +135,10 @@ class OrganizationDomainService:
             async with session.begin_nested():
                 organization_domain = await repository.update(
                     organization_domain,
-                    update_dict={"verified_at": utc_now()},
+                    update_dict={
+                        "verified_at": utc_now(),
+                        "verification_lost_at": None,
+                    },
                     flush=True,
                 )
         except IntegrityError as e:
@@ -143,6 +155,52 @@ class OrganizationDomainService:
             *(host for host in hosts if host not in organization.embed_hosts),
         ]
         return organization_domain
+
+    async def reverify(
+        self, session: AsyncSession, organization: Organization
+    ) -> Sequence[OrganizationDomain]:
+        repository = OrganizationDomainRepository.from_session(session)
+        organization_domains = await repository.get_all(
+            repository.get_statement_by_organization(organization.id)
+        )
+        for organization_domain in organization_domains:
+            if organization_domain.verification_record_value is None:
+                continue
+            if organization_domain.verified_at is None:
+                with contextlib.suppress(
+                    OrganizationDomainVerificationFailed,
+                    OrganizationDomainVerifiedElsewhere,
+                ):
+                    await self.verify(session, organization, organization_domain)
+                continue
+
+            try:
+                records = await _lookup_txt(
+                    organization_domain.verification_record_name
+                )
+            except dns.exception.DNSException as e:
+                log.warning(
+                    "organization_domain.reverify.lookup_failed",
+                    organization_id=str(organization.id),
+                    domain=organization_domain.domain,
+                    error=str(e),
+                )
+                continue
+
+            if organization_domain.verification_record_value not in records:
+                log.info(
+                    "organization_domain.reverify.lost",
+                    organization_id=str(organization.id),
+                    domain=organization_domain.domain,
+                )
+                await repository.update(
+                    organization_domain,
+                    update_dict={
+                        "verified_at": None,
+                        "verification_lost_at": utc_now(),
+                    },
+                )
+        return organization_domains
 
 
 organization_domain = OrganizationDomainService()

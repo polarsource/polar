@@ -10,6 +10,7 @@ from polar.kit.address import Address, CountryAlpha2
 from polar.kit.crypto import generate_token_hash_pair
 from polar.models import Customer, Organization, Product
 from polar.models.customer_email_verification import CustomerEmailVerification
+from polar.models.payment_method import SHARED_PAYMENT_TOKEN_TYPE
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
@@ -116,6 +117,42 @@ async def organization_allow_email_change(
     }
     await save_fixture(organization)
     return organization
+
+
+@pytest.mark.anyio
+class TestSharedPaymentToken:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_not_listed(
+        self, client: AsyncClient, save_fixture: SaveFixture, customer: Customer
+    ) -> None:
+        await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+
+        response = await client.get("/v1/customer-portal/customers/me/payment-methods")
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_not_deletable(
+        self, client: AsyncClient, save_fixture: SaveFixture, customer: Customer
+    ) -> None:
+        payment_method = await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+
+        response = await client.delete(
+            f"/v1/customer-portal/customers/me/payment-methods/{payment_method.id}"
+        )
+
+        assert response.status_code == 404
 
 
 @pytest.mark.anyio

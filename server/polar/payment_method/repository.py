@@ -15,7 +15,7 @@ from polar.kit.repository import (
 )
 from polar.models import Customer, PaymentMethod, Subscription
 from polar.models.email_log import EmailLog
-from polar.models.payment_method import card_expiration
+from polar.models.payment_method import SHARED_PAYMENT_TOKEN_TYPE, card_expiration
 
 
 def expiring_periods(now: datetime, window_end: datetime) -> list[tuple[int, int]]:
@@ -75,7 +75,11 @@ class PaymentMethodRepository(
     def get_by_customer_statement(
         self, customer_id: UUID
     ) -> Select[tuple[PaymentMethod]]:
-        return self.get_base_statement().where(PaymentMethod.customer_id == customer_id)
+        """Shared payment tokens are internal to their subscription: never listed."""
+        return self.get_base_statement().where(
+            PaymentMethod.customer_id == customer_id,
+            PaymentMethod.type != SHARED_PAYMENT_TOKEN_TYPE,
+        )
 
     async def get_all_by_processor_id(
         self,
@@ -99,6 +103,7 @@ class PaymentMethodRepository(
         customer_id: UUID,
         *,
         exclude_id: UUID | None = None,
+        exclude_shared_payment_tokens: bool = False,
         options: Options = (),
     ) -> Sequence[PaymentMethod]:
         statement = self.get_base_statement().where(
@@ -106,6 +111,8 @@ class PaymentMethodRepository(
         )
         if exclude_id is not None:
             statement = statement.where(PaymentMethod.id != exclude_id)
+        if exclude_shared_payment_tokens:
+            statement = statement.where(PaymentMethod.type != SHARED_PAYMENT_TOKEN_TYPE)
         statement = statement.options(*options)
         return await self.get_all(statement)
 

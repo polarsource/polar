@@ -1,5 +1,6 @@
 import uuid
 from datetime import date
+from typing import Any
 from urllib.parse import urlencode
 
 import stripe as stripe_lib
@@ -15,10 +16,14 @@ from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
+from polar.integrations.stripe.service import (
+    STRIPE_METADATA_SHARED_PAYMENT_TOKEN,
+)
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Checkout, Customer, Order, PaymentMethod, Subscription
 from polar.models.organization import resolve_default_customer_email_settings
+from polar.models.payment_method import SHARED_PAYMENT_TOKEN_TYPE
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
@@ -109,26 +114,61 @@ class PaymentMethodService:
         *,
         flush: bool = False,
     ) -> PaymentMethod:
+        return await self._upsert(
+            session,
+            customer,
+            processor_id=stripe_payment_method.id,
+            type=stripe_payment_method.type,
+            method_metadata=stripe_payment_method[stripe_payment_method.type],
+            flush=flush,
+        )
+
+    async def upsert_from_shared_payment_token(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        shared_payment_token_id: str,
+    ) -> PaymentMethod:
+        """
+        Keep the recurring SPT itself as the payment method: Stripe forbids saving
+        the PaymentMethod it clones from it, so renewals charge the token directly.
+        """
+        return await self._upsert(
+            session,
+            customer,
+            processor_id=shared_payment_token_id,
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+            method_metadata={},
+        )
+
+    async def _upsert(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        *,
+        processor_id: str,
+        type: str,
+        method_metadata: dict[str, Any],
+        flush: bool = False,
+    ) -> PaymentMethod:
         repository = PaymentMethodRepository.from_session(session)
 
         payment_method = await repository.get_by_customer_and_processor_id(
             customer.id,
             PaymentProcessor.stripe,
-            stripe_payment_method.id,
+            processor_id,
             include_deleted=True,
             options=repository.get_eager_options(),
         )
         if payment_method is None:
             payment_method = PaymentMethod(
                 processor=PaymentProcessor.stripe,
-                processor_id=stripe_payment_method.id,
+                processor_id=processor_id,
                 customer=customer,
             )
 
-        payment_method.type = stripe_payment_method.type
-        payment_method.method_metadata = stripe_payment_method[
-            stripe_payment_method.type
-        ]
+        payment_method.type = type
+        payment_method.method_metadata = method_metadata
         payment_method.deleted_at = None  # Restore if it was soft-deleted
 
         return await repository.update(payment_method, flush=flush)
@@ -139,9 +179,16 @@ class PaymentMethodService:
         intent: stripe_lib.Charge | stripe_lib.SetupIntent,
         checkout: Checkout,
     ) -> PaymentMethod:
-        stripe_payment_method = await self.resolve_from_stripe_intent(intent)
-
         assert checkout.customer is not None
+        shared_payment_token_id = (intent.get("metadata") or {}).get(
+            STRIPE_METADATA_SHARED_PAYMENT_TOKEN
+        )
+        if shared_payment_token_id is not None:
+            return await self.upsert_from_shared_payment_token(
+                session, checkout.customer, shared_payment_token_id
+            )
+
+        stripe_payment_method = await self.resolve_from_stripe_intent(intent)
         return await self.upsert_from_stripe(
             session, checkout.customer, stripe_payment_method
         )
@@ -157,6 +204,14 @@ class PaymentMethodService:
         Only saves if the order is for a recurring product and has a payment method attached.
         """
         if payment_intent.payment_method is None:
+            return None
+
+        # Payments made with a shared payment token come back with a single-use
+        # PaymentMethod Stripe derived from the token. Saving it would replace the
+        # subscription's token with something that can't be charged on renewal.
+        if (payment_intent.get("metadata") or {}).get(
+            STRIPE_METADATA_SHARED_PAYMENT_TOKEN
+        ) is not None:
             return None
 
         if order.product and not order.product.is_recurring:
@@ -183,7 +238,9 @@ class PaymentMethodService:
             )
 
         payment_methods = await repository.list_by_customer(
-            customer.id, options=repository.get_eager_options()
+            customer.id,
+            exclude_shared_payment_tokens=True,
+            options=repository.get_eager_options(),
         )
         if len(payment_methods) > 0:
             return payment_methods[0]
@@ -278,6 +335,7 @@ class PaymentMethodService:
         alternative_methods = await repository.list_by_customer(
             payment_method.customer_id,
             exclude_id=payment_method.id,
+            exclude_shared_payment_tokens=True,
         )
 
         if not alternative_methods:
@@ -352,7 +410,10 @@ class PaymentMethodService:
                 customer, update_dict={"default_payment_method_id": None}
             )
 
-        if payment_method.processor == PaymentProcessor.stripe:
+        if (
+            payment_method.processor == PaymentProcessor.stripe
+            and not payment_method.is_shared_payment_token
+        ):
             try:
                 await stripe_service.delete_payment_method(payment_method.processor_id)
             except stripe_lib.InvalidRequestError:

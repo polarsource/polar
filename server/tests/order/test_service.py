@@ -32,7 +32,10 @@ from polar.enums import (
 )
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
-from polar.integrations.stripe.service import StripeService
+from polar.integrations.stripe.service import (
+    STRIPE_METADATA_SHARED_PAYMENT_TOKEN,
+    StripeService,
+)
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import (
     Address,
@@ -73,6 +76,7 @@ from polar.models.merchant_migration_record import MerchantMigrationCutoverStatu
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
+from polar.models.payment_method import SHARED_PAYMENT_TOKEN_TYPE
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import PlatformFeeType, TransactionType
@@ -5872,6 +5876,112 @@ class TestTriggerPayment:
 
         delete_mock.assert_not_called()
 
+    async def test_shared_payment_token(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        payment_method = await create_payment_method(
+            save_fixture,
+            customer=customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        await order_service.trigger_payment(session, order, payment_method)
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
+        create_mock = (
+            stripe_service_mock.create_payment_intent_from_shared_payment_token
+        )
+        create_mock.assert_awaited_once()
+        assert create_mock.call_args.args == ("spt_123",)
+        params = create_mock.call_args.kwargs
+        assert params["off_session"] is True
+        assert params["amount"] == order.due_amount
+        assert params["metadata"][STRIPE_METADATA_SHARED_PAYMENT_TOKEN] == "spt_123"
+        assert "payment_method" not in params
+
+    async def test_shared_payment_token_rejected(
+        self,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        payment_method = await create_payment_method(
+            save_fixture,
+            customer=customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        stripe_service_mock.create_payment_intent_from_shared_payment_token.side_effect = stripe_lib.InvalidRequestError(
+            "The shared payment token has been deactivated.",
+            param="payment_method_data[shared_payment_granted_token]",
+        )
+        delete_mock = mocker.patch(
+            "polar.order.service.payment_method_service.delete", new=AsyncMock()
+        )
+        handle_payment_failure_mock = mocker.patch.object(
+            order_service, "handle_payment_failure", new=AsyncMock()
+        )
+
+        with pytest.raises(PaymentFailed):
+            await order_service.trigger_payment(session, order, payment_method)
+
+        handle_payment_failure_mock.assert_awaited_once()
+        delete_mock.assert_not_called()
+
+    async def test_shared_payment_token_invalid_request(
+        self,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        payment_method = await create_payment_method(
+            save_fixture,
+            customer=customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+        stripe_service_mock.create_payment_intent_from_shared_payment_token.side_effect = stripe_lib.InvalidRequestError(
+            "Invalid currency.", param="currency"
+        )
+        handle_payment_failure_mock = mocker.patch.object(
+            order_service, "handle_payment_failure", new=AsyncMock()
+        )
+
+        with pytest.raises(stripe_lib.InvalidRequestError):
+            await order_service.trigger_payment(session, order, payment_method)
+
+        handle_payment_failure_mock.assert_not_called()
+
     async def test_due_amount_less_than_50(
         self,
         stripe_service_mock: MagicMock,
@@ -7899,6 +8009,38 @@ class TestFinalizeOrder:
                 session, order, payment_method_id=other_payment_method.id
             )
 
+        await session.refresh(order)
+        assert order.status == OrderStatus.draft
+
+    async def test_explicit_shared_payment_token_rejected(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_payment_method(
+            save_fixture,
+            customer=customer,
+            processor_id="spt_123",
+            type=SHARED_PAYMENT_TOKEN_TYPE,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+
+        with pytest.raises(PaymentFailed):
+            await order_service.finalize_order(
+                session, order, payment_method_id=payment_method.id
+            )
+
+        stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
         await session.refresh(order)
         assert order.status == OrderStatus.draft
 

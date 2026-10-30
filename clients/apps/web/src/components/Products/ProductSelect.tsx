@@ -90,12 +90,10 @@ const ProductsCommandGroup = ({
     </CommandGroup>
   )
 }
-type ProductValueKey = 'id' | 'external_id'
-
 const getProductValue = (
   product: schemas['Product'],
-  valueKey: ProductValueKey,
-): string | null => product[valueKey]
+  filterByExternalId: boolean,
+): string | null => (filterByExternalId ? product.external_id : product.id)
 
 interface ProductSelectProps {
   organization: schemas['Organization']
@@ -104,7 +102,7 @@ interface ProductSelectProps {
   emptyLabel?: string
   className?: string
   includeArchived?: boolean
-  valueKey?: ProductValueKey
+  filterByExternalId?: boolean
 }
 
 const ProductSelect: React.FC<ProductSelectProps> = ({
@@ -114,14 +112,14 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   emptyLabel,
   className,
   includeArchived = false,
-  valueKey = 'id',
+  filterByExternalId = false,
 }) => {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
   // Selected products, with a dedicated hook to exhaust pagination
   const { data: selectedProducts } = useSelectedProducts(
-    valueKey === 'external_id'
+    filterByExternalId
       ? { organization_id: organization.id, external_id: value }
       : { id: value },
     includeArchived,
@@ -158,8 +156,10 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         }
       }
     }
-    return products.filter((product) => getProductValue(product, valueKey))
-  }, [queriedProducts, selectedProducts, query, valueKey])
+    return products.filter((product) =>
+      getProductValue(product, filterByExternalId),
+    )
+  }, [queriedProducts, selectedProducts, query, filterByExternalId])
 
   // Group displayed products by product price type
   const groupedProducts = useMemo<
@@ -185,14 +185,14 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
       return emptyLabel || 'All products'
     }
     if (value.length === 1) {
-      return selectedProducts?.[0].name
+      return selectedProducts?.[0]?.name
     }
     return `${value.length} products`
   }, [value, emptyLabel, selectedProducts])
 
   const onSelectProduct = useCallback(
     (product: schemas['Product']) => {
-      const productValue = getProductValue(product, valueKey)
+      const productValue = getProductValue(product, filterByExternalId)
       if (!productValue) {
         return
       }
@@ -202,13 +202,13 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         onChange([...value, productValue])
       }
     },
-    [onChange, value, valueKey],
+    [onChange, value, filterByExternalId],
   )
 
   const onSelectProductType = useCallback(
     (productPriceType: ProductPriceType) => {
       const productValues = groupedProducts[productPriceType].flatMap(
-        (product) => getProductValue(product, valueKey) ?? [],
+        (product) => getProductValue(product, filterByExternalId) ?? [],
       )
       const selectedValues = new Set(value)
       const allSelected = productValues.every((v) => selectedValues.has(v))
@@ -221,7 +221,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         ])
       }
     },
-    [groupedProducts, onChange, value, valueKey],
+    [groupedProducts, onChange, value, filterByExternalId],
   )
 
   return (

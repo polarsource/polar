@@ -12,7 +12,11 @@ from dateutil.relativedelta import relativedelta
 from pytest_mock import MockerFixture
 
 from polar.billing_entry.repository import BillingEntryRepository
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    ProrationBehaviorSetting,
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
 from polar.event.system import SystemEvent
 from polar.models import (
     BillingEntry,
@@ -47,6 +51,9 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_subscription_with_seats,
 )
+
+MONTH = SubscriptionRecurringInterval.month
+YEAR = SubscriptionRecurringInterval.year
 
 # Graduated seat schedule: 1–50 @ $0 (included), 51–100 @ $20,
 # 101–200 @ $17.50, 201+ @ $15.
@@ -2257,58 +2264,51 @@ class TestProrationDiscountProductApplicability:
 
 @pytest.mark.anyio
 class TestAutoProrationBehavior:
-    @pytest.fixture(autouse=True)
-    async def auto_proration(
-        self, save_fixture: SaveFixture, organization: Organization
-    ) -> None:
-        organization.subscription_settings = {
-            **organization.subscription_settings,
-            "proration_behavior": "auto",
-        }
-        await save_fixture(organization)
-
     @pytest.mark.parametrize(
-        ("old_interval", "old_amount", "new_interval", "new_amount", "immediate"),
+        (
+            "old_interval",
+            "old_amount",
+            "new_interval",
+            "new_amount",
+            "setting",
+            "requested",
+            "immediate",
+        ),
         [
             pytest.param(
-                SubscriptionRecurringInterval.month,
-                100_00,
-                SubscriptionRecurringInterval.month,
+                MONTH, 100_00, MONTH, 300_00, "auto", None, True, id="higher-price"
+            ),
+            pytest.param(
+                MONTH, 100_00, MONTH, 100_00, "auto", None, True, id="same-price"
+            ),
+            pytest.param(
+                MONTH, 300_00, MONTH, 100_00, "auto", None, False, id="lower-price"
+            ),
+            pytest.param(
+                MONTH, 100_00, YEAR, 1000_00, "auto", None, True, id="longer-interval"
+            ),
+            pytest.param(
+                YEAR, 1000_00, MONTH, 100_00, "auto", None, False, id="shorter-interval"
+            ),
+            pytest.param(
+                MONTH,
                 300_00,
+                MONTH,
+                100_00,
+                "auto",
+                SubscriptionProrationBehavior.invoice,
                 True,
-                id="same-interval-higher-price",
+                id="explicit-behavior-overrides-auto",
             ),
             pytest.param(
-                SubscriptionRecurringInterval.month,
-                100_00,
-                SubscriptionRecurringInterval.month,
-                100_00,
-                True,
-                id="same-interval-same-price",
-            ),
-            pytest.param(
-                SubscriptionRecurringInterval.month,
+                MONTH,
                 300_00,
-                SubscriptionRecurringInterval.month,
+                MONTH,
                 100_00,
+                SubscriptionProrationBehavior.invoice,
+                "auto",
                 False,
-                id="same-interval-lower-price",
-            ),
-            pytest.param(
-                SubscriptionRecurringInterval.month,
-                100_00,
-                SubscriptionRecurringInterval.year,
-                1000_00,
-                True,
-                id="longer-interval",
-            ),
-            pytest.param(
-                SubscriptionRecurringInterval.year,
-                1000_00,
-                SubscriptionRecurringInterval.month,
-                100_00,
-                False,
-                id="shorter-interval",
+                id="explicit-auto-overrides-setting",
             ),
         ],
     )
@@ -2324,11 +2324,18 @@ class TestAutoProrationBehavior:
         old_amount: int,
         new_interval: SubscriptionRecurringInterval,
         new_amount: int,
+        setting: ProrationBehaviorSetting,
+        requested: ProrationBehaviorSetting | None,
         immediate: bool,
     ) -> None:
         order_mock = mocker.patch.object(
             subscription_service, "_create_subscription_update_order", new=AsyncMock()
         )
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": setting,
+        }
+        await save_fixture(organization)
         old_product = await create_product(
             save_fixture,
             organization=organization,
@@ -2356,132 +2363,25 @@ class TestAutoProrationBehavior:
                     ctx,
                     subscription,
                     product_id=new_product.id,
+                    proration_behavior=requested,
                 )
             await session.flush()
 
-        pending = await SubscriptionUpdateRepository.from_session(
-            session
-        ).get_unapplied_by_subscription_id(subscription.id)
         events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 1
-
+        assert events[0].user_metadata["proration_behavior"] == (
+            SubscriptionProrationBehavior.invoice
+            if immediate
+            else SubscriptionProrationBehavior.next_period
+        )
+        assert order_mock.await_count == int(immediate)
         if immediate:
-            order_mock.assert_awaited_once_with(session, subscription)
             assert updated.product_id == new_product.id
-            assert pending is None
-            assert (
-                events[0].user_metadata["proration_behavior"]
-                == SubscriptionProrationBehavior.invoice
-            )
+            assert updated.pending_update is None
         else:
-            order_mock.assert_not_awaited()
             assert updated.product_id == old_product.id
-            assert pending is not None
-            assert pending.product_id == new_product.id
-            assert (
-                events[0].user_metadata["proration_behavior"]
-                == SubscriptionProrationBehavior.next_period
-            )
-
-    async def test_explicit_proration_behavior_overrides_auto(
-        self,
-        session: AsyncSession,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        enqueue_benefits_grants_mock: MagicMock,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        order_mock = mocker.patch.object(
-            subscription_service, "_create_subscription_update_order", new=AsyncMock()
-        )
-        old_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(300_00, "usd")],
-        )
-        new_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(100_00, "usd")],
-        )
-
-        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
-            subscription = await create_active_subscription(
-                save_fixture, product=old_product, customer=customer
-            )
-            frozen_time.move_to(datetime(2025, 6, 16, tzinfo=UTC))
-
-            async with SubscriptionUpdateContext(
-                session, subscription, subscription_service
-            ) as ctx:
-                updated = await subscription_service.update_product(
-                    session,
-                    ctx,
-                    subscription,
-                    product_id=new_product.id,
-                    proration_behavior=SubscriptionProrationBehavior.invoice,
-                )
-            await session.flush()
-
-        order_mock.assert_awaited_once_with(session, subscription)
-        assert updated.product_id == new_product.id
-
-    async def test_explicit_auto_overrides_organization_setting(
-        self,
-        session: AsyncSession,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        enqueue_benefits_grants_mock: MagicMock,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        order_mock = mocker.patch.object(
-            subscription_service, "_create_subscription_update_order", new=AsyncMock()
-        )
-        organization.subscription_settings = {
-            **organization.subscription_settings,
-            "proration_behavior": SubscriptionProrationBehavior.invoice,
-        }
-        await save_fixture(organization)
-
-        old_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(300_00, "usd")],
-        )
-        new_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(100_00, "usd")],
-        )
-
-        with freezegun.freeze_time(datetime(2025, 6, 1, tzinfo=UTC)) as frozen_time:
-            subscription = await create_active_subscription(
-                save_fixture, product=old_product, customer=customer
-            )
-            frozen_time.move_to(datetime(2025, 6, 16, tzinfo=UTC))
-
-            async with SubscriptionUpdateContext(
-                session, subscription, subscription_service
-            ) as ctx:
-                updated = await subscription_service.update_product(
-                    session,
-                    ctx,
-                    subscription,
-                    product_id=new_product.id,
-                    proration_behavior="auto",
-                )
-            await session.flush()
-
-        order_mock.assert_not_awaited()
-        assert updated.product_id == old_product.id
-        assert updated.pending_update is not None
-        assert updated.pending_update.product_id == new_product.id
+            assert updated.pending_update is not None
+            assert updated.pending_update.product_id == new_product.id
 
     @pytest.mark.parametrize(
         ("new_seats", "immediate"),
@@ -2526,19 +2426,15 @@ class TestAutoProrationBehavior:
                     ctx,
                     subscription,
                     seats=new_seats,
+                    proration_behavior="auto",
                 )
             await session.flush()
 
-        pending = await SubscriptionUpdateRepository.from_session(
-            session
-        ).get_unapplied_by_subscription_id(subscription.id)
-
+        assert order_mock.await_count == int(immediate)
         if immediate:
-            order_mock.assert_awaited_once_with(session, subscription)
             assert updated.seats == new_seats
-            assert pending is None
+            assert updated.pending_update is None
         else:
-            order_mock.assert_not_awaited()
             assert updated.seats == 80
-            assert pending is not None
-            assert pending.seats == new_seats
+            assert updated.pending_update is not None
+            assert updated.pending_update.seats == new_seats

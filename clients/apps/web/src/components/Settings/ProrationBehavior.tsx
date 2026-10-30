@@ -8,20 +8,20 @@ import {
   SelectTrigger,
 } from '@polar-sh/orbit'
 
-const PRORATION_BEHAVIOR_LABELS: Record<
-  schemas['SubscriptionProrationBehavior'],
-  string
-> = {
+type ProrationBehaviorSetting = schemas['Organization']['proration_behavior']
+
+const PRORATION_BEHAVIOR_LABELS: Record<ProrationBehaviorSetting, string> = {
   invoice: 'Prorate & charge now',
   prorate: 'Prorate on next invoice',
   next_period: 'Schedule for next cycle',
   reset: 'Charge full amount & reset cycle',
+  auto: 'Prorate upgrades, schedule downgrades',
 }
 
 export interface ProrationBehaviorProps {
   organization: schemas['Organization']
-  value: schemas['SubscriptionProrationBehavior']
-  onValueChange: (value: string) => void
+  value: ProrationBehaviorSetting
+  onValueChange: (value: ProrationBehaviorSetting) => void
   disabled?: boolean
 }
 
@@ -32,7 +32,13 @@ export const ProrationBehavior: React.FC<ProrationBehaviorProps> = ({
   ...props
 }) => {
   return (
-    <Select {...props} value={value} onValueChange={onValueChange}>
+    <Select
+      {...props}
+      value={value}
+      onValueChange={(value) =>
+        onValueChange(value as ProrationBehaviorSetting)
+      }
+    >
       <SelectTrigger>{PRORATION_BEHAVIOR_LABELS[value]}</SelectTrigger>
       <SelectContent>
         {Object.entries(PRORATION_BEHAVIOR_LABELS)

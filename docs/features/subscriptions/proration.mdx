@@ -10,7 +10,7 @@ You pick the proration behavior either at the organization level (as the default
 
 ## Proration behaviors
 
-Polar supports three standard proration behaviors:
+Polar supports three standard proration behaviors, plus `auto`, which picks one of them for each change:
 
 ### Prorate and charge now (`invoice`)
 
@@ -42,6 +42,18 @@ The change is **not applied immediately**. It's scheduled as a pending update an
 While a `next_period` update is pending, the subscription's `pending_update` field describes the scheduled change. Submitting a new update always supersedes the pending one: if you scheduled a `next_period` change and then make another update with `invoice` or `prorate`, the pending update is discarded and the new change is applied right away.
 
 This behavior is the safer default for downgrades where you don't want to issue credits, and for any case where you want the current period's terms to stay intact.
+
+### Prorate upgrades, schedule downgrades (`auto`)
+
+Polar decides per change: **upgrades** are applied immediately like `invoice`, and **downgrades** are scheduled for the next cycle like `next_period`. This lets customers upgrade straight from the [Customer Portal](/features/customer-portal/introduction) while keeping downgrades for their renewal.
+
+- **Product changes**: moving to a longer billing interval (for example, monthly to yearly) is an upgrade, and moving to a shorter one is a downgrade, whatever the prices. With the same interval, a higher or equal price is an upgrade and a lower price is a downgrade. Switching to a seat-based or unit-based product is always applied immediately.
+- **Seat and unit changes**: adding seats or units is an upgrade, removing them is a downgrade.
+- **Trials**: during a trial, every change is applied immediately, since nothing is billed until the trial ends. If the new product's trial would already be over, the trial ends and the customer is charged for the new plan.
+
+To apply a particular change differently, pass an explicit `proration_behavior` on that update; it overrides `auto`.
+
+<Note>In the API, `auto` is available from version `2027-01`.</Note>
 
 ### Charge full amount and reset cycle (`reset`)
 
@@ -92,7 +104,7 @@ with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
 
 </CodeGroup>
 
-Valid values are `invoice`, `prorate`, and `next_period`. If your organization has access to the preview `reset` behavior, you can pass `reset` here as well.
+Valid values are `invoice`, `prorate`, `next_period`, and `auto`. If your organization has access to the preview `reset` behavior, you can pass `reset` here as well.
 
 ## How the prorated amount is calculated
 

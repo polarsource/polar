@@ -13280,8 +13280,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -14819,8 +14824,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -20078,8 +20088,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -29282,8 +29297,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -30637,8 +30657,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -31702,11 +31727,8 @@ export interface components {
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
       allow_multiple_subscriptions: boolean
-      /**
-       * PublicSubscriptionProrationBehavior
-       * @enum {string}
-       */
-      proration_behavior: 'invoice' | 'prorate' | 'next_period'
+      /** Proration Behavior */
+      proration_behavior: ('invoice' | 'prorate' | 'next_period') | 'auto'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
       /** Prevent Trial Abuse */
@@ -32089,8 +32111,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -36948,9 +36975,13 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionChangePreviewSeats */
@@ -36960,9 +36991,13 @@ export interface components {
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionChangePreviewUnits */
@@ -36972,9 +37007,13 @@ export interface components {
        * @description Preview a change of the subscription to this number of units.
        */
       units: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /**
@@ -38681,9 +38720,13 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id?: string | null
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
       /**
        * Discount Id
@@ -38806,9 +38849,13 @@ export interface components {
        * @description Update the number of seats for this subscription.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionUpdateUnits */
@@ -38818,9 +38865,13 @@ export interface components {
        * @description Update the number of units for this subscription.
        */
       units: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /**
@@ -72988,7 +73039,7 @@ export const organizationStatusValues: ReadonlyArray<
   'offboarding',
   'offboarded',
 ]
-export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
+export const organizationSubscriptionSettingsProration_behaviorAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
 > = ['invoice', 'prorate', 'next_period']
 export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<

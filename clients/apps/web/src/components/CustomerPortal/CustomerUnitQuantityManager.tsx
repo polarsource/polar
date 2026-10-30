@@ -65,9 +65,16 @@ export const CustomerUnitQuantityManager = ({
     setDraft(String(value))
   }
 
+  const resolvedProrationBehavior =
+    prorationBehavior === 'auto'
+      ? units > currentUnits
+        ? 'invoice'
+        : 'next_period'
+      : prorationBehavior
+
   const invoicingMessage = useMemo((): string | null => {
-    if (!prorationBehavior) return null
-    switch (prorationBehavior) {
+    if (!resolvedProrationBehavior) return null
+    switch (resolvedProrationBehavior) {
       case 'invoice':
         return "You'll be charged immediately, with a proration for the current period."
       case 'prorate':
@@ -77,7 +84,7 @@ export const CustomerUnitQuantityManager = ({
       case 'reset':
         return "You'll be charged the full new amount immediately, and your billing period restarts today."
     }
-  }, [prorationBehavior])
+  }, [resolvedProrationBehavior])
 
   const onSubmit = useCallback(
     async (data: { units: number }) => {

@@ -6,7 +6,11 @@ import {
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
 import { isFreePrice } from '@/utils/product'
-import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
+import {
+  addInterval,
+  formatTrialEnd,
+  useTrialChangeOutcome,
+} from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/orbit'
@@ -112,11 +116,30 @@ const CustomerChangePlanModal = ({
     if (!selectedProduct) return [false, null]
     if (isTrialing) return [false, null]
 
+    const intervalChanged =
+      selectedProduct.recurring_interval !== subscription.recurring_interval ||
+      selectedProduct.recurring_interval_count !==
+        subscription.recurring_interval_count
+
+    // `auto` applies a longer billing interval now and defers a shorter one.
+    const isLongerInterval =
+      !!selectedProduct.recurring_interval &&
+      !!subscription.recurring_interval &&
+      addInterval(
+        subscription.current_period_start,
+        selectedProduct.recurring_interval,
+        selectedProduct.recurring_interval_count ?? 1,
+      ) >
+        addInterval(
+          subscription.current_period_start,
+          subscription.recurring_interval,
+          subscription.recurring_interval_count ?? 1,
+        )
+
     const willTrigger =
       prorationBehavior !== 'next_period' &&
-      (selectedProduct.recurring_interval !== subscription.recurring_interval ||
-        selectedProduct.recurring_interval_count !==
-          subscription.recurring_interval_count)
+      intervalChanged &&
+      (prorationBehavior !== 'auto' || isLongerInterval)
 
     if (!willTrigger) return [false, null]
 
@@ -166,6 +189,8 @@ const CustomerChangePlanModal = ({
         return 'The new plan will be applied on your next billing cycle.'
       case 'reset':
         return "You'll be charged the full amount for the new plan immediately, and your billing period restarts today."
+      case 'auto':
+        return 'Upgrades are charged immediately, with a proration for the current period. Downgrades are applied on your next billing cycle.'
     }
   }, [
     selectedProduct,

@@ -64,6 +64,15 @@ const CustomerPortalSubscription = ({
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const canManageBilling = hasBillingPermission(authenticatedUser)
 
+  // `auto` applies every change immediately during a trial.
+  const organizationProrationBehavior =
+    subscription.product.organization.proration_behavior
+  const quantityProrationBehavior =
+    subscription.status === 'trialing' &&
+    organizationProrationBehavior === 'auto'
+      ? 'invoice'
+      : organizationProrationBehavior
+
   const { data: orders, refetch: refetchOrders } = useCustomerOrders(api, {
     subscription_id: subscription.id,
     limit: 100,
@@ -355,9 +364,7 @@ const CustomerPortalSubscription = ({
           api={api}
           identifier={{ subscriptionId: subscription.id }}
           organizationSlug={subscription.product.organization.slug}
-          prorationBehavior={
-            subscription.product.organization.proration_behavior
-          }
+          prorationBehavior={quantityProrationBehavior}
         />
       )}
 
@@ -366,9 +373,7 @@ const CustomerPortalSubscription = ({
           api={api}
           subscription={subscription}
           unitPrice={unitPrice}
-          prorationBehavior={
-            subscription.product.organization.proration_behavior
-          }
+          prorationBehavior={quantityProrationBehavior}
           onUpdate={() => router.refresh()}
         />
       )}

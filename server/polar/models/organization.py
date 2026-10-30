@@ -39,7 +39,9 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.config import settings
 from polar.enums import (
+    AutoProrationBehavior,
     InvoiceNumbering,
+    ProrationBehaviorSetting,
     SubscriptionProrationBehavior,
     TaxBehaviorOption,
 )
@@ -87,16 +89,19 @@ class OrganizationDetails(TypedDict, total=False):
 
 class OrganizationSubscriptionSettings(TypedDict):
     allow_multiple_subscriptions: bool
-    proration_behavior: Annotated[
-        SubscriptionProrationBehavior,
-        WithJsonSchema(
-            {
-                "enum": ["invoice", "prorate", "next_period"],
-                "title": "PublicSubscriptionProrationBehavior",
-                "type": "string",
-            }
-        ),
-    ]
+    proration_behavior: (
+        Annotated[
+            SubscriptionProrationBehavior,
+            WithJsonSchema(
+                {
+                    "enum": ["invoice", "prorate", "next_period"],
+                    "title": "PublicSubscriptionProrationBehavior",
+                    "type": "string",
+                }
+            ),
+        ]
+        | AutoProrationBehavior
+    )
     benefit_revocation_grace_period: int
     prevent_trial_abuse: bool
     # Legacy - to be removed separately
@@ -919,10 +924,11 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.subscription_settings["allow_multiple_subscriptions"]
 
     @property
-    def proration_behavior(self) -> SubscriptionProrationBehavior:
-        return SubscriptionProrationBehavior(
-            self.subscription_settings["proration_behavior"]
-        )
+    def proration_behavior(self) -> ProrationBehaviorSetting:
+        value = self.subscription_settings["proration_behavior"]
+        if value == "auto":
+            return "auto"
+        return SubscriptionProrationBehavior(value)
 
     @property
     def benefit_revocation_grace_period(self) -> int:

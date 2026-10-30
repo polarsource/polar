@@ -105,6 +105,7 @@ class ProductService:
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
+        is_current: bool | None = None,
         is_recurring: bool | None = None,
         visibility: Sequence[ProductVisibility] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
@@ -139,7 +140,10 @@ class ProductService:
 
         if id is not None:
             statement = statement.where(Product.id.in_(id))
-        else:
+
+        if is_current is not None:
+            statement = statement.where(Product.is_current.is_(is_current))
+        elif id is None:
             statement = statement.where(Product.is_current)
 
         if external_id is not None:

@@ -15,9 +15,12 @@ const REDUCERS = ["tokens", "calls", "cost"];
 const stateKey = (identity: string) => `outpost:v1:state:${identity}`;
 const identityOf = (buckets: number) => `external:alice:tokens-${buckets}`;
 const keyOf = (buckets: number) => stateKey(identityOf(buckets));
-// An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count.
+// An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count. Each
+// call brings a new external_id, as events do; the same one would be a duplicate and write nothing.
+let sequence = 0;
 const writeArgs = (identity: string, bucketStart: number) => [
   stateKey(identity),
+  `outpost:v1:pending:${identity}:${bucketStart}`,
   identity,
   CHANNEL,
   EPOCH,
@@ -26,6 +29,7 @@ const writeArgs = (identity: string, bucketStart: number) => [
   7,
   7,
   7,
+  `event-${++sequence}`,
 ];
 
 let redisServer: RedisServer;
@@ -63,7 +67,7 @@ describe("WRITE_BUCKET", () => {
       async () => {
         await redis.evalsha(
           writeBucketSha,
-          1,
+          2,
           ...writeArgs(identityOf(buckets), newestBucketStart),
         );
       },
@@ -76,7 +80,7 @@ describe("WRITE_BUCKET", () => {
       const pipeline = redis.pipeline();
       for (const reducer of REDUCERS) {
         const identity = `external:alice:${reducer}`;
-        pipeline.evalsha(writeBucketSha, 1, ...writeArgs(identity, COLD_UNTIL));
+        pipeline.evalsha(writeBucketSha, 2, ...writeArgs(identity, COLD_UNTIL));
       }
       const results = await pipeline.exec();
       for (const [error] of results ?? []) if (error) throw error;

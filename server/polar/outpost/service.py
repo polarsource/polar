@@ -212,61 +212,67 @@ class OutpostService:
     ) -> None:
         """The requested ids stored so far, with the meter's snapshot read from the same
         database snapshot: it counts exactly those."""
-        if isinstance(session.bind, AsyncEngine):
-            await session.connection(
-                execution_options={"isolation_level": "REPEATABLE READ"}
+        with logfire.span(
+            "outpost.confirm",
+            organization_id=str(organization.id),
+            requested=len(payload.ids),
+        ) as span:
+            if isinstance(session.bind, AsyncEngine):
+                await session.connection(
+                    execution_options={"isolation_level": "REPEATABLE READ"}
+                )
+            reducer = await ReducerRepository.from_session(session).get_active_by_id(
+                payload.reducer_id, options=(selectinload(Reducer.meter_reducers),)
             )
-        reducer = await ReducerRepository.from_session(session).get_active_by_id(
-            payload.reducer_id, options=(selectinload(Reducer.meter_reducers),)
-        )
-        if (
-            reducer is None
-            or reducer.organization_id != organization.id
-            or payload.meter_id not in reducer.meter_ids
-        ):
-            log.warning(
-                "Meter not found",
-                organization_id=organization.id,
-                meter_id=payload.meter_id,
+            if (
+                reducer is None
+                or reducer.organization_id != organization.id
+                or payload.meter_id not in reducer.meter_ids
+            ):
+                log.warning(
+                    "Meter not found",
+                    organization_id=organization.id,
+                    meter_id=payload.meter_id,
+                )
+                return
+            if isinstance(payload, ConfirmIncomingMessageCustomerPayload):
+                identity: Identity = (payload.customer_id, None)
+            else:
+                identity = (None, payload.external_customer_id)
+            stored = await reducer_service.get_stored_external_ids(
+                session,
+                reducer,
+                *identity,
+                bucket_start=payload.bucket_start,
+                external_ids=payload.ids,
             )
-            return
-        if isinstance(payload, ConfirmIncomingMessageCustomerPayload):
-            identity: Identity = (payload.customer_id, None)
-        else:
-            identity = (None, payload.external_customer_id)
-        stored = await reducer_service.get_stored_external_ids(
-            session,
-            reducer,
-            *identity,
-            bucket_start=payload.bucket_start,
-            external_ids=payload.ids,
-        )
-        snapshots = await self._get_meter_usage(
-            session,
-            reducer,
-            [payload.meter_id],
-            [identity],
-            await self._get_customer(session, organization, identity),
-        )
-        if not snapshots:
-            return
-        await send_stream.send(
-            ConfirmedOutgoingMessage(
-                type=OutgoingMessageType.confirmed,
-                payload=ConfirmedOutgoingMessagePayload(
-                    reducer_id=payload.reducer_id,
-                    customer_id=identity[0],
-                    external_customer_id=identity[1],
-                    bucket_start=payload.bucket_start,
-                    ids=[
-                        external_id
-                        for external_id in payload.ids
-                        if external_id in stored
-                    ],
-                    snapshot=snapshots[0],
-                ),
+            span.set_attribute("stored", len(stored))
+            snapshots = await self._get_meter_usage(
+                session,
+                reducer,
+                [payload.meter_id],
+                [identity],
+                await self._get_customer(session, organization, identity),
             )
-        )
+            if not snapshots:
+                return
+            await send_stream.send(
+                ConfirmedOutgoingMessage(
+                    type=OutgoingMessageType.confirmed,
+                    payload=ConfirmedOutgoingMessagePayload(
+                        reducer_id=payload.reducer_id,
+                        customer_id=identity[0],
+                        external_customer_id=identity[1],
+                        bucket_start=payload.bucket_start,
+                        ids=[
+                            external_id
+                            for external_id in payload.ids
+                            if external_id in stored
+                        ],
+                        snapshot=snapshots[0],
+                    ),
+                )
+            )
 
     async def _send_reducer_bucket(
         self,

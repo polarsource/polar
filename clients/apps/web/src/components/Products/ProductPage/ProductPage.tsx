@@ -9,8 +9,7 @@ import { apiErrorToast, extractApiErrorMessage } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
 import { MoreVert } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { Status, type StatusColor } from '@polar-sh/orbit'
+import { Button, Status } from '@polar-sh/orbit'
 import { Subnav, SubnavItem } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -25,11 +24,6 @@ import { useCallback, useState } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
-
-const ProductTypeDisplayColor: Record<string, StatusColor> = {
-  subscription: 'green',
-  one_time: 'blue',
-}
 
 export interface ProductPageProps {
   organization: schemas['Organization']
@@ -169,19 +163,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex min-w-0 flex-row items-center gap-4">
             <h1 className="truncate text-2xl">{product.name}</h1>
-            <div className="flex shrink-0 flex-row items-center gap-4">
-              <Status
-                status={
-                  product.is_recurring ? 'Subscription' : 'One-time Product'
-                }
-                color={
-                  ProductTypeDisplayColor[
-                    product.is_recurring ? 'subscription' : 'one_time'
-                  ]
-                }
-              />
-              {product.is_archived && <Status status="Archived" color="red" />}
-            </div>
+            {product.is_archived && <Status status="Archived" color="gray" />}
           </div>
           <span className="dark:text-polar-500 text-xl text-gray-400 [&_*]:!text-current">
             <ProductPriceLabel

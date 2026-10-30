@@ -3225,6 +3225,61 @@ class TestBenefitVersioning:
             ["beta"],
         )
 
+    async def test_change_keeps_metadata_left_out(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [{**BETA_BENEFIT, "metadata": {"tier": 1}}]}
+            ),
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [{**BETA_BENEFIT, "description": "Early access"}]}
+            ),
+        )
+
+        [benefit] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["beta"])
+        assert (benefit.description, benefit.user_metadata) == (
+            "Early access",
+            {"tier": 1},
+        )
+
+    async def test_deprecated_new_benefit_not_created(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [{**BETA_BENEFIT, "deprecated": True}]}),
+        )
+
+        assert (result.changes, result.catalog) == ([], None)
+        assert (
+            await BenefitRepository.from_session(session).get_all_by_external_ids(
+                organization.id, ["beta"]
+            )
+            == []
+        )
+
     async def test_change_skips_removed_products(
         self,
         session: AsyncSession,

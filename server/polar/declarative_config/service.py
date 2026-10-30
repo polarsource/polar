@@ -708,6 +708,11 @@ class DeclarativeConfigService:
                             update_dict["is_tax_applicable"] = (
                                 change.existing.is_tax_applicable
                             )
+                            # Metadata left out of the config is kept, as on update.
+                            if "metadata" not in change.config.model_fields_set:
+                                update_dict["user_metadata"] = (
+                                    change.existing.user_metadata
+                                )
                         await repository.update(benefit, update_dict=update_dict)
                 except IntegrityError as e:
                     if _constraint_name(e) != _BENEFIT_EXTERNAL_ID_INDEX:

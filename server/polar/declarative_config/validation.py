@@ -617,6 +617,8 @@ async def diff_benefits(
     for index, benefit_config in enumerate(benefit_configs):
         benefit = existing_benefits.get(benefit_config.external_id)
         if benefit is None:
+            if benefit_config.deprecated:
+                continue
             create_dict = _create_update_dict(benefit_config)
             if "properties" in create_dict:
                 create_dict["properties"] = create_dict["properties"].model_dump()

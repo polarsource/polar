@@ -16,6 +16,7 @@ from opentelemetry.sdk.trace.sampling import (
     Sampler,
     SamplingResult,
 )
+from starlette.routing import Host
 
 from polar.observability.http_telemetry import HttpURLSpanProcessor, server_request_hook
 from polar.observability.s3_span_exporter import S3SpanExporter
@@ -267,6 +268,9 @@ def _request_attributes_mapper(
 
 
 def instrument_fastapi(app: FastAPI) -> None:
+    for route in app.routes:
+        if isinstance(route, Host) and isinstance(route.app, FastAPI):
+            instrument_fastapi(route.app)
     logfire.instrument_fastapi(
         app,
         capture_headers=False,

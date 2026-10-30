@@ -51,8 +51,6 @@ def test_apply_snapshot_seals_buckets(
             EPOCH,
             cutoff,
             cutoff + 1,
-            "meter",
-            1_000_000,
             1000,
             123456,
             1,

@@ -5,9 +5,24 @@
   "channel": "outpost:v1:bench:updates",
   "reducer": {
     "id": "tokens",
+    "kind": "usage",
     "meter_ids": ["meter"],
     "filter": { "conjunction": "and", "clauses": [] },
     "aggregation": { "func": "sum", "property": "tokens" }
+  },
+  "credit_reducer": {
+    "id": "credits",
+    "kind": "credit",
+    "meter_ids": ["meter"],
+    "filter": {
+      "conjunction": "and",
+      "clauses": [
+        { "property": "source", "operator": "eq", "value": "system" },
+        { "property": "name", "operator": "eq", "value": "meter.credited" },
+        { "property": "meter_id", "operator": "eq", "value": "meter" }
+      ]
+    },
+    "aggregation": { "func": "sum", "property": "units" }
   },
   "snapshot": {
     "customer_id": null,
@@ -16,8 +31,7 @@
     "count": 1000,
     "sum": 123456,
     "min": 1,
-    "max": 999,
-    "credited_units": 1000000
+    "max": 999
   },
   "events": {
     "seed": 4242,
@@ -30,12 +44,14 @@
     "reducers": [
       {
         "id": "tokens",
+        "kind": "usage",
         "meter_ids": ["tokens"],
         "filter": { "conjunction": "and", "clauses": [] },
         "aggregation": { "func": "sum", "property": "tokens" }
       },
       {
         "id": "calls",
+        "kind": "usage",
         "meter_ids": ["calls"],
         "filter": {
           "conjunction": "and",
@@ -45,6 +61,7 @@
       },
       {
         "id": "cost",
+        "kind": "usage",
         "meter_ids": ["cost"],
         "filter": {
           "conjunction": "and",

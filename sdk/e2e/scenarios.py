@@ -1,7 +1,7 @@
 import itertools
 
 from polar.outpost.client import Configuration, Snapshot
-from polar.outpost.reducer import BUCKET_SIZE
+from polar.outpost.reducer import BUCKET_SIZE, Reducer
 
 from harness import (
     ConfirmStep,
@@ -19,16 +19,33 @@ from harness import (
 )
 
 BUCKET = 1791806400000000
-CONFIGURATION: Configuration = {
-    "reducers": [
-        {
-            "id": "tokens",
-            "meter_ids": ["meter"],
-            "filter": {"conjunction": "and", "clauses": []},
-            "aggregation": {"func": "sum", "property": "tokens"},
-        }
-    ],
+
+
+def credit_reducer(meter_id: str) -> Reducer:
+    return {
+        "id": f"credits-{meter_id}",
+        "kind": "credit",
+        "meter_ids": [meter_id],
+        "filter": {
+            "conjunction": "and",
+            "clauses": [
+                {"property": "source", "operator": "eq", "value": "system"},
+                {"property": "name", "operator": "eq", "value": "meter.credited"},
+                {"property": "meter_id", "operator": "eq", "value": meter_id},
+            ],
+        },
+        "aggregation": {"func": "sum", "property": "units"},
+    }
+
+
+TOKENS: Reducer = {
+    "id": "tokens",
+    "kind": "usage",
+    "meter_ids": ["meter"],
+    "filter": {"conjunction": "and", "clauses": []},
+    "aggregation": {"func": "sum", "property": "tokens"},
 }
+CONFIGURATION: Configuration = {"reducers": [TOKENS, credit_reducer("meter")]}
 _ids = itertools.count(1)
 CUSTOMER: ExternalCustomerID = {"external_customer_id": "alice"}
 METER: ExternalCustomerMeterRequest = {**CUSTOMER, "meter_id": "meter"}
@@ -36,15 +53,32 @@ INITIAL: Snapshot = {
     **CUSTOMER,
     "customer_id": None,
     "customer_exists": True,
-    "meter_id": "meter",
+    "reducer_id": "tokens",
     "cold_until": BUCKET,
     "version": BUCKET + 1,
     "count": 0,
     "sum": 0,
     "min": None,
     "max": None,
-    "credited_units": 100,
 }
+
+
+def credits(
+    units: int, *, meter_id: str = "meter", version: int = BUCKET + 1
+) -> Snapshot:
+    return {
+        **INITIAL,
+        "reducer_id": f"credits-{meter_id}",
+        "cold_until": version,
+        "version": version,
+        "count": 1,
+        "sum": units,
+        "min": units,
+        "max": units,
+    }
+
+
+CREDITS = credits(100)
 WRITERS = ("writer-1", "writer-2", "writer-3", "writer-4")
 CONCURRENT_CLIENTS = (*WRITERS, "reader-1", "reader-2")
 
@@ -93,15 +127,17 @@ def sealed(version_offset: int, count: int, total: int) -> Snapshot:
     }
 
 
-def expect(at: float, client: str, consumed: int, *, within: float = 2) -> ReadStep:
+def expect(
+    at: float, client: str, consumed: int, *, credited: int = 100, within: float = 2
+) -> ReadStep:
     return ReadStep(
         at,
         client,
         METER,
         {
             "consumed_units": consumed,
-            "credited_units": 100,
-            "balance": 100 - consumed,
+            "credited_units": credited,
+            "balance": credited - consumed,
         },
         within=within,
     )
@@ -111,7 +147,7 @@ SCENARIOS = [
     Scenario(
         "shared consumption and restart",
         CONFIGURATION,
-        [INITIAL],
+        [INITIAL, CREDITS],
         [
             expect(0, "writer", 0),
             expect(0, "reader", 0),
@@ -128,7 +164,7 @@ SCENARIOS = [
     Scenario(
         "concurrent writers",
         CONFIGURATION,
-        [INITIAL],
+        [INITIAL, CREDITS],
         [
             *(expect(0, client, 0, within=0.4) for client in CONCURRENT_CLIENTS),
             *(
@@ -156,7 +192,7 @@ SCENARIOS = [
     Scenario(
         "snapshot reconciliation",
         CONFIGURATION,
-        [INITIAL],
+        [INITIAL, CREDITS],
         [
             expect(0, "writer", 0),
             expect(0, "reader", 0),
@@ -187,7 +223,7 @@ SCENARIOS = [
     Scenario(
         "server confirmation",
         CONFIGURATION,
-        [INITIAL],
+        [INITIAL, CREDITS],
         [
             expect(0, "writer", 0),
             expect(0, "reader", 0),
@@ -215,35 +251,32 @@ SCENARIOS = [
         "independent reducer snapshots and weighted average",
         {
             "reducers": [
-                {**CONFIGURATION["reducers"][0], "meter_ids": ["meter", "shared"]},
+                {**TOKENS, "meter_ids": ["meter", "shared"]},
                 {
                     "id": "average",
+                    "kind": "usage",
                     "meter_ids": ["average-meter"],
                     "filter": {"conjunction": "and", "clauses": []},
                     "aggregation": {"func": "avg", "property": "tokens"},
                 },
+                credit_reducer("meter"),
+                credit_reducer("shared"),
+                credit_reducer("average-meter"),
             ]
         },
         [
             {**INITIAL, "count": 2, "sum": 20, "min": 5, "max": 15},
             {
                 **INITIAL,
-                "meter_id": "shared",
+                "reducer_id": "average",
                 "count": 2,
                 "sum": 20,
                 "min": 5,
                 "max": 15,
-                "credited_units": 200,
             },
-            {
-                **INITIAL,
-                "meter_id": "average-meter",
-                "count": 2,
-                "sum": 20,
-                "min": 5,
-                "max": 15,
-                "credited_units": 150,
-            },
+            CREDITS,
+            credits(200, meter_id="shared"),
+            credits(150, meter_id="average-meter"),
         ],
         [
             expect(0, "writer", 20),
@@ -333,13 +366,13 @@ SCENARIOS = [
     Scenario(
         "cold read waits for the first snapshot",
         CONFIGURATION,
-        [{**INITIAL, "count": 1, "sum": 5, "min": 5, "max": 5}],
+        [{**INITIAL, "count": 1, "sum": 5, "min": 5, "max": 5}, CREDITS],
         [expect(0, "reader", 5, within=0)],
     ),
     Scenario(
         "unknown customer reads none",
         CONFIGURATION,
-        [INITIAL],
+        [INITIAL, CREDITS],
         [
             ReadStep(
                 0,
@@ -352,7 +385,7 @@ SCENARIOS = [
     Scenario(
         "reconnect after Polar drops the connection",
         CONFIGURATION,
-        [INITIAL],
+        [INITIAL, CREDITS],
         [
             expect(0, "writer", 0),
             expect(0, "reader", 0),
@@ -380,7 +413,7 @@ SCENARIOS = [
     Scenario(
         "redis outage fails fast then recovers",
         CONFIGURATION,
-        [INITIAL],
+        [INITIAL, CREDITS],
         [
             expect(0, "writer", 0),
             expect(0, "reader", 0),
@@ -412,6 +445,38 @@ SCENARIOS = [
             RedisStep(1, available=True),
             expect(1.2, "reader", 5, within=3),
             expect(1.2, "writer", 5, within=3),
+        ],
+    ),
+    Scenario(
+        "credit snapshot alone updates every client",
+        CONFIGURATION,
+        [INITIAL, CREDITS],
+        [
+            expect(0, "writer", 0),
+            expect(0, "reader-1", 0),
+            expect(0, "reader-2", 0),
+            emit(0.2, "writer", 7),
+            expect(0.3, "reader-1", 7),
+            expect(0.3, "reader-2", 7),
+            SnapshotStep(0.5, credits(150, version=BUCKET + 2)),
+            expect(0.6, "writer", 7, credited=150),
+            expect(0.6, "reader-1", 7, credited=150),
+            expect(0.6, "reader-2", 7, credited=150),
+        ],
+    ),
+    Scenario(
+        "stale credit snapshot is ignored",
+        CONFIGURATION,
+        [INITIAL, CREDITS],
+        [
+            expect(0, "writer", 0),
+            expect(0, "reader", 0),
+            SnapshotStep(0.2, credits(150, version=BUCKET + 3)),
+            expect(0.3, "writer", 0, credited=150),
+            expect(0.3, "reader", 0, credited=150),
+            SnapshotStep(0.5, credits(999, version=BUCKET + 2)),
+            expect(0.8, "writer", 0, credited=150, within=0),
+            expect(0.8, "reader", 0, credited=150, within=0),
         ],
     ),
 ]

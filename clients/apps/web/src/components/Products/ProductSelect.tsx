@@ -97,6 +97,7 @@ interface ProductSelectProps {
   emptyLabel?: string
   className?: string
   includeArchived?: boolean
+  filterByExternalId?: boolean
 }
 
 const ProductSelect: React.FC<ProductSelectProps> = ({
@@ -106,13 +107,16 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   emptyLabel,
   className,
   includeArchived = false,
+  filterByExternalId = false,
 }) => {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
   // Selected products, with a dedicated hook to exhaust pagination
   const { data: selectedProducts } = useSelectedProducts(
-    { id: value },
+    filterByExternalId
+      ? { organization_id: organization.id, external_id: value }
+      : { id: value },
     includeArchived,
   )
 
@@ -147,8 +151,10 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         }
       }
     }
-    return products
-  }, [queriedProducts, selectedProducts, query])
+    return filterByExternalId
+      ? products.filter((product) => product.external_id)
+      : products
+  }, [queriedProducts, selectedProducts, query, filterByExternalId])
 
   // Group displayed products by product price type
   const groupedProducts = useMemo<
@@ -174,43 +180,44 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
       return emptyLabel || 'All products'
     }
     if (value.length === 1) {
-      return selectedProducts?.[0].name
+      return selectedProducts?.[0]?.name
     }
     return `${value.length} products`
   }, [value, emptyLabel, selectedProducts])
 
   const onSelectProduct = useCallback(
     (product: schemas['Product']) => {
-      if (value.includes(product.id)) {
-        onChange(value.filter((id) => id !== product.id))
+      const productValue = filterByExternalId ? product.external_id : product.id
+      if (!productValue) {
+        return
+      }
+      if (value.includes(productValue)) {
+        onChange(value.filter((v) => v !== productValue))
       } else {
-        onChange([...value, product.id])
+        onChange([...value, productValue])
       }
     },
-    [onChange, value],
+    [onChange, value, filterByExternalId],
   )
 
   const onSelectProductType = useCallback(
     (productPriceType: ProductPriceType) => {
-      const products = groupedProducts[productPriceType]
-      const selectedIds = new Set(value)
-      const allSelected = products.every((product) =>
-        selectedIds.has(product.id),
+      const productValues = groupedProducts[productPriceType].flatMap(
+        (product) =>
+          (filterByExternalId ? product.external_id : product.id) ?? [],
       )
+      const selectedValues = new Set(value)
+      const allSelected = productValues.every((v) => selectedValues.has(v))
       if (allSelected) {
-        onChange(
-          value.filter((id) => !products.some((product) => id === product.id)),
-        )
+        onChange(value.filter((v) => !productValues.includes(v)))
       } else {
         onChange([
           ...value,
-          ...products
-            .filter((product) => !selectedIds.has(product.id))
-            .map(({ id }) => id),
+          ...productValues.filter((v) => !selectedValues.has(v)),
         ])
       }
     },
-    [groupedProducts, onChange, value],
+    [groupedProducts, onChange, value, filterByExternalId],
   )
 
   return (

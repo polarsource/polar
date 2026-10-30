@@ -66,8 +66,10 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
   onExport,
 }) => {
   const [productQuery, setProductQuery] = useState('')
+  // A product_id link keeps filtering by ID until the selection is cleared
   const filterByExternalId =
-    !!organization.feature_settings?.config_as_code_enabled
+    !!organization.feature_settings?.config_as_code_enabled &&
+    !product.product_id
   const productFilter = filterByExternalId
     ? product.external_product_id
     : product.product_id

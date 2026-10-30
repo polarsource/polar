@@ -55,6 +55,7 @@ const defaultColumns: ExportColumn[] = [
 interface ExportOrdersModalProps {
   organization: schemas['Organization']
   productId?: string[]
+  externalProductId?: string[]
   status?: schemas['OrderStatus'] | null
   isShown: boolean
   hide: () => void
@@ -63,6 +64,7 @@ interface ExportOrdersModalProps {
 const ExportOrdersModal: React.FC<ExportOrdersModalProps> = ({
   organization,
   productId,
+  externalProductId,
   status,
   isShown,
   hide,
@@ -82,6 +84,9 @@ const ExportOrdersModal: React.FC<ExportOrdersModalProps> = ({
           search.set('organization_id', organization.id)
           for (const id of productId ?? []) {
             search.append('product_id', id)
+          }
+          for (const id of externalProductId ?? []) {
+            search.append('external_product_id', id)
           }
           if (status) {
             search.append('status', status)

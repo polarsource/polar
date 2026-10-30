@@ -60,7 +60,7 @@ export const useSelectedProducts = (
           }),
         )
         products.push(...data.items)
-        if (data.pagination.max_page === page) {
+        if (page >= data.pagination.max_page) {
           break
         }
         page++

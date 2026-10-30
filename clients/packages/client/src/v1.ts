@@ -14903,6 +14903,11 @@ export interface components {
        */
       organization_id: string
       /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
        * Prices
        * @description List of prices for this product.
        */
@@ -28761,6 +28766,11 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
     }
     /**
      * OrderReceipt
@@ -33606,6 +33616,11 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
       /**
        * External Id
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.

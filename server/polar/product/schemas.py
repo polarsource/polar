@@ -6,6 +6,7 @@ from typing import Annotated, Any, Literal, Self
 from pydantic import (
     UUID4,
     AfterValidator,
+    BaseModel,
     BeforeValidator,
     Discriminator,
     Field,
@@ -1164,7 +1165,22 @@ ProductMediaList = Annotated[
 ]
 
 
-class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
+class ProductVersionOutputMixin(BaseModel):
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the product. "
+                "None for products not managed by declarative config."
+            )
+        ),
+    ]
+
+
+class Product(
+    MetadataOutputMixin, ExternalIDOutputMixin, ProductVersionOutputMixin, ProductBase
+):
     """
     A product.
     """

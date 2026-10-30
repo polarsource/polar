@@ -39,7 +39,7 @@ from polar.models.order import (
     OrderStatus,
 )
 from polar.organization.schemas import OrganizationID
-from polar.product.schemas import ProductBase, ProductPrice
+from polar.product.schemas import ProductBase, ProductPrice, ProductVersionOutputMixin
 from polar.subscription.schemas import SubscriptionBase
 from polar.version import V2026_10
 
@@ -222,7 +222,7 @@ class OrderUser(Schema):
     github_username: str | None = Field(None)
 
 
-class OrderProduct(ProductBase, MetadataOutputMixin): ...
+class OrderProduct(ProductVersionOutputMixin, ProductBase, MetadataOutputMixin): ...
 
 
 OrderDiscount = Annotated[DiscountMinimal, MergeJSONSchema({"title": "OrderDiscount"})]

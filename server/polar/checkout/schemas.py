@@ -70,6 +70,7 @@ from polar.product.schemas import (
     ProductPrice,
     ProductPriceCreateList,
     ProductPriceList,
+    ProductVersionOutputMixin,
 )
 from polar.version import V2026_10
 
@@ -764,7 +765,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
 class CheckoutOrganization(OrganizationPublicBase): ...
 
 
-class CheckoutProduct(ProductBase):
+class CheckoutProduct(ProductVersionOutputMixin, ProductBase):
     """Product data for a checkout session."""
 
     prices: ProductPriceList

@@ -41849,6 +41849,19 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
+          },
           "prices": {
             "items": {
               "oneOf": [
@@ -41896,6 +41909,7 @@
           "is_recurring",
           "is_archived",
           "organization_id",
+          "catalog_id",
           "prices",
           "benefits",
           "medias"
@@ -68329,6 +68343,19 @@
             "format": "uuid4",
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
+          },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
           }
         },
         "type": "object",
@@ -68348,7 +68375,8 @@
           "meter_interval_count",
           "is_recurring",
           "is_archived",
-          "organization_id"
+          "organization_id",
+          "catalog_id"
         ],
         "title": "OrderProduct"
       },
@@ -73335,6 +73363,19 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
+          },
           "external_id": {
             "anyOf": [
               {
@@ -73413,6 +73454,7 @@
           "is_recurring",
           "is_archived",
           "organization_id",
+          "catalog_id",
           "external_id",
           "metadata",
           "is_deletable",

@@ -100,6 +100,18 @@ class ProductRepository(
             statement = statement.with_for_update(of=Product, key_share=True)
         return await self.get_all(statement)
 
+    async def get_ids_by_external_ids(
+        self,
+        organization_ids: Sequence[UUID],
+        external_ids: Sequence[str],
+    ) -> list[UUID]:
+        """Return the IDs of every version of the given external IDs."""
+        statement = select(Product.id).where(
+            Product.organization_id.in_(organization_ids),
+            Product.external_id.in_(external_ids),
+        )
+        return list(await self.session.scalars(statement))
+
     async def get_external_ids_in_use(
         self, organization_id: UUID, external_ids: Sequence[str]
     ) -> set[str]:

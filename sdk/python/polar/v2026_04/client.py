@@ -191,7 +191,7 @@ class PolarAsync:
                 combined with buffered or outpost.
 
         Returns:
-            An unstarted helper to use with async with.
+            An metering helper.
         """
         return Metering.create(
             self, buffered=buffered, outpost=outpost, strategies=strategies

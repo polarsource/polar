@@ -13,8 +13,8 @@ from polar.v2027_01.errors import (
     CannotCreateOrganizationError,
     HTTPValidationError,
     OrganizationsUpdate403Error,
+    OrganizationsUpdate409Error,
     ResourceNotFound,
-    SSOEnforcementRequiresConnection,
 )
 from polar.v2027_01.inputs import (
     OrganizationCreate,
@@ -232,7 +232,7 @@ class OrganizationsSync(SyncServiceBase):
         Raises:
             OrganizationsUpdate403Error: You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
             ResourceNotFound: Organization not found.
-            SSOEnforcementRequiresConnection: Cannot enforce SSO without an enabled connection.
+            OrganizationsUpdate409Error: Cannot enforce SSO without an enabled connection and a verified domain.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -253,7 +253,7 @@ class OrganizationsSync(SyncServiceBase):
         method_errors = {
             403: OrganizationsUpdate403Error,
             404: ResourceNotFound,
-            409: SSOEnforcementRequiresConnection,
+            409: OrganizationsUpdate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Organization, method_errors)
@@ -463,7 +463,7 @@ class OrganizationsAsync(AsyncServiceBase):
         Raises:
             OrganizationsUpdate403Error: You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it.
             ResourceNotFound: Organization not found.
-            SSOEnforcementRequiresConnection: Cannot enforce SSO without an enabled connection.
+            OrganizationsUpdate409Error: Cannot enforce SSO without an enabled connection and a verified domain.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -484,7 +484,7 @@ class OrganizationsAsync(AsyncServiceBase):
         method_errors = {
             403: OrganizationsUpdate403Error,
             404: ResourceNotFound,
-            409: SSOEnforcementRequiresConnection,
+            409: OrganizationsUpdate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Organization, method_errors)

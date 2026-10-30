@@ -208,6 +208,7 @@ const PRORATION_BEHAVIOR_LABELS: Record<
   prorate: 'Prorate on next invoice',
   next_period: 'Schedule for next cycle',
   reset: 'Charge full amount & reset cycle',
+  auto: 'Prorate upgrades, schedule downgrades',
 }
 
 const ProrationBehaviorSelector = ({

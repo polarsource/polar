@@ -16,6 +16,13 @@ import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
 
+const INTERVAL_DAYS: Record<schemas['RecurringInterval'], number> = {
+  day: 1,
+  week: 7,
+  month: 30,
+  year: 365,
+}
+
 const ProductPriceListItem = ({
   product,
   currency,
@@ -112,11 +119,25 @@ const CustomerChangePlanModal = ({
     if (!selectedProduct) return [false, null]
     if (isTrialing) return [false, null]
 
+    const intervalDays = (
+      interval: schemas['RecurringInterval'] | null,
+      count: number | null,
+    ) => (interval ? INTERVAL_DAYS[interval] * (count ?? 1) : 0)
+    const currentIntervalDays = intervalDays(
+      subscription.recurring_interval,
+      subscription.recurring_interval_count,
+    )
+    const newIntervalDays = intervalDays(
+      selectedProduct.recurring_interval,
+      selectedProduct.recurring_interval_count,
+    )
+
     const willTrigger =
       prorationBehavior !== 'next_period' &&
       (selectedProduct.recurring_interval !== subscription.recurring_interval ||
         selectedProduct.recurring_interval_count !==
-          subscription.recurring_interval_count)
+          subscription.recurring_interval_count) &&
+      (prorationBehavior !== 'auto' || newIntervalDays > currentIntervalDays)
 
     if (!willTrigger) return [false, null]
 
@@ -166,6 +187,8 @@ const CustomerChangePlanModal = ({
         return 'The new plan will be applied on your next billing cycle.'
       case 'reset':
         return "You'll be charged the full amount for the new plan immediately, and your billing period restarts today."
+      case 'auto':
+        return 'Upgrades are charged immediately, with a proration for the current period. Downgrades are applied on your next billing cycle.'
     }
   }, [
     selectedProduct,

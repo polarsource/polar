@@ -12,7 +12,7 @@ All of these actions are available under **Sales → Subscriptions** in the dash
 
 Switch a subscription to a different recurring product — the standard upgrade or downgrade flow.
 
-- When the change takes effect depends on the [proration behavior](/features/subscriptions/proration): `invoice` and `prorate` apply the new product immediately, while `next_period` schedules a pending update that's only applied at the start of the next billing cycle.
+- When the change takes effect depends on the [proration behavior](/features/subscriptions/proration): `invoice` and `prorate` apply the new product immediately, `next_period` schedules a pending update that's only applied at the start of the next billing cycle, and `auto` applies upgrades immediately and schedules downgrades.
 - The new product must share the subscription's currency.
 - You can upgrade a non-seat subscription to a seat-based product — the billing customer is auto-promoted to a `team` customer and claims a seat — but you can't switch a seat-based subscription back to a non-seat product. Non-seat → seat changes must apply immediately, so `next_period` proration isn't allowed for that transition.
 - You can't change the plan on a subscription that's already canceled or scheduled to cancel — uncancel first.
@@ -46,7 +46,7 @@ Read more in [Proration](/features/subscriptions/proration).
 
 ## Change the number of seats
 
-For [seat-based subscriptions](/features/seat-based-pricing), update how many seats the customer is paying for. Like plan changes, when the seat count actually takes effect depends on the [proration behavior](/features/subscriptions/proration): immediate with `invoice` or `prorate`, scheduled for the next cycle with `next_period`.
+For [seat-based subscriptions](/features/seat-based-pricing), update how many seats the customer is paying for. Like plan changes, when the seat count actually takes effect depends on the [proration behavior](/features/subscriptions/proration): immediate with `invoice` or `prorate`, scheduled for the next cycle with `next_period`, and with `auto` immediate for increases and scheduled for decreases.
 
 ```bash cURL
 curl --request PATCH \

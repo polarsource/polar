@@ -58,6 +58,22 @@ def _is_any_customer(
     )
 
 
+def _starts_within(
+    reducer: Reducer,
+    start: datetime,
+    end: datetime,
+    customer_id: UUID | None,
+    external_customer_id: str | None,
+) -> ColumnElement[bool]:
+    return and_(
+        ReducerBucket.organization_id == reducer.organization_id,
+        ReducerBucket.reducer_id == reducer.id,
+        ReducerBucket.bucket_start >= start,
+        ReducerBucket.bucket_start < end,
+        _is_customer(ReducerBucket, customer_id, external_customer_id),
+    )
+
+
 class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     model = ReducerBucket
 
@@ -171,11 +187,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         external_customer_id: str | None,
     ) -> Sequence[ReducerBucket]:
         statement = self.get_base_statement().where(
-            ReducerBucket.organization_id == reducer.organization_id,
-            ReducerBucket.reducer_id == reducer.id,
-            ReducerBucket.bucket_start >= start,
-            ReducerBucket.bucket_start < end,
-            _is_customer(ReducerBucket, customer_id, external_customer_id),
+            _starts_within(reducer, start, end, customer_id, external_customer_id)
         )
         return await self.get_all(statement)
 
@@ -187,24 +199,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         `get_all_starting_within`, locked."""
         statement = (
             self.get_base_statement()
-            .where(
-                or_(
-                    *(
-                        and_(
-                            ReducerBucket.organization_id == reducer.organization_id,
-                            ReducerBucket.reducer_id == reducer.id,
-                            ReducerBucket.bucket_start >= start,
-                            ReducerBucket.bucket_start < end,
-                            _is_customer(
-                                ReducerBucket, customer_id, external_customer_id
-                            ),
-                        )
-                        for reducer, start, end, customer_id, external_customer_id in (
-                            slots
-                        )
-                    )
-                )
-            )
+            .where(or_(*(_starts_within(*slot) for slot in slots)))
             .with_for_update()
         )
         return await self.get_all(statement)

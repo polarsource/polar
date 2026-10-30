@@ -8,9 +8,10 @@ from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
 )
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import version
 from polar.models import File
 from polar.models.file import FileServiceTypes
 from polar.openapi import APITag
@@ -23,6 +24,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth
 from .schemas import (
@@ -179,6 +181,35 @@ async def uploaded(
     return await file_service.complete_upload(
         session, file=file, completed_schema=completed_schema
     )
+
+
+@router.post(
+    "/{id}/uploaded",
+    name="uploaded",
+    summary="Complete File Upload",
+    response_model=FileRead,
+    responses={
+        200: {"description": "File upload completed."},
+        400: {
+            "description": "The upload completion request is invalid.",
+            "model": BadRequest.schema(),
+        },
+        403: {
+            "description": "You don't have the permission to update this file.",
+            "model": NotPermitted.schema(),
+        },
+        404: FileNotFound,
+    },
+)
+@version(starting_from=V2027_01)
+async def uploaded_v2027_01(
+    id: FileID,
+    completed_schema: FileUploadCompleted,
+    auth_subject: auth.FileWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> File:
+    """Complete a file upload."""
+    return await uploaded(id, completed_schema, auth_subject, session)
 
 
 # Re-introduce with changing version

@@ -50429,6 +50429,15 @@ export interface operations {
           'application/json': components['schemas']['FileRead']
         }
       }
+      /** @description The upload completion request is invalid. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BadRequest']
+        }
+      }
       /** @description You don't have the permission to update this file. */
       403: {
         headers: {

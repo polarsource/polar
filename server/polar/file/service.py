@@ -11,6 +11,13 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import BadRequest
 from polar.integrations.aws.s3 import S3Service
+from polar.integrations.aws.s3.exceptions import (
+    S3MultipartUploadInvalidPart,
+    S3MultipartUploadInvalidRequest,
+    S3MultipartUploadMissingPartChecksum,
+    S3MultipartUploadNotFound,
+    S3MultipartUploadPartTooSmall,
+)
 from polar.integrations.aws.s3.schemas import S3File
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -147,8 +154,40 @@ class FileService:
         file: File,
         completed_schema: FileUploadCompleted,
     ) -> File:
+        if completed_schema.path != file.path:
+            raise BadRequest(
+                "Upload `path` does not match this file. "
+                "Use `upload.path` from the create file response."
+            )
+
         s3_service = S3_SERVICES[file.service]
-        s3file = s3_service.complete_multipart_upload(completed_schema)
+        try:
+            s3file = s3_service.complete_multipart_upload(completed_schema)
+        except S3MultipartUploadNotFound as e:
+            raise BadRequest(
+                "No pending upload found for this `id` and `path`. "
+                "Use `upload.id` and `upload.path` from the create file response, "
+                "not the file ID."
+            ) from e
+        except S3MultipartUploadInvalidPart as e:
+            raise BadRequest(
+                "One or more parts are invalid. Every part must have been uploaded, "
+                "be listed in ascending `number` order, and its `checksum_etag` "
+                "must be the `ETag` header returned by that part's upload."
+            ) from e
+        except S3MultipartUploadPartTooSmall as e:
+            raise BadRequest(
+                "One or more parts are too small. Every part except the last "
+                "must be at least 5 MiB; split the file as given in `upload.parts` "
+                "of the create file response."
+            ) from e
+        except S3MultipartUploadMissingPartChecksum as e:
+            raise BadRequest(
+                "Each part must include its `checksum_sha256_base64`, "
+                "as given in `upload.parts` of the create file response."
+            ) from e
+        except S3MultipartUploadInvalidRequest as e:
+            raise BadRequest(f"Invalid upload completion request: {e.message}") from e
 
         if file.mime_type == SVG_MIME_TYPE and file.service in SVG_SANITIZED_SERVICES:
             s3file = self._sanitize_svg(s3_service, s3file)

@@ -1,12 +1,17 @@
+import uuid
+
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
-from polar.models import CustomerMeter
+from polar.models import CustomerMeter, Organization
 from polar.postgres import AsyncSession
 from polar.reducer.service import reducer as reducer_service
-from polar.reducer.tasks import compare_highest_consumed_units
+from polar.reducer.tasks import compare_highest_consumed_units, seal
 from polar.worker._sqlalchemy import SQLAlchemyMiddleware
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer
 
 
 @pytest.mark.anyio
@@ -39,3 +44,27 @@ class TestCompareHighestConsumedUnits:
         assert [
             call.args[2] for call in log_customer_meter_comparison.call_args_list
         ] == customer_meters * 5
+
+
+@pytest.mark.anyio
+class TestSeal:
+    async def test_deleted_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        customer.set_deleted_at()
+        await save_fixture(customer)
+        mocker.patch.object(
+            SQLAlchemyMiddleware, "get_async_session", return_value=session
+        )
+        seal_mock = mocker.patch.object(reducer_service, "seal")
+        meter_id = uuid.uuid4()
+        at = utc_now()
+
+        await seal(customer.id, meter_id, at.isoformat())
+
+        seal_mock.assert_awaited_once_with(session, customer, meter_id, at=at)

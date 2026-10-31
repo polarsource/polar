@@ -597,7 +597,7 @@ BillingEntry(
 ```
 1. Subscription canceled or order refunded
 2. enqueue_benefits_grants(task="revoke")
-3. For each granted benefit:
+3. For each granted or pending (action-required) benefit:
    - Enqueue benefit.revoke task
 4. benefit.revoke task:
    - Call strategy.revoke() (type-specific)

@@ -139,6 +139,8 @@ const run = async (
           load: () => Effect.succeed(config),
           plan: () => Effect.succeed(plan),
           apply: applied,
+          init: () => Effect.die('unused'),
+          install: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
         }),
       ),

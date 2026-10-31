@@ -9,11 +9,22 @@ import type { PriceConfig } from './schema/price'
 import type { ProductConfig } from './schema/product'
 import type { Visibility } from './schema/visibility'
 
-const literal = (value: string | number | boolean): string =>
-  Object.is(value, -0) ? '-0' : JSON.stringify(value)
+const literal = (value: string | number | boolean): string => {
+  if (typeof value !== 'string') {
+    return Object.is(value, -0) ? '-0' : JSON.stringify(value)
+  }
+  const escaped = JSON.stringify(value).slice(1, -1)
+  return `'${escaped.replaceAll('\\"', '"').replaceAll("'", "\\'")}'`
+}
+
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
 
 const key = (value: string): string =>
-  value === '__proto__' ? `[${literal(value)}]` : literal(value)
+  value === '__proto__'
+    ? `[${literal(value)}]`
+    : IDENTIFIER.test(value)
+      ? value
+      : literal(value)
 
 const renderMetadata = (metadata: Metadata | undefined): string[] =>
   metadata === undefined || Object.keys(metadata).length === 0
@@ -419,6 +430,7 @@ const renderEntries = <Resource extends { readonly external_id: string }>(
   })
   const parameters =
     helpers.size === 0 ? '()' : `({ ${[...helpers].join(', ')} })`
+  if (lines.length === 0) return [`  ${property}: ${parameters} => ({}),`]
   return [
     `  ${property}: ${parameters} => (${useEntries ? '[' : '{'}`,
     ...lines,

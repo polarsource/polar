@@ -3,10 +3,11 @@ import yoctoSpinner from 'yocto-spinner'
 import { isJson } from '@/utils/output'
 import * as ui from '@/utils/ui'
 
-interface Progress {
+export interface Progress {
   readonly open: (title: string) => Effect.Effect<void>
   readonly start: (text: string) => Effect.Effect<void>
   readonly finish: (detail?: string) => Effect.Effect<void>
+  readonly fail: (detail?: string) => Effect.Effect<void>
   readonly close: Effect.Effect<void>
 }
 
@@ -26,7 +27,7 @@ const formatDuration = (duration: Duration.Duration) =>
   `${Math.round(Duration.toMillis(duration) / 1000)}s`
 
 const line = (mark: string, text: string, detail?: string) =>
-  `${ui.INDENT}${mark} ${text}${detail ? ` ${ui.dim(detail)}` : ''}`
+  `${ui.INDENT}${mark} ${text}${detail ? `\n${ui.INDENT}${ui.INDENT}${ui.dim(detail)}` : ''}`
 
 const boxedSpinnerText = (label: string, elapsed: string) => {
   const used =
@@ -119,6 +120,7 @@ const make = (interactive: boolean, layout: Layout) => {
     open,
     start: (text) => Effect.andThen(settle(false), begin(text)),
     finish: (detail) => settle(false, detail),
+    fail: (detail) => settle(true, detail),
     close,
   }
   return {
@@ -131,6 +133,7 @@ const silent: Progress = {
   open: () => Effect.void,
   start: () => Effect.void,
   finish: () => Effect.void,
+  fail: () => Effect.void,
   close: Effect.void,
 }
 

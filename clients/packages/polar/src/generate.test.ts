@@ -440,9 +440,9 @@ test('renders the tax behavior of a price', async () => {
     ),
   )
   expect(source).toContain(
-    'fixed().amount(usd(10), eur(9))\n          .tax("inclusive"),',
+    "fixed().amount(usd(10), eur(9))\n          .tax('inclusive'),",
   )
-  expect(source).toContain('.tax("exclusive"),')
+  expect(source).toContain(".tax('exclusive'),")
 })
 
 test('keeps prices with different tax behaviors in separate builder calls', async () => {
@@ -470,7 +470,7 @@ test('keeps prices with different tax behaviors in separate builder calls', asyn
     }),
   )
   expect(source).toContain(
-    'fixed().amount(usd(10))\n          .tax("inclusive"),',
+    "fixed().amount(usd(10))\n          .tax('inclusive'),",
   )
   expect(source).toContain('fixed().amount(eur(9)),')
 })

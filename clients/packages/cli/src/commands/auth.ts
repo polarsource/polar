@@ -54,7 +54,7 @@ const environmentTitles: Record<PolarEnvironment, string> = {
   local: 'Local',
 }
 
-const announceAuthorization =
+export const announceAuthorization =
   (environment: PolarEnvironment) => (authorization: URL) =>
     note(
       [

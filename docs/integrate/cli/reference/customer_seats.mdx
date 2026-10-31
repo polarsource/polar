@@ -30,6 +30,7 @@ polar customer_seats assign_seat [flags]
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
 | `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
 | `--subscription-id` | `string` | Subscription ID. Required if neither order_id nor checkout_id is provided. |
@@ -92,6 +93,7 @@ polar customer_seats list_seats [flags]
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
 | `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
 | `--subscription-id` | `string` | subscription_id |
@@ -115,6 +117,7 @@ polar customer_seats resend_invitation [flags] <seat_id>
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
 
 ## polar customer_seats revoke_seat
@@ -136,4 +139,5 @@ polar customer_seats revoke_seat [flags] <seat_id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |

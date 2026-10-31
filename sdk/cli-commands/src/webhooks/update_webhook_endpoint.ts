@@ -6,6 +6,7 @@ import { ApiRuntime, ApiCommandError } from '../runtime'
 import {
   confirm,
   fields,
+  org,
   data,
   mergeInput,
   nullableStringFlag,
@@ -19,6 +20,7 @@ export const command = Command.make(
   'update_webhook_endpoint',
   {
     confirm,
+    org,
     fields,
     path: {
       id: Argument.String('id'),
@@ -122,6 +124,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: confirmationInput['enabled'] === false,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

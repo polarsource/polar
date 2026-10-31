@@ -25,6 +25,12 @@ export const confirm = Flag.Boolean('confirm').pipe(
   Flag.withDescription('Skip the confirmation prompt for destructive requests'),
 )
 
+export const org = Flag.String('org').pipe(
+  Flag.optional,
+  Flag.map(Option.getOrUndefined),
+  Flag.withDescription('Organization ID or slug for this request. Defaults to the active organization.'),
+)
+
 export const fields = Flag.String('fields').pipe(
   Flag.optional,
   Flag.withDescription(

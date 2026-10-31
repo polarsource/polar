@@ -25,6 +25,9 @@ export const command = Command.make(
 {% if needs_confirmation %}
     confirm,
 {% endif %}
+{% if org_flag %}
+    org,
+{% endif %}
 {% if selectable %}
     fields,
 {% endif %}
@@ -52,7 +55,7 @@ export const command = Command.make(
     },
 {% endif %}
   },
-  ({% if method.path_params or input_type or needs_confirmation or selectable or not method.requires_authentication %}config{% endif %}) => Effect.gen(function* () {
+  ({% if method.path_params or input_type or needs_confirmation or org_flag or selectable or not method.requires_authentication %}config{% endif %}) => Effect.gen(function* () {
     const api = yield* ApiRuntime
 {% if input_type %}
     const {% if has_organization and input_type == 'Body' %}{ organization_id: organizationId, ...{{ input_type | lower }} }{% else %}{{ input_type | lower }}{% endif %} = mergeInput<{{ input_type }}>(config.data, {
@@ -99,6 +102,8 @@ export const command = Command.make(
 {% else %}
       organizationId: {{ input_type | lower }}.organization_id,
 {% endif %}
+{% elif org_flag %}
+      organizationId: config.org,
 {% endif %}
 {% if selectable %}
       fields: config.fields,
@@ -114,7 +119,7 @@ export const command = Command.make(
       },
 {% endif %}
 {% if not method.requires_authentication or method.pending_response %}
-      invoke: (_client, core) => executeRequest(
+      invoke: (_client, core{% if query_organization %}, organizationIds{% endif %}) => executeRequest(
         core,
         core.buildRequest(
           {{ method.http_method | quote }},
@@ -138,7 +143,7 @@ export const command = Command.make(
         },
       ),
 {% else %}
-      invoke: (client) => client.{{ sdk_service }}.{{ sdk_method }}({{ arguments | join(', ') }}),
+      invoke: (client{% if query_organization %}, _core, organizationIds{% endif %}) => client.{{ sdk_service }}.{{ sdk_method }}({{ arguments | join(', ') }}),
 {% endif %}
     })
   }),

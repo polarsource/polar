@@ -280,6 +280,17 @@ describe('auth whoami --json', () => {
     expect(JSON.parse(output()).organization).toBeNull()
   })
 
+  test('prints the organization commands fall back to when none is selected', async () => {
+    organizations.organizations = Organizations.of({
+      ...organizations.organizations,
+      resolve: () => Effect.succeed(acme),
+    })
+    const { promise, output } = run(['whoami', '--json'])
+    await promise
+
+    expect(JSON.parse(output()).organization).toEqual(acme)
+  })
+
   test('prints no sessions when logged out', async () => {
     auth.state.sessions = []
     const { promise, output } = run(['whoami', '--json'])

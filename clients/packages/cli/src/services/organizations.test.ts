@@ -37,7 +37,7 @@ let requests: Array<{
   slug?: string
   environment: PolarEnvironment
 }>
-let denied: boolean
+let denied: boolean | PolarEnvironment
 
 const environmentOf = () => polar.state.requests.at(-1)!.environment
 const polar = fakePolar({
@@ -45,7 +45,9 @@ const polar = fakePolar({
     list: ({ page = 1, slug }: { page?: number; slug?: string }) => {
       const environment = environmentOf()
       requests.push({ page, environment, ...(slug ? { slug } : {}) })
-      if (denied) throw new Error('forbidden')
+      if (denied === true || denied === environment) {
+        throw new Error('forbidden')
+      }
       const items = pages[environment] ?? [[]]
       if (slug !== undefined) {
         return Promise.resolve({
@@ -186,6 +188,18 @@ test('an explicit slug is looked up by listing instead of fetching by id', async
   ).toBe(true)
 })
 
+test('a slug fails when an environment could not be checked instead of using the other', async () => {
+  denied = 'production'
+  const organizations = await service()
+  await expect(
+    Effect.runPromise(organizations.resolve('first')),
+  ).rejects.toThrow()
+  expect(requests).toEqual([
+    { page: 1, slug: 'first', environment: 'sandbox' },
+    { page: 1, slug: 'first', environment: 'production' },
+  ])
+})
+
 test('an unknown slug in a single environment says so', async () => {
   auth.state.sessions = ['sandbox']
   const organizations = await service()
@@ -236,13 +250,29 @@ test('explicit IDs require a session', async () => {
   expect(requests).toEqual([])
 })
 
-test('no selection fails with guidance instead of choosing an organization', async () => {
+test('no selection with several organizations fails with guidance', async () => {
   config = fakeConfig()
   const organizations = await service()
   await expect(Effect.runPromise(organizations.resolve())).rejects.toThrow(
     'polar auth org',
   )
-  expect(requests).toEqual([])
+})
+
+test('no selection keeps the guidance when listing organizations fails', async () => {
+  config = fakeConfig()
+  denied = true
+  const organizations = await service()
+  await expect(Effect.runPromise(organizations.resolve())).rejects.toThrow(
+    'No active organization',
+  )
+})
+
+test('no selection uses the only accessible organization without saving it', async () => {
+  config = fakeConfig()
+  auth.state.sessions = ['production']
+  const organizations = await service()
+  expect(await Effect.runPromise(organizations.resolve())).toEqual(second)
+  expect(config.state.writes).toBe(0)
 })
 
 test('a stale selection fails rather than choosing another organization', async () => {

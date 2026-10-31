@@ -6,6 +6,7 @@ import { ApiRuntime, ApiCommandError } from '../runtime'
 import {
   confirm,
   fields,
+  org,
   data,
   mergeInput,
   missingFlags,
@@ -19,6 +20,7 @@ export const command = Command.make(
   'create',
   {
     confirm,
+    org,
     fields,
     data,
     input: {
@@ -93,6 +95,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: confirmationInput['revoke_benefits'] === true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) => client.refunds.create(body),
       })

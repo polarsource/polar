@@ -5,6 +5,7 @@ import { Command, Flag } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
 import {
   fields,
+  org,
   data,
   mergeInput,
   jsonFlag,
@@ -16,6 +17,7 @@ type Body = NonNullable<Parameters<Polar['customerSeats']['assignSeat']>[0]>
 export const command = Command.make(
   'assign_seat',
   {
+    org,
     fields,
     data,
     input: {
@@ -86,6 +88,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) => client.customerSeats.assignSeat(body),
       })

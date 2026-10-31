@@ -43,7 +43,11 @@ const activeOrganization = (override: boolean) =>
         list.length === 1 ? list[0] : undefined,
       )
     }
-    if (!(yield* organizations.selected)) return Option.some(undefined)
+    if (!(yield* organizations.selected)) {
+      return yield* lookup(
+        organizations.resolve().pipe(Effect.orElseSucceed(() => undefined)),
+      )
+    }
     return yield* lookup(organizations.resolve())
   })
 

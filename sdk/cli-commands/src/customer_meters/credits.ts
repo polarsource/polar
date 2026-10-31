@@ -6,6 +6,7 @@ import { ApiRuntime, ApiCommandError } from '../runtime'
 import {
   confirm,
   fields,
+  org,
   data,
   mergeInput,
   missingFlags,
@@ -18,6 +19,7 @@ export const command = Command.make(
   'credits',
   {
     confirm,
+    org,
     fields,
     data,
     input: {
@@ -82,6 +84,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) => client.customerMeters.credits(body),
       })

@@ -6,6 +6,7 @@ import { ApiRuntime, ApiCommandError } from '../runtime'
 import {
   confirm,
   fields,
+  org,
   data,
   mergeInput,
   missingFlags,
@@ -19,6 +20,7 @@ export const command = Command.make(
   'update',
   {
     confirm,
+    org,
     fields,
     path: {
       id: Argument.String('id'),
@@ -87,6 +89,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

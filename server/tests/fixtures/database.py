@@ -9,7 +9,7 @@ from alembic.config import Config
 from pydantic_core import Url
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from polar.config import settings
@@ -71,15 +71,27 @@ def initialize_test_database(worker_id: str) -> Iterator[None]:
     drop_database(sync_database_url)
 
 
-@pytest.fixture
-async def session(worker_id: str, mocker: MockerFixture) -> AsyncIterator[AsyncSession]:
+@pytest.fixture(scope="session")
+async def database_engine(
+    worker_id: str, initialize_test_database: None
+) -> AsyncIterator[AsyncEngine]:
     engine = create_async_engine(
         dsn=get_database_url(worker_id),
         application_name=f"test_{worker_id}",
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
     )
-    connection = await engine.connect()
+
+    yield engine
+
+    await engine.dispose()
+
+
+@pytest.fixture
+async def session(
+    database_engine: AsyncEngine, mocker: MockerFixture
+) -> AsyncIterator[AsyncSession]:
+    connection = await database_engine.connect()
     transaction = await connection.begin()
 
     session = AsyncSession(bind=connection, expire_on_commit=False)
@@ -88,7 +100,6 @@ async def session(worker_id: str, mocker: MockerFixture) -> AsyncIterator[AsyncS
 
     await transaction.rollback()
     await connection.close()
-    await engine.dispose()
 
 
 SaveFixture = Callable[[Model], Coroutine[None, None, None]]

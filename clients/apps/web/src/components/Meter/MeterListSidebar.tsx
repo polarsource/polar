@@ -1,6 +1,8 @@
 'use client'
 
+import { ManagedAsCodeNavIndicator } from '@/components/Dashboard/ManagedAsCodeNavIndicator'
 import { Spinner } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useMetersInfinite } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
@@ -146,7 +148,16 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
               <ArrowDownward fontSize="small" />
             )}
           </Button>
-          {!managedAsCode && (
+          {managedAsCode ? (
+            <Box
+              width={24}
+              height={24}
+              alignItems="center"
+              justifyContent="center"
+            >
+              <ManagedAsCodeNavIndicator />
+            </Box>
+          ) : (
             <Link
               href={`/dashboard/${organization.slug}/products/meters/create`}
             >

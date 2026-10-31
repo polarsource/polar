@@ -1,3 +1,4 @@
+import { ManagedAsCodeNotice } from '@/components/Dashboard/ManagedAsCodeNotice'
 import { MasterDetailIndex } from '@/components/Layout/MasterDetailIndex'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
@@ -47,15 +48,25 @@ export default async function Page(props: {
   return (
     <div className="mt-96 flex w-full flex-col items-center justify-center gap-4">
       <h1 className="text-2xl">No Benefits</h1>
-      <p className="dark:text-polar-500 text-gray-500">
-        Create a benefit to get started
-      </p>
-      {!organization.feature_settings?.config_as_code_enabled && (
-        <Link
-          href={`/dashboard/${organization.slug}/products/benefits?create_benefit=true`}
-        >
-          <Button>Create Benefit</Button>
-        </Link>
+      {organization.feature_settings?.config_as_code_enabled ? (
+        <>
+          <p className="dark:text-polar-500 text-gray-500">
+            Add benefits in <code>polar.config.ts</code>, then run{' '}
+            <code>polar config apply</code>.
+          </p>
+          <ManagedAsCodeNotice />
+        </>
+      ) : (
+        <>
+          <p className="dark:text-polar-500 text-gray-500">
+            Create a benefit to get started
+          </p>
+          <Link
+            href={`/dashboard/${organization.slug}/products/benefits?create_benefit=true`}
+          >
+            <Button>Create Benefit</Button>
+          </Link>
+        </>
       )}
     </div>
   )

@@ -120,7 +120,7 @@ export const ProductListItem = ({
             {product.is_archived ? (
               <Tooltip>
                 <TooltipTrigger>
-                  <Status color="red" status="Archived" />
+                  <Status color="gray" status="Archived" />
                 </TooltipTrigger>
                 <TooltipContent align="center" side="left">
                   Archived products only prevents new subscribers & purchases

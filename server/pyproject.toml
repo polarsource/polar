@@ -139,6 +139,7 @@ markers = [
   "websocket: Use the WebSocket transport for the test client",
   "api_version(*versions): Run the test for each APIVersion with its Polar-Version client header",
   "benchmark: performance benchmark, deselected by default (run with -m benchmark)",
+  "tinybird: uses a Tinybird workspace, applied automatically from the tinybird_workspace fixture",
 ]
 addopts = "-m 'not benchmark'"
 

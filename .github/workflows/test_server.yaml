@@ -417,17 +417,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      tinybird:
-        image: tinybirdco/tinybird-local:latest
-        ports:
-          - 7181:7181
-          - 7182:7182
-        options: >-
-          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@v7.0.1
 
@@ -495,16 +484,6 @@ jobs:
         run: |
           uv sync --dev --frozen
 
-      - name: 🐦 Install Tinybird CLI
-        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: 🐦 Prepare Tinybird workspace
-        working-directory: ./server
-        run: |
-          token=$(uv run python -m scripts.tinybird_test_workspace)
-          echo "::add-mask::$token"
-          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
-
       - name: ⚗️ alembic migrate
         working-directory: ./server
         run: uv run task db_migrate
@@ -522,7 +501,7 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest --splits 2 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+        run: uv run pytest -m "not benchmark and not tinybird" --splits 2 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
 
       - name: 💾 Save test durations
         if: github.event_name == 'push'
@@ -531,21 +510,135 @@ jobs:
           path: server/.test_durations
           key: test-durations-${{ github.sha }}
 
+  test-tinybird:
+    name: "Server: Tests 🐍 (Tinybird)"
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 15
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
+      POLAR_TEST_DATABASE_TEMPLATE: polar_test
+
+    services:
+      postgres:
+        image: postgres:15.1-bullseye
+        env:
+          POSTGRES_USER: polar
+          POSTGRES_PASSWORD: polar
+          POSTGRES_DB: polar_test
+          POSTGRES_PORT: 5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7.4-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+      minio:
+        image: bitnamilegacy/minio:2024.5.28
+        ports:
+          - 9000:9000
+          - 9001:9001
+        env:
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+        options: >-
+          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      tinybird:
+        image: tinybirdco/tinybird-local:latest
+        ports:
+          - 7181:7181
+          - 7182:7182
+        options: >-
+          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: 💿 MinIO Setup
+        working-directory: ./server/.minio
+        env:
+          MINIO_HOST: 127.0.0.1
+          MINIO_ROOT_USER: polar
+          MINIO_ROOT_PASSWORD: polarpolar
+          ACCESS_KEY: polar-development
+          SECRET_ACCESS_KEY: polar123456789
+          BUCKET_NAME: polar-s3
+          BUCKET_TESTING_NAME: testing-polar-s3
+          POLICY_FILE: policy.json
+        run: bash github.sh
+
+      - name: Create mock email renderer binary
+        run: touch /tmp/email-renderer
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: "server/pyproject.toml"
+
+      - name: 🔧 uv install
+        working-directory: ./server
+        run: uv sync --dev --frozen
+
+      - name: 🐦 Install Tinybird CLI
+        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: 🐦 Prepare Tinybird workspace
+        working-directory: ./server
+        run: |
+          token=$(uv run python -m scripts.tinybird_test_workspace)
+          echo "::add-mask::$token"
+          echo "POLAR_TEST_TINYBIRD_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: ⚗️ alembic migrate
+        working-directory: ./server
+        run: uv run task db_migrate
+
+      - name: 🐍 Run tests (pytest)
+        working-directory: ./server
+        run: uv run pytest -m "tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0
+
   test-status:
     name: "Server: Tests 🐍"
-    needs: [changes, test]
+    needs: [changes, test, test-tinybird]
     if: always()
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Check shard results
         env:
           RESULT: ${{ needs.test.result }}
+          TINYBIRD_RESULT: ${{ needs.test-tinybird.result }}
           CHANGES_RESULT: ${{ needs.changes.result }}
         run: |
-          if [ "$RESULT" = "success" ]; then
+          if [ "$RESULT" = "success" ] && [ "$TINYBIRD_RESULT" = "success" ]; then
             exit 0
           fi
-          if [ "$RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
+          if [ "$RESULT" = "skipped" ] && [ "$TINYBIRD_RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
             exit 0
           fi
           exit 1

@@ -11,11 +11,25 @@ import type {
 } from '@/schemas/BillingConfig'
 import type { CatalogOptions } from '@/services/billing-config/api'
 import { apply } from '@/services/billing-config/apply'
+import {
+  init,
+  type InitTarget,
+  type Prepared,
+  type Ran,
+  run,
+} from '@/services/billing-config/init'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
 import { prune } from '@/services/billing-config/prune'
 import { catalogs, publish } from '@/services/billing-config/publish'
 import { authenticatedClient } from '@/services/client'
+
+export type {
+  InitTarget,
+  Prepared,
+  Ran,
+  Run,
+} from '@/services/billing-config/init'
 
 export class BillingConfig extends Context.Service<
   BillingConfig,
@@ -31,6 +45,14 @@ export class BillingConfig extends Context.Service<
       organization: ActiveOrganization,
       options?: CatalogOptions,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
+    init: (
+      organization: ActiveOrganization,
+      target: InitTarget,
+    ) => Effect.Effect<Prepared, AuthError | BillingConfigError>
+    install: (
+      command: ReadonlyArray<string>,
+      directory: string,
+    ) => Effect.Effect<Ran>
     prune: <R>(
       config: LoadedConfig,
       organization: ActiveOrganization,
@@ -64,6 +86,8 @@ const make = Effect.gen(function* () {
     load,
     plan: plan(clients),
     apply: apply(clients),
+    init: init(fs, clients),
+    install: run,
     prune: prune(fs, load, clients),
     catalogs: catalogs(clients),
     publish: publish(clients),

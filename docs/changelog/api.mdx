@@ -29,8 +29,7 @@ Removed the following obsolete fields, including fields that were already hidden
 - Custom and Slack shared channel benefits: `is_tax_applicable`.
 - Discord benefit properties: `guild_token`. Use `guild_id` instead.
 - GitHub repository benefit properties: `repository_id`. Use `repository_owner` and `repository_name` instead.
-
-Legacy recurring-price fields are unchanged.
+- Legacy recurring prices: the `LegacyRecurringProductPrice` schema is dropped from the price union, and the deprecated `type` and `recurring_interval` fields are removed from price responses. Earlier API versions retain them.
 
 </Update>
 

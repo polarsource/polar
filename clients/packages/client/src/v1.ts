@@ -48553,6 +48553,8 @@ export interface operations {
         query?: string | null
         /** @description Filter on archived products. */
         is_archived?: boolean | null
+        /** @description Filter on current product versions. If `false`, only previous versions are returned. Defaults to current versions only, unless filtering by `id`. */
+        is_current?: boolean | null
         /** @description Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. */
         is_recurring?: boolean | null
         /** @description Filter products granting specific benefit. */

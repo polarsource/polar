@@ -1250,6 +1250,14 @@ class ProductListParams(QuerySchema):
     )
     query: str | None = Field(None, description="Filter by product name.")
     is_archived: bool | None = Field(None, description="Filter on archived products.")
+    is_current: Annotated[bool | None, Version(starting_from=V2027_01)] = Field(
+        None,
+        description=(
+            "Filter on current product versions. "
+            "If `false`, only previous versions are returned. "
+            "Defaults to current versions only, unless filtering by `id`."
+        ),
+    )
     is_recurring: bool | None = Field(
         None,
         description="Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. ",

@@ -5,7 +5,7 @@ description: "Query Render Postgres over Tailscale on the private network"
 
 Query Render Postgres over Tailscale. Do not add a laptop IP under **Access Control** on the database. Engineer access stays on Tailscale. An allowlist entry publishes the database on the public internet.
 
-Sandbox data is a database on the production `db` instance. Test runs on PlanetScale, not Render Postgres. Every instance on the account uses the same private-network suffix.
+Test and sandbox run on PlanetScale, not Render Postgres. Every instance on the account uses the same private-network suffix.
 
 <Warning>
   These instances hold live data. Confirm the database name before running anything that writes. Use a read replica when you only need to inspect rows.
@@ -43,7 +43,7 @@ psql "host=dpg-xxxxxxxx-c.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 u
 
 `psql` prompts for the password. TablePlus and Postico take the same host, port, user, and database.
 
-Sandbox is the `polar_sandbox` database on this same host. Production application data is the database name in the production service's internal URL.
+Production application data is the database name in the production service's internal URL.
 
 ## PlanetScale
 

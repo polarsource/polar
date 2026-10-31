@@ -4,6 +4,7 @@ import CheckoutStatus from '@/components/CheckoutStatus/CheckoutStatus'
 import CheckoutStatusSelect from '@/components/CheckoutStatusSelect/CheckoutStatusSelect'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import ProductSelect from '@/components/Products/ProductSelect'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { useCheckouts } from '@/hooks/queries/checkouts'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useDebouncedCallback } from '@/hooks/utils'
@@ -16,6 +17,7 @@ import {
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Input, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -150,7 +152,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           original: { products },
         },
       }) => {
-        return <>{products.map(({ name }) => name).join(', ')}</>
+        return (
+          <span>
+            {products.map((product, index) => (
+              <React.Fragment key={product.id}>
+                {index > 0 && ', '}
+                <Box
+                  as="span"
+                  display="inline-flex"
+                  alignItems="center"
+                  columnGap="s"
+                >
+                  {product.name}
+                  <ProductVersionLabel
+                    organization={organization}
+                    product={product}
+                  />
+                </Box>
+              </React.Fragment>
+            ))}
+          </span>
+        )
       },
     },
   ]

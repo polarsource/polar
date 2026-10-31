@@ -1,6 +1,7 @@
 'use client'
 
 import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text, TextArea } from '@polar-sh/orbit'
@@ -100,6 +101,10 @@ export const SubscriptionDetailsGrid = ({
                 <Text as="span" variant="body" truncate>
                   {productName}
                 </Text>
+                <ProductVersionLabel
+                  organization={organization}
+                  product={product ?? subscription.product}
+                />
                 <Box as="span" display="inline-flex">
                   <ArrowUpRightIcon size={16} />
                 </Box>

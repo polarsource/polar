@@ -22,6 +22,42 @@
           }
         ]
       }
-    ]
+    ],
+    // 9 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/only-export-components": "off",
+    // 4 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-high-complexity-react-function": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-giant-component": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-array-index-as-key": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/js-hoist-intl": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-pass-data-to-parent": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-autofocus": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/js-set-map-lookups": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-loading-flag-reset-outside-finally": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/shadcn-form-item-requires-label": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rerender-lazy-state-init": "off"
+  },
+  "settings": {
+    "react-doctor": {
+      "capabilities": [
+        "i18n",
+        "radix-ui",
+        "react",
+        "react-compiler",
+        "react:19",
+        "react:19.2",
+        "shadcn",
+        "ssr"
+      ]
+    }
   }
 }

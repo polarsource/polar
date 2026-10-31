@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
-  "extends": ["./oxlint-base.json"],
+  "extends": ["./oxlint-base.json", "./oxlint-react-doctor.json"],
   "plugins": ["typescript", "react", "nextjs"],
   "env": {
     "builtin": true,

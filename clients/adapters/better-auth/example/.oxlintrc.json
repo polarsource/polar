@@ -1,5 +1,15 @@
 {
   "$schema": "../../../node_modules/oxlint/configuration_schema.json",
   "ignorePatterns": ["node_modules/**", ".next/**"],
-  "extends": ["../../../packages/oxlint-config/oxlint-next.json"]
+  "extends": ["../../../packages/oxlint-config/oxlint-next.json"],
+  "rules": {
+    // 13 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/jsx-no-new-function-as-prop": "off",
+    // 3 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rerender-state-only-in-handlers": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-placeholder-only-field": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/only-export-components": "off"
+  }
 }

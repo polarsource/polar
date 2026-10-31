@@ -31,6 +31,7 @@ vi.mock('@polar-sh/orbit', () => ({
     <input
       type="checkbox"
       role="switch"
+      aria-checked={checked}
       id={id}
       checked={checked}
       disabled={disabled}

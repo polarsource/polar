@@ -4,8 +4,8 @@
   "jsPlugins": [
     {
       "name": "polar",
-      "specifier": "./oxlint-plugins/index.mjs"
-    }
+      "specifier": "./oxlint-plugins/index.mjs",
+    },
   ],
   "ignorePatterns": [
     "dist/**",
@@ -20,35 +20,139 @@
     "e2e/**",
     "playwright-report/**",
     "babel.config.js",
-    "scripts/**"
+    "scripts/**",
   ],
   "rules": {
+    // 5 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-derived-useState": "off",
     "polar/no-form-state-read": "error",
-    "polar/no-unsanitized-toast-detail": "error"
+    "polar/no-unsanitized-toast-detail": "error",
+    // 228 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-unstable-nested-components": "off",
+    // 99 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/server-sequential-independent-await": "off",
+    // 95 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/only-export-components": "off",
+    // 49 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-high-complexity-react-function": "off",
+    // 28 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/js-set-map-lookups": "off",
+    // 27 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-giant-component": "off",
+    // 18 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-locale-format-in-render": "off",
+    // 17 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/query-mutation-missing-invalidation": "off",
+    // 17 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-layout-property-animation": "off",
+    // 14 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/button-has-type": "off",
+    // 14 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-autofocus": "off",
+    // 12 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-static-element-interactions": "off",
+    // 11 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-loading-flag-reset-outside-finally": "off",
+    // 11 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/label-has-associated-control": "off",
+    // 8 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/click-events-have-key-events": "off",
+    // 7 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/nextjs-no-client-side-redirect": "off",
+    // 7 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/js-hoist-intl": "off",
+    // 7 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/anchor-ambiguous-text": "off",
+    // 6 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/control-has-associated-label": "off",
+    // 5 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/anchor-is-valid": "off",
+    // 5 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/nextjs-no-use-search-params-without-suspense": "off",
+    // 4 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rerender-state-only-in-handlers": "off",
+    // 4 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-pass-data-to-parent": "off",
+    // 4 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-enter-submit-without-ime-composition-guard": "off",
+    // 3 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-pass-live-state-to-parent": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/prefer-tag-over-role": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/motion-animate-presence-must-outlive-child": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-prop-callback-in-effect": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-chain-state-updates": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-adjust-state-on-prop-change": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/alt-text": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-fetch-response-used-without-status-check": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/nextjs-no-a-element": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/interactive-supports-focus": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-array-index-as-key": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rendering-hydration-no-flicker": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-placeholder-only-field": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-unowned-async-error-clear": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/shadcn-form-item-requires-label": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/effect-needs-cleanup": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-floating-then-in-jsx-handler": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-create-object-url-without-revoke": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/js-cache-storage": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/async-await-in-loop": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-transition-all": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-effect-event-handler": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-fetch-in-effect": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rerender-lazy-ref-init": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/nextjs-missing-metadata": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/anchor-target-exists": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-set-state-after-await-in-effect": "off",
   },
   "overrides": [
     {
       "files": ["src/components/Checkout/CheckoutConfirmation.tsx"],
       "rules": {
-        "react/set-state-in-effect": "off"
-      }
+        "react/set-state-in-effect": "off",
+      },
     },
     {
       "files": [
         "src/components/Auth/EmailOTPVerifyForm.tsx",
         "src/app/**/auth/totp/VerifyPage.tsx",
-        "src/app/**/auth/backup-codes/VerifyPage.tsx"
+        "src/app/**/auth/backup-codes/VerifyPage.tsx",
       ],
       "rules": {
         "react/immutability": "off",
-        "react/refs": "off"
-      }
+        "react/refs": "off",
+      },
     },
     {
       "files": ["src/components/Orders/DownloadInvoice.tsx"],
       "rules": {
-        "react/incompatible-library": "off"
-      }
+        "react/incompatible-library": "off",
+      },
     },
     {
       "files": ["**/*.tsx"],
@@ -62,24 +166,24 @@
         "polar/no-style-text": "error",
         "polar/no-next-image": "error",
         "polar/no-external-link-component": "error",
-        "polar/require-external-link-rel": "error"
-      }
+        "polar/require-external-link-rel": "error",
+      },
     },
     {
       "files": [
         "src/components/CustomerPortal/**/*.{ts,tsx}",
-        "src/app/**/portal/**/*.{ts,tsx}"
+        "src/app/**/portal/**/*.{ts,tsx}",
       ],
       "rules": {
         "polar/no-merchant-queries-in-customer-portal": "error",
-        "polar/no-merchant-api-calls-in-customer-portal": "error"
-      }
+        "polar/no-merchant-api-calls-in-customer-portal": "error",
+      },
     },
     {
       "files": ["src/app/**/portal/**/page.tsx"],
       "rules": {
-        "polar/require-customer-portal-page": "error"
-      }
+        "polar/require-customer-portal-page": "error",
+      },
     },
     {
       "files": [
@@ -87,26 +191,63 @@
         "src/app/**/portal/request/page.tsx",
         "src/app/**/portal/authenticate/page.tsx",
         "src/app/**/portal/verify-email/page.tsx",
-        "src/app/**/portal/claim/page.tsx"
+        "src/app/**/portal/claim/page.tsx",
       ],
       "rules": {
-        "polar/require-customer-portal-page": "off"
-      }
+        "polar/require-customer-portal-page": "off",
+      },
     },
     {
       "files": [
         "src/app/(main)/onboarding/**/*.tsx",
-        "src/components/Onboarding/**/*.tsx"
+        "src/components/Onboarding/**/*.tsx",
       ],
       "rules": {
-        "polar/no-raw-html-layout": "error"
-      }
+        "polar/no-raw-html-layout": "error",
+      },
     },
     {
       "files": ["src/app/**/(mdx)/layout.tsx"],
       "rules": {
-        "polar/no-broken-mdx-links": "error"
-      }
-    }
-  ]
+        "polar/no-broken-mdx-links": "error",
+      },
+    },
+  ],
+  "settings": {
+    "react-doctor": {
+      "capabilities": [
+        "i18n",
+        "nextjs",
+        "nextjs:15",
+        "radix-ui",
+        "react",
+        "react-compiler",
+        "react:19",
+        "react:19.2",
+        "shadcn",
+        "ssr",
+        "tanstack-query",
+        "tanstack-table",
+        "zod:4",
+      ],
+      "onlyExportComponents": {
+        "allowExportNames": [
+          "metadata",
+          "generateMetadata",
+          "viewport",
+          "generateViewport",
+          "dynamic",
+          "dynamicParams",
+          "revalidate",
+          "fetchCache",
+          "runtime",
+          "preferredRegion",
+          "maxDuration",
+          "generateStaticParams",
+          "generateSitemaps",
+          "generateImageMetadata",
+        ],
+      },
+    },
+  },
 }

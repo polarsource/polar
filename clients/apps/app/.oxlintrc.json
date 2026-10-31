@@ -1,5 +1,6 @@
 {
   "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "extends": ["../../packages/oxlint-config/oxlint-react-doctor.json"],
   "plugins": ["import", "react"],
   "jsPlugins": [
     {
@@ -109,7 +110,77 @@
     "@polar/no-hardcoded-colors": "error",
     "@polar/no-hardcoded-dimensions": "error",
     "react/rules-of-hooks": "error",
-    "react/exhaustive-deps": "warn"
+    "react/exhaustive-deps": "warn",
+    "react-doctor/expo-no-non-inlined-env": "warn",
+    "react-doctor/rn-animation-reaction-as-derived": "warn",
+    "react-doctor/rn-bottom-sheet-no-ignored-scroll-prop": "warn",
+    "react-doctor/rn-bottom-sheet-no-state-in-on-animate": "warn",
+    "react-doctor/rn-bottom-sheet-use-integrated-scrollable": "warn",
+    "react-doctor/rn-detox-missing-await": "warn",
+    "react-doctor/rn-list-callback-per-row": "warn",
+    "react-doctor/rn-list-data-mapped": "warn",
+    "react-doctor/rn-list-recyclable-without-types": "warn",
+    "react-doctor/rn-no-deep-imports": "warn",
+    "react-doctor/rn-no-deprecated-modules": "error",
+    "react-doctor/rn-no-dimensions-get": "warn",
+    "react-doctor/rn-no-falsy-and-render": "error",
+    "react-doctor/rn-no-image-children": "error",
+    "react-doctor/rn-no-legacy-expo-packages": "warn",
+    "react-doctor/rn-no-raw-text": "error",
+    "react-doctor/rn-no-scroll-state": "error",
+    "react-doctor/rn-no-scrollview-mapped-list": "warn",
+    "react-doctor/rn-platform-shaking-use-direct-import": "warn",
+    "react-doctor/rn-prefer-pressable-over-gesture-detector": "warn",
+    "react-doctor/rn-pressable-shared-value-mutation": "warn",
+    "react-doctor/rn-reanimated-4-no-legacy-spring-thresholds": "warn",
+    "react-doctor/rn-reanimated-4-no-removed-api": "warn",
+    "react-doctor/rn-style-prefer-boxshadow": "warn",
+    // 7 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rn-list-missing-estimated-item-size": "off",
+    // 7 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rn-no-inline-flatlist-renderitem": "off",
+    // 5 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rn-no-inline-object-in-list-item": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rn-no-legacy-shadow-styles": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rn-no-renderitem-key": "off",
+    // 6 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rn-reanimated-4-use-worklets-scheduler": "off",
+    // 16 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rn-scrollview-dynamic-padding": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/rn-scrollview-flex-in-content-container": "off",
+    // 173 findings 2026-10-27, memoization rule, the Expo app does not run the React Compiler
+    "react-doctor/jsx-no-new-object-as-prop": "off",
+    // 101 findings 2026-10-27, memoization rule, the Expo app does not run the React Compiler
+    "react-doctor/jsx-no-new-function-as-prop": "off",
+    // 30 findings 2026-10-27, memoization rule, the Expo app does not run the React Compiler
+    "react-doctor/jsx-no-new-array-as-prop": "off",
+    // 29 findings 2026-10-27, memoization rule, the Expo app does not run the React Compiler
+    "react-doctor/jsx-no-jsx-as-prop": "off",
+    // 6 findings 2026-10-27, memoization rule, the Expo app does not run the React Compiler
+    "react-doctor/jsx-no-constructed-context-values": "off",
+    // 13 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-unstable-nested-components": "off",
+    // 9 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/only-export-components": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/query-mutation-missing-invalidation": "off",
+    // 2 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/context-provider-value-from-unmemoized-local-literal": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-autofocus": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-array-index-as-key": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-giant-component": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/async-await-in-loop": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/js-set-map-lookups": "off",
+    // 1 findings 2026-10-27, re-enable in a follow-up
+    "react-doctor/no-spread-accumulator-in-reduce": "off"
   },
   "overrides": [
     {

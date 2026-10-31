@@ -76,12 +76,12 @@ jobs:
       #       mypy-
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.1
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -343,12 +343,12 @@ jobs:
         run: git fetch --depth=1 origin "$BASE_SHA"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.1
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -470,12 +470,12 @@ jobs:
         run: pnpm install --frozen-lockfile && pnpm build
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.1
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 

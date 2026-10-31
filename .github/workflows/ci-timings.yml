@@ -1,0 +1,24 @@
+name: CI Timings
+
+on:
+  schedule:
+    - cron: "7 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Send CI timings to PostHog
+        run: python3 .github/scripts/ci_timings.py
+        env:
+          GH_TOKEN: ${{ github.token }}

@@ -28,7 +28,7 @@ that assumes it.
 ```
 polar/{subscription,order,billing_entry,billing_interval,meter,event,discount,checkout,checkout_link}/
 polar/{payment,payment_method,refund,dispute,payout,payout_account,wallet,transaction}/
-polar/{invoice,receipt,tax,product,customer_seat,account}/  ·  polar/benefit/grant/
+polar/{invoice,receipt,credit_note,tax,product,customer_seat,account}/  ·  polar/benefit/grant/
 polar/models/{subscription,order,order_item,product,product_price,discount,checkout,
               payment,billing_entry,refund,dispute,wallet,transaction}.py
 migrations/ and server/scripts/ when they touch those tables

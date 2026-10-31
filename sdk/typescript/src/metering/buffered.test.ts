@@ -258,23 +258,19 @@ it("waits at least a second on Retry-After without spending attempts", async () 
   expect(onDropped).not.toHaveBeenCalled();
 });
 
-it(
-  "drops the batch when Retry-After exceeds the wait budget",
-  async () => {
-    vi.spyOn(console, "warn").mockImplementation(() => {});
-    const onDropped = vi.fn();
-    const ingest = vi.fn().mockRejectedValue(new PolarRateLimitError(429, 301));
-    await using strategy = await new BufferedMeteringStrategy(
-      { events: { ingest } },
-      { shutdownTimeoutMs: 10, onDropped },
-    ).start();
-    await strategy.track(events[0]);
-    await strategy.flush();
-    expect(ingest).toHaveBeenCalledOnce();
-    expect(onDropped).toHaveBeenCalledExactlyOnceWith([events[0]], "retry_exhausted");
-  },
-  500,
-);
+it("drops the batch when Retry-After exceeds the wait budget", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const onDropped = vi.fn();
+  const ingest = vi.fn().mockRejectedValue(new PolarRateLimitError(429, 301));
+  await using strategy = await new BufferedMeteringStrategy(
+    { events: { ingest } },
+    { shutdownTimeoutMs: 10, onDropped },
+  ).start();
+  await strategy.track(events[0]);
+  await strategy.flush();
+  expect(ingest).toHaveBeenCalledOnce();
+  expect(onDropped).toHaveBeenCalledExactlyOnceWith([events[0]], "retry_exhausted");
+}, 500);
 
 it.each([
   [new PolarNetworkError("offline"), "retry_exhausted"],

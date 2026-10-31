@@ -971,6 +971,8 @@ RefundReason: typing.TypeAlias = typing.Literal[
     "service_disruption",
     "satisfaction_guarantee",
     "dispute_prevention",
+    "tax_refund",
+    "vat_reverse_charge_correction",
     "other",
 ]
 RefundSortProperty: typing.TypeAlias = typing.Literal[

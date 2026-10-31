@@ -40,6 +40,7 @@ export const listSubscriptions = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
       discount_id?: string | string[] | null;
@@ -65,6 +66,7 @@ export const listSubscriptions = (client: ClientBase) => {
     const queryParams = {
       organization_id: query?.organization_id,
       product_id: query?.product_id,
+      external_product_id: query?.external_product_id,
       customer_id: query?.customer_id,
       external_customer_id: query?.external_customer_id,
       discount_id: query?.discount_id,
@@ -112,6 +114,7 @@ export const iterListSubscriptions = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
       discount_id?: string | string[] | null;
@@ -206,6 +209,7 @@ export const exportSubscriptions = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       status?: SubscriptionStatus | SubscriptionStatus[] | null;
       cancel_at_period_end?: boolean | null;
       started_after?: string | null;
@@ -219,6 +223,7 @@ export const exportSubscriptions = (client: ClientBase) => {
     const queryParams = {
       organization_id: query?.organization_id,
       product_id: query?.product_id,
+      external_product_id: query?.external_product_id,
       status: query?.status,
       cancel_at_period_end: query?.cancel_at_period_end,
       started_after: query?.started_after,

@@ -80,7 +80,7 @@ def _default_headers(
     headers = {
         "Polar-Version": version,
         "Authorization": f"Bearer {access_token}",
-        "User-Agent": "polar-sdk-python/1.0.3a5",
+        "User-Agent": "polar-sdk-python/1.0.3a6",
     }
     if organization_id is not None:
         headers["Polar-Organization"] = organization_id

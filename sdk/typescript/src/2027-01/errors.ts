@@ -37,6 +37,7 @@ import type {
   ResourceNotFound as ResourceNotFoundModel,
   RotateNotPermitted as RotateNotPermittedModel,
   SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
+  SSORequiresVerifiedDomain as SSORequiresVerifiedDomainModel,
   SubscriptionLocked as SubscriptionLockedModel,
   SubscriptionNotScheduledToCancel as SubscriptionNotScheduledToCancelModel,
   Unauthorized as UnauthorizedModel,
@@ -97,15 +98,17 @@ export class OrganizationsUpdate403Error extends PolarClientError<
   }
 }
 /**
- * Cannot enforce SSO without an enabled connection.
+ * Cannot enforce SSO without an enabled connection and a verified domain.
  */
-export class SSOEnforcementRequiresConnection extends PolarClientError<SSOEnforcementRequiresConnectionModel> {
+export class OrganizationsUpdate409Error extends PolarClientError<
+  SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel
+> {
   constructor(
     public readonly statusCode: 409,
-    public readonly error: SSOEnforcementRequiresConnectionModel,
+    public readonly error: SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel,
   ) {
     super(statusCode, error);
-    this.name = "SSOEnforcementRequiresConnection";
+    this.name = "OrganizationsUpdate409Error";
   }
 }
 /**

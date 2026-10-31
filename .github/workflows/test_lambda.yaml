@@ -7,7 +7,7 @@ on:
       - "lambda/**"
       - ".github/workflows/test_lambda.yaml"
   pull_request:
-    types: [opened, synchronize, edited]
+    types: [opened, synchronize]
     paths:
       - "lambda/**"
       - ".github/workflows/test_lambda.yaml"

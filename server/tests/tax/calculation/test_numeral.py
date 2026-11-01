@@ -16,6 +16,7 @@ from polar.tax.calculation.base import (
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
     TaxRecordError,
+    UnsupportedCountryError,
 )
 from polar.tax.calculation.numeral import (
     _numeral_jurisdiction_to_breakdown_item,
@@ -615,6 +616,57 @@ class TestNumeralBackfill:
         assert payload["address_province"] == state
         assert payload["line_items"][0]["sales"] == 599
         assert payload["line_items"][0]["total_taxes"] == 78
+
+    @pytest.mark.parametrize(
+        ("status", "error_type", "message", "expected_error"),
+        [
+            (
+                400,
+                "ERROR",
+                "Country code must be one of: US, CA",
+                UnsupportedCountryError,
+            ),
+            (
+                400,
+                "INVALID_COUNTRY_CODE",
+                "Country CR is currently not supported.",
+                UnsupportedCountryError,
+            ),
+            (
+                400,
+                "ERROR",
+                "address_postal_code is required for Canadian addresses",
+                httpx.HTTPStatusError,
+            ),
+            (
+                500,
+                "ERROR",
+                "Country code must be one of: US, CA",
+                httpx.HTTPStatusError,
+            ),
+        ],
+    )
+    async def test_error(
+        self,
+        respx_mock: respx.MockRouter,
+        status: int,
+        error_type: str,
+        message: str,
+        expected_error: type[Exception],
+    ) -> None:
+        respx_mock.post("/tax/manual_line_items").respond(
+            status, json={"code": status, "type": error_type, "message": message}
+        )
+        with pytest.raises(expected_error):
+            await numeral_tax_service.backfill(
+                amount=1000,
+                tax_amount=0,
+                currency="usd",
+                address=Address(country=CountryAlpha2("CR")),
+                tax_code=TaxCode.general_electronically_supplied_services,
+                reference="order_123",
+                transaction_date=datetime(2026, 10, 11, tzinfo=UTC),
+            )
 
 
 @pytest.mark.anyio

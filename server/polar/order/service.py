@@ -124,6 +124,7 @@ from polar.tax.calculation import (
     TaxCode,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
+from polar.tax.calculation.base import UnsupportedCountryError
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -2321,18 +2322,16 @@ class OrderService:
                 reference=str(order.id),
                 transaction_date=order.created_at,
             )
-        except CalculationExpiredError:
-            # Happens if the order was created a long time ago and the tax
-            # calculation expired before the payment was completed.
-            return await self._record_expired_tax_calculation(order)
+        except CalculationExpiredError, UnsupportedCountryError:
+            return await self._recalculate_tax_transaction(order)
 
         return {
             "tax_processor": tax_processor,
             "tax_transaction_processor_id": transaction_id,
         }
 
-    async def _record_expired_tax_calculation(self, order: Order) -> dict[str, Any]:
-        """Book the tax of an order whose calculation expired before payment.
+    async def _recalculate_tax_transaction(self, order: Order) -> dict[str, Any]:
+        """Recalculate and record tax while preserving the charged amounts.
 
         Returns the order fields to update.
         """
@@ -2388,6 +2387,7 @@ class OrderService:
             }
 
         update_dict: dict[str, Any] = {
+            "tax_processor": tax_processor,
             "tax_calculation_processor_id": tax_calculation_processor_id,
             "tax_behavior": tax_behavior,
             "tax_breakdown": tax_breakdown or None,

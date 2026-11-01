@@ -1,5 +1,6 @@
 import json
 import uuid
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -572,6 +573,48 @@ class TestNumeralRecord:
         respx_mock.get("/tax/transactions").respond(503)
         with pytest.raises(TaxRecordError):
             await numeral_tax_service.record("calc_123", "order_123")
+
+
+@pytest.mark.anyio
+@pytest.mark.respx(base_url="https://api.numeralhq.com")
+class TestNumeralBackfill:
+    @pytest.mark.parametrize(
+        ("country", "state", "postal_code", "expected_postal_code"),
+        [
+            ("CA", "ON", None, "A0A0A0"),
+            ("CA", "ON", "M5V 3L9", "M5V 3L9"),
+            ("US", "TX", None, ""),
+        ],
+    )
+    async def test_postal_code(
+        self,
+        respx_mock: respx.MockRouter,
+        country: str,
+        state: str,
+        postal_code: str | None,
+        expected_postal_code: str,
+    ) -> None:
+        route = respx_mock.post("/tax/manual_line_items").respond(
+            json={"line_item_id": "order_123"}
+        )
+        result = await numeral_tax_service.backfill(
+            amount=599,
+            tax_amount=78,
+            currency="usd",
+            address=Address(
+                country=CountryAlpha2(country), state=state, postal_code=postal_code
+            ),
+            tax_code=TaxCode.general_electronically_supplied_services,
+            reference="order_123",
+            transaction_date=datetime(2026, 10, 30, tzinfo=UTC),
+        )
+
+        assert result == "order_123"
+        payload = json.loads(route.calls.last.request.content)
+        assert payload["address_postal_code"] == expected_postal_code
+        assert payload["address_province"] == state
+        assert payload["line_items"][0]["sales"] == 599
+        assert payload["line_items"][0]["total_taxes"] == 78
 
 
 @pytest.mark.anyio

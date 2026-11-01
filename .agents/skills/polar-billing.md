@@ -288,7 +288,7 @@ handle_failure(payment)  # Update order status
 **File:** `server/polar/refund/service.py`
 
 ```python
-create(order, amount, reason, revoke_benefits)
+create(order, amount, tax_amount, reason, revoke_benefits)
 upsert_from_stripe(stripe_refund)
 # Also enqueues chargeback prevention notice for dispute_prevention refunds
 ```

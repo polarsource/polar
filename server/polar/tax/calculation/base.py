@@ -52,6 +52,11 @@ class CalculationExpiredError(TaxRecordError):
         super().__init__(message)
 
 
+class UnsupportedCountryError(TaxRecordError):
+    def __init__(self, country: str) -> None:
+        super().__init__(f"Tax recording is not supported for country {country}.")
+
+
 class TaxRevertError(TaxError):
     def __init__(
         self, message: str = "An error occurred while reverting the tax record."

@@ -24,6 +24,7 @@ from .base import (
     TaxCode,
     TaxRecordError,
     TaxServiceProtocol,
+    UnsupportedCountryError,
 )
 
 log: Logger = structlog.get_logger()
@@ -500,7 +501,19 @@ class NumeralTaxService(TaxServiceProtocol):
                 ],
             },
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 400:
+                error: NumeralErrorResponse = e.response.json()
+                if error.get("type") == "INVALID_COUNTRY_CODE" or (
+                    error.get("type") == "ERROR"
+                    and error.get("message", "").startswith(
+                        "Country code must be one of:"
+                    )
+                ):
+                    raise UnsupportedCountryError(address.country) from e
+            raise
         manual_line_item = response.json()
         trace.get_current_span().set_attribute(
             "numeral.line_item_id", manual_line_item["line_item_id"]

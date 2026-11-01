@@ -1126,6 +1126,8 @@ export type RefundReason =
   | "service_disruption"
   | "satisfaction_guarantee"
   | "dispute_prevention"
+  | "tax_refund"
+  | "vat_reverse_charge_correction"
   | "other";
 /**
  * RefundSortProperty
@@ -6771,10 +6773,6 @@ export interface CheckoutConfirmStripe {
    */
   product_id?: string | null;
   /**
-   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-   */
-  product_price_id?: string | null;
-  /**
    * amount
    */
   amount?: number | null;
@@ -6830,6 +6828,10 @@ export interface CheckoutConfirmStripe {
    * ID of the Stripe confirmation token. Required for fixed prices and custom prices.
    */
   confirmation_token_id?: string | null;
+  /**
+   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+   */
+  product_price_id?: string | null;
 }
 
 /**
@@ -8333,10 +8335,6 @@ export interface CheckoutUpdate {
    */
   product_id?: string | null;
   /**
-   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-   */
-  product_price_id?: string | null;
-  /**
    * amount
    */
   amount?: number | null;
@@ -8448,6 +8446,10 @@ You can store up to **50 key-value pairs**.
    * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
    */
   embed_origin?: string | null;
+  /**
+   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+   */
+  product_price_id?: string | null;
 }
 
 /**
@@ -8462,10 +8464,6 @@ export interface CheckoutUpdatePublic {
    * ID of the product to checkout. Must be present in the checkout's product list.
    */
   product_id?: string | null;
-  /**
-   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-   */
-  product_price_id?: string | null;
   /**
    * amount
    */
@@ -8518,6 +8516,10 @@ export interface CheckoutUpdatePublic {
    * Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
    */
   allow_trial?: false | null;
+  /**
+   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+   */
+  product_price_id?: string | null;
 }
 
 /**
@@ -12799,7 +12801,7 @@ export interface CustomerWallet {
 }
 
 /**
- * Schema to create a fixed amount discount.
+ * DiscountFixedCreate
  */
 export interface DiscountFixedCreate {
   /**
@@ -12866,6 +12868,10 @@ For example, to apply the discount for 2 years, set this to 24.
    */
   duration_in_months?: number | null;
   /**
+   * amounts
+   */
+  amounts?: Record<string, number> | null;
+  /**
    * amount
    */
   amount?: number | null;
@@ -12873,10 +12879,6 @@ For example, to apply the discount for 2 years, set this to 24.
    * currency
    */
   currency?: PresentmentCurrency | null;
-  /**
-   * amounts
-   */
-  amounts?: Record<string, number> | null;
 }
 
 /**
@@ -13634,7 +13636,7 @@ export interface DiscountRedemptionLimitReached {
 }
 
 /**
- * Schema to update a discount.
+ * DiscountUpdate
  */
 export interface DiscountUpdate {
   /**
@@ -13688,14 +13690,6 @@ You can store up to **50 key-value pairs**.
    */
   type?: DiscountType | null;
   /**
-   * amount
-   */
-  amount?: number | null;
-  /**
-   * currency
-   */
-  currency?: PresentmentCurrency | null;
-  /**
    * amounts
    */
   amounts?: Record<string, number> | null;
@@ -13707,6 +13701,14 @@ You can store up to **50 key-value pairs**.
    * products
    */
   products?: string[] | null;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
 }
 
 /**
@@ -18880,10 +18882,6 @@ export interface OrganizationCustomerPortalSettings {
  */
 export interface OrganizationDetails {
   /**
-   * Brief information about you and your business.
-   */
-  about?: string | null;
-  /**
    * Description of digital products being sold.
    */
   product_description?: string | null;
@@ -18896,6 +18894,18 @@ export interface OrganizationDetails {
    */
   pricing_models?: string[];
   /**
+   * Switching from another platform?
+   */
+  switching?: boolean;
+  /**
+   * Which platform the organization is migrating from.
+   */
+  switching_from?: ("paddle" | "lemon_squeezy" | "gumroad" | "stripe" | "other") | null;
+  /**
+   * Brief information about you and your business.
+   */
+  about?: string | null;
+  /**
    * How the organization will integrate and use Polar.
    */
   intended_use?: string | null;
@@ -18907,14 +18917,6 @@ export interface OrganizationDetails {
    * Estimated revenue in the next 12 months
    */
   future_annual_revenue?: number | null;
-  /**
-   * Switching from another platform?
-   */
-  switching?: boolean;
-  /**
-   * Which platform the organization is migrating from.
-   */
-  switching_from?: ("paddle" | "lemon_squeezy" | "gumroad" | "stripe" | "other") | null;
   /**
    * Revenue from last year if applicable.
    */

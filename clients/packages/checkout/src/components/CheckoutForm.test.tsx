@@ -1164,6 +1164,38 @@ describe('CheckoutForm', () => {
       expect(update).toHaveBeenCalledWith({ customer_name: 'Buyer Example' })
     })
 
+    it('keeps focus in the field when the buyer presses the submit button', () => {
+      const { update } = renderForm()
+      const input = screen.getByLabelText('Cardholder name')
+      fireEvent.change(input, { target: { value: 'Buyer Example' } })
+
+      const defaultAllowed = fireEvent.mouseDown(
+        screen.getByRole('button', { name: 'Pay now' }),
+      )
+
+      expect(defaultAllowed).toBe(false)
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('does not store a contact field while the checkout is confirming', () => {
+      const update = vi.fn(async () => createCheckout())
+      render(
+        <FormWrapper
+          checkout={createCheckout()}
+          {...defaultProps}
+          update={update}
+          loading
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      fill('Email', 'buyer@example.com')
+      fill('Cardholder name', 'Buyer Example')
+
+      expect(update).not.toHaveBeenCalled()
+    })
+
     it('waits for an address the browser reads as one', () => {
       const { update } = renderForm()
 

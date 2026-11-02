@@ -130,9 +130,7 @@ describe('CustomerChangePlanModal', () => {
     renderAndSelectSeatPlan()
 
     expect(
-      screen.getByText(
-        'The new yearly plan will be paid from your balance.',
-      ),
+      screen.getByText('The new yearly plan will be paid from your balance.'),
     ).toBeTruthy()
   })
 

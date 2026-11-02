@@ -46,7 +46,21 @@ test('outbound rejects other origins, writes in read-only mode, and unexposed op
       'GET',
       404,
       'NotFound',
-      'GET /v1/oauth2/userinfo is not an operation exposed by this server. Use the search tool to find it.',
+      "GET /v1/oauth2/userinfo is not an operation exposed by this server. The search tool lists every operation it exposes; one that isn't listed can't be called through this server.",
+    ],
+    [
+      'https://api.polar.test/v1/webhooks/endpoints/',
+      'GET',
+      404,
+      'NotFound',
+      'GET /v1/webhooks/endpoints/ is not an operation exposed by this server. Did you mean GET /v1/webhooks/endpoints?',
+    ],
+    [
+      'https://api.polar.test/v1/products',
+      'GET',
+      404,
+      'NotFound',
+      'GET /v1/products is not an operation exposed by this server. Did you mean GET /v1/products/?',
     ],
   ] as const) {
     const response = await outbound.fetch(new Request(url, { method }))

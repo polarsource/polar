@@ -23,10 +23,7 @@ export class PolarApiOutbound extends WorkerEntrypoint<
     }
     if (!isAllowedOperation(request.method, url.pathname)) {
       return Response.json(
-        {
-          error: 'NotFound',
-          detail: `${request.method} ${url.pathname} is not an operation exposed by this server. Use the search tool to find it.`,
-        },
+        { error: 'NotFound', detail: unexposed(request.method, url.pathname) },
         { status: 404 },
       )
     }
@@ -37,6 +34,16 @@ export class PolarApiOutbound extends WorkerEntrypoint<
     headers.set('Polar-Version', spec.apiVersion)
     return fetch(new Request(request, { headers }))
   }
+}
+
+const unexposed = (method: string, pathname: string) => {
+  const notExposed = `${method} ${pathname} is not an operation exposed by this server.`
+  const alternate = pathname.endsWith('/')
+    ? pathname.slice(0, -1)
+    : `${pathname}/`
+  return isAllowedOperation(method, alternate)
+    ? `${notExposed} Did you mean ${method} ${alternate}?`
+    : `${notExposed} The search tool lists every operation it exposes; one that isn't listed can't be called through this server.`
 }
 
 const forbidden = (message: string) =>

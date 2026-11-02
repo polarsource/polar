@@ -185,7 +185,7 @@ class BillingEntryRepository(
             )
 
     async def _link_pending(
-        self, pending_ids: Select[tuple[UUID]], order_item_id: UUID
+        self, pending_ids: Select[UUID], order_item_id: UUID
     ) -> None:
         # Keyset pagination: a bare `LIMIT` restart would re-scan rows already
         # updated in this transaction, making the loop quadratic.
@@ -240,7 +240,7 @@ class BillingEntryRepository(
         *,
         cutoff: datetime | None = None,
         options: Options = (),
-    ) -> Select[tuple["BillingEntry"]]:
+    ) -> Select["BillingEntry"]:
         statement = (
             self.get_base_statement()
             .where(

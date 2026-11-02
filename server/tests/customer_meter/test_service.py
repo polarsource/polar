@@ -23,6 +23,7 @@ from polar.models import (
 )
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
@@ -1313,6 +1314,7 @@ class TestUpdateCustomer:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -1323,7 +1325,7 @@ class TestUpdateCustomer:
         await save_fixture(meter)
 
         # Run update_customer - should not create customer_meter for archived meter
-        await customer_meter_service.update_customer(session, customer)
+        await customer_meter_service.update_customer(session, redis, customer)
 
         # Check that no customer meter was created
         from polar.customer_meter.repository import CustomerMeterRepository
@@ -1338,6 +1340,7 @@ class TestUpdateCustomer:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -1347,7 +1350,7 @@ class TestUpdateCustomer:
         assert meter.archived_at is None
 
         # Run update_customer - should create customer_meter
-        await customer_meter_service.update_customer(session, customer)
+        await customer_meter_service.update_customer(session, redis, customer)
 
         # Check that customer meter was created
         from polar.customer_meter.repository import CustomerMeterRepository

@@ -27,7 +27,7 @@ class AgentGrant(BaseGrant, TokenEndpointMixin):
 
     server: "AuthorizationServer"
 
-    def _get_agent_statement(self) -> Select[tuple[Agent]]:
+    def _get_agent_statement(self) -> Select[Agent]:
         return (
             select(Agent)
             .join(Agent.oauth2_client)

@@ -16,7 +16,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import stream
-from .auth import OutpostWrite, authenticate
+from .auth import OutpostWrite
 from .schemas import (
     ConnectionOutgoingMessage,
     ConnectionOutgoingMessagePayload,
@@ -71,10 +71,13 @@ async def handle_events(
 
 
 @router.websocket("/")
-async def outpost(websocket: WebSocket, redis: Redis = Depends(get_redis)) -> None:
-    auth_subject = await authenticate(websocket)
-    if auth_subject is None:
-        return
+async def outpost(
+    websocket: WebSocket,
+    auth_subject: OutpostWrite,
+    redis: Redis = Depends(get_redis),
+) -> None:
+    await websocket.accept()
+    log.debug("WebSocket connection accepted", subject_id=auth_subject.subject.id)
 
     sessionmaker: AsyncSessionMaker = websocket.state.async_sessionmaker
     connection_id = uuid.uuid4()

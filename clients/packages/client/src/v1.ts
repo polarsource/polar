@@ -46230,7 +46230,6 @@ export interface operations {
   'transactions:export': {
     parameters: {
       query: {
-        account_id: string
         type?: components['schemas']['TransactionType'] | null
         exclude_platform_fees?: boolean
         /** @description Only include transactions created after this date. Must include a UTC offset. */
@@ -46842,6 +46841,7 @@ export interface operations {
           | components['schemas']['TransactionExportColumn']
           | components['schemas']['TransactionExportColumn'][]
           | null
+        account_id: string
       }
       header?: never
       path?: never
@@ -58721,8 +58721,6 @@ export interface operations {
   'events:get_statistics_by_property': {
     parameters: {
       query: {
-        /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
-        property: string
         /** @description Start date. */
         start_date: string
         /** @description End date. */
@@ -59336,6 +59334,8 @@ export interface operations {
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
+        property: components['schemas']['AggregateField']
       }
       header?: never
       path?: never
@@ -60619,11 +60619,11 @@ export interface operations {
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
         external_customer_id?: string | string[] | null
-        /** @description Filter by event name. */
-        name?: string | string[] | null
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Filter by event name. */
+        name?: string | string[] | null
       }
       header?: never
       path?: never

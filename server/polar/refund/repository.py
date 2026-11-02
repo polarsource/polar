@@ -74,7 +74,7 @@ class RefundRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Refund]]:
+    ) -> Select[Refund]:
         statement = self.get_base_statement().where(
             Refund.order_id.is_not(None),
         )

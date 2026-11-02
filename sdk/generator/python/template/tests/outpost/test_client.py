@@ -2103,6 +2103,52 @@ async def test_snapshot_reports_a_cold_bucket_by_its_pending_part(
 
 
 @pytest.mark.anyio
+async def test_snapshot_reports_the_local_value_before_confirmed_events_settled(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    ingested: set[str],
+    exported_spans: list[ReadableSpan],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+
+    def confirming() -> list[ReadableSpan]:
+        return [
+            span
+            for span in exported_spans
+            if span.name == "outpost.snapshot.received"
+            and span.attributes is not None
+            and "outpost.pending.asked" in span.attributes
+        ]
+
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(2):
+            await outpost.track(_usage(f"event-{index}", 10))
+        await _seal(redis, BUCKET + BUCKET_SIZE)
+        ingested.update(f"event-{index}" for index in range(2))
+        snapshots["external:alice:tokens"] = {
+            **_sealing(2, 20),
+            "cold_until": BUCKET + 2 * BUCKET_SIZE,
+            "version": 1791807000000006,
+        }
+        async with Outpost(url, client=polar_client) as other:
+            await other.actor(external_customer_id="alice")
+            with anyio.fail_after(1):
+                while not confirming():
+                    await anyio.lowlevel.checkpoint()
+
+    span = confirming()[0]
+    assert span.attributes is not None
+    assert span.attributes["outpost.local.cold_until"] == BUCKET + BUCKET_SIZE
+    assert span.attributes["outpost.local.count"] == 2
+    assert span.attributes["outpost.local.sum"] == 20
+    assert span.attributes["outpost.pending.confirmed"] == 2
+    assert span.attributes["outpost.snapshot.delta"] is False
+
+
+@pytest.mark.anyio
 async def test_state_lives_a_day_refreshed_by_reads_writes_and_confirmations(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

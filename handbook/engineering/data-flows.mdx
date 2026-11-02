@@ -81,8 +81,7 @@ flowchart LR
 
 The diagram shows production. Sandbox runs the same platform against Stripe test mode, so it
 holds real merchant identities, organizations and product configuration, but no real payments or
-end-customer data. That data sits in a separate logical database, `polar_sandbox`, on the same
-physical Postgres instance as production.
+end-customer data. That data sits in a separate logical database, `polar_sandbox`, on PlanetScale.
 
 ## Where data is processed
 

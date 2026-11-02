@@ -2,9 +2,15 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 from pydantic import UUID4, AwareDatetime, Field, create_model
+from pydantic_extra_types.timezone_name import TimeZoneName
 
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.customer.schemas.customer import CustomerID
+from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
+from polar.kit.time_queries import TimeInterval
+from polar.kit.versioning import QuerySchema
+from polar.models.product import ProductBillingType
 from polar.organization.schemas import OrganizationID
+from polar.product.schemas import ProductID
 
 from .metrics import METRICS, MetricType
 
@@ -157,4 +163,62 @@ class MetricDashboardSchema(IDSchema, TimestampedSchema):
     )
     organization_id: UUID4 = Field(
         description="The ID of the organization owning this dashboard."
+    )
+
+
+class MetricsParams(QuerySchema):
+    start_date: date = Field(
+        ...,
+        description="Start date.",
+    )
+    end_date: date = Field(..., description="End date.")
+    timezone: TimeZoneName = Field(
+        default=TimeZoneName("UTC"),
+        description="Timezone to use for the timestamps. Default is UTC.",
+    )
+    interval: TimeInterval = Field(..., description="Interval between two timestamps.")
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    billing_type: MultipleQueryFilter[ProductBillingType] | None = Field(
+        None,
+        title="ProductBillingType Filter",
+        description=(
+            "Filter by billing type. "
+            "`recurring` will filter data corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will filter data corresponding to one-time purchases."
+        ),
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    metrics: list[str] | None = Field(
+        None,
+        title="Metrics",
+        description=(
+            "List of metric slugs to focus on. "
+            "When provided, only the queries needed for these metrics will be executed, "
+            "improving performance. If not provided, all metrics are returned."
+        ),
+    )
+
+
+class MetricsExportParams(MetricsParams):
+    metrics: list[str] | None = Field(
+        None,
+        title="Metrics",
+        description=(
+            "List of metric slugs to include in the export. "
+            "If not provided, all metrics are exported."
+        ),
+    )
+
+
+class MetricsDashboardListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
     )

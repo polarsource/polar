@@ -7,6 +7,7 @@ import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -123,7 +124,7 @@ class MemberService:
     async def _paginate(
         self,
         repository: MemberRepository,
-        statement: Select[tuple[Member]],
+        statement: Select[Member],
         *,
         role: MemberRole | None,
         pagination: PaginationParams,
@@ -132,7 +133,7 @@ class MemberService:
         if role is not None:
             statement = statement.where(Member.role == role)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == MemberSortProperty.created_at:

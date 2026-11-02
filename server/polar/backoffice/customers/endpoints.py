@@ -438,12 +438,12 @@ async def get(
                                 with email_verified_badge(customer.email_verified):
                                     pass
 
-                # Credit Balance
+                # Customer Balance
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
                         with tag.div(classes="flex justify-between items-center"):
                             with tag.h2(classes="card-title"):
-                                text("Credit Balance")
+                                text("Customer Balance")
                             if not customer.deleted_at:
                                 with button(
                                     hx_get=str(

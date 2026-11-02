@@ -8,6 +8,7 @@ from sqlalchemy import (
     TIMESTAMP,
     Case,
     ColumnElement,
+    NotNullable,
     Select,
     String,
     Uuid,
@@ -475,7 +476,7 @@ class CustomerRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Customer]]:
+    ) -> Select[Customer]:
         statement = self.get_base_statement()
         statement = statement.where(Customer.organization_id.in_(org_ids))
         return statement
@@ -517,7 +518,7 @@ class CustomerRepository(
     ) -> dict[str, UUID]:
         statement = (
             self.get_base_statement()
-            .with_only_columns(Customer.external_id, Customer.id)
+            .with_only_columns(NotNullable(Customer.external_id), Customer.id)
             .where(
                 Customer.organization_id == organization_id,
                 Customer.external_id.in_(external_ids),

@@ -1,9 +1,12 @@
+from datetime import date
 from typing import Any, cast
 
 import pycountry
 from pydantic import Field, computed_field
 
-from polar.kit.schemas import Schema
+from polar.kit.schemas import MultipleQueryFilter, Schema
+from polar.kit.versioning import QuerySchema
+from polar.organization.schemas import OrganizationID
 
 
 class TaxJurisdiction(Schema):
@@ -105,4 +108,18 @@ class TaxSummary(Schema):
     )
     jurisdiction_count: int = Field(
         description="Number of distinct jurisdictions tax was remitted in."
+    )
+
+
+class TaxReportParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    start_date: date | None = Field(
+        None,
+        description="Only include tax remitted on or after this date.",
+    )
+    end_date: date | None = Field(
+        None,
+        description="Only include tax remitted on or before this date.",
     )

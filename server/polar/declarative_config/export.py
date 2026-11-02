@@ -200,7 +200,7 @@ async def get_deprecated_products_statement(
     session: AsyncReadSession,
     organization: Organization,
     catalog_external_ids: Collection[str],
-) -> Select[tuple[Product]]:
+) -> Select[Product]:
     """Latest version of each product outside the catalog that customers still use.
 
     Config keeps them as deprecated, so existing customers can still reference

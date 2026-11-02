@@ -71,7 +71,7 @@ class CheckoutLinkRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[CheckoutLink]]:
+    ) -> Select[CheckoutLink]:
         return self.get_base_statement().where(
             CheckoutLink.organization_id.in_(org_ids)
         )

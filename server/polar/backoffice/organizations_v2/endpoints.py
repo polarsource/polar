@@ -529,7 +529,9 @@ def _search_rank(q: str) -> ColumnElement[int]:
     return case((_search_match(q), 0), (_search_match(f"{q}%"), 1), else_=2)
 
 
-def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
+def _apply_sql_sort(
+    stmt: Select[*tuple[Any, ...]], sort: str, direction: str
+) -> Select[*tuple[Any, ...]]:
     is_desc = direction == "desc"
     if sort == "name":
         return stmt.order_by(

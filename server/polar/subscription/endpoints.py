@@ -1,41 +1,33 @@
-from datetime import datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
 import structlog
 from fastapi import Depends, Query
-from pydantic import AwareDatetime
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
-from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
-from polar.discount.schemas import DiscountID
 from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.versioning import version
 from polar.models import Subscription, SubscriptionBulkUpdate
-from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import APITag, cli_preview
 from polar.order.service import PaymentActionRequired, PaymentFailed
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
     get_db_read_session,
     get_db_session,
 )
-from polar.product.schemas import ProductID
 from polar.routing import APIRouter
+from polar.subscription.schemas import SubscriptionListParams
 from polar.version import V2027_01
 
 from . import auth, sorting
 from .bulk_update import subscription_bulk_update as subscription_bulk_update_service
 from .export import (
-    SubscriptionExportColumn,
-    SubscriptionExportTimezone,
+    SubscriptionExportParams,
     generate_csv,
     get_filename,
 )
@@ -90,183 +82,31 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by customer external ID.",
-    ),
-    discount_id: MultipleQueryFilter[DiscountID] | None = Query(
-        None, title="DiscountID Filter", description="Filter by discount ID."
-    ),
-    active: bool | None = Query(
-        None,
-        description="Filter by active or inactive subscription.",
-        deprecated=True,
-    ),
-    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
-        None, title="Status Filter", description="Filter by subscription status."
-    ),
-    cancel_at_period_end: bool | None = Query(
-        None,
-        description="Filter by subscriptions that are set to cancel at period end.",
-    ),
-    customer_cancellation_reason: MultipleQueryFilter[CustomerCancellationReason]
-    | None = Query(
-        None,
-        title="CustomerCancellationReason Filter",
-        description="Filter by customer cancellation reason.",
-    ),
-    canceled_at_after: datetime | None = Query(
-        None,
-        description="Filter by cancellation date (after or equal to).",
-    ),
-    canceled_at_before: datetime | None = Query(
-        None,
-        description="Filter by cancellation date (before or equal to).",
-    ),
-    started_after: datetime | None = Query(
-        None,
-        description="Only include subscriptions started after this date.",
-    ),
-    started_before: datetime | None = Query(
-        None,
-        description="Only include subscriptions started before this date.",
-    ),
+    filters: Annotated[SubscriptionListParams, Query()],
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[SubscriptionSchema]:
     """List subscriptions."""
     results, count = await subscription_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        product_id=product_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        discount_id=discount_id,
-        active=active,
-        status=status,
-        cancel_at_period_end=cancel_at_period_end,
-        customer_cancellation_reason=customer_cancellation_reason,
-        canceled_at_after=canceled_at_after,
-        canceled_at_before=canceled_at_before,
-        started_after=started_after,
-        started_before=started_before,
+        organization_id=filters.organization_id,
+        product_id=filters.product_id,
+        external_product_id=filters.external_product_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        discount_id=filters.discount_id,
+        active=filters.active,
+        status=filters.status,
+        cancel_at_period_end=filters.cancel_at_period_end,
+        customer_cancellation_reason=filters.customer_cancellation_reason,
+        canceled_at_after=filters.canceled_at_after,
+        canceled_at_before=filters.canceled_at_before,
+        started_after=filters.started_after,
+        started_before=filters.started_before,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,
     )
-
-    return ListResource.from_paginated_results(
-        [SubscriptionSchema.model_validate(result) for result in results],
-        count,
-        pagination,
-    )
-
-
-@router.get(
-    "/",
-    response_model=ListResource[SubscriptionSchema],
-    name="list",
-    summary="List Subscriptions",
-    tags=[APITag.mcp, APITag.cli],
-    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
-)
-@version(starting_from=V2027_01)
-async def list_v2027_01(
-    auth_subject: auth.SubscriptionsRead,
-    pagination: PaginationParamsQuery,
-    sorting: sorting.ListSorting,
-    metadata: MetadataQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    external_product_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalProductID Filter",
-        description="Filter by product external ID.",
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by customer external ID.",
-    ),
-    discount_id: MultipleQueryFilter[DiscountID] | None = Query(
-        None, title="DiscountID Filter", description="Filter by discount ID."
-    ),
-    active: bool | None = Query(
-        None,
-        description="Filter by active or inactive subscription.",
-        deprecated=True,
-    ),
-    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
-        None, title="Status Filter", description="Filter by subscription status."
-    ),
-    cancel_at_period_end: bool | None = Query(
-        None,
-        description="Filter by subscriptions that are set to cancel at period end.",
-    ),
-    customer_cancellation_reason: MultipleQueryFilter[CustomerCancellationReason]
-    | None = Query(
-        None,
-        title="CustomerCancellationReason Filter",
-        description="Filter by customer cancellation reason.",
-    ),
-    canceled_at_after: datetime | None = Query(
-        None,
-        description="Filter by cancellation date (after or equal to).",
-    ),
-    canceled_at_before: datetime | None = Query(
-        None,
-        description="Filter by cancellation date (before or equal to).",
-    ),
-    started_after: datetime | None = Query(
-        None,
-        description="Only include subscriptions started after this date.",
-    ),
-    started_before: datetime | None = Query(
-        None,
-        description="Only include subscriptions started before this date.",
-    ),
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> ListResource[SubscriptionSchema]:
-    """List subscriptions."""
-    results, count = await subscription_service.list(
-        session,
-        auth_subject,
-        organization_id=organization_id,
-        product_id=product_id,
-        external_product_id=external_product_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        discount_id=discount_id,
-        active=active,
-        status=status,
-        cancel_at_period_end=cancel_at_period_end,
-        customer_cancellation_reason=customer_cancellation_reason,
-        canceled_at_after=canceled_at_after,
-        canceled_at_before=canceled_at_before,
-        started_after=started_after,
-        started_before=started_before,
-        metadata=metadata,
-        pagination=pagination,
-        sorting=sorting,
-    )
-
     return ListResource.from_paginated_results(
         [SubscriptionSchema.model_validate(result) for result in results],
         count,
@@ -279,138 +119,26 @@ async def list_v2027_01(
 )
 async def export(
     auth_subject: auth.SubscriptionsRead,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
-        None, title="Status Filter", description="Filter by subscription status."
-    ),
-    cancel_at_period_end: bool | None = Query(
-        None,
-        description="Filter by subscriptions that are set to cancel at period end.",
-    ),
-    started_after: AwareDatetime | None = Query(
-        None,
-        description=(
-            "Only include subscriptions started after this date. "
-            "Must include a UTC offset."
-        ),
-    ),
-    started_before: AwareDatetime | None = Query(
-        None,
-        description=(
-            "Only include subscriptions started before this date. "
-            "Must include a UTC offset."
-        ),
-    ),
-    timezone: Annotated[
-        SubscriptionExportTimezone,
-        Query(description="Time zone used to render dates in the CSV."),
-    ] = "UTC",
-    columns: MultipleQueryFilter[SubscriptionExportColumn] | None = Query(
-        None,
-        description=(
-            "Columns to include in the CSV, in order. "
-            "Defaults to email, started_at, product, amount, "
-            "currency, status and recurring_interval."
-        ),
-    ),
+    filters: Annotated[SubscriptionExportParams, Query()],
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CSVStreamingResponse:
     """Export subscriptions as a CSV file."""
-    tzinfo = ZoneInfo(timezone)
+    tzinfo = ZoneInfo(filters.timezone)
     return CSVStreamingResponse(
         generate_csv(
             session,
             auth_subject,
-            organization_id=organization_id,
-            product_id=product_id,
-            status=status,
-            cancel_at_period_end=cancel_at_period_end,
-            started_after=started_after,
-            started_before=started_before,
+            organization_id=filters.organization_id,
+            product_id=filters.product_id,
+            external_product_id=filters.external_product_id,
+            status=filters.status,
+            cancel_at_period_end=filters.cancel_at_period_end,
+            started_after=filters.started_after,
+            started_before=filters.started_before,
             timezone=tzinfo,
-            columns=columns,
+            columns=filters.columns,
         ),
-        get_filename(started_after, started_before, tzinfo),
-    )
-
-
-@router.get(
-    "/export",
-    name="export",
-    summary="Export Subscriptions",
-    response_class=CSVStreamingResponse,
-)
-@version(starting_from=V2027_01)
-async def export_v2027_01(
-    auth_subject: auth.SubscriptionsRead,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    external_product_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalProductID Filter",
-        description="Filter by product external ID.",
-    ),
-    status: MultipleQueryFilter[SubscriptionStatus] | None = Query(
-        None, title="Status Filter", description="Filter by subscription status."
-    ),
-    cancel_at_period_end: bool | None = Query(
-        None,
-        description="Filter by subscriptions that are set to cancel at period end.",
-    ),
-    started_after: AwareDatetime | None = Query(
-        None,
-        description=(
-            "Only include subscriptions started after this date. "
-            "Must include a UTC offset."
-        ),
-    ),
-    started_before: AwareDatetime | None = Query(
-        None,
-        description=(
-            "Only include subscriptions started before this date. "
-            "Must include a UTC offset."
-        ),
-    ),
-    timezone: Annotated[
-        SubscriptionExportTimezone,
-        Query(description="Time zone used to render dates in the CSV."),
-    ] = "UTC",
-    columns: MultipleQueryFilter[SubscriptionExportColumn] | None = Query(
-        None,
-        description=(
-            "Columns to include in the CSV, in order. "
-            "Defaults to email, started_at, product, amount, "
-            "currency, status and recurring_interval."
-        ),
-    ),
-    session: AsyncReadSession = Depends(get_db_read_session),
-) -> CSVStreamingResponse:
-    """Export subscriptions as a CSV file."""
-    tzinfo = ZoneInfo(timezone)
-    return CSVStreamingResponse(
-        generate_csv(
-            session,
-            auth_subject,
-            organization_id=organization_id,
-            product_id=product_id,
-            external_product_id=external_product_id,
-            status=status,
-            cancel_at_period_end=cancel_at_period_end,
-            started_after=started_after,
-            started_before=started_before,
-            timezone=tzinfo,
-            columns=columns,
-        ),
-        get_filename(started_after, started_before, tzinfo),
+        get_filename(filters.started_after, filters.started_before, tzinfo),
     )
 
 

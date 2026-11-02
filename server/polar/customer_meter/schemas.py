@@ -3,15 +3,20 @@ from typing import Annotated
 from fastapi import Path
 from pydantic import UUID4, Field
 
+from polar.customer.schemas.customer import CustomerID
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     METER_ID_EXAMPLE,
     IDSchema,
+    MultipleQueryFilter,
     Schema,
     TimestampedSchema,
 )
-from polar.meter.schemas import Meter
+from polar.kit.versioning import QuerySchema, Version
+from polar.meter.schemas import Meter, MeterID
+from polar.organization.schemas import OrganizationID
+from polar.version import V2027_01
 
 CustomerMeterID = Annotated[UUID4, Path(description="The customer meter ID.")]
 
@@ -93,3 +98,25 @@ class CustomerMeterCreditsExternalIDCreate(CustomerMeterCreditsCreateBase):
 CustomerMeterCreditsCreate = (
     CustomerMeterCreditsIDCreate | CustomerMeterCreditsExternalIDCreate
 )
+
+
+class CustomerMeterListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[str] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    )
+    meter_id: MultipleQueryFilter[MeterID] | None = Field(
+        None, title="MeterID Filter", description="Filter by meter ID."
+    )
+    external_meter_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalMeterID Filter", description="Filter by meter external ID."
+    )

@@ -25,15 +25,29 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
+
+
+class DiscountListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalID Filter", description="Filter by discount external ID."
+    )
+    query: str | None = Field(None, description="Filter by name.")
+
 
 DiscountID = Annotated[
     UUID4,

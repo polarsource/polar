@@ -6,8 +6,8 @@ import anyio.lowlevel
 import pytest
 
 from polar import PolarClientError, PolarError, PolarNetworkError, PolarRateLimitError
-from polar.metering import FlushProtocol
-from polar.metering.buffered import BufferedMeteringStrategy, DropReason
+from polar.metering import FlushProtocol, MeteringDeliveryError, MeteringTimeoutError
+from polar.metering.buffered import BufferedMeteringStrategy, DropReason, _FlushRequest
 from polar.metering.client import MeteringClient
 from polar.metering.events import EventInput
 
@@ -212,7 +212,9 @@ async def test_retry_after_beyond_budget_drops_the_batch(
             client, batch_interval=60, shutdown_timeout=0.02, on_dropped=on_dropped
         ) as strategy:
             await strategy.track(events[0])
-            await strategy.flush()
+            with pytest.raises(MeteringDeliveryError) as failure:
+                await strategy.flush()
+            assert failure.value.failures[0].cause is client.events.ingest.side_effect
             client.events.ingest.assert_awaited_once()
             on_dropped.assert_awaited_once_with(events[:1], "retry_exhausted")
 
@@ -239,7 +241,10 @@ async def test_flush_waits_for_drop_reporting(
         await release.wait()
 
     async def flush() -> None:
-        await strategy.flush()
+        with pytest.raises(MeteringDeliveryError) as failure:
+            await strategy.flush()
+        assert failure.value.events == events[:1]
+        assert failure.value.failures[0].cause is error
         completed.set()
 
     client.events.ingest.side_effect = error
@@ -274,7 +279,7 @@ async def test_worker_exit_releases_active_and_queued_flushes(
 
     async def flush() -> None:
         with anyio.CancelScope(shield=True):
-            with pytest.raises(TypeError if fail_worker else TimeoutError) as exc_info:
+            with pytest.raises(MeteringDeliveryError) as exc_info:
                 await strategy.flush()
             flush_errors.append(exc_info.value)
 
@@ -285,7 +290,7 @@ async def test_worker_exit_releases_active_and_queued_flushes(
     )
     with anyio.fail_after(1):
         async with anyio.create_task_group() as callers:
-            try:
+            with pytest.raises(MeteringDeliveryError):
                 async with strategy:
                     await strategy.track(events[0])
                     for _ in range(2):
@@ -294,15 +299,14 @@ async def test_worker_exit_releases_active_and_queued_flushes(
                     await strategy.track(events[1])
                     if fail_worker:
                         release.set()
-                        await anyio.sleep_forever()
-            except ExceptionGroup as errors:
-                assert fail_worker
-                assert errors.exceptions == (failure,)
-            else:
-                assert not fail_worker
+                        await anyio.wait_all_tasks_blocked()
     assert len(flush_errors) == 2
     if fail_worker:
-        assert all(error is failure for error in flush_errors)
+        assert all(
+            isinstance(error, MeteringDeliveryError)
+            and error.failures[0].cause is failure
+            for error in flush_errors
+        )
     else:
         on_dropped.assert_awaited_once_with(events[:2], "shutdown_timeout")
 
@@ -352,7 +356,7 @@ async def test_exit_bounds_retry_wait(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
     client.events.ingest.side_effect = PolarNetworkError("unavailable")
-    with anyio.fail_after(1):
+    with anyio.fail_after(1), pytest.raises(MeteringDeliveryError):
         async with BufferedMeteringStrategy(
             client, batch_size=1, shutdown_timeout=0.02
         ) as strategy:
@@ -380,8 +384,8 @@ async def test_shutdown_reports_only_unfinished_events(
     dropped: list[tuple[list[EventInput], DropReason]] = []
 
     async def on_dropped(batch: list[EventInput], reason: DropReason) -> None:
-        await anyio.lowlevel.checkpoint()
         dropped.append((batch, reason))
+        await anyio.lowlevel.checkpoint()
 
     async def send(*, events: list[EventInput]) -> None:
         if events[0]["name"] == "0":
@@ -391,7 +395,7 @@ async def test_shutdown_reports_only_unfinished_events(
         await anyio.sleep_forever()
 
     client.events.ingest.side_effect = send
-    with anyio.fail_after(1):
+    with anyio.fail_after(1), pytest.raises(MeteringDeliveryError):
         async with BufferedMeteringStrategy(
             client,
             batch_size=1,
@@ -441,14 +445,244 @@ async def test_a_failing_on_delivered_stays_out_of_the_delivery_retries(
         client, max_attempts=1, on_delivered=on_delivered, on_dropped=on_dropped
     )
     with anyio.fail_after(1):
-        try:
+        with pytest.raises(PolarNetworkError) as exc_info:
             async with strategy:
                 await strategy.track(events[0])
                 with pytest.raises(PolarNetworkError):
                     await strategy.flush()
-        except ExceptionGroup as errors:
-            assert errors.exceptions == (failure,)
-        else:
-            pytest.fail("the worker should have failed")
+        assert exc_info.value is failure
     client.events.ingest.assert_awaited_once()
     on_dropped.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_background_failures_are_retained_for_overlapping_flushes(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    reporting = anyio.Event()
+    release = anyio.Event()
+    observed: list[MeteringDeliveryError] = []
+    cause = PolarClientError(422, "invalid")
+
+    async def on_dropped(batch: list[EventInput], reason: DropReason) -> None:
+        reporting.set()
+        await release.wait()
+
+    async def flush() -> None:
+        with pytest.raises(MeteringDeliveryError) as failure:
+            await strategy.flush()
+        observed.append(failure.value)
+
+    client.events.ingest.side_effect = cause
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(
+            client, batch_size=1, on_dropped=on_dropped
+        ) as strategy:
+            await strategy.track(events[0])
+            await reporting.wait()
+            async with anyio.create_task_group() as callers:
+                callers.start_soon(flush)
+                callers.start_soon(flush)
+                await anyio.wait_all_tasks_blocked()
+                release.set()
+            assert len(observed) == 2
+            for failure in observed:
+                assert failure.events == events[:1]
+                assert failure.failures[0].reason == "permanent_error"
+                assert failure.failures[0].cause is cause
+            client.events.ingest.side_effect = None
+            await strategy.track(events[1])
+            await strategy.flush()
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("cancel", [False, True])
+async def test_abandoned_flush_preserves_failures_and_other_waiters(
+    client: AsyncMock, events: list[EventInput], cancel: bool
+) -> None:
+    sending = anyio.Event()
+    release = anyio.Event()
+    completed = anyio.Event()
+    cause = PolarClientError(422, "invalid")
+
+    async def send(*, events: list[EventInput]) -> None:
+        sending.set()
+        await release.wait()
+        raise cause
+
+    async def observer() -> None:
+        with pytest.raises(MeteringDeliveryError) as failure:
+            await strategy.flush()
+        assert failure.value.failures[0].cause is cause
+        completed.set()
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(client, batch_size=1) as strategy:
+            await strategy.track(events[0])
+            await sending.wait()
+            if cancel:
+                with anyio.move_on_after(0.01) as scope:
+                    await strategy.flush()
+                assert scope.cancelled_caught
+            else:
+                with pytest.raises(MeteringTimeoutError):
+                    await strategy.flush(timeout=0.01)
+            async with anyio.create_task_group() as callers:
+                callers.start_soon(observer)
+                await anyio.wait_all_tasks_blocked()
+                assert not completed.is_set()
+                release.set()
+                await completed.wait()
+            await strategy.flush()
+
+
+@pytest.mark.anyio
+async def test_shutdown_deadline_bounds_drop_callback(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+
+    async def send(**kwargs: object) -> None:
+        await anyio.sleep_forever()
+
+    client.events.ingest.side_effect = send
+    on_dropped = AsyncMock(side_effect=anyio.sleep_forever)
+    with anyio.fail_after(1), pytest.raises(MeteringDeliveryError) as failure:
+        async with BufferedMeteringStrategy(
+            client, shutdown_timeout=0.01, on_dropped=on_dropped
+        ) as strategy:
+            await strategy.track(events[0])
+    assert failure.value.events == events[:1]
+    assert failure.value.failures[0].reason == "shutdown_timeout"
+
+
+@pytest.mark.parametrize("timeout", [-1.0, float("nan"), float("inf")])
+@pytest.mark.anyio
+async def test_invalid_delivery_timeouts(client: AsyncMock, timeout: float) -> None:
+    with pytest.raises(ValueError):
+        BufferedMeteringStrategy(client, shutdown_timeout=timeout)
+    async with BufferedMeteringStrategy(client) as strategy:
+        with pytest.raises(ValueError):
+            await strategy.flush(timeout=timeout)
+
+
+@pytest.mark.anyio
+async def test_timed_out_drop_reporting_remains_observable(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    reporting = anyio.Event()
+    release = anyio.Event()
+
+    async def on_dropped(batch: list[EventInput], reason: DropReason) -> None:
+        reporting.set()
+        await release.wait()
+
+    client.events.ingest.side_effect = PolarClientError(422, "invalid")
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(
+            client, batch_size=1, on_dropped=on_dropped
+        ) as strategy:
+            await strategy.track(events[0])
+            await reporting.wait()
+            with pytest.raises(MeteringTimeoutError):
+                await strategy.flush(timeout=0.01)
+            release.set()
+            with pytest.raises(MeteringDeliveryError) as failure:
+                await strategy.flush()
+            assert failure.value.events == events[:1]
+            await strategy.flush()
+
+
+@pytest.mark.anyio
+async def test_flush_excludes_later_delivery_failures(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    sending = anyio.Event()
+    release = anyio.Event()
+    completed = anyio.Event()
+
+    async def send(*, events: list[EventInput]) -> None:
+        if events[0]["name"] == "0":
+            sending.set()
+            await release.wait()
+        else:
+            raise PolarClientError(422, "invalid")
+
+    async def first_flush() -> None:
+        await strategy.flush()
+        completed.set()
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(client, batch_size=1) as strategy:
+            await strategy.track(events[0])
+            await sending.wait()
+            async with anyio.create_task_group() as callers:
+                callers.start_soon(first_flush)
+                await anyio.wait_all_tasks_blocked()
+                await strategy.track(events[1])
+                release.set()
+                with pytest.raises(MeteringDeliveryError) as failure:
+                    await strategy.flush()
+                assert failure.value.events == events[1:2]
+                await completed.wait()
+
+
+@pytest.mark.anyio
+async def test_shutdown_bounds_callback_after_worker_failure(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    reporting = anyio.Event()
+
+    async def on_dropped(batch: list[EventInput], reason: DropReason) -> None:
+        reporting.set()
+        await anyio.sleep_forever()
+
+    client.events.ingest.side_effect = TypeError("broken transport")
+    with anyio.fail_after(1), pytest.raises(MeteringDeliveryError):
+        async with BufferedMeteringStrategy(
+            client, batch_size=1, shutdown_timeout=0.01, on_dropped=on_dropped
+        ) as strategy:
+            await strategy.track(events[0])
+            await reporting.wait()
+
+
+@pytest.mark.anyio
+async def test_cancellation_at_completion_does_not_acknowledge_failure(
+    client: AsyncMock, events: list[EventInput], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sending = anyio.Event()
+    release = anyio.Event()
+    abandoned = anyio.Event()
+
+    async def send(*, events: list[EventInput]) -> None:
+        sending.set()
+        await release.wait()
+        raise PolarClientError(422, "invalid")
+
+    async def flush(*, task_status: anyio.abc.TaskStatus[anyio.CancelScope]) -> None:
+        with anyio.CancelScope() as scope:
+            task_status.started(scope)
+            await strategy.flush()
+        assert scope.cancelled_caught
+        abandoned.set()
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(client, batch_size=1) as strategy:
+            await strategy.track(events[0])
+            await sending.wait()
+            async with anyio.create_task_group() as callers:
+                scope = await callers.start(flush)
+                original_finish = strategy._finish
+
+                def finish(request: _FlushRequest) -> None:
+                    original_finish(request)
+                    scope.cancel()
+
+                monkeypatch.setattr(strategy, "_finish", finish)
+                release.set()
+                await abandoned.wait()
+            with pytest.raises(MeteringDeliveryError) as failure:
+                await strategy.flush()
+            assert failure.value.events == events[:1]

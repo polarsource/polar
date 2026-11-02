@@ -18,9 +18,11 @@ from polar.metering import (
     FlushProtocol,
     InvalidActorError,
     Metering,
+    MeteringDeliveryError,
     MeteringError,
     MeteringOutpostOptions,
     MeteringStrategyProtocol,
+    MeteringTimeoutError,
     ValidateProtocol,
 )
 from polar.metering.buffered import BufferedMeteringStrategy
@@ -46,13 +48,14 @@ async def test_flush_optional_strategies(fail: bool) -> None:
         polar.metering(strategies=[first, ordinary, second]) as metering,
     ):
         if fail:
-            with pytest.raises(ExceptionGroup) as exc_info:
+            with pytest.raises(RuntimeError) as exc_info:
                 await metering.flush()
-            assert exc_info.value.exceptions == (error,)
+            assert exc_info.value is error
         else:
             await metering.flush()
-        first.flush.assert_awaited_once_with()
-        second.flush.assert_awaited_once_with()
+        for strategy in (first, second):
+            strategy.flush.assert_awaited_once()
+            assert 0 < strategy.flush.await_args.kwargs["timeout"] <= 30
         first.__aexit__.assert_not_awaited()
         await metering.track(name="usage", external_customer_id="customer")
         first.track.assert_awaited_once()
@@ -160,6 +163,8 @@ async def test_factory_buffer_options(monkeypatch: pytest.MonkeyPatch) -> None:
             with anyio.fail_after(1):
                 while not on_dropped.await_count:
                     await anyio.lowlevel.checkpoint()
+            with pytest.raises(MeteringDeliveryError):
+                await metering.flush()
         send.assert_awaited_once()
         on_dropped.assert_awaited_once_with(
             [{"name": "usage", "external_customer_id": "customer", "timestamp": ANY}],
@@ -211,7 +216,9 @@ async def test_factory_confirms_accepted_and_dropped_events_in_outpost(
         ) as metering:
             await metering.track(**accepted)
             await metering.track(**dropped)
-            await metering.flush()
+            with pytest.raises(MeteringDeliveryError) as failure:
+                await metering.flush()
+            assert failure.value.events == [dropped]
     # Received events settle where their bucket is hot; dropped ones settle everywhere.
     acknowledge.assert_awaited_once_with([accepted])
     confirm.assert_awaited_once_with([dropped])
@@ -592,3 +599,40 @@ async def test_meter_api_error_propagates(monkeypatch: pytest.MonkeyPatch) -> No
         async with polar.metering() as metering:
             with pytest.raises(PolarClientError):
                 await metering.meter(meter_id="meter", external_customer_id="customer")
+
+
+@pytest.mark.anyio
+async def test_public_flush_enforces_timeout_for_custom_strategy() -> None:
+    strategy = AsyncMock(spec=MeteringStrategyProtocol)
+    strategy.flush = AsyncMock()
+
+    async def flush(*, timeout: float = 30.0) -> None:
+        await anyio.sleep_forever()
+
+    strategy.flush.side_effect = flush
+    async with (
+        PolarAsync("token") as polar,
+        polar.metering(strategies=[strategy]) as metering,
+    ):
+        with anyio.fail_after(1), pytest.raises(MeteringTimeoutError):
+            await metering.flush(timeout=0.01)
+
+
+@pytest.mark.anyio
+async def test_context_preserves_body_and_delivery_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    body_error = ValueError("body failed")
+    delivery_error = PolarClientError(422, "rejected")
+    async with PolarAsync("token") as polar:
+        monkeypatch.setattr(
+            polar.events, "ingest", AsyncMock(side_effect=delivery_error)
+        )
+        with pytest.raises(ExceptionGroup) as failure:
+            async with polar.metering() as metering:
+                await metering.track(name="usage", external_customer_id="customer")
+                raise body_error
+    assert failure.value.exceptions[0] is body_error
+    delivery = failure.value.exceptions[1]
+    assert isinstance(delivery, MeteringDeliveryError)
+    assert delivery.failures[0].cause is delivery_error

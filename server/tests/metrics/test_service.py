@@ -5671,46 +5671,50 @@ class TestCheckoutMetrics:
         assert total_checkouts == 1
 
     @pytest.mark.parametrize("auth", ["user", "org"])
+    @pytest.mark.parametrize(
+        ("filter_one_time_product", "billing_type", "expected_checkouts"),
+        [
+            pytest.param(False, None, 3, id="no_filter"),
+            pytest.param(True, None, 1, id="product"),
+            pytest.param(False, [ProductBillingType.recurring], 2, id="billing_type"),
+            pytest.param(
+                True, [ProductBillingType.recurring], 0, id="product_and_billing_type"
+            ),
+        ],
+    )
     async def test_product_and_billing_type_filters(
         self,
         checkout_metrics_harness: CheckoutMetricsHarness,
         checkout_metrics_session: AsyncSession,
         auth: str,
+        filter_one_time_product: bool,
+        billing_type: list[ProductBillingType] | None,
+        expected_checkouts: int,
     ) -> None:
         context = checkout_metrics_harness.scenarios["product_filters"]
         auth_subject = _checkout_auth_subject(context, auth)
-        one_time_product_id = await checkout_metrics_session.scalar(
-            select(Product.id).where(
-                Product.organization_id == context.organization.id,
-                Product.billing_type == ProductBillingType.one_time,
+        product_id: list[UUID] | None = None
+        if filter_one_time_product:
+            one_time_product_id = await checkout_metrics_session.scalar(
+                select(Product.id).where(
+                    Product.organization_id == context.organization.id,
+                    Product.billing_type == ProductBillingType.one_time,
+                )
             )
-        )
-        assert one_time_product_id is not None
+            assert one_time_product_id is not None
+            product_id = [one_time_product_id]
 
-        async def total_checkouts(
-            product_id: list[UUID] | None = None,
-            billing_type: list[ProductBillingType] | None = None,
-        ) -> int | float:
-            metrics = await metrics_service.get_metrics(
-                checkout_metrics_session,
-                auth_subject,
-                start_date=date(2026, 2, 1),
-                end_date=date(2026, 2, 28),
-                timezone=ZoneInfo("UTC"),
-                interval=TimeInterval.month,
-                product_id=product_id,
-                billing_type=billing_type,
-                metrics=["checkouts"],
-            )
-            return sum(p.checkouts or 0 for p in metrics.periods)
-
-        assert await total_checkouts() == 3
-        assert await total_checkouts(product_id=[one_time_product_id]) == 1
-        assert await total_checkouts(billing_type=[ProductBillingType.recurring]) == 2
-        assert (
-            await total_checkouts(
-                product_id=[one_time_product_id],
-                billing_type=[ProductBillingType.recurring],
-            )
-            == 0
+        metrics = await metrics_service.get_metrics(
+            checkout_metrics_session,
+            auth_subject,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 28),
+            timezone=ZoneInfo("UTC"),
+            interval=TimeInterval.month,
+            product_id=product_id,
+            billing_type=billing_type,
+            metrics=["checkouts"],
         )
+
+        total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
+        assert total_checkouts == expected_checkouts

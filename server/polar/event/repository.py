@@ -402,6 +402,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
+    def get_meter_resets_statement(
+        self, customer: Customer, meter_id: UUID
+    ) -> Select[Event]:
+        return self.get_base_statement().where(
+            Event.organization_id == customer.organization_id,
+            Event.customer_id == customer.id,
+            Event.source == EventSource.system,
+            Event.name == SystemEvent.meter_reset,
+            Event.user_metadata["meter_id"].as_string() == str(meter_id),
+        )
+
     async def get_latest_meter_reset(
         self,
         customer: Customer,
@@ -410,14 +421,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         cutoff: datetime | None = None,
     ) -> Event | None:
         statement = (
-            self.get_base_statement()
-            .where(
-                Event.organization_id == customer.organization_id,
-                Event.customer_id == customer.id,
-                Event.source == EventSource.system,
-                Event.name == SystemEvent.meter_reset,
-                Event.user_metadata["meter_id"].as_string() == str(meter_id),
-            )
+            self.get_meter_resets_statement(customer, meter_id)
             .order_by(Event.timestamp.desc())
             .limit(1)
         )

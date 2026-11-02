@@ -261,7 +261,13 @@ export const consumedUnits = (state: State, func: Aggregation["func"]): number =
 const isClose = (a: number, b: number): boolean =>
   Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
 
-const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): void => {
+const reportLocalValue = (
+  span: Span,
+  snapshot: Snapshot,
+  replaced: string[],
+  // The state before the transaction settled confirmed events out of the pending part.
+  before?: Record<string, string>,
+): void => {
   const fields: Record<string, string> = {};
   for (let index = 0; index < replaced.length; index += 2)
     fields[replaced[index]] = replaced[index + 1];
@@ -270,13 +276,13 @@ const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): v
   const local = emptyStatistics();
   const buckets = new Map<string, BucketStatistics>();
   const pending = new Map<string, BucketStatistics>();
-  for (const [field, value] of Object.entries(fields)) {
+  for (const [field, value] of Object.entries(before ?? fields)) {
     if (field.startsWith(COLD_PREFIX)) {
       local[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(value);
       continue;
     }
     const [kind, start, statistic] = field.split(":");
-    if (kind !== "bucket" && kind !== "pending") continue;
+    if ((kind !== "bucket" && kind !== "pending") || Number(start) >= snapshot.cold_until) continue;
     const group = kind === "bucket" ? buckets : pending;
     const statistics = group.get(start) ?? emptyStatistics();
     statistics[statistic as keyof BucketStatistics] = number(value);
@@ -1236,9 +1242,11 @@ export class Outpost {
       async (span) => {
         const redis = this.requireRedis();
         let applied: [state: string[], replaced: string[]];
+        let before: Record<string, string> | undefined;
         const confirmed = [...(confirmation?.confirmed ?? [])].filter(([, ids]) => ids.length);
         if (confirmed.length) {
           const transaction = redis.multi() as OutpostPipeline;
+          transaction.hgetall(key);
           for (const [bucketStart, ids] of confirmed)
             transaction.outpostConfirm(
               key,
@@ -1256,11 +1264,12 @@ export class Outpost {
           const [error, result] = results[results.length - 1];
           if (error) throw error;
           applied = result as [string[], string[]];
+          before = results[0][1] as Record<string, string>;
         } else {
           applied = await redis.outpostApplySnapshot(key, ...snapshotArguments);
         }
         const [state, replaced] = applied;
-        reportLocalValue(span, snapshot, replaced);
+        reportLocalValue(span, snapshot, replaced, before);
         if (confirmation) {
           span.setAttributes({
             "outpost.pending.asked": confirmation.asked,

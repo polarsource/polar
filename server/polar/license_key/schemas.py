@@ -19,14 +19,21 @@ from polar.kit.metadata import (
     MetadataKey,
     MetadataValue,
 )
-from polar.kit.schemas import IDSchema, Int32, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    Int32,
+    MultipleQueryFilter,
+    Schema,
+    TimestampedSchema,
+)
 from polar.kit.utils import generate_uuid, utc_now
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.license_key import LicenseKeyStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.openapi import destructive_when_one_of
 from polar.order.schemas import OrderBase
+from polar.organization.schemas import OrganizationID
 from polar.subscription.schemas import SubscriptionBase
 from polar.version import V2026_10, V2027_01
 
@@ -395,3 +402,17 @@ class LicenseKeyCreate(LicenseKeyUpdate):
             limit_usage=limit_usage,
             expires_at=expires_at,
         )
+
+
+class LicenseKeyListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Field(
+        None, title="BenefitID Filter", description="Filter by benefit ID."
+    )
+    status: MultipleQueryFilter[LicenseKeyStatus] | None = Field(
+        None,
+        title="LicenseKeyStatus Filter",
+        description="Filter by license key status.",
+    )

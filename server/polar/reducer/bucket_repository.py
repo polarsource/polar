@@ -9,6 +9,7 @@ from sqlalchemy import (
     ColumnElement,
     Numeric,
     Row,
+    ScalarSelect,
     Select,
     Uuid,
     and_,
@@ -16,20 +17,30 @@ from sqlalchemy import (
     column,
     func,
     literal,
+    literal_column,
     null,
     or_,
     select,
     true,
+    union_all,
     update,
     values,
 )
 from sqlalchemy.dialects.postgresql import insert
 
+from polar.event.repository import EventRepository
 from polar.kit.db.locking import pg_advisory_xact_locks
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation
-from polar.models import Event, Reducer, ReducerBucket, StagedEvent
+from polar.models import (
+    Customer,
+    Event,
+    MeterReducer,
+    Reducer,
+    ReducerBucket,
+    StagedEvent,
+)
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 
@@ -72,6 +83,17 @@ def _starts_within(
         ReducerBucket.bucket_start < end,
         _is_customer(ReducerBucket, customer_id, external_customer_id),
     )
+
+
+def get_customer_identities(
+    customer: Customer,
+) -> list[tuple[UUID | None, str | None]]:
+    """The (customer_id, external_customer_id) pairs the customer's buckets use."""
+    identities: list[tuple[UUID | None, str | None]] = [(customer.id, None)]
+    if customer.external_id is not None:
+        identities.append((None, customer.external_id))
+        identities.append((customer.id, customer.external_id))
+    return identities
 
 
 class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
@@ -244,20 +266,96 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             ReducerBucket.bucket_start < before if before is not None else true(),
         )
 
-    async def get_totals_starting_within(
+    async def get_customer_meter_totals(
         self,
-        organization_id: UUID,
-        reducer_id: UUID,
-        identities: Sequence[tuple[UUID | None, str | None]],
-        start: datetime | None,
-        end: datetime,
-    ) -> Row[Any, Any, Any, Any]:
-        """count, sum, min and max of the identities' buckets of every generation
-        starting in [start, end)."""
-        clauses = [ReducerBucket.bucket_start < end]
-        if start is not None:
-            clauses.append(ReducerBucket.bucket_start >= start)
-        return await self._get_totals(organization_id, reducer_id, identities, *clauses)
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        usage_closed_before: datetime,
+    ) -> Sequence[Row[*tuple[Any, ...]]]:
+        """The id, kind and aggregation of each of the meter's reducers, the
+        customer's latest meter reset, and the count, sum, min and max of the
+        reducer's buckets of every generation starting from it: one row per
+        identity of the customer's usage buckets before `usage_closed_before`,
+        and one of its credit buckets."""
+        reducers = (
+            await self.session.execute(
+                select(Reducer)
+                .join(MeterReducer, MeterReducer.reducer_id == Reducer.id)
+                .where(MeterReducer.meter_id == meter_id)
+            )
+        ).scalars()
+        reducer_by_kind = {reducer.kind: reducer for reducer in reducers}
+        usage_reducer = reducer_by_kind.get(ReducerKind.usage)
+        credit_reducer = reducer_by_kind.get(ReducerKind.credit)
+        if usage_reducer is None and credit_reducer is None:
+            return []
+
+        reset = (
+            EventRepository.from_session(self.session)
+            .get_meter_resets_statement(customer, meter_id)
+            .with_only_columns(func.max(Event.timestamp).label("since"))
+            .cte("reset")
+        )
+        # A scalar subquery runs once before the scans, so its value can bound
+        # the bucket index scan; a join on the CTE can't.
+        since = select(reset.c.since).scalar_subquery()
+        statements: list[Select[*tuple[Any, ...]]] = []
+        if usage_reducer is not None:
+            statements.extend(
+                self._get_meter_reducer_totals_statement(
+                    usage_reducer,
+                    since,
+                    _is_customer(ReducerBucket, customer_id, external_customer_id),
+                    ReducerBucket.bucket_start < usage_closed_before,
+                )
+                for customer_id, external_customer_id in get_customer_identities(
+                    customer
+                )
+            )
+        if credit_reducer is not None:
+            statements.append(
+                self._get_meter_reducer_totals_statement(
+                    credit_reducer,
+                    since,
+                    _is_customer(ReducerBucket, customer.id, None),
+                )
+            )
+        result = await self.session.execute(union_all(*statements))
+        return result.all()
+
+    def _get_meter_reducer_totals_statement(
+        self,
+        reducer: Reducer,
+        since: ScalarSelect[datetime | None],
+        *clauses: ColumnElement[bool],
+    ) -> Select[*tuple[Any, ...]]:
+        # One statement per kind and identity: Postgres won't serve an OR of
+        # identities from the identity index here.
+        return (
+            select(
+                Reducer.id,
+                Reducer.kind,
+                Reducer.aggregation,
+                since,
+                func.coalesce(func.sum(ReducerBucket.count), 0),
+                func.coalesce(func.sum(ReducerBucket.sum), 0),
+                func.min(ReducerBucket.min),
+                func.max(ReducerBucket.max),
+            )
+            .outerjoin(
+                ReducerBucket,
+                and_(
+                    ReducerBucket.organization_id == reducer.organization_id,
+                    ReducerBucket.reducer_id == reducer.id,
+                    ReducerBucket.bucket_start
+                    >= func.coalesce(since, literal_column("'-infinity'::timestamptz")),
+                    *clauses,
+                ),
+            )
+            .where(Reducer.id == reducer.id)
+            .group_by(Reducer.id)
+        )
 
     async def _get_totals(
         self,

@@ -5,11 +5,10 @@ from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
+from polar.kit.schemas import SetSchemaReference
 from polar.kit.versioning import version
 from polar.models import Discount
 from polar.openapi import APITag, cli_preview
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.version import V2027_01
@@ -19,6 +18,7 @@ from .schemas import Discount as DiscountSchema
 from .schemas import (
     DiscountAdapter,
     DiscountCreate,
+    DiscountListParams,
     DiscountUpdate,
 )
 from .service import discount as discount_service
@@ -40,56 +40,16 @@ async def list(
     auth_subject: auth.DiscountRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    query: str | None = Query(None, description="Filter by name."),
+    filters: Annotated[DiscountListParams, Query()],
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[DiscountSchema]:
     """List discounts."""
     results, count = await discount_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        query=query,
-        pagination=pagination,
-        sorting=sorting,
-    )
-
-    return ListResource.from_paginated_results(
-        [DiscountAdapter.validate_python(result) for result in results],
-        count,
-        pagination,
-    )
-
-
-@router.get(
-    "/",
-    name="list",
-    summary="List Discounts",
-    response_model=ListResource[DiscountSchema],
-)
-@version(starting_from=V2027_01)
-async def list_v2027_01(
-    auth_subject: auth.DiscountRead,
-    pagination: PaginationParamsQuery,
-    sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    external_id: MultipleQueryFilter[str] | None = Query(
-        None, title="ExternalID Filter", description="Filter by discount external ID."
-    ),
-    query: str | None = Query(None, description="Filter by name."),
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[DiscountSchema]:
-    """List discounts."""
-    results, count = await discount_service.list(
-        session,
-        auth_subject,
-        organization_id=organization_id,
-        external_id=external_id,
-        query=query,
+        organization_id=filters.organization_id,
+        external_id=filters.external_id,
+        query=filters.query,
         pagination=pagination,
         sorting=sorting,
     )

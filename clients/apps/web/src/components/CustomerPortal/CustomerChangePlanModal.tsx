@@ -3,6 +3,7 @@
 import { InlineModalHeader } from '@polar-sh/orbit'
 import {
   useCustomerPaymentMethods,
+  useCustomerSubscriptionChangePreview,
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
 import { isFreePrice } from '@/utils/product'
@@ -38,6 +39,14 @@ const ProductPriceListItem = ({
       <ProductPriceLabel product={product} currency={currency} />
     </ListItem>
   )
+}
+
+const getNextInvoiceType = (
+  preview: schemas['SubscriptionChargePreview'],
+): 'charge' | 'balance' | 'credit' => {
+  if (preview.total_amount <= 0) return 'credit'
+  if (preview.due_amount === 0) return 'balance'
+  return 'charge'
 }
 
 const CustomerChangePlanModal = ({
@@ -106,34 +115,25 @@ const CustomerChangePlanModal = ({
 
   const isTrialing = subscription.status === 'trialing'
 
-  const [willTriggerImmediateCycle, nextInvoiceType] = useMemo(():
-    | [false, null]
-    | [true, 'charge' | 'credit'] => {
-    if (!selectedProduct) return [false, null]
-    if (isTrialing) return [false, null]
+  const willTriggerImmediateCycle =
+    selectedProduct !== null &&
+    !isTrialing &&
+    prorationBehavior !== 'next_period' &&
+    (selectedProduct.recurring_interval !== subscription.recurring_interval ||
+      selectedProduct.recurring_interval_count !==
+        subscription.recurring_interval_count)
 
-    const willTrigger =
-      prorationBehavior !== 'next_period' &&
-      (selectedProduct.recurring_interval !== subscription.recurring_interval ||
-        selectedProduct.recurring_interval_count !==
-          subscription.recurring_interval_count)
+  const changePreview = useCustomerSubscriptionChangePreview(
+    api,
+    subscription.id,
+    selectedProduct?.id,
+    willTriggerImmediateCycle,
+  )
 
-    if (!willTrigger) return [false, null]
-
-    const newPrice = selectedProduct.prices.reduce((acc, price) => {
-      if (price.amount_type === 'fixed') {
-        return acc + price.price_amount
-      }
-
-      return acc
-    }, 0)
-
-    const currentPrice = subscription.amount
-
-    const chargeOrCredit = newPrice > currentPrice ? 'charge' : 'credit'
-
-    return [willTrigger, chargeOrCredit]
-  }, [selectedProduct, prorationBehavior, subscription, isTrialing])
+  const nextInvoiceType =
+    changePreview.data && !changePreview.isFetching && !changePreview.isError
+      ? getNextInvoiceType(changePreview.data)
+      : null
 
   const invoicingMessage = useMemo((): string | null => {
     if (!selectedProduct) return null
@@ -147,13 +147,18 @@ const CustomerChangePlanModal = ({
     }
 
     if (willTriggerImmediateCycle) {
+      if (nextInvoiceType === null) return null
+
       const newPeriod =
         selectedProduct.recurring_interval === 'month' ? 'monthly' : 'yearly'
 
-      if (nextInvoiceType === 'charge') {
-        return `You'll be charged immediately for the new ${newPeriod} plan.`
-      } else {
-        return `Your previous payment will appear as a credit on your next invoice.`
+      switch (nextInvoiceType) {
+        case 'charge':
+          return `You'll be charged immediately for the new ${newPeriod} plan.`
+        case 'balance':
+          return `The new ${newPeriod} plan will be paid from your balance.`
+        case 'credit':
+          return `Your previous payment will appear as a credit on your next invoice.`
       }
     }
 

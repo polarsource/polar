@@ -874,6 +874,31 @@ it("drops a cold bucket once Polar confirmed every pending event", async () => {
   expect((await other.meter(meter))?.consumed_units).toBe(30);
 });
 
+it("reports the local value as it was before the confirmed events settled", async () => {
+  const outpost = await warm();
+  const events = [usage("event-0", 10), usage("event-1", 10)];
+  for (const event of events) await outpost.track(event);
+  await seal(bucket + BUCKET_SIZE);
+  ingested = new Set(events.map((event) => event.external_id));
+  snapshot = { ...sealing(2, 20), cold_until: bucket + 2 * BUCKET_SIZE, version: 1791807000000006 };
+  const other = await start();
+  await other.actor(customer);
+  const confirming = () =>
+    exported.find(
+      (span) =>
+        span.name === "outpost.snapshot.received" &&
+        span.attributes["outpost.pending.asked"] !== undefined,
+    );
+  await vi.waitFor(() => expect(confirming()).toBeDefined());
+  expect(confirming()!.attributes).toMatchObject({
+    "outpost.local.cold_until": bucket + BUCKET_SIZE,
+    "outpost.local.count": 2,
+    "outpost.local.sum": 20,
+    "outpost.pending.confirmed": 2,
+    "outpost.snapshot.delta": false,
+  });
+});
+
 it("applies a credit snapshot without asking Polar to confirm anything", async () => {
   const outpost = await warm();
   const events = [usage("event-0", 10), usage("event-1", 10)];

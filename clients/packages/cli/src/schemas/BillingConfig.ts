@@ -87,8 +87,10 @@ export const PlanResponse = Schema.Struct({
 export const PruneEntry = Schema.Struct({
   resource: ConfigResource,
   external_id: Schema.String,
-  in_use: Schema.Boolean,
-  referenced_by: Schema.Array(Schema.String),
+  customers_count: Schema.Number,
+  referenced_by: Schema.Array(
+    Schema.Struct({ resource: ConfigResource, external_id: Schema.String }),
+  ),
 })
 export type PruneEntry = typeof PruneEntry.Type
 

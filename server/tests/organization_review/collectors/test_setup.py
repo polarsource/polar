@@ -4,6 +4,7 @@ import pytest
 import respx
 from pytest_mock import MockerFixture
 
+from polar.kit.http import SSRFBlockedError
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.setup import (
     _extract_domain,
@@ -376,11 +377,7 @@ class TestCollectSetupDataCombined:
 
 
 class TestResolveUrlRedirects:
-    """Tests for resolve_url_redirects.
-
-    All tests patch _validate_url_host to skip DNS resolution / SSRF checks,
-    since test domains don't resolve in CI.
-    """
+    """Tests for resolve_url_redirects."""
 
     @pytest.mark.anyio
     async def test_empty_urls(self) -> None:
@@ -392,10 +389,6 @@ class TestResolveUrlRedirects:
         """URL that does not redirect reports redirected=False."""
         import respx
 
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
         mocker.patch(
             "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
             return_value=UrlRedirectInfo(
@@ -419,11 +412,6 @@ class TestResolveUrlRedirects:
         """URL that redirects to a different domain reports redirected=True."""
         import respx
 
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
-
         with respx.mock:
             respx.get("https://api.legit.com/success").respond(
                 302, headers={"Location": "https://porn-site.com/landing"}
@@ -441,10 +429,6 @@ class TestResolveUrlRedirects:
     async def test_chain_through_other_domain_back_to_own_site(
         self, mocker: MockerFixture
     ) -> None:
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
 
         with respx.mock:
             respx.get("https://api.legit.com/success").respond(
@@ -465,10 +449,6 @@ class TestResolveUrlRedirects:
     async def test_hop_limit_still_checks_last_redirect_target(
         self, mocker: MockerFixture
     ) -> None:
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
 
         with respx.mock:
             for i in range(9):
@@ -486,10 +466,6 @@ class TestResolveUrlRedirects:
 
     @pytest.mark.anyio
     async def test_port_on_subdomain_not_flagged(self, mocker: MockerFixture) -> None:
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
         mocker.patch(
             "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
             return_value=UrlRedirectInfo(
@@ -517,10 +493,6 @@ class TestResolveUrlRedirects:
         import respx
 
         mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
-        mocker.patch(
             "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
             return_value=UrlRedirectInfo(
                 original_url="https://example.com/old",
@@ -545,10 +517,6 @@ class TestResolveUrlRedirects:
         """Redirect from bare domain to www (or vice versa) is not flagged."""
         import respx
 
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
         mocker.patch(
             "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
             return_value=UrlRedirectInfo(
@@ -578,10 +546,6 @@ class TestResolveUrlRedirects:
         import respx
 
         mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
-        mocker.patch(
             "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
             return_value=UrlRedirectInfo(
                 original_url="https://www.example.com/thanks",
@@ -607,11 +571,6 @@ class TestResolveUrlRedirects:
         """Timeout is reported as an error, not a crash."""
         import respx
 
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
-
         with respx.mock:
             respx.get("https://slow.com/timeout").mock(side_effect=Exception("timeout"))
             results = await resolve_url_redirects(["https://slow.com/timeout"])
@@ -627,10 +586,6 @@ class TestResolveUrlRedirects:
         """URL returning 200 with a JS/meta-refresh redirect is caught by browser pass."""
         import respx
 
-        mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
         # GET returns 200 (no HTTP redirect) — browser pass will be triggered
         # Browser detects the client-side redirect to a different domain
         mocker.patch(
@@ -658,10 +613,6 @@ class TestResolveUrlRedirects:
         import respx
 
         mocker.patch(
-            "polar.organization_review.collectors.setup._validate_url_host",
-            return_value=None,
-        )
-        mocker.patch(
             "polar.organization_review.collectors.setup._resolve_redirect_with_browser",
             return_value=UrlRedirectInfo(
                 original_url="https://flaky-site.com/page",
@@ -676,6 +627,29 @@ class TestResolveUrlRedirects:
         assert len(results) == 1
         assert results[0].error == "browser_error"
         assert results[0].redirected is False
+
+    @pytest.mark.anyio
+    async def test_blocked_host(self) -> None:
+        with respx.mock:
+            respx.get("https://internal.example.com/").mock(
+                side_effect=SSRFBlockedError("private/reserved IP")
+            )
+            results = await resolve_url_redirects(["https://internal.example.com/"])
+
+        assert results[0].error == "blocked"
+
+    @pytest.mark.anyio
+    async def test_blocked_redirect_target(self) -> None:
+        with respx.mock:
+            respx.get("https://example.com/").respond(
+                302, headers={"Location": "https://internal.example.com/"}
+            )
+            respx.get("https://internal.example.com/").mock(
+                side_effect=SSRFBlockedError("private/reserved IP")
+            )
+            results = await resolve_url_redirects(["https://example.com/"])
+
+        assert results[0].error == "redirect_blocked"
 
 
 class TestResolveRedirectFirecrawl:

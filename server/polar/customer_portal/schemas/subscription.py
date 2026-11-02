@@ -14,16 +14,18 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.kit.schemas import (
     IDSchema,
     Int32,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
+    ProductID,
     ProductMediaList,
     ProductPrice,
     ProductPriceList,
@@ -242,3 +244,16 @@ CustomerSubscriptionUpdate = Annotated[
     | CustomerSubscriptionUpdateClear,
     SetSchemaReference("CustomerSubscriptionUpdate"),
 ]
+
+
+class CustomerPortalSubscriptionListParams(QuerySchema):
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    active: bool | None = Field(
+        None,
+        description=("Filter by active or cancelled subscription."),
+    )
+    query: str | None = Field(
+        None, description="Search by product or organization name."
+    )

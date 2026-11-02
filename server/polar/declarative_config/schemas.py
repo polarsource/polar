@@ -22,6 +22,7 @@ from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import IDSchema, Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
+from polar.kit.versioning import QuerySchema
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
@@ -561,13 +562,26 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
+class ConfigPruneReference(Schema):
+    resource: ConfigResource = Field(
+        description="The type of the referencing resource."
+    )
+    external_id: str = Field(description="The referencing resource's `external_id`.")
+
+
 class ConfigPruneEntry(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
-    in_use: bool = Field(description="Whether a customer still uses the resource.")
-    referenced_by: list[str] = Field(
+    customers_count: int = Field(
         description=(
-            "External IDs of the products and benefits staying in the config "
+            "Number of customers still using the resource: subscribers for a product, "
+            "customers granted a benefit, from a subscription or an order, and "
+            "subscribers or credit holders for a meter."
+        )
+    )
+    referenced_by: list[ConfigPruneReference] = Field(
+        description=(
+            "The products and benefits staying in the config "
             "that reference the resource."
         )
     )
@@ -766,4 +780,14 @@ class ConfigExport(Schema):
         description=(
             "The catalog version the products come from. None before the first publish."
         )
+    )
+
+
+class DeclarativeConfigExportParams(QuerySchema):
+    organization_id: OrganizationID | None = Field(
+        None,
+        description=(
+            "The ID of the organization to export. "
+            "**Required unless you use an organization token.**"
+        ),
     )

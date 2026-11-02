@@ -31,6 +31,7 @@ type Category =
   | 'organizations'
   | 'onboarding'
   | 'issues'
+  | 'products'
 
 type Noun = string
 

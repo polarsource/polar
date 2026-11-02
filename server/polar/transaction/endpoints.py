@@ -2,17 +2,14 @@ from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query
-from pydantic import UUID4, AwareDatetime
-from pydantic_extra_types.timezone_name import TimeZoneName
+from pydantic import UUID4
 
 from polar.account.service import account as account_service
 from polar.auth.permission import OrganizationPermission
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.models.transaction import TransactionType
 from polar.openapi import APITag
 from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
@@ -21,11 +18,11 @@ from polar.transaction import (
 )
 
 from .export import (
-    TransactionExportColumn,
+    TransactionExportParams,
     generate_csv,
     get_filename,
 )
-from .schemas import Transaction, TransactionsSummary
+from .schemas import Transaction, TransactionSearchParams, TransactionsSummary
 from .service.transaction import TransactionSortProperty
 from .service.transaction import transaction as transaction_service
 
@@ -40,22 +37,19 @@ SearchSorting = Annotated[
 
 @router.get("/search", response_model=ListResource[Transaction])
 async def search_transactions(
+    filters: Annotated[TransactionSearchParams, Query()],
     pagination: PaginationParamsQuery,
     sorting: SearchSorting,
     auth_subject: transactions_auth.TransactionsRead,
-    type: TransactionType | None = Query(None),
-    account_id: UUID4 | None = Query(None),
-    payment_customer_id: UUID4 | None = Query(None),
-    exclude_platform_fees: bool = Query(False),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[Transaction]:
     results, count = await transaction_service.search(
         session,
         auth_subject,
-        type=type,
-        account_id=account_id,
-        payment_customer_id=payment_customer_id,
-        exclude_platform_fees=exclude_platform_fees,
+        type=filters.type,
+        account_id=filters.account_id,
+        payment_customer_id=filters.payment_customer_id,
+        exclude_platform_fees=filters.exclude_platform_fees,
         pagination=pagination,
         sorting=sorting,
     )
@@ -74,36 +68,9 @@ async def search_transactions(
     tags=[APITag.private],
 )
 async def export(
+    filters: Annotated[TransactionExportParams, Query()],
     auth_subject: transactions_auth.TransactionsRead,
     account_id: UUID4,
-    type: TransactionType | None = Query(None),
-    exclude_platform_fees: bool = Query(False),
-    created_after: AwareDatetime | None = Query(
-        None,
-        description=(
-            "Only include transactions created after this date. "
-            "Must include a UTC offset."
-        ),
-    ),
-    created_before: AwareDatetime | None = Query(
-        None,
-        description=(
-            "Only include transactions created before this date. "
-            "Must include a UTC offset."
-        ),
-    ),
-    timezone: TimeZoneName = Query(
-        default="UTC",
-        description="Time zone used to render dates in the CSV.",
-    ),
-    columns: MultipleQueryFilter[TransactionExportColumn] | None = Query(
-        None,
-        description=(
-            "Columns to include in the CSV, in order. "
-            "Defaults to created_at, type, product, gross_amount, fees, "
-            "tax_amount, net_amount, currency, status and paid_out_at."
-        ),
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CSVStreamingResponse:
     """Export transactions as a CSV file."""
@@ -116,19 +83,19 @@ async def export(
     if account is None:
         raise ResourceNotFound()
 
-    tzinfo = ZoneInfo(timezone)
+    tzinfo = ZoneInfo(filters.timezone)
     return CSVStreamingResponse(
         generate_csv(
             session,
             account,
-            type=type,
-            exclude_platform_fees=exclude_platform_fees,
-            created_after=created_after,
-            created_before=created_before,
+            type=filters.type,
+            exclude_platform_fees=filters.exclude_platform_fees,
+            created_after=filters.created_after,
+            created_before=filters.created_before,
             timezone=tzinfo,
-            columns=columns,
+            columns=filters.columns,
         ),
-        get_filename(created_after, created_before, tzinfo),
+        get_filename(filters.created_after, filters.created_before, tzinfo),
     )
 
 

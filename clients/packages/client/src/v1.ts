@@ -16892,15 +16892,25 @@ export interface components {
        */
       external_id: string
       /**
-       * In Use
-       * @description Whether a customer still uses the resource.
+       * Customers Count
+       * @description Number of customers still using the resource: subscribers for a product, customers granted a benefit, from a subscription or an order, and subscribers or credit holders for a meter.
        */
-      in_use: boolean
+      customers_count: number
       /**
        * Referenced By
-       * @description External IDs of the products and benefits staying in the config that reference the resource.
+       * @description The products and benefits staying in the config that reference the resource.
        */
-      referenced_by: string[]
+      referenced_by: components['schemas']['ConfigPruneReference'][]
+    }
+    /** ConfigPruneReference */
+    ConfigPruneReference: {
+      /** @description The type of the referencing resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The referencing resource's `external_id`.
+       */
+      external_id: string
     }
     /** ConfigRemoval */
     ConfigRemoval: {
@@ -46230,7 +46240,6 @@ export interface operations {
   'transactions:export': {
     parameters: {
       query: {
-        account_id: string
         type?: components['schemas']['TransactionType'] | null
         exclude_platform_fees?: boolean
         /** @description Only include transactions created after this date. Must include a UTC offset. */
@@ -46842,6 +46851,7 @@ export interface operations {
           | components['schemas']['TransactionExportColumn']
           | components['schemas']['TransactionExportColumn'][]
           | null
+        account_id: string
       }
       header?: never
       path?: never
@@ -48869,6 +48879,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
         product_billing_type?:
           | components['schemas']['ProductBillingType']
@@ -48968,6 +48980,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by order status. */
         status?:
           | components['schemas']['OrderStatus']
@@ -49742,6 +49756,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */
@@ -51187,6 +51203,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
         billing_type?:
           | components['schemas']['ProductBillingType']
@@ -51836,6 +51854,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
         billing_type?:
           | components['schemas']['ProductBillingType']
@@ -58721,8 +58741,6 @@ export interface operations {
   'events:get_statistics_by_property': {
     parameters: {
       query: {
-        /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
-        property: string
         /** @description Start date. */
         start_date: string
         /** @description End date. */
@@ -59336,6 +59354,8 @@ export interface operations {
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
+        property: components['schemas']['AggregateField']
       }
       header?: never
       path?: never
@@ -60619,11 +60639,11 @@ export interface operations {
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
         external_customer_id?: string | string[] | null
-        /** @description Filter by event name. */
-        name?: string | string[] | null
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Filter by event name. */
+        name?: string | string[] | null
       }
       header?: never
       path?: never

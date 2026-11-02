@@ -100,6 +100,13 @@ Only the parts `AGENTS.md` does not already cover:
   output.
 - A query parameter must act as a pure filter. If it changes the response shape, the resource
   is wrong and it wants its own route.
+- List, export, and reporting filters belong in a `QuerySchema` model, composed with
+  the existing pagination, sorting, and metadata dependencies. New optional filters
+  use `Version(starting_from=...)` and a `None` default instead of a duplicated
+  endpoint. Check that older versions omit and ignore the new field, including
+  malformed input. Hidden `Query(include_in_schema=False)` parameters stay outside
+  the model until FastAPI supports hiding flattened fields. Source:
+  `server/AGENTS.md`, *Endpoint Pattern*, and the handbook's *API versioning* guide.
 - List endpoints return every resource the subject can access, with no filter applied by
   default. Flag any implicit narrowing in the list statement (`status != draft`,
   `is_archived = false`, `active = true`, …) and ask for an explicit query filter instead.

@@ -55,7 +55,6 @@ class ResourceRepository(
 ):
     model = Resource
 
-    # Auth-aware query - ALWAYS filter by auth_subject
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[Resource]]:
@@ -70,7 +69,6 @@ class ResourceRepository(
             )
         return statement
 
-    # Custom query methods
     async def get_by_slug(self, slug: str) -> Resource | None:
         statement = self.get_base_statement().where(Resource.slug == slug)
         return await self.get_one_or_none(statement)
@@ -101,14 +99,15 @@ inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
 
 ## Service Pattern
 
-Services contain business logic and call repositories.
+Services contain business logic and call repositories. Methods that only read take an
+`AsyncReadSession`; methods that write take an `AsyncSession`.
 
 ```python
 # polar/{module}/service.py
 class ResourceService:
     async def list(
         self,
-        session: AsyncReadSession,  # READ session for queries
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         pagination: PaginationParams,
@@ -121,20 +120,18 @@ class ResourceService:
 
     async def create(
         self,
-        session: AsyncSession,  # WRITE session for mutations
+        session: AsyncSession,
         auth_subject: AuthSubject[User],
         create_schema: ResourceCreate,
     ) -> Resource:
         repository = ResourceRepository.from_session(session)
         resource = await repository.create(Resource(**create_schema.model_dump()))
 
-        # Enqueue background job - NOT session.commit()!
         enqueue_job("resource.created", resource_id=resource.id)
 
         return resource
 
 
-# Singleton instance at module level
 resource = ResourceService()
 ```
 
@@ -154,7 +151,7 @@ router = APIRouter(prefix="/resources", tags=["resources"])
 
 @router.get("/", response_model=ListResource[ResourceSchema])
 async def list_resources(
-    auth_subject: auth.ResourcesRead,  # From module's auth.py
+    auth_subject: auth.ResourcesRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     session: AsyncReadSession = Depends(get_db_read_session),
@@ -239,24 +236,21 @@ class ResourceBase(Schema):
 
 
 class Resource(IDSchema, TimestampedSchema, ResourceBase):
-    """Read schema - includes all fields."""
-
-    # `id` comes from IDSchema — don't redeclare `id: UUID4`.
-    # Type fields with their enum (e.g. `status: ResourceStatus`), not `str`.
+    pass
 
 
 class ResourceCreate(ResourceBase):
-    """Create schema - required fields only."""
-
     pass
 
 
 class ResourceUpdate(Schema):
-    """Update schema - ALL fields optional with None default."""
-
     name: str | None = None
     slug: str | None = None
 ```
+
+- The read schema gets `id` from `IDSchema`; don't redeclare `id: UUID4`.
+- Every field on an update schema is optional with a `None` default.
+- Type fields with their enum (`status: ResourceStatus`), not `str`.
 
 ## Background Tasks
 
@@ -279,7 +273,7 @@ async def resource_created(resource_id: Annotated[UUID, LoggableField]) -> None:
         if resource is None:
             raise ResourceDoesNotExist(resource_id)
 
-        # Do work... session commits automatically at end
+        await resource_service.process(session, resource)
 ```
 
 Task arguments are excluded from telemetry unless marked with

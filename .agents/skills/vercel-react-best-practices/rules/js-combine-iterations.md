@@ -12,9 +12,9 @@ Multiple `.filter()` or `.map()` calls iterate the array multiple times. Combine
 **Incorrect (3 iterations):**
 
 ```typescript
-const admins = users.filter(u => u.isAdmin)
-const testers = users.filter(u => u.isTester)
-const inactive = users.filter(u => !u.isActive)
+const admins = users.filter((u) => u.isAdmin)
+const testers = users.filter((u) => u.isTester)
+const inactive = users.filter((u) => !u.isActive)
 ```
 
 **Correct (1 iteration):**

@@ -36,6 +36,8 @@ import { DEFAULT_RANGE, recentRangeIntervals } from './rangePresets'
 
 const PAGE_SIZE = 100
 
+const PUSH_HISTORY = { history: 'push' } as const
+
 const formatEventCount = (count: number) =>
   new Intl.NumberFormat('en-US', {
     notation: count < 100_000 ? 'standard' : 'compact',
@@ -49,29 +51,38 @@ const ClientPage = ({
 }) => {
   const [sorting, setSorting] = useQueryState(
     'sorting',
-    parseAsStringLiteral(['-timestamp', 'timestamp'] as const).withDefault(
-      '-timestamp',
-    ),
+    parseAsStringLiteral(['-timestamp', 'timestamp'] as const)
+      .withDefault('-timestamp')
+      .withOptions(PUSH_HISTORY),
   )
   const [query, setQuery] = useQueryState('query', parseAsString)
   const [selectedEventTypes, setSelectedEventTypes] = useQueryState(
     'eventTypes',
-    parseAsArrayOf(parseAsString),
+    parseAsArrayOf(parseAsString).withOptions(PUSH_HISTORY),
   )
-  const [costOnly, setCostOnly] = useQueryState('costOnly', parseAsBoolean)
-  const [llmOnly, setLlmOnly] = useQueryState('llmOnly', parseAsBoolean)
+  const [costOnly, setCostOnly] = useQueryState(
+    'costOnly',
+    parseAsBoolean.withOptions(PUSH_HISTORY),
+  )
+  const [llmOnly, setLlmOnly] = useQueryState(
+    'llmOnly',
+    parseAsBoolean.withOptions(PUSH_HISTORY),
+  )
   const eventsFilter = buildEventsFilter({
     costOnly: costOnly ?? false,
     llmOnly: llmOnly ?? false,
   })
-  const [range, setRange] = useQueryState('range', parseAsString)
+  const [range, setRange] = useQueryState(
+    'range',
+    parseAsString.withOptions(PUSH_HISTORY),
+  )
   const [customStartDate, setStartDate] = useQueryState(
     'startDate',
-    parseAsIsoDateTime,
+    parseAsIsoDateTime.withOptions(PUSH_HISTORY),
   )
   const [customEndDate, setEndDate] = useQueryState(
     'endDate',
-    parseAsIsoDateTime,
+    parseAsIsoDateTime.withOptions(PUSH_HISTORY),
   )
   const [rangeAnchor, setRangeAnchor] = useState(() => new Date())
   const rangeIntervals = recentRangeIntervals(rangeAnchor)
@@ -85,7 +96,7 @@ const ClientPage = ({
   const endDate = isCustomRange ? customEndDate : preset.value[1]
   const [selectedCustomerIds, setSelectedCustomerIds] = useQueryState(
     'customerIds',
-    parseAsArrayOf(parseAsString),
+    parseAsArrayOf(parseAsString).withOptions(PUSH_HISTORY),
   )
   const [metadata, setMetadata] = useQueryState(
     'metadata',
@@ -96,12 +107,14 @@ const ClientPage = ({
 
   const [source, setSource] = useQueryState(
     'source',
-    parseAsStringLiteral(['user', 'system'] as const),
+    parseAsStringLiteral(['user', 'system'] as const).withOptions(PUSH_HISTORY),
   )
   const [selectedEventId, setSelectedEventId] = useQueryState(
     'event',
-    parseAsString,
+    parseAsString.withOptions(PUSH_HISTORY),
   )
+  const stepToEvent = (id: string) =>
+    setSelectedEventId(id, { history: 'replace' })
 
   const debouncedQuery = useDebounce(query, 500)
   const debouncedMetadata = useDebounce(metadata, 500)
@@ -280,13 +293,9 @@ const ClientPage = ({
             organization={organization}
             onSelectEvent={setSelectedEventId}
             onPrevious={
-              previousEvent
-                ? () => setSelectedEventId(previousEvent.id)
-                : undefined
+              previousEvent ? () => stepToEvent(previousEvent.id) : undefined
             }
-            onNext={
-              nextEvent ? () => setSelectedEventId(nextEvent.id) : undefined
-            }
+            onNext={nextEvent ? () => stepToEvent(nextEvent.id) : undefined}
             onClose={() => setSelectedEventId(null)}
           />
         ) : undefined
@@ -367,6 +376,7 @@ const ClientPage = ({
                   events={items}
                   selectedEventId={selectedEventId}
                   onSelect={setSelectedEventId}
+                  onStep={stepToEvent}
                   onClose={() => setSelectedEventId(null)}
                 />
               )}

@@ -12,11 +12,13 @@ export const EventLog = ({
   events,
   selectedEventId,
   onSelect,
+  onStep,
   onClose,
 }: {
   events: schemas['Event'][]
   selectedEventId: string | null
   onSelect: (id: string) => void
+  onStep: (id: string) => void
   onClose: () => void
 }) => {
   useEffect(() => {
@@ -36,14 +38,14 @@ export const EventLog = ({
             : undefined
       if (!next) return
       e.preventDefault()
-      onSelect(next.id)
+      onStep(next.id)
       document
         .querySelector(`[data-event-id="${next.id}"]`)
         ?.scrollIntoView({ block: 'nearest' })
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [events, selectedEventId, onSelect, onClose])
+  }, [events, selectedEventId, onStep, onClose])
 
   const isSelectedLoaded = events.some((event) => event.id === selectedEventId)
   useEffect(() => {

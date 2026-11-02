@@ -17,7 +17,7 @@ from uuid import UUID
 import typer
 from rich import print
 from rich.table import Table
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.kit.db.postgres import create_async_sessionmaker
@@ -36,9 +36,11 @@ from polar.models import (
     Event,
     LicenseKey,
     Order,
+    Payment,
     PaymentMethod,
     Product,
     ProductBenefit,
+    Refund,
     Subscription,
     TrialRedemption,
 )
@@ -932,6 +934,30 @@ class ProductTransferService:
     async def update_related_entities(self, session: AsyncSession) -> None:
         """Update all entities related to the transferred products."""
         print("[bold yellow]🔄 Updating related entities...[/bold yellow]")
+
+        product_ids = [p.id for p in self.products]
+        order_ids = select(Order.id).where(Order.product_id.in_(product_ids))
+        checkout_ids = select(Checkout.id).where(Checkout.product_id.in_(product_ids))
+        payment_condition = or_(
+            Payment.order_id.in_(order_ids), Payment.checkout_id.in_(checkout_ids)
+        )
+        payment_ids = select(Payment.id).where(payment_condition)
+
+        for model, condition in (
+            (Order, Order.product_id.in_(product_ids)),
+            (Subscription, Subscription.product_id.in_(product_ids)),
+            (Payment, payment_condition),
+            (Refund, Refund.payment_id.in_(payment_ids)),
+        ):
+            updated_ids = await session.scalars(
+                update(model)
+                .where(condition)
+                .values(organization_id=self.target_organization_id)
+                .returning(model.id)
+            )
+            self.transfer_stats[f"{model.__tablename__}_organization_updated"] += len(
+                updated_ids.all()
+            )
 
         # Update checkouts that reference the transferring products
         result = await session.execute(

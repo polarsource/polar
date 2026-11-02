@@ -3,8 +3,20 @@ from uuid import UUID
 import pytest
 from sqlalchemy import func, select
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
-from polar.models import Account, Discount, Organization, ProductBenefit, User
+from polar.models import (
+    Account,
+    Checkout,
+    Discount,
+    Order,
+    Organization,
+    Payment,
+    ProductBenefit,
+    Refund,
+    Subscription,
+    User,
+)
 from polar.models.benefit import BenefitType
 from polar.models.discount import DiscountDuration, DiscountType
 from scripts.transfer_products_between_organizations import (
@@ -24,7 +36,10 @@ from tests.fixtures.random_objects import (
     create_event,
     create_order,
     create_organization,
+    create_payment,
     create_product,
+    create_refund,
+    create_subscription,
 )
 
 
@@ -1137,6 +1152,78 @@ class TestProductTransferService:
 @pytest.mark.anyio
 class TestProductTransferIntegration:
     """Integration tests for the complete product transfer workflow."""
+
+    @pytest.mark.parametrize("split_customer", [False, True])
+    async def test_complete_transfer_updates_organization_ownership(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        split_customer: bool,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        staying_customer = (
+            customer
+            if split_customer
+            else await create_customer(
+                save_fixture, organization=organization, email="staying@example.com"
+            )
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        staying_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        transferred_entities: list[
+            Subscription | Checkout | Order | Payment | Refund
+        ] = []
+        staying_entities: list[Subscription | Checkout | Order | Payment | Refund] = []
+        for current_product, current_customer, entities in (
+            (product, customer, transferred_entities),
+            (staying_product, staying_customer, staying_entities),
+        ):
+            subscription = await create_subscription(
+                save_fixture, product=current_product, customer=current_customer
+            )
+            checkout = await create_checkout(
+                save_fixture, products=[current_product], customer=current_customer
+            )
+            order = await create_order(
+                save_fixture,
+                product=current_product,
+                customer=current_customer,
+                subscription=subscription,
+                checkout=checkout,
+            )
+            payment = await create_payment(save_fixture, organization, order=order)
+            checkout_payment = await create_payment(
+                save_fixture, organization, checkout=checkout
+            )
+            refund = await create_refund(
+                save_fixture, order, payment, processor_id=f"refund_{order.id}"
+            )
+            entities.extend(
+                [subscription, checkout, order, payment, checkout_payment, refund]
+            )
+
+        service = ProductTransferService(organization.id, organization_second.id)
+        await service.validate_products_belong_to_same_organization(
+            session, [product.id]
+        )
+        await service.execute_transfer(session)
+
+        for entity in transferred_entities:
+            await session.refresh(entity)
+            assert entity.organization_id == organization_second.id
+        for entity in staying_entities:
+            await session.refresh(entity)
+            assert entity.organization_id == organization.id
 
     async def test_complete_transfer_workflow_simple_case(
         self,

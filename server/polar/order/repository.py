@@ -91,6 +91,16 @@ class OrderRepository(
 ):
     model = Order
 
+    async def get_for_tax_processing(self, id: UUID) -> Order | None:
+        statement = (
+            self.get_base_statement()
+            .where(Order.id == id)
+            .options(*self.get_eager_options())
+            .with_for_update(of=Order)
+            .execution_options(populate_existing=True)
+        )
+        return await self.get_one_or_none(statement)
+
     async def get_revenue_by_customer(
         self,
         organization_id: UUID,

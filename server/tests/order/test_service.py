@@ -592,12 +592,13 @@ class TestCreateFromCheckoutOneTime:
             session, retried_checkout
         )
 
+        await order_service.process_tax(session, retried_order.id)
         assert retried_order.id != first_order_id
-        assert tax_service_mock.record.call_count == 2
-        assert [
-            record_call.kwargs["reference"]
-            for record_call in tax_service_mock.record.call_args_list
-        ] == [f"checkout:{checkout_id}"] * 2
+        tax_service_mock.record.assert_awaited_once()
+        assert (
+            tax_service_mock.record.call_args.kwargs["reference"]
+            == f"checkout:{checkout_id}"
+        )
 
     async def test_recurring_product(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
@@ -3028,6 +3029,8 @@ class TestCreateWalletOrder:
 
         assert wallet_transaction.order == order
 
+        tax_service_mock.record.assert_not_called()
+        await order_service.process_tax(session, order.id)
         tax_service_mock.record.assert_called_once()
 
 
@@ -3834,7 +3837,9 @@ class TestHandlePayment:
             TaxProcessor.numeral,
         )
 
-        updated_order = await order_service.handle_payment(session, order, None)
+        await order_service.handle_payment(session, order, None)
+        tax_service_mock.record.assert_not_called()
+        updated_order = await order_service.process_tax(session, order.id)
 
         assert updated_order.status == OrderStatus.paid
         assert updated_order.tax_amount == charged_tax_amount
@@ -3960,6 +3965,8 @@ class TestHandlePayment:
 
         # Call handle_payment
         updated_order = await order_service.handle_payment(session, order, payment)
+        tax_service_mock.record.assert_not_called()
+        await order_service.process_tax(session, order.id)
 
         # Verify order status is updated to paid
         assert updated_order.status == OrderStatus.paid
@@ -4024,6 +4031,8 @@ class TestHandlePayment:
         ]
 
         updated_order = await order_service.handle_payment(session, order, payment)
+        tax_service_mock.record.assert_not_called()
+        await order_service.process_tax(session, order.id)
 
         # Order should be marked paid
         assert updated_order.status == OrderStatus.paid
@@ -4094,6 +4103,8 @@ class TestHandlePayment:
         )
 
         updated_order = await order_service.handle_payment(session, order, payment)
+        tax_service_mock.record.assert_not_called()
+        await order_service.process_tax(session, order.id)
 
         assert updated_order.status == OrderStatus.paid
 
@@ -6132,6 +6143,30 @@ class TestTriggerPayment:
 
 @pytest.mark.anyio
 class TestAcquirePaymentLock:
+    async def test_blocks_order_with_successful_payment(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture, product=product, customer=customer, status=OrderStatus.pending
+        )
+        for processor_id in ("ch_first", "ch_duplicate"):
+            await create_payment(
+                save_fixture,
+                organization,
+                order=order,
+                processor_id=processor_id,
+                status=PaymentStatus.succeeded,
+            )
+
+        with pytest.raises(PaymentAlreadyInProgress):
+            async with order_service.acquire_payment_lock(session, order):
+                pytest.fail("An order with a successful payment must not be charged")
+
     async def test_acquire_payment_lock_success(
         self,
         session: AsyncSession,
@@ -6515,6 +6550,37 @@ class TestProcessRetryPayment:
             await order_service.process_retry_payment(
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
+
+    async def test_process_retry_payment_with_successful_payment(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=utc_now(),
+        )
+        await create_payment(
+            save_fixture, organization, order=order, status=PaymentStatus.succeeded
+        )
+
+        with pytest.raises(PaymentAlreadyInProgress):
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
+
+        stripe_service_mock.create_payment_intent.assert_not_awaited()
 
     async def test_process_retry_payment_lock_held_on_success(
         self,

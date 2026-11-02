@@ -5,6 +5,7 @@ import structlog
 
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import checkout as checkout_service
+from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import (
     STRIPE_METADATA_PAYMENT_TRIGGER,
@@ -28,10 +29,12 @@ from polar.models.payment import DUNNING_COUNTING_TRIGGERS, PaymentTrigger
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
+from polar.payment.repository import PaymentRepository
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 from polar.wallet.repository import WalletRepository, WalletTransactionRepository
+from polar.worker import enqueue_job
 
 log: Logger = structlog.get_logger()
 
@@ -214,21 +217,58 @@ def _resolve_trigger(
     return None
 
 
+async def handle_charge_success(
+    session: AsyncSession, charge: stripe_lib.Charge
+) -> None:
+    organization = await resolve_organization(session, charge)
+    checkout = await resolve_checkout(session, charge)
+    wallet, wallet_transaction = await resolve_wallet(session, charge)
+    order = await resolve_order(session, charge, checkout)
+
+    repository = PaymentRepository.from_session(session)
+    payment = await repository.get_by_processor_id(PaymentProcessor.stripe, charge.id)
+    if payment is None or not payment.is_succeeded:
+        payment = await payment_service.upsert_from_stripe_charge(
+            session,
+            charge,
+            organization,
+            checkout,
+            wallet,
+            order,
+            trigger=_resolve_trigger(charge),
+        )
+
+    payment_method = None
+    if checkout is not None and checkout.should_save_payment_method:
+        payment_method = await payment_method_service.upsert_from_stripe_intent(
+            session, charge, checkout
+        )
+    await session.flush()
+    enqueue_job(
+        "order.process_payment",
+        payment.id,
+        payment_method_id=payment_method.id if payment_method else None,
+        wallet_transaction_id=wallet_transaction.id if wallet_transaction else None,
+    )
+    enqueue_job(
+        "order.process_tax",
+        payment_id=payment.id,
+        wallet_transaction_id=wallet_transaction.id if wallet_transaction else None,
+    )
+
+
 async def handle_success(
     session: AsyncSession, object: stripe_lib.Charge | stripe_lib.SetupIntent
 ) -> None:
+    if object.OBJECT_NAME == "charge":
+        await handle_charge_success(session, object)
+        return
+
     organization = await resolve_organization(session, object)
     checkout = await resolve_checkout(session, object)
     wallet, wallet_transaction = await resolve_wallet(session, object)
     order = await resolve_order(session, object, checkout)
-
-    trigger = _resolve_trigger(object)
-
     payment: Payment | None = None
-    if object.OBJECT_NAME == "charge":
-        payment = await payment_service.upsert_from_stripe_charge(
-            session, object, organization, checkout, wallet, order, trigger=trigger
-        )
 
     if checkout is not None:
         if object.OBJECT_NAME == "setup_intent":

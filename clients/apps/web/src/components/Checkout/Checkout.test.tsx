@@ -38,6 +38,15 @@ describe('Checkout page', () => {
     )
   })
 
+  it('reports the rendered locale and checkout id on the page view', () => {
+    const { checkout, posthog } = renderCheckout({ locale: 'de' })
+
+    expect(posthog.events).toContainEqual({
+      event: 'storefront:checkout:page:view',
+      properties: { checkout_id: checkout.id, locale: 'de' },
+    })
+  })
+
   it('blocks payment when the organization has been denied', async () => {
     renderCheckout({
       paymentStatus: {

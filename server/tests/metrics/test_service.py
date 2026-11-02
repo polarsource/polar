@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 import pytest
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import registry as entities_registry
+from sqlalchemy import select
 from sqlalchemy.schema import CreateSequence
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -2301,6 +2302,36 @@ async def _seed_checkout_outside_range(
     )
 
 
+async def _seed_checkout_product_filters(
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    one_time_product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+    )
+    recurring_product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+    )
+    opened_at = datetime(2026, 2, 15, 10, 0, tzinfo=UTC).isoformat()
+    await create_checkout(
+        save_fixture,
+        products=[one_time_product],
+        created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+        analytics_metadata={"opened_at": opened_at},
+    )
+    for _ in range(2):
+        await create_checkout(
+            save_fixture,
+            products=[recurring_product],
+            created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
+            analytics_metadata={"opened_at": opened_at},
+        )
+
+
 def _checkout_auth_subject(
     context: CheckoutMetricsContext, auth: str
 ) -> AuthSubject[User | Organization]:
@@ -2711,6 +2742,9 @@ async def checkout_metrics_harness(
 
         outside_range = await make_context("outside_range")
         await _seed_checkout_outside_range(save_fixture, outside_range.organization)
+
+        product_filters = await make_context("product_filters")
+        await _seed_checkout_product_filters(save_fixture, product_filters.organization)
 
         await session.commit()
         harness = CheckoutMetricsHarness(
@@ -5635,3 +5669,48 @@ class TestCheckoutMetrics:
         # Only the checkout opened within range should be counted
         total_checkouts = sum(p.checkouts or 0 for p in metrics.periods)
         assert total_checkouts == 1
+
+    @pytest.mark.parametrize("auth", ["user", "org"])
+    async def test_product_and_billing_type_filters(
+        self,
+        checkout_metrics_harness: CheckoutMetricsHarness,
+        checkout_metrics_session: AsyncSession,
+        auth: str,
+    ) -> None:
+        context = checkout_metrics_harness.scenarios["product_filters"]
+        auth_subject = _checkout_auth_subject(context, auth)
+        one_time_product_id = await checkout_metrics_session.scalar(
+            select(Product.id).where(
+                Product.organization_id == context.organization.id,
+                Product.billing_type == ProductBillingType.one_time,
+            )
+        )
+        assert one_time_product_id is not None
+
+        async def total_checkouts(
+            product_id: list[UUID] | None = None,
+            billing_type: list[ProductBillingType] | None = None,
+        ) -> int | float:
+            metrics = await metrics_service.get_metrics(
+                checkout_metrics_session,
+                auth_subject,
+                start_date=date(2026, 2, 1),
+                end_date=date(2026, 2, 28),
+                timezone=ZoneInfo("UTC"),
+                interval=TimeInterval.month,
+                product_id=product_id,
+                billing_type=billing_type,
+                metrics=["checkouts"],
+            )
+            return sum(p.checkouts or 0 for p in metrics.periods)
+
+        assert await total_checkouts() == 3
+        assert await total_checkouts(product_id=[one_time_product_id]) == 1
+        assert await total_checkouts(billing_type=[ProductBillingType.recurring]) == 2
+        assert (
+            await total_checkouts(
+                product_id=[one_time_product_id],
+                billing_type=[ProductBillingType.recurring],
+            )
+            == 0
+        )

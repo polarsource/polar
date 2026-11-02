@@ -2479,6 +2479,25 @@
             "description": "Filter by description."
           },
           {
+            "name": "catalog",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "draft",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "With `draft`, return the benefits of the draft catalog instead of the current ones.",
+              "title": "Catalog"
+            },
+            "description": "With `draft`, return the benefits of the draft catalog instead of the current ones."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -5147,6 +5166,25 @@
               "title": "Visibility"
             },
             "description": "Filter by visibility."
+          },
+          {
+            "name": "catalog",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "draft",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "With `draft`, return the products of the draft catalog instead of the current ones.",
+              "title": "Catalog"
+            },
+            "description": "With `draft`, return the products of the draft catalog instead of the current ones."
           },
           {
             "name": "page",

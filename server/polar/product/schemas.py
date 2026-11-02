@@ -63,6 +63,7 @@ from polar.kit.versioning import QuerySchema, Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
+from polar.models.catalog import CatalogStatus
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -1264,14 +1265,14 @@ class ProductListParams(QuerySchema):
     visibility: builtins.list[ProductVisibility] | None = Field(
         default=None, description="Filter by visibility."
     )
-    catalog: Annotated[Literal["draft"] | None, Version(starting_from=V2027_01)] = (
-        Field(
-            None,
-            description=(
-                "With `draft`, return the products of the draft catalog instead of "
-                "the current ones."
-            ),
-        )
+    catalog: Annotated[
+        Literal[CatalogStatus.draft] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        description=(
+            "With `draft`, return the products of the draft catalog instead of "
+            "the current ones."
+        ),
     )
 
 

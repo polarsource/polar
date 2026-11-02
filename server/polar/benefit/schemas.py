@@ -33,6 +33,7 @@ from polar.kit.schemas import (
 from polar.kit.versioning import QuerySchema, Version
 from polar.member.schemas import ExternalMemberID, Member
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.organization.schemas import OrganizationID
 from polar.version import V2027_01
 
@@ -280,14 +281,14 @@ class BenefitListParams(QuerySchema):
         None, title="Exclude IDs", description="Exclude benefits with these IDs."
     )
     query: str | None = Field(None, title="Query", description="Filter by description.")
-    catalog: Annotated[Literal["draft"] | None, Version(starting_from=V2027_01)] = (
-        Field(
-            None,
-            description=(
-                "With `draft`, return the benefits of the draft catalog instead of "
-                "the current ones."
-            ),
-        )
+    catalog: Annotated[
+        Literal[CatalogStatus.draft] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        description=(
+            "With `draft`, return the benefits of the draft catalog instead of "
+            "the current ones."
+        ),
     )
 
 

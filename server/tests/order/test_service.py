@@ -3804,6 +3804,8 @@ class TestHandlePayment:
             billing_address=customer.billing_address,
             tax_behavior=TaxBehavior.exclusive,
             tax_processor=TaxProcessor.stripe,
+            next_payment_attempt_at=utc_now(),
+            payment_lock_acquired_at=utc_now(),
         )
         order.tax_calculation_processor_id = "stripe_calculation"
         await save_fixture(order)
@@ -3832,22 +3834,24 @@ class TestHandlePayment:
             TaxProcessor.numeral,
         )
 
+        updated_order = await order_service.handle_payment(session, order, None)
+
+        assert updated_order.status == OrderStatus.paid
+        assert updated_order.tax_amount == charged_tax_amount
+        assert updated_order.tax_transaction_processor_id is None
+        assert updated_order.next_payment_attempt_at is None
+        assert updated_order.payment_lock_acquired_at is None
+
         if charged_tax_amount:
-            with pytest.raises(UnsupportedCountryError):
-                await order_service.handle_payment(session, order, None)
-            assert order.tax_amount == charged_tax_amount
-            assert order.tax_calculation_processor_id == "stripe_calculation"
+            assert updated_order.tax_calculation_processor_id == "stripe_calculation"
+            assert updated_order.tax_processor == TaxProcessor.stripe
+            assert updated_order.tax_breakdown is None
             tax_service_mock.record_amounts.assert_awaited_once()
             assert (
                 tax_service_mock.record_amounts.call_args.kwargs["tax_amount"]
                 == charged_tax_amount
             )
         else:
-            updated_order = await order_service.handle_payment(session, order, None)
-
-            assert updated_order.status == OrderStatus.paid
-            assert updated_order.tax_amount == 0
-            assert updated_order.tax_transaction_processor_id is None
             assert updated_order.tax_calculation_processor_id is None
             assert updated_order.tax_processor == TaxProcessor.numeral
             assert updated_order.tax_breakdown == tax_breakdown

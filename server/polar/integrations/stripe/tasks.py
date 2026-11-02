@@ -1,7 +1,7 @@
 import functools
 import uuid
 from collections.abc import Awaitable, Callable, Mapping
-from typing import Annotated, ParamSpec, cast
+from typing import Annotated, cast
 
 import stripe as stripe_lib
 import structlog
@@ -36,9 +36,6 @@ from . import payment
 from .account_risk import UnknownAccountRiskEvaluation, parse_account_signal
 
 log: Logger = structlog.get_logger()
-
-
-Params = ParamSpec("Params")
 
 
 def stripe_api_connection_error_retry[**Params, ReturnValue](
@@ -186,17 +183,12 @@ async def setup_intent_succeeded(event_id: Annotated[uuid.UUID, LoggableField]) 
             try:
                 await payment.handle_success(session, setup_intent)
             except (NotConfirmedCheckout, payment.OrderDoesNotExist) as e:
-                # Retry because we've seen in the wild a Stripe webhook coming
-                # *before* we updated the Checkout Session status in the database!
+                # The webhook can arrive before checkout confirmation or order creation.
                 if can_retry():
                     raise Retry() from e
                 # Raise the exception to be notified about it
                 else:
                     raise
-            except payment.OutdatedCheckoutIntent:
-                # Ignore outdated setup intents
-                # Expected flow after a a trial already redeemed error
-                pass
 
 
 @actor(
@@ -276,8 +268,7 @@ async def charge_succeeded(event_id: Annotated[uuid.UUID, LoggableField]) -> Non
             try:
                 await payment.handle_success(session, charge)
             except (NotConfirmedCheckout, payment.OrderDoesNotExist) as e:
-                # Retry because we've seen in the wild a Stripe webhook coming
-                # *before* we updated the Checkout Session status in the database!
+                # The webhook can arrive before checkout confirmation or order creation.
                 if can_retry():
                     raise Retry() from e
                 # Raise the exception to be notified about it

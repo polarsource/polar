@@ -22,6 +22,7 @@ from polar.benefit.strategies.meter_credit.properties import (
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
+from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
@@ -498,6 +499,7 @@ class SubscriptionUpdateContext:
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
         self._previous_product: Product | None = None
+        self._billing_state_effective_at: datetime | None = None
 
     async def __aenter__(self) -> Self:
         return self
@@ -511,6 +513,13 @@ class SubscriptionUpdateContext:
         # Don't trigger side effects if an exception was raised within the context
         if value is not None:
             return
+
+        if self._billing_state_effective_at is not None:
+            await billing_interval_service.record_subscription(
+                self.session,
+                self.subscription,
+                effective_at=self._billing_state_effective_at,
+            )
 
         match self._billing_effect:
             case "cycle":
@@ -562,6 +571,10 @@ class SubscriptionUpdateContext:
         self, effect: Literal["invoice", "cycle", "cycle_sync"]
     ) -> None:
         self._billing_effect = effect
+
+    def record_billing_state(self, *, effective_at: datetime) -> None:
+        """Record the billing state on exit, before the billing effect runs."""
+        self._billing_state_effective_at = effective_at
 
     def add_event_metadata(
         self, **metadata: Unpack[SubscriptionUpdatedMetadataFields]
@@ -867,6 +880,9 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.create(subscription, flush=True)
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=current_period_start
+        )
 
         # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
         if product.has_seat_based_price:
@@ -1004,6 +1020,7 @@ class SubscriptionService:
         """
         assert subscription.status == SubscriptionStatus.paused
         repository = SubscriptionRepository.from_session(session)
+        now = utc_now()
 
         await repository.release_scheduler_lock(subscription)
         subscription.status = (
@@ -1028,12 +1045,15 @@ class SubscriptionService:
             subscription.customer_cancellation_reason = customer_cancellation_reason
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
-            None if trial_end else current_period_start, containing=utc_now()
+            None if trial_end else current_period_start, containing=now
         )
 
         # Flushed so the returned subscription carries `payment_method_id`, which
         # the cutover records, and not just the relationship.
         subscription = await repository.update(subscription, flush=True)
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=now
+        )
 
         await self.enqueue_benefits_grants(session, subscription)
         await self._on_subscription_updated(session, subscription)
@@ -1169,6 +1189,10 @@ class SubscriptionService:
                 previous_is_canceled=previous_is_canceled,
             )
 
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=current_period_start
+        )
+
         # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
         if product.has_seat_based_price:
             await customer_service.upgrade_to_team(session, customer)
@@ -1234,6 +1258,9 @@ class SubscriptionService:
                 subscription = await self.clear_pending_update(
                     session, ctx, subscription
                 )
+            await billing_interval_service.record_subscription(
+                session, subscription, effective_at=cycle_at
+            )
             await self.enqueue_benefits_grants(session, subscription)
             repository = SubscriptionRepository.from_session(session)
             return await repository.release_scheduler_lock(subscription)
@@ -1333,6 +1360,10 @@ class SubscriptionService:
         # trial conversion).
         if not revoke:
             subscription.initialize_meter_period(subscription.current_period_start)
+
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=cycle_at
+        )
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.release_scheduler_lock(subscription)
@@ -2157,7 +2188,7 @@ class SubscriptionService:
                         # End the trial immediately - cycle() below will transition
                         # to active and bill the customer for the new period.
                         subscription.trial_end = subscription.current_period_end = (
-                            utc_now()
+                            subscription_update.applies_at
                         )
                     else:
                         assert new_trial_end is not None
@@ -2174,12 +2205,16 @@ class SubscriptionService:
 
                 if was_trialing and ends_trial:
                     ctx.set_billing_effect("cycle")
-                elif (
-                    (proration_behavior.is_immediate() or interval_changed)
-                    and not was_trialing
-                    and billing_entries
-                ):
-                    ctx.set_billing_effect("invoice")
+                else:
+                    ctx.record_billing_state(
+                        effective_at=subscription_update.applies_at
+                    )
+                    if (
+                        (proration_behavior.is_immediate() or interval_changed)
+                        and not was_trialing
+                        and billing_entries
+                    ):
+                        ctx.set_billing_effect("invoice")
 
                 # When transitioning from non-seat to seat-based pricing, promote
                 # the billing customer to a 'team' customer and claim a seat for
@@ -2454,9 +2489,11 @@ class SubscriptionService:
                             }
                         ]
                     )
+                now = utc_now()
                 subscription.status = SubscriptionStatus.trialing
-                subscription.trial_start = utc_now()
+                subscription.trial_start = now
                 subscription.trial_end = subscription.current_period_end = trial_end
+                ctx.record_billing_state(effective_at=now)
 
         await self._realign_pending_update_cycle(session, subscription)
 
@@ -2814,6 +2851,7 @@ class SubscriptionService:
             subscription = await self.clear_pending_update(session, ctx, subscription)
 
         subscription.status = SubscriptionStatus.active
+        ctx.record_billing_state(effective_at=now)
         subscription.cancel_at_period_end = False
         subscription.canceled_at = None
         subscription.ends_at = None
@@ -2948,6 +2986,7 @@ class SubscriptionService:
         subscription.status = SubscriptionStatus.active
         subscription.paused_at = None
         subscription.resumes_at = None
+        ctx.record_billing_state(effective_at=now)
         await repository.release_scheduler_lock(subscription)
 
         # Start a fresh billing period from now and charge immediately.
@@ -3107,6 +3146,7 @@ class SubscriptionService:
             subscription.ends_at = now
             subscription.ended_at = now
             subscription.status = SubscriptionStatus.canceled
+            ctx.record_billing_state(effective_at=now)
             if revoke_benefits:
                 await self.enqueue_benefits_grants(session, subscription)
         else:

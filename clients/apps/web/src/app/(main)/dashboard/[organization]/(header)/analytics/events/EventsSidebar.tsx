@@ -40,6 +40,8 @@ export const EventsSidebar = ({
   onToggleEventType,
   costOnly,
   onCostOnlyChange,
+  llmOnly,
+  onLlmOnlyChange,
   source,
   onSourceChange,
   selectedCustomerIds,
@@ -63,6 +65,8 @@ export const EventsSidebar = ({
   onToggleEventType: (name: string) => void
   costOnly: boolean
   onCostOnlyChange: (costOnly: boolean) => void
+  llmOnly: boolean
+  onLlmOnlyChange: (llmOnly: boolean) => void
   source: schemas['EventSource'] | null
   onSourceChange: (source: schemas['EventSource'] | null) => void
   selectedCustomerIds: string[] | null
@@ -172,6 +176,21 @@ export const EventsSidebar = ({
             <SelectContent>
               <SelectItem value="all">All events</SelectItem>
               <SelectItem value="withCost">Only with cost</SelectItem>
+            </SelectContent>
+          </Select>
+        </Box>
+        <Box flexDirection="column" gap="s">
+          <h3 className="text-sm">LLM</h3>
+          <Select
+            value={llmOnly ? 'withLlm' : 'all'}
+            onValueChange={(value) => onLlmOnlyChange(value === 'withLlm')}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All events</SelectItem>
+              <SelectItem value="withLlm">Only LLM events</SelectItem>
             </SelectContent>
           </Select>
         </Box>

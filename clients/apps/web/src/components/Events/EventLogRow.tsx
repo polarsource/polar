@@ -28,6 +28,15 @@ export const eventCost = (event: schemas['Event']) =>
       )
     : null
 
+export const eventLLM = (event: schemas['Event']) =>
+  '_llm' in event.metadata && event.metadata._llm ? event.metadata._llm : null
+
+export const formatTokens = (tokens: number) =>
+  new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(tokens)
+
 export const EventLogRow = ({
   event,
   selected,
@@ -39,6 +48,7 @@ export const EventLogRow = ({
 }) => {
   const customer = eventCustomerLabel(event)
   const cost = eventCost(event)
+  const llm = eventLLM(event)
 
   return (
     <button
@@ -86,6 +96,11 @@ export const EventLogRow = ({
             {customer ?? '—'}
           </Text>
         </Box>
+        <Box width={72} flexShrink={0} justifyContent="end">
+          <Text color="muted" tabularNums>
+            {llm ? formatTokens(llm.total_tokens) : ''}
+          </Text>
+        </Box>
         <Box width={88} flexShrink={0} justifyContent="end">
           <Text color="muted" tabularNums>
             {cost ?? ''}
@@ -113,6 +128,9 @@ export const EventLogHeader = () => (
     </Box>
     <Box flexGrow={1} flexBasis={0} minWidth={0}>
       <Text color="muted">Customer</Text>
+    </Box>
+    <Box width={72} flexShrink={0} justifyContent="end">
+      <Text color="muted">Tokens</Text>
     </Box>
     <Box width={88} flexShrink={0} justifyContent="end">
       <Text color="muted">Cost</Text>

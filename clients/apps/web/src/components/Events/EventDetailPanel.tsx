@@ -15,9 +15,11 @@ import { Field } from './EventDetailField'
 import { useEventDetailFields } from './EventDetailFields'
 import { EventCostComparison, useEventCostSamples } from './EventCostComparison'
 import { EventDetailSkeleton, SkeletonBar } from './EventDetailSkeleton'
+import { EventLLMFields } from './EventLLMFields'
 import {
   eventCost,
   eventCustomerLabel,
+  eventLLM,
   formatEventTimestamp,
 } from './EventLogRow'
 
@@ -117,6 +119,7 @@ const EventDetails = ({
     useEventDetailFields(event, organization.slug)
   const customer = eventCustomerLabel(event)
   const cost = eventCost(event)
+  const llm = eventLLM(event)
   const { data: childrenData, isLoading: isLoadingChildren } =
     useInfiniteEvents(organization.id, {
       parent_id: event.id,
@@ -203,6 +206,12 @@ const EventDetails = ({
             event={event}
             samples={costSamples?.items ?? []}
           />
+        </Section>
+      )}
+
+      {llm && (
+        <Section title="LLM" action={<Text truncate>{llm.model}</Text>}>
+          <EventLLMFields llm={llm} />
         </Section>
       )}
 

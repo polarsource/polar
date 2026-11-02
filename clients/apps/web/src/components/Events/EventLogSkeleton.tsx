@@ -39,6 +39,7 @@ export const EventLogSkeleton = () => (
         <Box flexGrow={1} flexBasis={0} minWidth={0}>
           <SkeletonBar width={customerWidth} height={14} />
         </Box>
+        <Box width={72} flexShrink={0} />
         <Box width={88} flexShrink={0} />
       </Box>
     ))}

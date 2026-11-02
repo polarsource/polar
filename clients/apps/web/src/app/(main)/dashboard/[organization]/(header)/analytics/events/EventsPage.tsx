@@ -14,7 +14,7 @@ import {
 } from '@/components/Metrics/DateRangePicker'
 import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
 import { useInViewport } from '@/hooks/utils'
-import { COST_EVENTS_FILTER } from '@/utils/event'
+import { buildEventsFilter } from '@/utils/event'
 import useDebounce from '@/utils/useDebounce'
 import { schemas } from '@polar-sh/client'
 import { Spinner, Text } from '@polar-sh/orbit'
@@ -59,7 +59,11 @@ const ClientPage = ({
     parseAsArrayOf(parseAsString),
   )
   const [costOnly, setCostOnly] = useQueryState('costOnly', parseAsBoolean)
-  const costFilter = costOnly ? COST_EVENTS_FILTER : null
+  const [llmOnly, setLlmOnly] = useQueryState('llmOnly', parseAsBoolean)
+  const eventsFilter = buildEventsFilter({
+    costOnly: costOnly ?? false,
+    llmOnly: llmOnly ?? false,
+  })
   const [range, setRange] = useQueryState('range', parseAsString)
   const [customStartDate, setStartDate] = useQueryState(
     'startDate',
@@ -116,7 +120,7 @@ const ClientPage = ({
         : null,
     customer_id: selectedCustomerIds ?? null,
     source: source ?? null,
-    filter: costFilter,
+    filter: eventsFilter,
     limit: PAGE_SIZE,
     sorting: [sorting],
     start_timestamp: startDate.toISOString(),
@@ -162,6 +166,7 @@ const ClientPage = ({
       query,
       selectedEventTypes,
       costOnly,
+      llmOnly,
       range,
       customStartDate,
       customEndDate,
@@ -175,6 +180,7 @@ const ClientPage = ({
     setQuery(null)
     setSelectedEventTypes(null)
     setCostOnly(null)
+    setLlmOnly(null)
     setRange(null)
     setStartDate(null)
     setEndDate(null)
@@ -241,6 +247,8 @@ const ClientPage = ({
           onToggleEventType={toggleEventType}
           costOnly={costOnly ?? false}
           onCostOnlyChange={(value) => setCostOnly(value || null)}
+          llmOnly={llmOnly ?? false}
+          onLlmOnlyChange={(value) => setLlmOnly(value || null)}
           source={source}
           onSourceChange={setSource}
           selectedCustomerIds={selectedCustomerIds}
@@ -294,7 +302,7 @@ const ClientPage = ({
           eventNames={selectedEventTypes}
           customerIds={selectedCustomerIds}
           source={source}
-          filter={costFilter}
+          filter={eventsFilter}
           onSelectRange={onDateRangeChange}
         />
         <Box alignItems="start" gap="s">

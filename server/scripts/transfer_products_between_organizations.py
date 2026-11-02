@@ -29,12 +29,14 @@ from polar.models import (
     CheckoutLink,
     CheckoutLinkProduct,
     Customer,
+    CustomerSeat,
     CustomerSession,
     Discount,
     DiscountRedemption,
     Downloadable,
     Event,
     LicenseKey,
+    Member,
     Order,
     Payment,
     PaymentMethod,
@@ -463,18 +465,18 @@ class ProductTransferService:
         )
 
         # Check if a customer with the same email already exists in target organization
-        existing_customer_result = await session.execute(
-            select(Customer).where(
-                and_(
-                    Customer.email == original_customer.email,
-                    Customer.organization_id == self.target_organization_id,
-                    Customer.deleted_at.is_(
-                        None
-                    ),  # Only consider non-deleted customers
+        existing_customer = None
+        if original_customer.email is not None:
+            existing_customer_result = await session.execute(
+                select(Customer).where(
+                    and_(
+                        Customer.email == original_customer.email,
+                        Customer.organization_id == self.target_organization_id,
+                        Customer.deleted_at.is_(None),
+                    )
                 )
             )
-        )
-        existing_customer = existing_customer_result.scalar_one_or_none()
+            existing_customer = existing_customer_result.scalar_one_or_none()
 
         if existing_customer:
             # Use existing customer instead of creating a new one
@@ -492,6 +494,7 @@ class ProductTransferService:
             organization_id=self.target_organization_id,
             email=original_customer.email,
             email_verified=original_customer.email_verified,
+            type=original_customer.type,
             name=original_customer.name,
             billing_name=original_customer.billing_name,
             billing_address=original_customer.billing_address,
@@ -499,7 +502,7 @@ class ProductTransferService:
             short_id=new_short_id,
             stripe_customer_id=None,  # Will be created if needed
             external_id=None,  # Can be set later if needed
-            metadata=original_customer.metadata,
+            user_metadata=original_customer.user_metadata.copy(),
         )
 
         session.add(new_customer)
@@ -608,18 +611,18 @@ class ProductTransferService:
             )
 
             # Check if a customer with the same email already exists in target organization
-            existing_customer_result = await session.execute(
-                select(Customer).where(
-                    and_(
-                        Customer.email == customer.email,
-                        Customer.organization_id == self.target_organization_id,
-                        Customer.deleted_at.is_(
-                            None
-                        ),  # Only consider non-deleted customers
+            existing_customer = None
+            if customer.email is not None:
+                existing_customer_result = await session.execute(
+                    select(Customer).where(
+                        and_(
+                            Customer.email == customer.email,
+                            Customer.organization_id == self.target_organization_id,
+                            Customer.deleted_at.is_(None),
+                        )
                     )
                 )
-            )
-            existing_customer = existing_customer_result.scalar_one_or_none()
+                existing_customer = existing_customer_result.scalar_one_or_none()
 
             if existing_customer:
                 # Customer with same email exists in target org - this is a merge scenario
@@ -726,6 +729,12 @@ class ProductTransferService:
                     session.add(payment_method)
                     self.transfer_stats["payment_methods_updated"] += 1
 
+                await session.execute(
+                    update(CustomerSeat)
+                    .where(CustomerSeat.customer_id == customer.id)
+                    .values(customer_id=existing_customer.id)
+                )
+
                 # Soft delete the source customer since they shouldn't exist in source org anymore
                 customer.deleted_at = func.now()
                 session.add(customer)
@@ -740,6 +749,17 @@ class ProductTransferService:
                 session.add(customer)
                 self.transfer_stats["customers_transferred_directly"] += 1
 
+            member_ids = await session.scalars(
+                update(Member)
+                .where(Member.customer_id == customer.id)
+                .values(
+                    customer_id=(existing_customer or customer).id,
+                    organization_id=self.target_organization_id,
+                )
+                .returning(Member.id)
+            )
+            self.transfer_stats["members_transferred"] += len(member_ids.all())
+
         await session.flush()
 
     async def split_customers(self, session: AsyncSession) -> None:
@@ -752,6 +772,25 @@ class ProductTransferService:
 
         for customer in self.customers_to_split:
             new_customer = await self.create_new_customer_for_split(session, customer)
+            members = await session.scalars(
+                select(Member).where(Member.customer_id == customer.id)
+            )
+            member_map: dict[UUID, Member] = {}
+            for member in members:
+                new_member = Member(
+                    customer=new_customer,
+                    organization_id=self.target_organization_id,
+                    email=member.email,
+                    name=member.name,
+                    external_id=member.external_id,
+                    role=member.role,
+                    _oauth_accounts=member.oauth_accounts.copy(),
+                    deleted_at=member.deleted_at,
+                )
+                session.add(new_member)
+                member_map[member.id] = new_member
+            await session.flush()
+            self.transfer_stats["members_copied"] += len(member_map)
 
             # Update all orders for transferring products to use the new customer
             orders_result = await session.execute(
@@ -802,6 +841,8 @@ class ProductTransferService:
 
             for grant in benefit_grants_to_update:
                 grant.customer_id = new_customer.id
+                if grant.member_id is not None:
+                    grant.member_id = member_map[grant.member_id].id
                 session.add(grant)
                 self.transfer_stats["benefit_grants_updated"] += 1
 
@@ -820,6 +861,8 @@ class ProductTransferService:
 
             for license_key in license_keys_to_update:
                 license_key.customer_id = new_customer.id
+                if license_key.member_id is not None:
+                    license_key.member_id = member_map[license_key.member_id].id
                 license_key.organization_id = self.target_organization_id
                 session.add(license_key)
                 self.transfer_stats["license_keys_updated"] += 1
@@ -839,8 +882,27 @@ class ProductTransferService:
 
             for downloadable in downloadables_to_update:
                 downloadable.customer_id = new_customer.id
+                if downloadable.member_id is not None:
+                    downloadable.member_id = member_map[downloadable.member_id].id
                 session.add(downloadable)
                 self.transfer_stats["downloadables_updated"] += 1
+
+            seats = await session.scalars(
+                select(CustomerSeat).where(
+                    CustomerSeat.customer_id == customer.id,
+                    or_(
+                        CustomerSeat.subscription_id.in_(
+                            [s.id for s in subscriptions_to_update]
+                        ),
+                        CustomerSeat.order_id.in_([o.id for o in orders_to_update]),
+                    ),
+                )
+            )
+            for seat in seats:
+                seat.customer_id = new_customer.id
+                if seat.member_id is not None:
+                    seat.member_id = member_map[seat.member_id].id
+                self.transfer_stats["customer_seats_updated"] += 1
 
             # Update billing entries for transferring products
             billing_entries_result = await session.execute(

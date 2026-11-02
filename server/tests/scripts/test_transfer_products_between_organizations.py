@@ -7,8 +7,13 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.models import (
     Account,
+    BenefitGrant,
     Checkout,
+    CustomerSeat,
     Discount,
+    Downloadable,
+    LicenseKey,
+    Member,
     Order,
     Organization,
     Payment,
@@ -18,7 +23,12 @@ from polar.models import (
     User,
 )
 from polar.models.benefit import BenefitType
+from polar.models.customer import CustomerType
+from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.downloadable import DownloadableStatus
+from polar.models.file import FileServiceTypes
+from polar.models.member import MemberRole
 from scripts.transfer_products_between_organizations import (
     MixedOrganizationError,
     ProductTransferService,
@@ -28,18 +38,22 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
     create_benefit,
+    create_benefit_grant,
     create_checkout,
     create_checkout_link,
     create_customer,
+    create_customer_seat,
     create_discount,
     create_discount_redemption,
     create_event,
+    create_member,
     create_order,
     create_organization,
     create_payment,
     create_product,
     create_refund,
     create_subscription,
+    create_support_case_attachment_file,
 )
 
 
@@ -280,7 +294,11 @@ class TestProductTransferService:
         )
 
         # Create customer with order for the product
-        customer = await create_customer(save_fixture, organization=source_org)
+        customer = await create_customer(
+            save_fixture,
+            organization=source_org,
+            user_metadata={"reference": "customer-123", "priority": 2},
+        )
         order = await create_order(save_fixture, customer=customer, product=product)
 
         service = ProductTransferService(source_org.id, target_org.id)
@@ -295,10 +313,144 @@ class TestProductTransferService:
         assert new_customer.organization_id == target_org.id
         assert new_customer.email == customer.email
         assert new_customer.name == customer.name
+        await session.refresh(new_customer)
+        assert new_customer.user_metadata == customer.user_metadata
+        assert new_customer.user_metadata is not customer.user_metadata
 
         # Check that the order was updated to reference the new customer
         await session.refresh(order)
         assert order.customer_id == new_customer.id
+
+    async def test_customer_splitting_copies_members_and_remaps_entitlements(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email=None
+        )
+        customer.type = CustomerType.team
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+            email="owner@example.com",
+            external_id="owner-123",
+        )
+        owner._oauth_accounts = {
+            "github:123": {"account_id": "123", "access_token": "test-token"}
+        }
+        deleted_member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="deleted@example.com",
+        )
+        deleted_member.deleted_at = func.now()
+        file = await create_support_case_attachment_file(
+            save_fixture, organization, service=FileServiceTypes.downloadable
+        )
+        service = ProductTransferService(organization.id, organization_second.id)
+        transferred: list[BenefitGrant | LicenseKey | Downloadable | CustomerSeat] = []
+        staying: list[BenefitGrant | LicenseKey | Downloadable | CustomerSeat] = []
+        for entities in (transferred, staying):
+            product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+            )
+            subscription = await create_subscription(
+                save_fixture, product=product, customer=customer
+            )
+            order = await create_order(save_fixture, product=product, customer=customer)
+            license_benefit = await create_benefit(
+                save_fixture, organization=organization, type=BenefitType.license_keys
+            )
+            download_benefit = await create_benefit(
+                save_fixture, organization=organization, type=BenefitType.downloadables
+            )
+            for benefit in (license_benefit, download_benefit):
+                entities.append(
+                    await create_benefit_grant(
+                        save_fixture,
+                        customer,
+                        benefit,
+                        member=owner,
+                        subscription=subscription,
+                    )
+                )
+            license_key = LicenseKey(
+                organization=organization,
+                customer=customer,
+                member=owner,
+                benefit=license_benefit,
+                key=f"license-{product.id}",
+            )
+            await save_fixture(license_key)
+            downloadable = Downloadable(
+                file=file,
+                customer=customer,
+                member=owner,
+                benefit=download_benefit,
+                status=DownloadableStatus.granted,
+            )
+            await save_fixture(downloadable)
+            subscription_seat = await create_customer_seat(
+                save_fixture,
+                subscription=subscription,
+                customer=customer,
+                member=owner,
+                status=SeatStatus.claimed,
+            )
+            order_seat = await create_customer_seat(
+                save_fixture,
+                order=order,
+                customer=customer,
+                member=owner,
+                status=SeatStatus.claimed,
+            )
+            entities.extend([license_key, downloadable, subscription_seat, order_seat])
+            if entities is transferred:
+                service.products = [product]
+                service.benefits_to_transfer = [license_benefit, download_benefit]
+
+        service.customers_to_split = [customer]
+        await service.split_customers(session)
+        await session.flush()
+
+        new_customer = service.new_customers_map[customer.id]
+        await session.refresh(new_customer)
+        assert new_customer.type == CustomerType.team
+        copied_members = (
+            await session.scalars(
+                select(Member).where(Member.customer_id == new_customer.id)
+            )
+        ).all()
+        assert len(copied_members) == 2
+        copied_owner = next(m for m in copied_members if m.role == MemberRole.owner)
+        assert copied_owner.id != owner.id
+        assert copied_owner.email == owner.email
+        assert copied_owner.name == owner.name
+        assert copied_owner.external_id == owner.external_id
+        assert copied_owner.oauth_accounts == owner.oauth_accounts
+        assert all(m.organization_id == organization_second.id for m in copied_members)
+        assert next(
+            m for m in copied_members if m.email == deleted_member.email
+        ).deleted_at
+        for entity in transferred:
+            await session.refresh(entity)
+            assert entity.customer_id == new_customer.id
+            assert entity.member_id == copied_owner.id
+        for entity in staying:
+            await session.refresh(entity)
+            assert entity.customer_id == customer.id
+            assert entity.member_id == owner.id
+        await session.refresh(owner)
+        assert owner.customer_id == customer.id
+        assert owner.organization_id == organization.id
 
     async def test_customer_splitting_with_existing_email_in_target(
         self,
@@ -440,6 +592,12 @@ class TestProductTransferService:
         # Create customer with order for only the transferring product
         customer = await create_customer(save_fixture, organization=source_org)
         order = await create_order(save_fixture, customer=customer, product=product)
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=source_org,
+            role=MemberRole.owner,
+        )
 
         service = ProductTransferService(source_org.id, target_org.id)
         service.customers_to_transfer = [customer]
@@ -454,6 +612,10 @@ class TestProductTransferService:
         # Check that the order still belongs to the customer (should not be changed)
         await session.refresh(order)
         assert order.customer_id == customer.id
+        await session.refresh(member)
+        assert member.customer_id == customer.id
+        assert member.organization_id == target_org.id
+        assert member.role == MemberRole.owner
 
     async def test_transfer_customers_directly_with_existing_email_in_target(
         self,
@@ -486,6 +648,19 @@ class TestProductTransferService:
         target_customer = await create_customer(
             save_fixture, organization=target_org, email="test@example.com"
         )
+        member = await create_member(
+            save_fixture,
+            customer=source_customer,
+            organization=source_org,
+            role=MemberRole.owner,
+        )
+        seat = await create_customer_seat(
+            save_fixture,
+            order=order,
+            customer=source_customer,
+            member=member,
+            status=SeatStatus.claimed,
+        )
 
         service = ProductTransferService(source_org.id, target_org.id)
         service.customers_to_transfer = [source_customer]
@@ -500,10 +675,55 @@ class TestProductTransferService:
         # Check that order was updated to reference the target customer
         await session.refresh(order)
         assert order.customer_id == target_customer.id
+        await session.refresh(member)
+        assert member.customer_id == target_customer.id
+        assert member.organization_id == target_org.id
+        assert member.role == MemberRole.owner
+        await session.refresh(seat)
+        assert seat.customer_id == target_customer.id
+        assert seat.member_id == member.id
 
         # Check stats
         assert service.transfer_stats["customers_transferred_directly"] == 0
         assert service.transfer_stats["customers_merged"] == 1
+
+    @pytest.mark.parametrize("split_customer", [False, True])
+    async def test_customer_without_email_does_not_match_target_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        split_customer: bool,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email=None
+        )
+        target_customers = [
+            await create_customer(
+                save_fixture, organization=organization_second, email=None
+            )
+            for _ in range(2)
+        ]
+        service = ProductTransferService(organization.id, organization_second.id)
+
+        if split_customer:
+            transferred_customer = await service.create_new_customer_for_split(
+                session, customer
+            )
+            assert transferred_customer.id != customer.id
+            assert customer.organization_id == organization.id
+        else:
+            service.customers_to_transfer = [customer]
+            await service.transfer_customers_directly(session)
+            transferred_customer = customer
+
+        await session.refresh(transferred_customer)
+        assert transferred_customer.organization_id == organization_second.id
+        assert transferred_customer.email is None
+        assert transferred_customer.deleted_at is None
+        assert transferred_customer.id not in [c.id for c in target_customers]
+        assert not service.customers_to_merge
 
     async def test_transfer_discounts_directly(
         self,

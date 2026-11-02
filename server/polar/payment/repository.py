@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
+from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
@@ -32,6 +33,16 @@ class PaymentRepository(
     RepositoryBase[Payment],
 ):
     model = Payment
+
+    async def get_for_processing(self, id: UUID) -> Payment | None:
+        statement = (
+            self.get_base_statement()
+            .where(Payment.id == id)
+            .options(joinedload(Payment.organization))
+            .with_for_update(of=Payment)
+            .execution_options(populate_existing=True)
+        )
+        return await self.get_one_or_none(statement)
 
     async def get_succeeded_without_transaction_ids(
         self, since: datetime, older_than: datetime, *, limit: int

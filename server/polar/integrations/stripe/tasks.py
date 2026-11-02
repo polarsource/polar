@@ -10,10 +10,14 @@ from dramatiq import Retry
 from polar.checkout.service import NotConfirmedCheckout
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor
+from polar.external_event.repository import ExternalEventRepository
+from polar.external_event.service import ExternalEventDoesNotExist
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.dispute import DisputeStatus
+from polar.models.external_event import StripeEvent
 from polar.observability.task_logging import LoggableField
 from polar.organization.service import organization as organization_service
 from polar.payment.service import UnhandledPaymentIntent
@@ -271,25 +275,20 @@ async def charge_failed(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
 @stripe_api_connection_error_retry
 async def charge_succeeded(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
-        async with external_event_service.handle_stripe(session, event_id) as event:
-            charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
-            try:
-                await payment.handle_success(session, charge)
-            except (NotConfirmedCheckout, payment.OrderDoesNotExist) as e:
-                # Retry because we've seen in the wild a Stripe webhook coming
-                # *before* we updated the Checkout Session status in the database!
-                if can_retry():
-                    raise Retry() from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
-
-            # Try to create the payment transaction immediately
-            try:
-                await payment_transaction_service.create_payment(session, charge=charge)
-            # If the Stripe balance is not available, no problem, we'll receive charge.updated later
-            except BalanceTransactionNotAvailableError:
-                return
+        repository = ExternalEventRepository.from_session(session)
+        event = await repository.get_by_id(event_id, for_update=True)
+        if not isinstance(event, StripeEvent):
+            raise ExternalEventDoesNotExist(event_id)
+        charge = cast(stripe_lib.Charge, event.stripe_data.data.object)
+        try:
+            await payment.handle_charge_success(session, charge)
+        except payment.OrderDoesNotExist as e:
+            if can_retry():
+                raise Retry() from e
+            raise
+        # Replaying a handled event republishes jobs if publishing failed after commit.
+        if not event.is_handled:
+            await repository.update(event, update_dict={"handled_at": utc_now()})
 
 
 @actor(

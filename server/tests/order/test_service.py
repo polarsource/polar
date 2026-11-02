@@ -580,6 +580,7 @@ class TestCreateFromCheckoutOneTime:
         first_order = await order_service.create_from_checkout_one_time(
             session, checkout
         )
+        await order_service.process_tax(session, first_order.id)
         first_order_id = first_order.id
         await transaction.rollback()
 
@@ -592,6 +593,7 @@ class TestCreateFromCheckoutOneTime:
             session, retried_checkout
         )
 
+        await order_service.process_tax(session, retried_order.id)
         assert retried_order.id != first_order_id
         assert tax_service_mock.record.call_count == 2
         assert [
@@ -3028,6 +3030,8 @@ class TestCreateWalletOrder:
 
         assert wallet_transaction.order == order
 
+        tax_service_mock.record.assert_not_called()
+        await order_service.process_tax(session, order.id)
         tax_service_mock.record.assert_called_once()
 
 
@@ -3832,9 +3836,13 @@ class TestHandlePayment:
             TaxProcessor.numeral,
         )
 
+        await order_service.handle_payment(session, order, None)
+        assert order.status == OrderStatus.paid
+        tax_service_mock.record.assert_not_called()
+
         if charged_tax_amount:
             with pytest.raises(UnsupportedCountryError):
-                await order_service.handle_payment(session, order, None)
+                await order_service.process_tax(session, order.id)
             assert order.tax_amount == charged_tax_amount
             assert order.tax_calculation_processor_id == "stripe_calculation"
             tax_service_mock.record_amounts.assert_awaited_once()
@@ -3843,7 +3851,7 @@ class TestHandlePayment:
                 == charged_tax_amount
             )
         else:
-            updated_order = await order_service.handle_payment(session, order, None)
+            updated_order = await order_service.process_tax(session, order.id)
 
             assert updated_order.status == OrderStatus.paid
             assert updated_order.tax_amount == 0
@@ -3956,6 +3964,8 @@ class TestHandlePayment:
 
         # Call handle_payment
         updated_order = await order_service.handle_payment(session, order, payment)
+        tax_service_mock.record.assert_not_called()
+        await order_service.process_tax(session, order.id)
 
         # Verify order status is updated to paid
         assert updated_order.status == OrderStatus.paid
@@ -4020,6 +4030,8 @@ class TestHandlePayment:
         ]
 
         updated_order = await order_service.handle_payment(session, order, payment)
+        tax_service_mock.record.assert_not_called()
+        await order_service.process_tax(session, order.id)
 
         # Order should be marked paid
         assert updated_order.status == OrderStatus.paid
@@ -4090,6 +4102,8 @@ class TestHandlePayment:
         )
 
         updated_order = await order_service.handle_payment(session, order, payment)
+        tax_service_mock.record.assert_not_called()
+        await order_service.process_tax(session, order.id)
 
         assert updated_order.status == OrderStatus.paid
 

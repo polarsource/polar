@@ -898,6 +898,8 @@ class OrderService:
                 billing_address=customer.billing_address,
                 tax_id=customer.tax_id,
                 tax_behavior=checkout.tax_behavior,
+                tax_processor=checkout.tax_processor,
+                tax_calculation_processor_id=checkout.tax_processor_id,
                 tax_breakdown=checkout.tax_breakdown,
                 invoice_number=invoice_number,
                 organization=organization,
@@ -929,30 +931,8 @@ class OrderService:
         else:
             await self._emit_balance_credit_order_event(session, order, organization)
 
-        # Record tax transaction
-        if checkout.tax_processor_id is not None:
-            assert checkout.tax_processor is not None
-            assert checkout.tax_behavior is not None
-            assert order.billing_address is not None
-            assert order.product is not None
-            transaction_id, tax_processor = await tax_calculation_service.record(
-                checkout.tax_processor,
-                checkout.tax_processor_id,
-                amount=checkout.net_amount,
-                tax_amount=checkout.tax_amount or 0,
-                currency=checkout.currency,
-                address=order.billing_address,
-                tax_code=order.product.tax_code,
-                reference=f"checkout:{checkout.id}",
-                transaction_date=order.created_at,
-            )
-            await repository.update(
-                order,
-                update_dict={
-                    "tax_processor": tax_processor,
-                    "tax_transaction_processor_id": transaction_id,
-                },
-            )
+        if payment is None and order.tax_calculation_processor_id is not None:
+            enqueue_job("order.process_tax", order_id=order.id)
 
         await self._on_order_created(session, order)
 
@@ -1754,6 +1734,8 @@ class OrderService:
                 billing_address=billing_address,
                 tax_id=customer.tax_id,
                 tax_breakdown=wallet_transaction.tax_breakdown,
+                tax_processor=wallet_transaction.tax_processor,
+                tax_calculation_processor_id=wallet_transaction.tax_calculation_processor_id,
                 invoice_number=invoice_number,
                 organization=wallet.organization,
                 customer=customer,
@@ -1783,28 +1765,8 @@ class OrderService:
             wallet_transaction, update_dict={"order": order}
         )
 
-        # Record tax transaction
-        if wallet_transaction.tax_calculation_processor_id is not None:
-            assert wallet_transaction.tax_processor is not None
-            assert order.billing_address is not None
-            transaction_id, tax_processor = await tax_calculation_service.record(
-                wallet_transaction.tax_processor,
-                wallet_transaction.tax_calculation_processor_id,
-                amount=order.net_amount,
-                tax_amount=order.tax_amount,
-                currency=order.currency,
-                address=order.billing_address,
-                tax_code=TaxCode.general_electronically_supplied_services,
-                reference=str(order.id),
-                transaction_date=order.created_at,
-            )
-            await repository.update(
-                order,
-                update_dict={
-                    "tax_processor": tax_processor,
-                    "tax_transaction_processor_id": transaction_id,
-                },
-            )
+        if payment is None and order.tax_calculation_processor_id is not None:
+            enqueue_job("order.process_tax", order_id=order.id)
 
         await self._on_order_created(session, order)
 
@@ -2274,12 +2236,6 @@ class OrderService:
                 "order.balance", order_id=order.id, charge_id=payment.processor_id
             )
 
-        if (
-            order.tax_calculation_processor_id is not None
-            and order.tax_transaction_processor_id is None
-        ):
-            update_dict = {**update_dict, **await self._record_tax_transaction(order)}
-
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict, flush=True)
 
@@ -2307,6 +2263,20 @@ class OrderService:
 
         return order
 
+    async def process_tax(self, session: AsyncSession, order_id: uuid.UUID) -> Order:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_for_tax_processing(order_id)
+        if order is None:
+            raise OrderError(f"Order {order_id} does not exist")
+        if (
+            order.tax_calculation_processor_id is None
+            or order.tax_transaction_processor_id is not None
+        ):
+            return order
+        return await repository.update(
+            order, update_dict=await self._record_tax_transaction(order)
+        )
+
     async def _record_tax_transaction(self, order: Order) -> dict[str, Any]:
         """Book the order's tax with the recording processor.
 
@@ -2315,7 +2285,14 @@ class OrderService:
         assert order.tax_calculation_processor_id is not None
         assert order.tax_processor is not None
         assert order.billing_address is not None
-        assert order.product is not None
+        reference = (
+            f"checkout:{order.checkout_id}" if order.checkout_id else str(order.id)
+        )
+        tax_code = (
+            order.product.tax_code
+            if order.product
+            else TaxCode.general_electronically_supplied_services
+        )
 
         try:
             transaction_id, tax_processor = await tax_calculation_service.record(
@@ -2325,19 +2302,23 @@ class OrderService:
                 tax_amount=order.tax_amount,
                 currency=order.currency,
                 address=order.billing_address,
-                tax_code=order.product.tax_code,
-                reference=str(order.id),
+                tax_code=tax_code,
+                reference=reference,
                 transaction_date=order.created_at,
             )
         except CalculationExpiredError, UnsupportedCountryError:
-            return await self._recalculate_tax_transaction(order)
+            if order.product is None:
+                raise
+            return await self._recalculate_tax_transaction(order, reference)
 
         return {
             "tax_processor": tax_processor,
             "tax_transaction_processor_id": transaction_id,
         }
 
-    async def _recalculate_tax_transaction(self, order: Order) -> dict[str, Any]:
+    async def _recalculate_tax_transaction(
+        self, order: Order, reference: str
+    ) -> dict[str, Any]:
         """Recalculate and record tax while preserving the charged amounts.
 
         Returns the order fields to update.
@@ -2353,7 +2334,7 @@ class OrderService:
             tax_amount,
             tax_breakdown,
         ) = await calculate_tax(
-            reference=str(order.id),
+            reference=reference,
             taxable_amount=order.net_amount,
             currency=order.currency,
             customer=order.customer,
@@ -2385,7 +2366,7 @@ class OrderService:
                 currency=order.currency,
                 address=order.billing_address,
                 tax_code=order.product.tax_code,
-                reference=str(order.id),
+                reference=reference,
                 transaction_date=order.created_at,
             )
             return {
@@ -2409,7 +2390,7 @@ class OrderService:
                 currency=order.currency,
                 address=order.billing_address,
                 tax_code=order.product.tax_code,
-                reference=str(order.id),
+                reference=reference,
                 transaction_date=order.created_at,
             )
             update_dict = {

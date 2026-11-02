@@ -4,7 +4,13 @@ from typing import Annotated
 from dramatiq import Retry
 
 from polar.exceptions import PolarTaskError
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.observability.task_logging import LoggableField
+from polar.payment.repository import PaymentRepository
+from polar.transaction.service.payment import BalanceTransactionNotAvailableError
+from polar.transaction.service.payment import (
+    payment_transaction as payment_transaction_service,
+)
 from polar.worker import AsyncSessionMaker, CronTrigger, TaskPriority, actor, can_retry
 
 from .repository import PaymentTransactionRepository
@@ -17,6 +23,21 @@ from .service.processor_fee import (
 
 
 class TransactionTaskError(PolarTaskError): ...
+
+
+@actor(actor_name="transaction.create_payment", priority=TaskPriority.LOW)
+async def create_payment(payment_id: Annotated[uuid.UUID, LoggableField]) -> None:
+    async with AsyncSessionMaker() as session:
+        payment = await PaymentRepository.from_session(session).get_by_id(payment_id)
+        if payment is None:
+            raise TransactionTaskError(f"Payment {payment_id} does not exist")
+        charge = await stripe_service.get_charge(payment.processor_id)
+        try:
+            await payment_transaction_service.create_payment(session, charge=charge)
+        except BalanceTransactionNotAvailableError as e:
+            if can_retry():
+                raise Retry() from e
+            raise
 
 
 class PaymentTransactionDoesNotExist(TransactionTaskError):

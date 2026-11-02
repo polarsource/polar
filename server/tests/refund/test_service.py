@@ -1010,6 +1010,47 @@ class TestUpdatedWebhooks(StripeRefund):
 
 @pytest.mark.anyio
 class TestTaxReversals:
+    async def test_records_pending_order_tax_before_reversing_refund(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        tax_calculation_service_service_mock: MagicMock,
+    ) -> None:
+        order, payment, _ = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subtotal_amount=1000,
+            tax_amount=200,
+            tax_processor=TaxProcessor.numeral,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        order.tax_calculation_processor_id = "pending_calculation"
+        await save_fixture(order)
+        record = mocker.patch(
+            "polar.order.service.tax_calculation_service.record",
+            return_value=("order_tax_transaction", TaxProcessor.numeral),
+        )
+        tax_calculation_service_service_mock.revert.return_value = (
+            "refund_tax_transaction"
+        )
+        refund = await create_refund(
+            save_fixture, order, payment, amount=1000, tax_amount=200
+        )
+
+        await refund_service._on_succeeded(session, refund)
+
+        record.assert_awaited_once()
+        assert order.tax_transaction_processor_id == "order_tax_transaction"
+        assert refund.tax_transaction_processor_id == "refund_tax_transaction"
+        assert (
+            tax_calculation_service_service_mock.revert.call_args.args[1]
+            == "order_tax_transaction"
+        )
+
     @pytest.mark.parametrize("processor", [TaxProcessor.stripe, TaxProcessor.numeral])
     async def test_tax_only_then_remaining_refund(
         self,

@@ -13,6 +13,7 @@ import {
   MeteringDeliveryError,
   MeteringTimeoutError,
   deliveryTimeout,
+  waitForDelivery,
   type DeliveryFailure,
   type DeliveryOptions,
   type DropReason,
@@ -97,6 +98,7 @@ export class BufferedMeteringStrategy {
   private closing?: Promise<void>;
   private wake?: () => void;
   private failure?: unknown;
+  private finished = false;
 
   /**
    * Configure event delivery and retries.
@@ -161,25 +163,15 @@ export class BufferedMeteringStrategy {
    */
   async flush(options?: DeliveryOptions): Promise<void> {
     const timeout = deliveryTimeout(options);
-    this.assertRunning();
+    if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
     const request = this.barrier();
-    this.queue.push(request);
-    this.wake?.();
+    if (this.finished) this.finish(request);
+    else {
+      this.queue.push(request);
+      this.wake?.();
+    }
     const timer = setTimeout(() => {
-      const pending = [
-        ...this.batch,
-        ...this.queue.filter((item): item is QueuedEvent => !(item instanceof FlushRequest)),
-      ].filter((item) => item.sequence > request.after && item.sequence <= request.through);
-      const failures = this.deliveryFailures(request);
-      if (pending.length)
-        failures.push({
-          events: pending.map((item) => item.event),
-          reason: "flush_timeout",
-          cause: new Error(`Metering flush timed out after ${timeout}ms`),
-        });
-      request.reject(
-        failures.length ? new MeteringDeliveryError(failures) : new MeteringTimeoutError(timeout),
-      );
+      request.reject(this.timeoutError(request, timeout, "flush_timeout"));
       this.release(request);
     }, timeout);
     try {
@@ -193,9 +185,11 @@ export class BufferedMeteringStrategy {
    * Stop accepting events and drain the queue, aborting unfinished delivery at the deadline.
    *
    * Repeated calls share the first call's deadline and result. Does nothing if not started.
+   * A callback still running at the deadline may continue after this wait rejects.
    *
    * @param options Maximum drain time in milliseconds; defaults to 30000.
    * @throws MeteringDeliveryError if delivery failures remain unacknowledged or shutdown drops events.
+   * @throws MeteringTimeoutError if shutdown expires while waiting for delivery callbacks.
    */
   async close(options?: DeliveryOptions): Promise<void> {
     const timeout = deliveryTimeout(options);
@@ -240,6 +234,27 @@ export class BufferedMeteringStrategy {
     this.failures = this.failures.filter((item) => item.sequence > oldest);
   }
 
+  private timeoutError(
+    request: FlushRequest,
+    timeout: number,
+    reason: "flush_timeout" | "shutdown_timeout",
+  ): MeteringDeliveryError | MeteringTimeoutError {
+    const pending = [
+      ...this.batch,
+      ...this.queue.filter((item): item is QueuedEvent => !(item instanceof FlushRequest)),
+    ].filter((item) => item.sequence > request.after && item.sequence <= request.through);
+    const failures = this.deliveryFailures(request);
+    if (pending.length)
+      failures.push({
+        events: pending.map((item) => item.event),
+        reason,
+        cause: new MeteringTimeoutError(timeout),
+      });
+    return failures.length
+      ? new MeteringDeliveryError(failures)
+      : new MeteringTimeoutError(timeout);
+  }
+
   private async drain(timeout: number): Promise<void> {
     const request = this.barrier();
     const timer = setTimeout(
@@ -247,7 +262,13 @@ export class BufferedMeteringStrategy {
       timeout,
     );
     try {
-      await this.worker;
+      try {
+        await waitForDelivery(this.worker!, timeout);
+      } catch (error) {
+        if (error instanceof MeteringTimeoutError)
+          throw this.timeoutError(request, timeout, "shutdown_timeout");
+        throw error;
+      }
       this.finish(request);
       await request.completed;
     } finally {
@@ -312,8 +333,7 @@ export class BufferedMeteringStrategy {
       const pending = this.batch;
       this.batch = [];
       for (const message of this.queue.splice(0)) {
-        if (message instanceof FlushRequest) requests.push(message);
-        else pending.push(message);
+        if (!(message instanceof FlushRequest)) pending.push(message);
       }
       for (const item of pending) this.failures.push({ ...item, reason, cause: error });
       if (!this.abort.signal.aborted)
@@ -330,7 +350,9 @@ export class BufferedMeteringStrategy {
           "Metering worker and drop callback failed",
         );
       }
-      for (const request of requests) this.finish(request);
+    } finally {
+      this.finished = true;
+      for (const request of this.barriers) this.finish(request);
     }
   }
 

@@ -10,7 +10,7 @@ import {
   type RequestOptions,
 } from "../base";
 import { BufferedMeteringStrategy } from "./buffered";
-import { MeteringDeliveryError } from "./errors";
+import { MeteringDeliveryError, MeteringTimeoutError } from "./errors";
 
 const events: EventInput[] = Array.from({ length: 5 }, (_, i) => ({
   name: `usage-${i}`,
@@ -197,7 +197,7 @@ it.each(["shutdown timeout", "worker error"])(
       if (failure === "worker error") {
         failDelivery(new TypeError(error));
         await expect(strategy.close()).rejects.toThrow(error);
-        await expect(strategy.flush()).rejects.toThrow(error);
+        await expect(strategy.flush()).rejects.toThrow("not running");
         await expect(strategy.track(events[0])).rejects.toThrow(error);
         expect(onDropped).toHaveBeenCalledWith(events.slice(0, 2), "worker_error");
       } else {
@@ -562,3 +562,93 @@ it("an abandoned flush leaves its eventual failure observable", async () => {
     await strategy.close();
   }
 });
+
+it.each([false, true])(
+  "reports retained failures when flush follows a worker error (callback pending: %s)",
+  async (callbackPending) => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const cause = new TypeError("broken transport");
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const onDropped = vi.fn(() => (callbackPending ? gate : undefined));
+    const strategy = await new BufferedMeteringStrategy(
+      { events: { ingest: vi.fn().mockRejectedValue(cause) } },
+      { batchSize: 1, onDropped },
+    ).start();
+    try {
+      await strategy.track(events[0]);
+      await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
+      const flushing = strategy.flush();
+      const result = expect(flushing).rejects.toMatchObject({
+        events: [events[0]],
+        failures: [{ events: [events[0]], reason: "worker_error", cause }],
+      });
+      release();
+      await result;
+    } finally {
+      release();
+      await strategy.close({ timeoutMs: 20 }).catch(() => {});
+    }
+  },
+);
+
+it.each(["delivered", "dropped", "shutdown"] as const)(
+  "bounds shutdown when the %s callback hangs",
+  async (phase) => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let callbackStarted!: () => void;
+    const started = new Promise<void>((resolve) => {
+      callbackStarted = resolve;
+    });
+    const callback = vi.fn(() => {
+      callbackStarted();
+      return gate;
+    });
+    const cause = new PolarClientError(422, "invalid");
+    const ingest = vi.fn(async (_body: unknown, options?: RequestOptions) => {
+      if (phase === "dropped") throw cause;
+      if (phase === "shutdown")
+        await new Promise<void>((_resolve, reject) => {
+          options!.signal!.addEventListener("abort", () => reject(options!.signal!.reason), {
+            once: true,
+          });
+        });
+    });
+    const strategy = await new BufferedMeteringStrategy(
+      { events: { ingest } },
+      {
+        batchSize: 1,
+        onDelivered: phase === "delivered" ? callback : undefined,
+        onDropped: phase !== "delivered" ? callback : undefined,
+      },
+    ).start();
+    let closing: Promise<void> | undefined;
+    try {
+      await strategy.track(events[0]);
+      if (phase !== "shutdown") await started;
+      closing = strategy.close({ timeoutMs: 10 });
+      if (phase === "delivered") await expect(closing).rejects.toBeInstanceOf(MeteringTimeoutError);
+      else
+        await expect(closing).rejects.toMatchObject({
+          events: [events[0]],
+          failures: [
+            {
+              events: [events[0]],
+              reason: phase === "dropped" ? "permanent_error" : "shutdown_timeout",
+            },
+          ],
+        });
+      expect(callback).toHaveBeenCalledOnce();
+    } finally {
+      release();
+      await closing?.catch(() => {});
+    }
+  },
+  500,
+);

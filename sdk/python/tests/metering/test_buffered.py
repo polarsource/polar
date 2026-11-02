@@ -541,12 +541,17 @@ async def test_abandoned_flush_preserves_failures_and_other_waiters(
 async def test_shutdown_deadline_bounds_drop_callback(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
+    reporting = anyio.Event()
 
     async def send(**kwargs: object) -> None:
         await anyio.sleep_forever()
 
     client.events.ingest.side_effect = send
-    on_dropped = AsyncMock(side_effect=anyio.sleep_forever)
+
+    async def on_dropped(batch: list[EventInput], reason: DropReason) -> None:
+        reporting.set()
+        await anyio.sleep_forever()
+
     with anyio.fail_after(1), pytest.raises(MeteringDeliveryError) as failure:
         async with BufferedMeteringStrategy(
             client, shutdown_timeout=0.01, on_dropped=on_dropped
@@ -554,6 +559,7 @@ async def test_shutdown_deadline_bounds_drop_callback(
             await strategy.track(events[0])
     assert failure.value.events == events[:1]
     assert failure.value.failures[0].reason == "shutdown_timeout"
+    assert reporting.is_set()
 
 
 @pytest.mark.parametrize("timeout", [-1.0, float("nan"), float("inf")])

@@ -27,6 +27,7 @@ import React from 'react'
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
+  external_product_id: parseAsArrayOf(parseAsString),
   customer_id: parseAsString,
   status: parseAsStringLiteral(enums.checkoutStatusValues),
   query: parseAsString,
@@ -46,12 +47,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     })
 
   const [
-    { product_id: productId, customer_id: customerId, status, query },
+    {
+      product_id: productId,
+      external_product_id: externalProductId,
+      customer_id: customerId,
+      status,
+      query,
+    },
     setFilters,
   ] = useQueryStates(filterParsers)
 
+  const filterByExternalId =
+    !!organization.feature_settings?.config_as_code_enabled && !productId
+  const productFilter = filterByExternalId ? externalProductId : productId
+
   const onProductSelect = (value: string[]) => {
-    setFilters({ product_id: value.length > 0 ? value : null })
+    const selected = value.length > 0 ? value : null
+    setFilters(
+      filterByExternalId
+        ? { product_id: null, external_product_id: selected }
+        : { product_id: selected, external_product_id: null },
+    )
     resetPage()
   }
 
@@ -68,6 +84,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const checkoutsHook = useCheckouts(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
     customer_id: customerId ?? undefined,
     status: status ?? undefined,
     query: query ?? undefined,
@@ -172,8 +189,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <ProductSelect
               organization={organization}
               includeArchived
-              value={productId || []}
+              value={productFilter ?? []}
               onChange={onProductSelect}
+              filterByExternalId={filterByExternalId}
             />
           </div>
         </div>

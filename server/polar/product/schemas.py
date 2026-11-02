@@ -1225,6 +1225,9 @@ BenefitPublicList = Annotated[
 
 class ProductNameCheckRequest(Schema):
     name: str = Field(min_length=1, max_length=64)
+    organization_id: OrganizationID | None = Field(
+        None, description="Organization the product is being drafted for."
+    )
 
 
 class ProductNameCheck(Schema):

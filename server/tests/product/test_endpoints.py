@@ -2,6 +2,7 @@ import uuid
 from typing import Any
 
 import pytest
+from fakeredis import FakeAsyncRedis
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
@@ -13,11 +14,14 @@ from polar.models import (
     Organization,
     Product,
     ProductPriceFixed,
+    User,
     UserOrganization,
 )
 from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
 from polar.postgres import AsyncSession
+from polar.product.name_check import pop_flagged_names
+from polar.redis import Redis
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -1088,6 +1092,10 @@ class TestDeleteProduct:
 
 @pytest.mark.anyio
 class TestNameCheck:
+    @pytest.fixture
+    def redis(self) -> Redis:
+        return FakeAsyncRedis(decode_responses=True)
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/products/name-check", json={"name": "Casino Night"}
@@ -1111,3 +1119,42 @@ class TestNameCheck:
         )
 
         assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_remembers_flagged_name_for_organization(
+        self,
+        client: AsyncClient,
+        redis: Redis,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/products/name-check",
+            json={"name": "Casino Night", "organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 200
+        assert await pop_flagged_names(redis, organization.id, user.id) == {
+            "Casino Night": "gambling"
+        }
+
+    @pytest.mark.auth
+    async def test_inaccessible_organization(
+        self,
+        client: AsyncClient,
+        redis: Redis,
+        user: User,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/products/name-check",
+            json={
+                "name": "Casino Night",
+                "organization_id": str(organization_second.id),
+            },
+        )
+
+        assert response.status_code == 404
+        assert await pop_flagged_names(redis, organization_second.id, user.id) == {}

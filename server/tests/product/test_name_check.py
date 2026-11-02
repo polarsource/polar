@@ -6,6 +6,7 @@ from polar.product.name_check import (
     check_product_name,
     find_flagged_phrase,
     jev_agent,
+    judge_product_name,
 )
 
 
@@ -81,3 +82,10 @@ class TestCheckProductName:
             result = await check_product_name("Sponsoring mensuel")
 
         assert result.category is None
+
+
+@pytest.mark.anyio
+class TestJudgeProductName:
+    async def test_jev_failure_returns_none(self) -> None:
+        with jev_agent().override(model=jev_unavailable()):
+            assert await judge_product_name("Sponsoring mensuel") is None

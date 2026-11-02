@@ -7,7 +7,7 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.orm import contains_eager, selectinload, undefer
 
-from polar.auth.models import Agent, AuthSubject
+from polar.auth.models import Agent, AuthSubject, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -37,6 +37,7 @@ from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
     Organization,
+    OrganizationRiskSignal,
     Product,
     ProductBenefit,
     ProductMedia,
@@ -50,6 +51,7 @@ from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
+from polar.organization_review.risk_signal import risk_signal as risk_signal_service
 from polar.organization_review.schemas import ReviewContext
 from polar.product.guard import (
     is_custom_price,
@@ -60,9 +62,11 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductRepository
+from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
+from .name_check import judge_product_name, pop_flagged_names
 from .schemas import (
     ExistingProductPrice,
     ProductCreate,
@@ -74,6 +78,8 @@ from .schemas import (
     ProductUpdate,
 )
 from .sorting import ProductSortProperty
+
+MAX_REVISED_FLAGGED_NAMES = 10
 
 
 class ProductError(PolarError): ...
@@ -563,6 +569,7 @@ class ProductService:
 
         if update_schema.name is not None and update_schema.name != product.name:
             product.name = update_schema.name
+            enqueue_job("product.check_name", product.id)
         if (
             update_schema.description is not None
             and update_schema.description != product.description
@@ -977,6 +984,81 @@ class ProductService:
     ) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)
         self._enqueue_organization_review(product)
+        enqueue_job(
+            "product.check_name",
+            product.id,
+            user_id=auth_subject.subject.id if is_user(auth_subject) else None,
+        )
+
+    async def check_name(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        product: Product,
+        *,
+        user_id: uuid.UUID | None,
+    ) -> None:
+        """Record a risk signal when a product is saved under a name our Acceptable
+        Use Policy check flags, or under a clean name after the user was warned
+        about the names they tried first."""
+        check = await judge_product_name(product.name)
+        if check is None:
+            return
+
+        flagged_names = (
+            await pop_flagged_names(redis, product.organization_id, user_id)
+            if user_id is not None
+            else {}
+        )
+
+        if check.category is not None:
+            matched = f' (matched "{check.phrase}")' if check.phrase else ""
+            await risk_signal_service.record(
+                session,
+                product.organization,
+                source=OrganizationRiskSignal.Source.POLAR,
+                type=OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME,
+                risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
+                description=(
+                    f'Product "{product.name}" was saved with a name suggesting '
+                    f"{check.category}{matched}."
+                ),
+                payload={
+                    "product_id": str(product.id),
+                    "name": product.name,
+                    "category": check.category,
+                    "phrase": check.phrase,
+                },
+            )
+            return
+
+        flagged_names.pop(product.name, None)
+        if not flagged_names:
+            return
+
+        revised_from = [
+            {"name": name, "category": category}
+            for name, category in list(flagged_names.items())[
+                :MAX_REVISED_FLAGGED_NAMES
+            ]
+        ]
+        tried = ", ".join(f'"{n["name"]}" ({n["category"]})' for n in revised_from)
+        await risk_signal_service.record(
+            session,
+            product.organization,
+            source=OrganizationRiskSignal.Source.POLAR,
+            type=OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_REVISED,
+            risk_level=OrganizationRiskSignal.RiskLevel.NORMAL,
+            description=(
+                f'Product "{product.name}" was saved after the user was warned '
+                f"that these names may violate the Acceptable Use Policy: {tried}."
+            ),
+            payload={
+                "product_id": str(product.id),
+                "name": product.name,
+                "revised_from": revised_from,
+            },
+        )
 
     async def _after_product_updated(
         self, session: AsyncSession, product: Product

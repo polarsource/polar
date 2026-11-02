@@ -1,6 +1,7 @@
 import functools
 import re
 from typing import Annotated
+from uuid import UUID
 
 import structlog
 from pydantic import BaseModel, ConfigDict, Field
@@ -10,6 +11,7 @@ from pydantic_ai.providers.typesafe import TypeSafeProvider
 from typesafe_sdk import AsyncTypeSafeClient
 
 from polar.config import settings
+from polar.redis import Redis
 
 from .schemas import ProductNameCheck
 
@@ -17,6 +19,7 @@ log = structlog.get_logger()
 
 JEV_GATEWAY_URL = "https://gateway-us.pydantic.dev/proxy/jev"
 FLAGGED_CONFIDENCE_THRESHOLD = 0.7
+FLAGGED_NAMES_TTL_SECONDS = 60 * 60
 
 FLAGGED_PRODUCT_PHRASES: dict[str, str] = {
     "human services": "consulting, consultation, coaching, mentorship, 1-on-1, 1:1, done-for-you, custom, freelance, call, book a session",
@@ -96,17 +99,55 @@ def find_flagged_phrase(name: str) -> ProductNameCheck | None:
     return None
 
 
-async def check_product_name(name: str) -> ProductNameCheck:
+async def judge_product_name(name: str) -> ProductNameCheck | None:
+    """Check a product name, returning `None` when the decision model failed."""
     if flagged := find_flagged_phrase(name):
         return flagged
     try:
         result = await jev_agent().run(name)
     except Exception as e:
         log.warning("product.name_check.jev_failed", error=str(e))
-        return ProductNameCheck(category=None, phrase=None)
+        return None
 
     confidence = (result.response.provider_details or {}).get("confidence", {})
     category = result.output.category
     if confidence.get("category", 0) < FLAGGED_CONFIDENCE_THRESHOLD:
         category = None
     return ProductNameCheck(category=category, phrase=None)
+
+
+async def check_product_name(name: str) -> ProductNameCheck:
+    return await judge_product_name(name) or ProductNameCheck(
+        category=None, phrase=None
+    )
+
+
+def _flagged_names_key(organization_id: UUID, user_id: UUID) -> str:
+    return f"product_name_check:flagged:{organization_id}:{user_id}"
+
+
+async def remember_flagged_name(
+    redis: Redis,
+    organization_id: UUID,
+    user_id: UUID,
+    name: str,
+    category: str,
+) -> None:
+    """Remember a name the user was warned about while drafting a product."""
+    key = _flagged_names_key(organization_id, user_id)
+    async with redis.pipeline(transaction=True) as pipe:
+        pipe.hset(key, name, category)
+        pipe.expire(key, FLAGGED_NAMES_TTL_SECONDS)
+        await pipe.execute()
+
+
+async def pop_flagged_names(
+    redis: Redis, organization_id: UUID, user_id: UUID
+) -> dict[str, str]:
+    """Names the user was warned about since their last saved product, by category."""
+    key = _flagged_names_key(organization_id, user_id)
+    async with redis.pipeline(transaction=True) as pipe:
+        pipe.hgetall(key)
+        pipe.delete(key)
+        flagged_names, _ = await pipe.execute()
+    return flagged_names

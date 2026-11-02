@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends, Query
 
 from polar.authz.dependencies import AuthorizeWebUserRead
+from polar.authz.service import get_accessible_organization
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -17,11 +18,12 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.product.schemas import ProductListParams
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
 from . import auth, legacy_schemas
-from .name_check import check_product_name
+from .name_check import check_product_name, remember_flagged_name
 from .schemas import Product as ProductSchema
 from .schemas import (
     ProductBenefitsUpdate,
@@ -115,13 +117,37 @@ async def get(
     summary="Check Product Name",
     response_model=ProductNameCheck,
     tags=[APITag.private],
+    responses={
+        404: {
+            "description": "Organization not found.",
+            "model": ResourceNotFound.schema(),
+        }
+    },
 )
 async def name_check(
     auth_subject: AuthorizeWebUserRead,
     name_check_request: ProductNameCheckRequest,
+    session: AsyncReadSession = Depends(get_db_read_session),
+    redis: Redis = Depends(get_redis),
 ) -> ProductNameCheck:
     """Warn when a product name suggests a use case the Acceptable Use Policy forbids."""
-    return await check_product_name(name_check_request.name)
+    organization_id = name_check_request.organization_id
+    if organization_id is not None and (
+        await get_accessible_organization(session, auth_subject, organization_id)
+        is None
+    ):
+        raise ResourceNotFound()
+
+    check = await check_product_name(name_check_request.name)
+    if organization_id is not None and check.category is not None:
+        await remember_flagged_name(
+            redis,
+            organization_id,
+            auth_subject.subject.id,
+            name_check_request.name,
+            check.category,
+        )
+    return check
 
 
 @router.post(

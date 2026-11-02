@@ -1020,6 +1020,7 @@ class SubscriptionService:
         """
         assert subscription.status == SubscriptionStatus.paused
         repository = SubscriptionRepository.from_session(session)
+        now = utc_now()
 
         await repository.release_scheduler_lock(subscription)
         subscription.status = (
@@ -1044,12 +1045,15 @@ class SubscriptionService:
             subscription.customer_cancellation_reason = customer_cancellation_reason
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
-            None if trial_end else current_period_start, containing=utc_now()
+            None if trial_end else current_period_start, containing=now
         )
 
         # Flushed so the returned subscription carries `payment_method_id`, which
         # the cutover records, and not just the relationship.
         subscription = await repository.update(subscription, flush=True)
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=now
+        )
 
         await self.enqueue_benefits_grants(session, subscription)
         await self._on_subscription_updated(session, subscription)

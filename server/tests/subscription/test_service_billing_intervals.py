@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 import pytest
+from freezegun import freeze_time
 from pytest_mock import MockerFixture
 
 from polar.billing_interval.repository import BillingIntervalRepository
@@ -14,6 +17,7 @@ from polar.models import (
 )
 from polar.models.billing_interval import UsagePolicy
 from polar.models.checkout import CheckoutStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
@@ -21,6 +25,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_checkout,
+    create_subscription,
     create_trialing_subscription,
 )
 
@@ -209,3 +214,47 @@ class TestRevoke:
 
         [interval] = await get_intervals(session, subscription)
         assert interval.period_end == subscription.ended_at
+
+
+@pytest.mark.anyio
+class TestActivateImported:
+    @freeze_time("2026-06-15")
+    async def test_replaces_paused_interval_at_cutover(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(subscription_service, "_on_subscription_migrated")
+        now = utc_now()
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = now - timedelta(days=10)
+        await save_fixture(subscription)
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=subscription.paused_at
+        )
+
+        await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=now - timedelta(days=20),
+            current_period_end=now + timedelta(days=10),
+            trial_end=None,
+            payment_method=None,
+            provider="stripe",
+            provider_subscription_id="sub_1",
+        )
+
+        paused, charged = await get_intervals(session, subscription)
+        assert paused.usage_policy == UsagePolicy.paused
+        assert paused.period_end == now
+        assert charged.usage_policy == UsagePolicy.charge
+        assert charged.period_start == now
+        assert charged.period_end is None

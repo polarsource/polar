@@ -3,26 +3,32 @@ from uuid import UUID
 import pytest
 from sqlalchemy import func, select
 
-from polar.enums import SubscriptionRecurringInterval
+from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession
 from polar.models import (
     Account,
     BenefitGrant,
+    BillingEntry,
     Checkout,
+    Customer,
     CustomerSeat,
     Discount,
+    DiscountRedemption,
     Downloadable,
     LicenseKey,
     Member,
     Order,
     Organization,
     Payment,
+    PaymentMethod,
     ProductBenefit,
     Refund,
     Subscription,
+    SubscriptionUpdate,
     User,
 )
 from polar.models.benefit import BenefitType
+from polar.models.billing_entry import BillingEntryType
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
@@ -30,6 +36,7 @@ from polar.models.downloadable import DownloadableStatus
 from polar.models.file import FileServiceTypes
 from polar.models.member import MemberRole
 from scripts.transfer_products_between_organizations import (
+    CustomerSplitError,
     MixedOrganizationError,
     ProductTransferService,
     TransferValidationError,
@@ -39,6 +46,7 @@ from tests.fixtures.random_objects import (
     create_account,
     create_benefit,
     create_benefit_grant,
+    create_billing_entry,
     create_checkout,
     create_checkout_link,
     create_customer,
@@ -50,6 +58,7 @@ from tests.fixtures.random_objects import (
     create_order,
     create_organization,
     create_payment,
+    create_payment_method,
     create_product,
     create_refund,
     create_subscription,
@@ -725,6 +734,115 @@ class TestProductTransferService:
         assert transferred_customer.id not in [c.id for c in target_customers]
         assert not service.customers_to_merge
 
+    @pytest.mark.parametrize("existing_target", [False, True])
+    async def test_split_customer_copies_payment_methods(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        existing_target: bool,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        default_method = await create_payment_method(
+            save_fixture, customer, method_metadata={"last4": "4242"}
+        )
+        subscription_method = await create_payment_method(save_fixture, customer)
+        customer.default_payment_method = default_method
+        existing_method = None
+        if existing_target:
+            target_customer = await create_customer(
+                save_fixture,
+                organization=organization_second,
+                stripe_customer_id=None,
+            )
+            existing_method = await create_payment_method(
+                save_fixture,
+                target_customer,
+                processor_id=subscription_method.processor_id,
+            )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        staying_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=subscription_method,
+        )
+        staying_subscription = await create_subscription(
+            save_fixture,
+            product=staying_product,
+            customer=customer,
+            payment_method=subscription_method,
+        )
+        service = ProductTransferService(organization.id, organization_second.id)
+        service.products = [product]
+        await service.execute_transfer(session)
+
+        await session.refresh(subscription)
+        await session.refresh(staying_subscription)
+        await session.refresh(customer)
+        new_customer = await session.get(Customer, subscription.customer_id)
+        assert new_customer is not None
+        assert new_customer.stripe_customer_id == customer.stripe_customer_id
+        target_methods = (
+            await session.scalars(
+                select(PaymentMethod).where(
+                    PaymentMethod.customer_id == new_customer.id
+                )
+            )
+        ).all()
+        assert len(target_methods) == 2
+        copied_default = next(
+            method
+            for method in target_methods
+            if method.processor_id == default_method.processor_id
+        )
+        copied_subscription_method = next(
+            method
+            for method in target_methods
+            if method.processor_id == subscription_method.processor_id
+        )
+        assert copied_default.id != default_method.id
+        assert copied_default.method_metadata == default_method.method_metadata
+        assert copied_default.type == default_method.type
+        assert copied_default.processor == default_method.processor
+        assert new_customer.default_payment_method_id == copied_default.id
+        assert subscription.payment_method_id == copied_subscription_method.id
+        if existing_method is not None:
+            assert copied_subscription_method.id == existing_method.id
+        assert staying_subscription.payment_method_id == subscription_method.id
+        assert customer.default_payment_method_id == default_method.id
+        for original_method in (default_method, subscription_method):
+            await session.refresh(original_method)
+            assert original_method.customer_id == customer.id
+
+    async def test_copy_payment_methods_rejects_different_stripe_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        target_customer = await create_customer(
+            save_fixture,
+            organization=organization_second,
+            stripe_customer_id="cus_other",
+        )
+        service = ProductTransferService(organization.id, organization_second.id)
+        with pytest.raises(CustomerSplitError, match="different Stripe customer ID"):
+            await service.copy_payment_methods(session, customer, target_customer, [])
+        assert target_customer.stripe_customer_id == "cus_other"
+
     async def test_transfer_discounts_directly(
         self,
         save_fixture: SaveFixture,
@@ -771,77 +889,173 @@ class TestProductTransferService:
         assert discount.organization_id == target_org.id
         assert service.transfer_stats["discounts_transferred_directly"] == 1
 
+    @pytest.mark.parametrize(
+        "discount_type", [DiscountType.fixed, DiscountType.percentage]
+    )
     async def test_split_discounts(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        account: Account,
-        account_second: Account,
+        organization: Organization,
+        organization_second: Organization,
+        discount_type: DiscountType,
     ) -> None:
-        """Test that discounts used by both transferring and non-transferring products are split correctly."""
-        source_org = await create_organization(save_fixture, account)
-        target_org = await create_organization(save_fixture, account_second)
-
-        # Create two products - one to transfer, one to stay
+        customer = await create_customer(save_fixture, organization=organization)
         product_transfer = await create_product(
             save_fixture,
-            organization=source_org,
-            name="Transfer Product",
-            recurring_interval=None,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
         )
         product_stay = await create_product(
             save_fixture,
-            organization=source_org,
-            name="Stay Product",
-            recurring_interval=None,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
         )
-
-        # Create a discount used by both products (needs splitting)
-        from polar.models.discount import DiscountDuration, DiscountType
-
-        discount = await create_discount(
+        discount: Discount
+        if discount_type == DiscountType.fixed:
+            discount = await create_discount(
+                save_fixture,
+                organization=organization,
+                products=[product_transfer, product_stay],
+                type=DiscountType.fixed,
+                amounts={"usd": 1000, "eur": 900},
+                duration=DiscountDuration.repeating,
+                duration_in_months=3,
+            )
+        else:
+            discount = await create_discount(
+                save_fixture,
+                organization=organization,
+                products=[product_transfer, product_stay],
+                type=DiscountType.percentage,
+                basis_points=2500,
+                duration=DiscountDuration.repeating,
+                duration_in_months=3,
+            )
+        discount.code = "SAVE"
+        discount.external_id = "save-discount"
+        discount.user_metadata = {"campaign": "launch"}
+        discount.max_redemptions = 8
+        discount.max_redemptions_per_customer = 3
+        await create_discount(
             save_fixture,
-            organization=source_org,
-            products=[product_transfer, product_stay],  # Used by both products
+            organization=organization_second,
+            name=discount.name,
             type=DiscountType.fixed,
-            amounts={"usd": 1000},
+            amounts={"usd": 500},
             duration=DiscountDuration.once,
         )
-
-        service = ProductTransferService(source_org.id, target_org.id)
-        service.products = [product_transfer]  # Only transfer one product
-        service.discounts_to_split = [discount]  # This discount needs splitting
-
-        await service.split_discounts(session)
-
-        # Verify the split was performed
-        assert service.transfer_stats["discounts_split"] == 1
-
-        # Find the new discount created in target organization
-        result = await session.execute(
-            select(Discount).where(
-                Discount.organization_id == target_org.id,
-                Discount.name == discount.name,
+        transferred: list[
+            Checkout
+            | Order
+            | Subscription
+            | BillingEntry
+            | SubscriptionUpdate
+            | DiscountRedemption
+        ] = []
+        staying: list[
+            Checkout
+            | Order
+            | Subscription
+            | BillingEntry
+            | SubscriptionUpdate
+            | DiscountRedemption
+        ] = []
+        for product, references in (
+            (product_transfer, transferred),
+            (product_stay, staying),
+        ):
+            checkout = await create_checkout(
+                save_fixture, products=[product], customer=customer, discount=discount
             )
-        )
-        new_discount = result.scalar_one_or_none()
+            subscription = await create_subscription(
+                save_fixture, product=product, customer=customer, discount=discount
+            )
+            order = await create_order(
+                save_fixture,
+                product=product,
+                customer=customer,
+                subscription=subscription,
+                checkout=checkout,
+                discount=discount,
+            )
+            billing_entry = await create_billing_entry(
+                save_fixture,
+                type=BillingEntryType.cycle,
+                customer=customer,
+                product_price=product.prices[0],
+                subscription=subscription,
+            )
+            billing_entry.discount = discount
+            pending_update = SubscriptionUpdate(
+                subscription=subscription,
+                product=product,
+                discount=discount,
+                applies_at=subscription.current_period_end,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+            await save_fixture(pending_update)
+            checkout_redemption = await create_discount_redemption(
+                save_fixture, discount=discount, checkout=checkout
+            )
+            subscription_redemption = await create_discount_redemption(
+                save_fixture, discount=discount, subscription=subscription
+            )
+            references.extend(
+                [
+                    checkout,
+                    subscription,
+                    order,
+                    billing_entry,
+                    pending_update,
+                    checkout_redemption,
+                    subscription_redemption,
+                ]
+            )
 
-        assert new_discount is not None
-        assert new_discount.organization_id == target_org.id
-        assert new_discount.code == discount.code  # Same code
-        assert new_discount.type == discount.type  # Same type
-        assert new_discount.redemptions_count == 0  # Reset redemption count
+        service = ProductTransferService(organization.id, organization_second.id)
+        service.products = [product_transfer]
+        await service.execute_transfer(session)
 
-        # Verify original discount still exists in source organization
+        new_discount = service.new_discounts_map[discount.id]
+        await session.refresh(new_discount)
         await session.refresh(discount)
-        assert discount.organization_id == source_org.id  # Original stays
+        assert new_discount.organization_id == organization_second.id
+        assert discount.organization_id == organization.id
+        for attribute in (
+            "code",
+            "external_id",
+            "user_metadata",
+            "type",
+            "duration",
+            "duration_in_months",
+            "max_redemptions",
+            "max_redemptions_per_customer",
+        ):
+            assert getattr(new_discount, attribute) == getattr(discount, attribute)
+        for currency in ("usd", "eur"):
+            assert new_discount.get_discount_amount(
+                5000, currency
+            ) == discount.get_discount_amount(5000, currency)
+        assert new_discount.redemptions_count == 2
+        assert discount.redemptions_count == 2
+        assert [p.id for p in new_discount.products] == [product_transfer.id]
+        assert [p.id for p in discount.products] == [product_stay.id]
+        for reference in transferred:
+            await session.refresh(reference)
+            assert reference.discount_id == new_discount.id
+        for reference in staying:
+            await session.refresh(reference)
+            assert reference.discount_id == discount.id
 
+    @pytest.mark.parametrize("with_redemptions", [False, True])
     async def test_analyze_discounts(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         account: Account,
         account_second: Account,
+        with_redemptions: bool,
     ) -> None:
         """Test that discount analysis correctly categorizes discounts."""
         source_org = await create_organization(save_fixture, account)
@@ -893,26 +1107,32 @@ class TestProductTransferService:
             code="STAY5",
         )
 
-        # `_analyze_discounts` categorizes by redemption, not by the
-        # discount's product association.
-        checkout_transfer = await create_checkout(
-            save_fixture, products=[product_transfer], product=product_transfer
+        discount_global = await create_discount(
+            save_fixture,
+            organization=source_org,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
         )
-        checkout_stay = await create_checkout(
-            save_fixture, products=[product_stay], product=product_stay
-        )
-        await create_discount_redemption(
-            save_fixture, discount=discount_direct, checkout=checkout_transfer
-        )
-        await create_discount_redemption(
-            save_fixture, discount=discount_split, checkout=checkout_transfer
-        )
-        await create_discount_redemption(
-            save_fixture, discount=discount_split, checkout=checkout_stay
-        )
-        await create_discount_redemption(
-            save_fixture, discount=discount_stay, checkout=checkout_stay
-        )
+        if with_redemptions:
+            checkout_transfer = await create_checkout(
+                save_fixture, products=[product_transfer], product=product_transfer
+            )
+            checkout_stay = await create_checkout(
+                save_fixture, products=[product_stay], product=product_stay
+            )
+            await create_discount_redemption(
+                save_fixture, discount=discount_direct, checkout=checkout_transfer
+            )
+            await create_discount_redemption(
+                save_fixture, discount=discount_split, checkout=checkout_transfer
+            )
+            await create_discount_redemption(
+                save_fixture, discount=discount_split, checkout=checkout_stay
+            )
+            await create_discount_redemption(
+                save_fixture, discount=discount_stay, checkout=checkout_stay
+            )
 
         service = ProductTransferService(source_org.id, target_org.id)
         service.products = [product_transfer]
@@ -920,7 +1140,65 @@ class TestProductTransferService:
         await service._analyze_discounts(session)
 
         assert service.discounts_to_transfer == [discount_direct]
-        assert service.discounts_to_split == [discount_split]
+        assert {d.id for d in service.discounts_to_split} == {
+            discount_split.id,
+            discount_global.id,
+        }
+
+    @pytest.mark.parametrize("restriction", ["global", "transferred", "retained"])
+    async def test_split_discount_does_not_broaden_product_restrictions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        restriction: str,
+    ) -> None:
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        staying_product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        products = {
+            "global": [],
+            "transferred": [product],
+            "retained": [staying_product],
+        }[restriction]
+        discount = await create_discount(
+            save_fixture,
+            organization=organization,
+            products=products,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        staying_order = await create_order(
+            save_fixture, customer=customer, discount=discount
+        )
+        service = ProductTransferService(organization.id, organization_second.id)
+        service.products = [product]
+        await service._analyze_discounts(session)
+        assert service.discounts_to_split == [discount]
+        await service.split_discounts(session)
+
+        copied_discount = service.new_discounts_map[discount.id]
+        await session.refresh(order)
+        await session.refresh(staying_order)
+        assert order.discount_id == copied_discount.id
+        assert staying_order.discount_id == discount.id
+        assert (discount.deleted_at is not None) == (restriction == "transferred")
+        assert (copied_discount.deleted_at is not None) == (restriction == "retained")
+        assert [p.id for p in copied_discount.products] == (
+            [product.id] if restriction == "transferred" else []
+        )
+        assert [p.id for p in discount.products] == (
+            [staying_product.id] if restriction == "retained" else []
+        )
 
     async def test_validate_transfer_success(
         self,

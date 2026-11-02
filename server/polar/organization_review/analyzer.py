@@ -26,7 +26,8 @@ from .thresholds import thresholds_for_prompt
 
 log = structlog.get_logger(__name__)
 
-_RISK_SIGNAL_SEVERITY_ORDER: dict[str, int] = {
+_RISK_SIGNAL_SEVERITY_ORDER: dict[OrganizationRiskSignal.RiskLevel, int] = {
+    OrganizationRiskSignal.RiskLevel.UNKNOWN: 0,
     OrganizationRiskSignal.RiskLevel.LOW: 1,
     OrganizationRiskSignal.RiskLevel.NORMAL: 2,
     OrganizationRiskSignal.RiskLevel.ELEVATED: 3,
@@ -1102,7 +1103,7 @@ class ReviewAnalyzer:
             # Highest severity first so the cap never drops the worst signals.
             entries = sorted(
                 risk_signals.entries,
-                key=lambda e: _RISK_SIGNAL_SEVERITY_ORDER.get(e.risk_level, 0),
+                key=lambda e: _RISK_SIGNAL_SEVERITY_ORDER[e.risk_level],
                 reverse=True,
             )
             shown = entries[:20]

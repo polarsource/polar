@@ -16892,15 +16892,25 @@ export interface components {
        */
       external_id: string
       /**
-       * In Use
-       * @description Whether a customer still uses the resource.
+       * Customers Count
+       * @description Number of customers still using the resource: subscribers for a product, customers granted a benefit, from a subscription or an order, and subscribers or credit holders for a meter.
        */
-      in_use: boolean
+      customers_count: number
       /**
        * Referenced By
-       * @description External IDs of the products and benefits staying in the config that reference the resource.
+       * @description The products and benefits staying in the config that reference the resource.
        */
-      referenced_by: string[]
+      referenced_by: components['schemas']['ConfigPruneReference'][]
+    }
+    /** ConfigPruneReference */
+    ConfigPruneReference: {
+      /** @description The type of the referencing resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The referencing resource's `external_id`.
+       */
+      external_id: string
     }
     /** ConfigRemoval */
     ConfigRemoval: {

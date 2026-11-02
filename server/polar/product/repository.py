@@ -114,21 +114,28 @@ class ProductRepository(
     async def get_external_ids_in_use(
         self, organization_id: UUID, external_ids: Sequence[str]
     ) -> set[str]:
-        """Return the external IDs that a billable subscription is on, or is
-        scheduled to change to, in any of their versions."""
+        return set(
+            await self.count_customers_by_external_ids(organization_id, external_ids)
+        )
+
+    async def count_customers_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Count the customers with a billable subscription on, or scheduled to
+        change to, any version of each external ID."""
         if not external_ids:
-            return set()
+            return {}
         products = (
             Product.organization_id == organization_id,
             Product.external_id.in_(external_ids),
         )
         subscribed = (
-            select(Product.external_id)
+            select(Product.external_id, Subscription.customer_id)
             .join(Subscription, Subscription.product_id == Product.id)
             .where(*products, Subscription.billable, ~Subscription.is_deleted)
         )
         scheduled = (
-            select(Product.external_id)
+            select(Product.external_id, Subscription.customer_id)
             .join(SubscriptionUpdate, SubscriptionUpdate.product_id == Product.id)
             .join(Subscription, Subscription.id == SubscriptionUpdate.subscription_id)
             .where(
@@ -139,8 +146,13 @@ class ProductRepository(
                 ~Subscription.is_deleted,
             )
         )
-        result = await self.session.execute(union(subscribed, scheduled))
-        return set(cast(Sequence[str], result.scalars().all()))
+        # The union keeps each (external ID, customer) pair once
+        customers = union(subscribed, scheduled).subquery()
+        statement = select(customers.c.external_id, func.count()).group_by(
+            customers.c.external_id
+        )
+        result = await self.session.execute(statement)
+        return {cast(str, external_id): count for external_id, count in result.tuples()}
 
     async def get_external_ids(
         self, organization_id: UUID, *, current: bool = False

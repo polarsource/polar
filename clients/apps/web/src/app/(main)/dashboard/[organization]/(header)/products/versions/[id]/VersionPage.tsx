@@ -10,6 +10,7 @@ import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ArrowBackOutlined, Circle } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
+import { DraftActions } from './DraftActions'
 import { notFound } from 'next/navigation'
 import { ReactNode } from 'react'
 import { PublishedAt } from '../VersionsPage'
@@ -283,7 +284,7 @@ export default function VersionPage({
             <Box alignItems="center" columnGap="l" minWidth={0}>
               <BackLink versionsPath={versionsPath} />
               <Text variant="heading-xs" as="h1" truncate>
-                {catalog.name ?? 'Untitled'}
+                {catalog.name ?? statusLabel[catalog.status]}
               </Text>
             </Box>
             <Text variant="heading-xs" color="muted">
@@ -325,6 +326,12 @@ export default function VersionPage({
             ) : (
               <Text>{statusLabel[catalog.status]}</Text>
             )}
+            {catalog.status === 'draft' ? (
+              <DraftActions
+                catalogId={catalog.id}
+                versionsPath={versionsPath}
+              />
+            ) : null}
           </Field>
           <Field label="Published">
             <Text>

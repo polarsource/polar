@@ -89,9 +89,17 @@ const VersionRow = ({
           color={catalog.name ? 'default' : 'muted'}
           truncate
         >
-          {catalog.name ?? 'Untitled'}
+          {catalog.name ?? (catalog.status === 'draft' ? 'Draft' : 'Untitled')}
         </Text>
-        <Box>{catalog.status === 'live' ? <CurrentBadge /> : null}</Box>
+        <Box>
+          {catalog.status === 'live' ? (
+            <CurrentBadge />
+          ) : catalog.status === 'draft' ? (
+            <Text as="span" color="muted">
+              Not published
+            </Text>
+          ) : null}
+        </Box>
         <Text variant="body" color="muted" align="right">
           <PublishedAt catalog={catalog} />
         </Text>
@@ -137,7 +145,7 @@ export default function VersionsPage({
         <EmptyState
           icon={<HistoryRounded />}
           title="No versions yet"
-          description="A version is published each time you apply product changes from your config."
+          description="A version is published each time you apply product changes from your config. Changes applied as a draft show up here to review and publish."
         />
       )}
     </DashboardBody>

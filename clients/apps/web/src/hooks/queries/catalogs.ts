@@ -1,6 +1,7 @@
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
@@ -68,7 +69,7 @@ export const useCatalogs = (
           params: {
             query: {
               organization_id: organizationId,
-              status: ['live', 'archived'],
+              status: ['draft', 'live', 'archived'],
               page,
               limit,
             },
@@ -86,4 +87,27 @@ export const useCatalog = (id: string | null | undefined) =>
       unwrap(api.GET('/v1/catalogs/{id}', { params: { path: { id: id! } } })),
     retry: defaultRetry,
     enabled: !!id,
+  })
+
+const invalidateCatalogs = () => {
+  const queryClient = getQueryClient()
+  for (const key of ['catalogs', 'products', 'benefits']) {
+    queryClient.invalidateQueries({ queryKey: [key] })
+  }
+}
+
+export const usePublishCatalog = () =>
+  useMutation({
+    mutationFn: (id: string) =>
+      unwrap(
+        api.POST('/v1/catalogs/{id}/publish', { params: { path: { id } } }),
+      ),
+    onSuccess: invalidateCatalogs,
+  })
+
+export const useDiscardCatalog = () =>
+  useMutation({
+    mutationFn: (id: string) =>
+      unwrap(api.DELETE('/v1/catalogs/{id}', { params: { path: { id } } })),
+    onSuccess: invalidateCatalogs,
   })

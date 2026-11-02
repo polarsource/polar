@@ -29,6 +29,10 @@ class BillingIntervalRepository(RepositoryBase[BillingInterval]):
         until: datetime,
     ) -> Sequence[BillingInterval]:
         """Intervals of every subscription of the customer starting by `until`."""
+        # TODO: No lower bound, so usage an earlier failed seal left unsealed is
+        # still split before it's sealed. Once seal failures raise instead of being
+        # logged (when the reducer bills for real), nothing before the previous
+        # reset can be left unsealed: cap this to intervals ending at or after it.
         statement = (
             self.get_base_statement()
             .join(Subscription, Subscription.id == BillingInterval.subscription_id)

@@ -7,14 +7,16 @@ import Link from 'next/link'
 import { useContext, useMemo } from 'react'
 import { EventCardBase } from './EventCardBase'
 
-export const BillingReasonDisplayName: Record<schemas['OrderBillingReason'], string> =
-  {
-    purchase: 'Purchase',
-    subscription_create: 'Subscription Creation',
-    subscription_cycle: 'Subscription Cycle',
-    subscription_update: 'Subscription Update',
-    subscription_meter_cycle: 'Meter Cycle',
-  }
+export const BillingReasonDisplayName: Record<
+  schemas['OrderBillingReason'],
+  string
+> = {
+  purchase: 'Purchase',
+  subscription_create: 'Subscription Creation',
+  subscription_cycle: 'Subscription Cycle',
+  subscription_update: 'Subscription Update',
+  subscription_meter_cycle: 'Meter Cycle',
+}
 
 export interface OrderEventCardProps {
   event: schemas['OrderPaidEvent'] | schemas['OrderRefundedEvent']

@@ -1,0 +1,26 @@
+server/polar/metrics/queries.py
+  s_8fccaa7ed95c99::t_d1f385678a6002 439,447,452-459,468-470
+server/tests/metrics/test_service.py
+  s_8fccaa7ed95c99::t_278901d86bad9e 5672-5689,5694-5700,5703-5716
+  s_8fccaa7ed95c99::t_49d24da234e38d 2746-2748
+  s_8fccaa7ed95c99::t_e1f997ee2fa452 5690,5692-5693,5701-5702
+  s_8fccaa7ed95c99::t_f295505bb21b9c 5691
+  s_8fccaa7ed95c99::t_a1c9ee68125d5a 11
+  s_8fccaa7ed95c99::t_974b1204a1e944 2305-2334
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "019bdbb1d10a04633caeec1862739c9f00f6b6de",
+  "prompts": {},
+  "sessions": {
+    "s_8fccaa7ed95c99": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3dcd5561-b7a3-4cf6-9e9e-9c19ff08ab4f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

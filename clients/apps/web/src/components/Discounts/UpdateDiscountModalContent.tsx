@@ -1,4 +1,4 @@
-import { useUpdateDiscount } from '@/hooks/queries'
+import { useCurrentProductIds, useUpdateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isDiscountFixed } from '@/utils/discount'
 import { isValidationError, schemas } from '@polar-sh/client'
@@ -28,18 +28,30 @@ const getInitialAmountsByCurrency = (
   }))
 }
 
-const UpdateDiscountModalContent = ({
+const UpdateDiscountModalContent = (props: UpdateDiscountModalContentProps) => {
+  const productIds = useCurrentProductIds(
+    props.organization,
+    props.discount.products.map((product) => product.id),
+  )
+  if (!productIds) {
+    return null
+  }
+  return <UpdateDiscountForm {...props} productIds={productIds} />
+}
+
+const UpdateDiscountForm = ({
   organization,
   discount,
   onDiscountUpdated,
   hideModal,
-}: UpdateDiscountModalContentProps) => {
+  productIds,
+}: UpdateDiscountModalContentProps & { productIds: string[] }) => {
   const updateDiscount = useUpdateDiscount(discount.id)
 
   const form = useForm<DiscountFormValues>({
     defaultValues: {
       ...(discount as unknown as DiscountFormValues),
-      products: discount.products.map((product) => product.id),
+      products: productIds,
       amountsByCurrency: getInitialAmountsByCurrency(discount),
     },
   })

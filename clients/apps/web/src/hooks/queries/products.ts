@@ -204,3 +204,40 @@ export const useUpdateProductBenefits = (
       })
     },
   })
+
+// With config-as-code, each catalog publish adds new product rows, so saved IDs
+// can point at old versions. Map each one to the current row with the same
+// external_id. Products without a current row keep their saved ID.
+export const useCurrentProductIds = (
+  organization: schemas['Organization'],
+  productIds: string[],
+) => {
+  const enabled = !!organization.feature_settings?.config_as_code_enabled
+  const { data: saved } = useSelectedProducts(
+    { id: enabled ? productIds : [] },
+    true,
+  )
+  const externalIds = saved?.flatMap((product) => product.external_id ?? [])
+  const { data: current } = useSelectedProducts(
+    { organization_id: organization.id, external_id: externalIds ?? [] },
+    true,
+  )
+  if (!enabled || productIds.length === 0 || externalIds?.length === 0) {
+    return productIds
+  }
+  if (!saved || !current) {
+    return undefined
+  }
+  const currentIds = new Map(
+    current.map((product) => [product.external_id, product.id]),
+  )
+  return [
+    ...new Set(
+      saved.map(
+        (product) =>
+          (product.external_id && currentIds.get(product.external_id)) ||
+          product.id,
+      ),
+    ),
+  ]
+}

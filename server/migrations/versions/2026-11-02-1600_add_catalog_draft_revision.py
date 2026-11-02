@@ -25,9 +25,10 @@ def upgrade() -> None:
         op.execute("SET lock_timeout = '5s'")
         try:
             # A constant default fills existing rows without rewriting the table.
+            # NOT NULL is enforced in a later migration (ADR-0006).
             op.add_column(
                 "catalogs",
-                sa.Column("revision", sa.Integer(), server_default="0", nullable=False),
+                sa.Column("revision", sa.Integer(), server_default="0", nullable=True),
                 if_not_exists=True,
             )
             op.add_column(

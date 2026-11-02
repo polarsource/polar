@@ -66,9 +66,10 @@ class Catalog(RecordModel):
     published_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
-    # Bumped by every dashboard save of a draft.
+    # Bumped by every dashboard save of a draft. Nullable during the expand
+    # phase (ADR-0006).
     revision: Mapped[int] = mapped_column(
-        Integer, nullable=False, default=0, server_default="0"
+        Integer, nullable=True, default=0, server_default="0"
     )
     # The draft revision the last config apply wrote.
     applied_revision: Mapped[int | None] = mapped_column(

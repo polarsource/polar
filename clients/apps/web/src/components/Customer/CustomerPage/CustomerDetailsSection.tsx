@@ -25,7 +25,11 @@ export const CustomerDetailsSection = ({
         Customer Details
       </Text>
       <Box flexDirection="column" rowGap={{ base: 'm', md: 'none' }}>
-        <DetailRow label="ID" value={copyable(customer.id)} />
+        <DetailRow
+          label="ID"
+          value={copyable(customer.id)}
+          valueClassName="font-mono text-xs"
+        />
         <DetailRow label="External ID" value={copyable(customer.external_id)} />
         <DetailRow label="Email" value={copyable(customer.email)} />
         <DetailRow label="Name" value={copyable(customer.name)} />

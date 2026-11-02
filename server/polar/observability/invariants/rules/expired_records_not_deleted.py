@@ -14,7 +14,8 @@ from polar.models import (
     Checkout,
     CustomerEmailVerification,
     CustomerSession,
-    CustomerSessionCode,
+    CustomerSessionAuthenticationSession,
+    CustomerSessionEmailOTP,
     EmailLog,
     EmailOTP,
     EmailVerification,
@@ -56,9 +57,16 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         lambda cutoff: OAuth2State.expires_at < int(cutoff.timestamp()),
     ),
     CleanupTask(
-        "customer_session_code.delete_expired",
-        CustomerSessionCode,
-        lambda cutoff: CustomerSessionCode.expires_at < cutoff,
+        "customer_session_authentication_session.delete_expired",
+        CustomerSessionAuthenticationSession,
+        lambda cutoff: (
+            CustomerSessionAuthenticationSession.expires_at < int(cutoff.timestamp())
+        ),
+    ),
+    CleanupTask(
+        "customer_session_email_otp.delete_expired",
+        CustomerSessionEmailOTP,
+        lambda cutoff: CustomerSessionEmailOTP.expires_at < int(cutoff.timestamp()),
     ),
     CleanupTask(
         "email_update.delete_expired_record",

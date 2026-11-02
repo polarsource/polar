@@ -4,7 +4,7 @@ terraform {
   required_providers {
     planetscale = {
       source  = "planetscale/planetscale"
-      version = ">= 1.14"
+      version = ">= 1.16"
     }
   }
 }

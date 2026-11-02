@@ -24,6 +24,7 @@ from .base import (
     TaxCode,
     TaxRecordError,
     TaxServiceProtocol,
+    UnsupportedCountryError,
 )
 
 log: Logger = structlog.get_logger()
@@ -90,6 +91,10 @@ class NumeralTaxTransactionResponse(TypedDict):
     id: str
     object: Literal["tax.transaction"]
     line_items: list[NumeralLineItem]
+
+
+class NumeralTaxTransactionListResponse(TypedDict):
+    transactions: list[NumeralTaxTransactionResponse]
 
 
 class NumeralTaxRefundResponse(TypedDict):
@@ -349,7 +354,19 @@ class NumeralTaxService(TaxServiceProtocol):
                 )
                 raise TaxRecordError() from e
             error_response: NumeralErrorResponse = e.response.json()
-            if error_response.get("type") == "CALCULATION_EXPIRED":
+            error_type = error_response.get("type")
+            if error_type in {
+                "TRANSACTION_ALREADY_EXISTS",
+                "REFERENCE_ORDER_ID_ALREADY_EXISTS",
+                "CALCULATION_EXPIRED",
+            }:
+                existing_transaction = await self._get_existing_transaction(reference)
+                if existing_transaction is not None:
+                    trace.get_current_span().set_attribute(
+                        "numeral.transaction_id", existing_transaction["id"]
+                    )
+                    return existing_transaction["id"]
+            if error_type == "CALCULATION_EXPIRED":
                 raise CalculationExpiredError() from e
             log.warning(
                 "Numeral tax record error",
@@ -364,6 +381,25 @@ class NumeralTaxService(TaxServiceProtocol):
             "numeral.transaction_id", transaction["id"]
         )
         return transaction["id"]
+
+    async def _get_existing_transaction(
+        self, reference: str
+    ) -> NumeralTaxTransactionResponse | None:
+        try:
+            response = await self.client.get(
+                "/tax/transactions", params={"reference_order_id": reference}
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            raise TaxRecordError() from e
+
+        result: NumeralTaxTransactionListResponse = response.json()
+        transactions = result["transactions"]
+        if not transactions:
+            return None
+        if len(transactions) != 1:
+            raise TaxRecordError()
+        return transactions[0]
 
     @logfire.instrument("numeral.revert")
     async def revert(
@@ -442,11 +478,15 @@ class NumeralTaxService(TaxServiceProtocol):
         trace.get_current_span().set_attribute(
             "numeral.api_version", NUMERAL_API_VERSION
         )
+        postal_code = address.postal_code or ""
+        if address.country == "CA" and not postal_code:
+            postal_code = "A0A0A0"
+
         response = await self.client.post(
             "/tax/manual_line_items",
             json={
                 "order_id": reference,
-                "address_postal_code": address.postal_code or "",
+                "address_postal_code": postal_code,
                 "address_province": address.get_unprefixed_state() or "",
                 "address_country": address.country,
                 "transaction_date_time": int(transaction_date.timestamp()),
@@ -461,7 +501,19 @@ class NumeralTaxService(TaxServiceProtocol):
                 ],
             },
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 400:
+                error: NumeralErrorResponse = e.response.json()
+                if error.get("type") == "INVALID_COUNTRY_CODE" or (
+                    error.get("type") == "ERROR"
+                    and error.get("message", "").startswith(
+                        "Country code must be one of:"
+                    )
+                ):
+                    raise UnsupportedCountryError(address.country) from e
+            raise
         manual_line_item = response.json()
         trace.get_current_span().set_attribute(
             "numeral.line_item_id", manual_line_item["line_item_id"]

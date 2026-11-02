@@ -10,6 +10,7 @@ import {
   subscriptionStatusFilterValues,
   type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
+import { type ProductFilter } from '@/components/Subscriptions/SubscriptionsProductSelect'
 import { useSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
@@ -40,6 +41,7 @@ import SubscriptionFilters from './SubscriptionFilters'
 
 const filterParsers = {
   product_id: parseAsString,
+  external_product_id: parseAsString,
   status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
     DEFAULT_SUBSCRIPTION_STATUS,
   ),
@@ -83,6 +85,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const [
     {
       product_id: productId,
+      external_product_id: externalProductId,
       status,
       cancel_at_period_end: cancelAtPeriodEnd,
       metadata,
@@ -104,8 +107,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     )
   }
 
-  const onProductSelect = (value: string | null) => {
-    setFilters({ product_id: value })
+  const product: ProductFilter = {
+    product_id: productId,
+    external_product_id: externalProductId,
+  }
+
+  const onProductSelect = (value: ProductFilter) => {
+    setFilters(value)
     resetPage()
   }
 
@@ -131,6 +139,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const subscriptionsHook = useSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
     status: status === 'any' ? undefined : [status],
     cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
     started_after: startDate.toISOString(),
@@ -269,7 +278,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       <div className="flex flex-col gap-8">
         <SubscriptionFilters
           organization={organization}
-          productId={productId}
+          product={product}
           onProductSelect={onProductSelect}
           status={status}
           onStatusSelect={onStatusSelect}
@@ -301,7 +310,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       </div>
       <ExportSubscriptionsModal
         organization={organization}
-        productId={productId}
+        product={product}
         status={status}
         cancelAtPeriodEnd={cancelAtPeriodEnd}
         isShown={isExportModalShown}

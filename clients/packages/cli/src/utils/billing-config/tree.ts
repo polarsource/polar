@@ -202,6 +202,12 @@ export const formatTree = (
     ]
   }
 
+  const width = Math.max(
+    0,
+    ...entries
+      .filter((entry) => entry.action === 'unchanged')
+      .map((entry) => entry.id.length),
+  )
   return [
     ...new Set([
       'settings',
@@ -212,12 +218,6 @@ export const formatTree = (
     .flatMap((section) => {
       const own = bySection(section)
       if (own.length === 0) return []
-      const width = Math.max(
-        0,
-        ...own
-          .filter((entry) => entry.action === 'unchanged')
-          .map((entry) => entry.id.length),
-      )
       const rendered = own.map((entry) => ({
         entry,
         lines: section === 'products' ? product(entry) : plain(entry, section),

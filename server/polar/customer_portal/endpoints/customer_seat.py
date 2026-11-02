@@ -19,7 +19,7 @@ from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
 
 from .. import auth
-from ..schemas.seat import CustomerSeatAssign
+from ..schemas.seat import CustomerPortalSeatListParams, CustomerSeatAssign
 from ..schemas.subscription import CustomerSubscription
 from ..service.customer_seat import customer_seat as customer_seat_service
 from ..utils import get_customer
@@ -40,12 +40,9 @@ router = APIRouter(prefix="/seats", tags=["seats", APITag.public])
     },
 )
 async def list_seats(
+    filters: Annotated[CustomerPortalSeatListParams, Query()],
     auth_subject: auth.CustomerPortalUnionRead,
     session: AsyncSession = Depends(get_db_session),
-    subscription_id: Annotated[
-        UUID4 | None, Query(description="Subscription ID")
-    ] = None,
-    order_id: Annotated[UUID4 | None, Query(description="Order ID")] = None,
 ) -> SeatsList:
     customer = get_customer(auth_subject)
 
@@ -53,14 +50,14 @@ async def list_seats(
     order: Order | None = None
     total_seats = 0
 
-    if subscription_id:
+    if filters.subscription_id:
         subscription_repository = SubscriptionRepository.from_session(session)
 
         statement = (
             subscription_repository.get_readable_statement(auth_subject)
             .options(*subscription_repository.get_eager_options())
             .where(
-                Subscription.id == subscription_id,
+                Subscription.id == filters.subscription_id,
             )
         )
         subscription = await subscription_repository.get_one_or_none(statement)
@@ -70,14 +67,14 @@ async def list_seats(
 
         total_seats = subscription.seats or 0
 
-    elif order_id:
+    elif filters.order_id:
         order_repository = OrderRepository.from_session(session)
 
         order_statement = (
             order_repository.get_readable_statement(auth_subject)
             .options(*order_repository.get_eager_options())
             .where(
-                Order.id == order_id,
+                Order.id == filters.order_id,
             )
         )
         order = await order_repository.get_one_or_none(order_statement)

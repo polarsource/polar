@@ -123,8 +123,6 @@ def test_apply_snapshot(
         EPOCH,
         COLD_UNTIL,
         COLD_UNTIL + 1,
-        "meter",
-        1_000_000,
         1000,
         123456,
         1,

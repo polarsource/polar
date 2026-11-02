@@ -1,5 +1,15 @@
 # @polar-sh/checkout
 
+## 0.6.0
+
+### Minor Changes
+
+- 44c022b: The checkout form can expose WebMCP tools to AI agents through the opt-in `webMCP` prop.
+
+### Patch Changes
+
+- 873039e: The checkout form reads the billing country, discount code and tax ID through `useWatch` and its errors through `useFormState`, so it stays reactive when bundled with the React Compiler.
+
 ## 0.5.0
 
 ### Minor Changes

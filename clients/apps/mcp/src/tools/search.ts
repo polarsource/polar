@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/server'
 import { Effect, Schema } from 'effect'
+import { intentField } from '../intent'
 import { makeToolRunner } from '../results'
 import { Sandbox } from '../sandbox'
 import { spec } from '../spec'
@@ -61,6 +62,7 @@ export const registerSearchTool = Effect.fn('registerSearchTool')(function* (
         code: Schema.String.annotate({
           description: 'JavaScript async arrow function that searches `spec`',
         }),
+        ...intentField,
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
         readOnlyHint: true,

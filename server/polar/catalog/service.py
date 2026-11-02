@@ -1,11 +1,15 @@
 import hashlib
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime
+
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.authz.types import AccessibleOrganizationID
+from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -33,6 +37,11 @@ def compute_version_hash(parent_hash: str | None, entries: Mapping[str, str]) ->
     return hashlib.sha256("\n".join(lines).encode()).hexdigest()
 
 
+class CatalogNotFound(PolarError):
+    def __init__(self, id: uuid.UUID) -> None:
+        super().__init__(f"No published catalog with ID {id}.", 404)
+
+
 class CatalogService:
     async def list(
         self,
@@ -45,15 +54,9 @@ class CatalogService:
         published_before: datetime | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[Catalog], int]:
-        org_ids = await get_accessible_org_ids(
-            session, auth_subject, permission=OrganizationPermission.products_read
-        )
+        org_ids = await self._get_readable_org_ids(session, auth_subject)
         if organization_id is not None:
             org_ids = {oid for oid in org_ids if oid in set(organization_id)}
-        enabled_org_ids = await OrganizationRepository.from_session(
-            session
-        ).get_ids_with_feature(set(org_ids), "config_as_code_enabled")
-        org_ids = {oid for oid in org_ids if oid in enabled_org_ids}
 
         repository = CatalogRepository.from_session(session)
         statement = repository.get_statement_by_org_ids(org_ids)
@@ -68,6 +71,53 @@ class CatalogService:
             limit=pagination.limit,
             page=pagination.page,
         )
+
+    async def get(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        id: uuid.UUID,
+    ) -> Catalog | None:
+        org_ids = await self._get_readable_org_ids(session, auth_subject)
+        repository = CatalogRepository.from_session(session)
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(Catalog.id == id)
+            .options(selectinload(Catalog.product_members))
+        )
+        return await repository.get_one_or_none(statement)
+
+    async def _get_readable_org_ids(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+    ) -> set[AccessibleOrganizationID]:
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_read
+        )
+        enabled_org_ids = await OrganizationRepository.from_session(
+            session
+        ).get_ids_with_feature(set(org_ids), "config_as_code_enabled")
+        return {oid for oid in org_ids if oid in enabled_org_ids}
+
+    async def resolve(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        id: uuid.UUID | None,
+    ) -> Catalog | None:
+        """Return the published catalog with this ID, or the live catalog when
+        `id` is None.
+
+        The live catalog is None before the first publish.
+        """
+        repository = CatalogRepository.from_session(session)
+        if id is None:
+            return await repository.get_live(organization.id)
+        catalog = await repository.get_published_by_id(organization.id, id)
+        if catalog is None:
+            raise CatalogNotFound(id)
+        return catalog
 
     async def get_live_entries(
         self,
@@ -104,13 +154,19 @@ class CatalogService:
         organization: Organization,
         live: Catalog | None,
         definitions: Mapping[str, str],
+        removed: Collection[str],
     ) -> tuple[str | None, str | None]:
         """Return the live version hash, and the version hash of the catalog these
-        new product definitions would publish."""
+        new product definitions, without the removed products, would publish."""
         before, entries = await self.get_live_entries(session, organization, live)
-        if not definitions:
+        if not definitions and not removed:
             return before, before
-        return before, compute_version_hash(before, {**entries, **definitions})
+        kept = {
+            external_id: value
+            for external_id, value in entries.items()
+            if external_id not in removed
+        }
+        return before, compute_version_hash(before, {**kept, **definitions})
 
     async def get_default_name(
         self,
@@ -180,11 +236,13 @@ class CatalogService:
         live: Catalog | None,
         new_products: Mapping[str, Product],
         version_hash: str,
+        removed: Collection[str],
         name: str | None = None,
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
         catalog_product_repository = CatalogProductRepository.from_session(session)
+        product_repository = ProductRepository.from_session(session)
 
         members = (
             {}
@@ -196,6 +254,10 @@ class CatalogService:
                 )
             }
         )
+        for external_id in removed:
+            await product_repository.update(
+                members.pop(external_id), update_dict={"is_current": False}
+            )
         if live is not None:
             await repository.update(
                 live, update_dict={"status": CatalogStatus.archived}, flush=True

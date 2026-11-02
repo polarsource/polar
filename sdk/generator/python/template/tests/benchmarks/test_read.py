@@ -7,14 +7,14 @@ from pytest_codspeed import BenchmarkFixture
 from polar.metering import CustomerMeter
 from polar.outpost.client import Outpost
 from polar.outpost.reducer import Reducer
-from tests.benchmarks import REDUCER, SNAPSHOT
+from tests.benchmarks import CREDIT_REDUCER, REDUCER, SNAPSHOT
 
 pytestmark = pytest.mark.benchmark
 
 
 @pytest.fixture(scope="module")
 def reducers() -> list[Reducer]:
-    return [REDUCER]
+    return [REDUCER, CREDIT_REDUCER]
 
 
 @pytest.fixture(scope="module")
@@ -32,5 +32,5 @@ def test_warm_meter_read(
 
     loop.run_until_complete(outpost.actor(external_customer_id="alice"))
     meter = read()
-    assert meter is not None and meter.credited_units == 1_000_000
+    assert meter is not None and meter.credited_units == SNAPSHOT["sum"]
     benchmark(read)

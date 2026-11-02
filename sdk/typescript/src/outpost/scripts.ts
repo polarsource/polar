@@ -203,16 +203,10 @@ if not previous or version >= tonumber(previous) then
         redis.call('HDEL', KEYS[1], unpack(dropped, i, math.min(i + 999, #dropped)))
     end
     redis.call('HSET', KEYS[1], 'cold_until', ARGV[4], 'snapshot_version', ARGV[5],
-        'cold:count', ARGV[8], 'cold:sum', ARGV[9])
-    if ARGV[10] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[10]) end
-    if ARGV[11] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[11]) end
+        'cold:count', ARGV[6], 'cold:sum', ARGV[7])
+    if ARGV[8] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[8]) end
+    if ARGV[9] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[9]) end
 end
-local credit_version = fields['credited_version:' .. ARGV[6]]
-if not credit_version or version >= tonumber(credit_version) then
-    redis.call('HSET', KEYS[1], 'credited:' .. ARGV[6], ARGV[7],
-        'credited_version:' .. ARGV[6], ARGV[5])
-end
-
 if not fields['epoch'] then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end

@@ -41,7 +41,7 @@ Seller = aliased(Organization, name="seller")
 Remaining = aliased(Organization, name="remaining")
 
 
-def _shared_payout_account_ids() -> Select[tuple[UUID | None]]:
+def _shared_payout_account_ids() -> Select[UUID | None]:
     """Payout accounts held by more than one live organization.
 
     Narrowing to these first keeps the per-organization checks below off the
@@ -120,7 +120,7 @@ def _has_better_claim() -> ColumnElement[bool]:
     )
 
 
-def _candidates() -> Select[tuple[UUID]]:
+def _candidates() -> Select[UUID]:
     return select(Candidate.id).where(*_unlinkable(), _has_better_claim())
 
 

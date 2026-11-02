@@ -1,0 +1,318 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "server/benchmarks/**"
+      - "server/polar/reducer/**"
+      - "server/polar/event/**"
+      - "server/polar/event_type/**"
+      - "server/polar/meter/**"
+      - "server/polar/outpost/**"
+      - "server/polar/kit/db/**"
+      - "server/polar/kit/repository/**"
+      - "server/polar/worker/_enqueue.py"
+      - "server/polar/models/event.py"
+      - "server/polar/models/event_type.py"
+      - "server/polar/models/meter.py"
+      - "server/polar/models/meter_event.py"
+      - "server/polar/models/meter_reducer.py"
+      - "server/polar/models/reducer.py"
+      - "server/polar/models/reducer_bucket.py"
+      - "sdk/python/**"
+      - "sdk/typescript/**"
+      - ".github/workflows/benchmark.yaml"
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "server/benchmarks/**"
+      - "server/polar/reducer/**"
+      - "server/polar/event/**"
+      - "server/polar/event_type/**"
+      - "server/polar/meter/**"
+      - "server/polar/outpost/**"
+      - "server/polar/kit/db/**"
+      - "server/polar/kit/repository/**"
+      - "server/polar/worker/_enqueue.py"
+      - "server/polar/models/event.py"
+      - "server/polar/models/event_type.py"
+      - "server/polar/models/meter.py"
+      - "server/polar/models/meter_event.py"
+      - "server/polar/models/meter_reducer.py"
+      - "server/polar/models/reducer.py"
+      - "server/polar/models/reducer_bucket.py"
+      - "sdk/python/**"
+      - "sdk/typescript/**"
+      - ".github/workflows/benchmark.yaml"
+  workflow_dispatch:
+  # A weekly reference for the SDKs on main, whatever changed.
+  schedule:
+    - cron: "0 6 * * 1"
+
+# A newer push on a pull request supersedes a run in progress. Every push on main gets its own
+# run
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  # CodSpeed authenticates the run with OIDC.
+  id-token: write
+
+env:
+  # CodSpeed profiles Python from 3.12; 3.14 runs this code about as fast as 3.11, 3.12 slower.
+  UV_PYTHON: "3.14"
+  # CodSpeed traces the interpreter from setup-python; keep uv from downloading its own.
+  UV_PYTHON_PREFERENCE: only-system
+  # A random hash seed changes dict collisions, hence instruction counts, from run to run.
+  PYTHONHASHSEED: "0"
+
+# Instruction counts, on the runners the rest of CI uses, for the pure CPU benchmarks: wall time
+# would add noise, not information. Real time, on CodSpeed's dedicated ARM64 machines, for the
+# Redis benchmarks, whose cost is in another process, and the warm reads, which a few simulated
+# calls would measure cold.
+jobs:
+  changes:
+    name: Detect changes
+    # Draft pull requests run once, when marked ready for review.
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      sdk: ${{ steps.filter.outputs.sdk }}
+      walltime: ${{ steps.filter.outputs.walltime }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # The macro runner minutes are metered: real time runs on every SDK change except the
+      # ones that cannot reach a benchmark, that is the generated API clients, the tests and
+      # the docs. The weekly run on main catches anything this misses.
+      - uses: dorny/paths-filter@v4.0.3
+        id: filter
+        with:
+          # The default quantifier ignores the `!` patterns.
+          predicate-quantifier: some-with-excludes
+          filters: |
+            server:
+              - 'server/benchmarks/**'
+              - 'server/polar/reducer/**'
+              - 'server/polar/event/**'
+              - 'server/polar/event_type/**'
+              - 'server/polar/meter/**'
+              - 'server/polar/outpost/**'
+              - 'server/polar/kit/db/**'
+              - 'server/polar/kit/repository/**'
+              - 'server/polar/worker/_enqueue.py'
+              - 'server/polar/models/event.py'
+              - 'server/polar/models/event_type.py'
+              - 'server/polar/models/meter.py'
+              - 'server/polar/models/meter_event.py'
+              - 'server/polar/models/meter_reducer.py'
+              - 'server/polar/models/reducer.py'
+              - 'server/polar/models/reducer_bucket.py'
+              - '.github/workflows/benchmark.yaml'
+            sdk:
+              - 'sdk/python/**'
+              - 'sdk/typescript/**'
+              - '.github/workflows/benchmark.yaml'
+            walltime:
+              - 'sdk/typescript/**'
+              - '!sdk/typescript/src/20*/**'
+              - '!sdk/typescript/**/*.test.ts'
+              - '!sdk/typescript/README.md'
+              - 'sdk/python/**'
+              - '!sdk/python/polar/v20*/**'
+              - '!sdk/python/tests/ingestion/**'
+              - '!sdk/python/tests/metering/**'
+              - '!sdk/python/tests/outpost/**'
+              - '!sdk/python/tests/test_*.py'
+              - '!sdk/python/README.md'
+              - '.github/workflows/benchmark.yaml'
+
+  typescript-simulation:
+    name: TypeScript SDK (simulation)
+    needs: changes
+    if: needs.changes.outputs.sdk == 'true' || contains('workflow_dispatch schedule', github.event_name)
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: sdk/typescript
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: sdk/typescript/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: sdk/typescript/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: simulation
+          working-directory: sdk/typescript
+          run: pnpm vitest bench --run --exclude src/outpost/scripts.bench.ts --exclude src/outpost/seal.bench.ts --exclude src/outpost/confirm.bench.ts --exclude src/outpost/seal-confirmed.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts --exclude src/outpost/read-buckets.bench.ts
+
+  python-simulation:
+    name: Python SDK (simulation)
+    needs: changes
+    if: needs.changes.outputs.sdk == 'true' || contains('workflow_dispatch schedule', github.event_name)
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: sdk/python
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ env.UV_PYTHON }}
+
+      - name: Install dependencies
+        run: uv sync --frozen --all-extras
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: simulation
+          working-directory: sdk/python
+          run: uv run --no-sync pytest tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_seal.py --ignore=tests/benchmarks/test_confirm.py --ignore=tests/benchmarks/test_seal_confirmed.py --ignore=tests/benchmarks/test_ingest.py --ignore=tests/benchmarks/test_read.py --ignore=tests/benchmarks/test_read_buckets.py -m benchmark --codspeed
+
+  # Both SDKs in one job: the macro runner minutes are metered, and the setup is most of them.
+  walltime:
+    name: SDKs (walltime)
+    needs: changes
+    if: needs.changes.outputs.walltime == 'true' || contains('workflow_dispatch schedule', github.event_name)
+    runs-on: codspeed-macro
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: sdk/typescript/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: sdk/typescript/pnpm-lock.yaml
+
+      - name: Install TypeScript dependencies
+        working-directory: sdk/typescript
+        run: pnpm install --frozen-lockfile
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ env.UV_PYTHON }}
+
+      - name: Install Python dependencies
+        working-directory: sdk/python
+        run: uv sync --frozen --all-extras
+
+      - name: Install Redis
+        uses: shogo82148/actions-setup-redis@v1.58.1
+        with:
+          redis-version: "7.4"
+          auto-start: false
+
+      - name: Run TypeScript benchmarks
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: walltime
+          working-directory: sdk/typescript
+          run: pnpm vitest bench --run src/outpost/scripts.bench.ts src/outpost/seal.bench.ts src/outpost/confirm.bench.ts src/outpost/seal-confirmed.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts src/outpost/read-buckets.bench.ts
+
+      - name: Run Python benchmarks
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: walltime
+          working-directory: sdk/python
+          run: uv run --no-sync pytest tests/benchmarks/test_scripts.py tests/benchmarks/test_seal.py tests/benchmarks/test_confirm.py tests/benchmarks/test_seal_confirmed.py tests/benchmarks/test_ingest.py tests/benchmarks/test_read.py tests/benchmarks/test_read_buckets.py -m benchmark --codspeed
+
+  server:
+    name: Server (walltime)
+    needs: changes
+    # The weekly reference covers the SDKs only: the macro runner minutes are metered.
+    if: github.event_name != 'schedule' && (needs.changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: codspeed-macro
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: server
+    env:
+      POLAR_ENV: testing
+      POLAR_EMAIL_RENDERER_BINARY_PATH: /tmp/email-renderer
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      # Host networking: a published port goes through docker-proxy, the largest source of
+      # walltime variance for I/O-bound benchmarks. Durability is irrelevant here. Autovacuum would
+      # analyze the tables at a different point of each run, and the query plans change with it.
+      - name: Start Postgres and Redis
+        run: |
+          docker run -d --name postgres --network host \
+            -e POSTGRES_USER=polar -e POSTGRES_PASSWORD=polar -e POSTGRES_DB=polar_test \
+            postgres:15.1-bullseye -c fsync=off -c synchronous_commit=off -c full_page_writes=off \
+            -c autovacuum=off
+          docker run -d --name redis --network host redis:7.4-alpine \
+            redis-server --save "" --appendonly no
+          for _ in $(seq 60); do
+            docker exec postgres pg_isready -U polar >/dev/null 2>&1 \
+              && docker exec redis redis-cli ping >/dev/null 2>&1 && exit 0
+            sleep 1
+          done
+          docker logs postgres; docker logs redis; exit 1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version-file: server/.python-version
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # Config import only checks that the email renderer exists; no benchmark renders an email.
+      - name: Stub the email renderer
+        run: touch /tmp/email-renderer
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v5
+        with:
+          mode: walltime
+          working-directory: server
+          run: uv run --no-sync pytest benchmarks -m benchmark --codspeed -p no:randomly

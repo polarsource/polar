@@ -2,7 +2,7 @@ import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { DataTable, DataTableColumnHeader } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
@@ -27,13 +27,20 @@ export const ProductSubscriptions = ({
     <div className="flex flex-col gap-y-6">
       <div className="flex flex-row items-center justify-between gap-x-6">
         <div className="flex flex-col gap-y-1">
-          <h2 className="text-lg">Subscriptions</h2>
+          <Text variant="heading-xxs" as="h2">
+            Subscriptions
+          </Text>
           <p className="dark:text-polar-500 text-sm text-gray-500">
             Showing 10 most recent subscriptions for {product.name}
           </p>
         </div>
         <Link
-          href={`/dashboard/${organization.slug}/sales/subscriptions?product_id=${product.id}`}
+          href={
+            organization.feature_settings?.config_as_code_enabled &&
+            product.external_id
+              ? `/dashboard/${organization.slug}/sales/subscriptions?external_product_id=${encodeURIComponent(product.external_id)}`
+              : `/dashboard/${organization.slug}/sales/subscriptions?product_id=${product.id}`
+          }
         >
           <Button size="sm">View All</Button>
         </Link>

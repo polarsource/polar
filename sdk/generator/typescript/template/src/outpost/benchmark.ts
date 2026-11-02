@@ -10,6 +10,7 @@ export const {
   snapshot: SNAPSHOT,
 } = benchmark;
 export const REDUCER = benchmark.reducer as Reducer;
+export const CREDIT_REDUCER = benchmark.credit_reducer as Reducer;
 // Events pending in one bucket: a batch the buffer just delivered, and a backlog after a 429.
 export const PENDING_COUNTS = [1, 100, 1000];
 // What WRITE_BUCKET stores per event: its value.
@@ -52,10 +53,6 @@ export const encodeState = (buckets: number): string[] => {
     "1",
     "cold:max",
     "999",
-    "credited:meter",
-    "1000000",
-    "credited_version:meter",
-    String(COLD_UNTIL + 1),
   ];
   for (let index = 0; index < buckets; index++) {
     const prefix = `bucket:${COLD_UNTIL + index * BUCKET_SIZE}:`;

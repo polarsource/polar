@@ -143,11 +143,10 @@ def get_server_metadata(
         id_token_signing_alg_values_supported=constants.ID_TOKEN_SIGNING_ALG_VALUES_SUPPORTED,
         claims_supported=constants.CLAIMS_SUPPORTED,
     )
-    if settings.AGENT_SIGN_UP_ENABLED:
-        metadata.agent_auth = AgentAuthMetadata(
-            skill=url_for("agent:auth_md"),
-            identity_endpoint=url_for("agent:create_identity"),
-            claim_endpoint=url_for("agent:start_claim"),
-            identity_types_supported=["anonymous"],
-        )
+    metadata.agent_auth = AgentAuthMetadata(
+        skill=url_for("agent:auth_md"),
+        identity_endpoint=url_for("agent:create_identity"),
+        claim_endpoint=url_for("agent:start_claim"),
+        identity_types_supported=["anonymous"],
+    )
     return metadata

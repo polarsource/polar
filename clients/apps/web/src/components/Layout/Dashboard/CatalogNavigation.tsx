@@ -1,7 +1,5 @@
 'use client'
 
-import { toast } from '@/components/Toast/use-toast'
-import { useSafeCopy } from '@/hooks/clipboard'
 import { useLiveCatalog } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
@@ -17,7 +15,7 @@ import {
   useCatalogRoutes,
   useDiscountRoutes,
 } from '../../Dashboard/navigationProducts'
-import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { NavList } from './NavList'
 
 const LiveCatalogDetails = ({ catalog }: { catalog: schemas['Catalog'] }) => (
@@ -46,63 +44,44 @@ const LiveCatalogDetails = ({ catalog }: { catalog: schemas['Catalog'] }) => (
   </Box>
 )
 
-const CatalogVersionChip = ({ catalog }: { catalog: schemas['Catalog'] }) => {
-  const [copied, setCopied] = useState(false)
-  const safeCopy = useSafeCopy(toast)
-  const triggerRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (!copied) return
-    const timeout = setTimeout(() => setCopied(false), 1200)
-    return () => clearTimeout(timeout)
-  }, [copied])
-
-  return (
-    <Tooltip delayDuration={150}>
-      <TooltipTrigger
-        ref={triggerRef}
-        aria-label="Copy live catalog ID"
-        className="flex"
-        // Radix closes the tooltip on press; keep it open so the copy is visible
-        onPointerDown={(event) => event.preventDefault()}
-        onClick={(event) => {
-          event.preventDefault()
-          void safeCopy(catalog.id).then(() => setCopied(true))
-        }}
+const CatalogVersionChip = ({
+  organization,
+  catalog,
+}: {
+  organization: schemas['Organization']
+  catalog: schemas['Catalog']
+}) => (
+  <Tooltip delayDuration={150}>
+    <TooltipTrigger asChild>
+      <Link
+        href={`/dashboard/${organization.slug}/products/versions`}
+        className="flex min-w-0"
       >
         <Box
           as="span"
           display="flex"
+          minWidth={0}
           color={{ base: 'text-tertiary', hover: 'text-primary' }}
           transitionProperty="colors"
           transitionDuration="fast"
-          cursor="default"
         >
           <Text as="span" variant="caption" color="inherit" truncate>
-            {copied ? 'Copied' : (catalog.name ?? 'Untitled')}
+            {catalog.name ?? 'Untitled'}
           </Text>
         </Box>
-      </TooltipTrigger>
-      <TooltipContent
-        side="right"
-        align="start"
-        sideOffset={8}
-        className="p-0"
-        onPointerDownOutside={(event) => {
-          if (triggerRef.current?.contains(event.target as Node)) {
-            event.preventDefault()
-          }
-        }}
-      >
-        <LiveCatalogDetails catalog={catalog} />
-      </TooltipContent>
-    </Tooltip>
-  )
-}
+      </Link>
+    </TooltipTrigger>
+    <TooltipContent side="right" align="start" sideOffset={8} className="p-0">
+      <LiveCatalogDetails catalog={catalog} />
+    </TooltipContent>
+  </Tooltip>
+)
 
 const CatalogLabel = ({
+  organization,
   catalog,
 }: {
+  organization: schemas['Organization']
   catalog: schemas['Catalog'] | null | undefined
 }) => (
   <Box
@@ -117,7 +96,9 @@ const CatalogLabel = ({
     <Text as="span" variant="label" color="inherit">
       Catalog
     </Text>
-    {catalog ? <CatalogVersionChip catalog={catalog} /> : null}
+    {catalog ? (
+      <CatalogVersionChip organization={organization} catalog={catalog} />
+    ) : null}
   </Box>
 )
 
@@ -146,7 +127,9 @@ export const CatalogNavigation = ({
         navType="organization"
       />
       <Box width="100%" flexDirection="column" rowGap="s">
-        {state === 'expanded' ? <CatalogLabel catalog={liveCatalog} /> : null}
+        {state === 'expanded' ? (
+          <CatalogLabel organization={organization} catalog={liveCatalog} />
+        ) : null}
         <NavList routes={catalogRoutes} navType="organization" />
       </Box>
     </Box>

@@ -522,6 +522,10 @@ class DataSnapshot(Schema):
     website: WebsiteData | None = None
     prior_feedback: PriorFeedbackData = Field(default_factory=PriorFeedbackData)
     risk_signals: RiskSignalData = Field(default_factory=RiskSignalData)
+    verified_domains: list[str] = Field(
+        default_factory=list,
+        description="Domains the organization proved it controls via DNS TXT.",
+    )
     appeal_reason: str | None = None
     original_denial_reason: str | None = None
     collected_at: datetime

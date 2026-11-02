@@ -297,6 +297,7 @@ class CheckoutService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        external_product_id: Sequence[str] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         status: Sequence[CheckoutStatus] | None = None,
@@ -321,6 +322,11 @@ class CheckoutService:
 
         if product_id is not None:
             statement = statement.where(Checkout.product_id.in_(product_id))
+
+        if external_product_id is not None:
+            statement = statement.where(
+                Checkout.product.has(Product.external_id.in_(external_product_id))
+            )
 
         if customer_id is not None:
             statement = statement.where(Checkout.customer_id.in_(customer_id))

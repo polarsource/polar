@@ -19,6 +19,7 @@ from polar.organization_review.schemas import (
     CheckoutSuccessUrlData,
     DataSnapshot,
     HistoryData,
+    IntegrationData,
     OrganizationData,
     PaymentMetrics,
     PayoutAccountData,
@@ -28,6 +29,7 @@ from polar.organization_review.schemas import (
     RiskSignalEntry,
     SetupData,
     UrlRedirectInfo,
+    WebhookEndpointData,
     WebsiteData,
     WebsitePage,
 )
@@ -272,6 +274,66 @@ class TestBuildPromptRiskSignals:
         # The old 'highest' signal survives the cap because severity sorts first.
         assert "fraudulent_merchant (risk level: highest)" in prompt
         assert "(5 more signal(s) omitted)" in prompt
+
+
+class TestBuildPromptVerifiedDomains:
+    def _snapshot(self, verified_domains: list[str]) -> DataSnapshot:
+        return _minimal_snapshot().model_copy(
+            update={
+                "organization": OrganizationData(
+                    name="Test Org", slug="test-org", website="https://www.acme.com"
+                ),
+                "setup": SetupData(
+                    integration=IntegrationData(
+                        webhook_endpoints=[
+                            WebhookEndpointData(url="https://api.acme.com/hook"),
+                            WebhookEndpointData(url="https://panel.example.net/hook"),
+                        ],
+                        webhook_domains=["api.acme.com", "panel.example.net"],
+                    )
+                ),
+                "verified_domains": verified_domains,
+            }
+        )
+
+    def test_not_verified(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot([]))
+
+        assert "verified via DNS" not in prompt
+
+    def test_verified(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot(["acme.com"]))
+
+        assert (
+            "Website: https://www.acme.com "
+            "(domain verified via DNS by this organization)"
+        ) in prompt
+        assert (
+            "Webhook Domains: api.acme.com "
+            "(domain verified via DNS by this organization), panel.example.net\n"
+        ) in prompt
+
+    def test_verified_subdomain_does_not_cover_parent(
+        self, review_analyzer: ReviewAnalyzer
+    ) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot(["api.acme.com"]))
+
+        assert "Website: https://www.acme.com\n" in prompt
+        assert (
+            "Webhook Domains: api.acme.com "
+            "(domain verified via DNS by this organization), panel.example.net\n"
+        ) in prompt
+
+    def test_verified_host_with_port(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = self._snapshot(["acme.com"])
+        snapshot.setup.integration.webhook_domains = ["api.acme.com:8443"]
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert (
+            "Webhook Domains: api.acme.com:8443 "
+            "(domain verified via DNS by this organization)\n"
+        ) in prompt
 
 
 class TestBuildPromptRedirects:

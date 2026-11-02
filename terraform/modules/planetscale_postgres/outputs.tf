@@ -28,6 +28,16 @@ output "app_role_base_username" {
   value       = planetscale_postgres_redacted_branch_role.app.base_username
 }
 
+output "analytics_reader_role_id" {
+  description = "Analytics reader role ID. Reset its password with `pscale role reset`."
+  value       = planetscale_postgres_redacted_branch_role.analytics_reader.id
+}
+
+output "analytics_reader_role_username" {
+  description = "Analytics reader role username."
+  value       = planetscale_postgres_redacted_branch_role.analytics_reader.username
+}
+
 output "database_name" {
   description = "PostgreSQL database name to connect to, distinct from the PlanetScale database slug."
   value       = var.app_database_name
@@ -50,4 +60,9 @@ output "host" {
 output "bouncer_usernames" {
   description = "App role username for each dedicated PgBouncer, keyed by bouncer name. Connect on port 6432."
   value       = { for name, _ in planetscale_postgres_bouncer.this : name => "${planetscale_postgres_redacted_branch_role.app.username}|${name}" }
+}
+
+output "private_connection_service_name" {
+  description = "VPC endpoint service name for PrivateLink to this branch."
+  value       = planetscale_postgres_redacted_branch_role.app.private_connection_service_name
 }

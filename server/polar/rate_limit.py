@@ -44,7 +44,7 @@ _AUTHENTICATION_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/auth/backup-codes": [
         Rule(minute=6, hour=12, block_time=900, zone="auth-backup-codes"),
     ],
-    "^/v1/customer-portal/customer-session/(request|authenticate)": [
+    "^/v1/customer-portal/customer-session/(start|email-otp)": [
         Rule(minute=6, hour=12, block_time=900, zone="customer-session-login"),
     ],
 }
@@ -118,21 +118,6 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
     ],
     "^/v1/feedbacks/": [
         Rule(hour=5, block_time=3600, zone="feedback-submit"),
-    ],
-    # Each call is an LLM run Polar pays for, so it's capped well below the
-    # catch-all. All groups listed — an unmatched one falls through to `api`.
-    "^/v1/compass/assistant": [
-        Rule(minute=60, hour=500, zone="compass-assistant"),
-        Rule(group=RateLimitGroup.web, minute=60, hour=500, zone="compass-assistant"),
-        Rule(
-            group=RateLimitGroup.elevated, minute=60, hour=500, zone="compass-assistant"
-        ),
-        Rule(
-            group=RateLimitGroup.restricted,
-            minute=60,
-            hour=500,
-            zone="compass-assistant",
-        ),
     ],
     # Product name check validation in the dashboard product creation flow
     "^/v1/products/name-check": [

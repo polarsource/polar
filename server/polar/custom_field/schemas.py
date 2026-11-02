@@ -17,10 +17,12 @@ from polar.kit.schemas import (
     ClassName,
     IDSchema,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import QuerySchema
 from polar.models.custom_field import (
     CustomFieldCheckboxProperties,
     CustomFieldDateProperties,
@@ -263,3 +265,13 @@ AttachedCustomFieldListCreate = Annotated[
     list[AttachedCustomFieldCreate],
     Field(description="List of custom fields to attach."),
 ]
+
+
+class CustomFieldListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    query: str | None = Field(None, description="Filter by custom field name or slug.")
+    type: MultipleQueryFilter[CustomFieldType] | None = Field(
+        None, title="CustomFieldType Filter", description="Filter by custom field type."
+    )

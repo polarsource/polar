@@ -1,5 +1,4 @@
 import typing
-import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -25,7 +24,7 @@ from tests.fixtures.random_objects import (
     create_reducer,
 )
 
-from .conftest import Run, create_metered_reducer
+from .conftest import Run, analyze, create_metered_reducer
 
 pytestmark = pytest.mark.benchmark
 
@@ -62,6 +61,7 @@ def test_rollup_100_events(
     events = build_events(organization, 100)
     contributed = run(reducer_service.rollup(session, redis, organization.id, events))
     assert contributed == reducers * 10
+    analyze(run, session)
     benchmark(
         lambda: run(reducer_service.rollup(session, redis, organization.id, events))
     )
@@ -91,6 +91,7 @@ def test_rollup_100_customers(
     ]
     contributed = run(reducer_service.rollup(session, redis, organization.id, events))
     assert contributed == 100
+    analyze(run, session)
     benchmark(
         lambda: run(reducer_service.rollup(session, redis, organization.id, events))
     )
@@ -119,6 +120,7 @@ def test_rollup_100_events_into_closed_buckets(
     ]
     contributed = run(reducer_service.rollup(session, redis, organization.id, events))
     assert contributed == 10
+    analyze(run, session)
     benchmark(
         lambda: run(reducer_service.rollup(session, redis, organization.id, events))
     )
@@ -169,6 +171,7 @@ def test_sync_bucket_1000_events(
     )
     assert bucket is not None
     assert bucket.count == 1000
+    analyze(run, session)
     benchmark(sync)
 
 
@@ -221,6 +224,7 @@ def test_cold_usage(
     cold_until, totals = read()
     assert cold_until == newest_start + REDUCER_BUCKET_SIZE
     assert totals.count == 10 * buckets
+    analyze(run, session)
     benchmark(read)
 
 
@@ -236,7 +240,7 @@ def test_seal_288_buckets(
     since = newest_start - 287 * REDUCER_BUCKET_SIZE
     at = newest_start + REDUCER_BUCKET_SIZE / 2
 
-    async def seed() -> tuple[Customer, uuid.UUID]:
+    async def seed() -> tuple[Customer, Reducer]:
         reducer = await create_metered_reducer(session, save_fixture, organization)
         customer = await create_customer(
             save_fixture, organization=organization, external_id="customer"
@@ -268,9 +272,10 @@ def test_seal_288_buckets(
             for index in range(10)
         )
         await session.flush()
-        return customer, reducer.meter_ids[0]
+        return customer, reducer
 
-    customer, meter_id = run(seed())
+    customer, reducer = run(seed())
+    meter_id = reducer.meter_ids[0]
     savepoint: typing.Any = None
 
     def begin() -> None:
@@ -290,6 +295,7 @@ def test_seal_288_buckets(
             select(func.count())
             .select_from(ReducerBucket)
             .where(
+                ReducerBucket.reducer_id == reducer.id,
                 ReducerBucket.customer_id == customer.id,
                 ReducerBucket.external_customer_id.is_(None),
                 ReducerBucket.sealed_at.is_not(None),
@@ -298,4 +304,5 @@ def test_seal_288_buckets(
     )
     assert sealed == 288
     rollback()
+    analyze(run, session)
     benchmark.pedantic(seal, setup=begin, teardown=rollback, rounds=20)

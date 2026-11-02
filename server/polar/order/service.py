@@ -124,6 +124,7 @@ from polar.tax.calculation import (
     TaxCode,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
+from polar.tax.calculation.base import UnsupportedCountryError
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -380,6 +381,7 @@ class OrderService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        external_product_id: Sequence[str] | None = None,
         product_billing_type: Sequence[ProductBillingType] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
@@ -419,6 +421,9 @@ class OrderService:
 
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))
+
+        if external_product_id is not None:
+            statement = statement.where(Product.external_id.in_(external_product_id))
 
         if product_billing_type is not None:
             product_repository = ProductRepository.from_session(session)
@@ -937,7 +942,7 @@ class OrderService:
                 currency=checkout.currency,
                 address=order.billing_address,
                 tax_code=order.product.tax_code,
-                reference=str(order.id),
+                reference=f"checkout:{checkout.id}",
                 transaction_date=order.created_at,
             )
             await repository.update(
@@ -2321,18 +2326,16 @@ class OrderService:
                 reference=str(order.id),
                 transaction_date=order.created_at,
             )
-        except CalculationExpiredError:
-            # Happens if the order was created a long time ago and the tax
-            # calculation expired before the payment was completed.
-            return await self._record_expired_tax_calculation(order)
+        except CalculationExpiredError, UnsupportedCountryError:
+            return await self._recalculate_tax_transaction(order)
 
         return {
             "tax_processor": tax_processor,
             "tax_transaction_processor_id": transaction_id,
         }
 
-    async def _record_expired_tax_calculation(self, order: Order) -> dict[str, Any]:
-        """Book the tax of an order whose calculation expired before payment.
+    async def _recalculate_tax_transaction(self, order: Order) -> dict[str, Any]:
+        """Recalculate and record tax while preserving the charged amounts.
 
         Returns the order fields to update.
         """
@@ -2364,30 +2367,39 @@ class OrderService:
         if tax_amount != order.tax_amount:
             log.warning(
                 "Tax recalculation differs from the charged tax, "
-                "recording the charged amount",
+                "attempting to record the charged amount",
                 order_id=order.id,
                 charged_tax_amount=order.tax_amount,
                 recalculated_tax_amount=tax_amount,
                 recalculated_calculation_id=tax_calculation_processor_id,
             )
-            (
-                transaction_id,
-                tax_processor,
-            ) = await tax_calculation_service.record_amounts(
-                amount=order.net_amount,
-                tax_amount=order.tax_amount,
-                currency=order.currency,
-                address=order.billing_address,
-                tax_code=order.product.tax_code,
-                reference=str(order.id),
-                transaction_date=order.created_at,
-            )
+            try:
+                (
+                    transaction_id,
+                    tax_processor,
+                ) = await tax_calculation_service.record_amounts(
+                    amount=order.net_amount,
+                    tax_amount=order.tax_amount,
+                    currency=order.currency,
+                    address=order.billing_address,
+                    tax_code=order.product.tax_code,
+                    reference=str(order.id),
+                    transaction_date=order.created_at,
+                )
+            except UnsupportedCountryError:
+                log.warning(
+                    "Skipping tax recording for unsupported country",
+                    order_id=order.id,
+                    country=order.billing_address.country,
+                )
+                return {}
             return {
                 "tax_processor": tax_processor,
                 "tax_transaction_processor_id": transaction_id,
             }
 
         update_dict: dict[str, Any] = {
+            "tax_processor": tax_processor,
             "tax_calculation_processor_id": tax_calculation_processor_id,
             "tax_behavior": tax_behavior,
             "tax_breakdown": tax_breakdown or None,

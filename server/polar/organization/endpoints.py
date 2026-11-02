@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, Query, Request, Response, status
@@ -62,6 +63,9 @@ from polar.openapi import APITag
 from polar.organization.repository import (
     OrganizationReviewRepository,
 )
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.organization_review.appeal_case import (
     AppealNotRejectedError,
     CaseAlreadyExistsError,
@@ -78,6 +82,7 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.sso.repository import OrganizationSSOConnectionRepository
+from polar.sso.service import SSORequiresVerifiedDomain
 from polar.startup_program.service import (
     StartupProgramError,
 )
@@ -120,6 +125,7 @@ from .schemas import (
     OrganizationEmbedStatus,
     OrganizationID,
     OrganizationKYC,
+    OrganizationListParams,
     OrganizationPaymentStatus,
     OrganizationPayoutAccountSet,
     OrganizationReviewState,
@@ -155,17 +161,17 @@ OrganizationNotFound = {
     operation_id="organizations:list",
 )
 async def list_organizations(
+    filters: Annotated[OrganizationListParams, Query()],
     auth_subject: auth.OrganizationsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    slug: str | None = Query(None, description="Filter by slug."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationSchema]:
     """List organizations."""
     results, count = await organization_service.list(
         session,
         auth_subject,
-        slug=slug,
+        slug=filters.slug,
         pagination=pagination,
         sorting=sorting,
     )
@@ -399,8 +405,12 @@ async def update(
         },
         404: OrganizationNotFound,
         409: {
-            "description": "Cannot enforce SSO without an enabled connection.",
-            "model": SSOEnforcementRequiresConnection.schema(),
+            "description": (
+                "Cannot enforce SSO without an enabled connection and a verified "
+                "domain."
+            ),
+            "model": SSOEnforcementRequiresConnection.schema()
+            | SSORequiresVerifiedDomain.schema(),
         },
     },
     tags=[APITag.public],
@@ -440,6 +450,10 @@ async def _update(
             authz.organization.id
         ):
             raise SSOEnforcementRequiresConnection()
+        if not await organization_domain_service.has_verified(
+            session, authz.organization
+        ):
+            raise SSORequiresVerifiedDomain()
     return await organization_service.update(
         session, authz.organization, organization_update
     )

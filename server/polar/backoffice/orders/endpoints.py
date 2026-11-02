@@ -1,30 +1,45 @@
 import uuid
 from collections.abc import Generator
+from decimal import Decimal
 from typing import Annotated, Any
 
 import pycountry
 import structlog
 from babel.numbers import format_percent
 from fastapi import Depends, HTTPException, Query, Request
+from fastapi.responses import RedirectResponse
 from pydantic import UUID4, BeforeValidator, ValidationError
+from pydantic_core import PydanticCustomError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, tag, text
 
 from polar.backoffice.routing import BackofficeRouter
+from polar.credit_note.repository import CreditNoteRepository
+from polar.credit_note.service import credit_note as credit_note_service
+from polar.customer.schemas.customer import CustomerUpdate
+from polar.customer.service import customer as customer_service
+from polar.exceptions import PolarRequestValidationError
 from polar.invoice.service import invoice as invoice_service
+from polar.kit.address import AddressInput
 from polar.kit.currency import format_currency, get_currency_decimal_factor
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product
 from polar.models.order import OrderBillingReason, OrderStatus
 from polar.models.payment import PaymentTrigger
+from polar.models.refund import RefundReason, RefundStatus
 from polar.order import sorting
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
-from polar.postgres import AsyncSession, get_db_read_session, get_db_session
-from polar.refund.schemas import RefundCreate
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
+from polar.refund.repository import RefundRepository
 from polar.refund.service import refund as refund_service
 from polar.tax.calculation.base import TaxabilityReason
 from polar.worker import enqueue_job
@@ -35,8 +50,17 @@ from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..search import organization_ilike
 from ..toast import add_toast
-from .components import order_status_badge, orders_datatable, payments_datatable
-from .forms import RefundForm
+from .components import (
+    order_status_badge,
+    orders_datatable,
+    payments_datatable,
+    refunds_datatable,
+)
+from .forms import (
+    TAX_REFUND_REASONS,
+    VATRefundForm,
+    build_refund_form_class,
+)
 
 router = BackofficeRouter()
 logger = structlog.get_logger()
@@ -292,6 +316,7 @@ async def get(
     # Get all payments for this order
     payment_repository = PaymentRepository.from_session(session)
     payments = await payment_repository.get_all_by_order(order.id)
+    refunds = await RefundRepository.from_session(session).get_all_by_order(order.id)
     retries_remaining = await order_service.get_dunning_retries_remaining(
         session, order
     )
@@ -336,7 +361,7 @@ async def get(
                     if (
                         order.paid
                         and not order.refunds_blocked
-                        and (order.refunded_amount or 0) < (order.net_amount or 0)
+                        and order.remaining_balance > 0
                     ):
                         with button(
                             hx_get=str(request.url_for("orders:refund", id=order.id)),
@@ -794,11 +819,19 @@ async def get(
                             with payments_datatable(request, payments):
                                 pass
 
+                    with tag.div(classes="card card-border w-full shadow-sm"):
+                        with tag.div(classes="card-body"):
+                            with tag.h2(classes="card-title"):
+                                text("Refunds")
+                            with refunds_datatable(request, refunds):
+                                pass
+
 
 @router.api_route("/{id}/refund", name="orders:refund", methods=["GET", "POST"])
 async def refund(
     request: Request,
     id: UUID4,
+    reason: RefundReason = Query(default=RefundReason.customer_request),
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     order_repository = OrderRepository.from_session(session)
@@ -819,36 +852,73 @@ async def refund(
         await add_toast(request, "Refunds are blocked for this order.", "error")
         return
 
-    if (order.refunded_amount or 0) >= (order.net_amount or 0):
+    if order.remaining_balance <= 0:
         await add_toast(request, "This order has already been fully refunded.", "error")
         return
 
     validation_error: ValidationError | None = None
+    form_data = await request.form() if request.method == "POST" else None
+    data: dict[str, Any] = (
+        dict(form_data) if form_data is not None else dict(request.query_params)
+    )
+    try:
+        reason = RefundReason(data.get("reason", reason))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid refund reason") from None
+    form_class = build_refund_form_class(request, reason)
+    is_tax_refund = reason in TAX_REFUND_REASONS
+    max_refundable = (
+        order.refundable_tax_amount if is_tax_refund else order.refundable_amount
+    )
 
     if request.method == "POST":
-        data = await request.form()
         try:
-            form = RefundForm.model_validate_form(data)
-
-            refund_create = RefundCreate(
-                order_id=order.id,
-                reason=form.reason,
-                amount=int(form.amount * get_currency_decimal_factor(order.currency)),
-                comment=form.comment,
-                revoke_benefits=form.revoke_benefits,
-            )
-            await refund_service.create(
-                session,
-                order,
-                amount=refund_create.amount,
-                tax_amount=order.calculate_refunded_tax_from_subtotal(
-                    refund_create.amount
-                ),
-                reason=refund_create.reason,
-                comment=refund_create.comment,
-                revoke_benefits=refund_create.revoke_benefits,
-                metadata=refund_create.metadata,
-            )
+            assert form_data is not None
+            form = form_class.model_validate_form(form_data)
+            amount = int(form.amount * get_currency_decimal_factor(order.currency))
+            if amount <= 0 or amount > max_refundable:
+                raise ValueError(
+                    "Refund amount must be positive and within the remaining balance."
+                )
+            async with session.begin_nested():
+                if isinstance(form, VATRefundForm):
+                    billing_address = (
+                        order.customer.billing_address or order.billing_address
+                    )
+                    customer_update = CustomerUpdate(tax_id=form.tax_id)
+                    if billing_address is not None:
+                        customer_update.billing_address = AddressInput.model_validate(
+                            billing_address.model_dump()
+                        )
+                    try:
+                        await customer_service.update(
+                            session, order.customer, customer_update
+                        )
+                    except PolarRequestValidationError as e:
+                        raise ValidationError.from_exception_data(
+                            form_class.__name__,
+                            [
+                                {
+                                    "type": PydanticCustomError(
+                                        error["type"], error["msg"]
+                                    ),
+                                    "loc": ("tax_id",),
+                                    "input": form.tax_id,
+                                }
+                                for error in e.errors()
+                            ],
+                        ) from e
+                await refund_service.create(
+                    session,
+                    order,
+                    amount=0 if is_tax_refund else amount,
+                    tax_amount=amount
+                    if is_tax_refund
+                    else order.calculate_refunded_tax_from_subtotal(amount),
+                    reason=RefundReason(form.reason),
+                    comment=form.comment,
+                    revoke_benefits=False if is_tax_refund else form.revoke_benefits,
+                )
             await add_toast(request, "Refund created successfully.", "success")
             return HXRedirectResponse(
                 request, str(request.url_for("orders:get", id=id)), 303
@@ -859,15 +929,21 @@ async def refund(
             await add_toast(request, f"Failed to create refund: {e}", "error")
             validation_error = None
 
-    # Calculate max refundable amount
-    max_refundable = (order.net_amount or 0) - (order.refunded_amount or 0)
     max_refundable_display = format_currency(max_refundable, order.currency)
+    if request.method == "GET":
+        data["reason"] = reason
+        data["amount"] = Decimal(max_refundable) / get_currency_decimal_factor(
+            order.currency
+        )
+        tax_id = order.customer.tax_id or order.tax_id
+        data.setdefault("tax_id", tax_id[0] if tax_id else "")
 
     with modal("Refund order", open=True):
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p():
                 text(f"Maximum refundable amount: {max_refundable_display}")
-            with RefundForm.render(
+            with form_class.render(
+                data=data,
                 hx_post=str(request.url_for("orders:refund", id=id)),
                 hx_target="#modal",
                 classes="flex flex-col",
@@ -879,6 +955,70 @@ async def refund(
                             text("Cancel")
                     with button(type="submit", variant="primary"):
                         text("Submit")
+
+
+@router.api_route(
+    "/{id}/refunds/{refund_id}/credit-note",
+    name="orders:credit_note",
+    methods=["GET", "POST"],
+)
+async def create_credit_note(
+    request: Request,
+    id: UUID4,
+    refund_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    refund = await RefundRepository.from_session(session).get_by_id(refund_id)
+    if refund is None or refund.order_id != id:
+        raise HTTPException(status_code=404)
+    if request.method == "POST":
+        if refund.credit_note_id is not None:
+            repository = CreditNoteRepository.from_session(session)
+            credit_note = await repository.get_by_id(
+                refund.credit_note_id, options=repository.get_eager_options()
+            )
+            if credit_note is None:
+                raise HTTPException(status_code=404)
+        else:
+            credit_note = await credit_note_service.create_from_refund(session, refund)
+        await credit_note_service.generate_pdf(session, credit_note)
+        await add_toast(request, "Credit note generated.", "success")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+    if refund.status != RefundStatus.succeeded:
+        raise HTTPException(
+            status_code=409, detail="Only succeeded refunds can be credited."
+        )
+    with modal("Generate credit note", open=True):
+        with tag.p():
+            text(
+                f"Issue a credit note for {format_currency(refund.total_amount, refund.currency)}? This does not create another refund."
+            )
+        with tag.form(hx_post=str(request.url), hx_target="#modal"):
+            with tag.div(classes="modal-action"):
+                with button(type="submit", variant="primary"):
+                    text("Generate")
+
+
+@router.get(
+    "/{id}/refunds/{refund_id}/credit-note/download", name="orders:credit_note_download"
+)
+async def download_credit_note(
+    id: UUID4,
+    refund_id: UUID4,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> RedirectResponse:
+    refund = await RefundRepository.from_session(session).get_by_id(refund_id)
+    if refund is None or refund.order_id != id or refund.credit_note_id is None:
+        raise HTTPException(status_code=404)
+    credit_note = await CreditNoteRepository.from_session(session).get_by_id(
+        refund.credit_note_id
+    )
+    if credit_note is None:
+        raise HTTPException(status_code=404)
+    url, _ = await credit_note_service.get_pdf_url(credit_note)
+    return RedirectResponse(url, status_code=303)
 
 
 @router.post("/{id}/block-refunds", name="orders:block_refunds")

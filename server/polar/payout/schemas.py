@@ -4,7 +4,8 @@ from uuid import UUID
 from pydantic import UUID4, AliasPath, Field
 
 from polar.enums import PayoutAccountType
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
+from polar.kit.versioning import QuerySchema
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.transaction.schemas import TransactionEmbedded
@@ -60,3 +61,12 @@ class PayoutGenerateInvoice(Schema):
 
 class PayoutInvoice(Schema):
     url: str
+
+
+class PayoutListParams(QuerySchema):
+    account_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="Account ID Filter", description="Filter by account ID."
+    )
+    status: MultipleQueryFilter[PayoutStatus] | None = Field(
+        None, title="Status Filter", description="Filter by payout status."
+    )

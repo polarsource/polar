@@ -129,6 +129,7 @@ from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
 )
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import SubscriptionStatus
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -2299,6 +2300,7 @@ async def create_reducer(
     *,
     organization: Organization,
     meters: Sequence[Meter],
+    kind: ReducerKind = ReducerKind.usage,
 ) -> Reducer:
     """Create a reducer with the filter and aggregation of the first meter,
     used by all the given meters."""
@@ -2307,6 +2309,7 @@ async def create_reducer(
         organization=organization,
         filter=meter.filter,
         aggregation=meter.aggregation,
+        kind=kind,
     )
     await save_fixture(reducer)
     for m in meters:

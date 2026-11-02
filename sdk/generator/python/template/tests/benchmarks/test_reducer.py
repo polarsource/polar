@@ -90,7 +90,7 @@ def any_of(*clauses: Filter | FilterClause) -> Filter:
 
 
 def reducer_of(id: str, filter: Filter, aggregation: Aggregation) -> Reducer:
-    return {"id": id, "filter": filter, "aggregation": aggregation}
+    return {"id": id, "kind": "usage", "filter": filter, "aggregation": aggregation}
 
 
 def match_all(filter: Filter) -> None:

@@ -1,5 +1,6 @@
 import json
 import uuid
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -15,6 +16,7 @@ from polar.tax.calculation.base import (
     TaxCalculationLogicalError,
     TaxCalculationTechnicalError,
     TaxRecordError,
+    UnsupportedCountryError,
 )
 from polar.tax.calculation.numeral import (
     _numeral_jurisdiction_to_breakdown_item,
@@ -510,8 +512,161 @@ class TestNumeralRecord:
         respx_mock.post("/tax/transactions").respond(
             400, json={"code": 400, "type": error_type, "message": "Error"}
         )
+        if error_type == "CALCULATION_EXPIRED":
+            respx_mock.get("/tax/transactions").respond(json={"transactions": []})
         with pytest.raises(expected_error):
             await numeral_tax_service.record("calc_123", "order_123")
+
+    @pytest.mark.parametrize(
+        "error_type",
+        [
+            "TRANSACTION_ALREADY_EXISTS",
+            "REFERENCE_ORDER_ID_ALREADY_EXISTS",
+            "CALCULATION_EXPIRED",
+        ],
+    )
+    async def test_retry_recovers_recorded_transaction(
+        self,
+        respx_mock: respx.MockRouter,
+        error_type: str,
+    ) -> None:
+        recorded_transaction = {"id": "tr_123"}
+        record = respx_mock.post("/tax/transactions")
+        record.side_effect = [
+            httpx.Response(200, json=recorded_transaction),
+            httpx.Response(400, json={"type": error_type}),
+        ]
+        lookup = respx_mock.get(
+            "/tax/transactions", params={"reference_order_id": "order_123"}
+        ).respond(json={"transactions": [recorded_transaction]})
+
+        first = await numeral_tax_service.record("calc_123", "order_123")
+        retry = await numeral_tax_service.record(
+            "calc_123" if error_type == "TRANSACTION_ALREADY_EXISTS" else "calc_retry",
+            "order_123",
+        )
+
+        assert first == retry == "tr_123"
+        assert record.call_count == 2
+        assert lookup.call_count == 1
+
+    @pytest.mark.parametrize("transaction_count", [0, 2])
+    async def test_duplicate_requires_one_existing_transaction(
+        self,
+        respx_mock: respx.MockRouter,
+        transaction_count: int,
+    ) -> None:
+        respx_mock.post("/tax/transactions").respond(
+            400, json={"type": "TRANSACTION_ALREADY_EXISTS"}
+        )
+        respx_mock.get("/tax/transactions").respond(
+            json={"transactions": [{"id": "tr_123"}] * transaction_count}
+        )
+        with pytest.raises(TaxRecordError):
+            await numeral_tax_service.record("calc_123", "order_123")
+
+    async def test_lookup_failure_does_not_recalculate(
+        self, respx_mock: respx.MockRouter
+    ) -> None:
+        respx_mock.post("/tax/transactions").respond(
+            400, json={"type": "CALCULATION_EXPIRED"}
+        )
+        respx_mock.get("/tax/transactions").respond(503)
+        with pytest.raises(TaxRecordError):
+            await numeral_tax_service.record("calc_123", "order_123")
+
+
+@pytest.mark.anyio
+@pytest.mark.respx(base_url="https://api.numeralhq.com")
+class TestNumeralBackfill:
+    @pytest.mark.parametrize(
+        ("country", "state", "postal_code", "expected_postal_code"),
+        [
+            ("CA", "ON", None, "A0A0A0"),
+            ("CA", "ON", "M5V 3L9", "M5V 3L9"),
+            ("US", "TX", None, ""),
+        ],
+    )
+    async def test_postal_code(
+        self,
+        respx_mock: respx.MockRouter,
+        country: str,
+        state: str,
+        postal_code: str | None,
+        expected_postal_code: str,
+    ) -> None:
+        route = respx_mock.post("/tax/manual_line_items").respond(
+            json={"line_item_id": "order_123"}
+        )
+        result = await numeral_tax_service.backfill(
+            amount=599,
+            tax_amount=78,
+            currency="usd",
+            address=Address(
+                country=CountryAlpha2(country), state=state, postal_code=postal_code
+            ),
+            tax_code=TaxCode.general_electronically_supplied_services,
+            reference="order_123",
+            transaction_date=datetime(2026, 10, 30, tzinfo=UTC),
+        )
+
+        assert result == "order_123"
+        payload = json.loads(route.calls.last.request.content)
+        assert payload["address_postal_code"] == expected_postal_code
+        assert payload["address_province"] == state
+        assert payload["line_items"][0]["sales"] == 599
+        assert payload["line_items"][0]["total_taxes"] == 78
+
+    @pytest.mark.parametrize(
+        ("status", "error_type", "message", "expected_error"),
+        [
+            (
+                400,
+                "ERROR",
+                "Country code must be one of: US, CA",
+                UnsupportedCountryError,
+            ),
+            (
+                400,
+                "INVALID_COUNTRY_CODE",
+                "Country CR is currently not supported.",
+                UnsupportedCountryError,
+            ),
+            (
+                400,
+                "ERROR",
+                "address_postal_code is required for Canadian addresses",
+                httpx.HTTPStatusError,
+            ),
+            (
+                500,
+                "ERROR",
+                "Country code must be one of: US, CA",
+                httpx.HTTPStatusError,
+            ),
+        ],
+    )
+    async def test_error(
+        self,
+        respx_mock: respx.MockRouter,
+        status: int,
+        error_type: str,
+        message: str,
+        expected_error: type[Exception],
+    ) -> None:
+        respx_mock.post("/tax/manual_line_items").respond(
+            status, json={"code": status, "type": error_type, "message": message}
+        )
+        with pytest.raises(expected_error):
+            await numeral_tax_service.backfill(
+                amount=1000,
+                tax_amount=0,
+                currency="usd",
+                address=Address(country=CountryAlpha2("CR")),
+                tax_code=TaxCode.general_electronically_supplied_services,
+                reference="order_123",
+                transaction_date=datetime(2026, 10, 11, tzinfo=UTC),
+            )
 
 
 @pytest.mark.anyio

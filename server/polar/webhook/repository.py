@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, func, select, tuple_, update
+from sqlalchemy import CursorResult, Select, delete, func, select, tuple_, update
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -82,7 +82,7 @@ class WebhookEventRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[WebhookEvent]]:
+    ) -> Select[WebhookEvent]:
         return (
             self.get_base_statement()
             .join(
@@ -182,12 +182,40 @@ class WebhookDeliveryRepository(
             .where(WebhookDelivery.id.in_(ids))
             .values(response=None)
         )
-        result = cast(CursorResult[Any], await self.session.execute(statement))
+        result = cast(
+            CursorResult[*tuple[Any, ...]], await self.session.execute(statement)
+        )
+        return result.rowcount
+
+    async def get_expired_ids(
+        self, *, older_than: datetime, limit: int
+    ) -> Sequence[UUID]:
+        statement = (
+            select(WebhookDelivery.id)
+            .where(WebhookDelivery.created_at < older_than)
+            .order_by(WebhookDelivery.created_at.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
+    async def count_expired(self, *, older_than: datetime) -> int:
+        statement = select(func.count(WebhookDelivery.id)).where(
+            WebhookDelivery.created_at < older_than
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
+    async def delete_by_ids(self, ids: Sequence[UUID]) -> int:
+        statement = delete(WebhookDelivery).where(WebhookDelivery.id.in_(ids))
+        result = cast(
+            CursorResult[*tuple[Any, ...]], await self.session.execute(statement)
+        )
         return result.rowcount
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[WebhookDelivery]]:
+    ) -> Select[WebhookDelivery]:
         return (
             self.get_base_statement()
             .join(
@@ -208,7 +236,7 @@ class WebhookEndpointRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[WebhookEndpoint]]:
+    ) -> Select[WebhookEndpoint]:
         return self.get_base_statement().where(
             WebhookEndpoint.organization_id.in_(org_ids)
         )

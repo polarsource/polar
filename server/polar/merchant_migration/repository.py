@@ -103,7 +103,7 @@ class MerchantMigrationRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[MerchantMigration]]:
+    ) -> Select[MerchantMigration]:
         statement = self.get_base_statement()
         if is_user(auth_subject):
             statement = statement.where(
@@ -138,7 +138,7 @@ class MerchantMigrationRepository(
         )
         return (await self.session.scalars(statement)).all()
 
-    def get_ops_statement(self) -> Select[tuple[MerchantMigration]]:
+    def get_ops_statement(self) -> Select[MerchantMigration]:
         """Every migration across every organization, newest first.
 
         Deliberately unscoped: the backoffice watches all migrations at once and
@@ -248,7 +248,9 @@ class MerchantMigrationRecordRepository(
             )
             .execution_options(synchronize_session=False)
         )
-        result = cast(CursorResult[Any], await self.session.execute(statement))
+        result = cast(
+            CursorResult[*tuple[Any, ...]], await self.session.execute(statement)
+        )
         return result.rowcount
 
     async def list_by_migration(
@@ -493,7 +495,7 @@ class MerchantMigrationRecordRepository(
 
     def _product_by_price_statement(
         self, organization_id: UUID, price_source_id: str
-    ) -> Select[tuple[MerchantMigrationRecord]]:
+    ) -> Select[MerchantMigrationRecord]:
         # An archived price can sit on two rows; the oldest is the one earlier
         # moves used.
         return (
@@ -562,7 +564,7 @@ class MerchantMigrationRecordRepository(
 
     def _switchable_subscriptions_statement(
         self, migration_id: UUID
-    ) -> Select[tuple[MerchantMigrationRecord]]:
+    ) -> Select[MerchantMigrationRecord]:
         """Subscriptions whose dependencies are ready for card checks and cutover.
 
         Ordered so a batched pass and a chained one see the same sequence.
@@ -830,7 +832,7 @@ class MerchantMigrationRecordRepository(
 
     def _payment_method_coverage_statement(
         self, migration_id: UUID, *, exact: bool
-    ) -> Select[tuple[UUID]]:
+    ) -> Select[UUID]:
         CustomerRecord = aliased(MerchantMigrationRecord)
         payment_method_filters = [
             PaymentMethod.customer_id == Customer.id,
@@ -946,7 +948,7 @@ class MerchantMigrationRecordRepository(
             .limit(batch_size)
         )
         result = cast(
-            CursorResult[Any],
+            CursorResult[*tuple[Any, ...]],
             await self.session.execute(
                 delete(MerchantMigrationRecord).where(
                     MerchantMigrationRecord.id.in_(batch)

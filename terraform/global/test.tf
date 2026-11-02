@@ -749,6 +749,17 @@ resource "tfe_variable" "private_backoffice_tailscale_ip_test" {
   }
 }
 
+resource "tfe_variable" "ec2_tailscale_oauth_client_id_test" {
+  key             = "ec2_tailscale_oauth_client_id"
+  category        = "terraform"
+  description     = "ID of the Tailscale OAuth client used by the EC2 router in test"
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "ec2_tailscale_oauth_client_secret_test" {
   key             = "ec2_tailscale_oauth_client_secret"
   category        = "terraform"

@@ -214,11 +214,11 @@ The metering helper buffers events in memory and sends them in batches to Polar.
 
 #### Outpost
 
-| Option            | Default                          | Meaning                                                  |
-| ----------------- | -------------------------------- | -------------------------------------------------------- |
-| `redisUrl`        | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
-| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                |
-| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot. |
+| Option            | Default                          | Meaning                                                        |
+| ----------------- | -------------------------------- | -------------------------------------------------------------- |
+| `redisUrl`        | `REDIS_URL` environment variable | Redis instance used by Outpost.                                |
+| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                      |
+| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot.       |
 | `confirmTimeout`  | `2000`                           | Milliseconds a snapshot waits for Polar to confirm its events. |
 
 Telemetry can also be disabled with the `POLAR_OUTPOST_TELEMETRY=0` environment variable.

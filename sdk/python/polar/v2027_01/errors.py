@@ -116,6 +116,9 @@ from polar.v2027_01.outputs import (
     SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
 )
 from polar.v2027_01.outputs import (
+    SSORequiresVerifiedDomain as SSORequiresVerifiedDomainModel,
+)
+from polar.v2027_01.outputs import (
     SubscriptionLocked as SubscriptionLockedModel,
 )
 from polar.v2027_01.outputs import (
@@ -177,12 +180,14 @@ class OrganizationsUpdate403Error(PolarClientError):
         super().__init__(status_code, error)
 
 
-class SSOEnforcementRequiresConnection(PolarClientError):
-    error_type = SSOEnforcementRequiresConnectionModel
-    error: SSOEnforcementRequiresConnectionModel
+class OrganizationsUpdate409Error(PolarClientError):
+    error_type = SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel
+    error: SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel
 
     def __init__(
-        self, status_code: int, error: SSOEnforcementRequiresConnectionModel
+        self,
+        status_code: int,
+        error: SSOEnforcementRequiresConnectionModel | SSORequiresVerifiedDomainModel,
     ) -> None:
         self.error = error
         super().__init__(status_code, error)

@@ -45,9 +45,6 @@ class MerchantMigrationStep(StrEnum):
     create_catalog = "create_catalog"
     copy_cards = "copy_cards"
     activate_subscriptions = "activate_subscriptions"
-    # Legacy: what a finished switch used to set. Nothing writes it; rows still
-    # on it read as `completed` until a data migration moves them.
-    cleanup = "cleanup"
     # Every imported subscription was switched, skipped or failed. Finishing
     # deletes the source key.
     completed = "completed"
@@ -56,7 +53,6 @@ class MerchantMigrationStep(StrEnum):
 
 
 MERCHANT_MIGRATION_FINISHED_STEPS = (
-    MerchantMigrationStep.cleanup,
     MerchantMigrationStep.completed,
     MerchantMigrationStep.closed,
 )

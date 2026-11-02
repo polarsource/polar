@@ -10,6 +10,7 @@ from polar.logging import Logger
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.models import Reducer
+from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 
@@ -23,6 +24,7 @@ REDUCERS_CACHE_TTL_SECONDS = 6 * 60 * 60
 class CachedReducer(Schema):
     id: UUID
     organization_id: UUID
+    kind: ReducerKind
     filter: Filter
     aggregation: Aggregation
 
@@ -31,7 +33,7 @@ cached_reducers_adapter = TypeAdapter(list[CachedReducer])
 
 
 def get_cache_key(organization_id: UUID) -> str:
-    return f"reducers:active:v1:{organization_id}"
+    return f"reducers:active:v2:{organization_id}"
 
 
 async def invalidate(redis: Redis, organization_id: UUID) -> None:
@@ -52,6 +54,7 @@ async def get_active_reducers(
                 Reducer(
                     id=reducer.id,
                     organization_id=reducer.organization_id,
+                    kind=reducer.kind,
                     filter=reducer.filter,
                     aggregation=reducer.aggregation,
                 )
@@ -59,7 +62,9 @@ async def get_active_reducers(
             ]
         async with redis.pipeline() as pipeline:
             await pipeline.watch(key)
-            reducers = await repository.get_all_active_by_organization(organization_id)
+            reducers = await repository.get_all_active_by_organization_and_kinds(
+                organization_id, (ReducerKind.usage,)
+            )
             cached_reducers = [
                 CachedReducer.model_validate(reducer) for reducer in reducers
             ]
@@ -77,5 +82,7 @@ async def get_active_reducers(
             "Failed to cache active reducers", organization_id=organization_id
         )
     if reducers is None:
-        reducers = await repository.get_all_active_by_organization(organization_id)
+        reducers = await repository.get_all_active_by_organization_and_kinds(
+            organization_id, (ReducerKind.usage,)
+        )
     return reducers

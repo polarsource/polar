@@ -91,7 +91,7 @@ class LicenseKeyRepository(
 
     def get_customer_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[LicenseKey]]:
+    ) -> Select[LicenseKey]:
         statement = self.get_base_statement()
 
         if is_member(auth_subject):
@@ -107,7 +107,7 @@ class LicenseKeyRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[LicenseKey]]:
+    ) -> Select[LicenseKey]:
         statement = self.get_base_statement()
         statement = statement.where(LicenseKey.organization_id.in_(org_ids))
         return statement

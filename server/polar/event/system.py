@@ -1,10 +1,17 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, overload
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Literal,
+    NotRequired,
+    TypedDict,
+    overload,
+)
 
 from pydantic import Field
 from sqlalchemy.orm import Mapped
-from sqlalchemy.util.typing import TypedDict
 
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.address import AddressDict

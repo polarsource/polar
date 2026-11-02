@@ -19,6 +19,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Agent, Organization, Product, User
+from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -32,7 +33,7 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, catalogs, products, validation
+from . import benefits, catalogs, products, removals, validation
 from .auth import SECTION_SCOPES
 from .export import EXPORTED_SECTIONS, export_config
 from .schemas import (
@@ -209,15 +210,22 @@ class DeclarativeConfigService:
             session, organization, config, for_update=True
         )
         issues.extend(catalogs.benefit_issues(changes))
+        removed, removal_issues = await removals.products(session, organization, config)
+        issues.extend(removal_issues)
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
         if errors:
             raise ConfigInvalid(errors)
 
+        removed_external_ids = [removal.external_id for removal in removed]
         live = await catalog_service.get_or_create_live(session, organization)
         _, version_hash = await catalog_service.get_next_version_hash(
-            session, organization, live, catalogs.product_definitions(changes)
+            session,
+            organization,
+            live,
+            catalogs.product_definitions(changes),
+            removed_external_ids,
         )
         settings_result = await self._apply_settings(
             session, organization, changes.settings
@@ -240,7 +248,7 @@ class DeclarativeConfigService:
             benefit_ids,
         )
         catalog: ConfigCatalogChange | None = None
-        if new_products:
+        if new_products or removed:
             assert version_hash is not None
             before = None if live is None else ConfigCatalog.model_validate(live)
             published = await catalog_service.publish(
@@ -249,6 +257,7 @@ class DeclarativeConfigService:
                 live,
                 new_products,
                 version_hash,
+                removed_external_ids,
                 name=config.catalog_name,
             )
             catalog = ConfigCatalogChange(
@@ -274,6 +283,7 @@ class DeclarativeConfigService:
                 *benefit_results,
                 *product_results,
             ],
+            removed=removed,
             catalog=catalog,
             settings=settings_result,
         )
@@ -283,30 +293,52 @@ class DeclarativeConfigService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
+        catalog_id: UUID | None = None,
     ) -> ConfigPlan:
         _assert_section_scopes(auth_subject, config, write=False)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        base = await catalog_service.resolve(session, organization, catalog_id)
+        archived_base = (
+            base if base is not None and base.status != CatalogStatus.live else None
+        )
         changes, issues = await validation.check(
-            session, organization, config, for_update=False
+            session,
+            organization,
+            config,
+            for_update=False,
+            catalog=archived_base,
         )
         issues.extend(catalogs.benefit_issues(changes))
-        live = await CatalogRepository.from_session(session).get_live(organization.id)
-        catalog_before, catalog_after = await catalog_service.get_next_version_hash(
-            session, organization, live, catalogs.product_definitions(changes)
+        removed, removal_issues = await removals.products(
+            session, organization, config, catalog=archived_base
         )
+        issues.extend(removal_issues)
         catalog: ConfigCatalogPlan | None = None
+        # Apply publishes on top of live, so planning against an archived
+        # catalog has no next catalog.
+        catalog_before, catalog_after = (
+            (None, None)
+            if archived_base is not None
+            else await catalog_service.get_next_version_hash(
+                session,
+                organization,
+                base,
+                catalogs.product_definitions(changes),
+                [removal.external_id for removal in removed],
+            )
+        )
         if catalog_after is not None and catalog_after != catalog_before:
             catalog = ConfigCatalogPlan(
-                before=None if live is None else ConfigCatalog.model_validate(live),
+                before=None if base is None else ConfigCatalog.model_validate(base),
                 name=config.catalog_name
                 if config.catalog_name is not None
                 else await catalog_service.get_default_name(
                     session,
                     organization,
-                    after_baseline=live is None and catalog_before is not None,
+                    after_baseline=base is None and catalog_before is not None,
                 ),
             )
         return ConfigPlan(
@@ -316,6 +348,7 @@ class DeclarativeConfigService:
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *self._plan_changes(ConfigResource.product, changes.products),
             ],
+            removed=removed,
             catalog=catalog,
             settings=None
             if changes.settings is None
@@ -357,22 +390,15 @@ class DeclarativeConfigService:
                 organization.id, [b.external_id for b in deprecated_benefits]
             )
         }
-        product_ids = {
-            product.external_id: product.id
-            for product in await product_repository.get_all_by_external_ids(
-                organization.id, [p.external_id for p in deprecated_products]
-            )
-        }
+        products_in_use = await product_repository.get_external_ids_in_use(
+            organization.id, [p.external_id for p in deprecated_products]
+        )
 
         # Products first: a deprecated benefit or meter stays while a kept product uses it
         product_entries: list[ConfigPruneEntry] = []
         kept_products = [p for p in config.products if not p.deprecated]
         for product in deprecated_products:
-            product_id = product_ids.get(product.external_id)
-            in_use = (
-                product_id is not None
-                and await subscription_repository.exists_billable_by_product(product_id)
-            )
+            in_use = product.external_id in products_in_use
             if in_use:
                 kept_products.append(product)
             product_entries.append(
@@ -449,6 +475,7 @@ class DeclarativeConfigService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: UUID | None,
+        catalog_id: UUID | None = None,
     ) -> ConfigExport:
         _assert_scopes(auth_subject, EXPORTED_SECTIONS, write=False)
         organization = await self._get_organization(
@@ -457,7 +484,8 @@ class DeclarativeConfigService:
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
         )
-        return await export_config(session, organization)
+        catalog = await catalog_service.resolve(session, organization, catalog_id)
+        return await export_config(session, organization, catalog)
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]

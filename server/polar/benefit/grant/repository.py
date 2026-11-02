@@ -39,7 +39,7 @@ class BenefitGrantRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[BenefitGrant]]:
+    ) -> Select[BenefitGrant]:
         statement = self.get_base_statement().join(
             Benefit, BenefitGrant.benefit_id == Benefit.id
         )

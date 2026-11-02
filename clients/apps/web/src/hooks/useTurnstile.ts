@@ -95,6 +95,12 @@ export const useTurnstile = (action: string) => {
       },
       'expired-callback': reset,
     })
+
+    // A submit before the script loaded is already waiting on a token.
+    if (waitersRef.current.length > 0) {
+      executedRef.current = true
+      turnstile.execute(widgetIdRef.current)
+    }
   }, [action, settleToken, reset])
 
   useEffect(() => {

@@ -6,13 +6,11 @@ import type {
   LoadedConfig,
   PlanResult,
   PruneEntry,
-  PullResult,
 } from '@/schemas/BillingConfig'
 import { apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
 import { prune } from '@/services/billing-config/prune'
-import { pull } from '@/services/billing-config/pull'
 import { authenticatedClient } from '@/services/client'
 
 export class BillingConfig extends Context.Service<
@@ -27,11 +25,6 @@ export class BillingConfig extends Context.Service<
       config: LoadedConfig,
       organization: ActiveOrganization,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
-    pull: (
-      organization: ActiveOrganization,
-      file: string | undefined,
-      force: boolean,
-    ) => Effect.Effect<PullResult, AuthError | BillingConfigError>
     prune: <R>(
       config: LoadedConfig,
       organization: ActiveOrganization,
@@ -58,7 +51,6 @@ const make = Effect.gen(function* () {
     load,
     plan: plan(clients),
     apply: apply(clients),
-    pull: pull(fs, load, clients),
     prune: prune(fs, load, clients),
   })
 })

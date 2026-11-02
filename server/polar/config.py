@@ -136,10 +136,6 @@ class Settings(BaseSettings):
     LOCAL_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
 
-    # Self-service sign-up for AI agents (ADR-0014): the sign-up endpoint, the
-    # JWT-bearer grant and the discovery documents that point agents to them.
-    AGENT_SIGN_UP_ENABLED: bool = False
-
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []
 
@@ -194,6 +190,9 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_TTL: timedelta = timedelta(hours=1)
     CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
+    CUSTOMER_SESSION_AUTHENTICATION_SESSION_COOKIE_KEY: str = (
+        "polar_customer_auth_session"
+    )
 
     # Impersonation session
     IMPERSONATION_COOKIE_KEY: str = "polar_original_session"

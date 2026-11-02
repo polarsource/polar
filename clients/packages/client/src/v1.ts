@@ -3432,113 +3432,6 @@ export interface paths {
     patch: operations['metrics:update_dashboard']
     trace?: never
   }
-  '/v1/compass/insights': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List Insights
-     * @description List computed insights about your business.
-     *
-     *     Insights are derived live from your metrics, narrated, and linked to a
-     *     drill-down. They are ordered by importance.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['compass:list_insights']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/compass/threads': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List Assistant Threads
-     * @description List the caller's assistant conversation threads, most recent first.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['compass:list_threads']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/compass/threads/{id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Assistant Thread
-     * @description Get a thread. Its messages are fetched separately, page by page.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['compass:get_thread']
-    put?: never
-    post?: never
-    /**
-     * Delete Assistant Thread
-     * @description Delete a thread and its conversation history.
-     *
-     *     **Scopes**: `metrics:write`
-     */
-    delete: operations['compass:delete_thread']
-    options?: never
-    head?: never
-    /**
-     * Update Assistant Thread
-     * @description Rename a thread.
-     *
-     *     **Scopes**: `metrics:write`
-     */
-    patch: operations['compass:update_thread']
-    trace?: never
-  }
-  '/v1/compass/threads/{id}/messages': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List Assistant Thread Messages
-     * @description List a thread's turns, for rehydrating the UI.
-     *
-     *     Paged newest-first: page 1 is the tail of the conversation and higher
-     *     pages walk back through it. Within a page, turns read oldest-first the
-     *     way they're rendered.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['compass:list_thread_messages']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/license-keys/': {
     parameters: {
       query?: never
@@ -3779,6 +3672,28 @@ export interface paths {
      *     **Scopes**: `products:read` `products:write`
      */
     get: operations['catalogs:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/catalogs/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Catalog
+     * @description Get a catalog version and the products in it.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['catalogs:get']
     put?: never
     post?: never
     delete?: never
@@ -4779,40 +4694,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/customer-portal/customer-session/request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Customer Portal.Customer Session.Request */
-    post: operations['customer_portal:customer-session:customer_portal.customer_session.request']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/customer-portal/customer-session/authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Customer Portal.Customer Session.Authenticate */
-    post: operations['customer_portal:customer-session:customer_portal.customer_session.authenticate']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/customer-portal/customer-session/introspect': {
     parameters: {
       query?: never
@@ -4851,6 +4732,57 @@ export interface paths {
     get: operations['customer_portal:customer-session:get_authenticated_user']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Start */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.start']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/email-otp/request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Email Otp Request */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.email_otp_request']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/email-otp/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Email Otp Verify */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.email_otp_verify']
     delete?: never
     options?: never
     head?: never
@@ -6267,6 +6199,9 @@ export interface paths {
      * Export Config
      * @description Export the organization's current config as a declarative config document.
      *
+     *     With `catalog_id`, products come from that catalog version. Settings, meters
+     *     and benefits aren't versioned, so they're always the current ones.
+     *
      *     `config` has the shape plan and apply accept, without `organization_id`:
      *     planning it for the same organization without edits reports no changes.
      *     Resources without an `external_id`, archived ones, ones config can't express
@@ -6301,8 +6236,14 @@ export interface paths {
      * @description Apply a declarative config document to the organization.
      *
      *     Meters, benefits, products and webhook endpoints are matched by
-     *     `external_id`: missing ones are created, changed ones are updated, and ones
-     *     not listed are left untouched.
+     *     `external_id`: missing ones are created, and changed ones are updated.
+     *     Deprecated products are neither created nor updated.
+     *     Deprecated products, and products that `config pull` exports but the config
+     *     doesn't list, are left out of the published catalog. Other products, and all
+     *     products when `products` is omitted, are left untouched. A product that
+     *     isn't listed but has a billable subscription or a pending subscription
+     *     update must be marked deprecated instead, or nothing is applied.
+     *     Other resources that aren't listed are left untouched.
      *     `settings` are applied first, so products can be priced in a new
      *     `payments.currency` in the same config. Every active product must have a price in
      *     the resulting currency, or nothing is applied.
@@ -6334,6 +6275,10 @@ export interface paths {
      *
      *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
+     *
+     *     With the ID of an archived catalog, products are compared to that version
+     *     instead of the live one. The plan then shows the changes from that version,
+     *     not what apply would do, and the response's `catalog` is None.
      *
      *     Each section requires the read or write scope for its resource.
      *
@@ -8019,30 +7964,6 @@ export interface components {
        */
       billing_notes?: string | null
     }
-    /**
-     * AddCurrencyAction
-     * @description A nudge to offer prices in an additional presentment currency.
-     *
-     *     The client routes to the products list, where per-product pricing can be
-     *     extended. Nothing is ever applied automatically.
-     */
-    AddCurrencyAction: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'add_currency'
-      /**
-       * Label
-       * @description Button label.
-       */
-      label: string
-      /**
-       * Currency
-       * @description Lowercase ISO code of the suggested currency, e.g. `eur`.
-       */
-      currency: string
-    }
     /** Address */
     Address: {
       /** Line1 */
@@ -8594,54 +8515,6 @@ export interface components {
         | 'ZW'
     }
     /**
-     * AdjustPriceAction
-     * @description A recommendation to review a product's pricing, with a reference point.
-     *
-     *     The suggested amount is a *reference*, not a mandate: it's the list price
-     *     that would restore the target gross margin at the current cost to serve,
-     *     ignoring demand elasticity. It applies to new customers only — existing
-     *     subscriptions keep their price. The client routes to the product's pricing
-     *     editor; nothing is ever applied automatically.
-     */
-    AdjustPriceAction: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'adjust_price'
-      /**
-       * Label
-       * @description Button label.
-       */
-      label: string
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The product whose pricing to review.
-       */
-      product_id: string
-      /**
-       * Product Name
-       * @description Display name of the product.
-       */
-      product_name: string
-      /**
-       * Current Price Amount
-       * @description The product's current list price, in cents.
-       */
-      current_price_amount: number
-      /**
-       * Suggested Price Amount
-       * @description Reference list price (cents) that would restore the target gross margin at the current cost to serve. Null when no meaningful suggestion can be computed.
-       */
-      suggested_price_amount: number | null
-      /**
-       * Currency
-       * @description ISO currency code of the amounts.
-       */
-      currency: string
-    }
-    /**
      * AgentClaim
      * @description What the human reviews before claiming the agent.
      */
@@ -8842,38 +8715,6 @@ export interface components {
       error: 'AppealNotRejectedError'
       /** Detail */
       detail: string
-    }
-    /**
-     * AssistantBlockPart
-     * @description A renderable block, at the position the model placed it.
-     */
-    AssistantBlockPart: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      kind: 'block'
-      /** Block */
-      block:
-        | components['schemas']['TextBlock']
-        | components['schemas']['MetricChartBlock']
-        | components['schemas']['InsightCardsBlock']
-        | components['schemas']['EntityListBlock']
-        | components['schemas']['DataTableBlock']
-        | components['schemas']['CustomerCardBlock']
-    }
-    /**
-     * AssistantTextPart
-     * @description A run of assistant prose, as it was streamed.
-     */
-    AssistantTextPart: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      kind: 'text'
-      /** Text */
-      text: string
     }
     /**
      * AttachedCustomField
@@ -13817,11 +13658,89 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** CatalogNotFound */
+    CatalogNotFound: {
+      /**
+       * Error
+       * @example CatalogNotFound
+       * @constant
+       */
+      error: 'CatalogNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogProduct */
+    CatalogProduct: {
+      /**
+       * External Id
+       * @description Key of the product in the catalog.
+       */
+      external_id: string
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The product version in this catalog.
+       */
+      product_id: string
+    }
     /**
      * CatalogStatus
      * @enum {string}
      */
     CatalogStatus: 'draft' | 'live' | 'archived'
+    /**
+     * CatalogVersion
+     * @description A catalog version with its products.
+     */
+    CatalogVersion: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Name
+       * @description Name given when it was published. Defaults to `v{n}`, n being its position in the organization's catalog history.
+       */
+      name: string | null
+      /**
+       * Parent Id
+       * @description ID of the catalog this version replaced. Null for the first one.
+       */
+      parent_id: string | null
+      /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
+      status: components['schemas']['CatalogStatus']
+      /**
+       * Published At
+       * @description When the catalog was published. Null for drafts.
+       */
+      published_at: string | null
+      /**
+       * Products
+       * @description The products in this version, ordered by key.
+       */
+      products: components['schemas']['CatalogProduct'][]
+    }
     /** ChannelNamePreviewRequest */
     ChannelNamePreviewRequest: {
       /** Organization Id */
@@ -14984,6 +14903,11 @@ export interface components {
        */
       organization_id: string
       /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
        * Prices
        * @description List of prices for this product.
        */
@@ -16112,78 +16036,6 @@ export interface components {
        */
       allow_trial?: false | null
     }
-    /**
-     * ColumnFormat
-     * @enum {string}
-     */
-    ColumnFormat: 'text' | 'currency' | 'datetime' | 'badge' | 'avatar'
-    /**
-     * CompassThreadMessageSchema
-     * @description One completed turn: the user's prompt and the rendered answer.
-     */
-    CompassThreadMessageSchema: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /** Prompt */
-      prompt: string
-      /** Parts */
-      parts: (
-        | components['schemas']['AssistantTextPart']
-        | components['schemas']['AssistantBlockPart']
-      )[]
-    }
-    /**
-     * CompassThreadSchema
-     * @description An assistant conversation thread.
-     */
-    CompassThreadSchema: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
-      /** Title */
-      title: string
-    }
-    /** CompassThreadUpdate */
-    CompassThreadUpdate: {
-      /** Title */
-      title?: string | null
-    }
     /** ConcurrentRoleModification */
     ConcurrentRoleModification: {
       /**
@@ -16195,15 +16047,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /**
-     * ConfidenceLevel
-     * @description How much we trust an insight, derived from sample size and baseline variance.
-     *
-     *     Low-confidence insights are softened or suppressed so small merchants don't
-     *     get noise (e.g. "churn doubled" off a 1 -> 2 customer change).
-     * @enum {string}
-     */
-    ConfidenceLevel: 'low' | 'medium' | 'high'
     /** Config */
     Config: {
       /** @description Organization settings to update. Left untouched when omitted. */
@@ -16225,7 +16068,7 @@ export interface components {
       benefits?: components['schemas']['ConfigBenefit'][]
       /**
        * Products
-       * @description Products to create or update, matched by `external_id`. Existing products that aren't listed are left untouched.
+       * @description Products to create or update, matched by `external_id`. Deprecated products are never created or updated. They, and live products that aren't listed, are left out of the next catalog. A product that isn't listed but still has a billable subscription, or a scheduled subscription change to it, is an error: mark it `deprecated` instead. Products that pulling the config doesn't export, and all products when `products` is omitted, are left untouched.
        */
       products?: components['schemas']['ConfigProduct'][]
       /**
@@ -16248,6 +16091,11 @@ export interface components {
     ConfigApplyResult: {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
+      /**
+       * Removed
+       * @description Resources left out of the published catalog.
+       */
+      removed: components['schemas']['ConfigRemoval'][]
       /** @description The published catalog, if applying published a new one. */
       catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Result for `settings`, if in the config. */
@@ -16299,10 +16147,10 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
        * @default false
        */
-      deprecated: boolean
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the benefit, used to match it.
@@ -16359,10 +16207,10 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
        * @default false
        */
-      deprecated: boolean
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the benefit, used to match it.
@@ -16488,6 +16336,28 @@ export interface components {
        * @description Resources left out of the exported config. At most the section's config limit is listed.
        */
       skipped: components['schemas']['ConfigSkippedResource'][]
+      /** @description The catalog version the products come from. None before the first publish. */
+      catalog: components['schemas']['ConfigExportCatalog'] | null
+    }
+    /** ConfigExportCatalog */
+    ConfigExportCatalog: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Name of the catalog.
+       */
+      name: string | null
+      /**
+       * Status
+       * @description `live` for the catalog new checkouts use, `archived` otherwise.
+       * @enum {string}
+       */
+      status: 'live' | 'archived'
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
@@ -16567,6 +16437,7 @@ export interface components {
       | 'meter_locked'
       | 'missing_currency'
       | 'not_supported'
+      | 'removed_in_use'
       | 'type_changed'
       | 'unknown_event'
       | 'unknown_reference'
@@ -16621,10 +16492,10 @@ export interface components {
         | components['schemas']['UniqueAggregation']
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
        * @default false
        */
-      deprecated: boolean
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the meter. Used to match the config entry with an existing meter.
@@ -16666,6 +16537,11 @@ export interface components {
     ConfigPlan: {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
+      /**
+       * Removed
+       * @description Resources that applying leaves out of the next catalog.
+       */
+      removed: components['schemas']['ConfigRemoval'][]
       /** @description The catalog that applying publishes, if any. */
       catalog: components['schemas']['ConfigCatalogPlan'] | null
       /** @description Change for `settings`, if in the config. */
@@ -16701,10 +16577,10 @@ export interface components {
       }
       /**
        * Deprecated
-       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it.
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
        * @default false
        */
-      deprecated: boolean
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the product, used to match it.
@@ -16992,6 +16868,11 @@ export interface components {
       /** Benefits */
       benefits: string[]
       metadata: components['schemas']['MetadataOutputType']
+      /**
+       * Deprecated
+       * @description `true` for products that are no longer in the catalog but still have customers.
+       */
+      deprecated: true | null
     }
     /** ConfigPrune */
     ConfigPrune: {
@@ -17021,6 +16902,23 @@ export interface components {
        */
       referenced_by: string[]
     }
+    /** ConfigRemoval */
+    ConfigRemoval: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /** @description `missing` when the config doesn't list the resource, `deprecated` when it's marked deprecated. */
+      reason: components['schemas']['ConfigRemovalReason']
+    }
+    /**
+     * ConfigRemovalReason
+     * @enum {string}
+     */
+    ConfigRemovalReason: 'missing' | 'deprecated'
     /**
      * ConfigResource
      * @enum {string}
@@ -18963,29 +18861,6 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
-    /**
-     * CustomerCardBlock
-     * @description A single customer's identity header, above their orders/subscriptions.
-     */
-    CustomerCardBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'customer_card'
-      /** Email */
-      email: string
-      /** Name */
-      name: string | null
-      /** Avatar Url */
-      avatar_url: string | null
-      /**
-       * Created At
-       * Format: date-time
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-    }
     CustomerCreate:
       | components['schemas']['CustomerIndividualCreate']
       | components['schemas']['CustomerTeamCreate']
@@ -20862,10 +20737,13 @@ export interface components {
       customer_id: string
       customer: components['schemas']['Customer']
     }
-    /** CustomerSessionCodeAuthenticateRequest */
-    CustomerSessionCodeAuthenticateRequest: {
-      /** Code */
-      code: string
+    /** CustomerSessionAuthenticationStart */
+    CustomerSessionAuthenticationStart: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
     }
     /** CustomerSessionCodeAuthenticateResponse */
     CustomerSessionCodeAuthenticateResponse: {
@@ -20882,24 +20760,6 @@ export interface components {
       error: 'CustomerSessionCodeInvalidOrExpired'
       /** Detail */
       detail: string
-    }
-    /** CustomerSessionCodeRequest */
-    CustomerSessionCodeRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
-      /**
-       * Customer Id
-       * @description Optional customer ID for disambiguation when multiple customers share the same email.
-       */
-      customer_id?: string | null
     }
     /**
      * CustomerSessionCustomerExternalIDCreate
@@ -20955,6 +20815,26 @@ export interface components {
        * @description ID of the customer to create a session for.
        */
       customer_id: string
+    }
+    /** CustomerSessionEmailOTPRequest */
+    CustomerSessionEmailOTPRequest: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string
+      /**
+       * Customer Id
+       * @description Optional customer ID for disambiguation when multiple customers share the same email.
+       */
+      customer_id?: string | null
+      /** Cf-Turnstile-Response */
+      'cf-turnstile-response': string
+    }
+    /** CustomerSessionEmailOTPVerify */
+    CustomerSessionEmailOTPVerify: {
+      /** Code */
+      code: string
     }
     /**
      * CustomerSortProperty
@@ -22409,44 +22289,6 @@ export interface components {
       error: 'CutoverNotStarted'
       /** Detail */
       detail: string
-    }
-    /**
-     * DataTableBlock
-     * @description Tabular entities (orders, subscriptions, customers, ...).
-     */
-    DataTableBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'data_table'
-      /**
-       * Entity
-       * @description What the rows are, e.g. `subscriptions`.
-       */
-      entity: string
-      /**
-       * Title
-       * @description Heading rendered above the table.
-       */
-      title: string | null
-      /** Columns */
-      columns: components['schemas']['DataTableColumn'][]
-      /** Rows */
-      rows: {
-        [key: string]: string | number | null
-      }[]
-      /** Total Count */
-      total_count: number
-    }
-    /** DataTableColumn */
-    DataTableColumn: {
-      /** Key */
-      key: string
-      /** Label */
-      label: string
-      /** @default text */
-      format: components['schemas']['ColumnFormat']
     }
     /** DiscordGuild */
     DiscordGuild: {
@@ -23920,36 +23762,6 @@ export interface components {
       /** Return To */
       return_to?: string | null
     }
-    /**
-     * EntityListBlock
-     * @description A few entities as a compact list; same shape as the table so the
-     *     client formats values (currency, dates) identically in both.
-     */
-    EntityListBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'entity_list'
-      /**
-       * Entity
-       * @description What the items are, e.g. `orders`.
-       */
-      entity: string
-      /**
-       * Title
-       * @description Heading rendered above the list.
-       */
-      title: string | null
-      /** Columns */
-      columns: components['schemas']['DataTableColumn'][]
-      /** Rows */
-      rows: {
-        [key: string]: string | number | null
-      }[]
-      /** Total Count */
-      total_count: number
-    }
     Event:
       | components['schemas']['SystemEvent']
       | components['schemas']['UserEvent']
@@ -24849,125 +24661,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /**
-     * Insight
-     * @description A computed, narrated reading of the business with a drill-down.
-     */
-    Insight: {
-      /**
-       * Id
-       * @description Deterministic insight key (`detector_id:organization_id:period_bucket`). Stable across recomputes so dismissals and feedback re-attach.
-       */
-      id: string
-      /**
-       * Detector Id
-       * @description The detector that produced this insight.
-       */
-      detector_id: string
-      category: components['schemas']['InsightCategory']
-      /**
-       * Category Label
-       * @description Visible label next to the category dot.
-       */
-      category_label: string
-      /** @description How much the merchant should care; the feed sorts on this first. */
-      severity: components['schemas']['InsightSeverity']
-      /** Title */
-      title: string
-      /** Body */
-      body: string
-      /**
-       * Why
-       * @description Explanation surfaced via the 'Why you're seeing this' link.
-       */
-      why?: string | null
-      confidence: components['schemas']['ConfidenceLevel']
-      /** Primary Action */
-      primary_action?:
-        | (
-            | components['schemas']['ViewMetricAction']
-            | components['schemas']['ViewCostsAction']
-            | components['schemas']['AdjustPriceAction']
-            | components['schemas']['AddCurrencyAction']
-          )
-        | null
-      /**
-       * Suggested Prompt
-       * @description A natural follow-up question this finding invites, offered to the merchant as a one-tap prompt for the assistant. None when the finding has no obvious next question.
-       */
-      suggested_prompt: string | null
-      /**
-       * Drivers
-       * @description Top contributors to the headline change.
-       */
-      drivers?: components['schemas']['InsightDriver'][]
-    }
-    /**
-     * InsightCardsBlock
-     * @description Compass insights, rendered with the same card as the feed.
-     */
-    InsightCardsBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'insight_cards'
-      /** Insights */
-      insights: components['schemas']['Insight'][]
-    }
-    /**
-     * InsightCategory
-     * @description Buckets an insight by which aspect of the business it speaks to.
-     * @enum {string}
-     */
-    InsightCategory:
-      | 'revenue'
-      | 'retention'
-      | 'growth'
-      | 'risk'
-      | 'cost'
-      | 'product'
-    /**
-     * InsightDriver
-     * @description One contributor to the headline change.
-     *
-     *     Decomposition is what makes an insight *explain* rather than *announce* — e.g.
-     *     "MRR grew 12%, ~70% of it from Pro upgrades". Populated by a grouped query; the
-     *     MRR scaffold leaves this empty until a dedicated Tinybird breakdown pipe lands.
-     */
-    InsightDriver: {
-      /**
-       * Dimension
-       * @description What the drivers are grouped by, e.g. `product`.
-       */
-      dimension: string
-      /**
-       * Label
-       * @description Human-readable name of this driver.
-       */
-      label: string
-      /**
-       * Contribution Pct
-       * @description Share of the headline change attributable to this driver (0-1).
-       */
-      contribution_pct: number
-      /**
-       * Value
-       * @description This driver's contribution in the metric's unit.
-       */
-      value: number
-    }
-    /**
-     * InsightSeverity
-     * @description How much the merchant should care, assigned per insight by its detector.
-     *
-     *     This is a property of what was *found*, not of the detector: the same MRR
-     *     detector emits `warning` when revenue falls and `info` when it grows. The
-     *     feed is ordered by severity first, so the most consequential reading always
-     *     leads.
-     * @enum {string}
-     */
-    InsightSeverity: 'critical' | 'warning' | 'opportunity' | 'info'
     /** InsufficientBalance */
     InsufficientBalance: {
       /**
@@ -25757,18 +25450,6 @@ export interface components {
     ListResource_Checkout_: {
       /** Items */
       items: components['schemas']['Checkout'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[CompassThreadMessageSchema] */
-    ListResource_CompassThreadMessageSchema_: {
-      /** Items */
-      items: components['schemas']['CompassThreadMessageSchema'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[CompassThreadSchema] */
-    ListResource_CompassThreadSchema_: {
-      /** Items */
-      items: components['schemas']['CompassThreadSchema'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[CustomField] */
@@ -27061,7 +26742,6 @@ export interface components {
       | 'create_catalog'
       | 'copy_cards'
       | 'activate_subscriptions'
-      | 'cleanup'
       | 'completed'
       | 'closed'
     /** MerchantMigrationTaxBehaviorUpdateResult */
@@ -27489,45 +27169,6 @@ export interface components {
       display_name: string
       /** @description Type of the metric, useful to know the unit or format of the value. */
       type: components['schemas']['MetricType']
-    }
-    /**
-     * MetricChartBlock
-     * @description A single metric's series over the requested window.
-     */
-    MetricChartBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'metric_chart'
-      /**
-       * Metric
-       * @description Metric slug, e.g. `monthly_recurring_revenue`.
-       */
-      metric: string
-      /**
-       * Label
-       * @description Human-readable metric name.
-       */
-      label: string
-      /**
-       * Unit
-       * @description Metric unit type, e.g. `currency` or `scalar`.
-       */
-      unit: string
-      /** Points */
-      points: components['schemas']['MetricChartPoint'][]
-    }
-    /** MetricChartPoint */
-    MetricChartPoint: {
-      /**
-       * Timestamp
-       * Format: date-time
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      timestamp: string
-      /** Value */
-      value: number
     }
     /**
      * MetricDashboardCreate
@@ -29125,6 +28766,11 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
     }
     /**
      * OrderReceipt
@@ -30906,12 +30552,6 @@ export interface components {
        * @default false
        */
       dispute_auto_accept_enabled: boolean
-      /**
-       * Compass Enabled
-       * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
-       * @default false
-       */
-      compass_enabled: boolean
       /**
        * Merchant Migration Enabled
        * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
@@ -33977,6 +33617,11 @@ export interface components {
        */
       organization_id: string
       /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
        * External Id
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
        * @example ext_1337
@@ -35975,6 +35620,17 @@ export interface components {
       detail: string
       /** Redirect Url */
       redirect_url: string
+    }
+    /** SSORequiresVerifiedDomain */
+    SSORequiresVerifiedDomain: {
+      /**
+       * Error
+       * @example SSORequiresVerifiedDomain
+       * @constant
+       */
+      error: 'SSORequiresVerifiedDomain'
+      /** Detail */
+      detail: string
     }
     /**
      * Scope
@@ -39729,19 +39385,6 @@ export interface components {
       jurisdiction_count: number
     }
     /**
-     * TextBlock
-     * @description Plain narrated text.
-     */
-    TextBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'text'
-      /** Text */
-      text: string
-    }
-    /**
      * Tier
      * @description A per-unit rate up to and including `bound`.
      *
@@ -40925,53 +40568,6 @@ export interface components {
       p99?: {
         [key: string]: string
       }
-    }
-    /**
-     * ViewCostsAction
-     * @description A drill-down to the cost analytics, where per-trace anomalies live.
-     *
-     *     Unlike `view_metric`, costs are not a single metric slug: they have their
-     *     own analytics with a p99 anomaly breakdown. When `event_id` is set, the
-     *     client deep-links to that specific outlier event's span; otherwise it lands
-     *     on the costs overview. The client owns the routing either way.
-     */
-    ViewCostsAction: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'view_costs'
-      /**
-       * Label
-       * @description Button label.
-       */
-      label: string
-      /**
-       * Event Id
-       * @description Root event id of the single largest outlier trace, deep-linked to its span. Null routes to the costs overview instead.
-       */
-      event_id: string | null
-    }
-    /**
-     * ViewMetricAction
-     * @description A drill-down that points at the metric behind the insight.
-     */
-    ViewMetricAction: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'view_metric'
-      /**
-       * Label
-       * @description Button label.
-       */
-      label: string
-      /**
-       * Metric
-       * @description Slug of the metric this insight is about (e.g. `monthly_recurring_revenue`). The client owns the routing and resolves it to the matching analytics page.
-       */
-      metric: string
     }
     /**
      * Visibility
@@ -43847,13 +43443,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Cannot enforce SSO without an enabled connection. */
+      /** @description Cannot enforce SSO without an enabled connection and a verified domain. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SSOEnforcementRequiresConnection']
+          'application/json':
+            | components['schemas']['SSOEnforcementRequiresConnection']
+            | components['schemas']['SSORequiresVerifiedDomain']
         }
       }
       /** @description Validation Error */
@@ -45564,6 +45162,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The organization has no verified domain. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SSORequiresVerifiedDomain']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -45984,6 +45591,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */
@@ -46092,6 +45701,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by subscription status. */
         status?:
           | components['schemas']['SubscriptionStatus']
@@ -46619,7 +46230,6 @@ export interface operations {
   'transactions:export': {
     parameters: {
       query: {
-        account_id: string
         type?: components['schemas']['TransactionType'] | null
         exclude_platform_fees?: boolean
         /** @description Only include transactions created after this date. Must include a UTC offset. */
@@ -47231,6 +46841,7 @@ export interface operations {
           | components['schemas']['TransactionExportColumn']
           | components['schemas']['TransactionExportColumn'][]
           | null
+        account_id: string
       }
       header?: never
       path?: never
@@ -49258,6 +48869,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
         product_billing_type?:
           | components['schemas']['ProductBillingType']
@@ -49357,6 +48970,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by order status. */
         status?:
           | components['schemas']['OrderStatus']
@@ -50131,6 +49746,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */
@@ -52444,850 +52061,6 @@ export interface operations {
       }
     }
   }
-  'compass:list_insights': {
-    parameters: {
-      query?: {
-        /** @description Timezone used to resolve the current period. Default is UTC. */
-        timezone?:
-          | 'Africa/Abidjan'
-          | 'Africa/Accra'
-          | 'Africa/Addis_Ababa'
-          | 'Africa/Algiers'
-          | 'Africa/Asmara'
-          | 'Africa/Asmera'
-          | 'Africa/Bamako'
-          | 'Africa/Bangui'
-          | 'Africa/Banjul'
-          | 'Africa/Bissau'
-          | 'Africa/Blantyre'
-          | 'Africa/Brazzaville'
-          | 'Africa/Bujumbura'
-          | 'Africa/Cairo'
-          | 'Africa/Casablanca'
-          | 'Africa/Ceuta'
-          | 'Africa/Conakry'
-          | 'Africa/Dakar'
-          | 'Africa/Dar_es_Salaam'
-          | 'Africa/Djibouti'
-          | 'Africa/Douala'
-          | 'Africa/El_Aaiun'
-          | 'Africa/Freetown'
-          | 'Africa/Gaborone'
-          | 'Africa/Harare'
-          | 'Africa/Johannesburg'
-          | 'Africa/Juba'
-          | 'Africa/Kampala'
-          | 'Africa/Khartoum'
-          | 'Africa/Kigali'
-          | 'Africa/Kinshasa'
-          | 'Africa/Lagos'
-          | 'Africa/Libreville'
-          | 'Africa/Lome'
-          | 'Africa/Luanda'
-          | 'Africa/Lubumbashi'
-          | 'Africa/Lusaka'
-          | 'Africa/Malabo'
-          | 'Africa/Maputo'
-          | 'Africa/Maseru'
-          | 'Africa/Mbabane'
-          | 'Africa/Mogadishu'
-          | 'Africa/Monrovia'
-          | 'Africa/Nairobi'
-          | 'Africa/Ndjamena'
-          | 'Africa/Niamey'
-          | 'Africa/Nouakchott'
-          | 'Africa/Ouagadougou'
-          | 'Africa/Porto-Novo'
-          | 'Africa/Sao_Tome'
-          | 'Africa/Timbuktu'
-          | 'Africa/Tripoli'
-          | 'Africa/Tunis'
-          | 'Africa/Windhoek'
-          | 'America/Adak'
-          | 'America/Anchorage'
-          | 'America/Anguilla'
-          | 'America/Antigua'
-          | 'America/Araguaina'
-          | 'America/Argentina/Buenos_Aires'
-          | 'America/Argentina/Catamarca'
-          | 'America/Argentina/ComodRivadavia'
-          | 'America/Argentina/Cordoba'
-          | 'America/Argentina/Jujuy'
-          | 'America/Argentina/La_Rioja'
-          | 'America/Argentina/Mendoza'
-          | 'America/Argentina/Rio_Gallegos'
-          | 'America/Argentina/Salta'
-          | 'America/Argentina/San_Juan'
-          | 'America/Argentina/San_Luis'
-          | 'America/Argentina/Tucuman'
-          | 'America/Argentina/Ushuaia'
-          | 'America/Aruba'
-          | 'America/Asuncion'
-          | 'America/Atikokan'
-          | 'America/Atka'
-          | 'America/Bahia'
-          | 'America/Bahia_Banderas'
-          | 'America/Barbados'
-          | 'America/Belem'
-          | 'America/Belize'
-          | 'America/Blanc-Sablon'
-          | 'America/Boa_Vista'
-          | 'America/Bogota'
-          | 'America/Boise'
-          | 'America/Buenos_Aires'
-          | 'America/Cambridge_Bay'
-          | 'America/Campo_Grande'
-          | 'America/Cancun'
-          | 'America/Caracas'
-          | 'America/Catamarca'
-          | 'America/Cayenne'
-          | 'America/Cayman'
-          | 'America/Chicago'
-          | 'America/Chihuahua'
-          | 'America/Ciudad_Juarez'
-          | 'America/Coral_Harbour'
-          | 'America/Cordoba'
-          | 'America/Costa_Rica'
-          | 'America/Coyhaique'
-          | 'America/Creston'
-          | 'America/Cuiaba'
-          | 'America/Curacao'
-          | 'America/Danmarkshavn'
-          | 'America/Dawson'
-          | 'America/Dawson_Creek'
-          | 'America/Denver'
-          | 'America/Detroit'
-          | 'America/Dominica'
-          | 'America/Edmonton'
-          | 'America/Eirunepe'
-          | 'America/El_Salvador'
-          | 'America/Ensenada'
-          | 'America/Fort_Nelson'
-          | 'America/Fort_Wayne'
-          | 'America/Fortaleza'
-          | 'America/Glace_Bay'
-          | 'America/Godthab'
-          | 'America/Goose_Bay'
-          | 'America/Grand_Turk'
-          | 'America/Grenada'
-          | 'America/Guadeloupe'
-          | 'America/Guatemala'
-          | 'America/Guayaquil'
-          | 'America/Guyana'
-          | 'America/Halifax'
-          | 'America/Havana'
-          | 'America/Hermosillo'
-          | 'America/Indiana/Indianapolis'
-          | 'America/Indiana/Knox'
-          | 'America/Indiana/Marengo'
-          | 'America/Indiana/Petersburg'
-          | 'America/Indiana/Tell_City'
-          | 'America/Indiana/Vevay'
-          | 'America/Indiana/Vincennes'
-          | 'America/Indiana/Winamac'
-          | 'America/Indianapolis'
-          | 'America/Inuvik'
-          | 'America/Iqaluit'
-          | 'America/Jamaica'
-          | 'America/Jujuy'
-          | 'America/Juneau'
-          | 'America/Kentucky/Louisville'
-          | 'America/Kentucky/Monticello'
-          | 'America/Knox_IN'
-          | 'America/Kralendijk'
-          | 'America/La_Paz'
-          | 'America/Lima'
-          | 'America/Los_Angeles'
-          | 'America/Louisville'
-          | 'America/Lower_Princes'
-          | 'America/Maceio'
-          | 'America/Managua'
-          | 'America/Manaus'
-          | 'America/Marigot'
-          | 'America/Martinique'
-          | 'America/Matamoros'
-          | 'America/Mazatlan'
-          | 'America/Mendoza'
-          | 'America/Menominee'
-          | 'America/Merida'
-          | 'America/Metlakatla'
-          | 'America/Mexico_City'
-          | 'America/Miquelon'
-          | 'America/Moncton'
-          | 'America/Monterrey'
-          | 'America/Montevideo'
-          | 'America/Montreal'
-          | 'America/Montserrat'
-          | 'America/Nassau'
-          | 'America/New_York'
-          | 'America/Nipigon'
-          | 'America/Nome'
-          | 'America/Noronha'
-          | 'America/North_Dakota/Beulah'
-          | 'America/North_Dakota/Center'
-          | 'America/North_Dakota/New_Salem'
-          | 'America/Nuuk'
-          | 'America/Ojinaga'
-          | 'America/Panama'
-          | 'America/Pangnirtung'
-          | 'America/Paramaribo'
-          | 'America/Phoenix'
-          | 'America/Port-au-Prince'
-          | 'America/Port_of_Spain'
-          | 'America/Porto_Acre'
-          | 'America/Porto_Velho'
-          | 'America/Puerto_Rico'
-          | 'America/Punta_Arenas'
-          | 'America/Rainy_River'
-          | 'America/Rankin_Inlet'
-          | 'America/Recife'
-          | 'America/Regina'
-          | 'America/Resolute'
-          | 'America/Rio_Branco'
-          | 'America/Rosario'
-          | 'America/Santa_Isabel'
-          | 'America/Santarem'
-          | 'America/Santiago'
-          | 'America/Santo_Domingo'
-          | 'America/Sao_Paulo'
-          | 'America/Scoresbysund'
-          | 'America/Shiprock'
-          | 'America/Sitka'
-          | 'America/St_Barthelemy'
-          | 'America/St_Johns'
-          | 'America/St_Kitts'
-          | 'America/St_Lucia'
-          | 'America/St_Thomas'
-          | 'America/St_Vincent'
-          | 'America/Swift_Current'
-          | 'America/Tegucigalpa'
-          | 'America/Thule'
-          | 'America/Thunder_Bay'
-          | 'America/Tijuana'
-          | 'America/Toronto'
-          | 'America/Tortola'
-          | 'America/Vancouver'
-          | 'America/Virgin'
-          | 'America/Whitehorse'
-          | 'America/Winnipeg'
-          | 'America/Yakutat'
-          | 'America/Yellowknife'
-          | 'Antarctica/Casey'
-          | 'Antarctica/Davis'
-          | 'Antarctica/DumontDUrville'
-          | 'Antarctica/Macquarie'
-          | 'Antarctica/Mawson'
-          | 'Antarctica/McMurdo'
-          | 'Antarctica/Palmer'
-          | 'Antarctica/Rothera'
-          | 'Antarctica/South_Pole'
-          | 'Antarctica/Syowa'
-          | 'Antarctica/Troll'
-          | 'Antarctica/Vostok'
-          | 'Arctic/Longyearbyen'
-          | 'Asia/Aden'
-          | 'Asia/Almaty'
-          | 'Asia/Amman'
-          | 'Asia/Anadyr'
-          | 'Asia/Aqtau'
-          | 'Asia/Aqtobe'
-          | 'Asia/Ashgabat'
-          | 'Asia/Ashkhabad'
-          | 'Asia/Atyrau'
-          | 'Asia/Baghdad'
-          | 'Asia/Bahrain'
-          | 'Asia/Baku'
-          | 'Asia/Bangkok'
-          | 'Asia/Barnaul'
-          | 'Asia/Beirut'
-          | 'Asia/Bishkek'
-          | 'Asia/Brunei'
-          | 'Asia/Calcutta'
-          | 'Asia/Chita'
-          | 'Asia/Choibalsan'
-          | 'Asia/Chongqing'
-          | 'Asia/Chungking'
-          | 'Asia/Colombo'
-          | 'Asia/Dacca'
-          | 'Asia/Damascus'
-          | 'Asia/Dhaka'
-          | 'Asia/Dili'
-          | 'Asia/Dubai'
-          | 'Asia/Dushanbe'
-          | 'Asia/Famagusta'
-          | 'Asia/Gaza'
-          | 'Asia/Harbin'
-          | 'Asia/Hebron'
-          | 'Asia/Ho_Chi_Minh'
-          | 'Asia/Hong_Kong'
-          | 'Asia/Hovd'
-          | 'Asia/Irkutsk'
-          | 'Asia/Istanbul'
-          | 'Asia/Jakarta'
-          | 'Asia/Jayapura'
-          | 'Asia/Jerusalem'
-          | 'Asia/Kabul'
-          | 'Asia/Kamchatka'
-          | 'Asia/Karachi'
-          | 'Asia/Kashgar'
-          | 'Asia/Kathmandu'
-          | 'Asia/Katmandu'
-          | 'Asia/Khandyga'
-          | 'Asia/Kolkata'
-          | 'Asia/Krasnoyarsk'
-          | 'Asia/Kuala_Lumpur'
-          | 'Asia/Kuching'
-          | 'Asia/Kuwait'
-          | 'Asia/Macao'
-          | 'Asia/Macau'
-          | 'Asia/Magadan'
-          | 'Asia/Makassar'
-          | 'Asia/Manila'
-          | 'Asia/Muscat'
-          | 'Asia/Nicosia'
-          | 'Asia/Novokuznetsk'
-          | 'Asia/Novosibirsk'
-          | 'Asia/Omsk'
-          | 'Asia/Oral'
-          | 'Asia/Phnom_Penh'
-          | 'Asia/Pontianak'
-          | 'Asia/Pyongyang'
-          | 'Asia/Qatar'
-          | 'Asia/Qostanay'
-          | 'Asia/Qyzylorda'
-          | 'Asia/Rangoon'
-          | 'Asia/Riyadh'
-          | 'Asia/Saigon'
-          | 'Asia/Sakhalin'
-          | 'Asia/Samarkand'
-          | 'Asia/Seoul'
-          | 'Asia/Shanghai'
-          | 'Asia/Singapore'
-          | 'Asia/Srednekolymsk'
-          | 'Asia/Taipei'
-          | 'Asia/Tashkent'
-          | 'Asia/Tbilisi'
-          | 'Asia/Tehran'
-          | 'Asia/Tel_Aviv'
-          | 'Asia/Thimbu'
-          | 'Asia/Thimphu'
-          | 'Asia/Tokyo'
-          | 'Asia/Tomsk'
-          | 'Asia/Ujung_Pandang'
-          | 'Asia/Ulaanbaatar'
-          | 'Asia/Ulan_Bator'
-          | 'Asia/Urumqi'
-          | 'Asia/Ust-Nera'
-          | 'Asia/Vientiane'
-          | 'Asia/Vladivostok'
-          | 'Asia/Yakutsk'
-          | 'Asia/Yangon'
-          | 'Asia/Yekaterinburg'
-          | 'Asia/Yerevan'
-          | 'Atlantic/Azores'
-          | 'Atlantic/Bermuda'
-          | 'Atlantic/Canary'
-          | 'Atlantic/Cape_Verde'
-          | 'Atlantic/Faeroe'
-          | 'Atlantic/Faroe'
-          | 'Atlantic/Jan_Mayen'
-          | 'Atlantic/Madeira'
-          | 'Atlantic/Reykjavik'
-          | 'Atlantic/South_Georgia'
-          | 'Atlantic/St_Helena'
-          | 'Atlantic/Stanley'
-          | 'Australia/ACT'
-          | 'Australia/Adelaide'
-          | 'Australia/Brisbane'
-          | 'Australia/Broken_Hill'
-          | 'Australia/Canberra'
-          | 'Australia/Currie'
-          | 'Australia/Darwin'
-          | 'Australia/Eucla'
-          | 'Australia/Hobart'
-          | 'Australia/LHI'
-          | 'Australia/Lindeman'
-          | 'Australia/Lord_Howe'
-          | 'Australia/Melbourne'
-          | 'Australia/NSW'
-          | 'Australia/North'
-          | 'Australia/Perth'
-          | 'Australia/Queensland'
-          | 'Australia/South'
-          | 'Australia/Sydney'
-          | 'Australia/Tasmania'
-          | 'Australia/Victoria'
-          | 'Australia/West'
-          | 'Australia/Yancowinna'
-          | 'Brazil/Acre'
-          | 'Brazil/DeNoronha'
-          | 'Brazil/East'
-          | 'Brazil/West'
-          | 'CET'
-          | 'CST6CDT'
-          | 'Canada/Atlantic'
-          | 'Canada/Central'
-          | 'Canada/Eastern'
-          | 'Canada/Mountain'
-          | 'Canada/Newfoundland'
-          | 'Canada/Pacific'
-          | 'Canada/Saskatchewan'
-          | 'Canada/Yukon'
-          | 'Chile/Continental'
-          | 'Chile/EasterIsland'
-          | 'Cuba'
-          | 'EET'
-          | 'EST'
-          | 'EST5EDT'
-          | 'Egypt'
-          | 'Eire'
-          | 'Etc/GMT'
-          | 'Etc/GMT+0'
-          | 'Etc/GMT+1'
-          | 'Etc/GMT+10'
-          | 'Etc/GMT+11'
-          | 'Etc/GMT+12'
-          | 'Etc/GMT+2'
-          | 'Etc/GMT+3'
-          | 'Etc/GMT+4'
-          | 'Etc/GMT+5'
-          | 'Etc/GMT+6'
-          | 'Etc/GMT+7'
-          | 'Etc/GMT+8'
-          | 'Etc/GMT+9'
-          | 'Etc/GMT-0'
-          | 'Etc/GMT-1'
-          | 'Etc/GMT-10'
-          | 'Etc/GMT-11'
-          | 'Etc/GMT-12'
-          | 'Etc/GMT-13'
-          | 'Etc/GMT-14'
-          | 'Etc/GMT-2'
-          | 'Etc/GMT-3'
-          | 'Etc/GMT-4'
-          | 'Etc/GMT-5'
-          | 'Etc/GMT-6'
-          | 'Etc/GMT-7'
-          | 'Etc/GMT-8'
-          | 'Etc/GMT-9'
-          | 'Etc/GMT0'
-          | 'Etc/Greenwich'
-          | 'Etc/UCT'
-          | 'Etc/UTC'
-          | 'Etc/Universal'
-          | 'Etc/Zulu'
-          | 'Europe/Amsterdam'
-          | 'Europe/Andorra'
-          | 'Europe/Astrakhan'
-          | 'Europe/Athens'
-          | 'Europe/Belfast'
-          | 'Europe/Belgrade'
-          | 'Europe/Berlin'
-          | 'Europe/Bratislava'
-          | 'Europe/Brussels'
-          | 'Europe/Bucharest'
-          | 'Europe/Budapest'
-          | 'Europe/Busingen'
-          | 'Europe/Chisinau'
-          | 'Europe/Copenhagen'
-          | 'Europe/Dublin'
-          | 'Europe/Gibraltar'
-          | 'Europe/Guernsey'
-          | 'Europe/Helsinki'
-          | 'Europe/Isle_of_Man'
-          | 'Europe/Istanbul'
-          | 'Europe/Jersey'
-          | 'Europe/Kaliningrad'
-          | 'Europe/Kiev'
-          | 'Europe/Kirov'
-          | 'Europe/Kyiv'
-          | 'Europe/Lisbon'
-          | 'Europe/Ljubljana'
-          | 'Europe/London'
-          | 'Europe/Luxembourg'
-          | 'Europe/Madrid'
-          | 'Europe/Malta'
-          | 'Europe/Mariehamn'
-          | 'Europe/Minsk'
-          | 'Europe/Monaco'
-          | 'Europe/Moscow'
-          | 'Europe/Nicosia'
-          | 'Europe/Oslo'
-          | 'Europe/Paris'
-          | 'Europe/Podgorica'
-          | 'Europe/Prague'
-          | 'Europe/Riga'
-          | 'Europe/Rome'
-          | 'Europe/Samara'
-          | 'Europe/San_Marino'
-          | 'Europe/Sarajevo'
-          | 'Europe/Saratov'
-          | 'Europe/Simferopol'
-          | 'Europe/Skopje'
-          | 'Europe/Sofia'
-          | 'Europe/Stockholm'
-          | 'Europe/Tallinn'
-          | 'Europe/Tirane'
-          | 'Europe/Tiraspol'
-          | 'Europe/Ulyanovsk'
-          | 'Europe/Uzhgorod'
-          | 'Europe/Vaduz'
-          | 'Europe/Vatican'
-          | 'Europe/Vienna'
-          | 'Europe/Vilnius'
-          | 'Europe/Volgograd'
-          | 'Europe/Warsaw'
-          | 'Europe/Zagreb'
-          | 'Europe/Zaporozhye'
-          | 'Europe/Zurich'
-          | 'Factory'
-          | 'GB'
-          | 'GB-Eire'
-          | 'GMT'
-          | 'GMT+0'
-          | 'GMT-0'
-          | 'GMT0'
-          | 'Greenwich'
-          | 'HST'
-          | 'Hongkong'
-          | 'Iceland'
-          | 'Indian/Antananarivo'
-          | 'Indian/Chagos'
-          | 'Indian/Christmas'
-          | 'Indian/Cocos'
-          | 'Indian/Comoro'
-          | 'Indian/Kerguelen'
-          | 'Indian/Mahe'
-          | 'Indian/Maldives'
-          | 'Indian/Mauritius'
-          | 'Indian/Mayotte'
-          | 'Indian/Reunion'
-          | 'Iran'
-          | 'Israel'
-          | 'Jamaica'
-          | 'Japan'
-          | 'Kwajalein'
-          | 'Libya'
-          | 'MET'
-          | 'MST'
-          | 'MST7MDT'
-          | 'Mexico/BajaNorte'
-          | 'Mexico/BajaSur'
-          | 'Mexico/General'
-          | 'NZ'
-          | 'NZ-CHAT'
-          | 'Navajo'
-          | 'PRC'
-          | 'PST8PDT'
-          | 'Pacific/Apia'
-          | 'Pacific/Auckland'
-          | 'Pacific/Bougainville'
-          | 'Pacific/Chatham'
-          | 'Pacific/Chuuk'
-          | 'Pacific/Easter'
-          | 'Pacific/Efate'
-          | 'Pacific/Enderbury'
-          | 'Pacific/Fakaofo'
-          | 'Pacific/Fiji'
-          | 'Pacific/Funafuti'
-          | 'Pacific/Galapagos'
-          | 'Pacific/Gambier'
-          | 'Pacific/Guadalcanal'
-          | 'Pacific/Guam'
-          | 'Pacific/Honolulu'
-          | 'Pacific/Johnston'
-          | 'Pacific/Kanton'
-          | 'Pacific/Kiritimati'
-          | 'Pacific/Kosrae'
-          | 'Pacific/Kwajalein'
-          | 'Pacific/Majuro'
-          | 'Pacific/Marquesas'
-          | 'Pacific/Midway'
-          | 'Pacific/Nauru'
-          | 'Pacific/Niue'
-          | 'Pacific/Norfolk'
-          | 'Pacific/Noumea'
-          | 'Pacific/Pago_Pago'
-          | 'Pacific/Palau'
-          | 'Pacific/Pitcairn'
-          | 'Pacific/Pohnpei'
-          | 'Pacific/Ponape'
-          | 'Pacific/Port_Moresby'
-          | 'Pacific/Rarotonga'
-          | 'Pacific/Saipan'
-          | 'Pacific/Samoa'
-          | 'Pacific/Tahiti'
-          | 'Pacific/Tarawa'
-          | 'Pacific/Tongatapu'
-          | 'Pacific/Truk'
-          | 'Pacific/Wake'
-          | 'Pacific/Wallis'
-          | 'Pacific/Yap'
-          | 'Poland'
-          | 'Portugal'
-          | 'ROC'
-          | 'ROK'
-          | 'Singapore'
-          | 'Turkey'
-          | 'UCT'
-          | 'US/Alaska'
-          | 'US/Aleutian'
-          | 'US/Arizona'
-          | 'US/Central'
-          | 'US/East-Indiana'
-          | 'US/Eastern'
-          | 'US/Hawaii'
-          | 'US/Indiana-Starke'
-          | 'US/Michigan'
-          | 'US/Mountain'
-          | 'US/Pacific'
-          | 'US/Samoa'
-          | 'UTC'
-          | 'Universal'
-          | 'W-SU'
-          | 'WET'
-          | 'Zulu'
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
-        /** @description Filter by insight category. */
-        category?:
-          | components['schemas']['InsightCategory']
-          | components['schemas']['InsightCategory'][]
-          | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Insight'][]
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:list_threads': {
-    parameters: {
-      query: {
-        /** @description Organization whose threads to list. */
-        organization_id: string
-        /** @description Page number, defaults to 1. */
-        page?: number
-        /** @description Size of a page, defaults to 10. Maximum is 100. */
-        limit?: number
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ListResource_CompassThreadSchema_']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:get_thread': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The thread ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CompassThreadSchema']
-        }
-      }
-      /** @description Thread not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:delete_thread': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The thread ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Thread deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Thread not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:update_thread': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The thread ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CompassThreadUpdate']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CompassThreadSchema']
-        }
-      }
-      /** @description Thread not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:list_thread_messages': {
-    parameters: {
-      query?: {
-        /** @description Page number, defaults to 1. */
-        page?: number
-        /** @description Size of a page, defaults to 10. Maximum is 100. */
-        limit?: number
-      }
-      header?: never
-      path: {
-        /** @description The thread ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ListResource_CompassThreadMessageSchema_']
-        }
-      }
-      /** @description Thread not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'license_keys:list': {
     parameters: {
       query?: {
@@ -53931,6 +52704,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Catalog_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogVersion']
+        }
+      }
+      /** @description Catalog not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -56675,90 +55488,6 @@ export interface operations {
       }
     }
   }
-  'customer_portal:customer-session:customer_portal.customer_session.request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CustomerSessionCodeRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Multiple customers found for this email. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'customer_portal:customer-session:customer_portal.customer_session.authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CustomerSessionCodeAuthenticateRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
-        }
-      }
-      /** @description Invalid or expired verification code. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSessionCodeInvalidOrExpired']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'customer_portal:customer-session:introspect': {
     parameters: {
       query?: never
@@ -56795,6 +55524,134 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['PortalAuthenticatedUser']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionAuthenticationStart']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.email_otp_request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionEmailOTPRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Turnstile verification failed */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Multiple customers found for this email. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.email_otp_verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionEmailOTPVerify']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
+        }
+      }
+      /** @description Invalid or expired verification code, or invalid authentication session. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CustomerSessionCodeInvalidOrExpired']
+            | components['schemas']['InvalidAuthenticationSession']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }
@@ -59870,8 +58727,6 @@ export interface operations {
   'events:get_statistics_by_property': {
     parameters: {
       query: {
-        /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
-        property: string
         /** @description Start date. */
         start_date: string
         /** @description End date. */
@@ -60485,6 +59340,8 @@ export interface operations {
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
+        property: components['schemas']['AggregateField']
       }
       header?: never
       path?: never
@@ -61768,11 +60625,11 @@ export interface operations {
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
         external_customer_id?: string | string[] | null
-        /** @description Filter by event name. */
-        name?: string | string[] | null
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Filter by event name. */
+        name?: string | string[] | null
       }
       header?: never
       path?: never
@@ -63565,6 +62422,8 @@ export interface operations {
       query?: {
         /** @description The ID of the organization to export. **Required unless you use an organization token.** */
         organization_id?: string | null
+        /** @description ID of a published catalog. Defaults to the live catalog. */
+        catalog_id?: string | null
       }
       header?: never
       path?: never
@@ -63599,6 +62458,15 @@ export interface operations {
           'application/json':
             | components['schemas']['NotPermitted']
             | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description No published catalog has this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
         }
       }
       /** @description Validation Error */
@@ -63681,7 +62549,10 @@ export interface operations {
   }
   'config:plan': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description ID of a published catalog. Defaults to the live catalog. */
+        catalog_id?: string | null
+      }
       header?: never
       path?: never
       cookie?: never
@@ -63719,6 +62590,15 @@ export interface operations {
           'application/json':
             | components['schemas']['NotPermitted']
             | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description No published catalog has this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
         }
       }
       /** @description Validation Error */
@@ -68301,608 +67181,6 @@ export const pathsV1MetricsExportGetParametersQueryTimezoneValues: ReadonlyArray
   'WET',
   'Zulu',
 ]
-export const pathsV1CompassInsightsGetParametersQueryTimezoneValues: ReadonlyArray<
-  FlattenedDeepRequired<paths>['/v1/compass/insights']['get']['parameters']['query']['timezone']
-> = [
-  'Africa/Abidjan',
-  'Africa/Accra',
-  'Africa/Addis_Ababa',
-  'Africa/Algiers',
-  'Africa/Asmara',
-  'Africa/Asmera',
-  'Africa/Bamako',
-  'Africa/Bangui',
-  'Africa/Banjul',
-  'Africa/Bissau',
-  'Africa/Blantyre',
-  'Africa/Brazzaville',
-  'Africa/Bujumbura',
-  'Africa/Cairo',
-  'Africa/Casablanca',
-  'Africa/Ceuta',
-  'Africa/Conakry',
-  'Africa/Dakar',
-  'Africa/Dar_es_Salaam',
-  'Africa/Djibouti',
-  'Africa/Douala',
-  'Africa/El_Aaiun',
-  'Africa/Freetown',
-  'Africa/Gaborone',
-  'Africa/Harare',
-  'Africa/Johannesburg',
-  'Africa/Juba',
-  'Africa/Kampala',
-  'Africa/Khartoum',
-  'Africa/Kigali',
-  'Africa/Kinshasa',
-  'Africa/Lagos',
-  'Africa/Libreville',
-  'Africa/Lome',
-  'Africa/Luanda',
-  'Africa/Lubumbashi',
-  'Africa/Lusaka',
-  'Africa/Malabo',
-  'Africa/Maputo',
-  'Africa/Maseru',
-  'Africa/Mbabane',
-  'Africa/Mogadishu',
-  'Africa/Monrovia',
-  'Africa/Nairobi',
-  'Africa/Ndjamena',
-  'Africa/Niamey',
-  'Africa/Nouakchott',
-  'Africa/Ouagadougou',
-  'Africa/Porto-Novo',
-  'Africa/Sao_Tome',
-  'Africa/Timbuktu',
-  'Africa/Tripoli',
-  'Africa/Tunis',
-  'Africa/Windhoek',
-  'America/Adak',
-  'America/Anchorage',
-  'America/Anguilla',
-  'America/Antigua',
-  'America/Araguaina',
-  'America/Argentina/Buenos_Aires',
-  'America/Argentina/Catamarca',
-  'America/Argentina/ComodRivadavia',
-  'America/Argentina/Cordoba',
-  'America/Argentina/Jujuy',
-  'America/Argentina/La_Rioja',
-  'America/Argentina/Mendoza',
-  'America/Argentina/Rio_Gallegos',
-  'America/Argentina/Salta',
-  'America/Argentina/San_Juan',
-  'America/Argentina/San_Luis',
-  'America/Argentina/Tucuman',
-  'America/Argentina/Ushuaia',
-  'America/Aruba',
-  'America/Asuncion',
-  'America/Atikokan',
-  'America/Atka',
-  'America/Bahia',
-  'America/Bahia_Banderas',
-  'America/Barbados',
-  'America/Belem',
-  'America/Belize',
-  'America/Blanc-Sablon',
-  'America/Boa_Vista',
-  'America/Bogota',
-  'America/Boise',
-  'America/Buenos_Aires',
-  'America/Cambridge_Bay',
-  'America/Campo_Grande',
-  'America/Cancun',
-  'America/Caracas',
-  'America/Catamarca',
-  'America/Cayenne',
-  'America/Cayman',
-  'America/Chicago',
-  'America/Chihuahua',
-  'America/Ciudad_Juarez',
-  'America/Coral_Harbour',
-  'America/Cordoba',
-  'America/Costa_Rica',
-  'America/Coyhaique',
-  'America/Creston',
-  'America/Cuiaba',
-  'America/Curacao',
-  'America/Danmarkshavn',
-  'America/Dawson',
-  'America/Dawson_Creek',
-  'America/Denver',
-  'America/Detroit',
-  'America/Dominica',
-  'America/Edmonton',
-  'America/Eirunepe',
-  'America/El_Salvador',
-  'America/Ensenada',
-  'America/Fort_Nelson',
-  'America/Fort_Wayne',
-  'America/Fortaleza',
-  'America/Glace_Bay',
-  'America/Godthab',
-  'America/Goose_Bay',
-  'America/Grand_Turk',
-  'America/Grenada',
-  'America/Guadeloupe',
-  'America/Guatemala',
-  'America/Guayaquil',
-  'America/Guyana',
-  'America/Halifax',
-  'America/Havana',
-  'America/Hermosillo',
-  'America/Indiana/Indianapolis',
-  'America/Indiana/Knox',
-  'America/Indiana/Marengo',
-  'America/Indiana/Petersburg',
-  'America/Indiana/Tell_City',
-  'America/Indiana/Vevay',
-  'America/Indiana/Vincennes',
-  'America/Indiana/Winamac',
-  'America/Indianapolis',
-  'America/Inuvik',
-  'America/Iqaluit',
-  'America/Jamaica',
-  'America/Jujuy',
-  'America/Juneau',
-  'America/Kentucky/Louisville',
-  'America/Kentucky/Monticello',
-  'America/Knox_IN',
-  'America/Kralendijk',
-  'America/La_Paz',
-  'America/Lima',
-  'America/Los_Angeles',
-  'America/Louisville',
-  'America/Lower_Princes',
-  'America/Maceio',
-  'America/Managua',
-  'America/Manaus',
-  'America/Marigot',
-  'America/Martinique',
-  'America/Matamoros',
-  'America/Mazatlan',
-  'America/Mendoza',
-  'America/Menominee',
-  'America/Merida',
-  'America/Metlakatla',
-  'America/Mexico_City',
-  'America/Miquelon',
-  'America/Moncton',
-  'America/Monterrey',
-  'America/Montevideo',
-  'America/Montreal',
-  'America/Montserrat',
-  'America/Nassau',
-  'America/New_York',
-  'America/Nipigon',
-  'America/Nome',
-  'America/Noronha',
-  'America/North_Dakota/Beulah',
-  'America/North_Dakota/Center',
-  'America/North_Dakota/New_Salem',
-  'America/Nuuk',
-  'America/Ojinaga',
-  'America/Panama',
-  'America/Pangnirtung',
-  'America/Paramaribo',
-  'America/Phoenix',
-  'America/Port-au-Prince',
-  'America/Port_of_Spain',
-  'America/Porto_Acre',
-  'America/Porto_Velho',
-  'America/Puerto_Rico',
-  'America/Punta_Arenas',
-  'America/Rainy_River',
-  'America/Rankin_Inlet',
-  'America/Recife',
-  'America/Regina',
-  'America/Resolute',
-  'America/Rio_Branco',
-  'America/Rosario',
-  'America/Santa_Isabel',
-  'America/Santarem',
-  'America/Santiago',
-  'America/Santo_Domingo',
-  'America/Sao_Paulo',
-  'America/Scoresbysund',
-  'America/Shiprock',
-  'America/Sitka',
-  'America/St_Barthelemy',
-  'America/St_Johns',
-  'America/St_Kitts',
-  'America/St_Lucia',
-  'America/St_Thomas',
-  'America/St_Vincent',
-  'America/Swift_Current',
-  'America/Tegucigalpa',
-  'America/Thule',
-  'America/Thunder_Bay',
-  'America/Tijuana',
-  'America/Toronto',
-  'America/Tortola',
-  'America/Vancouver',
-  'America/Virgin',
-  'America/Whitehorse',
-  'America/Winnipeg',
-  'America/Yakutat',
-  'America/Yellowknife',
-  'Antarctica/Casey',
-  'Antarctica/Davis',
-  'Antarctica/DumontDUrville',
-  'Antarctica/Macquarie',
-  'Antarctica/Mawson',
-  'Antarctica/McMurdo',
-  'Antarctica/Palmer',
-  'Antarctica/Rothera',
-  'Antarctica/South_Pole',
-  'Antarctica/Syowa',
-  'Antarctica/Troll',
-  'Antarctica/Vostok',
-  'Arctic/Longyearbyen',
-  'Asia/Aden',
-  'Asia/Almaty',
-  'Asia/Amman',
-  'Asia/Anadyr',
-  'Asia/Aqtau',
-  'Asia/Aqtobe',
-  'Asia/Ashgabat',
-  'Asia/Ashkhabad',
-  'Asia/Atyrau',
-  'Asia/Baghdad',
-  'Asia/Bahrain',
-  'Asia/Baku',
-  'Asia/Bangkok',
-  'Asia/Barnaul',
-  'Asia/Beirut',
-  'Asia/Bishkek',
-  'Asia/Brunei',
-  'Asia/Calcutta',
-  'Asia/Chita',
-  'Asia/Choibalsan',
-  'Asia/Chongqing',
-  'Asia/Chungking',
-  'Asia/Colombo',
-  'Asia/Dacca',
-  'Asia/Damascus',
-  'Asia/Dhaka',
-  'Asia/Dili',
-  'Asia/Dubai',
-  'Asia/Dushanbe',
-  'Asia/Famagusta',
-  'Asia/Gaza',
-  'Asia/Harbin',
-  'Asia/Hebron',
-  'Asia/Ho_Chi_Minh',
-  'Asia/Hong_Kong',
-  'Asia/Hovd',
-  'Asia/Irkutsk',
-  'Asia/Istanbul',
-  'Asia/Jakarta',
-  'Asia/Jayapura',
-  'Asia/Jerusalem',
-  'Asia/Kabul',
-  'Asia/Kamchatka',
-  'Asia/Karachi',
-  'Asia/Kashgar',
-  'Asia/Kathmandu',
-  'Asia/Katmandu',
-  'Asia/Khandyga',
-  'Asia/Kolkata',
-  'Asia/Krasnoyarsk',
-  'Asia/Kuala_Lumpur',
-  'Asia/Kuching',
-  'Asia/Kuwait',
-  'Asia/Macao',
-  'Asia/Macau',
-  'Asia/Magadan',
-  'Asia/Makassar',
-  'Asia/Manila',
-  'Asia/Muscat',
-  'Asia/Nicosia',
-  'Asia/Novokuznetsk',
-  'Asia/Novosibirsk',
-  'Asia/Omsk',
-  'Asia/Oral',
-  'Asia/Phnom_Penh',
-  'Asia/Pontianak',
-  'Asia/Pyongyang',
-  'Asia/Qatar',
-  'Asia/Qostanay',
-  'Asia/Qyzylorda',
-  'Asia/Rangoon',
-  'Asia/Riyadh',
-  'Asia/Saigon',
-  'Asia/Sakhalin',
-  'Asia/Samarkand',
-  'Asia/Seoul',
-  'Asia/Shanghai',
-  'Asia/Singapore',
-  'Asia/Srednekolymsk',
-  'Asia/Taipei',
-  'Asia/Tashkent',
-  'Asia/Tbilisi',
-  'Asia/Tehran',
-  'Asia/Tel_Aviv',
-  'Asia/Thimbu',
-  'Asia/Thimphu',
-  'Asia/Tokyo',
-  'Asia/Tomsk',
-  'Asia/Ujung_Pandang',
-  'Asia/Ulaanbaatar',
-  'Asia/Ulan_Bator',
-  'Asia/Urumqi',
-  'Asia/Ust-Nera',
-  'Asia/Vientiane',
-  'Asia/Vladivostok',
-  'Asia/Yakutsk',
-  'Asia/Yangon',
-  'Asia/Yekaterinburg',
-  'Asia/Yerevan',
-  'Atlantic/Azores',
-  'Atlantic/Bermuda',
-  'Atlantic/Canary',
-  'Atlantic/Cape_Verde',
-  'Atlantic/Faeroe',
-  'Atlantic/Faroe',
-  'Atlantic/Jan_Mayen',
-  'Atlantic/Madeira',
-  'Atlantic/Reykjavik',
-  'Atlantic/South_Georgia',
-  'Atlantic/St_Helena',
-  'Atlantic/Stanley',
-  'Australia/ACT',
-  'Australia/Adelaide',
-  'Australia/Brisbane',
-  'Australia/Broken_Hill',
-  'Australia/Canberra',
-  'Australia/Currie',
-  'Australia/Darwin',
-  'Australia/Eucla',
-  'Australia/Hobart',
-  'Australia/LHI',
-  'Australia/Lindeman',
-  'Australia/Lord_Howe',
-  'Australia/Melbourne',
-  'Australia/NSW',
-  'Australia/North',
-  'Australia/Perth',
-  'Australia/Queensland',
-  'Australia/South',
-  'Australia/Sydney',
-  'Australia/Tasmania',
-  'Australia/Victoria',
-  'Australia/West',
-  'Australia/Yancowinna',
-  'Brazil/Acre',
-  'Brazil/DeNoronha',
-  'Brazil/East',
-  'Brazil/West',
-  'CET',
-  'CST6CDT',
-  'Canada/Atlantic',
-  'Canada/Central',
-  'Canada/Eastern',
-  'Canada/Mountain',
-  'Canada/Newfoundland',
-  'Canada/Pacific',
-  'Canada/Saskatchewan',
-  'Canada/Yukon',
-  'Chile/Continental',
-  'Chile/EasterIsland',
-  'Cuba',
-  'EET',
-  'EST',
-  'EST5EDT',
-  'Egypt',
-  'Eire',
-  'Etc/GMT',
-  'Etc/GMT+0',
-  'Etc/GMT+1',
-  'Etc/GMT+10',
-  'Etc/GMT+11',
-  'Etc/GMT+12',
-  'Etc/GMT+2',
-  'Etc/GMT+3',
-  'Etc/GMT+4',
-  'Etc/GMT+5',
-  'Etc/GMT+6',
-  'Etc/GMT+7',
-  'Etc/GMT+8',
-  'Etc/GMT+9',
-  'Etc/GMT-0',
-  'Etc/GMT-1',
-  'Etc/GMT-10',
-  'Etc/GMT-11',
-  'Etc/GMT-12',
-  'Etc/GMT-13',
-  'Etc/GMT-14',
-  'Etc/GMT-2',
-  'Etc/GMT-3',
-  'Etc/GMT-4',
-  'Etc/GMT-5',
-  'Etc/GMT-6',
-  'Etc/GMT-7',
-  'Etc/GMT-8',
-  'Etc/GMT-9',
-  'Etc/GMT0',
-  'Etc/Greenwich',
-  'Etc/UCT',
-  'Etc/UTC',
-  'Etc/Universal',
-  'Etc/Zulu',
-  'Europe/Amsterdam',
-  'Europe/Andorra',
-  'Europe/Astrakhan',
-  'Europe/Athens',
-  'Europe/Belfast',
-  'Europe/Belgrade',
-  'Europe/Berlin',
-  'Europe/Bratislava',
-  'Europe/Brussels',
-  'Europe/Bucharest',
-  'Europe/Budapest',
-  'Europe/Busingen',
-  'Europe/Chisinau',
-  'Europe/Copenhagen',
-  'Europe/Dublin',
-  'Europe/Gibraltar',
-  'Europe/Guernsey',
-  'Europe/Helsinki',
-  'Europe/Isle_of_Man',
-  'Europe/Istanbul',
-  'Europe/Jersey',
-  'Europe/Kaliningrad',
-  'Europe/Kiev',
-  'Europe/Kirov',
-  'Europe/Kyiv',
-  'Europe/Lisbon',
-  'Europe/Ljubljana',
-  'Europe/London',
-  'Europe/Luxembourg',
-  'Europe/Madrid',
-  'Europe/Malta',
-  'Europe/Mariehamn',
-  'Europe/Minsk',
-  'Europe/Monaco',
-  'Europe/Moscow',
-  'Europe/Nicosia',
-  'Europe/Oslo',
-  'Europe/Paris',
-  'Europe/Podgorica',
-  'Europe/Prague',
-  'Europe/Riga',
-  'Europe/Rome',
-  'Europe/Samara',
-  'Europe/San_Marino',
-  'Europe/Sarajevo',
-  'Europe/Saratov',
-  'Europe/Simferopol',
-  'Europe/Skopje',
-  'Europe/Sofia',
-  'Europe/Stockholm',
-  'Europe/Tallinn',
-  'Europe/Tirane',
-  'Europe/Tiraspol',
-  'Europe/Ulyanovsk',
-  'Europe/Uzhgorod',
-  'Europe/Vaduz',
-  'Europe/Vatican',
-  'Europe/Vienna',
-  'Europe/Vilnius',
-  'Europe/Volgograd',
-  'Europe/Warsaw',
-  'Europe/Zagreb',
-  'Europe/Zaporozhye',
-  'Europe/Zurich',
-  'Factory',
-  'GB',
-  'GB-Eire',
-  'GMT',
-  'GMT+0',
-  'GMT-0',
-  'GMT0',
-  'Greenwich',
-  'HST',
-  'Hongkong',
-  'Iceland',
-  'Indian/Antananarivo',
-  'Indian/Chagos',
-  'Indian/Christmas',
-  'Indian/Cocos',
-  'Indian/Comoro',
-  'Indian/Kerguelen',
-  'Indian/Mahe',
-  'Indian/Maldives',
-  'Indian/Mauritius',
-  'Indian/Mayotte',
-  'Indian/Reunion',
-  'Iran',
-  'Israel',
-  'Jamaica',
-  'Japan',
-  'Kwajalein',
-  'Libya',
-  'MET',
-  'MST',
-  'MST7MDT',
-  'Mexico/BajaNorte',
-  'Mexico/BajaSur',
-  'Mexico/General',
-  'NZ',
-  'NZ-CHAT',
-  'Navajo',
-  'PRC',
-  'PST8PDT',
-  'Pacific/Apia',
-  'Pacific/Auckland',
-  'Pacific/Bougainville',
-  'Pacific/Chatham',
-  'Pacific/Chuuk',
-  'Pacific/Easter',
-  'Pacific/Efate',
-  'Pacific/Enderbury',
-  'Pacific/Fakaofo',
-  'Pacific/Fiji',
-  'Pacific/Funafuti',
-  'Pacific/Galapagos',
-  'Pacific/Gambier',
-  'Pacific/Guadalcanal',
-  'Pacific/Guam',
-  'Pacific/Honolulu',
-  'Pacific/Johnston',
-  'Pacific/Kanton',
-  'Pacific/Kiritimati',
-  'Pacific/Kosrae',
-  'Pacific/Kwajalein',
-  'Pacific/Majuro',
-  'Pacific/Marquesas',
-  'Pacific/Midway',
-  'Pacific/Nauru',
-  'Pacific/Niue',
-  'Pacific/Norfolk',
-  'Pacific/Noumea',
-  'Pacific/Pago_Pago',
-  'Pacific/Palau',
-  'Pacific/Pitcairn',
-  'Pacific/Pohnpei',
-  'Pacific/Ponape',
-  'Pacific/Port_Moresby',
-  'Pacific/Rarotonga',
-  'Pacific/Saipan',
-  'Pacific/Samoa',
-  'Pacific/Tahiti',
-  'Pacific/Tarawa',
-  'Pacific/Tongatapu',
-  'Pacific/Truk',
-  'Pacific/Wake',
-  'Pacific/Wallis',
-  'Pacific/Yap',
-  'Poland',
-  'Portugal',
-  'ROC',
-  'ROK',
-  'Singapore',
-  'Turkey',
-  'UCT',
-  'US/Alaska',
-  'US/Aleutian',
-  'US/Arizona',
-  'US/Central',
-  'US/East-Indiana',
-  'US/Eastern',
-  'US/Hawaii',
-  'US/Indiana-Starke',
-  'US/Michigan',
-  'US/Mountain',
-  'US/Pacific',
-  'US/Samoa',
-  'UTC',
-  'Universal',
-  'W-SU',
-  'WET',
-  'Zulu',
-]
 export const pathsV1EventsStatisticsByPropertyGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/events/statistics/by-property']['get']['parameters']['query']['timezone']
 > = [
@@ -71913,9 +70191,6 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'WET',
   'Zulu',
 ]
-export const addCurrencyActionTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AddCurrencyAction']['type']
-> = ['add_currency']
 export const addressCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Address']['country']
 > = [
@@ -72417,21 +70692,12 @@ export const addressInputCountryValues: ReadonlyArray<
   'ZM',
   'ZW',
 ]
-export const adjustPriceActionTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AdjustPriceAction']['type']
-> = ['adjust_price']
 export const aggregationFunctionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AggregationFunction']
 > = ['count', 'sum', 'max', 'min', 'avg', 'unique']
 export const appealDecisionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AppealDecision']
 > = ['approved', 'rejected']
-export const assistantBlockPartKindValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AssistantBlockPart']['kind']
-> = ['block']
-export const assistantTextPartKindValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AssistantTextPart']['kind']
-> = ['text']
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AuthorizeResponseOrganization']['sub_type']
 > = ['organization']
@@ -72705,12 +70971,6 @@ export const checkoutSortPropertyValues: ReadonlyArray<
 export const checkoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutStatus']
 > = ['open', 'expired', 'confirmed', 'succeeded', 'failed']
-export const columnFormatValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ColumnFormat']
-> = ['text', 'currency', 'datetime', 'badge', 'avatar']
-export const confidenceLevelValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfidenceLevel']
-> = ['low', 'medium', 'high']
 export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
@@ -72726,6 +70986,9 @@ export const configBenefitMeterCreditTypeValues: ReadonlyArray<
 export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
 > = ['meter_credit']
+export const configExportCatalogStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExportCatalog']['status']
+> = ['live', 'archived']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
@@ -72739,6 +71002,7 @@ export const configIssueTypeValues: ReadonlyArray<
   'meter_locked',
   'missing_currency',
   'not_supported',
+  'removed_in_use',
   'type_changed',
   'unknown_event',
   'unknown_reference',
@@ -72773,6 +71037,9 @@ export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
 export const configProductPriceUnitBasedReadAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBasedRead']['amount_type']
 > = ['unit_based']
+export const configRemovalReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigRemovalReason']
+> = ['missing', 'deprecated']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
 > = ['meter', 'benefit', 'product', 'webhook']
@@ -73394,9 +71661,6 @@ export const customerCancellationReasonValues: ReadonlyArray<
   'unused',
   'other',
 ]
-export const customerCardBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['CustomerCardBlock']['type']
-> = ['customer_card']
 export const customerCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerCreatedEvent']['name']
 > = ['customer.created']
@@ -73507,9 +71771,6 @@ export const customerUpdatedEventNameValues: ReadonlyArray<
 export const customerWalletSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerWalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']
-export const dataTableBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['DataTableBlock']['type']
-> = ['data_table']
 export const discountDurationValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']
@@ -73569,9 +71830,6 @@ export const downloadableFileCreateServiceValues: ReadonlyArray<
 export const downloadableFileReadServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileRead']['service']
 > = ['downloadable']
-export const entityListBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['EntityListBlock']['type']
-> = ['entity_list']
 export const eventNamesSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['EventNamesSortProperty']
 > = [
@@ -73643,15 +71901,6 @@ export const filterOperatorValues: ReadonlyArray<
 export const identityVerificationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IdentityVerificationStatus']
 > = ['unverified', 'pending', 'verified', 'failed']
-export const insightCardsBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['InsightCardsBlock']['type']
-> = ['insight_cards']
-export const insightCategoryValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['InsightCategory']
-> = ['revenue', 'retention', 'growth', 'risk', 'cost', 'product']
-export const insightSeverityValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['InsightSeverity']
-> = ['critical', 'warning', 'opportunity', 'info']
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
@@ -73714,7 +71963,6 @@ export const merchantMigrationStepValues: ReadonlyArray<
   'create_catalog',
   'copy_cards',
   'activate_subscriptions',
-  'cleanup',
   'completed',
   'closed',
 ]
@@ -73733,9 +71981,6 @@ export const meterSortPropertyValues: ReadonlyArray<
 export const meterUnitValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterUnit']
 > = ['scalar', 'token', 'custom']
-export const metricChartBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['MetricChartBlock']['type']
-> = ['metric_chart']
 export const metricTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MetricType']
 > = ['scalar', 'currency', 'currency_sub_cent', 'percentage']
@@ -76052,9 +74297,6 @@ export const taxJurisdictionSortPropertyValues: ReadonlyArray<
   'country',
   '-country',
 ]
-export const textBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['TextBlock']['type']
-> = ['text']
 export const tierTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TierType']
 > = ['volume', 'graduated']
@@ -76353,12 +74595,6 @@ export const userUpdateCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
-export const viewCostsActionTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ViewCostsAction']['type']
-> = ['view_costs']
-export const viewMetricActionTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ViewMetricAction']['type']
-> = ['view_metric']
 export const visibilityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Visibility']
 > = ['draft', 'private', 'public']

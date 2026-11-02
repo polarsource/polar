@@ -1,14 +1,16 @@
 import ipaddress
 import socket
 import unicodedata
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Annotated
 from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import anyio
+import httpcore
 import httpx
 from fastapi import Depends, Query, Request
-from pydantic import AfterValidator, HttpUrl, PlainSerializer, ValidationError
+from pydantic import AfterValidator, HttpUrl, PlainSerializer
 from safe_redirect_url import url_has_allowed_host_and_scheme
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -44,59 +46,104 @@ class SSRFBlockedError(Exception):
     """Raised when a request targets a private/reserved IP address."""
 
 
-async def resolve_and_validate_ip(hostname: str) -> None:
-    """Resolve *hostname* and raise `SSRFBlockedError` if any IP is private/reserved."""
+def _is_blocked_ip(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    return (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_reserved
+        or addr.is_link_local
+        or addr.is_multicast
+        or addr.is_unspecified
+    )
+
+
+async def resolve_and_validate_ip(hostname: str) -> list[str]:
+    """Resolve *hostname* and raise `SSRFBlockedError` if any IP is private/reserved.
+
+    Returns the resolved IPs. Checking a hostname and then letting an HTTP client
+    resolve it again is open to DNS rebinding: to be safe, connect to one of the
+    returned IPs, as `SSRFSafeTransport` does.
+    """
     try:
         infos = await anyio.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
     except OSError as exc:
         raise SSRFBlockedError(f"DNS resolution failed for {hostname}") from exc
 
+    ips: list[str] = []
     for _family, _type, _proto, _canonname, sockaddr in infos:
         addr = ipaddress.ip_address(sockaddr[0])
-        if (
-            addr.is_private
-            or addr.is_loopback
-            or addr.is_reserved
-            or addr.is_link_local
-            or addr.is_multicast
-            or addr.is_unspecified
-        ):
+        if _is_blocked_ip(addr):
             raise SSRFBlockedError(
                 f"Blocked request to {hostname}: resolves to private/reserved IP {addr}"
             )
+        if str(addr) not in ips:
+            ips.append(str(addr))
+    return ips
 
 
-class UnsafeCrawlableUrl(Exception):
-    """A URL that may point to private/reserved IPs, which we will validate manually."""
+class _SSRFSafeNetworkBackend(httpcore.AsyncNetworkBackend):
+    """Resolve and validate the host, then connect to the validated IP.
 
-
-async def validate_crawlable_url(url: HttpUrl | str) -> HttpUrl:
+    The URL keeps its hostname, so the `Host` header, TLS SNI and certificate
+    verification are unchanged; only the address the socket connects to is
+    pinned to the IP we checked.
     """
-    Validate that the URL is crawlable (not private/reserved).
 
-    Args:
-        url: The URL to validate.
+    def __init__(self) -> None:
+        self._backend = httpcore.AnyIOBackend()
 
-    Returns:
-        The original URL if it's valid.
-
-    Raises:
-        UnsafeCrawlableUrl: If the URL is invalid or points to a private/reserved
-    """
-    if not isinstance(url, HttpUrl):
+    async def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: float | None = None,
+        local_address: str | None = None,
+        socket_options: Iterable[httpcore.SOCKET_OPTION] | None = None,
+    ) -> httpcore.AsyncNetworkStream:
         try:
-            url = HttpUrl(url)
-        except ValidationError as e:
-            raise UnsafeCrawlableUrl(f"Invalid URL: {e}") from e
+            with anyio.fail_after(timeout):
+                ips = await resolve_and_validate_ip(host)
+        except TimeoutError as e:
+            raise httpcore.ConnectTimeout(f"DNS resolution timed out for {host}") from e
 
-    if url.host is None:
-        raise UnsafeCrawlableUrl("URL must have a host")
+        error: httpcore.ConnectError | None = None
+        for ip in ips:
+            try:
+                return await self._backend.connect_tcp(
+                    ip,
+                    port,
+                    timeout=timeout,
+                    local_address=local_address,
+                    socket_options=socket_options,
+                )
+            except httpcore.ConnectError as e:
+                error = e
+        assert error is not None
+        raise error
 
-    try:
-        await resolve_and_validate_ip(url.host)
-    except SSRFBlockedError as e:
-        raise UnsafeCrawlableUrl(str(e)) from e
-    return url
+    async def sleep(self, seconds: float) -> None:
+        await self._backend.sleep(seconds)
+
+
+class SSRFSafeTransport(httpx.AsyncHTTPTransport):
+    """HTTPX transport that refuses to connect to private/reserved IPs.
+
+    Every connection, including the ones made while following redirects, is
+    validated. It raises `SSRFBlockedError` when the host resolves to a
+    private/reserved IP. Proxies are not supported, since we'd only validate
+    the proxy's address.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        # Same limits as HTTPX's defaults
+        self._pool = httpcore.AsyncConnectionPool(
+            ssl_context=httpx.create_ssl_context(),
+            max_connections=100,
+            max_keepalive_connections=20,
+            keepalive_expiry=5.0,
+            network_backend=_SSRFSafeNetworkBackend(),
+        )
 
 
 @dataclass
@@ -109,48 +156,30 @@ class UrlReachability:
 async def check_url_reachable(
     url: HttpUrl | str, *, timeout: float = 5.0
 ) -> UrlReachability:
-    """Validate the URL and GET it, following redirects.
+    """GET the URL, following redirects.
 
     The check rejects URLs that resolve to private/reserved IPs (including any
-    redirect target) and treats HTTP 2xx/3xx as reachable. We use GET rather
-    than HEAD because some sites block HEAD requests.
+    redirect target, see `SSRFSafeTransport`) and treats HTTP 2xx/3xx as
+    reachable. We use GET rather than HEAD because some sites block HEAD requests.
     """
     try:
-        validated_url = await validate_crawlable_url(url)
-    except UnsafeCrawlableUrl as e:
-        return UrlReachability(reachable=False, error=str(e))
-
-    async def _check_redirect(response: httpx.Response) -> None:
-        if response.is_redirect:
-            location = response.headers.get("location", "")
-            # `Location` may be a relative reference (RFC 7231). Resolve it
-            # against the current URL — the same resolution httpx uses to
-            # follow the redirect — so we validate the URL actually fetched.
-            try:
-                absolute_location = response.url.join(location)
-            except httpx.InvalidURL as e:
-                # A malformed `Location` (e.g. an invalid port) can't be
-                # followed. `InvalidURL` isn't an `httpx.HTTPError`, so convert
-                # it to the handled type instead of letting it escape.
-                raise UnsafeCrawlableUrl(f"Invalid redirect URL: {e}") from e
-            await validate_crawlable_url(str(absolute_location))
-
-    try:
         async with httpx.AsyncClient(
+            transport=SSRFSafeTransport(),
             follow_redirects=True,
             timeout=timeout,
             headers={"User-Agent": settings.POLAR_USER_AGENT},
-            event_hooks={"response": [_check_redirect]},
         ) as client:
-            response = await client.get(str(validated_url))
+            response = await client.get(str(url))
         return UrlReachability(
             reachable=200 <= response.status_code < 400,
             status=response.status_code,
         )
-    except UnsafeCrawlableUrl as e:
+    except SSRFBlockedError as e:
         return UrlReachability(reachable=False, error=str(e))
     except httpx.TimeoutException:
         return UrlReachability(reachable=False, error="Request timed out")
+    except httpx.InvalidURL as e:
+        return UrlReachability(reachable=False, error=f"Invalid URL: {e}")
     except httpx.HTTPError:
         return UrlReachability(reachable=False, error="Unable to reach URL")
 

@@ -171,6 +171,45 @@ class TestList:
         json = response.json()
         assert len(json["items"]) == len(checkouts)
 
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_external_product_id(
+        self,
+        save_fixture: SaveFixture,
+        api_prefix: str,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_second: Product,
+    ) -> None:
+        old_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+        old_pro.is_current = False
+        await save_fixture(old_pro)
+        new_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+        for product in (old_pro, new_pro, product_second):
+            await create_checkout(save_fixture, products=[product])
+
+        response = await client.get(
+            f"{api_prefix}/", params={"external_product_id": "pro"}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert {item["product_id"] for item in json["items"]} == {
+            str(old_pro.id),
+            str(new_pro.id),
+        }
+
 
 @pytest.mark.anyio
 class TestGet:

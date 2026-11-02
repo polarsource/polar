@@ -35,6 +35,7 @@ Aggregation: typing.TypeAlias = CountAggregation | PropertyAggregation
 
 class Reducer(typing.TypedDict):
     id: str
+    kind: typing.Literal["usage", "credit"]
     filter: Filter
     aggregation: Aggregation
     meter_ids: typing.NotRequired[list[str]]
@@ -170,6 +171,7 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
     return any_matcher
 
 
+# Credit reducers count Polar's system events: no local event matches them.
 def with_matchers(
     reducers: collections.abc.Iterable[Reducer],
 ) -> list[ReducerMatcher]:
@@ -182,6 +184,7 @@ def with_matchers(
             else get_property_reader(reducer["aggregation"]["property"]),
         )
         for reducer in reducers
+        if reducer["kind"] == "usage"
     ]
 
 

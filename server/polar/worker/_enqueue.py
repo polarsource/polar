@@ -10,6 +10,7 @@ from typing import Any, Self
 import dramatiq
 import structlog
 from dramatiq.common import dq_name
+from redis.exceptions import RedisError
 
 from polar.config import settings
 from polar.logging import CorrelationID, Logger
@@ -61,7 +62,7 @@ def should_route_to_sqs(actor_name: str) -> bool:
 
 
 class JobQueueManager:
-    __slots__ = ("_enqueued_jobs", "_ingested_events")
+    __slots__ = ("_enqueued_jobs", "_ingested_events", "_published")
 
     def __init__(self) -> None:
         self._enqueued_jobs: list[
@@ -73,6 +74,7 @@ class JobQueueManager:
             ]
         ] = []
         self._ingested_events: list[uuid.UUID] = []
+        self._published: list[tuple[str, str]] = []
 
     def enqueue_job(
         self,
@@ -87,6 +89,10 @@ class JobQueueManager:
     def enqueue_events(self, *event_ids: uuid.UUID) -> None:
         self._ingested_events.extend(event_ids)
 
+    def publish(self, channel: str, message: str) -> None:
+        """Publish the message on the Redis channel once flushed, after the commit."""
+        self._published.append((channel, message))
+
     async def flush(self, broker: dramatiq.Broker, redis: Redis) -> None:
         for chunk in itertools.batched(
             self._ingested_events, EVENT_INGESTED_CHUNK_SIZE
@@ -94,6 +100,7 @@ class JobQueueManager:
             self.enqueue_job("event.ingested", list(chunk))
 
         if not self._enqueued_jobs:
+            await self._publish(redis)
             self.reset()
             return
 
@@ -186,7 +193,21 @@ class JobQueueManager:
                 )
             await _sqs.send_jobs(prepared_sqs_jobs)
 
+        await self._publish(redis)
         self.reset()
+
+    async def _publish(self, redis: Redis) -> None:
+        """Publish last and never raise: a lost message must not drop or replay the
+        jobs of a committed transaction."""
+        if not self._published:
+            return
+        try:
+            async with redis.pipeline(transaction=False) as pipeline:
+                for channel, payload in self._published:
+                    pipeline.publish(channel, payload)
+                await pipeline.execute()
+        except RedisError:
+            log.warning("polar.worker.publish_failed", count=len(self._published))
 
     async def _batch_hset_messages(
         self,
@@ -214,6 +235,7 @@ class JobQueueManager:
     def reset(self) -> None:
         self._enqueued_jobs = []
         self._ingested_events = []
+        self._published = []
 
     @contextlib.contextmanager
     def discard_on_error(self) -> Iterator[None]:
@@ -223,11 +245,13 @@ class JobQueueManager:
         with it, while jobs enqueued before the block are kept.
         """
         jobs, events = len(self._enqueued_jobs), len(self._ingested_events)
+        published = len(self._published)
         try:
             yield
         except BaseException:
             del self._enqueued_jobs[jobs:]
             del self._ingested_events[events:]
+            del self._published[published:]
             raise
 
     @classmethod

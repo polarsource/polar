@@ -18,6 +18,7 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    true,
 )
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 
@@ -100,7 +101,7 @@ def _get_readable_orders_statement(
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
-) -> Select[tuple[uuid.UUID]]:
+) -> Select[uuid.UUID]:
     statement = select(Order.id).join(
         Product, onclause=Order.product_id == Product.id, isouter=True
     )
@@ -186,22 +187,43 @@ def get_active_subscriptions_cte(
         .group_by(fx_day, fx_currency)
     )
 
+    subscription_currencies = cte(
+        select(func.lower(Subscription.currency).label("currency"))
+        .where(
+            Subscription.id.in_(readable_subscriptions_statement),
+            func.lower(Subscription.currency) != "usd",
+        )
+        .distinct()
+    )
+
     closest_global_fx_rate = (
         closest_recorded_exchange_rate(
-            func.lower(Subscription.currency), timestamp_column
+            subscription_currencies.c.currency, timestamp_column
         )
-        .correlate(Subscription, timestamp_series)
+        .correlate(subscription_currencies, timestamp_series)
         .scalar_subquery()
     )
 
-    bucketed_fx_rate = (
-        select(bucketed_fx.c.avg_exchange_rate)
-        .where(
-            bucketed_fx.c.timestamp == timestamp_column,
-            bucketed_fx.c.presentment_currency == func.lower(Subscription.currency),
+    fx_rates = cte(
+        select(
+            timestamp_column.label("timestamp"),
+            subscription_currencies.c.currency.label("currency"),
+            func.coalesce(
+                bucketed_fx.c.avg_exchange_rate, closest_global_fx_rate, 1
+            ).label("rate"),
         )
-        .correlate(Subscription, timestamp_series)
-        .scalar_subquery()
+        .select_from(
+            timestamp_series.join(subscription_currencies, true()).join(
+                bucketed_fx,
+                isouter=True,
+                onclause=and_(
+                    bucketed_fx.c.timestamp == timestamp_column,
+                    bucketed_fx.c.presentment_currency
+                    == subscription_currencies.c.currency,
+                ),
+            )
+        )
+        .distinct()
     )
 
     # TODO: Change this to look at the organization settlement currency
@@ -211,14 +233,7 @@ def get_active_subscriptions_cte(
             func.lower(Subscription.currency) == "usd",
             Subscription.net_amount,
         ),
-        else_=func.round(
-            Subscription.net_amount
-            * func.coalesce(
-                bucketed_fx_rate,
-                closest_global_fx_rate,
-                1,
-            )
-        ),
+        else_=func.round(Subscription.net_amount * func.coalesce(fx_rates.c.rate, 1)),
     )
     monthly_amount = case(
         (
@@ -276,6 +291,13 @@ def get_active_subscriptions_cte(
                 >= start_timestamp,
             ),
         ),
+    ).join(
+        fx_rates,
+        isouter=True,
+        onclause=and_(
+            fx_rates.c.timestamp == timestamp_column,
+            fx_rates.c.currency == func.lower(Subscription.currency),
+        ),
     )
 
     active_subscription_buckets = cte(
@@ -321,7 +343,7 @@ def _get_readable_subscriptions_statement(
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
-) -> Select[tuple[uuid.UUID]]:
+) -> Select[uuid.UUID]:
     statement = select(Subscription.id).join(
         Product, onclause=Subscription.product_id == Product.id
     )
@@ -658,7 +680,7 @@ def _get_readable_seats_statement(
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
-) -> Select[tuple[uuid.UUID]]:
+) -> Select[uuid.UUID]:
     statement = (
         select(CustomerSeat.id)
         .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)

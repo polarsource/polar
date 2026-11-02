@@ -6,6 +6,7 @@ from typing import Annotated, Any, Literal, Self
 from pydantic import (
     UUID4,
     AfterValidator,
+    BaseModel,
     BeforeValidator,
     Discriminator,
     Field,
@@ -49,13 +50,14 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
@@ -1164,7 +1166,22 @@ ProductMediaList = Annotated[
 ]
 
 
-class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
+class ProductVersionOutputMixin(BaseModel):
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the product. "
+                "None for products not managed by declarative config."
+            )
+        ),
+    ]
+
+
+class Product(
+    MetadataOutputMixin, ExternalIDOutputMixin, ProductVersionOutputMixin, ProductBase
+):
     """
     A product.
     """
@@ -1216,4 +1233,32 @@ class ProductNameCheck(Schema):
     )
     phrase: str | None = Field(
         description="The exact phrase that matched, when a word-list rule flagged it."
+    )
+
+
+class ProductListParams(QuerySchema):
+    id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalID Filter", description="Filter by product external ID."
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    query: str | None = Field(None, description="Filter by product name.")
+    is_archived: bool | None = Field(None, description="Filter on archived products.")
+    is_recurring: bool | None = Field(
+        None,
+        description="Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. ",
+    )
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Field(
+        None,
+        title="BenefitID Filter",
+        description="Filter products granting specific benefit.",
+    )
+    visibility: builtins.list[ProductVisibility] | None = Field(
+        default=None, description="Filter by visibility."
     )

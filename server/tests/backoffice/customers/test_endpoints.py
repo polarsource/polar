@@ -202,7 +202,7 @@ class TestCreateBalanceTransaction:
 
 
 @pytest.mark.anyio
-class TestCreditBalance:
+class TestCustomerBalance:
     async def test_displays_all_billing_wallet_currencies(
         self,
         backoffice_client: httpx.AsyncClient,
@@ -216,6 +216,8 @@ class TestCreditBalance:
         response = await backoffice_client.get(f"/customers/{customer.id}")
 
         assert response.status_code == 200
+        assert "Customer Balance" in response.text
+        assert "Credit Balance" not in response.text
         assert "Add Transaction" in response.text
         assert "USD" in response.text
         assert "$12.34" in response.text
@@ -246,7 +248,7 @@ class TestCreditBalance:
         response = await backoffice_client.get(f"/customers/{customer.id}")
 
         assert response.status_code == 200
-        assert "Credit Balance" in response.text
+        assert "Customer Balance" in response.text
         assert "Add Transaction" not in response.text
 
 

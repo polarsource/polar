@@ -1121,6 +1121,31 @@ export interface components {
       /** Domain */
       domain: string
     }
+    /** DomainVerificationLostEmail */
+    DomainVerificationLostEmail: {
+      /**
+       * Template
+       * @default domain_verification_lost
+       * @constant
+       */
+      template: 'domain_verification_lost'
+      props: components['schemas']['DomainVerificationLostProps']
+    }
+    /** DomainVerificationLostProps */
+    DomainVerificationLostProps: {
+      /** Email */
+      email: string
+      /** Domain */
+      domain: string
+      /** Organization Name */
+      organization_name: string
+      /** Settings Url */
+      settings_url: string
+      /** Record Name */
+      record_name: string
+      /** Record Value */
+      record_value: string
+    }
     /** EmailUpdateEmail */
     EmailUpdateEmail: {
       /**

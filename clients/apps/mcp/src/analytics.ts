@@ -10,6 +10,7 @@ export const toolNames = new Set([
   'execute',
   'search_docs',
   'read_docs_page',
+  'feedback',
   ...generatedTools.map(({ name }) => name),
 ])
 const MAX_ERROR_MESSAGE_CHARS = 1_000
@@ -60,10 +61,27 @@ export const captureToolCall = (entry: RequestLogEntry) => {
   )
     return
   const product = USER_AGENT_PRODUCT.exec(entry.userAgent ?? '')
+  const context = {
+    $mcp_source: 'posthog_mcp_analytics',
+    $mcp_intent: entry.intent,
+    $mcp_intent_source: entry.intent && 'context_parameter',
+    $mcp_client_name: entry.client?.name ?? product?.[1],
+    $mcp_client_version: entry.client?.version ?? product?.[2],
+    user_agent: entry.userAgent,
+    $mcp_server_name: 'polar',
+    $mcp_server_version: version,
+    server: entry.server,
+    mode: entry.mode,
+    read_only: entry.readOnly,
+    $process_person_profile: false,
+    $geoip_disable: true,
+  }
+  const distinct_id = `mcp:${entry.subject}`
   const event = {
     api_key: apiKey,
     event: '$mcp_tool_call',
-    distinct_id: `mcp:${entry.subject}`,
+    distinct_id,
+    timestamp: new Date(Date.now() - (entry.durationMs ?? 0)).toISOString(),
     properties: {
       $mcp_tool_name:
         entry.tool && toolNames.has(entry.tool) ? entry.tool : 'unknown',
@@ -76,14 +94,7 @@ export const captureToolCall = (entry: RequestLogEntry) => {
       ),
       api_error_fields: entry.apiErrorFields,
       $mcp_duration_ms: entry.durationMs,
-      $mcp_client_name: entry.client?.name ?? product?.[1],
-      $mcp_client_version: entry.client?.version ?? product?.[2],
-      user_agent: entry.userAgent,
-      $mcp_server_name: 'polar',
-      $mcp_server_version: version,
-      server: entry.server,
-      mode: entry.mode,
-      read_only: entry.readOnly,
+      ...context,
       error_kind: entry.errorKind,
       script_error: entry.scriptError,
       result_chars: entry.resultChars,
@@ -92,10 +103,32 @@ export const captureToolCall = (entry: RequestLogEntry) => {
       api_requests: entry.apiRequests,
       api_operations: entry.apiOperations,
       unexposed_operations: entry.unexposedOperations,
-      $process_person_profile: false,
-      $geoip_disable: true,
     },
   }
+  send(event)
+  if (entry.feedback) {
+    send({
+      api_key: apiKey,
+      event: 'mcp_feedback',
+      distinct_id,
+      properties: { ...entry.feedback, ...context },
+    })
+    if (entry.feedback.category === 'missing_capability') {
+      send({
+        api_key: apiKey,
+        event: '$mcp_missing_capability',
+        distinct_id,
+        properties: {
+          ...context,
+          $mcp_intent: entry.feedback.summary,
+          $mcp_intent_source: 'context_parameter',
+        },
+      })
+    }
+  }
+}
+
+const send = (event: object) =>
   waitUntil(
     fetch(CAPTURE_URL, {
       method: 'POST',
@@ -106,4 +139,3 @@ export const captureToolCall = (entry: RequestLogEntry) => {
       () => undefined,
     ),
   )
-}

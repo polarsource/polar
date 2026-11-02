@@ -9,7 +9,6 @@ from polar.notification_recipient import (
 )
 from polar.notification_recipient.schemas import (
     NotificationRecipientCreate,
-    NotificationRecipientPlatform,
     NotificationRecipientSchema,
 )
 from polar.notification_recipient.service import (
@@ -22,7 +21,7 @@ from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
-from .schemas import NotificationsList, NotificationsMarkRead
+from .schemas import NotificationsList, NotificationsListParams, NotificationsMarkRead
 from .service import notifications
 
 NotificationRecipientID = Annotated[
@@ -85,17 +84,14 @@ async def create(
     summary="Lists all notification recipients subscribed to notifications",
 )
 async def list(
+    filters: Annotated[NotificationsListParams, Query()],
     auth_subject: notification_recipient_auth.NotificationRecipientRead,
     pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_session),
-    expo_push_token: str | None = Query(None, description="Filter by Expo push token."),
-    platform: NotificationRecipientPlatform | None = Query(
-        None, description="Filter by platform."
-    ),
 ) -> ListResource[NotificationRecipientSchema]:
     """List all devices subscribed to notifications."""
     notification_recipients = await notification_recipient_service.list_by_user(
-        session, auth_subject.subject.id, expo_push_token, platform
+        session, auth_subject.subject.id, filters.expo_push_token, filters.platform
     )
 
     return ListResource.from_paginated_results(

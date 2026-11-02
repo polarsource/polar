@@ -16,11 +16,6 @@ import {
   useGeneralRoutes,
   useOrganizationRoutes,
 } from '../../Dashboard/navigation'
-import {
-  useBillingRoutes,
-  useInsightsRoutes,
-  useProductNavigationEnabled,
-} from '../../Dashboard/navigationProducts'
 import { useSettingsRouteGroups } from '../../Dashboard/navigationSettings'
 import { CatalogNavigation } from './CatalogNavigation'
 import { NavList } from './NavList'
@@ -48,8 +43,6 @@ export const OrganizationNavigation = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const productNavEnabled = useProductNavigationEnabled(organization)
-
   if (useIsSettingsPath(organization)) {
     return <SettingsNavigation organization={organization} />
   }
@@ -58,14 +51,10 @@ export const OrganizationNavigation = ({
     return <CatalogNavigation organization={organization} />
   }
 
-  return productNavEnabled ? (
-    <ProductNavigation organization={organization} />
-  ) : (
-    <LegacyOrganizationNavigation organization={organization} />
-  )
+  return <StandardOrganizationNavigation organization={organization} />
 }
 
-const LegacyOrganizationNavigation = ({
+const StandardOrganizationNavigation = ({
   organization,
 }: {
   organization: schemas['Organization']
@@ -75,33 +64,6 @@ const LegacyOrganizationNavigation = ({
     ...useOrganizationRoutes(organization),
   ]
   return <NavList routes={routes} navType="organization" />
-}
-
-const ProductNavigation = ({
-  organization,
-}: {
-  organization: schemas['Organization']
-}) => {
-  const insightsRoutes = useInsightsRoutes(organization)
-  const billingRoutes = useBillingRoutes(organization)
-  const settingsRoutes = useOrganizationRoutes(organization).filter(
-    (route) => route.id === 'settings',
-  )
-
-  return (
-    <div className="flex w-full flex-col gap-6">
-      <NavList routes={insightsRoutes} navType="organization" />
-      <div className="flex w-full flex-col gap-2">
-        <span className="dark:text-polar-500 px-2 text-xs font-medium text-gray-400">
-          Billing
-        </span>
-        <NavList
-          routes={[...billingRoutes, ...settingsRoutes]}
-          navType="organization"
-        />
-      </div>
-    </div>
-  )
 }
 
 const BackLink = ({

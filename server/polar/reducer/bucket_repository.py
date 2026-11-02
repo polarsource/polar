@@ -266,6 +266,25 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             ReducerBucket.bucket_start < before if before is not None else true(),
         )
 
+    async def get_unbilled_totals_within(
+        self,
+        organization_id: UUID,
+        reducer_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        start: datetime,
+        end: datetime,
+    ) -> Row[Any, Any, Any, Any]:
+        """count, sum, min and max of the identities' unbilled buckets of every
+        generation within [start, end), sealed or not."""
+        return await self._get_totals(
+            organization_id,
+            reducer_id,
+            identities,
+            ReducerBucket.billed_at.is_(None),
+            ReducerBucket.bucket_start >= start,
+            ReducerBucket.bucket_end <= end,
+        )
+
     async def get_customer_meter_totals(
         self,
         customer: Customer,

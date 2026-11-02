@@ -43,6 +43,12 @@ from polar.reducer.service import (
     get_reducer_bucket_start,
 )
 from polar.reducer.service import reducer as reducer_service
+from polar.reducer.types import (
+    IncompleteUsage,
+    ObservedUsage,
+    UsageSummary,
+    UsageWindow,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
@@ -1742,6 +1748,119 @@ async def rollup_tokens(
     ]
     await reducer_service.rollup(session, redis, organization.id, events)
     return meter
+
+
+@pytest.fixture
+async def tokens_meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
+    meter = await create_meter(
+        save_fixture,
+        organization=organization,
+        aggregation=PropertyAggregation(
+            func=AggregationFunction.max, property="tokens"
+        ),
+    )
+    await create_reducer(save_fixture, organization=organization, meters=[meter])
+    return meter
+
+
+def usage_window(meter: Meter, start: datetime, end: datetime) -> UsageWindow:
+    return UsageWindow(uuid.uuid4(), uuid.uuid4(), meter.id, start, end)
+
+
+@pytest.mark.anyio
+class TestPreviewBill:
+    @pytest.fixture(autouse=True)
+    async def tokens(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.reducer.service.utc_now", return_value=BILLED_AT)
+        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+
+    async def test_reads_each_window_without_sealing(
+        self,
+        session: AsyncSession,
+        external_customer: Customer,
+        tokens_meter: Meter,
+    ) -> None:
+        windows = [
+            usage_window(tokens_meter, BUCKET_START, CUTOFF),
+            usage_window(tokens_meter, CUTOFF, NEXT_BUCKET_START),
+        ]
+
+        result = await reducer_service.preview_bill(session, external_customer, windows)
+
+        assert isinstance(result, ObservedUsage)
+        assert [usage.summary for usage in result.windows] == [
+            UsageSummary(1, Decimal(5), Decimal(5), Decimal(5)),
+            UsageSummary(1, Decimal(3), Decimal(3), Decimal(3)),
+        ]
+        assert not any(sealed for *_, sealed in await get_intervals(session))
+
+    async def test_excludes_billed_usage(
+        self,
+        session: AsyncSession,
+        external_customer: Customer,
+        tokens_meter: Meter,
+        order: Order,
+    ) -> None:
+        assert await reducer_service.bill(
+            session,
+            external_customer,
+            [tokens_meter.id],
+            order_id=order.id,
+            billable_from=BUCKET_START,
+            cutoff=CUTOFF,
+        ) == {tokens_meter.id: (Decimal(5), Decimal(0))}
+
+        result = await reducer_service.preview_bill(
+            session,
+            external_customer,
+            [usage_window(tokens_meter, BUCKET_START, NEXT_BUCKET_START)],
+        )
+
+        assert isinstance(result, ObservedUsage)
+        assert [usage.summary for usage in result.windows] == [
+            UsageSummary(1, Decimal(3), Decimal(3), Decimal(3))
+        ]
+
+    async def test_boundary_inside_a_sealed_bucket_is_incomplete(
+        self,
+        session: AsyncSession,
+        external_customer: Customer,
+        tokens_meter: Meter,
+    ) -> None:
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            tokens_meter.id, ReducerKind.usage
+        )
+        assert reducer is not None
+        await reducer_service.sync_bucket(
+            session, reducer.id, BUCKET_START, None, "external"
+        )
+        await reducer_service.seal(
+            session,
+            external_customer,
+            tokens_meter.id,
+            at=NEXT_BUCKET_START,
+            boundaries=(),
+        )
+
+        result = await reducer_service.preview_bill(
+            session,
+            external_customer,
+            [usage_window(tokens_meter, BUCKET_START, CUTOFF)],
+        )
+
+        assert result == IncompleteUsage("boundary_unavailable")
 
 
 @pytest.mark.anyio

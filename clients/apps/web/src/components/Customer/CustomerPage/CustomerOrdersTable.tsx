@@ -1,6 +1,7 @@
 'use client'
 
 import { OrderStatus } from '@/components/Orders/OrderStatus'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -40,7 +41,20 @@ export const CustomerOrdersTable = ({
                 href={`/dashboard/${organization.slug}/sales/${original.id}`}
                 key={original.id}
               >
-                <span>{original.description}</span>
+                <Box
+                  as="span"
+                  display="inline-flex"
+                  alignItems="center"
+                  columnGap="s"
+                >
+                  {original.description}
+                  {original.product && (
+                    <ProductVersionLabel
+                      organization={organization}
+                      product={original.product}
+                    />
+                  )}
+                </Box>
               </Link>
             ),
           },

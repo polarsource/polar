@@ -37,6 +37,11 @@ from polar.organization_review.schemas import (
     ReviewVerdict,
 )
 
+FLAGGED_PRODUCT_NAME_TYPES = (
+    OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED,
+    OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT,
+)
+
 
 class OrganizationReviewRepository(
     RepositorySoftDeletionIDMixin[OrganizationReview, UUID],
@@ -540,6 +545,37 @@ class OrganizationRiskSignalRepository(
                 OrganizationRiskSignal.organization_id == organization_id,
                 OrganizationRiskSignal.risk_level
                 != OrganizationRiskSignal.RiskLevel.UNKNOWN,
+            )
+            .order_by(OrganizationRiskSignal.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
+
+    async def has_flagged_product_name(
+        self, organization_id: UUID, product_id: UUID
+    ) -> bool:
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationRiskSignal.organization_id == organization_id,
+                OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
+                OrganizationRiskSignal.payload["product_id"].astext == str(product_id),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().first() is not None
+
+    async def list_flagged_product_names(
+        self, organization_id: UUID, *, limit: int = 100
+    ) -> list[OrganizationRiskSignal]:
+        """Name check findings for an organization, most recent first."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationRiskSignal.organization_id == organization_id,
+                OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
             )
             .order_by(OrganizationRiskSignal.created_at.desc())
             .limit(limit)

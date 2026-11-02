@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import Depends, Query
 
-from polar.authz.dependencies import AuthorizeWebUserRead
+from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -26,6 +26,7 @@ from .schemas import Product as ProductSchema
 from .schemas import (
     ProductBenefitsUpdate,
     ProductCreate,
+    ProductFlaggedNameReport,
     ProductID,
     ProductNameCheck,
     ProductNameCheckRequest,
@@ -122,6 +123,35 @@ async def name_check(
 ) -> ProductNameCheck:
     """Warn when a product name suggests a use case the Acceptable Use Policy forbids."""
     return await check_product_name(name_check_request.name)
+
+
+@router.post(
+    "/{id}/flagged-name",
+    summary="Report Flagged Product Name",
+    status_code=204,
+    responses={
+        204: {"description": "Report recorded."},
+        403: {
+            "description": "You don't have the permission to manage this product.",
+            "model": NotPermitted.schema(),
+        },
+        404: ProductNotFound,
+    },
+    tags=[APITag.private],
+)
+async def report_flagged_name(
+    id: ProductID,
+    auth_subject: AuthorizeWebUserWrite,
+    report: ProductFlaggedNameReport,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Record that a product was created after its name showed the warning."""
+    product = await product_service.get(session, auth_subject, id)
+
+    if product is None:
+        raise ResourceNotFound()
+
+    await product_service.report_flagged_name(session, auth_subject, product, report)
 
 
 @router.post(

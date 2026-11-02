@@ -2648,6 +2648,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/products/{id}/flagged-name': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Report Flagged Product Name
+     * @description Record that a product was created after its name showed the warning.
+     */
+    post: operations['products:report_flagged_name']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/products/{id}/benefits': {
     parameters: {
       query?: never
@@ -33877,6 +33897,39 @@ export interface components {
        */
       meter_interval_count?: number | null
     }
+    /** ProductFlaggedNameAttempt */
+    ProductFlaggedNameAttempt: {
+      /**
+       * Name
+       * @description A name that showed the Acceptable Use Policy warning.
+       */
+      name: string
+      /**
+       * Category
+       * @description Category the name check returned for it.
+       */
+      category: string
+      /**
+       * Phrase
+       * @description The word-list phrase that matched, if any.
+       */
+      phrase?: string | null
+      /**
+       * Flagged At
+       * Format: date-time
+       * @description When the name check first flagged this name, from the browser.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      flagged_at: string
+    }
+    /** ProductFlaggedNameReport */
+    ProductFlaggedNameReport: {
+      /**
+       * Attempts
+       * @description Flagged names tried before create, in the order they were typed.
+       */
+      attempts: components['schemas']['ProductFlaggedNameAttempt'][]
+    }
     /**
      * ProductMediaFileCreate
      * @description Schema to create a file to be used as a product media file.
@@ -48834,6 +48887,57 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ProductNameCheck']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'products:report_flagged_name': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProductFlaggedNameReport']
+      }
+    }
+    responses: {
+      /** @description Report recorded. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description You don't have the permission to manage this product. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Product not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

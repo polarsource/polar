@@ -15,9 +15,15 @@ import {
   ProductEditOrCreateForm,
   productToCreateForm,
 } from '@/utils/product'
-import { useFlaggedProductName } from '@/hooks/useFlaggedProductName'
+import {
+  FlaggedProductName,
+  getFlaggedNamesToReport,
+  useFlaggedProductName,
+} from '@/hooks/useFlaggedProductName'
+import { api } from '@/utils/client'
 import { usePostHog } from '@/hooks/posthog'
 import { isValidationError, schemas } from '@polar-sh/client'
+import * as Sentry from '@sentry/nextjs'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -100,10 +106,17 @@ export const CreateProductPage = ({
   })
   const { handleSubmit, setError } = form
   const name = useWatch({ control: form.control, name: 'name' })
+  const [flaggedNames, setFlaggedNames] = useState<FlaggedProductName[]>([])
   const flaggedPhrase = useFlaggedProductName({
     organizationId: organization.id,
     name: name ?? '',
   })
+  if (
+    flaggedPhrase &&
+    !flaggedNames.some((flagged) => flagged.name === flaggedPhrase.name)
+  ) {
+    setFlaggedNames([...flaggedNames, flaggedPhrase])
+  }
 
   const onInvalid = useCallback(
     (errors: FieldErrors<ProductEditOrCreateForm>) => {
@@ -181,6 +194,28 @@ export const CreateProductPage = ({
           })
         }
 
+        const attempts = getFlaggedNamesToReport(
+          productCreate.name.trim(),
+          flaggedNames,
+        )
+        if (attempts.length > 0) {
+          void api
+            .POST('/v1/products/{id}/flagged-name', {
+              params: { path: { id: product.id } },
+              body: { attempts },
+            })
+            .then(({ response }) => {
+              if (!response.ok) {
+                Sentry.captureException(
+                  new Error(
+                    `Flagged product name report failed with status ${response.status}`,
+                  ),
+                )
+              }
+            })
+            .catch((error) => Sentry.captureException(error))
+        }
+
         router.push(
           getStatusRedirect(
             returnTo ?? `/dashboard/${organization.slug}/products`,
@@ -209,6 +244,7 @@ export const CreateProductPage = ({
       toast,
       setError,
       flaggedPhrase,
+      flaggedNames,
       posthog,
     ],
   )

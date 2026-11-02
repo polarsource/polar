@@ -1,11 +1,13 @@
 import builtins
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     UUID4,
     AfterValidator,
+    AwareDatetime,
     BaseModel,
     BeforeValidator,
     Discriminator,
@@ -1261,4 +1263,38 @@ class ProductListParams(QuerySchema):
     )
     visibility: builtins.list[ProductVisibility] | None = Field(
         default=None, description="Filter by visibility."
+    )
+
+
+def _flagged_at_to_utc(value: datetime) -> datetime:
+    try:
+        return value.astimezone(UTC)
+    except OverflowError as e:
+        raise ValueError("Timestamp is out of range.") from e
+
+
+class ProductFlaggedNameAttempt(Schema):
+    name: str = Field(
+        min_length=1,
+        max_length=64,
+        description="A name that showed the Acceptable Use Policy warning.",
+    )
+    category: str = Field(
+        max_length=100, description="Category the name check returned for it."
+    )
+    phrase: str | None = Field(
+        default=None,
+        max_length=64,
+        description="The word-list phrase that matched, if any.",
+    )
+    flagged_at: Annotated[AwareDatetime, AfterValidator(_flagged_at_to_utc)] = Field(
+        description="When the name check first flagged this name, from the browser."
+    )
+
+
+class ProductFlaggedNameReport(Schema):
+    attempts: list[ProductFlaggedNameAttempt] = Field(
+        min_length=1,
+        max_length=50,
+        description="Flagged names tried before create, in the order they were typed.",
     )

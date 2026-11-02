@@ -21,7 +21,7 @@ from ._shared import (
     render_dimension,
     render_review_context_badge,
 )
-from .risk_signals import render_risk_signals_card
+from .risk_signals import render_flagged_names_card, render_risk_signals_card
 
 logger = structlog.get_logger()
 
@@ -34,8 +34,10 @@ class ReviewsSection:
         organization: Organization,
         agent_reviews: Sequence[OrganizationAgentReview],
         risk_signals: Sequence[OrganizationRiskSignal],
+        flagged_names: Sequence[OrganizationRiskSignal] = (),
     ) -> None:
         self.org = organization
+        self.flagged_names = flagged_names
         self.agent_reviews = agent_reviews
         self.risk_signals = risk_signals
 
@@ -44,6 +46,7 @@ class ReviewsSection:
         """Render the reviews section."""
         with tag.div(classes="space-y-6"):
             render_risk_signals_card(self.risk_signals)
+            render_flagged_names_card(request, self.org, self.flagged_names)
 
             with card(bordered=True):
                 with tag.div(classes="mb-4"):

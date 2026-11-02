@@ -1,3 +1,5 @@
+import html
+import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
@@ -419,6 +421,94 @@ class TestDeletePayoutAccount:
         persisted = await repository.get_by_id(payout_account.id, include_deleted=True)
         assert persisted is not None
         assert persisted.deleted_at is None
+
+
+@pytest.mark.anyio
+class TestFlaggedProductNames:
+    async def _create_signal(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_id: uuid.UUID,
+        type: OrganizationRiskSignal.Type = (
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED
+        ),
+    ) -> None:
+        await save_fixture(
+            OrganizationRiskSignal(
+                organization=organization,
+                source=OrganizationRiskSignal.Source.POLAR,
+                type=type,
+                risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
+                payload={
+                    "attempts": [
+                        {
+                            "name": "Coaching Package",
+                            "category": "human services",
+                            "phrase": None,
+                            "flagged_at": "2026-11-02T14:51:02Z",
+                        },
+                        {
+                            "name": "Casino Night",
+                            "category": "gambling",
+                            "phrase": "Casino",
+                            "flagged_at": "2026-11-02T14:51:18Z",
+                        },
+                    ],
+                    "product_id": str(product_id),
+                    "product_name": "Night Games",
+                },
+            )
+        )
+
+    async def test_reviews_section_shows_the_timeline(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product_id = uuid.uuid4()
+        await self._create_signal(save_fixture, organization, product_id)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}?section=reviews"
+        )
+
+        assert response.status_code == 200
+        page = html.unescape(response.text)
+        assert f"/products/{product_id}" in page
+        timeline = [
+            "2026-11-02 14:51:02 UTC",
+            'Tried "Coaching Package"',
+            "2026-11-02 14:51:18 UTC",
+            'Tried "Casino Night"',
+            'Created as "Night Games"',
+        ]
+        positions = [page.index(entry) for entry in timeline]
+        assert positions == sorted(positions)
+
+    @pytest.mark.parametrize(
+        "type",
+        [
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED,
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT,
+        ],
+    )
+    async def test_list_filter(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        type: OrganizationRiskSignal.Type,
+    ) -> None:
+        await self._create_signal(save_fixture, organization, uuid.uuid4(), type)
+
+        response = await backoffice_client.get("/organizations/?flagged_names=true")
+
+        assert response.status_code == 200
+        assert organization.name in response.text
+        assert organization_second.name not in response.text
 
 
 @pytest.mark.anyio

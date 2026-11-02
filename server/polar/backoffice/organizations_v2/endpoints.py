@@ -47,6 +47,7 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     AccountCredit,
     Organization,
+    OrganizationRiskSignal,
     PayoutAccount,
     User,
     UserOrganization,
@@ -87,6 +88,7 @@ from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
 )
 from polar.organization_review.repository import (
+    FLAGGED_PRODUCT_NAME_TYPES,
     OrganizationReviewRepository,
     OrganizationRiskSignalRepository,
 )
@@ -595,6 +597,7 @@ async def list_organizations(
     days_in_status: str | None = Query(""),
     has_appeal: str | None = Query(""),
     first_reviews: str | None = Query(""),
+    flagged_names: str | None = Query(""),
     deleted: DeletedFilter | None = Query(None),
 ) -> None:
     """
@@ -730,6 +733,16 @@ async def list_organizations(
     elif first_reviews == "false":
         stmt = stmt.where(~Organization.is_first_review)
 
+    if flagged_names == "true":
+        stmt = stmt.where(
+            Organization.id.in_(
+                select(OrganizationRiskSignal.organization_id).where(
+                    OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
+                    OrganizationRiskSignal.deleted_at.is_(None),
+                )
+            )
+        )
+
     stmt = apply_deleted_filter(stmt, deleted_filter)
 
     is_review_tab = status_filter == OrganizationStatus.REVIEW
@@ -834,6 +847,7 @@ async def list_organizations(
                 selected_risk_level=risk_level,
                 selected_days_in_status=days_in_status,
                 selected_has_appeal=has_appeal,
+                selected_flagged_names=flagged_names,
                 selected_deleted=deleted_filter,
                 signals_by_org=signals_by_org,
                 open_case_org_ids=open_case_org_ids,
@@ -970,6 +984,7 @@ async def get_organization_detail(
     risk_signal_repo = OrganizationRiskSignalRepository.from_session(session)
     risk_signals = await risk_signal_repo.list_by_organization(organization_id)
     has_risk_signals = bool(risk_signals)
+    flagged_names = await risk_signal_repo.list_flagged_product_names(organization_id)
 
     # Any open case (appeal or dispute) lights the Support Cases nav badge.
     open_case_count = await session.scalar(
@@ -990,6 +1005,7 @@ async def get_organization_detail(
         startup_program_status=startup_program_status,
         has_open_case=has_open_case,
         has_risk_signals=has_risk_signals,
+        has_flagged_names=bool(flagged_names),
     )
 
     parsed_agent_report = None
@@ -1070,6 +1086,7 @@ async def get_organization_detail(
                     organization,
                     agent_reviews=agent_reviews,
                     risk_signals=risk_signals,
+                    flagged_names=flagged_names,
                 )
                 with reviews_section.render(request):
                     pass

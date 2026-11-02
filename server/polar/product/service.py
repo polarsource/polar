@@ -37,6 +37,7 @@ from polar.meter.repository import MeterRepository
 from polar.models import (
     Benefit,
     Organization,
+    OrganizationRiskSignal,
     Product,
     ProductBenefit,
     ProductMedia,
@@ -50,6 +51,8 @@ from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
+from polar.organization_review.repository import OrganizationRiskSignalRepository
+from polar.organization_review.risk_signal import risk_signal as risk_signal_service
 from polar.organization_review.schemas import ReviewContext
 from polar.product.guard import (
     is_custom_price,
@@ -63,9 +66,11 @@ from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
+from .name_check import FLAGGED_PRODUCT_PHRASES
 from .schemas import (
     ExistingProductPrice,
     ProductCreate,
+    ProductFlaggedNameReport,
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceMeteredTiersCreate,
@@ -214,6 +219,66 @@ class ProductService:
             .options(undefer(Product.external_id), *repository.get_eager_options())
         )
         return await repository.get_all(statement)
+
+    async def report_flagged_name(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        report: ProductFlaggedNameReport,
+    ) -> None:
+        await assert_resource_permission(
+            session, auth_subject, product, OrganizationPermission.products_manage
+        )
+        errors: list[ValidationError] = [
+            {
+                "type": "value_error",
+                "loc": ("body", "attempts", index, "category"),
+                "msg": "Unknown name check category.",
+                "input": attempt.category,
+            }
+            for index, attempt in enumerate(report.attempts)
+            if attempt.category not in FLAGGED_PRODUCT_PHRASES
+        ]
+        if errors:
+            raise PolarRequestValidationError(errors)
+
+        await ProductRepository.from_session(session).get_by_id(
+            product.id, for_update=True
+        )
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        if await repository.has_flagged_product_name(
+            product.organization_id, product.id
+        ):
+            return
+
+        product_name = product.name.strip().casefold()
+        kept = any(
+            attempt.name.strip().casefold() == product_name
+            for attempt in report.attempts
+        )
+        names = [attempt.name for attempt in report.attempts]
+        if not kept:
+            names.append(product.name)
+        await risk_signal_service.record(
+            session,
+            product.organization,
+            source=OrganizationRiskSignal.Source.POLAR,
+            type=(
+                OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT
+                if kept
+                else OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED
+            ),
+            risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
+            description=" → ".join(names),
+            payload={
+                "attempts": [
+                    attempt.model_dump(mode="json") for attempt in report.attempts
+                ],
+                "product_id": str(product.id),
+                "product_name": product.name,
+            },
+        )
 
     async def create(
         self,

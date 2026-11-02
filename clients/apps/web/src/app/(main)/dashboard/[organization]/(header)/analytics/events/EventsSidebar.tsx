@@ -1,7 +1,6 @@
 'use client'
 
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
-import { EventCreationGuideButton } from '@/components/Events/EventCreationGuideButton'
 import { EventMetadataFields } from '@/components/Events/EventMetadataFields'
 import { EventTypeFilter } from '@/components/Events/EventTypeFilter'
 import DateRangePicker, {
@@ -127,25 +126,22 @@ export const EventsSidebar = ({
         minHeight={40}
       >
         <Text>Filters</Text>
-        <Box alignItems="center" gap="xs">
-          {hasActiveFilters && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-6 w-6 [&_svg]:size-3!"
-                  onClick={onReset}
-                  aria-label="Reset filters"
-                >
-                  <FunnelX />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Reset filters</TooltipContent>
-            </Tooltip>
-          )}
-          <EventCreationGuideButton />
-        </Box>
+        {hasActiveFilters && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-6 w-6 [&_svg]:size-3!"
+                onClick={onReset}
+                aria-label="Reset filters"
+              >
+                <FunnelX />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Reset filters</TooltipContent>
+          </Tooltip>
+        )}
       </Box>
       <Box
         flexDirection="column"

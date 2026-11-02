@@ -1,6 +1,6 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
+import { ClientResponseError, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
@@ -107,7 +107,14 @@ export const usePublishCatalog = () =>
 
 export const useDiscardCatalog = () =>
   useMutation({
-    mutationFn: (id: string) =>
-      unwrap(api.DELETE('/v1/catalogs/{id}', { params: { path: { id } } })),
+    // 204 has no body for `unwrap` to return
+    mutationFn: async (id: string) => {
+      const { error, response } = await api.DELETE('/v1/catalogs/{id}', {
+        params: { path: { id } },
+      })
+      if (error) {
+        throw new ClientResponseError(error, response)
+      }
+    },
     onSuccess: invalidateCatalogs,
   })

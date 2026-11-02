@@ -284,7 +284,8 @@ export default function VersionPage({
             <Box alignItems="center" columnGap="l" minWidth={0}>
               <BackLink versionsPath={versionsPath} />
               <Text variant="heading-xs" as="h1" truncate>
-                {catalog.name ?? statusLabel[catalog.status]}
+                {catalog.name ??
+                  (catalog.status === 'draft' ? statusLabel.draft : 'Untitled')}
               </Text>
             </Box>
             <Text variant="heading-xs" color="muted">

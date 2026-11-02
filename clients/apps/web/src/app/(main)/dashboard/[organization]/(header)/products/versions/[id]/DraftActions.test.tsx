@@ -8,8 +8,8 @@ const discard = vi.fn(() => Promise.resolve())
 const push = vi.fn()
 
 vi.mock('@/hooks/queries/catalogs', () => ({
-  usePublishCatalog: () => ({ mutateAsync: publish, isPending: false }),
-  useDiscardCatalog: () => ({ mutateAsync: discard, isPending: false }),
+  usePublishCatalog: () => ({ mutateAsync: publish }),
+  useDiscardCatalog: () => ({ mutateAsync: discard }),
 }))
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))

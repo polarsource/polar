@@ -4,6 +4,8 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useDiscardCatalog, usePublishCatalog } from '@/hooks/queries/catalogs'
+import { extractApiErrorMessage } from '@/utils/api/errors'
+import { ClientResponseError } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
@@ -11,8 +13,12 @@ import { useRouter } from 'next/navigation'
 const failed = (action: string) => (error: unknown) =>
   toast({
     title: `Could not ${action} the draft`,
-    description:
-      error instanceof Error ? error.message : 'Please try again in a moment.',
+    description: extractApiErrorMessage(
+      error instanceof ClientResponseError
+        ? (error.error as { detail?: unknown })
+        : {},
+      'Please try again in a moment.',
+    ),
   })
 
 export const DraftActions = ({
@@ -35,14 +41,8 @@ export const DraftActions = ({
         publish this draft.
       </Text>
       <Box columnGap="m">
-        <Button onClick={publishModal.show} loading={publish.isPending}>
-          Publish
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={discardModal.show}
-          loading={discard.isPending}
-        >
+        <Button onClick={publishModal.show}>Publish</Button>
+        <Button variant="secondary" onClick={discardModal.show}>
           Discard
         </Button>
       </Box>

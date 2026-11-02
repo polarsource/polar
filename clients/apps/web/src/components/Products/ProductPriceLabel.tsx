@@ -133,10 +133,12 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       ? []
       : meteredPrices.slice(0, 1)
 
-  const labels = [
-    staticLabel,
-    ...shownMeteredPrices.map(renderMeteredPrice),
-  ].filter(Boolean)
+  const meteredLabels =
+    shownMeteredPrices.length > 1
+      ? [<span key="meters">{shownMeteredPrices.length} meters</span>]
+      : shownMeteredPrices.map(renderMeteredPrice)
+
+  const labels = [staticLabel, ...meteredLabels].filter(Boolean)
 
   if (labels.length === 0) {
     return staticPrice ? (

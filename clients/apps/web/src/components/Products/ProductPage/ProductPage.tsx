@@ -25,6 +25,7 @@ import { useCallback, useState } from 'react'
 import { DashboardBody } from '../../Layout/DashboardLayout'
 import { ProductMetricsView } from './ProductMetricsView'
 import { ProductOverview } from './ProductOverview'
+import { ProductVersionBanner } from './ProductVersionBanner'
 
 export interface ProductPageProps {
   organization: schemas['Organization']
@@ -267,6 +268,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
       }
     >
       <Box flexDirection="column" rowGap="2xl">
+        <ProductVersionBanner organization={organization} product={product} />
         <Subnav label="Product sections">
           {(['overview', 'metrics'] as const).map((value) => (
             <SubnavItem key={value} active={tab === value}>

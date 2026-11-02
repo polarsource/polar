@@ -501,7 +501,7 @@ class MetricsService:
             session, auth_subject, organization_id=organization_id
         )
         product_repository = ProductRepository.from_session(session)
-        resolved = await product_repository.get_ids_by_external_ids(
+        resolved = await product_repository.get_version_ids_by_external_ids(
             org_ids, external_product_id
         )
         if product_id is not None:

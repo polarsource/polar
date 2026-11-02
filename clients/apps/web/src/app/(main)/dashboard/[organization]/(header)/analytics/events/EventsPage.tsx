@@ -114,7 +114,9 @@ const ClientPage = ({
     parseAsString.withOptions(PUSH_HISTORY),
   )
   const stepToEvent = (id: string) =>
-    setSelectedEventId(id, { history: 'replace' })
+    setSelectedEventId(id, {
+      history: selectedEventId === null ? 'push' : 'replace',
+    })
 
   const debouncedQuery = useDebounce(query, 500)
   const debouncedMetadata = useDebounce(metadata, 500)

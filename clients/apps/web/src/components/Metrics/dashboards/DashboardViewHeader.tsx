@@ -36,9 +36,8 @@ function useMetricsExport(
   organization: schemas['Organization'],
   earliestDateISOString: string,
 ) {
-  const { interval, startDate, endDate, productId } = useMetricsFilters(
-    earliestDateISOString,
-  )
+  const { interval, startDate, endDate, productId, externalProductId } =
+    useMetricsFilters(earliestDateISOString)
 
   return useCallback(
     (metrics: string[]) => {
@@ -55,10 +54,20 @@ function useMetricsExport(
         Intl.DateTimeFormat().resolvedOptions().timeZone,
       )
       productId?.forEach((id) => url.searchParams.append('product_id', id))
+      externalProductId?.forEach((id) =>
+        url.searchParams.append('external_product_id', id),
+      )
       metrics.forEach((m) => url.searchParams.append('metrics', m))
       window.open(url.toString(), '_blank', 'noopener,noreferrer')
     },
-    [organization.id, startDate, endDate, interval, productId],
+    [
+      organization.id,
+      startDate,
+      endDate,
+      interval,
+      productId,
+      externalProductId,
+    ],
   )
 }
 

@@ -7,7 +7,6 @@ import ExportOrdersModal from '@/components/Orders/ExportOrdersModal'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
-import { useSelectedProducts } from '@/hooks/queries/products'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useModal } from '@/components/Modal/useModal'
 import { useDateRange } from '@/utils/date'
@@ -238,20 +237,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       : []),
   ]
 
-  const { data: externalProducts } = useSelectedProducts(
-    { organization_id: organization.id, external_id: externalProductId ?? [] },
-    true,
-  )
-  const metricsProductId = externalProductId
-    ? externalProducts?.map((product) => product.id)
-    : (productId ?? undefined)
-
   const { data: metricsData } = useMetrics({
     organization_id: organization.id,
     startDate,
     endDate,
     interval: dateRangeToInterval(startDate, endDate),
-    product_id: metricsProductId,
+    product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
     metrics: ['orders', 'revenue', 'average_order_value'],
   })
 

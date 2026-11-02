@@ -54,7 +54,7 @@ const useFilteredMetrics = (
   earliestDateISOString: string,
   metrics: MetricKey[],
 ) => {
-  const { interval, startDate, endDate, productId } = useMetricsFilters(
+  const { interval, startDate, endDate, productFilter } = useMetricsFilters(
     earliestDateISOString,
   )
   const { data } = useMetrics(
@@ -63,12 +63,12 @@ const useFilteredMetrics = (
       endDate,
       interval,
       organization_id: organizationId,
-      ...(productId && productId.length > 0 ? { product_id: productId } : {}),
+      ...productFilter,
       metrics,
     },
     metrics.length > 0,
   )
-  return { data, interval, startDate, endDate, productId }
+  return { data, interval, startDate, endDate, productFilter }
 }
 
 // Each built-in group queries its own metrics, so the page renders section by
@@ -82,11 +82,8 @@ const BuiltInGroupSection = ({
   group: MetricGroupDefinition
   earliestDateISOString: string
 }) => {
-  const { data, interval, startDate, endDate, productId } = useFilteredMetrics(
-    organizationId,
-    earliestDateISOString,
-    group.metrics,
-  )
+  const { data, interval, startDate, endDate, productFilter } =
+    useFilteredMetrics(organizationId, earliestDateISOString, group.metrics)
 
   return (
     <DashboardSection id={group.slug} title={group.title}>
@@ -99,7 +96,7 @@ const BuiltInGroupSection = ({
           organizationId={organizationId}
           startDate={startDate}
           endDate={endDate}
-          productId={productId ?? undefined}
+          productFilter={productFilter}
         />
       ) : group.slug === 'seats' ? (
         <SeatsContent data={data} interval={interval} />

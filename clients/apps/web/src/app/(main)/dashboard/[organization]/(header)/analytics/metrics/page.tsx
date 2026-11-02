@@ -20,6 +20,7 @@ export default async function Page(props: {
     end_date?: string
     interval?: schemas['TimeInterval']
     product_id?: string | string[]
+    external_product_id?: string | string[]
   }>
 }) {
   const { organization: organizationSlug } = await props.params
@@ -40,19 +41,14 @@ export default async function Page(props: {
 
   const interval = searchParams.interval || defaultInterval
 
-  const { product_id, ...restSearchParams } = searchParams
-  const productId = product_id
-    ? Array.isArray(product_id)
-      ? product_id
-      : [product_id]
-    : undefined
+  const urlSearchParams = new URLSearchParams(
+    Object.entries(searchParams).flatMap(([key, value]) =>
+      [value ?? []].flat().map((v) => [key, v]),
+    ),
+  )
 
   if (!['year', 'month', 'week', 'day', 'hour'].includes(interval)) {
-    const urlSearchParams = new URLSearchParams({
-      ...restSearchParams,
-      interval: defaultInterval,
-    })
-    productId?.forEach((id) => urlSearchParams.append('product_id', id))
+    urlSearchParams.set('interval', defaultInterval)
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 
@@ -122,13 +118,9 @@ export default async function Page(props: {
   const validInterval = findValidInterval(startDate, endDate, interval)
 
   if (startDate < minDate || validInterval !== interval) {
-    const urlSearchParams = new URLSearchParams({
-      ...restSearchParams,
-      start_date: toISODate(max([minDate, startDate])),
-      end_date: toISODate(endDate),
-      interval: validInterval,
-    })
-    productId?.forEach((id) => urlSearchParams.append('product_id', id))
+    urlSearchParams.set('start_date', toISODate(max([minDate, startDate])))
+    urlSearchParams.set('end_date', toISODate(endDate))
+    urlSearchParams.set('interval', validInterval)
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 

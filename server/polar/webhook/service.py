@@ -9,10 +9,17 @@ from uuid import UUID
 
 import structlog
 from pydantic import AnyUrl
-from sqlalchemy import CursorResult, String, desc, or_, select, text, update
+from sqlalchemy import (
+    ColumnElement,
+    CursorResult,
+    String,
+    or_,
+    select,
+    text,
+    update,
+)
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -314,39 +321,33 @@ class WebhookService:
         event_type: Sequence[WebhookEventType] | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookDelivery], int]:
-        repository = WebhookDeliveryRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.organization_manage
         )
 
+        endpoint_repository = WebhookEndpointRepository.from_session(session)
         if endpoint_id is not None:
-            endpoint_repository = WebhookEndpointRepository.from_session(session)
-            allowed_endpoint_ids = await endpoint_repository.get_accessible_ids(
+            endpoint_ids = await endpoint_repository.get_accessible_ids(
                 org_ids, endpoint_id
             )
-            if not allowed_endpoint_ids:
-                return [], 0
-            base_statement = repository.get_base_statement().where(
-                WebhookDelivery.webhook_endpoint_id.in_(allowed_endpoint_ids)
-            )
         else:
-            base_statement = repository.get_statement_by_org_ids(org_ids)
+            endpoint_ids = await endpoint_repository.get_ids_by_org_ids(org_ids)
+        if not endpoint_ids:
+            return [], 0
 
-        statement = base_statement.options(
-            joinedload(WebhookDelivery.webhook_event)
-        ).order_by(desc(WebhookDelivery.created_at))
+        clauses: list[ColumnElement[bool]] = []
 
         if start_timestamp is not None:
-            statement = statement.where(WebhookDelivery.created_at > start_timestamp)
+            clauses.append(WebhookDelivery.created_at > start_timestamp)
 
         if end_timestamp is not None:
-            statement = statement.where(WebhookDelivery.created_at < end_timestamp)
+            clauses.append(WebhookDelivery.created_at < end_timestamp)
 
         if succeeded is not None:
-            statement = statement.where(WebhookDelivery.succeeded == succeeded)
+            clauses.append(WebhookDelivery.succeeded == succeeded)
 
         if query is not None:
-            statement = statement.where(
+            clauses.append(
                 or_(
                     sql_cast(WebhookDelivery.id, String).ilike(f"%{query}%"),
                     sql_cast(WebhookDelivery.webhook_event_id, String).ilike(
@@ -357,34 +358,17 @@ class WebhookService:
             )
 
         if http_code_class is not None:
-            if http_code_class == "2xx":
-                statement = statement.where(
-                    WebhookDelivery.http_code >= 200,
-                    WebhookDelivery.http_code < 300,
-                )
-            elif http_code_class == "3xx":
-                statement = statement.where(
-                    WebhookDelivery.http_code >= 300,
-                    WebhookDelivery.http_code < 400,
-                )
-            elif http_code_class == "4xx":
-                statement = statement.where(
-                    WebhookDelivery.http_code >= 400,
-                    WebhookDelivery.http_code < 500,
-                )
-            elif http_code_class == "5xx":
-                statement = statement.where(
-                    WebhookDelivery.http_code >= 500,
-                    WebhookDelivery.http_code < 600,
-                )
+            lower_bound = int(http_code_class[0]) * 100
+            clauses.append(WebhookDelivery.http_code >= lower_bound)
+            clauses.append(WebhookDelivery.http_code < lower_bound + 100)
 
-        if event_type is not None:
-            statement = statement.join(
-                WebhookEvent, WebhookDelivery.webhook_event_id == WebhookEvent.id
-            ).where(WebhookEvent.type.in_(event_type))
-
-        return await repository.paginate(
-            statement, limit=pagination.limit, page=pagination.page
+        repository = WebhookDeliveryRepository.from_session(session)
+        return await repository.paginate_by_endpoints(
+            endpoint_ids,
+            clauses,
+            event_types=event_type,
+            limit=pagination.limit,
+            page=pagination.page,
         )
 
     async def redeliver_event(

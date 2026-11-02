@@ -3,8 +3,20 @@ from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, func, select, tuple_, update
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy import (
+    ColumnElement,
+    CursorResult,
+    Select,
+    Uuid,
+    column,
+    func,
+    select,
+    true,
+    tuple_,
+    update,
+    values,
+)
+from sqlalchemy.orm import aliased, contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -18,6 +30,7 @@ from polar.models import (
     WebhookEndpoint,
     WebhookEvent,
 )
+from polar.models.webhook_endpoint import WebhookEventType
 
 
 class WebhookEventRepository(
@@ -187,6 +200,63 @@ class WebhookDeliveryRepository(
         )
         return result.rowcount
 
+    async def paginate_by_endpoints(
+        self,
+        endpoint_ids: Sequence[UUID],
+        clauses: Sequence[ColumnElement[bool]],
+        *,
+        event_types: Sequence[WebhookEventType] | None,
+        limit: int,
+        page: int,
+    ) -> tuple[list[WebhookDelivery], int]:
+        """
+        Paginate the deliveries of the given endpoints, newest first.
+
+        A plain `ORDER BY created_at DESC LIMIT n` over the joined endpoints makes
+        the planner walk the global `created_at` index backwards until it finds
+        n matching rows, which scans most of the table for endpoints with few
+        or old deliveries. Instead, take the top `offset + limit` rows of each
+        endpoint from its `(webhook_endpoint_id, created_at)` index in a
+        LATERAL subquery, then sort that bounded set.
+        """
+        offset = (page - 1) * limit
+        order = (WebhookDelivery.created_at.desc(), WebhookDelivery.id.desc())
+
+        filtered = self.get_base_statement().where(*clauses)
+        if event_types is not None:
+            filtered = filtered.join(
+                WebhookEvent, WebhookDelivery.webhook_event_id == WebhookEvent.id
+            ).where(WebhookEvent.type.in_(event_types))
+
+        count_statement = select(func.count()).select_from(
+            filtered.where(WebhookDelivery.webhook_endpoint_id.in_(endpoint_ids))
+            .with_only_columns(WebhookDelivery.id)
+            .subquery()
+        )
+        count = (await self.session.execute(count_statement)).scalar_one()
+
+        endpoints = values(column("id", Uuid), name="endpoints").data(
+            [(endpoint_id,) for endpoint_id in endpoint_ids]
+        )
+        latest_per_endpoint = (
+            filtered.where(WebhookDelivery.webhook_endpoint_id == endpoints.c.id)
+            .order_by(*order)
+            .limit(offset + limit)
+            .lateral("latest_deliveries")
+        )
+        delivery = aliased(WebhookDelivery, latest_per_endpoint)
+        statement = (
+            select(delivery)
+            .select_from(endpoints)
+            .join(latest_per_endpoint, true())
+            .options(joinedload(delivery.webhook_event))
+            .order_by(delivery.created_at.desc(), delivery.id.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        result = await self.session.execute(statement)
+        return list(result.unique().scalars().all()), count
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[WebhookDelivery]:
@@ -240,6 +310,17 @@ class WebhookEndpointRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar_one_or_none() is not None
+
+    async def get_ids_by_org_ids(
+        self, org_ids: set[AccessibleOrganizationID]
+    ) -> Sequence[UUID]:
+        statement = (
+            self.get_base_statement(include_deleted=True)
+            .with_only_columns(WebhookEndpoint.id)
+            .where(WebhookEndpoint.organization_id.in_(org_ids))
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
 
     async def get_accessible_ids(
         self,

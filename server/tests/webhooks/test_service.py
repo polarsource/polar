@@ -10,6 +10,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.eventstream import CheckoutEvent
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
+from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import HttpsUrl
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -34,7 +35,7 @@ from polar.webhook.service import webhook as webhook_service
 from polar.webhook.webhooks import WebhookCheckoutUpdatedPayload
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout
+from tests.fixtures.random_objects import create_checkout, create_webhook_endpoint
 
 
 @pytest.fixture
@@ -311,6 +312,127 @@ class TestOnEventSuccess:
             CheckoutEvent.webhook_event_delivered,
             {"status": checkout.status},
         )
+
+
+@pytest.mark.anyio
+class TestListDeliveries:
+    async def _create_delivery(
+        self,
+        save_fixture: SaveFixture,
+        endpoint: WebhookEndpoint,
+        *,
+        minutes_ago: int,
+        type: WebhookEventType = WebhookEventType.checkout_updated,
+        http_code: int = 200,
+    ) -> WebhookDelivery:
+        created_at = utc_now() - timedelta(minutes=minutes_ago)
+        event = WebhookEvent(
+            created_at=created_at,
+            webhook_endpoint=endpoint,
+            type=type,
+            api_version=CURRENT_API_VERSION,
+            payload="{}",
+        )
+        await save_fixture(event)
+        delivery = WebhookDelivery(
+            created_at=created_at,
+            webhook_endpoint=endpoint,
+            webhook_event=event,
+            succeeded=http_code < 300,
+            http_code=http_code,
+        )
+        await save_fixture(delivery)
+        return delivery
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_read})
+    )
+    async def test_paginates_across_endpoints(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        endpoint_a = await create_webhook_endpoint(
+            save_fixture, organization=organization
+        )
+        endpoint_b = await create_webhook_endpoint(
+            save_fixture, organization=organization
+        )
+        deleted_endpoint = await create_webhook_endpoint(
+            save_fixture, organization=organization
+        )
+        deleted_endpoint.set_deleted_at()
+        await save_fixture(deleted_endpoint)
+        other_endpoint = await create_webhook_endpoint(
+            save_fixture, organization=organization_second
+        )
+
+        deliveries = [
+            await self._create_delivery(save_fixture, endpoint, minutes_ago=minutes)
+            for endpoint, minutes in [
+                (endpoint_a, 1),
+                (endpoint_b, 2),
+                (deleted_endpoint, 3),
+                (endpoint_a, 4),
+                (endpoint_b, 5),
+            ]
+        ]
+        await self._create_delivery(save_fixture, other_endpoint, minutes_ago=0)
+
+        first_page, count = await webhook_service.list_deliveries(
+            session, auth_subject, pagination=PaginationParams(limit=3, page=1)
+        )
+        second_page, _ = await webhook_service.list_deliveries(
+            session, auth_subject, pagination=PaginationParams(limit=3, page=2)
+        )
+
+        assert count == 5
+        assert [d.id for d in first_page] == [d.id for d in deliveries[:3]]
+        assert [d.id for d in second_page] == [d.id for d in deliveries[3:]]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_read})
+    )
+    async def test_filters(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        endpoint_a = await create_webhook_endpoint(
+            save_fixture, organization=organization
+        )
+        endpoint_b = await create_webhook_endpoint(
+            save_fixture, organization=organization
+        )
+        failed_order = await self._create_delivery(
+            save_fixture,
+            endpoint_a,
+            minutes_ago=1,
+            type=WebhookEventType.order_created,
+            http_code=500,
+        )
+        await self._create_delivery(save_fixture, endpoint_a, minutes_ago=2)
+        await self._create_delivery(
+            save_fixture, endpoint_b, minutes_ago=3, type=WebhookEventType.order_created
+        )
+
+        results, count = await webhook_service.list_deliveries(
+            session,
+            auth_subject,
+            endpoint_id=[endpoint_a.id],
+            event_type=[WebhookEventType.order_created],
+            http_code_class="5xx",
+            pagination=PaginationParams(limit=10, page=1),
+        )
+
+        assert count == 1
+        assert [d.id for d in results] == [failed_order.id]
+        assert results[0].webhook_event.type == WebhookEventType.order_created
 
 
 @pytest.mark.anyio

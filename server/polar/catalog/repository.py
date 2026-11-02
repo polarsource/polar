@@ -1,7 +1,8 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -12,7 +13,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Catalog, CatalogProduct, Product
+from polar.models import Benefit, Catalog, CatalogBenefit, CatalogProduct, Product
 from polar.models.catalog import CatalogStatus
 
 
@@ -118,5 +119,61 @@ class CatalogProductRepository(
             self.get_base_statement()
             .where(CatalogProduct.catalog_id == catalog_id)
             .options(joinedload(CatalogProduct.product))
+        )
+        return await self.get_all(statement)
+
+
+class CatalogBenefitRepository(
+    RepositorySoftDeletionIDMixin[CatalogBenefit, UUID],
+    RepositorySoftDeletionMixin[CatalogBenefit],
+    RepositoryBase[CatalogBenefit],
+):
+    model = CatalogBenefit
+
+    async def get_first_published_at(self, organization_id: UUID) -> datetime | None:
+        """When the organization's first catalog listing benefits was published.
+
+        Soft-deleted rows count too, so the boundary never moves.
+        """
+        statement = (
+            select(func.min(Catalog.published_at))
+            .join(CatalogBenefit, CatalogBenefit.catalog_id == Catalog.id)
+            .where(Catalog.organization_id == organization_id)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
+    def get_benefits_statement(self, catalog_id: UUID) -> Select[tuple[Benefit]]:
+        return (
+            select(Benefit)
+            .join(CatalogBenefit, CatalogBenefit.benefit_id == Benefit.id)
+            .where(
+                CatalogBenefit.catalog_id == catalog_id,
+                CatalogBenefit.deleted_at.is_(None),
+                Benefit.deleted_at.is_(None),
+            )
+            .order_by(Benefit.created_at, Benefit.id)
+        )
+
+    async def get_benefits_by_external_ids(
+        self,
+        catalog_id: UUID,
+        external_ids: Sequence[str],
+        *,
+        options: Options,
+    ) -> Sequence[Benefit]:
+        statement = (
+            self.get_benefits_statement(catalog_id)
+            .where(CatalogBenefit.external_id.in_(external_ids))
+            .options(*options)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().unique().all()
+
+    async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogBenefit]:
+        statement = (
+            self.get_base_statement()
+            .where(CatalogBenefit.catalog_id == catalog_id)
+            .options(joinedload(CatalogBenefit.benefit))
         )
         return await self.get_all(statement)

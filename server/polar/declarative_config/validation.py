@@ -9,7 +9,11 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
-from polar.catalog.repository import CatalogProductRepository
+from polar.catalog.repository import (
+    CatalogBenefitRepository,
+    CatalogProductRepository,
+)
+from polar.catalog.service import catalog as catalog_service
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.kit.currency import PresentmentCurrency
@@ -594,21 +598,27 @@ async def diff_benefits(
     meters: Sequence[MeterChange],
     *,
     for_update: bool,
+    catalog: Catalog | None = None,
 ) -> list[BenefitChange]:
     repository = BenefitRepository.from_session(session)
-    existing_benefits = {
-        benefit.external_id: benefit
-        for benefit in await repository.get_all_by_external_ids(
-            organization.id,
-            [config.external_id for config in benefit_configs],
-            for_update=for_update,
+    catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
+    external_ids = [config.external_id for config in benefit_configs]
+    if catalog is not None and await catalog_service.lists_benefits(session, catalog):
+        benefits = await catalog_benefit_repository.get_benefits_by_external_ids(
+            catalog.id, external_ids, options=repository.get_eager_options()
         )
-    }
+    else:
+        benefits = await repository.get_all_by_external_ids(
+            organization.id, external_ids, for_update=for_update
+        )
+    existing_benefits = {benefit.external_id: benefit for benefit in benefits}
     meter_external_ids = _external_ids_by_id(meters)
     changes: list[BenefitChange] = []
     for index, benefit_config in enumerate(benefit_configs):
         benefit = existing_benefits.get(benefit_config.external_id)
         if benefit is None:
+            if benefit_config.deprecated:
+                continue
             create_dict = _create_update_dict(benefit_config)
             if "properties" in create_dict:
                 create_dict["properties"] = create_dict["properties"].model_dump()
@@ -620,25 +630,51 @@ async def diff_benefits(
                 index,
                 benefit_config,
                 benefit,
-                _get_benefit_update_dict(benefit, benefit_config, properties),
+                # A deprecated benefit leaves the catalog instead of getting a new row.
+                {}
+                if benefit_config.deprecated
+                else _get_benefit_update_dict(benefit, benefit_config, properties),
                 {"properties": properties},
             )
         )
     return changes
 
 
+VERSIONED_BENEFIT_TYPES = frozenset(
+    {BenefitType.feature_flag, BenefitType.meter_credit}
+)
+
+
 def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
-    return [
-        ConfigIssue(
-            severity=ConfigIssueSeverity.error,
-            type=ConfigIssueType.type_changed,
-            loc=_loc(ConfigResource.benefit, change.index, "type"),
-            msg="The type of an existing benefit can't be changed.",
-            input=change.config.type,
-        )
-        for change in changes
-        if change.existing is not None and change.existing.type != change.config.type
-    ]
+    issues: list[ConfigIssue] = []
+    for change in changes:
+        existing = change.existing
+        if existing is None:
+            continue
+        if existing.type not in VERSIONED_BENEFIT_TYPES:
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.not_supported,
+                    loc=_loc(ConfigResource.benefit, change.index, "type"),
+                    msg=(
+                        f"This is a {existing.type} benefit. Only feature flag and "
+                        "meter credit benefits can be managed in the config."
+                    ),
+                    input=change.config.type,
+                )
+            )
+        elif existing.type != change.config.type:
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.type_changed,
+                    loc=_loc(ConfigResource.benefit, change.index, "type"),
+                    msg="The type of an existing benefit can't be changed.",
+                    input=change.config.type,
+                )
+            )
+    return issues
 
 
 _PRODUCT_FIELDS = ("name", "description", "visibility")
@@ -892,7 +928,12 @@ async def check(
         session, organization, config.meters, for_update=for_update
     )
     benefits = await diff_benefits(
-        session, organization, config.benefits, meters, for_update=for_update
+        session,
+        organization,
+        config.benefits,
+        meters,
+        for_update=for_update,
+        catalog=catalog,
     )
     products = await diff_products(
         session,

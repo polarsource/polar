@@ -5,7 +5,9 @@ from httpx import AsyncClient
 
 from polar.kit.utils import utc_now
 from polar.models import (
+    Benefit,
     Catalog,
+    CatalogBenefit,
     CatalogProduct,
     Organization,
     Product,
@@ -190,8 +192,14 @@ class TestGet:
         product: Product,
         product_second: Product,
         product_one_time: Product,
+        benefit_organization: Benefit,
     ) -> None:
         draft, live, archived = catalogs
+        await save_fixture(
+            CatalogBenefit(
+                catalog=live, benefit=benefit_organization, external_id="support"
+            )
+        )
         for catalog, catalog_product, external_id in (
             (archived, product, "pro"),
             (archived, product_one_time, "lifetime"),
@@ -214,6 +222,9 @@ class TestGet:
         assert json["products"] == [
             {"external_id": "lifetime", "product_id": str(product_one_time.id)},
             {"external_id": "pro", "product_id": str(product_second.id)},
+        ]
+        assert json["benefits"] == [
+            {"external_id": "support", "benefit_id": str(benefit_organization.id)}
         ]
 
         response = await client.get(f"/v1/catalogs/{draft.id}")

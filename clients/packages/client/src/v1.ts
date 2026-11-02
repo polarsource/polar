@@ -13636,6 +13636,20 @@ export interface components {
        */
       published_at: string | null
     }
+    /** CatalogBenefit */
+    CatalogBenefit: {
+      /**
+       * External Id
+       * @description Key of the benefit in the catalog.
+       */
+      external_id: string
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The benefit version in this catalog.
+       */
+      benefit_id: string
+    }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
       /**
@@ -13690,7 +13704,7 @@ export interface components {
     CatalogStatus: 'draft' | 'live' | 'archived'
     /**
      * CatalogVersion
-     * @description A catalog version with its products.
+     * @description A catalog version with its products and benefits.
      */
     CatalogVersion: {
       /**
@@ -13740,6 +13754,11 @@ export interface components {
        * @description The products in this version, ordered by key.
        */
       products: components['schemas']['CatalogProduct'][]
+      /**
+       * Benefits
+       * @description The benefits in this version, ordered by key. Empty for versions published before benefits were versioned.
+       */
+      benefits: components['schemas']['CatalogBenefit'][]
     }
     /** ChannelNamePreviewRequest */
     ChannelNamePreviewRequest: {

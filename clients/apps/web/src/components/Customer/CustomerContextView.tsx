@@ -150,7 +150,11 @@ export const CustomerContextView = ({
           </div>
           <div className="flex flex-col">
             {Object.entries(customer.metadata).map(([key, value]) => (
-              <DetailRow key={key} label={key} value={copyable(String(value))} />
+              <DetailRow
+                key={key}
+                label={key}
+                value={copyable(String(value))}
+              />
             ))}
           </div>
         </ContextCard>

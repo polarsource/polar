@@ -2804,7 +2804,7 @@
       "name": "title",
       "type": "string",
       "required": true,
-      "description": "The headline of the alert, rendered in the variant's accent color.",
+      "description": "The headline of the alert, in the default text color.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
         "line": 61
@@ -2849,7 +2849,7 @@
     {
       "name": "variant",
       "type": "AlertVariant",
-      "description": "Picks the icon, surface tint and accent color in one go. Use it to map the alert to its meaning rather than styling icon and colors by hand.",
+      "description": "Picks the icon and its accent color in one go. Use it to map the alert to its meaning rather than styling icon and colors by hand.",
       "source": {
         "path": "clients/packages/orbit/src/components/Alert.tsx",
         "line": 57

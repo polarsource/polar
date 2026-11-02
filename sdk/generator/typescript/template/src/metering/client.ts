@@ -129,6 +129,7 @@ export class Metering {
   private starting?: Promise<void>;
   private closing?: Promise<void>;
   private shutdownDeadline?: number;
+  private shutdownTimedOut = false;
   private activeOperations = 0;
   private onDrained?: () => void;
   private readonly client: ClientBase;
@@ -289,7 +290,10 @@ export class Metering {
       for (const strategy of this.strategies) {
         await strategy.start();
         this.running.push(strategy);
-        if (this.shutdownDeadline !== undefined && Date.now() >= this.shutdownDeadline) {
+        if (
+          this.shutdownTimedOut ||
+          (this.shutdownDeadline !== undefined && Date.now() >= this.shutdownDeadline)
+        ) {
           throw new MeteringTimeoutError(0);
         }
       }
@@ -319,6 +323,7 @@ export class Metering {
         );
       }
     } catch (error) {
+      if (error instanceof MeteringTimeoutError) this.shutdownTimedOut = true;
       errors.push(error);
     }
     try {

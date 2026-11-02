@@ -939,6 +939,7 @@ it("close bounds its wait for an active custom flush and still closes resources"
 });
 
 it("startup that outlives a close deadline cleans up when it eventually completes", async () => {
+  vi.spyOn(Date, "now").mockReturnValue(0);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;

@@ -13,7 +13,7 @@ from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.models.organization_risk_signal import OrganizationRiskSignal
+from polar.models import OrganizationRiskSignal
 from polar.organization_review.analyzer import ReviewAnalyzer, _render_scraped_site
 from polar.organization_review.schemas import (
     CheckoutReturnUrlData,

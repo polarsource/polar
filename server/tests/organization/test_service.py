@@ -19,7 +19,6 @@ from polar.enums import (
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.account_risk import (
     MerchantRiskSignal,
-    StripeAccountRiskLevel,
     UnknownAccountRiskEvaluation,
     WebsiteRiskSignal,
 )
@@ -2082,7 +2081,7 @@ class TestHandleAccountRiskSignal:
     def _merchant(
         self,
         account_id: str,
-        level: StripeAccountRiskLevel,
+        level: OrganizationRiskSignal.RiskLevel,
         *,
         description: str | None = "Indicators: disputes",
     ) -> MerchantRiskSignal:
@@ -2096,7 +2095,7 @@ class TestHandleAccountRiskSignal:
     def _website(
         self,
         evaluation_id: str,
-        level: StripeAccountRiskLevel,
+        level: OrganizationRiskSignal.RiskLevel,
         *,
         description: str | None = "Deceptive website",
     ) -> WebsiteRiskSignal:
@@ -2146,7 +2145,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._merchant("acct_risk", StripeAccountRiskLevel.ELEVATED),
+            self._merchant("acct_risk", OrganizationRiskSignal.RiskLevel.ELEVATED),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
@@ -2181,7 +2180,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._website("acctevl_456", StripeAccountRiskLevel.HIGHEST),
+            self._website("acctevl_456", OrganizationRiskSignal.RiskLevel.HIGHEST),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
@@ -2212,7 +2211,9 @@ class TestHandleAccountRiskSignal:
         with pytest.raises(UnknownAccountRiskEvaluation):
             await organization_service.handle_account_risk_signal(
                 session,
-                self._website("acctevl_unknown", StripeAccountRiskLevel.HIGHEST),
+                self._website(
+                    "acctevl_unknown", OrganizationRiskSignal.RiskLevel.HIGHEST
+                ),
             )
 
         assert organization.status == OrganizationStatus.ACTIVE
@@ -2234,7 +2235,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._website("acctevl_456", StripeAccountRiskLevel.LOW),
+            self._website("acctevl_456", OrganizationRiskSignal.RiskLevel.LOW),
         )
 
         assert organization.status == OrganizationStatus.ACTIVE

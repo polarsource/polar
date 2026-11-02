@@ -1085,7 +1085,6 @@ class ReviewAnalyzer:
                     "These are NOT actual disputes and are not counted in Disputes above."
                 )
 
-        # Risk signals from Stripe Radar for Platforms and our own checks
         risk_signals = snapshot.risk_signals
         if risk_signals.entries:
             parts.append("\n## Risk Signals")

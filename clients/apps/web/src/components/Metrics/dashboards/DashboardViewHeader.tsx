@@ -1,5 +1,6 @@
 'use client'
 
+import { downloadExport } from '@/components/Export/utils'
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { Modal } from '@polar-sh/orbit'
@@ -58,7 +59,7 @@ function useMetricsExport(
         url.searchParams.append('external_product_id', id),
       )
       metrics.forEach((m) => url.searchParams.append('metrics', m))
-      window.open(url.toString(), '_blank', 'noopener,noreferrer')
+      return downloadExport(url, 'polar-metrics.csv')
     },
     [
       organization.id,

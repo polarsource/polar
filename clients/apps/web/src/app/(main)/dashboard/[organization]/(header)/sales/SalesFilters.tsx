@@ -59,7 +59,10 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
       limit: 50,
     },
   )
-  const { data: selectedProducts } = useSelectedProducts(productId ?? [], true)
+  const { data: selectedProducts } = useSelectedProducts(
+    { id: productId ?? [] },
+    true,
+  )
 
   const productOptions = useMemo<FilterOption[]>(() => {
     let items = products?.items ?? []

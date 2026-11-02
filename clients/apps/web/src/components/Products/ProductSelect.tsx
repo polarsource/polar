@@ -111,7 +111,10 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   const [query, setQuery] = useState('')
 
   // Selected products, with a dedicated hook to exhaust pagination
-  const { data: selectedProducts } = useSelectedProducts(value, includeArchived)
+  const { data: selectedProducts } = useSelectedProducts(
+    { id: value },
+    includeArchived,
+  )
 
   // Queried products, show a selection of products based on the query
   const queriedProductsParameters = useMemo<

@@ -156,7 +156,7 @@ const CustomerChangePlanModal = ({
         case 'charge':
           return `You'll be charged immediately for the new ${newPeriod} plan.`
         case 'balance':
-          return `The new ${newPeriod} plan will be paid from your account balance.`
+          return `The new ${newPeriod} plan will be paid from your balance.`
         case 'credit':
           return `Your previous payment will appear as a credit on your next invoice.`
       }

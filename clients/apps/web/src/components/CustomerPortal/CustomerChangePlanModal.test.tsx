@@ -68,7 +68,7 @@ const mockPreview = (
   } as unknown as ReturnType<typeof useCustomerSubscriptionChangePreview>)
 
 const immediateCycleNotice =
-  /charged immediately|credit on your next invoice|account balance/
+  /charged immediately|credit on your next invoice|from your balance/
 
 const renderAndSelectSeatPlan = () => {
   render(
@@ -124,14 +124,14 @@ describe('CustomerChangePlanModal', () => {
     ).toBeTruthy()
   })
 
-  it('shows the balance message when account balance covers the charge', () => {
+  it('shows the balance message when the balance covers the charge', () => {
     mockPreview({ total_amount: 12000, due_amount: 0 })
 
     renderAndSelectSeatPlan()
 
     expect(
       screen.getByText(
-        'The new yearly plan will be paid from your account balance.',
+        'The new yearly plan will be paid from your balance.',
       ),
     ).toBeTruthy()
   })

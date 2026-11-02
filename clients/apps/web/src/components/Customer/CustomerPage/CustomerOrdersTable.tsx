@@ -47,13 +47,13 @@ export const CustomerOrdersTable = ({
                   alignItems="center"
                   columnGap="s"
                 >
-                  {original.description}
                   {original.product && (
                     <ProductVersionLabel
                       organization={organization}
                       product={original.product}
                     />
                   )}
+                  {original.description}
                 </Box>
               </Link>
             ),

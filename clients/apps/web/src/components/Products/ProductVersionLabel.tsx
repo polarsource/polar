@@ -24,9 +24,9 @@ export const ProductVersionLabel = ({
   return (
     <Pill
       color="gray"
-      className="text-xxs! space-x-0.5 rounded-sm px-2 py-0.5 font-normal"
+      className="shrink-0 space-x-1 rounded-sm py-0.5 pr-1.5 pl-1 font-normal"
     >
-      <History size={10} aria-hidden />
+      <History size={12} aria-hidden />
       <span>{catalog.name}</span>
     </Pill>
   )

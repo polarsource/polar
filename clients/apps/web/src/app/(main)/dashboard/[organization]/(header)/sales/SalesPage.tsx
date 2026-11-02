@@ -172,13 +172,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         }
         return (
           <div className="flex flex-row items-center gap-2">
-            <Truncated>
-              <Text as="span">{product.name}</Text>
-            </Truncated>
             <ProductVersionLabel
               organization={organization}
               product={product}
             />
+            <Truncated>
+              <Text as="span">{product.name}</Text>
+            </Truncated>
             {product.is_archived && (
               <Status status="Archived" color="red" size="small" />
             )}

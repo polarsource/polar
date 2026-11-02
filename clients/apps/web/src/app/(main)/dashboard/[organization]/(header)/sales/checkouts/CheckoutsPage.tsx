@@ -180,11 +180,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   alignItems="center"
                   columnGap="s"
                 >
-                  {product.name}
                   <ProductVersionLabel
                     organization={organization}
                     product={product}
                   />
+                  {product.name}
                 </Box>
               </React.Fragment>
             ))}

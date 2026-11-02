@@ -45,11 +45,11 @@ export const CustomerSubscriptionsTable = ({
                 alignItems="center"
                 columnGap="s"
               >
-                {original.product.name}
                 <ProductVersionLabel
                   organization={organization}
                   product={original.product}
                 />
+                {original.product.name}
               </Box>
             ),
           },

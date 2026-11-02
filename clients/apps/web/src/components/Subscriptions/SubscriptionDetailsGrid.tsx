@@ -98,13 +98,13 @@ export const SubscriptionDetailsGrid = ({
                 alignItems="center"
                 columnGap="s"
               >
+                <Text as="span" variant="body" truncate>
+                  {productName}
+                </Text>
                 <ProductVersionLabel
                   organization={organization}
                   product={product ?? subscription.product}
                 />
-                <Text as="span" variant="body" truncate>
-                  {productName}
-                </Text>
                 <Box as="span" display="inline-flex">
                   <ArrowUpRightIcon size={16} />
                 </Box>

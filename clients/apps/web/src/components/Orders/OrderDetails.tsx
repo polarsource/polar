@@ -41,13 +41,13 @@ export const OrderDetails = ({
                 columnGap="s"
                 maxWidth="100%"
               >
+                <Text as="span" variant="body" truncate>
+                  {product.name}
+                </Text>
                 <ProductVersionLabel
                   organization={organization}
                   product={product}
                 />
-                <Text as="span" variant="body" truncate>
-                  {product.name}
-                </Text>
                 <Box as="span" display="inline-flex" flexShrink={0}>
                   <ArrowUpRightIcon size={16} />
                 </Box>

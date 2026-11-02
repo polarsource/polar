@@ -3,6 +3,7 @@
 import { InlineModalHeader } from '@polar-sh/orbit'
 import {
   useCustomerPaymentMethods,
+  useCustomerSubscriptionChangePreview,
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
 import { isFreePrice } from '@/utils/product'
@@ -106,34 +107,26 @@ const CustomerChangePlanModal = ({
 
   const isTrialing = subscription.status === 'trialing'
 
-  const [willTriggerImmediateCycle, nextInvoiceType] = useMemo(():
-    | [false, null]
-    | [true, 'charge' | 'credit'] => {
-    if (!selectedProduct) return [false, null]
-    if (isTrialing) return [false, null]
+  const willTriggerImmediateCycle =
+    selectedProduct !== null &&
+    !isTrialing &&
+    prorationBehavior !== 'next_period' &&
+    (selectedProduct.recurring_interval !== subscription.recurring_interval ||
+      selectedProduct.recurring_interval_count !==
+        subscription.recurring_interval_count)
 
-    const willTrigger =
-      prorationBehavior !== 'next_period' &&
-      (selectedProduct.recurring_interval !== subscription.recurring_interval ||
-        selectedProduct.recurring_interval_count !==
-          subscription.recurring_interval_count)
+  const changePreview = useCustomerSubscriptionChangePreview(
+    api,
+    subscription.id,
+    selectedProduct?.id,
+    willTriggerImmediateCycle,
+  )
 
-    if (!willTrigger) return [false, null]
-
-    const newPrice = selectedProduct.prices.reduce((acc, price) => {
-      if (price.amount_type === 'fixed') {
-        return acc + price.price_amount
-      }
-
-      return acc
-    }, 0)
-
-    const currentPrice = subscription.amount
-
-    const chargeOrCredit = newPrice > currentPrice ? 'charge' : 'credit'
-
-    return [willTrigger, chargeOrCredit]
-  }, [selectedProduct, prorationBehavior, subscription, isTrialing])
+  const nextInvoiceType: 'charge' | 'credit' | null = changePreview.data
+    ? changePreview.data.total_amount > 0
+      ? 'charge'
+      : 'credit'
+    : null
 
   const invoicingMessage = useMemo((): string | null => {
     if (!selectedProduct) return null
@@ -147,6 +140,8 @@ const CustomerChangePlanModal = ({
     }
 
     if (willTriggerImmediateCycle) {
+      if (nextInvoiceType === null) return null
+
       const newPeriod =
         selectedProduct.recurring_interval === 'month' ? 'monthly' : 'yearly'
 

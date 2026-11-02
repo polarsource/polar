@@ -401,6 +401,25 @@ export const useCustomerSubscriptionMeterChargePreview = (
     enabled,
   })
 
+export const useCustomerSubscriptionChangePreview = (
+  api: Client,
+  id: string,
+  productId: string | undefined,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: ['customer_subscription_change_preview', { id, productId }],
+    queryFn: () =>
+      unwrap(
+        api.POST('/v1/customer-portal/subscriptions/{id}/change-preview', {
+          params: { path: { id } },
+          body: { product_id: productId as string },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!productId,
+  })
+
 export const useCustomerSubscriptionCancelPreview = (
   api: Client,
   id: string,

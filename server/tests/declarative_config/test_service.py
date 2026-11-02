@@ -3738,9 +3738,9 @@ class TestExport:
         assert [(change.external_id, change.action) for change in plan.changes] == [
             ("pack", ConfigAction.unchanged)
         ]
-        assert [(entry.external_id, entry.in_use) for entry in prune.entries] == [
-            ("pro", True)
-        ]
+        assert [
+            (entry.external_id, entry.customers_count) for entry in prune.entries
+        ] == [("pro", 1)]
 
         subscription.status = SubscriptionStatus.canceled
         await save_fixture(subscription)

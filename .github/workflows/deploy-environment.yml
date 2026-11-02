@@ -106,7 +106,7 @@ jobs:
       # Best effort: a missing Sentry release is observability noise, not a
       # deploy regression, and must not fail the job (which would block production).
       - name: Create Sentry release
-        uses: getsentry/action-release@v3.7.1
+        uses: getsentry/action-release@v3.7.2
         continue-on-error: true
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}

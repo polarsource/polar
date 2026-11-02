@@ -10,7 +10,9 @@ Usage:
     uv run python -m scripts.backfill_missing_buckets_splits_from_resets [--execute]
 
 Defaults to a dry-run listing the customer meters to split; pass --execute to seal
-them at their latest reset, like `reducer.seal` does after a reset.
+them at their latest reset, like `reducer.seal` does after a reset. A sealed bucket,
+or one with several generations, can't be split: those are reported as not split,
+with the reason in the logs.
 """
 
 import uuid
@@ -20,17 +22,20 @@ from typing import Any
 
 import dramatiq
 import typer
-from sqlalchemy import Row, text
+from sqlalchemy import Row, and_, or_, select, text
 
 from polar import tasks  # noqa: F401
 from polar.customer.repository import CustomerRepository
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
+from polar.models import Customer, MeterReducer, Reducer, ReducerBucket
+from polar.models.reducer import ReducerKind
 from polar.postgres import create_async_engine
 from polar.redis import create_redis
+from polar.reducer.bucket_repository import get_customer_identities
 from polar.reducer.service import reducer as reducer_service
 from polar.worker import JobQueueManager
 
-from .helper import configure_script_logging, read_engine, typer_async
+from .helper import configure_script_console_logging, read_engine, typer_async
 
 cli = typer.Typer()
 
@@ -88,14 +93,49 @@ async def find_missing_splits(session: AsyncSession) -> Sequence[Row[Any]]:
     return (await session.execute(MISSING_SPLITS)).all()
 
 
+async def _spans(
+    session: AsyncSession, customer: Customer, meter_id: uuid.UUID, at: datetime
+) -> bool:
+    """Whether one of the customer's usage buckets of the meter with usage spans
+    `at`."""
+    statement = (
+        select(ReducerBucket.id)
+        .join(Reducer, Reducer.id == ReducerBucket.reducer_id)
+        .join(MeterReducer, MeterReducer.reducer_id == Reducer.id)
+        .where(
+            MeterReducer.meter_id == meter_id,
+            Reducer.kind == ReducerKind.usage,
+            ReducerBucket.organization_id == customer.organization_id,
+            or_(
+                *(
+                    and_(
+                        ReducerBucket.customer_id == customer_id,
+                        ReducerBucket.external_customer_id == external_customer_id,
+                    )
+                    for customer_id, external_customer_id in get_customer_identities(
+                        customer
+                    )
+                )
+            ),
+            ReducerBucket.bucket_start < at,
+            ReducerBucket.bucket_end > at,
+            ReducerBucket.count > 0,
+        )
+        .limit(1)
+    )
+    return (await session.execute(statement)).first() is not None
+
+
 async def split(
     session: AsyncSession, customer_id: uuid.UUID, meter_id: uuid.UUID, at: datetime
 ) -> bool:
+    """Seals the customer meter at `at`, and returns whether `at` is now a bucket
+    boundary: `seal` logs its failures and skipped splits instead of raising."""
     customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
     if customer is None:
         return False
     await reducer_service.seal(session, customer, meter_id, at=at)
-    return True
+    return not await _spans(session, customer, meter_id, at)
 
 
 @cli.command()
@@ -106,7 +146,7 @@ async def backfill(
     ),
     yes: bool = typer.Option(False, "--yes", help="Skip the confirmation prompt."),
 ) -> None:
-    configure_script_logging()
+    configure_script_console_logging()
     read = read_engine(command_timeout=3600)
     try:
         async with create_async_sessionmaker(read)() as session:
@@ -131,6 +171,7 @@ async def backfill(
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
     redis = create_redis("app")
+    not_split = 0
     try:
         for row in missing:
             async with JobQueueManager.open(dramatiq.get_broker(), redis):
@@ -138,10 +179,15 @@ async def backfill(
                     if not await split(
                         session, row.customer_id, row.meter_id, row.reset_at
                     ):
-                        typer.echo(f"customer {row.customer_id} not found, skipped.")
+                        not_split += 1
+                        typer.echo(
+                            f"customer {row.customer_id} meter {row.meter_id}: "
+                            "not split (customer deleted, bucket sealed, or seal "
+                            "failed: see the logs above)"
+                        )
     finally:
         await engine.dispose()
-    typer.echo("Done. Run again without --execute to list what's left.")
+    typer.echo(f"Split {len(missing) - not_split} of {len(missing)} customer meter(s).")
 
 
 if __name__ == "__main__":

@@ -1,8 +1,7 @@
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession
@@ -18,6 +17,7 @@ from tests.fixtures.random_objects import create_event, create_reducer
 
 PREVIOUS_RESET = datetime(2026, 10, 1, 11, 2, tzinfo=UTC)
 LATEST_RESET = datetime(2026, 10, 1, 12, 2, tzinfo=UTC)
+LATEST_BUCKET_START = LATEST_RESET - timedelta(minutes=2)
 
 
 @pytest.fixture
@@ -27,6 +27,8 @@ async def customer_meter(
     customer: Customer,
     meter: Meter,
 ) -> CustomerMeter:
+    """A reset inside each of two usage buckets, each with an event on both sides
+    of it."""
     reducer = await create_reducer(
         save_fixture, organization=organization, meters=[meter]
     )
@@ -40,6 +42,13 @@ async def customer_meter(
             timestamp=reset,
             metadata={"meter_id": str(meter.id)},
         )
+        for timestamp in (reset - timedelta(minutes=1), reset + timedelta(minutes=1)):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                timestamp=timestamp,
+            )
         bucket_start = reset - timedelta(minutes=2)
         await save_fixture(
             ReducerBucket(
@@ -48,8 +57,7 @@ async def customer_meter(
                 customer_id=customer.id,
                 bucket_start=bucket_start,
                 bucket_end=bucket_start + REDUCER_BUCKET_SIZE,
-                count=1,
-                sum=Decimal(1),
+                count=2,
             )
         )
     customer_meter = CustomerMeter(customer=customer, meter=meter)
@@ -66,7 +74,7 @@ class TestBackfillMissingBucketsSplitsFromResets:
             (customer_meter.customer_id, customer_meter.meter_id, LATEST_RESET)
         ]
 
-    async def test_split_makes_the_reset_a_bucket_boundary(
+    async def test_split_divides_the_usage_at_the_reset(
         self, session: AsyncSession, customer_meter: CustomerMeter
     ) -> None:
         assert await split(
@@ -74,16 +82,34 @@ class TestBackfillMissingBucketsSplitsFromResets:
         )
 
         assert await find_missing_splits(session) == []
-        boundaries = (
+        buckets = (
             await session.execute(
-                select(ReducerBucket.bucket_start, ReducerBucket.bucket_end)
-                .where(
-                    ReducerBucket.bucket_start >= LATEST_RESET - timedelta(minutes=2)
+                select(
+                    ReducerBucket.bucket_start,
+                    ReducerBucket.bucket_end,
+                    ReducerBucket.count,
                 )
+                .where(ReducerBucket.bucket_start >= LATEST_BUCKET_START)
                 .order_by(ReducerBucket.bucket_start)
             )
         ).all()
-        assert [tuple(boundary) for boundary in boundaries] == [
-            (LATEST_RESET - timedelta(minutes=2), LATEST_RESET),
-            (LATEST_RESET, LATEST_RESET + timedelta(minutes=3)),
+        assert [tuple(bucket) for bucket in buckets] == [
+            (LATEST_BUCKET_START, LATEST_RESET, 1),
+            (LATEST_RESET, LATEST_BUCKET_START + REDUCER_BUCKET_SIZE, 1),
+        ]
+
+    async def test_reports_a_sealed_bucket_as_not_split(
+        self, session: AsyncSession, customer_meter: CustomerMeter
+    ) -> None:
+        await session.execute(
+            update(ReducerBucket)
+            .where(ReducerBucket.bucket_start == LATEST_BUCKET_START)
+            .values(sealed_at=LATEST_RESET)
+        )
+
+        assert not await split(
+            session, customer_meter.customer_id, customer_meter.meter_id, LATEST_RESET
+        )
+        assert [tuple(row) for row in await find_missing_splits(session)] == [
+            (customer_meter.customer_id, customer_meter.meter_id, LATEST_RESET)
         ]

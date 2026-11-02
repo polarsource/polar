@@ -1786,9 +1786,12 @@ class TestPlan:
             session, auth_subject, Config.model_validate({"benefits": [BETA_BENEFIT]})
         )
 
-        assert [(issue.type, issue.loc) for issue in plan.issues] == [
-            (ConfigIssueType.not_supported, ["body", "benefits", 0, "type"])
-        ]
+        [issue] = plan.issues
+        assert (issue.type, issue.loc) == (
+            ConfigIssueType.not_supported,
+            ["body", "benefits", 0, "type"],
+        )
+        assert issue.msg.startswith("This is a License Keys benefit.")
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_new_resources(

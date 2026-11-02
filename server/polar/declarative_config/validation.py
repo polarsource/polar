@@ -658,8 +658,9 @@ def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
                     type=ConfigIssueType.not_supported,
                     loc=_loc(ConfigResource.benefit, change.index, "type"),
                     msg=(
-                        f"This is a {existing.type} benefit. Only feature flag and "
-                        "meter credit benefits can be managed in the config."
+                        f"This is a {existing.type.get_display_name()} benefit. "
+                        "Only feature flag and meter credit benefits can be "
+                        "managed in the config."
                     ),
                     input=change.config.type,
                 )

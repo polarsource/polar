@@ -9,7 +9,6 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { record } from '@/utils/billing-config/describe'
 import { plural } from '@/utils/billing-config/problems'
 import { removable } from '@/utils/billing-config/prune'
 import { NOUNS, found, section, target } from '@/utils/billing-config/review'
@@ -19,29 +18,14 @@ import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
-// referenced_by holds bare external IDs, so the type comes from the config itself
-const kind = (config: LoadedConfig, externalId: string) => {
-  const sections = record(config.input) ?? {}
-  const match = NOUNS.find(([name]) => {
-    const items = sections[name]
-    return (
-      Array.isArray(items) &&
-      items.some((item) => record(item)?.['external_id'] === externalId)
-    )
-  })
-  return match
-    ? `${ui.printable(externalId)} (${match[1]})`
-    : ui.printable(externalId)
-}
-
-const reason = (config: LoadedConfig, entry: PruneEntry) =>
+const reason = (entry: PruneEntry) =>
   [
     ...(entry.customer_count === 0
       ? []
       : [plural(entry.customer_count, 'customer', 'customers')]),
     ...(entry.referenced_by.length > 0
       ? [
-          `used by ${entry.referenced_by.map((id) => kind(config, id)).join(', ')}`,
+          `used by ${entry.referenced_by.map((ref) => `${ui.printable(ref.external_id)} (${ref.resource})`).join(', ')}`,
         ]
       : []),
   ].join(', ')
@@ -50,7 +34,6 @@ const pad = (text: string, size: number) =>
   text + ' '.repeat(Math.max(0, size - Bun.stringWidth(text)))
 
 const report = (
-  config: LoadedConfig,
   organization: ActiveOrganization,
   entries: ReadonlyArray<PruneEntry>,
 ) => {
@@ -82,7 +65,7 @@ const report = (
           [
             `${ui.INDENT}${ui.bold('Keep, still in use')}`,
             ...keep.map((entry) =>
-              row(ui.dim('='), entry, ui.dim(reason(config, entry))),
+              row(ui.dim('='), entry, ui.dim(reason(entry))),
             ),
           ].join('\n'),
         ]),
@@ -108,7 +91,7 @@ const confirm =
   ) =>
   (entries: ReadonlyArray<PruneEntry>) =>
     Effect.gen(function* () {
-      yield* say(report(config, organization, entries))
+      yield* say(report(organization, entries))
       if (confirmed) return
       if (json || !(yield* interactive)) {
         return yield* new BillingConfigError({
@@ -144,7 +127,7 @@ const render = (
         ),
       ]
     : [
-        ...report(config, organization, entries),
+        ...report(organization, entries),
         ui.blank,
         ui.success(
           entries.length === 0

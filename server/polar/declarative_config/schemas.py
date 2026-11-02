@@ -562,6 +562,13 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
+class ConfigPruneReference(Schema):
+    resource: ConfigResource = Field(
+        description="The type of the referencing resource."
+    )
+    external_id: str = Field(description="The referencing resource's `external_id`.")
+
+
 class ConfigPruneEntry(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
@@ -572,9 +579,9 @@ class ConfigPruneEntry(Schema):
             "subscribers or credit holders for a meter."
         )
     )
-    referenced_by: list[str] = Field(
+    referenced_by: list[ConfigPruneReference] = Field(
         description=(
-            "External IDs of the products and benefits staying in the config "
+            "The products and benefits staying in the config "
             "that reference the resource."
         )
     )

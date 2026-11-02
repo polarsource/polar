@@ -2605,13 +2605,54 @@ class TestPrune:
         )
 
         assert [
-            (entry.external_id, entry.customer_count, entry.referenced_by)
+            (
+                entry.external_id,
+                entry.customer_count,
+                [(ref.resource, ref.external_id) for ref in entry.referenced_by],
+            )
             for entry in result.entries
         ] == [
-            ("apples", 0, ["legacy"]),
-            ("beta", 1, ["legacy"]),
+            ("apples", 0, [(ConfigResource.product, "legacy")]),
+            ("beta", 1, [(ConfigResource.product, "legacy")]),
             ("legacy", 1, []),
         ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_references_sharing_an_external_id(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        config = {
+            "meters": [{**FIXTURE_METER, "external_id": "calls", "deprecated": True}],
+            "benefits": [
+                {
+                    **CREDITS_BENEFIT,
+                    "external_id": "calls",
+                    "properties": {"meter": "calls", "units": 1000},
+                }
+            ],
+            "products": [
+                {
+                    "external_id": "calls",
+                    "name": "Calls",
+                    "recurring_interval": "month",
+                    "prices": [
+                        {
+                            "amount_type": "metered_unit",
+                            "meter": "calls",
+                            "unit_amount": "1",
+                        }
+                    ],
+                }
+            ],
+        }
+
+        result = await declarative_config_service.prune(
+            session, auth_subject, Config.model_validate(config)
+        )
+
+        assert [
+            (ref.resource, ref.external_id) for ref in result.entries[0].referenced_by
+        ] == [(ConfigResource.product, "calls"), (ConfigResource.benefit, "calls")]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     @pytest.mark.parametrize(

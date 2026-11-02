@@ -88,7 +88,9 @@ export const PruneEntry = Schema.Struct({
   resource: ConfigResource,
   external_id: Schema.String,
   customer_count: Schema.Number,
-  referenced_by: Schema.Array(Schema.String),
+  referenced_by: Schema.Array(
+    Schema.Struct({ resource: ConfigResource, external_id: Schema.String }),
+  ),
 })
 export type PruneEntry = typeof PruneEntry.Type
 

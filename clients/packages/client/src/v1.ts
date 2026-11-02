@@ -16898,9 +16898,19 @@ export interface components {
       customer_count: number
       /**
        * Referenced By
-       * @description External IDs of the products and benefits staying in the config that reference the resource.
+       * @description The products and benefits staying in the config that reference the resource.
        */
-      referenced_by: string[]
+      referenced_by: components['schemas']['ConfigPruneReference'][]
+    }
+    /** ConfigPruneReference */
+    ConfigPruneReference: {
+      /** @description The type of the referencing resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The referencing resource's `external_id`.
+       */
+      external_id: string
     }
     /** ConfigRemoval */
     ConfigRemoval: {

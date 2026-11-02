@@ -54,6 +54,7 @@ from .schemas import (
     ConfigProductPriceMeteredUnit,
     ConfigPrune,
     ConfigPruneEntry,
+    ConfigPruneReference,
     ConfigResource,
     ConfigResult,
     ConfigSettingsChange,
@@ -424,7 +425,9 @@ class DeclarativeConfigService:
                 0 if benefit_id is None else benefit_customers.get(benefit_id, 0)
             )
             referenced_by = [
-                product.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.product, external_id=product.external_id
+                )
                 for product in kept_products
                 if benefit.external_id in product.benefits
             ]
@@ -444,7 +447,9 @@ class DeclarativeConfigService:
             meter_id = meter_ids.get(meter.external_id)
             customers = 0 if meter_id is None else meter_customers.get(meter_id, 0)
             products_on_meter = [
-                product.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.product, external_id=product.external_id
+                )
                 for product in kept_products
                 if any(
                     isinstance(
@@ -456,7 +461,9 @@ class DeclarativeConfigService:
                 )
             ]
             benefits_on_meter = [
-                benefit.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.benefit, external_id=benefit.external_id
+                )
                 for benefit in kept_benefits
                 if isinstance(benefit, ConfigBenefitMeterCredit)
                 and benefit.properties.meter == meter.external_id

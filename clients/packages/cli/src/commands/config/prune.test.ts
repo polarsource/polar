@@ -40,7 +40,7 @@ const beta: PruneEntry = {
   resource: 'benefit',
   external_id: 'beta',
   customer_count: 3,
-  referenced_by: ['legacy'],
+  referenced_by: [{ resource: 'product', external_id: 'legacy' }],
 }
 const legacy: PruneEntry = {
   resource: 'product',

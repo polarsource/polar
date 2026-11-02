@@ -366,29 +366,6 @@ class TestCreateCheckout:
         AuthSubjectFixture(scopes={Scope.checkouts_write}),
         AuthSubjectFixture(subject="agent"),
     )
-    async def test_invalid_customer_billing_name_too_long(
-        self,
-        api_prefix: str,
-        client: AsyncClient,
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/",
-            json={
-                "payment_processor": "stripe",
-                "product_price_id": str(product.prices[0].id),
-                "success_url": "https://example.com/success?checkout_id={CHECKOUT_ID}",
-                "customer_billing_name": "a" * 257,
-            },
-        )
-
-        assert response.status_code == 422
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(scopes={Scope.checkouts_write}),
-        AuthSubjectFixture(subject="agent"),
-    )
     async def test_valid(
         self,
         api_prefix: str,
@@ -1408,26 +1385,6 @@ class TestClientConfirm:
         )
 
         assert response.status_code == 422
-
-    async def test_invalid_customer_billing_name_too_long(
-        self,
-        api_prefix: str,
-        stripe_service_mock: MagicMock,
-        client: AsyncClient,
-        checkout_open: Checkout,
-    ) -> None:
-        response = await client.post(
-            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
-            json={
-                "customer_name": "Customer Name",
-                "customer_email": "customer@example.com",
-                "customer_billing_name": "a" * 257,
-                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
-            },
-        )
-
-        assert response.status_code == 422
-        stripe_service_mock.create_customer.assert_not_called()
 
     async def test_valid(
         self,

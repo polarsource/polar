@@ -7,6 +7,7 @@ from sqlalchemy import (
     TIMESTAMP,
     ForeignKey,
     Index,
+    Integer,
     String,
     UniqueConstraint,
     Uuid,
@@ -37,6 +38,12 @@ class Catalog(RecordModel):
             unique=True,
             postgresql_where=text("status = 'live' AND deleted_at IS NULL"),
         ),
+        Index(
+            "ix_catalogs_organization_id_draft",
+            "organization_id",
+            unique=True,
+            postgresql_where=text("status = 'draft' AND deleted_at IS NULL"),
+        ),
     )
 
     organization_id: Mapped[UUID] = mapped_column(
@@ -58,6 +65,14 @@ class Catalog(RecordModel):
     )
     published_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    # Bumped by every dashboard save of a draft.
+    revision: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    # The draft revision the last config apply wrote.
+    applied_revision: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
     )
 
     @declared_attr

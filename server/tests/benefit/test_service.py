@@ -191,6 +191,28 @@ class TestList:
         assert len(results) == 1
         assert results[0].id == benefit_organization.id
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_excludes_previous_versions(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        previous = await create_benefit(
+            save_fixture, organization=organization, external_id="a", is_current=False
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="a"
+        )
+        session.expunge_all()
+
+        results, _ = await benefit_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert [benefit.id for benefit in results] == [current.id]
+
 
 @pytest.mark.anyio
 class TestGet:

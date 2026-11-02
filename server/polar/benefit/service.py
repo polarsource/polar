@@ -69,6 +69,8 @@ class BenefitService:
 
         if id_in is not None:
             statement = statement.where(Benefit.id.in_(id_in))
+        else:
+            statement = statement.where(Benefit.is_current)
 
         if id_not_in is not None:
             statement = statement.where(Benefit.id.notin_(id_not_in))

@@ -126,6 +126,7 @@ export const EventCostComparison = ({
           style={{ left: `${position(cost)}%` }}
         />
       </div>
+      <Text color="muted">Compared with the last {costs.length} events</Text>
     </Box>
   )
 }

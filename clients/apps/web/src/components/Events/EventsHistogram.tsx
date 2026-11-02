@@ -63,6 +63,8 @@ export const EventsHistogram = ({
   customerIds,
   source,
   filter,
+  query,
+  metadata,
   onSelectRange,
 }: {
   organizationId: string
@@ -72,6 +74,8 @@ export const EventsHistogram = ({
   customerIds: string[] | null
   source: schemas['EventSource'] | null
   filter: string | null
+  query: string | null
+  metadata: Record<string, string | number | boolean> | null
   onSelectRange: (range: { from: Date; to: Date }) => void
 }) => {
   const [hovered, setHovered] = useState<number | null>(null)
@@ -87,6 +91,8 @@ export const EventsHistogram = ({
       customer_id: customerIds ?? undefined,
       source: source ?? undefined,
       filter: filter ?? undefined,
+      query: query ?? undefined,
+      metadata: metadata ?? undefined,
     },
   )
 

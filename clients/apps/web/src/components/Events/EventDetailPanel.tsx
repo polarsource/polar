@@ -120,13 +120,18 @@ const EventDetails = ({
   const customer = eventCustomerLabel(event)
   const cost = eventCost(event)
   const llm = eventLLM(event)
-  const { data: childrenData, isLoading: isLoadingChildren } =
-    useInfiniteEvents(organization.id, {
-      parent_id: event.id,
-      depth: 1,
-      limit: 50,
-      sorting: ['timestamp'],
-    })
+  const {
+    data: childrenData,
+    isLoading: isLoadingChildren,
+    hasNextPage: hasMoreChildren,
+    fetchNextPage: fetchMoreChildren,
+    isFetchingNextPage: isFetchingMoreChildren,
+  } = useInfiniteEvents(organization.id, {
+    parent_id: event.id,
+    depth: 1,
+    limit: 50,
+    sorting: ['timestamp'],
+  })
   const children = childrenData?.pages.flatMap((page) => page.items) ?? []
   const { data: parent, isLoading: isLoadingParent } = useEvent(
     organization.id,
@@ -247,7 +252,14 @@ const EventDetails = ({
       )}
 
       {children.length > 0 && (
-        <Section title="Children">
+        <Section
+          title="Children"
+          action={
+            <Text color="muted" tabularNums>
+              {event.child_count}
+            </Text>
+          }
+        >
           {children.map((child) => (
             <RelatedEventRow
               key={child.id}
@@ -255,6 +267,16 @@ const EventDetails = ({
               onSelect={() => onSelectEvent(child.id)}
             />
           ))}
+          {hasMoreChildren && (
+            <Button
+              variant="ghost"
+              size="sm"
+              loading={isFetchingMoreChildren}
+              onClick={() => fetchMoreChildren()}
+            >
+              Load more
+            </Button>
+          )}
         </Section>
       )}
     </>

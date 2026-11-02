@@ -28,6 +28,13 @@ const TOKEN_PATTERN = /^([a-z]+(?:\.[^:\s]+)?):(.*)$/i
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+const inputToQuery = (input: string) => {
+  const trimmed = input.trim()
+  return TOKEN_PATTERN.test(trimmed) || UUID_PATTERN.test(trimmed)
+    ? null
+    : input || null
+}
+
 const Token = ({
   children,
   onRemove,
@@ -102,6 +109,13 @@ export const EventSearch = ({
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [input, setInput] = useState(query ?? '')
+  const [syncedQuery, setSyncedQuery] = useState(query)
+  if (query !== syncedQuery) {
+    setSyncedQuery(query)
+    if (query !== inputToQuery(input)) {
+      setInput(query ?? '')
+    }
+  }
   const [open, setOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
 
@@ -124,6 +138,7 @@ export const EventSearch = ({
   const commit = (next: string) => {
     setInput(next)
     setHighlighted(-1)
+    onQueryChange(null)
   }
 
   const addEventType = (name: string) => {
@@ -249,12 +264,7 @@ export const EventSearch = ({
     setInput(next)
     setHighlighted(-1)
     setOpen(true)
-    const trimmed = next.trim()
-    onQueryChange(
-      TOKEN_PATTERN.test(trimmed) || UUID_PATTERN.test(trimmed)
-        ? null
-        : next || null,
-    )
+    onQueryChange(inputToQuery(next))
   }
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {

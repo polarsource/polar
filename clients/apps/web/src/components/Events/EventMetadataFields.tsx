@@ -5,6 +5,14 @@ import { Plus, X } from '@polar-sh/orbit/icons'
 
 type Entry = { key: string; value: string | number | boolean }
 
+const parseValue = (value: Entry['value']) => {
+  if (value === 'true' || value === 'false') return value === 'true'
+  if (typeof value === 'string' && value !== '' && !isNaN(Number(value))) {
+    return Number(value)
+  }
+  return value
+}
+
 const FIELD_CLASS_NAME = 'h-8 rounded-lg px-2.5 text-xs md:text-xs'
 
 export const EventMetadataFields = ({
@@ -20,7 +28,10 @@ export const EventMetadataFields = ({
     onChange(
       metadata.map((current, i) =>
         i === index
-          ? { key: entry.key.replaceAll(' ', '_').trim(), value: entry.value }
+          ? {
+              key: entry.key.replaceAll(' ', '_').trim(),
+              value: parseValue(entry.value),
+            }
           : current,
       ),
     )

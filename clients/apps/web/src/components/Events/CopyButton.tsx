@@ -1,3 +1,5 @@
+import { toast } from '@/components/Toast/use-toast'
+import { useSafeCopy } from '@/hooks/clipboard'
 import { Button } from '@polar-sh/orbit'
 import { Check, Copy } from '@polar-sh/orbit/icons'
 import { useEffect, useState } from 'react'
@@ -12,6 +14,7 @@ export const CopyButton = ({
   label?: string
 }) => {
   const [copied, setCopied] = useState(false)
+  const safeCopy = useSafeCopy(toast)
 
   useEffect(() => {
     if (!copied) return
@@ -26,8 +29,8 @@ export const CopyButton = ({
       className="h-6 w-6 [&_svg]:size-3!"
       aria-label={copied ? 'Copied' : label}
       title={copied ? 'Copied' : label}
-      onClick={() => {
-        navigator.clipboard.writeText(value)
+      onClick={async () => {
+        await safeCopy(value)
         setCopied(true)
       }}
     >

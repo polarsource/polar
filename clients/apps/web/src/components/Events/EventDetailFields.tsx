@@ -58,7 +58,7 @@ export const useEventDetailFields = (
     isLoadingOldProduct ||
     isLoadingOrder ||
     isLoadingBenefit
-  const subscriptionHref = `${base}/subscriptions?subscriptionId=${subscriptionId}`
+  const subscriptionHref = `${base}/sales/subscriptions/${subscriptionId}`
 
   switch (kind) {
     case 'subscription.cycled':

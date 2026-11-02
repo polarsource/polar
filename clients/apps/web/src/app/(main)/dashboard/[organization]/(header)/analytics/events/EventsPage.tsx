@@ -105,6 +105,8 @@ const ClientPage = ({
 
   const debouncedQuery = useDebounce(query, 500)
   const debouncedMetadata = useDebounce(metadata, 500)
+  const searchQuery =
+    debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null
 
   const {
     data: events,
@@ -125,7 +127,7 @@ const ClientPage = ({
     sorting: [sorting],
     start_timestamp: startDate.toISOString(),
     end_timestamp: endDate.toISOString(),
-    query: debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null,
+    query: searchQuery,
     metadata: debouncedMetadata ?? null,
   })
 
@@ -217,8 +219,15 @@ const ClientPage = ({
     (sorting === '-timestamp'
       ? lastLoadedTime >= selectedTime
       : lastLoadedTime <= selectedTime)
+  const isSelectedInRange =
+    selectedTime !== null &&
+    selectedTime >= startDate.getTime() &&
+    selectedTime <= endDate.getTime()
   const shouldLoadUntilSelected =
-    selectedIndex < 0 && isBeforeSelectedEvent && hasNextPage
+    selectedIndex < 0 &&
+    isSelectedInRange &&
+    isBeforeSelectedEvent &&
+    hasNextPage
 
   useEffect(() => {
     if (shouldLoadUntilSelected && !isFetchingNextPage) {
@@ -303,6 +312,8 @@ const ClientPage = ({
           customerIds={selectedCustomerIds}
           source={source}
           filter={eventsFilter}
+          query={searchQuery}
+          metadata={debouncedMetadata}
           onSelectRange={onDateRangeChange}
         />
         <Box alignItems="start" gap="s">

@@ -1,6 +1,7 @@
 'use client'
 
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
+import { EventCreationGuideButton } from '@/components/Events/EventCreationGuideButton'
 import { EventMetadataFields } from '@/components/Events/EventMetadataFields'
 import { EventTypeFilter } from '@/components/Events/EventTypeFilter'
 import DateRangePicker, {
@@ -23,8 +24,21 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { FunnelX } from '@polar-sh/orbit/icons'
+import { useState } from 'react'
 
 type Metadata = Record<string, string | number | boolean>
+type MetadataRow = { key: string; value: Metadata[string] }
+
+const metadataToRows = (metadata: Metadata | null): MetadataRow[] =>
+  Object.entries(metadata ?? {}).map(([key, value]) => ({ key, value }))
+
+const rowsToMetadata = (rows: MetadataRow[]): Metadata =>
+  Object.fromEntries(
+    rows.filter((row) => row.key !== '').map((row) => [row.key, row.value]),
+  )
+
+const isSameMetadata = (a: Metadata, b: Metadata) =>
+  JSON.stringify(a) === JSON.stringify(b)
 
 type Sorting = '-timestamp' | 'timestamp'
 
@@ -82,9 +96,16 @@ export const EventsSidebar = ({
     customer_id: selectedCustomerIds ?? undefined,
   })
   const eventTypes = data?.pages.flatMap((page) => page.items) ?? []
-  const metadataEntries = Object.entries(metadata ?? {}).map(
-    ([key, value]) => ({ key, value }),
+  const [metadataRows, setMetadataRows] = useState(() =>
+    metadataToRows(metadata),
   )
+  const [syncedMetadata, setSyncedMetadata] = useState(metadata)
+  if (metadata !== syncedMetadata) {
+    setSyncedMetadata(metadata)
+    if (!isSameMetadata(rowsToMetadata(metadataRows), metadata ?? {})) {
+      setMetadataRows(metadataToRows(metadata))
+    }
+  }
 
   return (
     <Box flexDirection="column" gap="l" height="100%">
@@ -96,22 +117,25 @@ export const EventsSidebar = ({
         minHeight={40}
       >
         <Text>Filters</Text>
-        {hasActiveFilters && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-6 w-6 [&_svg]:size-3!"
-                onClick={onReset}
-                aria-label="Reset filters"
-              >
-                <FunnelX />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Reset filters</TooltipContent>
-          </Tooltip>
-        )}
+        <Box alignItems="center" gap="xs">
+          {hasActiveFilters && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-6 w-6 [&_svg]:size-3!"
+                  onClick={onReset}
+                  aria-label="Reset filters"
+                >
+                  <FunnelX />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Reset filters</TooltipContent>
+            </Tooltip>
+          )}
+          <EventCreationGuideButton />
+        </Box>
       </Box>
       <Box
         flexDirection="column"
@@ -195,14 +219,14 @@ export const EventsSidebar = ({
           </Select>
         </Box>
         <EventMetadataFields
-          metadata={metadataEntries}
-          onChange={(entries) =>
-            onMetadataChange(
-              Object.fromEntries(
-                entries.map((entry) => [entry.key, entry.value]),
-              ),
-            )
-          }
+          metadata={metadataRows}
+          onChange={(rows) => {
+            setMetadataRows(rows)
+            const next = rowsToMetadata(rows)
+            if (!isSameMetadata(next, rowsToMetadata(metadataRows))) {
+              onMetadataChange(next)
+            }
+          }}
         />
         <Box flexDirection="column" gap="s">
           <h3 className="text-sm">Sorting</h3>

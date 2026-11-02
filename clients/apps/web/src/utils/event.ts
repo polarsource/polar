@@ -14,7 +14,7 @@ const COST_EVENTS_FILTER = {
 
 const LLM_EVENTS_FILTER = {
   conjunction: 'and',
-  clauses: [{ property: '_llm.total_tokens', operator: 'gte', value: 0 }],
+  clauses: [{ property: '_llm.input_tokens', operator: 'gte', value: 0 }],
 }
 
 export const buildEventsFilter = ({

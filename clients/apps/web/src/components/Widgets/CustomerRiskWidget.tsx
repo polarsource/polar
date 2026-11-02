@@ -6,6 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { useContext } from 'react'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetError } from './WidgetError'
 import { WidgetLink } from './WidgetLink'
 import { WidgetGuard } from './WidgetGuard'
 
@@ -30,7 +31,8 @@ export const CustomerRiskWidget = ({ className }: CustomerRiskWidgetProps) => (
 
 const CustomerRiskWidgetContent = ({ className }: CustomerRiskWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
-  const { items, isLoading } = useAtRisk(organization, LIMIT)
+  const { items, isLoading, isError, refetch } = useAtRisk(organization, LIMIT)
+  const failed = isError && items.length === 0
   const basePath = `/dashboard/${organization.slug}/customers`
   const count = items.length >= LIMIT ? `${LIMIT}+` : `${items.length}`
 
@@ -39,13 +41,18 @@ const CustomerRiskWidgetContent = ({ className }: CustomerRiskWidgetProps) => {
       title={WIDGET_TITLE}
       headline={
         <Text variant="heading-m" weight="book">
-          {isLoading ? '–' : count}
+          {isLoading || failed ? '–' : count}
         </Text>
       }
       action={<WidgetLink href={`${basePath}/at-risk`} />}
       className={className}
     >
-      {!isLoading && items.length === 0 ? (
+      {failed ? (
+        <WidgetError
+          title="Couldn't load at-risk subscriptions"
+          onRetry={() => refetch()}
+        />
+      ) : !isLoading && items.length === 0 ? (
         <Box
           flex={1}
           flexDirection="column"
@@ -77,7 +84,9 @@ const CustomerRiskWidgetContent = ({ className }: CustomerRiskWidgetProps) => {
               >
                 <Box alignItems="baseline" columnGap="s" minWidth={0}>
                   <Text truncate>
-                    {subscription.customer.name ?? subscription.customer.email}
+                    {subscription.customer.name ??
+                      subscription.customer.email ??
+                      '-'}
                   </Text>
                   <Text color="muted" truncate>
                     {subscription.product.name}

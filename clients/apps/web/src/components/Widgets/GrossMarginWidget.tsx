@@ -37,7 +37,7 @@ const GrossMarginWidgetContent = ({ className }: GrossMarginWidgetProps) => {
   // Revenue is billed on each customer's anniversary while costs accrue daily,
   // so partial months swing wildly. Use a trailing window and complete months.
   const { data: trailing } = useMetrics({
-    startDate: subDays(today, TRAILING_DAYS),
+    startDate: subDays(today, TRAILING_DAYS - 1),
     endDate: today,
     organization_id: organization.id,
     interval: 'day',
@@ -88,6 +88,7 @@ const GrossMarginWidgetContent = ({ className }: GrossMarginWidgetProps) => {
             key: period.timestamp,
             label: format(period.timestamp, 'MMM'),
             value: Math.max(0, period.percentage ?? 0),
+            negative: period.percentage != null && period.percentage < 0,
             tooltip:
               period.percentage != null
                 ? `${period.percentage}% in ${format(period.timestamp, 'MMMM')}`

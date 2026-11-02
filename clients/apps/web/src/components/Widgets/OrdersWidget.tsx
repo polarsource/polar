@@ -104,7 +104,7 @@ const OrdersWidgetContent = ({ className }: OrdersWidgetProps) => {
                   </Text>
                 </Box>
                 <Text tabularNums>
-                  {formatCurrency('statistics')(
+                  {formatCurrency('accounting')(
                     order.net_amount,
                     order.currency,
                   )}

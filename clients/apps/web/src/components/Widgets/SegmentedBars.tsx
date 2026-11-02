@@ -9,6 +9,8 @@ export interface SegmentedBar {
   value: number
   tooltip: string
   highlighted?: boolean
+  // Values below zero can't fill segments; mark them with a danger baseline.
+  negative?: boolean
 }
 
 const filledSegments = (value: number, max: number) =>
@@ -19,7 +21,7 @@ const filledSegments = (value: number, max: number) =>
 const Segment = ({
   color,
 }: {
-  color: 'text-primary' | 'text-accent' | 'text-disabled'
+  color: 'text-primary' | 'text-accent' | 'text-disabled' | 'text-danger'
 }) => (
   <Box color={color}>
     <div className="h-px w-full bg-current" />
@@ -52,7 +54,11 @@ export const SegmentedBars = ({
                     <Segment
                       key={index}
                       color={
-                        index >= SEGMENTS - filled ? litColor : 'text-disabled'
+                        index >= SEGMENTS - filled
+                          ? litColor
+                          : bar.negative && !loading && index === SEGMENTS - 1
+                            ? 'text-danger'
+                            : 'text-disabled'
                       }
                     />
                   ))}

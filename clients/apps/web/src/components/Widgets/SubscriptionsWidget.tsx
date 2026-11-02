@@ -1,3 +1,4 @@
+import { useHasPermission } from '@/hooks/permissions'
 import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Text } from '@polar-sh/orbit'
@@ -30,8 +31,9 @@ const SubscriptionsWidgetContent = ({
   className,
 }: SubscriptionsWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
+  const canReadSales = useHasPermission(organization.id, 'sales:read')
 
-  const { data, isLoading } = useMetrics({
+  const { data } = useMetrics({
     startDate: startOfMonth(new Date()),
     endDate: endOfMonth(new Date()),
     organization_id: organization.id,
@@ -57,15 +59,17 @@ const SubscriptionsWidgetContent = ({
       headline={
         <Box alignItems="baseline" columnGap="m">
           <Text variant="heading-m" weight="book">
-            {isLoading ? '–' : (period?.active_subscriptions ?? 0)}
+            {period ? (period.active_subscriptions ?? 0) : '–'}
           </Text>
           <Text color="muted">active</Text>
         </Box>
       }
       action={
-        <WidgetLink
-          href={`/dashboard/${organization.slug}/sales/subscriptions`}
-        />
+        canReadSales ? (
+          <WidgetLink
+            href={`/dashboard/${organization.slug}/sales/subscriptions`}
+          />
+        ) : undefined
       }
       className={className}
     >
@@ -87,7 +91,7 @@ const SubscriptionsWidgetContent = ({
             borderColor="border-secondary"
           >
             <Text>{row.label}</Text>
-            <Text tabularNums>{isLoading ? '–' : (row.value ?? 0)}</Text>
+            <Text tabularNums>{period ? (row.value ?? 0) : '–'}</Text>
           </Box>
         ))}
       </Box>

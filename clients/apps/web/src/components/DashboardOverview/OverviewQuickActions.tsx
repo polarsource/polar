@@ -34,10 +34,12 @@ const QuickLink = ({
   icon: ReactNode
 }) => (
   <QuickAction label={label}>
-    <Link href={href} aria-label={label}>
-      <Button role="link" size="icon" variant="ghost" className="h-8 w-8">
-        {icon}
-      </Button>
+    <Link
+      href={href}
+      aria-label={label}
+      className="dark:hover:bg-polar-700 focus-visible:ring-ring inline-flex h-8 w-8 items-center justify-center rounded-full text-black transition-colors hover:bg-gray-200 focus-visible:ring-2 focus-visible:outline-none dark:text-white"
+    >
+      {icon}
     </Link>
   </QuickAction>
 )

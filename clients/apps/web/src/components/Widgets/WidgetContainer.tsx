@@ -30,7 +30,7 @@ export const WidgetContainer = ({
         paddingTop="xl"
       >
         <Box flexDirection="column" rowGap="s" minWidth={0}>
-          <Text>{title}</Text>
+          <Text as="h3">{title}</Text>
           {headline}
         </Box>
         {action}

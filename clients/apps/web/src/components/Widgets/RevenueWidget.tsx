@@ -67,7 +67,7 @@ const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
   })
 
   const today = new Date()
-  const { data: previousToDate, isLoading: isLoadingPrevious } = useMetrics({
+  const { data: previousToDate } = useMetrics({
     startDate: startOfMonth(subMonths(today, 1)),
     endDate: subMonths(today, 1),
     organization_id: organization.id,
@@ -88,7 +88,7 @@ const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
           <Text variant="heading-m" weight="book">
             {formatCurrency('statistics')(current, 'usd')}
           </Text>
-          {!isLoading && !isLoadingPrevious && (
+          {data && previousToDate && (
             <Change current={current} previous={previous} />
           )}
           {currentMonth && (

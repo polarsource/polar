@@ -7,6 +7,7 @@ import { startOfMonth, subMonths } from 'date-fns'
 import Link from 'next/link'
 import { useContext, useState } from 'react'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetError } from './WidgetError'
 import { WidgetGuard } from './WidgetGuard'
 import { WidgetLink } from './WidgetLink'
 
@@ -35,7 +36,12 @@ const TopCustomersWidgetContent = ({ className }: TopCustomersWidgetProps) => {
   })
   const basePath = `/dashboard/${organization.slug}/customers`
 
-  const { data: customers, isLoading } = useTopCustomers(organization.id, {
+  const {
+    data: customers,
+    isLoading,
+    isError,
+    refetch,
+  } = useTopCustomers(organization.id, {
     start,
     end,
     limit: LIMIT,
@@ -45,14 +51,16 @@ const TopCustomersWidgetContent = ({ className }: TopCustomersWidgetProps) => {
     endDate: end,
     organization_id: organization.id,
     interval: 'month',
-    metrics: ['net_revenue'],
+    metrics: ['revenue'],
   })
 
   const topRevenue = (customers ?? []).reduce(
     (sum, customer) => sum + customer.net_revenue,
     0,
   )
-  const totalRevenue = metrics?.totals.net_revenue ?? 0
+  // Both sides are pre-fee and pre-tax; the customer totals also subtract
+  // refunds, which the revenue metric doesn't.
+  const totalRevenue = metrics?.totals.revenue ?? 0
   const share =
     totalRevenue > 0 ? Math.round((topRevenue / totalRevenue) * 100) : null
 
@@ -62,7 +70,7 @@ const TopCustomersWidgetContent = ({ className }: TopCustomersWidgetProps) => {
       headline={
         <Box alignItems="baseline" columnGap="m">
           <Text variant="heading-m" weight="book">
-            {share != null ? `${share}%` : '–'}
+            {share != null && !isError ? `${share}%` : '–'}
           </Text>
           <Text color="muted">of revenue</Text>
         </Box>
@@ -70,7 +78,12 @@ const TopCustomersWidgetContent = ({ className }: TopCustomersWidgetProps) => {
       action={<WidgetLink href={basePath} />}
       className={className}
     >
-      {!isLoading && (customers ?? []).length === 0 ? (
+      {isError ? (
+        <WidgetError
+          title="Couldn't load top customers"
+          onRetry={() => refetch()}
+        />
+      ) : !isLoading && (customers ?? []).length === 0 ? (
         <Box
           flex={1}
           flexDirection="column"
@@ -99,7 +112,7 @@ const TopCustomersWidgetContent = ({ className }: TopCustomersWidgetProps) => {
                 borderColor="border-secondary"
               >
                 <Box alignItems="baseline" columnGap="s" minWidth={0}>
-                  <Text truncate>{customer.name ?? customer.email}</Text>
+                  <Text truncate>{customer.name ?? customer.email ?? '-'}</Text>
                   <Text color="muted">
                     {customer.order_count}{' '}
                     {customer.order_count === 1 ? 'order' : 'orders'}

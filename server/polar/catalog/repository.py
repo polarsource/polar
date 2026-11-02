@@ -143,7 +143,7 @@ class CatalogBenefitRepository(
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
-    def get_benefits_statement(self, catalog_id: UUID) -> Select[tuple[Benefit]]:
+    def get_benefits_statement(self, catalog_id: UUID) -> Select[Benefit]:
         return (
             select(Benefit)
             .join(CatalogBenefit, CatalogBenefit.benefit_id == Benefit.id)

@@ -80,6 +80,7 @@ async def list(
         visibility=filters.visibility,
         benefit_id=filters.benefit_id,
         metadata=metadata,
+        catalog=filters.catalog,
         pagination=pagination,
         sorting=sorting,
     )

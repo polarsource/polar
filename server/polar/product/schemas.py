@@ -1264,6 +1264,15 @@ class ProductListParams(QuerySchema):
     visibility: builtins.list[ProductVisibility] | None = Field(
         default=None, description="Filter by visibility."
     )
+    catalog: Annotated[Literal["draft"] | None, Version(starting_from=V2027_01)] = (
+        Field(
+            None,
+            description=(
+                "With `draft`, return the products of the draft catalog instead of "
+                "the current ones."
+            ),
+        )
+    )
 
 
 def _flagged_at_to_utc(value: datetime) -> datetime:

@@ -70,6 +70,7 @@ async def list(
         external_id=filters.external_id,
         metadata=metadata,
         query=filters.query,
+        catalog=filters.catalog,
         pagination=pagination,
         sorting=sorting,
     )

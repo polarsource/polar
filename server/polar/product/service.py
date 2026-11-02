@@ -16,6 +16,7 @@ from polar.authz.service import (
 )
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
+from polar.catalog.repository import CatalogProductRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.declarative_config.guard import (
@@ -114,6 +115,7 @@ class ProductService:
         visibility: Sequence[ProductVisibility] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
+        catalog: Literal["draft"] | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[ProductSortProperty]] = (
             (ProductSortProperty.created_at, True),
@@ -142,10 +144,18 @@ class ProductService:
             isouter=True,
         )
 
+        if catalog == "draft":
+            statement = statement.where(
+                Product.id.in_(
+                    CatalogProductRepository.from_session(
+                        session
+                    ).get_draft_product_ids_statement()
+                )
+            )
+        elif id is None:
+            statement = statement.where(Product.is_current)
         if id is not None:
             statement = statement.where(Product.id.in_(id))
-        else:
-            statement = statement.where(Product.is_current)
 
         if external_id is not None:
             statement = statement.where(Product.external_id.in_(external_id))

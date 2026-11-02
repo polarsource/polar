@@ -32,9 +32,19 @@ type MetadataRow = { key: string; value: Metadata[string] }
 const metadataToRows = (metadata: Metadata | null): MetadataRow[] =>
   Object.entries(metadata ?? {}).map(([key, value]) => ({ key, value }))
 
+const parseMetadataValue = (value: MetadataRow['value']) => {
+  if (value === 'true' || value === 'false') return value === 'true'
+  if (typeof value === 'string' && value !== '' && !isNaN(Number(value))) {
+    return Number(value)
+  }
+  return value
+}
+
 const rowsToMetadata = (rows: MetadataRow[]): Metadata =>
   Object.fromEntries(
-    rows.filter((row) => row.key !== '').map((row) => [row.key, row.value]),
+    rows
+      .filter((row) => row.key !== '')
+      .map((row) => [row.key, parseMetadataValue(row.value)]),
   )
 
 const isSameMetadata = (a: Metadata, b: Metadata) =>

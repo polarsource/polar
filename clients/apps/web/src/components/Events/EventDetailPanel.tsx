@@ -252,14 +252,7 @@ const EventDetails = ({
       )}
 
       {children.length > 0 && (
-        <Section
-          title="Children"
-          action={
-            <Text color="muted" tabularNums>
-              {event.child_count}
-            </Text>
-          }
-        >
+        <Section title="Children">
           {children.map((child) => (
             <RelatedEventRow
               key={child.id}

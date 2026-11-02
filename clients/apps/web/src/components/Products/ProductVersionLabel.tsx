@@ -1,6 +1,7 @@
 import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Pill } from '@polar-sh/orbit'
+import { History } from '@polar-sh/orbit/icons'
 
 export const ProductVersionLabel = ({
   organization,
@@ -21,8 +22,12 @@ export const ProductVersionLabel = ({
     return null
   }
   return (
-    <Pill color="gray" className="text-xxs! rounded-sm px-2 py-0.5 font-normal">
-      {catalog.name}
+    <Pill
+      color="gray"
+      className="text-xxs! space-x-0.5 rounded-sm px-2 py-0.5 font-normal"
+    >
+      <History size={10} aria-hidden />
+      <span>{catalog.name}</span>
     </Pill>
   )
 }

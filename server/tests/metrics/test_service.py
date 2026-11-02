@@ -1,5 +1,5 @@
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from typing import Any, NotRequired, TypedDict
 from uuid import UUID
@@ -8,7 +8,6 @@ from zoneinfo import ZoneInfo
 import pytest
 from alembic_utils.pg_trigger import PGTrigger
 from alembic_utils.replaceable_entity import registry as entities_registry
-from sqlalchemy import select
 from sqlalchemy.schema import CreateSequence
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -343,6 +342,7 @@ class MetricsHarness:
 class CheckoutMetricsContext:
     organization: Organization
     user: User
+    product_ids: dict[str, UUID] = field(default_factory=dict)
 
 
 @dataclass
@@ -2305,7 +2305,7 @@ async def _seed_checkout_outside_range(
 async def _seed_checkout_product_filters(
     save_fixture: SaveFixture,
     organization: Organization,
-) -> None:
+) -> dict[str, UUID]:
     one_time_product = await create_product(
         save_fixture,
         organization=organization,
@@ -2330,6 +2330,7 @@ async def _seed_checkout_product_filters(
             created_at=datetime(2026, 2, 15, 9, 30, tzinfo=UTC),
             analytics_metadata={"opened_at": opened_at},
         )
+    return {"one_time": one_time_product.id}
 
 
 def _checkout_auth_subject(
@@ -2744,7 +2745,9 @@ async def checkout_metrics_harness(
         await _seed_checkout_outside_range(save_fixture, outside_range.organization)
 
         product_filters = await make_context("product_filters")
-        await _seed_checkout_product_filters(save_fixture, product_filters.organization)
+        product_filters.product_ids = await _seed_checkout_product_filters(
+            save_fixture, product_filters.organization
+        )
 
         await session.commit()
         harness = CheckoutMetricsHarness(
@@ -5693,16 +5696,9 @@ class TestCheckoutMetrics:
     ) -> None:
         context = checkout_metrics_harness.scenarios["product_filters"]
         auth_subject = _checkout_auth_subject(context, auth)
-        product_id: list[UUID] | None = None
-        if filter_one_time_product:
-            one_time_product_id = await checkout_metrics_session.scalar(
-                select(Product.id).where(
-                    Product.organization_id == context.organization.id,
-                    Product.billing_type == ProductBillingType.one_time,
-                )
-            )
-            assert one_time_product_id is not None
-            product_id = [one_time_product_id]
+        product_id = (
+            [context.product_ids["one_time"]] if filter_one_time_product else None
+        )
 
         metrics = await metrics_service.get_metrics(
             checkout_metrics_session,

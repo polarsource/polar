@@ -48869,6 +48869,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
         product_billing_type?:
           | components['schemas']['ProductBillingType']
@@ -48968,6 +48970,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by order status. */
         status?:
           | components['schemas']['OrderStatus']
@@ -49742,6 +49746,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */

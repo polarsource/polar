@@ -128,6 +128,7 @@ async def list(
         auth_subject,
         organization_id=filters.organization_id,
         product_id=filters.product_id,
+        external_product_id=filters.external_product_id,
         customer_id=filters.customer_id,
         external_customer_id=filters.external_customer_id,
         status=filters.status,

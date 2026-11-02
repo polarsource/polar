@@ -79,7 +79,7 @@ from polar.product.schemas import (
     ProductPriceList,
     ProductVersionOutputMixin,
 )
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 Amount = Annotated[
     int,
@@ -914,6 +914,13 @@ class CheckoutListParams(QuerySchema):
     )
     product_id: MultipleQueryFilter[ProductID] | None = Field(
         None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
     )
     customer_id: MultipleQueryFilter[CustomerID] | None = Field(
         None, title="CustomerID Filter", description="Filter by customer ID."

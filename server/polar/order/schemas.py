@@ -48,7 +48,7 @@ from polar.product.schemas import (
     ProductVersionOutputMixin,
 )
 from polar.subscription.schemas import SubscriptionBase, SubscriptionID
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]
 
@@ -433,6 +433,13 @@ class OrderListParams(QuerySchema):
     )
     product_id: MultipleQueryFilter[ProductID] | None = Field(
         None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
     )
     product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Field(
         None,

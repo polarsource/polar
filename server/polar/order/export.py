@@ -11,11 +11,12 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
 from polar.kit.schemas import MultipleQueryFilter
-from polar.kit.versioning import QuerySchema
-from polar.models import Order
+from polar.kit.versioning import QuerySchema, Version
+from polar.models import Order, Product
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
+from polar.version import V2027_01
 
 from .repository import OrderRepository
 
@@ -125,6 +126,7 @@ async def generate_csv(
     *,
     organization_id: Sequence[OrganizationID] | None,
     product_id: Sequence[ProductID] | None,
+    external_product_id: Sequence[str] | None = None,
     status: Sequence[OrderStatus] | None,
     created_after: datetime | None,
     created_before: datetime | None,
@@ -148,6 +150,10 @@ async def generate_csv(
         statement = statement.where(Order.organization_id.in_(organization_id))
     if product_id is not None:
         statement = statement.where(Order.product_id.in_(product_id))
+    if external_product_id is not None:
+        statement = statement.where(
+            Order.product.has(Product.external_id.in_(external_product_id))
+        )
     if status is not None:
         statement = statement.where(Order.status.in_(status))
     if created_after is not None:
@@ -167,6 +173,13 @@ class OrderExportParams(QuerySchema):
     )
     product_id: MultipleQueryFilter[ProductID] | None = Field(
         None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
     )
     status: MultipleQueryFilter[OrderStatus] | None = Field(
         None, title="Status Filter", description="Filter by order status."

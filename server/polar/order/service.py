@@ -381,6 +381,7 @@ class OrderService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        external_product_id: Sequence[str] | None = None,
         product_billing_type: Sequence[ProductBillingType] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
@@ -420,6 +421,9 @@ class OrderService:
 
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))
+
+        if external_product_id is not None:
+            statement = statement.where(Product.external_id.in_(external_product_id))
 
         if product_billing_type is not None:
             product_repository = ProductRepository.from_session(session)

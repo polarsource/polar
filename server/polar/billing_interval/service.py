@@ -17,6 +17,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
 from polar.reducer.types import UsageWindow
+from polar.subscription.repository import SubscriptionRepository
 
 from .comparison import BillingComparison
 from .repository import BillingIntervalRepository
@@ -101,6 +102,28 @@ class BillingIntervalService:
             customer, meter_id, until=until
         )
         return get_interval_boundaries(intervals, until=until)
+
+    async def get_usage_windows(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        cutoff: datetime,
+    ) -> tuple[UsageWindow, ...]:
+        """The customer's chargeable usage windows on the meter before `cutoff`."""
+        repository = BillingIntervalRepository.from_session(session)
+        intervals = await repository.get_by_customer_and_meter(
+            customer, meter_id, until=cutoff
+        )
+        if not intervals:
+            return ()
+        subscription_starts = await SubscriptionRepository.from_session(
+            session
+        ).get_started_at_by_ids(
+            list({interval.subscription_id for interval in intervals})
+        )
+        return resolve_ownership(intervals, subscription_starts, cutoff=cutoff)
 
 
 def get_interval_boundaries(

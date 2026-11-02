@@ -42,3 +42,6 @@ export const ClickToCopy = ({ children, value }: ClickToCopyProps) => {
     </Box>
   )
 }
+
+export const copyable = (value: string | null | undefined) =>
+  value ? <ClickToCopy>{value}</ClickToCopy> : value

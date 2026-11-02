@@ -1,6 +1,6 @@
 'use client'
 
-import { ClickToCopy } from '@/components/Shared/ClickToCopy'
+import { ClickToCopy, copyable } from '@/components/Shared/ClickToCopy'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { formatCountry } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
@@ -8,9 +8,6 @@ import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-
-const copyable = (value: string | null | undefined) =>
-  value ? <ClickToCopy>{value}</ClickToCopy> : value
 
 interface CustomerDetailsSectionProps {
   customer: schemas['Customer']
@@ -30,7 +27,11 @@ export const CustomerDetailsSection = ({
           value={copyable(customer.id)}
           valueClassName="font-mono text-xs"
         />
-        <DetailRow label="External ID" value={copyable(customer.external_id)} />
+        <DetailRow
+          label="External ID"
+          value={copyable(customer.external_id)}
+          valueClassName="min-w-0 break-all"
+        />
         <DetailRow label="Email" value={copyable(customer.email)} />
         <DetailRow label="Name" value={copyable(customer.name)} />
         <DetailRow

@@ -203,7 +203,7 @@ const BaseCheckoutForm = ({
   const captureContact = useCallback(
     async (name: ContactField, value: string) => {
       const contact = value.trim()
-      if (loading || !contact || checkout[name] === contact) {
+      if (!contact || checkout[name] === contact) {
         return
       }
       clearErrors(name)
@@ -213,7 +213,7 @@ const BaseCheckoutForm = ({
         /* API errors handled by provider */
       }
     },
-    [checkout, loading, update, clearErrors],
+    [checkout, update, clearErrors],
   )
 
   const discountCode = useWatch({ control, name: 'discount_code' })
@@ -786,7 +786,6 @@ const BaseCheckoutForm = ({
                 className="w-full"
                 disabled={disabled || isUpdatePending || !isPaymentFormReady}
                 loading={loading}
-                onMouseDown={(e) => e.preventDefault()}
               >
                 {checkoutLabel}
               </Button>

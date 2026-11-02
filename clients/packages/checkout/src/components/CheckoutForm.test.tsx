@@ -1,4 +1,4 @@
-import type { schemas } from '@polar-sh/client'
+import type { Client, schemas } from '@polar-sh/client'
 import type { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
@@ -17,8 +17,14 @@ import {
 import type { ProductCheckoutPublic } from '../guards'
 import {
   CheckoutFormContext,
+  CheckoutFormProvider,
+  useCheckoutForm,
   type CheckoutFormContextProps,
 } from '../providers/CheckoutFormProvider'
+import {
+  CheckoutContext,
+  type CheckoutContextProps,
+} from '../providers/CheckoutProvider'
 import { createCheckout } from '../test-utils/makeCheckout'
 import CheckoutForm from './CheckoutForm'
 
@@ -1164,36 +1170,80 @@ describe('CheckoutForm', () => {
       expect(update).toHaveBeenCalledWith({ customer_name: 'Buyer Example' })
     })
 
-    it('keeps focus in the field when the buyer presses the submit button', () => {
-      const { update } = renderForm()
-      const input = screen.getByLabelText('Cardholder name')
-      fireEvent.change(input, { target: { value: 'Buyer Example' } })
-
-      const defaultAllowed = fireEvent.mouseDown(
-        screen.getByRole('button', { name: 'Pay now' }),
-      )
-
-      expect(defaultAllowed).toBe(false)
-      expect(update).not.toHaveBeenCalled()
-    })
-
-    it('does not store a contact field while the checkout is confirming', () => {
-      const update = vi.fn(async () => createCheckout())
+    it('submits the typed contact details on the first click, while the field is still focused', async () => {
+      const checkout = createCheckout({
+        customer_billing_address: {
+          country: 'US',
+          line1: null,
+          line2: null,
+          postal_code: null,
+          city: null,
+          state: null,
+        },
+      })
+      const confirm = vi.fn(defaultProps.confirm)
+      const ProviderForm = () => {
+        const { form, update, isUpdatePending } = useCheckoutForm()
+        return (
+          <CheckoutForm
+            form={form}
+            checkout={checkout}
+            update={update}
+            confirm={confirm}
+            loading={false}
+            loadingLabel={undefined}
+            isUpdatePending={isUpdatePending}
+            themePreset={{ stripe: {} } as ThemingPresetProps}
+            locale="en"
+          />
+        )
+      }
       render(
-        <FormWrapper
-          checkout={createCheckout()}
-          {...defaultProps}
-          update={update}
-          loading
-          themePreset={{ stripe: {} } as ThemingPresetProps}
-          locale="en"
-        />,
+        <CheckoutContext.Provider
+          value={{
+            checkout,
+            refresh: vi.fn(),
+            update: vi.fn<CheckoutContextProps['update']>(
+              async () =>
+                ({ ok: true, value: checkout }) as Awaited<
+                  ReturnType<CheckoutContextProps['update']>
+                >,
+            ),
+            confirm: vi.fn(),
+            cancelPayment: vi.fn(),
+            client: {} as Client,
+          }}
+        >
+          <CheckoutFormProvider>
+            <ProviderForm />
+          </CheckoutFormProvider>
+        </CheckoutContext.Provider>,
       )
+      fireEvent.click(screen.getByText('mock ready'))
+      fireEvent.change(screen.getByLabelText('Email'), {
+        target: { value: 'buyer@example.com' },
+      })
+      const name = screen.getByLabelText('Cardholder name')
+      fireEvent.change(name, { target: { value: 'Buyer Example' } })
+      const submit = screen.getByRole('button', { name: 'Pay now' })
 
-      fill('Email', 'buyer@example.com')
-      fill('Cardholder name', 'Buyer Example')
+      fireEvent.mouseDown(submit)
+      await act(async () => {
+        fireEvent.blur(name)
+      })
+      await act(async () => {
+        fireEvent.mouseUp(submit)
+        fireEvent.click(submit)
+      })
 
-      expect(update).not.toHaveBeenCalled()
+      expect(confirm).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          customer_email: 'buyer@example.com',
+          customer_name: 'Buyer Example',
+        }),
+        null,
+        null,
+      )
     })
 
     it('waits for an address the browser reads as one', () => {

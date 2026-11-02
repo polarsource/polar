@@ -34,7 +34,7 @@ const metadataToRows = (metadata: Metadata | null): MetadataRow[] =>
 
 const parseMetadataValue = (value: MetadataRow['value']) => {
   if (value === 'true' || value === 'false') return value === 'true'
-  if (typeof value === 'string' && value !== '' && !isNaN(Number(value))) {
+  if (typeof value === 'string' && String(Number(value)) === value) {
     return Number(value)
   }
   return value

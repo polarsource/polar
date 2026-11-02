@@ -41,6 +41,14 @@ const ProductPriceListItem = ({
   )
 }
 
+const getNextInvoiceType = (
+  preview: schemas['SubscriptionChargePreview'],
+): 'charge' | 'balance' | 'credit' => {
+  if (preview.total_amount <= 0) return 'credit'
+  if (preview.due_amount === 0) return 'balance'
+  return 'charge'
+}
+
 const CustomerChangePlanModal = ({
   api,
   organization,
@@ -122,11 +130,10 @@ const CustomerChangePlanModal = ({
     willTriggerImmediateCycle,
   )
 
-  const nextInvoiceType: 'charge' | 'credit' | null = changePreview.data
-    ? changePreview.data.total_amount > 0
-      ? 'charge'
-      : 'credit'
-    : null
+  const nextInvoiceType =
+    changePreview.data && !changePreview.isFetching && !changePreview.isError
+      ? getNextInvoiceType(changePreview.data)
+      : null
 
   const invoicingMessage = useMemo((): string | null => {
     if (!selectedProduct) return null
@@ -145,10 +152,13 @@ const CustomerChangePlanModal = ({
       const newPeriod =
         selectedProduct.recurring_interval === 'month' ? 'monthly' : 'yearly'
 
-      if (nextInvoiceType === 'charge') {
-        return `You'll be charged immediately for the new ${newPeriod} plan.`
-      } else {
-        return `Your previous payment will appear as a credit on your next invoice.`
+      switch (nextInvoiceType) {
+        case 'charge':
+          return `You'll be charged immediately for the new ${newPeriod} plan.`
+        case 'balance':
+          return `The new ${newPeriod} plan will be paid from your account balance.`
+        case 'credit':
+          return `Your previous payment will appear as a credit on your next invoice.`
       }
     }
 

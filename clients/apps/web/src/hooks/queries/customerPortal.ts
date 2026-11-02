@@ -462,6 +462,9 @@ export const useCustomerUpdateSubscription = (api: Client) =>
         queryKey: ['customer_subscription_meter_charge_preview'],
       })
       queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
+      })
+      queryClient.invalidateQueries({
         queryKey: ['customer_seats'],
       })
     },
@@ -491,6 +494,9 @@ export const useCustomerCancelSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_meter_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
+      })
     },
   })
 
@@ -518,6 +524,9 @@ export const useCustomerRevokeSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_meter_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
+      })
     },
   })
 
@@ -542,6 +551,9 @@ export const useCustomerUncancelSubscription = (api: Client) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
       })
     },
   })
@@ -577,6 +589,9 @@ export const useCustomerPauseSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_meter_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
+      })
     },
   })
 
@@ -609,6 +624,9 @@ export const useCustomerResumeSubscription = (api: Client) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
       })
     },
   })

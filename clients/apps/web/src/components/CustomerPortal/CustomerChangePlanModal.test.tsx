@@ -57,10 +57,18 @@ const organization = {
   proration_behavior: 'invoice',
 } as unknown as schemas['CustomerOrganization']
 
-const mockPreview = (totalAmount: number) =>
+const mockPreview = (
+  preview: { total_amount: number; due_amount: number } | undefined,
+  state: { isFetching?: boolean; isError?: boolean } = {},
+) =>
   vi.mocked(useCustomerSubscriptionChangePreview).mockReturnValue({
-    data: { total_amount: totalAmount },
+    data: preview,
+    isFetching: state.isFetching ?? false,
+    isError: state.isError ?? false,
   } as unknown as ReturnType<typeof useCustomerSubscriptionChangePreview>)
+
+const immediateCycleNotice =
+  /charged immediately|credit on your next invoice|account balance/
 
 const renderAndSelectSeatPlan = () => {
   render(
@@ -87,7 +95,7 @@ describe('CustomerChangePlanModal', () => {
   })
 
   it('shows an immediate charge for a seat-only plan the server charges for', () => {
-    mockPreview(12000)
+    mockPreview({ total_amount: 12000, due_amount: 12000 })
 
     renderAndSelectSeatPlan()
 
@@ -105,7 +113,7 @@ describe('CustomerChangePlanModal', () => {
   })
 
   it('shows a credit when the server previews a net credit', () => {
-    mockPreview(-500)
+    mockPreview({ total_amount: -500, due_amount: 0 })
 
     renderAndSelectSeatPlan()
 
@@ -116,14 +124,34 @@ describe('CustomerChangePlanModal', () => {
     ).toBeTruthy()
   })
 
-  it('shows no immediate-cycle notice while the preview is loading', () => {
-    vi.mocked(useCustomerSubscriptionChangePreview).mockReturnValue({
-      data: undefined,
-    } as unknown as ReturnType<typeof useCustomerSubscriptionChangePreview>)
+  it('shows the balance message when account balance covers the charge', () => {
+    mockPreview({ total_amount: 12000, due_amount: 0 })
 
     renderAndSelectSeatPlan()
 
-    expect(screen.queryByText(/charged immediately/)).toBeNull()
-    expect(screen.queryByText(/credit on your next invoice/)).toBeNull()
+    expect(
+      screen.getByText(
+        'The new yearly plan will be paid from your account balance.',
+      ),
+    ).toBeTruthy()
   })
+
+  it.each([
+    ['loading', undefined, {}],
+    [
+      'refetching',
+      { total_amount: 12000, due_amount: 12000 },
+      { isFetching: true },
+    ],
+    ['failed', { total_amount: 12000, due_amount: 12000 }, { isError: true }],
+  ])(
+    'shows no immediate-cycle notice while the preview is %s',
+    (_, preview, state) => {
+      mockPreview(preview, state)
+
+      renderAndSelectSeatPlan()
+
+      expect(screen.queryByText(immediateCycleNotice)).toBeNull()
+    },
+  )
 })

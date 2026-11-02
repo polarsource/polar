@@ -2123,7 +2123,7 @@ class TestHandleAccountRiskSignal:
             organization=organization,
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
-            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+            risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
             account_evaluation_id=evaluation_id,
         )
         await save_fixture(signal)

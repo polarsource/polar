@@ -26,6 +26,13 @@ from .thresholds import thresholds_for_prompt
 
 log = structlog.get_logger(__name__)
 
+_RISK_SIGNAL_SEVERITY_ORDER: dict[str, int] = {
+    OrganizationRiskSignal.RiskLevel.LOW: 1,
+    OrganizationRiskSignal.RiskLevel.NORMAL: 2,
+    OrganizationRiskSignal.RiskLevel.ELEVATED: 3,
+    OrganizationRiskSignal.RiskLevel.HIGHEST: 4,
+}
+
 SYSTEM_PROMPT = f"""\
 You are an expert compliance and risk analyst for Polar, a Merchant of Record platform \
 for digital products. You are reviewing an organization's application to sell on Polar.
@@ -606,7 +613,7 @@ DENY.
 - If the appeal asserts something that directly contradicts hard data \
 (prohibited products visible on Polar, Stripe account fraud indicators \
 such as fraudulent verification documents), DENY regardless of the \
-appeal text. Probabilistic entries under "## External Risk Signals" are \
+appeal text. Probabilistic entries under "## Risk Signals" are \
 NOT hard data by themselves — weigh them together with the appeal. Do \
 NOT use prior denied or blocked organizations as a signal at the appeal \
 stage — judge this organization on its own merits and the appeal text.
@@ -1078,27 +1085,28 @@ class ReviewAnalyzer:
                     "These are NOT actual disputes and are not counted in Disputes above."
                 )
 
-        # External risk signals (e.g. Stripe Radar for Platforms)
+        # Risk signals from Stripe Radar for Platforms and our own checks
         risk_signals = snapshot.risk_signals
         if risk_signals.entries:
-            parts.append("\n## External Risk Signals")
+            parts.append("\n## Risk Signals")
             parts.append(
-                "⚠️ The following risk signals were raised against this organization "
-                "by external fraud-detection systems. Only signals at 'elevated' or "
-                "'highest' severity are recorded, so every entry below is significant. "
-                "They are probabilistic — not proof of fraud on their own — but treat "
-                "them as strong corroborating evidence: verify whether the website and "
-                "products match what the signal flags, and weigh them into "
-                "POLICY_COMPLIANCE and PRODUCT_LEGITIMACY."
+                "⚠️ The following risk signals were raised against this organization. "
+                "'stripe' signals come from Stripe's fraud-detection systems and are "
+                "only recorded at 'elevated' or 'highest' severity, so treat them as "
+                "strong corroborating evidence. 'polar' signals come from our own "
+                "checks, e.g. a product saved under a name our Acceptable Use Policy "
+                "check flagged, or a flagged name changed until the warning went "
+                "away; they are weaker heuristics with innocent explanations, so "
+                "weigh them by their risk level. All signals are probabilistic, not "
+                "proof on their own: verify whether the website and products match "
+                "what the signal flags, and weigh them into POLICY_COMPLIANCE and "
+                "PRODUCT_LEGITIMACY."
             )
             # Highest severity first so the cap never drops the worst signals.
             entries = sorted(
                 risk_signals.entries,
-                key=lambda e: (
-                    0
-                    if e.risk_level == OrganizationRiskSignal.HIGHEST_RISK_LEVEL
-                    else 1
-                ),
+                key=lambda e: _RISK_SIGNAL_SEVERITY_ORDER.get(e.risk_level, 0),
+                reverse=True,
             )
             shown = entries[:20]
             for signal in shown:

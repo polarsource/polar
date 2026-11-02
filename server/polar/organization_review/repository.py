@@ -539,7 +539,7 @@ class OrganizationRiskSignalRepository(
             .where(
                 OrganizationRiskSignal.organization_id == organization_id,
                 OrganizationRiskSignal.risk_level
-                != OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+                != OrganizationRiskSignal.RiskLevel.UNKNOWN,
             )
             .order_by(OrganizationRiskSignal.created_at.desc())
             .limit(limit)

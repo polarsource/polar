@@ -204,7 +204,7 @@ def _stub_analyzer_io(
 class TestBuildPromptRiskSignals:
     def test_no_section_without_signals(self, review_analyzer: ReviewAnalyzer) -> None:
         prompt = review_analyzer._build_prompt(_minimal_snapshot())
-        assert "## External Risk Signals" not in prompt
+        assert "## Risk Signals" not in prompt
 
     def test_renders_signals(self, review_analyzer: ReviewAnalyzer) -> None:
         snapshot = _minimal_snapshot().model_copy(
@@ -231,7 +231,7 @@ class TestBuildPromptRiskSignals:
 
         prompt = review_analyzer._build_prompt(snapshot)
 
-        assert "## External Risk Signals" in prompt
+        assert "## Risk Signals" in prompt
         assert (
             "- [2026-07-01] stripe: fraudulent_website (risk level: elevated)" in prompt
         )
@@ -244,6 +244,34 @@ class TestBuildPromptRiskSignals:
             "fraudulent_website (risk level: elevated)"
         )
         assert "omitted" not in prompt
+
+    def test_sorts_by_severity(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "risk_signals": RiskSignalData(
+                    entries=[
+                        RiskSignalEntry(
+                            source="polar",
+                            type="flagged_product_name_revised",
+                            risk_level="normal",
+                            created_at=datetime(2026, 7, 2, tzinfo=UTC),
+                        ),
+                        RiskSignalEntry(
+                            source="polar",
+                            type="flagged_product_name",
+                            risk_level="elevated",
+                            created_at=datetime(2026, 7, 1, tzinfo=UTC),
+                        ),
+                    ]
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert prompt.index("polar: flagged_product_name (") < prompt.index(
+            "polar: flagged_product_name_revised"
+        )
 
     def test_caps_signals_and_notes_omission(
         self, review_analyzer: ReviewAnalyzer

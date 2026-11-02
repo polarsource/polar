@@ -41,7 +41,6 @@ export const SettingsGroup: React.FC<
       borderWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
-      backgroundColor="background-secondary"
     >
       {Children.toArray(children).map((child, index) => (
         <Fragment key={isValidElement(child) ? child.key : index}>

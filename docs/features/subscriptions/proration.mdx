@@ -47,7 +47,7 @@ This behavior is the safer default for downgrades where you don't want to issue 
 
 Polar decides per change: **upgrades** are applied immediately like `invoice`, and **downgrades** are scheduled for the next cycle like `next_period`. This lets customers upgrade straight from the [Customer Portal](/features/customer-portal/introduction) while keeping downgrades for their renewal.
 
-- **Product changes**: moving to a longer billing interval (for example, monthly to yearly) is an upgrade, and moving to a shorter one is a downgrade, whatever the prices. With the same interval, a higher or equal price is an upgrade and a lower price is a downgrade. Switching to a seat-based or unit-based product is always applied immediately.
+- **Product changes**: moving to a longer billing interval (for example, monthly to yearly) is an upgrade, and moving to a shorter one is a downgrade, whatever the prices. With the same interval, a higher or equal price is an upgrade and a lower price is a downgrade. Switching from a non-seat subscription to a seat-based product, or from a non-unit subscription to a unit-based product, is always applied immediately.
 - **Seat and unit changes**: adding seats or units is an upgrade, removing them is a downgrade.
 - **Trials**: during a trial, every change is applied immediately, since nothing is billed until the trial ends. If the new product's trial would already be over, the trial ends and the customer is charged for the new plan.
 
@@ -104,7 +104,7 @@ with Polar("<YOUR_BEARER_TOKEN_HERE>") as polar:
 
 </CodeGroup>
 
-Valid values are `invoice`, `prorate`, `next_period`, and `auto`. If your organization has access to the preview `reset` behavior, you can pass `reset` here as well.
+Valid values are `invoice`, `prorate`, and `next_period`, plus `auto` from API version `2027-01`. If your organization has access to the preview `reset` behavior, you can pass `reset` here as well.
 
 ## How the prorated amount is calculated
 

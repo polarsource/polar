@@ -35,7 +35,7 @@ import { useForm, useFormContext } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast, useToast } from '../Toast/use-toast'
 import { CreateAccessTokenModal } from './CreateAccessTokenModal'
-import { SettingsGroup } from './SettingsGroup'
+import { SettingsGroup, SettingsGroupRow } from './SettingsGroup'
 import { TreeMultiSelect } from './TreeMultiSelect'
 import { useResumeOrganizationAccessTokenCreation } from './useResumeOrganizationAccessTokenCreation'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -448,13 +448,13 @@ const OrganizationAccessTokensSettings = ({
               token.id === createdToken?.organization_access_token.id
 
             return (
-              <Box key={token.id} paddingHorizontal="xl" paddingVertical="l">
+              <SettingsGroupRow key={token.id}>
                 <AccessTokenItem
                   token={token}
                   rawToken={isNewToken ? createdToken?.token : undefined}
                   rootRef={isNewToken ? createdTokenRef : undefined}
                 />
-              </Box>
+              </SettingsGroupRow>
             )
           })
         ) : (

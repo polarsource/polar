@@ -1538,6 +1538,10 @@ class TestBill:
         for timestamp in (RESET, CUTOFF):
             await create_reset_event(save_fixture, customer, meter, timestamp)
         seal = mocker.patch.object(reducer_service, "_seal_buckets")
+        get_boundaries = mocker.patch(
+            "polar.reducer.service.billing_interval_service.get_boundaries",
+            return_value=(START,),
+        )
         bill = mocker.patch.object(
             reducer_service,
             "_bill_buckets",
@@ -1552,7 +1556,6 @@ class TestBill:
             order_id=order_id,
             billable_from=START,
             cutoff=CUTOFF,
-            boundaries=(),
         )
 
         assert quantities == {meter.id: (Decimal(3), Decimal(2))}
@@ -1563,10 +1566,13 @@ class TestBill:
                 customer,
                 since=START,
                 until=CUTOFF,
-                boundaries=(),
+                boundaries=[START],
             ),
             call(session, [credit], customer, since=RESET, until=CUTOFF),
         ]
+        get_boundaries.assert_called_once_with(
+            session, customer, meter.id, until=CUTOFF
+        )
         assert bill.call_args_list == [
             call(
                 session, [usage], customer, order_id=order_id, since=START, until=CUTOFF
@@ -1606,7 +1612,6 @@ class TestBill:
             order_id=order.id,
             billable_from=START,
             cutoff=CUTOFF,
-            boundaries=(),
         )
 
         assert quantities == {meter.id: (Decimal(0), Decimal(4))}
@@ -1634,7 +1639,6 @@ class TestBill:
             order_id=order.id,
             billable_from=START,
             cutoff=CUTOFF,
-            boundaries=(),
         )
 
         assert quantities == {meter.id: (Decimal(0), Decimal(0))}
@@ -1676,7 +1680,6 @@ class TestBill:
             order_id=order.id,
             billable_from=CUTOFF,
             cutoff=NEXT_BUCKET_START,
-            boundaries=(),
         )
 
         assert quantities == {meter.id: (Decimal(3), Decimal(0))}
@@ -1708,7 +1711,6 @@ class TestBill:
             order_id=uuid.uuid4(),
             billable_from=START,
             cutoff=CUTOFF,
-            boundaries=(),
         )
 
         assert quantities == {}

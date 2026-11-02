@@ -11,6 +11,7 @@ import structlog
 from redis.exceptions import RedisError
 from sqlalchemy import Row
 
+from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncReadSession
@@ -222,11 +223,11 @@ class ReducerService:
         order_id: UUID,
         billable_from: datetime,
         cutoff: datetime,
-        boundaries: Sequence[datetime],
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
         """Marks the customer's usage within [billable_from, cutoff] and its credits
         since the latest reset as billed by the order, and returns their quantities
-        per meter. Usage it seals is split at `boundaries` first."""
+        per meter. Usage it seals is first split at the billing interval boundaries
+        of the meters."""
         meter_ids = sorted(meter_ids)
         try:
             async with session.begin_nested():
@@ -237,13 +238,20 @@ class ReducerService:
                 # That task and this run at roughly the same time, so if it
                 # hasn't run already we seal it here. The one that runs
                 # afterward becomes a no-op.
+                boundaries: set[datetime] = set()
+                for meter_id in reducers:
+                    boundaries.update(
+                        await billing_interval_service.get_boundaries(
+                            session, customer, meter_id, until=cutoff
+                        )
+                    )
                 await self._seal_buckets(
                     session,
                     list(reducers.values()),
                     customer,
                     since=billable_from,
                     until=cutoff,
-                    boundaries=boundaries,
+                    boundaries=sorted(boundaries),
                 )
                 quantities = await self._bill_buckets(
                     session,

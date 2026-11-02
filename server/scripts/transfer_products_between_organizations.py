@@ -749,6 +749,9 @@ class ProductTransferService:
                 await self.copy_payment_methods(
                     session, customer, existing_customer, subscriptions_to_update
                 )
+                await self.transfer_customer_references(
+                    session, customer, existing_customer, split=False
+                )
 
                 await session.execute(
                     update(CustomerSeat)
@@ -943,21 +946,63 @@ class ProductTransferService:
                 session.add(billing_entry)
                 self.transfer_stats["billing_entries_updated"] += 1
 
-            # Update customer sessions for this customer
-            customer_sessions_result = await session.execute(
-                select(CustomerSession).where(
-                    CustomerSession.customer_id == customer.id
-                )
-            )
-            customer_sessions_to_update = customer_sessions_result.scalars().all()
-
-            for customer_session in customer_sessions_to_update:
-                customer_session.customer_id = new_customer.id
-                session.add(customer_session)
-                self.transfer_stats["customer_sessions_updated"] += 1
-
             await self.copy_payment_methods(
                 session, customer, new_customer, subscriptions_to_update
+            )
+            await self.transfer_customer_references(
+                session, customer, new_customer, split=True
+            )
+
+    async def transfer_customer_references(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        target_customer: Customer,
+        *,
+        split: bool,
+    ) -> None:
+        product_ids = [product.id for product in self.products]
+        order_ids = select(Order.id).where(Order.product_id.in_(product_ids))
+        checkout_ids = select(Checkout.id).where(Checkout.product_id.in_(product_ids))
+        payment_ids = select(Payment.id).where(
+            or_(Payment.order_id.in_(order_ids), Payment.checkout_id.in_(checkout_ids))
+        )
+
+        for model, product_condition in (
+            (Refund, Refund.payment_id.in_(payment_ids)),
+            (TrialRedemption, TrialRedemption.product_id.in_(product_ids)),
+        ):
+            statement = update(model).where(model.customer_id == customer.id)
+            if split:
+                statement = statement.where(product_condition)
+            updated_ids = await session.scalars(
+                statement.values(customer_id=target_customer.id).returning(model.id)
+            )
+            self.transfer_stats[f"{model.__tablename__}_updated"] += len(
+                updated_ids.all()
+            )
+
+        for reference_model in (Checkout, Event):
+            if split and reference_model is Event:
+                continue
+            customer_condition = reference_model.customer_id == customer.id
+            if customer.external_id is not None:
+                customer_condition = or_(
+                    customer_condition,
+                    and_(
+                        reference_model.customer_id.is_(None),
+                        reference_model.external_customer_id == customer.external_id,
+                        reference_model.organization_id == self.source_organization_id,
+                    ),
+                )
+            statement = update(reference_model).where(customer_condition)
+            if split:
+                statement = statement.where(Checkout.product_id.in_(product_ids))
+            await session.execute(
+                statement.values(
+                    customer_id=target_customer.id,
+                    external_customer_id=target_customer.external_id,
+                )
             )
 
     async def copy_payment_methods(
@@ -1106,21 +1151,6 @@ class ProductTransferService:
             checkout.organization_id = self.target_organization_id
             session.add(checkout)  # Ensure checkout is tracked by session
             self.transfer_stats["checkouts_updated"] += 1
-
-        # Update trial redemptions
-        result = await session.execute(
-            select(TrialRedemption).where(
-                TrialRedemption.product_id.in_([p.id for p in self.products])
-            )
-        )
-        trial_redemptions_to_update = result.scalars().all()
-
-        for trial_redemption in trial_redemptions_to_update:
-            # Trial redemption organization is derived from customer, which should already be updated
-            session.add(
-                trial_redemption
-            )  # Ensure trial redemption is tracked by session
-            self.transfer_stats["trial_redemptions_updated"] += 1
 
         # Update checkout links by removing transferring products
         await self._update_checkout_links(session)

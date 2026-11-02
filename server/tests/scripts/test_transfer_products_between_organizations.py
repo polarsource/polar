@@ -12,6 +12,7 @@ from polar.models import (
     Checkout,
     Customer,
     CustomerSeat,
+    CustomerSession,
     Discount,
     DiscountRedemption,
     Downloadable,
@@ -25,6 +26,7 @@ from polar.models import (
     Refund,
     Subscription,
     SubscriptionUpdate,
+    TrialRedemption,
     User,
 )
 from polar.models.benefit import BenefitType
@@ -63,6 +65,7 @@ from tests.fixtures.random_objects import (
     create_refund,
     create_subscription,
     create_support_case_attachment_file,
+    create_trial_redemption,
 )
 
 
@@ -1650,6 +1653,131 @@ class TestProductTransferService:
 @pytest.mark.anyio
 class TestProductTransferIntegration:
     """Integration tests for the complete product transfer workflow."""
+
+    @pytest.mark.parametrize("mode", ["merge", "split_new", "split_existing"])
+    @pytest.mark.parametrize("target_external_id", [None, "target_customer"])
+    async def test_customer_references_follow_transferred_purchases(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        mode: str,
+        target_external_id: str | None,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="source_customer"
+        )
+        target_customer = None
+        if mode != "split_new":
+            target_customer = await create_customer(
+                save_fixture,
+                organization=organization_second,
+                email=customer.email,
+                external_id=target_external_id,
+            )
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        staying_product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        staying_customer = (
+            customer
+            if mode.startswith("split")
+            else await create_customer(
+                save_fixture, organization=organization, email="staying@example.com"
+            )
+        )
+        moving_references: list[Checkout | Order | Refund | TrialRedemption] = []
+        staying_references: list[Checkout | Order | Refund | TrialRedemption] = []
+        for current_product, current_customer, references in (
+            (product, customer, moving_references),
+            (staying_product, staying_customer, staying_references),
+        ):
+            checkout = await create_checkout(
+                save_fixture,
+                products=[current_product],
+                customer=current_customer,
+                external_customer_id=current_customer.external_id,
+            )
+            external_checkout = await create_checkout(
+                save_fixture,
+                products=[current_product],
+                external_customer_id=current_customer.external_id,
+            )
+            order = await create_order(
+                save_fixture, product=current_product, customer=current_customer
+            )
+            references.extend([checkout, external_checkout, order])
+            for payment in (
+                await create_payment(save_fixture, organization, order=order),
+                await create_payment(save_fixture, organization, checkout=checkout),
+            ):
+                references.append(
+                    await create_refund(
+                        save_fixture,
+                        order,
+                        payment,
+                        processor_id=f"refund_{payment.id}",
+                    )
+                )
+            references.append(
+                await create_trial_redemption(
+                    save_fixture,
+                    customer=current_customer,
+                    customer_email="customer@example.com",
+                    product=current_product,
+                )
+            )
+        customer_session = CustomerSession(customer=customer, token="source_session")
+        await save_fixture(customer_session)
+        events = [
+            await create_event(
+                save_fixture, organization=organization, customer=customer
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id=customer.external_id,
+            ),
+        ]
+        staying_customer_ids = [
+            reference.customer_id for reference in staying_references
+        ]
+
+        service = ProductTransferService(organization.id, organization_second.id)
+        service.products = [product]
+        await service.execute_transfer(session)
+
+        if target_customer is None:
+            target_customer = service.new_customers_map[customer.id]
+        for reference in moving_references:
+            await session.refresh(reference)
+            assert reference.customer_id == target_customer.id
+            if isinstance(reference, Checkout):
+                assert reference.external_customer_id == target_customer.external_id
+        for reference, original_customer_id in zip(
+            staying_references, staying_customer_ids, strict=True
+        ):
+            await session.refresh(reference)
+            assert reference.customer_id == original_customer_id
+        await session.refresh(customer_session)
+        assert customer_session.customer_id == (
+            target_customer.id if mode == "merge" else customer.id
+        )
+        for event in events:
+            await session.refresh(event)
+        if mode == "merge":
+            for event in events:
+                assert event.customer_id == target_customer.id
+                assert event.external_customer_id == target_customer.external_id
+                assert event.organization_id == organization_second.id
+        else:
+            assert events[0].customer_id == customer.id
+            assert events[1].customer_id is None
+            assert events[1].external_customer_id == customer.external_id
+            assert all(event.organization_id == organization.id for event in events)
 
     @pytest.mark.parametrize("split_customer", [False, True])
     async def test_complete_transfer_updates_organization_ownership(

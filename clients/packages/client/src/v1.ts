@@ -16892,10 +16892,10 @@ export interface components {
        */
       external_id: string
       /**
-       * Customer Count
+       * Customers Count
        * @description Number of customers still using the resource: subscribers for a product, customers granted a benefit, from a subscription or an order, and subscribers or credit holders for a meter.
        */
-      customer_count: number
+      customers_count: number
       /**
        * Referenced By
        * @description The products and benefits staying in the config that reference the resource.

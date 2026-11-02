@@ -20,9 +20,9 @@ import * as ui from '@/utils/ui'
 
 const reason = (entry: PruneEntry) =>
   [
-    ...(entry.customer_count === 0
+    ...(entry.customers_count === 0
       ? []
-      : [plural(entry.customer_count, 'customer', 'customers')]),
+      : [plural(entry.customers_count, 'customer', 'customers')]),
     ...(entry.referenced_by.length > 0
       ? [
           `used by ${entry.referenced_by.map((ref) => `${ui.printable(ref.external_id)} (${ref.resource})`).join(', ')}`,

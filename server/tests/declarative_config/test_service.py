@@ -2533,19 +2533,19 @@ class TestPrune:
             {
                 "resource": ConfigResource.meter,
                 "external_id": "apples",
-                "customer_count": 0,
+                "customers_count": 0,
                 "referenced_by": [],
             },
             {
                 "resource": ConfigResource.benefit,
                 "external_id": "beta",
-                "customer_count": 0,
+                "customers_count": 0,
                 "referenced_by": [],
             },
             {
                 "resource": ConfigResource.product,
                 "external_id": "legacy",
-                "customer_count": 0,
+                "customers_count": 0,
                 "referenced_by": [],
             },
         ]
@@ -2607,7 +2607,7 @@ class TestPrune:
         assert [
             (
                 entry.external_id,
-                entry.customer_count,
+                entry.customers_count,
                 [(ref.resource, ref.external_id) for ref in entry.referenced_by],
             )
             for entry in result.entries
@@ -2690,7 +2690,7 @@ class TestPrune:
         )
 
         assert [
-            (entry.external_id, entry.customer_count) for entry in result.entries
+            (entry.external_id, entry.customers_count) for entry in result.entries
         ] == [("apples", 1)]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -2720,7 +2720,7 @@ class TestPrune:
         )
 
         assert [
-            (entry.external_id, entry.customer_count) for entry in result.entries
+            (entry.external_id, entry.customers_count) for entry in result.entries
         ] == [("apples", 1)]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -2786,7 +2786,7 @@ class TestPrune:
         )
 
         assert [
-            (entry.external_id, entry.customer_count) for entry in result.entries
+            (entry.external_id, entry.customers_count) for entry in result.entries
         ] == [
             ("apples", 2),
             ("pears", 1),

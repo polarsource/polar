@@ -87,7 +87,7 @@ export const PlanResponse = Schema.Struct({
 export const PruneEntry = Schema.Struct({
   resource: ConfigResource,
   external_id: Schema.String,
-  customer_count: Schema.Number,
+  customers_count: Schema.Number,
   referenced_by: Schema.Array(
     Schema.Struct({ resource: ConfigResource, external_id: Schema.String }),
   ),

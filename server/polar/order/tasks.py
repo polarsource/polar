@@ -537,6 +537,13 @@ async def process_stale_payment_lock(
             return
 
         payment_repository = PaymentRepository.from_session(session)
+        if await payment_repository.get_succeeded_by_order(order.id) is not None:
+            log.info(
+                "Successful payment already recorded, keeping payment lock",
+                order_id=order.id,
+            )
+            return
+
         if await payment_repository.has_pending_sepa_debit_for_order(order.id):
             log.info(
                 "SEPA debit still pending, keeping payment lock", order_id=order.id

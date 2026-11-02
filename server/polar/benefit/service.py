@@ -25,6 +25,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.visibility import Visibility
 from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.redis import Redis
@@ -56,7 +57,7 @@ class BenefitService:
             (BenefitSortProperty.created_at, True),
         ),
         query: str | None = None,
-        catalog: Literal["draft"] | None = None,
+        catalog: Literal[CatalogStatus.draft] | None = None,
     ) -> tuple[Sequence[Benefit], int]:
         repository = BenefitRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -70,7 +71,7 @@ class BenefitService:
         if organization_id is not None:
             statement = statement.where(Benefit.organization_id.in_(organization_id))
 
-        if catalog == "draft":
+        if catalog == CatalogStatus.draft:
             statement = statement.where(
                 Benefit.id.in_(
                     CatalogBenefitRepository.from_session(

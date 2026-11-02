@@ -46,6 +46,7 @@ from polar.models import (
     ProductVisibility,
     User,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_custom_field import ProductCustomField
 from polar.models.product_price import ProductPriceSource
@@ -115,7 +116,7 @@ class ProductService:
         visibility: Sequence[ProductVisibility] | None = None,
         benefit_id: Sequence[uuid.UUID] | None = None,
         metadata: MetadataQuery | None = None,
-        catalog: Literal["draft"] | None = None,
+        catalog: Literal[CatalogStatus.draft] | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[ProductSortProperty]] = (
             (ProductSortProperty.created_at, True),
@@ -144,7 +145,7 @@ class ProductService:
             isouter=True,
         )
 
-        if catalog == "draft":
+        if catalog == CatalogStatus.draft:
             statement = statement.where(
                 Product.id.in_(
                     CatalogProductRepository.from_session(

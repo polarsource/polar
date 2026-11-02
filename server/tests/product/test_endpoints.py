@@ -9,6 +9,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
     Catalog,
+    CatalogProduct,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -34,6 +35,38 @@ from tests.fixtures.random_objects import (
 
 @pytest.mark.anyio
 class TestListProducts:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_draft_catalog(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        draft = Catalog(organization=organization, status=CatalogStatus.draft)
+        draft_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_current=False,
+        )
+        await save_fixture(draft)
+        await save_fixture(
+            CatalogProduct(catalog=draft, product=draft_product, external_id="pro")
+        )
+
+        response = await client.get(
+            "/v1/products/",
+            params={"catalog": "draft"},
+            headers={"Polar-Version": str(V2027_01)},
+        )
+
+        assert [item["id"] for item in response.json()["items"]] == [
+            str(draft_product.id)
+        ]
+
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:

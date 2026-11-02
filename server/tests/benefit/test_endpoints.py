@@ -10,6 +10,7 @@ from polar.kit.visibility import Visibility
 from polar.models import (
     Benefit,
     Catalog,
+    CatalogBenefit,
     Customer,
     Downloadable,
     Member,
@@ -89,6 +90,35 @@ class TestListBenefits:
 
 @pytest.mark.anyio
 class TestListBenefitsFilters:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.benefits_read}))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_draft_catalog(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        benefits: list[Benefit],
+    ) -> None:
+        draft = Catalog(organization=organization, status=CatalogStatus.draft)
+        draft_benefit = await create_benefit(
+            save_fixture, organization=organization, is_current=False
+        )
+        await save_fixture(draft)
+        await save_fixture(
+            CatalogBenefit(catalog=draft, benefit=draft_benefit, external_id="beta")
+        )
+
+        response = await client.get(
+            "/v1/benefits/",
+            params={"catalog": "draft"},
+            headers={"Polar-Version": str(V2027_01)},
+        )
+
+        assert [item["id"] for item in response.json()["items"]] == [
+            str(draft_benefit.id)
+        ]
+
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.benefits_read}),
     )

@@ -20,7 +20,7 @@ export const useFlaggedProductName = ({
     queryFn: async () => {
       const check = await unwrap(
         api.POST('/v1/products/name-check', {
-          body: { name: debouncedName, organization_id: organizationId },
+          body: { name: debouncedName },
         }),
       )
       if (check.category) {

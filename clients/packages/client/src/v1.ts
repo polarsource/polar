@@ -33971,11 +33971,6 @@ export interface components {
     ProductNameCheckRequest: {
       /** Name */
       name: string
-      /**
-       * Organization Id
-       * @description Organization the product is being drafted for.
-       */
-      organization_id?: string | null
     }
     /** ProductNotDeletable */
     ProductNotDeletable: {
@@ -48830,15 +48825,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ProductNameCheck']
-        }
-      }
-      /** @description Organization not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

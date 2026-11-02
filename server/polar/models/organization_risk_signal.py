@@ -17,10 +17,9 @@ class OrganizationRiskSignal(RecordModel):
     """A risk signal about an organization, for a human to review.
 
     Signals come from external systems (Stripe) and from our own checks
-    (Polar), such as a product saved under a name that our Acceptable Use
-    Policy check flagged. Each row is one finding; `payload` holds the
-    source-specific details. Signals are evidence, not verdicts: recording one
-    never blocks the organization on its own.
+    (Polar). Each row is one finding; `payload` holds the source-specific
+    details. Signals are evidence, not verdicts: recording one never blocks the
+    organization on its own.
     """
 
     class Source(StrEnum):
@@ -30,8 +29,6 @@ class OrganizationRiskSignal(RecordModel):
     class Type(StrEnum):
         FRAUDULENT_WEBSITE = "fraudulent_website"
         FRAUDULENT_MERCHANT = "fraudulent_merchant"
-        FLAGGED_PRODUCT_NAME = "flagged_product_name"
-        FLAGGED_PRODUCT_NAME_REVISED = "flagged_product_name_revised"
 
     class RiskLevel(StrEnum):
         LOW = "low"

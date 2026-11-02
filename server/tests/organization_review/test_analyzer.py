@@ -253,13 +253,13 @@ class TestBuildPromptRiskSignals:
                     entries=[
                         RiskSignalEntry(
                             source=OrganizationRiskSignal.Source.POLAR,
-                            type=OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_REVISED,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
                             risk_level=OrganizationRiskSignal.RiskLevel.NORMAL,
                             created_at=datetime(2026, 7, 2, tzinfo=UTC),
                         ),
                         RiskSignalEntry(
-                            source=OrganizationRiskSignal.Source.POLAR,
-                            type=OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME,
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
                             risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
                             created_at=datetime(2026, 7, 1, tzinfo=UTC),
                         ),
@@ -270,8 +270,8 @@ class TestBuildPromptRiskSignals:
 
         prompt = review_analyzer._build_prompt(snapshot)
 
-        assert prompt.index("polar: flagged_product_name (") < prompt.index(
-            "polar: flagged_product_name_revised"
+        assert prompt.index("stripe: fraudulent_merchant") < prompt.index(
+            "polar: fraudulent_website"
         )
 
     def test_caps_signals_and_notes_omission(

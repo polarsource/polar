@@ -17,11 +17,11 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.product.schemas import ProductListParams
-from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
 from . import auth, legacy_schemas
+from .name_check import check_product_name
 from .schemas import Product as ProductSchema
 from .schemas import (
     ProductBenefitsUpdate,
@@ -115,27 +115,13 @@ async def get(
     summary="Check Product Name",
     response_model=ProductNameCheck,
     tags=[APITag.private],
-    responses={
-        404: {
-            "description": "Organization not found.",
-            "model": ResourceNotFound.schema(),
-        }
-    },
 )
 async def name_check(
     auth_subject: AuthorizeWebUserRead,
     name_check_request: ProductNameCheckRequest,
-    session: AsyncReadSession = Depends(get_db_read_session),
-    redis: Redis = Depends(get_redis),
 ) -> ProductNameCheck:
     """Warn when a product name suggests a use case the Acceptable Use Policy forbids."""
-    return await product_service.check_draft_name(
-        session,
-        redis,
-        auth_subject,
-        name_check_request.name,
-        organization_id=name_check_request.organization_id,
-    )
+    return await check_product_name(name_check_request.name)
 
 
 @router.post(

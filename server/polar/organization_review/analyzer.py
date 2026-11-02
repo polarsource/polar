@@ -1094,13 +1094,11 @@ class ReviewAnalyzer:
                 "'stripe' signals come from Stripe's fraud-detection systems and are "
                 "only recorded at 'elevated' or 'highest' severity, so treat them as "
                 "strong corroborating evidence. 'polar' signals come from our own "
-                "checks, e.g. a product saved under a name our Acceptable Use Policy "
-                "check flagged, or a flagged name changed until the warning went "
-                "away; they are weaker heuristics with innocent explanations, so "
-                "weigh them by their risk level. All signals are probabilistic, not "
-                "proof on their own: verify whether the website and products match "
-                "what the signal flags, and weigh them into POLICY_COMPLIANCE and "
-                "PRODUCT_LEGITIMACY."
+                "checks; they are weaker heuristics that can have innocent "
+                "explanations, so weigh them by their risk level. All signals are "
+                "probabilistic, not proof on their own: verify whether the website "
+                "and products match what the signal flags, and weigh them into "
+                "POLICY_COMPLIANCE and PRODUCT_LEGITIMACY."
             )
             # Highest severity first so the cap never drops the worst signals.
             entries = sorted(

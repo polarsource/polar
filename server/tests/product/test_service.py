@@ -5,7 +5,6 @@ from typing import Any
 from unittest.mock import AsyncMock, call
 
 import pytest
-from fakeredis import FakeAsyncRedis
 from pytest_mock import MockerFixture
 from sqlalchemy import delete
 
@@ -26,7 +25,6 @@ from polar.models import (
     File,
     Meter,
     Organization,
-    OrganizationRiskSignal,
     Product,
     User,
     UserOrganization,
@@ -41,7 +39,6 @@ from polar.models.product_price import (
     ProductPriceFixed,
     ProductPriceMeteredTiers,
 )
-from polar.organization_review.repository import OrganizationRiskSignalRepository
 from polar.organization_review.schemas import ReviewContext
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -51,13 +48,11 @@ from polar.product.guard import (
     is_static_price,
     is_unit_price,
 )
-from polar.product.name_check import pop_flagged_names, remember_flagged_name
 from polar.product.schemas import (
     ExistingProductPrice,
     ProductCreate,
     ProductCreateOneTime,
     ProductCreateRecurring,
-    ProductNameCheck,
     ProductPriceCustomCreate,
     ProductPriceFixedCreate,
     ProductPriceMeteredTiersCreate,
@@ -70,7 +65,6 @@ from polar.product.service import ProductNotDeletable
 from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
 from polar.product.tiers import Tiers, TiersInput, TierType
-from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import (
     SaveFixture,
@@ -504,34 +498,6 @@ class TestCreate:
             "organization_review.run_agent",
             organization_id=organization.id,
             context=ReviewContext.PRODUCT_CHANGED,
-        )
-
-    @pytest.mark.auth
-    async def test_enqueues_name_check(
-        self,
-        session: AsyncSession,
-        enqueue_job_mock: AsyncMock,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        create_schema = ProductCreateRecurring(
-            name="Product",
-            organization_id=organization.id,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[
-                ProductPriceFixedCreate(
-                    amount_type=ProductPriceAmountType.fixed,
-                    price_amount=1000,
-                    price_currency=PresentmentCurrency.usd,
-                )
-            ],
-        )
-
-        product = await product_service.create(session, create_schema, auth_subject)
-
-        enqueue_job_mock.assert_any_call(
-            "product.check_name", product.id, user_id=auth_subject.subject.id
         )
 
     @pytest.mark.auth
@@ -1885,39 +1851,6 @@ class TestUpdate:
             context=ReviewContext.PRODUCT_CHANGED,
         )
 
-    @pytest.mark.auth
-    async def test_name_change_enqueues_name_check(
-        self,
-        session: AsyncSession,
-        enqueue_job_mock: AsyncMock,
-        auth_subject: AuthSubject[User],
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        await product_service.update(
-            session, product, ProductUpdate(name="Product Update"), auth_subject
-        )
-
-        enqueue_job_mock.assert_any_call("product.check_name", product.id)
-
-    @pytest.mark.auth
-    async def test_unchanged_name_skips_name_check(
-        self,
-        session: AsyncSession,
-        enqueue_job_mock: AsyncMock,
-        auth_subject: AuthSubject[User],
-        product: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        await product_service.update(
-            session, product, ProductUpdate(description="New"), auth_subject
-        )
-
-        assert all(
-            c.args[:1] != ("product.check_name",)
-            for c in enqueue_job_mock.call_args_list
-        )
-
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
@@ -3250,116 +3183,3 @@ class TestProductProperties:
 
         assert product_with_seats.has_seat_based_price is True
         assert product_without_seats.has_seat_based_price is False
-
-
-@pytest.mark.anyio
-class TestRecordNameCheck:
-    @pytest.fixture
-    def redis(self) -> Redis:
-        return FakeAsyncRedis(decode_responses=True)
-
-    async def test_flagged_name(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        organization: Organization,
-        product: Product,
-        user: User,
-    ) -> None:
-        check = ProductNameCheck(category="gambling", phrase="Casino")
-
-        await product_service.record_name_check(
-            session, redis, product, check, user_id=user.id
-        )
-
-        repository = OrganizationRiskSignalRepository.from_session(session)
-        [signal] = await repository.list_by_organization(organization.id)
-        assert signal.source == OrganizationRiskSignal.Source.POLAR
-        assert signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME
-        assert signal.risk_level == OrganizationRiskSignal.RiskLevel.ELEVATED
-        assert signal.payload == {
-            "product_id": str(product.id),
-            "name": product.name,
-            "category": "gambling",
-            "phrase": "Casino",
-        }
-
-    async def test_clean_name_after_warnings(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        await remember_flagged_name(
-            redis, organization.id, user.id, "Stickers", "physical goods"
-        )
-        await remember_flagged_name(
-            redis, organization.id, user.id, "Stickers Digital", "physical goods"
-        )
-        product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=None,
-            name="Stickers Digital",
-        )
-
-        await product_service.record_name_check(
-            session,
-            redis,
-            product,
-            ProductNameCheck(category=None, phrase=None),
-            user_id=user.id,
-        )
-
-        repository = OrganizationRiskSignalRepository.from_session(session)
-        [signal] = await repository.list_by_organization(organization.id)
-        assert signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_REVISED
-        assert signal.risk_level == OrganizationRiskSignal.RiskLevel.NORMAL
-        assert signal.payload["revised_from"] == [
-            {"name": "Stickers", "category": "physical goods"}
-        ]
-        assert await pop_flagged_names(redis, organization.id, user.id) == {}
-
-    async def test_clean_name_without_warnings(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        organization: Organization,
-        product: Product,
-        user: User,
-    ) -> None:
-        await product_service.record_name_check(
-            session,
-            redis,
-            product,
-            ProductNameCheck(category=None, phrase=None),
-            user_id=user.id,
-        )
-
-        repository = OrganizationRiskSignalRepository.from_session(session)
-        assert await repository.list_by_organization(organization.id) == []
-
-    async def test_without_user_ignores_warnings(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        organization: Organization,
-        product: Product,
-        user: User,
-    ) -> None:
-        await remember_flagged_name(
-            redis, organization.id, user.id, "Casino", "gambling"
-        )
-
-        await product_service.record_name_check(
-            session,
-            redis,
-            product,
-            ProductNameCheck(category=None, phrase=None),
-            user_id=None,
-        )
-
-        repository = OrganizationRiskSignalRepository.from_session(session)
-        assert await repository.list_by_organization(organization.id) == []

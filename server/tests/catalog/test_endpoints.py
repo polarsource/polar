@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from polar.kit.utils import utc_now
 from polar.models import (
     Catalog,
+    CatalogBenefit,
     CatalogProduct,
     Organization,
     Product,
@@ -14,6 +15,7 @@ from polar.models import (
 from polar.models.catalog import CatalogStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_benefit, create_product
 
 
 @pytest.fixture
@@ -264,3 +266,48 @@ class TestDiscard:
 
         assert response.status_code == 204
         assert (await client.get(f"/v1/catalogs/{draft.id}")).status_code == 404
+
+
+@pytest.mark.anyio
+class TestListDraft:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_products_and_benefits(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        catalogs: tuple[Catalog, Catalog, Catalog],
+    ) -> None:
+        draft, _, _ = catalogs
+        draft_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_current=False,
+        )
+        draft_benefit = await create_benefit(
+            save_fixture, organization=organization, is_current=False
+        )
+        await save_fixture(
+            CatalogProduct(catalog=draft, product=draft_product, external_id="pro")
+        )
+        await save_fixture(
+            CatalogBenefit(catalog=draft, benefit=draft_benefit, external_id="beta")
+        )
+        headers = {"Polar-Version": "2027-01"}
+
+        products = await client.get(
+            "/v1/products/", params={"catalog": "draft"}, headers=headers
+        )
+        benefits = await client.get(
+            "/v1/benefits/", params={"catalog": "draft"}, headers=headers
+        )
+
+        assert [item["id"] for item in products.json()["items"]] == [
+            str(draft_product.id)
+        ]
+        assert [item["id"] for item in benefits.json()["items"]] == [
+            str(draft_benefit.id)
+        ]

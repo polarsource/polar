@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from typing import Literal
 
 from pydantic import BaseModel
 from sqlalchemy import case, delete
@@ -11,6 +12,7 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
+from polar.catalog.repository import CatalogBenefitRepository
 from polar.declarative_config.guard import (
     DeclarativeConfigManaged,
     assert_catalog_editable,
@@ -54,6 +56,7 @@ class BenefitService:
             (BenefitSortProperty.created_at, True),
         ),
         query: str | None = None,
+        catalog: Literal["draft"] | None = None,
     ) -> tuple[Sequence[Benefit], int]:
         repository = BenefitRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -67,10 +70,18 @@ class BenefitService:
         if organization_id is not None:
             statement = statement.where(Benefit.organization_id.in_(organization_id))
 
+        if catalog == "draft":
+            statement = statement.where(
+                Benefit.id.in_(
+                    CatalogBenefitRepository.from_session(
+                        session
+                    ).get_draft_benefit_ids_statement()
+                )
+            )
+        elif id_in is None:
+            statement = statement.where(Benefit.is_current)
         if id_in is not None:
             statement = statement.where(Benefit.id.in_(id_in))
-        else:
-            statement = statement.where(Benefit.is_current)
 
         if id_not_in is not None:
             statement = statement.where(Benefit.id.notin_(id_not_in))

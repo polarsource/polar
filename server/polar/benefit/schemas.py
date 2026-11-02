@@ -280,6 +280,15 @@ class BenefitListParams(QuerySchema):
         None, title="Exclude IDs", description="Exclude benefits with these IDs."
     )
     query: str | None = Field(None, title="Query", description="Filter by description.")
+    catalog: Annotated[Literal["draft"] | None, Version(starting_from=V2027_01)] = (
+        Field(
+            None,
+            description=(
+                "With `draft`, return the benefits of the draft catalog instead of "
+                "the current ones."
+            ),
+        )
+    )
 
 
 class BenefitGrantListParams(QuerySchema):

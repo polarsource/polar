@@ -138,6 +138,18 @@ class CatalogProductRepository(
             delete(CatalogProduct).where(CatalogProduct.catalog_id == catalog_id)
         )
 
+    def get_draft_product_ids_statement(self) -> Select[UUID]:
+        """IDs of the rows the organizations' draft catalogs list."""
+        return (
+            select(CatalogProduct.product_id)
+            .join(Catalog, Catalog.id == CatalogProduct.catalog_id)
+            .where(
+                Catalog.status == CatalogStatus.draft,
+                Catalog.deleted_at.is_(None),
+                CatalogProduct.deleted_at.is_(None),
+            )
+        )
+
     async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogProduct]:
         statement = (
             self.get_base_statement()
@@ -199,6 +211,18 @@ class CatalogBenefitRepository(
         apply lists the same `external_id`s again."""
         await self.session.execute(
             delete(CatalogBenefit).where(CatalogBenefit.catalog_id == catalog_id)
+        )
+
+    def get_draft_benefit_ids_statement(self) -> Select[UUID]:
+        """IDs of the rows the organizations' draft catalogs list."""
+        return (
+            select(CatalogBenefit.benefit_id)
+            .join(Catalog, Catalog.id == CatalogBenefit.catalog_id)
+            .where(
+                Catalog.status == CatalogStatus.draft,
+                Catalog.deleted_at.is_(None),
+                CatalogBenefit.deleted_at.is_(None),
+            )
         )
 
     async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogBenefit]:

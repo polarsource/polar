@@ -3249,6 +3249,13 @@ class SubscriptionService:
         # Usage of the current meter cycle is settled before any pending update
         # applies, on its own order ahead of this invoice.
         usage_billed_on_meter_cycle = self.bills_usage_on_meter_cycle(subscription)
+        # The renewal order bills the current product's usage; summed before the
+        # pending update replaces its prices and drops its meters.
+        metered_amount = (
+            0
+            if usage_billed_on_meter_cycle
+            else sum(meter.amount for meter in subscription.meters)
+        )
 
         # Apply any pending subscription update (product change, seats change)
         pending_update = subscription.pending_update
@@ -3287,12 +3294,6 @@ class SubscriptionService:
             base_price = 0
         else:
             base_price = sum(p.amount for p in subscription.subscription_product_prices)
-
-        metered_amount = (
-            0
-            if usage_billed_on_meter_cycle
-            else sum(meter.amount for meter in subscription.meters)
-        )
 
         items = [
             OrderItem(

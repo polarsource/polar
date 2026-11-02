@@ -5,4 +5,5 @@ export type {
   TextColor,
   TextStyleProps,
   TextVariant,
+  TextWeight,
 } from '../primitives/createText'

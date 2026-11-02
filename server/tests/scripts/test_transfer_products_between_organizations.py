@@ -17,6 +17,7 @@ from polar.models import (
     DiscountRedemption,
     Downloadable,
     LicenseKey,
+    LicenseKeyActivation,
     Member,
     Order,
     Organization,
@@ -1653,6 +1654,324 @@ class TestProductTransferService:
 @pytest.mark.anyio
 class TestProductTransferIntegration:
     """Integration tests for the complete product transfer workflow."""
+
+    @pytest.mark.parametrize("mode", ["direct", "merge", "split"])
+    async def test_license_keys_follow_transferred_benefits(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        mode: str,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        target_customer = None
+        if mode == "merge":
+            target_customer = await create_customer(
+                save_fixture, organization=organization_second, email=customer.email
+            )
+        staying_customer = (
+            customer
+            if mode == "split"
+            else await create_customer(
+                save_fixture, organization=organization, email="staying@example.com"
+            )
+        )
+        keys = []
+        for current_customer in (customer, staying_customer):
+            product = await create_product(
+                save_fixture, organization=organization, recurring_interval=None
+            )
+            benefit = await create_benefit(
+                save_fixture, organization=organization, type=BenefitType.license_keys
+            )
+            await save_fixture(
+                ProductBenefit(product=product, benefit=benefit, order=0)
+            )
+            order = await create_order(
+                save_fixture, customer=current_customer, product=product
+            )
+            key = LicenseKey(
+                customer=current_customer,
+                organization=organization,
+                benefit=benefit,
+                key=f"key-{product.id}",
+                usage=3,
+                limit_usage=10,
+            )
+            await save_fixture(key)
+            grant = await create_benefit_grant(
+                save_fixture,
+                current_customer,
+                benefit,
+                order=order,
+                properties={"license_key_id": str(key.id)},
+            )
+            activation = LicenseKeyActivation(license_key=key, label="Existing device")
+            await save_fixture(activation)
+            keys.append((product, benefit, key, grant, activation))
+        service = ProductTransferService(organization.id, organization_second.id)
+        service.products = [keys[0][0]]
+
+        await service.execute_transfer(session)
+
+        expected_customer = (
+            service.new_customers_map[customer.id]
+            if mode == "split"
+            else target_customer or customer
+        )
+        for index, (_, benefit, key, grant, activation) in enumerate(keys):
+            for entity in (benefit, key, grant, activation):
+                await session.refresh(entity)
+            expected_org = organization_second if index == 0 else organization
+            assert benefit.organization_id == key.organization_id == expected_org.id
+            assert (
+                key.customer_id
+                == grant.customer_id
+                == (expected_customer.id if index == 0 else staying_customer.id)
+            )
+            assert key.benefit_id == grant.benefit_id == benefit.id
+            assert grant.properties.get("license_key_id") == str(key.id)
+            assert activation.license_key_id == key.id
+            assert key.usage == 3
+            assert key.limit_usage == 10
+
+    @pytest.mark.parametrize("retained_association", [False, True])
+    @pytest.mark.parametrize(
+        "benefit_type",
+        [BenefitType.custom, BenefitType.license_keys, BenefitType.downloadables],
+    )
+    async def test_shared_benefits_preserve_retained_entitlements(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        benefit_type: BenefitType,
+        retained_association: bool,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        member = await create_member(
+            save_fixture, customer=customer, organization=organization
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        staying_product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture, product=staying_product, customer=customer
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=benefit_type,
+            external_id="shared-benefit",
+            selectable=False,
+            deletable=False,
+        )
+        benefit.user_metadata = {"source": "shared"}
+        await save_fixture(ProductBenefit(product=product, benefit=benefit, order=0))
+        if retained_association:
+            await save_fixture(
+                ProductBenefit(product=staying_product, benefit=benefit, order=0)
+            )
+        moving_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            member=member,
+            subscription=subscription,
+            granted=True,
+        )
+        staying_grant = await create_benefit_grant(
+            save_fixture, customer, benefit, member=member, order=order, granted=False
+        )
+        keys = []
+        activations = []
+        downloadable = None
+        customer_downloadable = None
+        if benefit_type == BenefitType.license_keys:
+            for grant in (moving_grant, staying_grant):
+                key = LicenseKey(
+                    customer=customer,
+                    member=member,
+                    organization=organization,
+                    benefit=benefit,
+                    key=f"key-{grant.id}",
+                )
+                await save_fixture(key)
+                grant.properties = {"license_key_id": str(key.id)}
+                activation = LicenseKeyActivation(
+                    license_key=key, label="Existing device"
+                )
+                await save_fixture(activation)
+                keys.append(key)
+                activations.append(activation)
+        elif benefit_type == BenefitType.downloadables:
+            file = await create_support_case_attachment_file(
+                save_fixture, organization, service=FileServiceTypes.downloadable
+            )
+            benefit.properties = {"files": [str(file.id)], "archived": {}}
+            downloadable = Downloadable(
+                customer=customer,
+                member=member,
+                benefit=benefit,
+                file=file,
+                status=DownloadableStatus.granted,
+                downloaded=7,
+            )
+            await save_fixture(downloadable)
+            for grant in (moving_grant, staying_grant):
+                grant.properties = {"files": [str(file.id)]}
+            await create_benefit_grant(
+                save_fixture,
+                customer,
+                benefit,
+                subscription=subscription,
+                properties={"files": [str(file.id)]},
+            )
+            customer_downloadable = Downloadable(
+                customer=customer,
+                benefit=benefit,
+                file=file,
+                status=DownloadableStatus.granted,
+            )
+            await save_fixture(customer_downloadable)
+        await session.flush()
+        service = ProductTransferService(organization.id, organization_second.id)
+        service.products = [product]
+
+        await service.execute_transfer(session)
+
+        new_benefit = service.new_benefits_map[benefit.id]
+        new_customer = service.new_customers_map[customer.id]
+        for entity in (benefit, new_benefit, moving_grant, staying_grant):
+            await session.refresh(entity)
+        assert benefit.organization_id == organization.id
+        assert new_benefit.organization_id == organization_second.id
+        for attribute in (
+            "type",
+            "description",
+            "is_tax_applicable",
+            "selectable",
+            "deletable",
+            "visibility",
+            "external_id",
+            "properties",
+            "user_metadata",
+        ):
+            assert getattr(new_benefit, attribute) == getattr(benefit, attribute)
+        assert moving_grant.benefit_id == new_benefit.id
+        assert moving_grant.customer_id == new_customer.id
+        assert moving_grant.member_id != member.id
+        assert moving_grant.granted_at is not None
+        assert staying_grant.benefit_id == benefit.id
+        assert staying_grant.customer_id == customer.id
+        assert staying_grant.member_id == member.id
+        assert staying_grant.revoked_at is not None
+        associations = (
+            await session.scalars(
+                select(ProductBenefit).where(
+                    ProductBenefit.product_id.in_([product.id, staying_product.id])
+                )
+            )
+        ).all()
+        assert {
+            (association.product_id, association.benefit_id)
+            for association in associations
+        } == (
+            {(product.id, new_benefit.id), (staying_product.id, benefit.id)}
+            if retained_association
+            else {(product.id, new_benefit.id)}
+        )
+        for index, (key, activation) in enumerate(zip(keys, activations, strict=True)):
+            await session.refresh(key)
+            await session.refresh(activation)
+            grant = moving_grant if index == 0 else staying_grant
+            assert key.benefit_id == grant.benefit_id
+            assert key.customer_id == grant.customer_id
+            assert key.member_id == grant.member_id
+            assert key.organization_id == (
+                organization_second.id if index == 0 else organization.id
+            )
+            assert grant.properties.get("license_key_id") == str(key.id)
+            assert activation.license_key_id == key.id
+        if downloadable is not None:
+            await session.refresh(downloadable)
+            copied = (
+                await session.scalars(
+                    select(Downloadable).where(
+                        Downloadable.benefit_id == new_benefit.id,
+                        Downloadable.member_id == moving_grant.member_id,
+                    )
+                )
+            ).one()
+            assert downloadable.customer_id == customer.id
+            assert downloadable.member_id == member.id
+            assert downloadable.benefit_id == benefit.id
+            assert copied.id != downloadable.id
+            assert copied.customer_id == new_customer.id
+            assert copied.member_id == moving_grant.member_id
+            assert copied.file_id == downloadable.file_id
+            assert copied.downloaded == downloadable.downloaded == 7
+            assert copied.status == downloadable.status
+            assert customer_downloadable is not None
+            await session.refresh(customer_downloadable)
+            assert customer_downloadable.benefit_id == new_benefit.id
+            assert customer_downloadable.customer_id == new_customer.id
+            assert customer_downloadable.member_id is None
+
+    async def test_historical_benefit_discovery_and_shared_key_rejection(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        benefit = await create_benefit(
+            save_fixture, organization=organization, type=BenefitType.license_keys
+        )
+        key = LicenseKey(
+            customer=customer,
+            organization=organization,
+            benefit=benefit,
+            key="shared-key",
+        )
+        await save_fixture(key)
+        products = []
+        for _ in range(2):
+            product = await create_product(
+                save_fixture, organization=organization, recurring_interval=None
+            )
+            order = await create_order(save_fixture, customer=customer, product=product)
+            await create_benefit_grant(
+                save_fixture,
+                customer,
+                benefit,
+                order=order,
+                properties={"license_key_id": str(key.id)},
+            )
+            products.append(product)
+        service = ProductTransferService(organization.id, organization_second.id)
+        service.products = products[:1]
+
+        await service.analyze_affected_data(session)
+
+        assert service.benefits_to_split == [benefit]
+        assert service.benefits_to_transfer == []
+        with pytest.raises(TransferValidationError, match="license key shared"):
+            await service.split_benefits(session)
+        await session.refresh(key)
+        assert key.organization_id == organization.id
+        assert key.benefit_id == benefit.id
 
     @pytest.mark.parametrize("mode", ["merge", "split_new", "split_existing"])
     @pytest.mark.parametrize("target_external_id", [None, "target_customer"])

@@ -11,6 +11,7 @@ transferring and non-transferring products.
 import asyncio
 from collections import defaultdict
 from collections.abc import Sequence
+from copy import deepcopy
 from functools import wraps
 from uuid import UUID
 
@@ -102,6 +103,8 @@ class ProductTransferService:
         self.target_organization_id = target_organization_id
         self.products: Sequence[Product] = []
         self.benefits_to_transfer: Sequence[Benefit] = []
+        self.benefits_to_split: Sequence[Benefit] = []
+        self.new_benefits_map: dict[UUID, Benefit] = {}
         self.customers_to_split: Sequence[Customer] = []
         self.customers_to_transfer: Sequence[Customer] = []
         self.customers_to_merge: list[
@@ -172,9 +175,15 @@ class ProductTransferService:
         print("[bold yellow]🔍 Analyzing affected data...[/bold yellow]")
 
         # Find all benefits used by the transferring products
+        product_ids = [p.id for p in self.products]
         product_benefit_ids_result = await session.execute(
-            select(ProductBenefit.benefit_id).where(
-                ProductBenefit.product_id.in_([p.id for p in self.products])
+            union_all(
+                select(ProductBenefit.benefit_id).where(
+                    ProductBenefit.product_id.in_(product_ids)
+                ),
+                select(BenefitGrant.benefit_id)
+                .where(self._transferred_benefit_grants())
+                .distinct(),
             )
         )
         product_benefit_ids = product_benefit_ids_result.scalars().all()
@@ -187,7 +196,29 @@ class ProductTransferService:
                 )
             )
         )
-        self.benefits_to_transfer = benefits_result.scalars().all()
+        benefits = benefits_result.scalars().all()
+        retained_benefit_ids = set(
+            await session.scalars(
+                union_all(
+                    select(ProductBenefit.benefit_id).where(
+                        ProductBenefit.benefit_id.in_(product_benefit_ids),
+                        ProductBenefit.product_id.notin_(product_ids),
+                    ),
+                    select(BenefitGrant.benefit_id)
+                    .where(
+                        BenefitGrant.benefit_id.in_(product_benefit_ids),
+                        ~func.coalesce(self._transferred_benefit_grants(), false()),
+                    )
+                    .distinct(),
+                )
+            )
+        )
+        self.benefits_to_transfer = [
+            benefit for benefit in benefits if benefit.id not in retained_benefit_ids
+        ]
+        self.benefits_to_split = [
+            benefit for benefit in benefits if benefit.id in retained_benefit_ids
+        ]
 
         # Find all customers who have orders/subscriptions for these products
         customer_ids_with_transferring_products_result = await session.execute(
@@ -306,12 +337,24 @@ class ProductTransferService:
 
         self.transfer_stats["products"] = len(self.products)
         self.transfer_stats["benefits"] = len(self.benefits_to_transfer)
+        self.transfer_stats["benefits_to_split"] = len(self.benefits_to_split)
         self.transfer_stats["customers_to_split"] = len(self.customers_to_split)
         self.transfer_stats["customers_to_transfer"] = len(self.customers_to_transfer)
         self.transfer_stats["discounts_to_transfer"] = len(self.discounts_to_transfer)
         self.transfer_stats["discounts_to_split"] = len(self.discounts_to_split)
         self.transfer_stats["checkout_links_to_update"] = len(
             self.checkout_links_to_update
+        )
+
+    def _transferred_benefit_grants(self) -> ColumnElement[bool]:
+        product_ids = [product.id for product in self.products]
+        return or_(
+            BenefitGrant.order_id.in_(
+                select(Order.id).where(Order.product_id.in_(product_ids))
+            ),
+            BenefitGrant.subscription_id.in_(
+                select(Subscription.id).where(Subscription.product_id.in_(product_ids))
+            ),
         )
 
     def _discount_reference_filters(
@@ -858,6 +901,7 @@ class ProductTransferService:
                         BenefitGrant.benefit_id.in_(
                             [b.id for b in self.benefits_to_transfer]
                         ),
+                        self._transferred_benefit_grants(),
                     )
                 )
             )
@@ -1081,6 +1125,106 @@ class ProductTransferService:
 
         await session.flush()
 
+    async def split_benefits(self, session: AsyncSession) -> None:
+        for benefit in self.benefits_to_split:
+            new_benefit = Benefit(
+                organization_id=self.target_organization_id,
+                type=benefit.type,
+                description=benefit.description,
+                is_tax_applicable=benefit.is_tax_applicable,
+                selectable=benefit.selectable,
+                deletable=benefit.deletable,
+                visibility=benefit.visibility,
+                external_id=benefit.external_id,
+                properties=deepcopy(benefit.properties),
+                user_metadata=deepcopy(benefit.user_metadata),
+                deleted_at=benefit.deleted_at,
+            )
+            session.add(new_benefit)
+            await session.flush()
+            grants = (
+                await session.scalars(
+                    select(BenefitGrant).where(
+                        BenefitGrant.benefit_id == benefit.id,
+                        self._transferred_benefit_grants(),
+                    )
+                )
+            ).all()
+            retained_grants = (
+                await session.scalars(
+                    select(BenefitGrant).where(
+                        BenefitGrant.benefit_id == benefit.id,
+                        ~func.coalesce(self._transferred_benefit_grants(), false()),
+                    )
+                )
+            ).all()
+            key_ids = {
+                UUID(str(key_id))
+                for grant in grants
+                if (key_id := grant.properties.get("license_key_id")) is not None
+            }
+            if any(
+                UUID(str(key_id)) in key_ids
+                for grant in retained_grants
+                if (key_id := grant.properties.get("license_key_id")) is not None
+            ):
+                raise TransferValidationError(
+                    f"Benefit {benefit.id} has a license key shared by transferred "
+                    "and retained grants; it cannot be moved without changing access."
+                )
+            await session.execute(
+                update(LicenseKey)
+                .where(LicenseKey.benefit_id == benefit.id, LicenseKey.id.in_(key_ids))
+                .values(
+                    benefit_id=new_benefit.id,
+                    organization_id=self.target_organization_id,
+                )
+            )
+
+            transferred_scopes = {
+                (grant.customer_id, grant.member_id) for grant in grants
+            }
+            retained_scopes = {
+                (grant.customer_id, grant.member_id) for grant in retained_grants
+            }
+            downloadables = await session.scalars(
+                select(Downloadable).where(Downloadable.benefit_id == benefit.id)
+            )
+            for downloadable in downloadables:
+                scope = (downloadable.customer_id, downloadable.member_id)
+                if scope not in transferred_scopes:
+                    continue
+                if scope in retained_scopes:
+                    session.add(
+                        Downloadable(
+                            benefit_id=new_benefit.id,
+                            customer_id=downloadable.customer_id,
+                            member_id=downloadable.member_id,
+                            file_id=downloadable.file_id,
+                            status=downloadable.status,
+                            downloaded=downloadable.downloaded,
+                            last_downloaded_at=downloadable.last_downloaded_at,
+                            deleted_at=downloadable.deleted_at,
+                        )
+                    )
+                else:
+                    downloadable.benefit_id = new_benefit.id
+
+            for grant in grants:
+                grant.benefit_id = new_benefit.id
+            await session.execute(
+                update(ProductBenefit)
+                .where(
+                    ProductBenefit.benefit_id == benefit.id,
+                    ProductBenefit.product_id.in_([p.id for p in self.products]),
+                )
+                .values(benefit_id=new_benefit.id)
+            )
+            self.new_benefits_map[benefit.id] = new_benefit
+            self.benefits_to_transfer = [*self.benefits_to_transfer, new_benefit]
+            self.transfer_stats["benefits_split"] += 1
+        await session.flush()
+
     async def transfer_benefits(self, session: AsyncSession) -> None:
         """Transfer benefits to the target organization."""
         if not self.benefits_to_transfer:
@@ -1094,6 +1238,11 @@ class ProductTransferService:
             session.add(benefit)  # Ensure benefit is tracked by session
             self.transfer_stats["benefits_transferred"] += 1
 
+        await session.execute(
+            update(LicenseKey)
+            .where(LicenseKey.benefit_id.in_([b.id for b in self.benefits_to_transfer]))
+            .values(organization_id=self.target_organization_id)
+        )
         await session.flush()
 
     async def transfer_products(self, session: AsyncSession) -> None:
@@ -1338,6 +1487,8 @@ class ProductTransferService:
 
             # Split discounts (those used by both transferring and non-transferring products)
             await self.split_discounts(session)
+
+            await self.split_benefits(session)
 
             # Transfer customers directly (those with only transferring products)
             await self.transfer_customers_directly(session)

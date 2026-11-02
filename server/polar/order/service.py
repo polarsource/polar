@@ -2369,18 +2369,21 @@ class OrderService:
                 recalculated_tax_amount=tax_amount,
                 recalculated_calculation_id=tax_calculation_processor_id,
             )
-            (
-                transaction_id,
-                tax_processor,
-            ) = await tax_calculation_service.record_amounts(
-                amount=order.net_amount,
-                tax_amount=order.tax_amount,
-                currency=order.currency,
-                address=order.billing_address,
-                tax_code=order.product.tax_code,
-                reference=str(order.id),
-                transaction_date=order.created_at,
-            )
+            try:
+                (
+                    transaction_id,
+                    tax_processor,
+                ) = await tax_calculation_service.record_amounts(
+                    amount=order.net_amount,
+                    tax_amount=order.tax_amount,
+                    currency=order.currency,
+                    address=order.billing_address,
+                    tax_code=order.product.tax_code,
+                    reference=str(order.id),
+                    transaction_date=order.created_at,
+                )
+            except UnsupportedCountryError:
+                return {}
             return {
                 "tax_processor": tax_processor,
                 "tax_transaction_processor_id": transaction_id,

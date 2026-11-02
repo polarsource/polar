@@ -16,8 +16,8 @@ import { Text, type TextColor } from './Text'
 
 export type AlertVariant = 'info' | 'warning' | 'danger' | 'success'
 
-// The variant is the only styling lever: it picks the icon, the tinted surface
-// and the accent color so callers never reach for an icon or a color token.
+// The variant is the only styling lever: it picks the icon and its accent
+// color so callers never reach for an icon or a color token.
 const variantStyles: Record<
   AlertVariant,
   {
@@ -144,7 +144,7 @@ export const Alert = ({
             transitionProperty="opacity"
             transitionDuration="fast"
           >
-            <Text as="span" color={accentColor} style={iconBoxStyle}>
+            <Text as="span" color="muted" style={iconBoxStyle}>
               <X size={16} aria-hidden />
             </Text>
           </Box>

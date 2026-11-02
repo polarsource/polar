@@ -263,7 +263,7 @@ jobs:
     name: Server (walltime)
     needs: changes
     # The weekly reference covers the SDKs only: the macro runner minutes are metered.
-    if: needs.changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'schedule' && (needs.changes.outputs.server == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: codspeed-macro
     timeout-minutes: 30
     defaults:

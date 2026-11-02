@@ -6128,6 +6128,30 @@ class TestTriggerPayment:
 
 @pytest.mark.anyio
 class TestAcquirePaymentLock:
+    async def test_blocks_order_with_successful_payment(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture, product=product, customer=customer, status=OrderStatus.pending
+        )
+        for processor_id in ("ch_first", "ch_duplicate"):
+            await create_payment(
+                save_fixture,
+                organization,
+                order=order,
+                processor_id=processor_id,
+                status=PaymentStatus.succeeded,
+            )
+
+        with pytest.raises(PaymentAlreadyInProgress):
+            async with order_service.acquire_payment_lock(session, order):
+                pytest.fail("An order with a successful payment must not be charged")
+
     async def test_acquire_payment_lock_success(
         self,
         session: AsyncSession,

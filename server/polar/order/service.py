@@ -368,6 +368,11 @@ class OrderService:
         if not lock_acquired:
             raise PaymentAlreadyInProgress(order)
 
+        payment_repository = PaymentRepository.from_session(session)
+        if await payment_repository.has_succeeded_for_order(order.id):
+            log.warning("Order already has a successful payment", order_id=order.id)
+            raise PaymentAlreadyInProgress(order)
+
         try:
             yield
         except Exception:

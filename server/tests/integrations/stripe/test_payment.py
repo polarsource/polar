@@ -1,17 +1,22 @@
 import asyncio
 from datetime import timedelta
+from typing import cast
 
 import pytest
 import stripe as stripe_lib
 from freezegun import freeze_time
+from pytest_mock import MockerFixture
 from sqlalchemy import delete
+from sqlalchemy.ext.asyncio import AsyncSession as SQLAlchemyAsyncSession
 
 from polar.checkout.repository import CheckoutRepository
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.stripe.payment import (
     _resolve_trigger,
     handle_failure,
+    handle_success,
 )
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.db.postgres import (
     AsyncSession,
     create_async_engine,
@@ -29,11 +34,12 @@ from polar.models import (
 )
 from polar.models.checkout import CheckoutStatus
 from polar.models.order import OrderStatus
-from polar.models.payment import PaymentTrigger
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.payment.repository import PaymentRepository
 from polar.subscription.repository import SubscriptionRepository
+from polar.tax.calculation.base import TaxRecordError
 from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
 from tests.fixtures.random_objects import (
     create_account,
@@ -44,6 +50,68 @@ from tests.fixtures.random_objects import (
     create_user,
 )
 from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
+
+
+@pytest.mark.anyio
+class TestHandleSuccess:
+    async def test_successful_payment_survives_order_processing_failure(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now(),
+            tax_processor=TaxProcessor.numeral,
+            billing_address=Address(country=CountryAlpha2("MX")),
+        )
+        order.tax_calculation_processor_id = "tax_calculation"
+        await save_fixture(order)
+        charge = build_stripe_charge(
+            metadata={
+                "organization_id": str(order.organization_id),
+                "order_id": str(order.id),
+            },
+            billing_details={"email": "customer@example.com"},
+            payment_method_details={"type": "card", "card": {"last4": "4242"}},
+        )
+        record_tax = mocker.patch(
+            "polar.order.service.tax_calculation_service.record",
+            side_effect=TaxRecordError("Tax provider unavailable"),
+        )
+
+        async with SQLAlchemyAsyncSession(
+            bind=session.bind,
+            expire_on_commit=False,
+            join_transaction_mode="create_savepoint",
+        ) as processing_session:
+            with pytest.raises(TaxRecordError):
+                await handle_success(cast(AsyncSession, processing_session), charge)
+            await processing_session.rollback()
+
+        repository = PaymentRepository.from_session(session)
+        payment = await repository.get_by_processor_id(
+            PaymentProcessor.stripe, charge.id
+        )
+        assert payment is not None
+        assert payment.status == PaymentStatus.succeeded
+        assert payment.order_id == order.id
+        await session.refresh(order)
+        assert order.status == OrderStatus.pending
+        assert order.payment_lock_acquired_at is not None
+
+        record_tax.side_effect = None
+        record_tax.return_value = ("tax_transaction", TaxProcessor.numeral)
+        await handle_success(session, charge)
+
+        assert len(await repository.get_all_by_order(order.id)) == 1
+        assert order.payment_lock_acquired_at is None
 
 
 @pytest.mark.anyio

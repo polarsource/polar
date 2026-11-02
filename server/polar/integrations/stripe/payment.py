@@ -28,6 +28,7 @@ from polar.models.payment import DUNNING_COUNTING_TRIGGERS, PaymentTrigger
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
+from polar.payment.repository import PaymentRepository
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
@@ -229,6 +230,18 @@ async def handle_success(
         payment = await payment_service.upsert_from_stripe_charge(
             session, object, organization, checkout, wallet, order, trigger=trigger
         )
+        # Preserve the successful charge if subsequent order or tax processing fails.
+        await session.commit()
+        # Reacquire the locks released by the commit before processing the purchase.
+        if checkout is not None:
+            session.expire(checkout)
+            checkout = await resolve_checkout(session, object)
+        await PaymentRepository.from_session(session).get_by_id(
+            payment.id, for_update=True
+        )
+        if order is not None:
+            session.expire(order)
+        order = await resolve_order(session, object, checkout)
 
     if checkout is not None:
         if object.OBJECT_NAME == "setup_intent":

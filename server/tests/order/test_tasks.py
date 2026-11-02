@@ -658,6 +658,35 @@ class TestEnqueueStalePaymentLocks:
 
 @pytest.mark.anyio
 class TestProcessStalePaymentLock:
+    @pytest.mark.parametrize("status", [PaymentStatus.succeeded, PaymentStatus.failed])
+    async def test_checks_payment_status_before_releasing_lock(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        status: PaymentStatus,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now()
+            - settings.PAYMENT_LOCK_STALE_THRESHOLD
+            - timedelta(minutes=1),
+        )
+        await create_payment(save_fixture, organization, order=order, status=status)
+
+        await process_stale_payment_lock(order.id)
+
+        updated_order = await OrderRepository.from_session(session).get_by_id(order.id)
+        assert updated_order is not None
+        assert (updated_order.payment_lock_acquired_at is not None) == (
+            status == PaymentStatus.succeeded
+        )
+
     async def test_releases_payment_lock(
         self,
         session: AsyncSession,

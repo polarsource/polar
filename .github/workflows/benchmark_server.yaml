@@ -74,12 +74,14 @@ jobs:
       - uses: actions/checkout@v7.0.1
 
       # Host networking: a published port goes through docker-proxy, the largest source of
-      # walltime variance for I/O-bound benchmarks. Durability is irrelevant here.
+      # walltime variance for I/O-bound benchmarks. Durability is irrelevant here. Autovacuum would
+      # analyze the tables at a different point of each run, and the query plans change with it.
       - name: Start Postgres and Redis
         run: |
           docker run -d --name postgres --network host \
             -e POSTGRES_USER=polar -e POSTGRES_PASSWORD=polar -e POSTGRES_DB=polar_test \
-            postgres:15.1-bullseye -c fsync=off -c synchronous_commit=off -c full_page_writes=off
+            postgres:15.1-bullseye -c fsync=off -c synchronous_commit=off -c full_page_writes=off \
+            -c autovacuum=off
           docker run -d --name redis --network host redis:7.4-alpine \
             redis-server --save "" --appendonly no
           for _ in $(seq 60); do

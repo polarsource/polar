@@ -127,9 +127,7 @@ class _SubscriptionScheduleJobStore(BaseJobStore):
     def remove_all_jobs(self) -> None:
         raise RuntimeError("This job store does not support managing jobs directly.")
 
-    def _list_jobs_from_statement(
-        self, statement: Select[tuple[Subscription]]
-    ) -> list[Job]:
+    def _list_jobs_from_statement(self, statement: Select[Subscription]) -> list[Job]:
         jobs: list[Job] = []
         with Session(self.engine) as session:
             results = session.execute(
@@ -156,7 +154,7 @@ class _SubscriptionScheduleJobStore(BaseJobStore):
         return jobs
 
     @staticmethod
-    def scheduling_statement() -> Select[tuple[Subscription]]:
+    def scheduling_statement() -> Select[Subscription]:
         raise NotImplementedError
 
 
@@ -173,7 +171,7 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
         return cast(ColumnElement[datetime.datetime | None], _next_run_time())
 
     @staticmethod
-    def scheduling_statement() -> Select[tuple[Subscription]]:
+    def scheduling_statement() -> Select[Subscription]:
         """Base query for subscriptions eligible for cycle scheduling.
 
         Returns an engine-agnostic ``Select`` — safe to execute via either
@@ -207,7 +205,7 @@ class SubscriptionResumeJobStore(_SubscriptionScheduleJobStore):
         return cast(ColumnElement[datetime.datetime | None], Subscription.resumes_at)
 
     @staticmethod
-    def scheduling_statement() -> Select[tuple[Subscription]]:
+    def scheduling_statement() -> Select[Subscription]:
         """Paused subscriptions eligible for auto-resume. Excludes renewals-disabled
         orgs — resuming charges immediately (the API path guards separately)."""
         return (

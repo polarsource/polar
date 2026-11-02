@@ -6,7 +6,6 @@ from pydantic import UUID4
 from polar.catalog.service import CatalogNotFound
 from polar.exceptions import NotPermitted, Unauthorized
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -17,7 +16,14 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from .auth import ConfigRead, ConfigWrite
-from .schemas import Config, ConfigApplyResult, ConfigExport, ConfigPlan, ConfigPrune
+from .schemas import (
+    Config,
+    ConfigApplyResult,
+    ConfigExport,
+    ConfigPlan,
+    ConfigPrune,
+    DeclarativeConfigExportParams,
+)
 from .service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
@@ -60,14 +66,8 @@ CatalogQuery = Annotated[
     },
 )
 async def export(
+    filters: Annotated[DeclarativeConfigExportParams, Query()],
     auth_subject: ConfigRead,
-    organization_id: OrganizationID | None = Query(
-        None,
-        description=(
-            "The ID of the organization to export. "
-            "**Required unless you use an organization token.**"
-        ),
-    ),
     catalog_id: CatalogQuery = None,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ConfigExport:
@@ -87,7 +87,7 @@ async def export(
     Requires the read or write scope of every exported section.
     """
     return await declarative_config_service.export(
-        session, auth_subject, organization_id, catalog_id
+        session, auth_subject, filters.organization_id, catalog_id
     )
 
 

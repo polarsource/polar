@@ -3,14 +3,10 @@ from datetime import datetime
 from typing import Annotated
 
 from polar.customer.repository import CustomerRepository
-from polar.customer_meter.repository import CustomerMeterRepository
 from polar.exceptions import PolarTaskError
-from polar.meter.aggregation import AggregationFunction
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
-    AsyncReadSessionMaker,
     AsyncSessionMaker,
-    CronTrigger,
     RedisMiddleware,
     TaskPriority,
     actor,
@@ -32,27 +28,6 @@ async def invalidate_cache(
     organization_id: Annotated[uuid.UUID, LoggableField],
 ) -> None:
     await cache.invalidate(RedisMiddleware.get(), organization_id)
-
-
-@actor(
-    actor_name="reducer.compare_highest_consumed_units",
-    cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
-    priority=TaskPriority.LOW,
-    max_retries=0,
-)
-async def compare_highest_consumed_units() -> None:
-    async with AsyncReadSessionMaker() as session:
-        repository = CustomerMeterRepository.from_session(session)
-        redis = RedisMiddleware.get()
-        for aggregation_function in AggregationFunction:
-            if aggregation_function == AggregationFunction.unique:
-                continue
-            for customer_meter in await repository.get_all_by_highest_consumed_units(
-                aggregation_function, 10
-            ):
-                await reducer_service.log_customer_meter_comparison(
-                    session, redis, customer_meter
-                )
 
 
 @actor(actor_name="reducer.seal", priority=TaskPriority.LOW)

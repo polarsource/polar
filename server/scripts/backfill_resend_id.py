@@ -64,7 +64,7 @@ async def enqueue_sync(
     await enqueue_sync_users(statement)
 
 
-async def enqueue_sync_users(statement: Select[tuple[UUID]]) -> None:
+async def enqueue_sync_users(statement: Select[UUID]) -> None:
     configure_script_logging()
     if settings.RESEND_ACTIVE_USERS_SEGMENT_ID is None or not settings.RESEND_API_KEY:
         typer.echo(

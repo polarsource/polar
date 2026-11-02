@@ -36,6 +36,7 @@ from polar.models import (
 )
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
+from polar.models.discount import Discount, DiscountDuration, DiscountType
 from polar.models.member import MemberRole
 from polar.models.order import OrderStatus
 from polar.models.organization import (
@@ -51,6 +52,7 @@ from polar.models.organization import (
 )
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
+from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
@@ -95,12 +97,14 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
     create_checkout_link,
+    create_discount,
     create_dispute,
     create_order,
     create_organization,
     create_payment,
     create_payout_account,
     create_product,
+    create_subscription,
     create_webhook_endpoint,
     set_product_benefits,
 )
@@ -3999,6 +4003,9 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is False
         assert "has_orders" in [r.value for r in result.blocked_reasons]
 
+    @pytest.mark.parametrize(
+        "discount_type", [None, DiscountType.fixed, DiscountType.percentage]
+    )
     async def test_blocked_with_paid_active_subscriptions(
         self,
         session: AsyncSession,
@@ -4006,16 +4013,32 @@ class TestCheckCanDelete:
         organization: Organization,
         product: Product,
         customer: Customer,
+        discount_type: DiscountType | None,
     ) -> None:
         """Organization with paid active subscriptions cannot be immediately deleted."""
-        from polar.models.subscription import SubscriptionStatus
-        from tests.fixtures.random_objects import create_subscription
-
+        discount: Discount | None = None
+        if discount_type == DiscountType.fixed:
+            discount = await create_discount(
+                save_fixture,
+                organization=organization,
+                type=DiscountType.fixed,
+                amounts={"usd": 100},
+                duration=DiscountDuration.forever,
+            )
+        elif discount_type == DiscountType.percentage:
+            discount = await create_discount(
+                save_fixture,
+                organization=organization,
+                type=DiscountType.percentage,
+                basis_points=5000,
+                duration=DiscountDuration.forever,
+            )
         await create_subscription(
             save_fixture,
             product=product,
             customer=customer,
             status=SubscriptionStatus.active,
+            discount=discount,
         )
 
         result = await organization_service.check_can_delete(session, organization)

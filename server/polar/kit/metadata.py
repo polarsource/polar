@@ -177,8 +177,8 @@ def get_metadata_clause[M: MetadataMixin](
 
 
 def apply_metadata_clause[M: MetadataMixin](
-    model: type[M], statement: Select[tuple[M]], query: MetadataQuery
-) -> Select[tuple[M]]:
+    model: type[M], statement: Select[M], query: MetadataQuery
+) -> Select[M]:
     clause = get_metadata_clause(model, query)
     return statement.where(clause)
 

@@ -152,6 +152,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -256,6 +257,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "User"
         ],
         "x-speakeasy-group": "organizations",
@@ -359,6 +361,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -487,6 +490,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2485,6 +2489,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2590,6 +2595,7 @@
         "x-tool-title": "Create Benefit",
         "x-tool-description": "Create a benefit, for example license keys, file downloads or Discord access.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2692,6 +2698,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2836,7 +2843,11 @@
         "x-tool-name": "benefits_update",
         "x-tool-title": "Update Benefit",
         "x-tool-description": "Update a benefit.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2851,9 +2862,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"type\": \"custom\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -2939,6 +2947,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -3066,6 +3075,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -3819,6 +3829,9 @@
         "x-tool-name": "webhooks_create_webhook_endpoint",
         "x-tool-title": "Create Webhook Endpoint",
         "x-tool-description": "Create a webhook endpoint.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -3834,9 +3847,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.createWebhookEndpoint(\n  {\n    \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    \"api_version\": \"2026-10\",\n    \"format\": \"raw\",\n    \"events\": [\n      \"checkout.created\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       }
     },
@@ -4047,16 +4057,16 @@
         "x-tool-name": "webhooks_update_webhook_endpoint",
         "x-tool-title": "Update Webhook Endpoint",
         "x-tool-description": "Update a webhook endpoint.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
         ],
         "x-speakeasy-group": "webhooks",
         "x-speakeasy-name-override": "update_webhook_endpoint",
-        "x-tool-annotations": [
-          "destructive",
-          "open_world"
-        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -4611,6 +4621,9 @@
         "x-tool-name": "webhooks_redeliver_webhook_event",
         "x-tool-title": "Redeliver Webhook Event",
         "x-tool-description": "Schedule the re-delivery of a webhook event.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -4626,9 +4639,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.redeliverWebhookEvent(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       }
     },
@@ -4920,6 +4930,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5023,7 +5034,11 @@
         "x-tool-name": "products_create",
         "x-tool-title": "Create Product",
         "x-tool-description": "Create a product.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5038,9 +5053,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.create(\n  {\n    \"name\": \"string\",\n    \"prices\": [\n      {\n        \"amount_type\": \"fixed\",\n        \"price_amount\": 0\n      }\n    ],\n    \"recurring_interval\": \"day\",\n    \"recurring_interval_count\": 1\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       }
     },
@@ -5128,6 +5140,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5255,16 +5268,17 @@
         "x-tool-name": "products_update",
         "x-tool-title": "Update Product",
         "x-tool-description": "Update a product.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "update",
-        "x-tool-annotations": [
-          "destructive",
-          "open_world"
-        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -5369,6 +5383,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5482,7 +5497,12 @@
         "x-tool-name": "products_update_benefits",
         "x-tool-title": "Update Product Benefits",
         "x-tool-description": "Update benefits granted by a product.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5497,10 +5517,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.updateBenefits(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"benefits\": [\n      \"00000000-0000-4000-8000-000000000000\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive",
-          "open_world"
         ]
       }
     },
@@ -8039,6 +8055,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8138,6 +8155,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8240,6 +8258,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8348,6 +8367,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8838,6 +8858,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8937,6 +8958,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9047,6 +9069,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9157,6 +9180,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9255,6 +9279,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12624,6 +12649,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12728,6 +12754,7 @@
         "x-tool-title": "Create Checkout Link",
         "x-tool-description": "Create a checkout link.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12833,6 +12860,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12952,6 +12980,7 @@
         "x-tool-title": "Update Checkout Link",
         "x-tool-description": "Update a checkout link.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13042,6 +13071,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13852,6 +13882,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13957,6 +13988,7 @@
         "x-tool-title": "Create Discount",
         "x-tool-description": "Create a discount.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14060,6 +14092,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14188,6 +14221,7 @@
         "x-tool-title": "Update Discount",
         "x-tool-description": "Update a discount.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14278,6 +14312,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14939,6 +14974,9 @@
         "x-tool-name": "customers_update",
         "x-tool-title": "Update Customer",
         "x-tool-description": "Update a customer.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14954,9 +14992,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"email\": \"customer@example.com\",\n    \"external_id\": \"usr_1337\",\n    \"type\": \"team\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -15267,6 +15302,9 @@
         "x-tool-name": "customers_update_external",
         "x-tool-title": "Update Customer by External ID",
         "x-tool-description": "Update a customer by external ID.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15282,9 +15320,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.updateExternal(\n  \"string\",\n  {\n    \"email\": \"customer@example.com\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -16770,6 +16805,9 @@
         "x-tool-name": "customers_members_update",
         "x-tool-title": "Update Member",
         "x-tool-description": "Update a member of a customer.\n\nOnly name, email and role can be updated.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16785,9 +16823,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -17145,6 +17180,9 @@
         "x-tool-name": "customers_members_update_external",
         "x-tool-title": "Update Member by External ID",
         "x-tool-description": "Update a member by external ID for a customer identified by its external ID.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -17160,9 +17198,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.updateExternal(\n  \"string\",\n  \"string\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -22096,6 +22131,9 @@
         "x-tool-name": "customer_seats_assign_seat",
         "x-tool-title": "Assign Seat",
         "x-tool-description": "Assign a seat for a subscription or order.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -22111,9 +22149,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.assignSeat(\n  {\n    \"immediate_claim\": false\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       },
       "get": {
@@ -22408,6 +22443,9 @@
         "x-tool-name": "customer_seats_resend_invitation",
         "x-tool-title": "Resend Invitation",
         "x-tool-description": "Resend an invitation for a pending customer seat.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -22423,9 +22461,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2026-10\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.resendInvitation(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       }
     },
@@ -23309,6 +23344,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -23512,6 +23548,7 @@
           }
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24128,6 +24165,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24232,6 +24270,7 @@
         "x-tool-title": "Create Meter",
         "x-tool-description": "Create a meter.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24334,6 +24373,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24453,6 +24493,7 @@
         "x-tool-title": "Update Meter",
         "x-tool-description": "Update a meter.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -25285,6 +25326,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -44299,8 +44341,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Amount",
@@ -44324,7 +44365,6 @@
         "properties": {
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)",
             "title": "Amount",
             "description": "The amount in cents."
           },
@@ -55221,6 +55261,28 @@
             "title": "Duration In Months",
             "description": "Number of months the discount should be applied.\n\nRequired when `duration` is `repeating`. Must be omitted otherwise.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
           },
+          "amounts": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer",
+                  "maximum": 999999999999.0,
+                  "minimum": 0.0,
+                  "description": "Fixed amount to discount from the invoice total."
+                },
+                "propertyNames": {
+                  "$ref": "#/components/schemas/PresentmentCurrency"
+                },
+                "type": "object",
+                "minProperties": 1,
+                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amounts"
+          },
           "amount": {
             "anyOf": [
               {
@@ -55248,28 +55310,6 @@
             ],
             "default": "usd",
             "deprecated": true
-          },
-          "amounts": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "integer",
-                  "maximum": 999999999999.0,
-                  "minimum": 0.0,
-                  "description": "Fixed amount to discount from the invoice total."
-                },
-                "propertyNames": {
-                  "$ref": "#/components/schemas/PresentmentCurrency"
-                },
-                "type": "object",
-                "minProperties": 1,
-                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amounts"
           }
         },
         "type": "object",
@@ -55277,8 +55317,7 @@
           "name",
           "duration"
         ],
-        "title": "DiscountFixedCreate",
-        "description": "Schema to create a fixed amount discount."
+        "title": "DiscountFixedCreate"
       },
       "DiscountFixedOnceForeverDuration": {
         "properties": {
@@ -57238,33 +57277,6 @@
               }
             ]
           },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999999999999.0,
-                "minimum": 0.0,
-                "description": "Fixed amount to discount from the invoice total."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount",
-            "deprecated": true
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "description": "The currency of the fixed amount discount."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "deprecated": true
-          },
           "amounts": {
             "anyOf": [
               {
@@ -57316,11 +57328,37 @@
               }
             ],
             "title": "Products"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 999999999999.0,
+                "minimum": 0.0,
+                "description": "Fixed amount to discount from the invoice total."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "deprecated": true
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentmentCurrency",
+                "description": "The currency of the fixed amount discount."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true
           }
         },
         "type": "object",
-        "title": "DiscountUpdate",
-        "description": "Schema to update a discount."
+        "title": "DiscountUpdate"
       },
       "Dispute": {
         "properties": {
@@ -58286,10 +58324,14 @@
               "minLength": 1
             },
             {
-              "type": "integer"
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": -9007199254740991.0
             },
             {
-              "type": "number"
+              "type": "number",
+              "maximum": 9007199254740991.0,
+              "minimum": -9007199254740991.0
             },
             {
               "type": "boolean"
@@ -59922,21 +59964,29 @@
           },
           "input_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Input Tokens",
             "description": "The number of LLM input tokens used for the event."
           },
           "cached_input_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Cached Input Tokens",
             "description": "The number of LLM cached tokens that were used for the event."
           },
           "output_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Output Tokens",
             "description": "The number of LLM output tokens used for the event."
           },
           "total_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Total Tokens",
             "description": "The total number of LLM tokens used for the event."
           }
@@ -70401,19 +70451,6 @@
       },
       "OrganizationDetails": {
         "properties": {
-          "about": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "About",
-            "description": "Brief information about you and your business.",
-            "deprecated": true
-          },
           "product_description": {
             "anyOf": [
               {
@@ -70441,6 +70478,44 @@
             "type": "array",
             "title": "Pricing Models",
             "description": "Pricing models used by the organization."
+          },
+          "switching": {
+            "type": "boolean",
+            "title": "Switching",
+            "description": "Switching from another platform?",
+            "default": false
+          },
+          "switching_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "paddle",
+                  "lemon_squeezy",
+                  "gumroad",
+                  "stripe",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Switching From",
+            "description": "Which platform the organization is migrating from."
+          },
+          "about": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About",
+            "description": "Brief information about you and your business.",
+            "deprecated": true
           },
           "intended_use": {
             "anyOf": [
@@ -70477,31 +70552,6 @@
             "title": "Future Annual Revenue",
             "description": "Estimated revenue in the next 12 months",
             "deprecated": true
-          },
-          "switching": {
-            "type": "boolean",
-            "title": "Switching",
-            "description": "Switching from another platform?",
-            "default": false
-          },
-          "switching_from": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "paddle",
-                  "lemon_squeezy",
-                  "gumroad",
-                  "stripe",
-                  "other"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Switching From",
-            "description": "Which platform the organization is migrating from."
           },
           "previous_annual_revenue": {
             "anyOf": [
@@ -73915,7 +73965,6 @@
           },
           "unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount",
             "description": "The price per unit in cents."
           }
@@ -73975,8 +74024,7 @@
                 "exclusiveMinimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Unit Amount",
@@ -75120,6 +75168,8 @@
           "service_disruption",
           "satisfaction_guarantee",
           "dispute_prevention",
+          "tax_refund",
+          "vat_reverse_charge_correction",
           "other"
         ],
         "title": "RefundReason"
@@ -80931,7 +80981,6 @@
           },
           "unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount"
           }
         },
@@ -80964,8 +81013,7 @@
                 "minimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,19}|(?=[\\d.]{1,32}0*$)\\d{0,19}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Unit Amount"

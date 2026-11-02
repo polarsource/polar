@@ -62,7 +62,9 @@ async def get_active_reducers(
             ]
         async with redis.pipeline() as pipeline:
             await pipeline.watch(key)
-            reducers = await repository.get_all_active_by_organization(organization_id)
+            reducers = await repository.get_all_active_by_organization_and_kinds(
+                organization_id, (ReducerKind.usage,)
+            )
             cached_reducers = [
                 CachedReducer.model_validate(reducer) for reducer in reducers
             ]
@@ -80,5 +82,7 @@ async def get_active_reducers(
             "Failed to cache active reducers", organization_id=organization_id
         )
     if reducers is None:
-        reducers = await repository.get_all_active_by_organization(organization_id)
+        reducers = await repository.get_all_active_by_organization_and_kinds(
+            organization_id, (ReducerKind.usage,)
+        )
     return reducers

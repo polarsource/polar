@@ -14,6 +14,7 @@ export type Aggregation =
   | { func: "sum" | "min" | "max" | "avg"; property: string };
 export interface Reducer {
   id: string;
+  kind: "usage" | "credit";
   filter: Filter;
   aggregation: Aggregation;
   meter_ids?: string[];
@@ -121,17 +122,20 @@ export const getMatcher = (filter: Filter | FilterClause): EventMatcher => {
   }
 };
 
+// Credit reducers count Polar's system events: no local event matches them.
 export const withMatchers = (reducers: readonly Reducer[]): ReducerMatchers =>
-  reducers.map(
-    (reducer) =>
-      [
-        reducer,
-        getMatcher(reducer.filter),
-        reducer.aggregation.func === "count"
-          ? () => 1
-          : getPropertyReader(reducer.aggregation.property),
-      ] as const,
-  );
+  reducers
+    .filter((reducer) => reducer.kind === "usage")
+    .map(
+      (reducer) =>
+        [
+          reducer,
+          getMatcher(reducer.filter),
+          reducer.aggregation.func === "count"
+            ? () => 1
+            : getPropertyReader(reducer.aggregation.property),
+        ] as const,
+    );
 
 export const reduce = (
   matchers: ReducerMatchers,

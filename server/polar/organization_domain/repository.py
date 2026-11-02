@@ -19,14 +19,14 @@ class OrganizationDomainRepository(
 
     def get_statement_by_organization(
         self, organization_id: UUID
-    ) -> Select[tuple[OrganizationDomain]]:
+    ) -> Select[OrganizationDomain]:
         return self.get_base_statement().where(
             OrganizationDomain.organization_id == organization_id
         )
 
     def get_verified_statement_by_organization(
         self, organization_id: UUID
-    ) -> Select[tuple[OrganizationDomain]]:
+    ) -> Select[OrganizationDomain]:
         return self.get_statement_by_organization(organization_id).where(
             OrganizationDomain.verified_at.is_not(None)
         )

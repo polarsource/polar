@@ -1,6 +1,6 @@
 import json
 from collections.abc import AsyncGenerator, Sequence
-from datetime import datetime
+from typing import Annotated
 
 from fastapi import Depends, Query
 from pydantic import TypeAdapter
@@ -10,15 +10,18 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
+from polar.customer.schemas.customer import (
+    CustomerExportParams,
+    CustomerGrowthParams,
+    CustomerListParams,
+    CustomerTopParams,
+)
 from polar.exceptions import ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
-from polar.kit.time_queries import TimeInterval
 from polar.models import Customer, PaymentMethod
 from polar.openapi import APITag, cli_preview, destructive
-from polar.organization.schemas import OrganizationID
 from polar.payment_method.schemas import PaymentMethodTypeAdapter
 from polar.postgres import (
     AsyncReadSession,
@@ -81,35 +84,22 @@ CustomerNotFound = {
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
+    filters: Annotated[CustomerListParams, Query()],
     auth_subject: auth.CustomerRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    email: str | None = Query(None, description="Filter by exact email."),
-    query: str | None = Query(
-        None, description="Filter by name, email, or external ID."
-    ),
-    active: bool | None = Query(
-        None,
-        description=(
-            "Filter by active customers, i.e. customers with at least one "
-            "trialing, active or past_due subscription."
-        ),
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CustomerSchema]:
     """List customers."""
     results, count = await customer_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        email=email,
+        organization_id=filters.organization_id,
+        email=filters.email,
         metadata=metadata,
-        query=query,
-        active=active,
+        query=filters.query,
+        active=filters.active,
         pagination=pagination,
         sorting=sorting,
     )
@@ -126,10 +116,8 @@ async def list(
 
 @router.get("/export", summary="Export Customers", response_class=CSVStreamingResponse)
 async def export(
+    filters: Annotated[CustomerExportParams, Query()],
     auth_subject: auth.CustomerRead,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, description="Filter by organization ID."
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CSVStreamingResponse:
     """Export customers as a CSV file."""
@@ -159,7 +147,7 @@ async def export(
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.customers_read
         )
-        stream = repository.stream_by_organization(org_ids, organization_id)
+        stream = repository.stream_by_organization(org_ids, filters.organization_id)
 
         async for customer in stream:
             billing_address = customer.billing_address
@@ -194,23 +182,18 @@ async def export(
     tags=[APITag.private],
 )
 async def growth(
+    filters: Annotated[CustomerGrowthParams, Query()],
     auth_subject: auth.CustomerRead,
-    organization_id: OrganizationID = Query(
-        description="The organization ID to compute growth for."
-    ),
-    start: datetime = Query(description="The start of the period."),
-    end: datetime = Query(description="The end of the period."),
-    interval: TimeInterval = Query(description="The interval between each period."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> Sequence[CustomerGrowthPeriod]:
     """Get new and cumulative customer counts over time."""
     periods = await customer_service.get_growth(
         session,
         auth_subject,
-        organization_id=organization_id,
-        start=start,
-        end=end,
-        interval=interval,
+        organization_id=filters.organization_id,
+        start=filters.start,
+        end=filters.end,
+        interval=filters.interval,
     )
     return [
         CustomerGrowthPeriod(
@@ -229,27 +212,18 @@ async def growth(
     tags=[APITag.private],
 )
 async def top(
+    filters: Annotated[CustomerTopParams, Query()],
     auth_subject: auth.CustomerRead,
-    organization_id: OrganizationID = Query(
-        description="The organization ID to rank customers for."
-    ),
-    start: datetime | None = Query(
-        None, description="Only count orders created at or after this timestamp."
-    ),
-    end: datetime | None = Query(
-        None, description="Only count orders created before this timestamp."
-    ),
-    limit: int = Query(10, ge=1, le=50, description="How many customers to rank."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> TopCustomerList:
     """Rank the organization's customers by paid net revenue."""
     ranked = await customer_service.get_top_by_revenue(
         session,
         auth_subject,
-        organization_id=organization_id,
-        start=start,
-        end=end,
-        limit=limit,
+        organization_id=filters.organization_id,
+        start=filters.start,
+        end=filters.end,
+        limit=filters.limit,
     )
     return [
         TopCustomer(

@@ -1,7 +1,10 @@
-from datetime import UTC, datetime
+import re
+from collections.abc import Sequence
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal, NotRequired
 
+from annotated_types import Len, Predicate
 from fastapi import Path
 from pydantic import (
     UUID4,
@@ -12,8 +15,10 @@ from pydantic import (
     Field,
 )
 from pydantic.type_adapter import TypeAdapter
+from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import TypedDict
 
+from polar.customer.schemas.customer import CustomerID
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.event.system import (
     BalanceCreditOrderMetadata,
@@ -58,9 +63,13 @@ from polar.kit.metadata import (
 from polar.kit.schemas import (
     ClassName,
     IDSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
 )
+from polar.kit.time_queries import TimeInterval
+from polar.kit.versioning import QuerySchema
+from polar.meter.schemas import MeterID
 from polar.models.event import EventSource
 from polar.organization.schemas import OrganizationID
 
@@ -894,3 +903,175 @@ class ListVarianceEvents(Schema):
 
 
 EventID = Annotated[UUID4, Path(description="The event ID.")]
+
+
+_aggregate_field_regex = re.compile(r"^[a-zA-Z0-9_.]+$")
+
+
+def _validate_aggregate_field(value: str) -> bool:
+    return _aggregate_field_regex.match(value) is not None
+
+
+type AggregateField = Annotated[
+    str, Len(min_length=1, max_length=255), Predicate(_validate_aggregate_field)
+]
+
+
+class EventListParams(QuerySchema):
+    filter: str | None = Field(
+        None,
+        description=(
+            "Filter events following filter clauses. "
+            "JSON string following the same schema a meter filter clause. "
+        ),
+    )
+    start_timestamp: AwareDatetime | None = Field(
+        None, description="Filter events after this timestamp."
+    )
+    end_timestamp: AwareDatetime | None = Field(
+        None, description="Filter events before this timestamp."
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[str] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    )
+    meter_id: MeterID | None = Field(
+        None, title="MeterID Filter", description="Filter by a meter filter clause."
+    )
+    name: MultipleQueryFilter[str] | None = Field(
+        None, title="Name Filter", description="Filter by event name."
+    )
+    source: MultipleQueryFilter[EventSource] | None = Field(
+        None, title="Source Filter", description="Filter by event source."
+    )
+    query: str | None = Field(
+        None, title="Query", description="Query to filter events."
+    )
+    parent_id: EventID | None = Field(
+        None,
+        description="When combined with depth, use this event as the anchor instead of root events.",
+    )
+    depth: int | None = Field(
+        None,
+        ge=0,
+        le=5,
+        description="Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events.",
+    )
+
+
+class EventStatisticsParams(QuerySchema):
+    start_date: date = Field(..., description="Start date.")
+    end_date: date = Field(..., description="End date.")
+    timezone: TimeZoneName = Field(
+        default=TimeZoneName("UTC"),
+        description="Timezone to use for the dates. Default is UTC.",
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[str] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    )
+    aggregate_fields: Sequence[AggregateField] = Field(
+        default=["_cost.amount"],
+        description="Metadata field paths to aggregate.",
+    )
+    limit: int = Field(default=200, le=1000)
+
+
+class EventStatisticsByPropertyParams(EventStatisticsParams):
+    property: AggregateField = Field(
+        ...,
+        description="Metadata property path to group by (e.g., _llm.model, _llm.vendor).",
+    )
+
+
+class EventStatisticsByVarianceParams(EventStatisticsParams):
+    name: MultipleQueryFilter[str] | None = Field(
+        None, title="Name Filter", description="Filter by event name."
+    )
+    limit: int = Field(default=100, le=1000)
+
+
+class EventListStatisticsTimeseriesParams(QuerySchema):
+    start_date: date = Field(
+        ...,
+        description="Start date.",
+    )
+    end_date: date = Field(..., description="End date.")
+    timezone: TimeZoneName = Field(
+        default=TimeZoneName("UTC"),
+        description="Timezone to use for the dates. Default is UTC.",
+    )
+    interval: TimeInterval = Field(..., description="Interval between two dates.")
+    filter: str | None = Field(
+        None,
+        description=(
+            "Filter events following filter clauses. "
+            "JSON string following the same schema a meter filter clause. "
+        ),
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[str] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    )
+    meter_id: MeterID | None = Field(
+        None, title="MeterID Filter", description="Filter by a meter filter clause."
+    )
+    name: MultipleQueryFilter[str] | None = Field(
+        None, title="Name Filter", description="Filter by event name."
+    )
+    source: MultipleQueryFilter[EventSource] | None = Field(
+        None, title="Source Filter", description="Filter by event source."
+    )
+    event_type_id: UUID4 | None = Field(
+        None,
+        title="Event Type ID Filter",
+        description="Filter by event type ID.",
+    )
+    query: str | None = Field(
+        None, title="Query", description="Query to filter events."
+    )
+    aggregate_fields: Sequence[AggregateField] = Field(
+        default=["_cost.amount"],
+        description="Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
+    )
+
+
+class EventListNamesParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[str] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    )
+    source: MultipleQueryFilter[EventSource] | None = Field(
+        None, title="Source Filter", description="Filter by event source."
+    )
+    query: str | None = Field(
+        None, title="Query", description="Query to filter event names."
+    )

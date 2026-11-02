@@ -8,7 +8,6 @@ import {
   DiamondOutlined,
   DiscountOutlined,
   DonutLargeOutlined,
-  ExploreOutlined,
   GavelOutlined,
   HiveOutlined,
   LinkOutlined,
@@ -172,16 +171,6 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     checkIsActive: (currentRoute: string) =>
       currentRoute === `/dashboard/${org?.slug}`,
     if: true,
-  },
-  {
-    id: 'compass',
-    title: 'Compass',
-    icon: <ExploreOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/compass`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org?.slug}/compass`)
-    },
-    if: !!org?.feature_settings?.compass_enabled,
   },
   {
     id: 'new-products',

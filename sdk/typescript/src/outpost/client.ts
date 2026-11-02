@@ -67,21 +67,19 @@ export interface State {
   buckets: Map<number, BucketStatistics>;
   // The part of each bucket Polar has not confirmed yet.
   pending: Map<number, BucketStatistics>;
-  credited: Record<string, number>;
 }
 type Customer = Parameters<typeof customerKey>[0];
 interface Snapshot {
+  reducer_id: string;
   customer_id: string | null;
   external_customer_id: string | null;
   customer_exists: boolean;
-  meter_id: string;
   cold_until: number;
   version: number;
   count: number;
   sum: number;
   min: number | null;
   max: number | null;
-  credited_units: number;
 }
 interface Confirmed {
   reducer_id: string;
@@ -97,9 +95,8 @@ type Message =
   | { type: "configuration"; payload: { reducers: Reducer[] } }
   | { type: "meter_usage"; payload: Snapshot }
   | { type: "confirmed"; payload: Confirmed };
-// A snapshot waiting for Polar to say which of the pending events it counts, one per meter.
+// A snapshot waiting for Polar to say which of the pending events it counts, one per reducer.
 interface Confirmation {
-  key: string;
   snapshot: Snapshot;
   customer: string;
   identity: string;
@@ -197,10 +194,8 @@ const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
     clearTimeout(timer);
   }
 };
-const isReady = (local: LocalState, meterIds: readonly string[]): boolean =>
-  local.missing ||
-  (local.state?.coldUntil !== undefined &&
-    meterIds.every((meterId) => meterId in local.state!.credited));
+const isReady = (local: LocalState): boolean =>
+  local.missing || local.state?.coldUntil !== undefined;
 const notify = (local: LocalState): void => {
   local.changed.resolve();
   local.changed = signal();
@@ -228,7 +223,6 @@ export const decodeState = (value: string[]): State => {
     cold: emptyStatistics(),
     buckets: new Map(),
     pending: new Map(),
-    credited: {},
   };
   for (let i = 0; i < value.length; i += 2) {
     const field = value[i];
@@ -247,7 +241,6 @@ export const decodeState = (value: string[]): State => {
       bucket[field.slice(separator + 1) as keyof BucketStatistics] = number(raw);
     } else if (field.startsWith(COLD_PREFIX))
       state.cold[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(raw);
-    else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(raw);
     else if (field === "epoch") state.epoch = raw;
     else if (field === "revision") state.revision = BigInt(raw);
     else if (field === "cold_until") state.coldUntil = number(raw);
@@ -268,7 +261,13 @@ export const consumedUnits = (state: State, func: Aggregation["func"]): number =
 const isClose = (a: number, b: number): boolean =>
   Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
 
-const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): void => {
+const reportLocalValue = (
+  span: Span,
+  snapshot: Snapshot,
+  replaced: string[],
+  // The state before the transaction settled confirmed events out of the pending part.
+  before?: Record<string, string>,
+): void => {
   const fields: Record<string, string> = {};
   for (let index = 0; index < replaced.length; index += 2)
     fields[replaced[index]] = replaced[index + 1];
@@ -277,13 +276,13 @@ const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): v
   const local = emptyStatistics();
   const buckets = new Map<string, BucketStatistics>();
   const pending = new Map<string, BucketStatistics>();
-  for (const [field, value] of Object.entries(fields)) {
+  for (const [field, value] of Object.entries(before ?? fields)) {
     if (field.startsWith(COLD_PREFIX)) {
       local[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(value);
       continue;
     }
     const [kind, start, statistic] = field.split(":");
-    if (kind !== "bucket" && kind !== "pending") continue;
+    if ((kind !== "bucket" && kind !== "pending") || Number(start) >= snapshot.cold_until) continue;
     const group = kind === "bucket" ? buckets : pending;
     const statistics = group.get(start) ?? emptyStatistics();
     statistics[statistic as keyof BucketStatistics] = number(value);
@@ -685,26 +684,32 @@ export class Outpost {
       const customer = customerKey(input);
       this.requireRedis();
       await this.waitConfigured();
-      const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
+      const reducer = this.findReducer("usage", input.meter_id);
       if (!reducer) {
         read.outcome = "unknown_meter";
         return null;
       }
+      const creditReducer = this.findReducer("credit", input.meter_id);
       const local = await this.warmCustomer(customer, reducer);
-      await this.waitReady(reducer, local, [input.meter_id]);
-      if (local.missing) {
+      const creditLocal = creditReducer && (await this.warmCustomer(customer, creditReducer));
+      await Promise.all([
+        this.waitReady(reducer, local),
+        creditReducer && this.waitReady(creditReducer, creditLocal!),
+      ]);
+      if (local.missing || creditLocal?.missing) {
         read.outcome = "unknown_customer";
         return null;
       }
       const state = local.state;
       if (!state || state.coldUntil === undefined)
         throw new NotReadyError("Customer snapshot is not ready");
-      read.outcome =
-        (reducer.aggregation.func as string) === "unique" || input.meter_id in state.credited
-          ? "ready"
-          : "not_ready";
+      const creditState = creditLocal?.state;
+      const creditReady = creditState?.coldUntil !== undefined;
+      read.outcome = !creditLocal || creditReady ? "ready" : "not_ready";
       const consumed = consumedUnits(state, reducer.aggregation.func);
-      const credited = state.credited[input.meter_id] ?? 0;
+      const credited = creditReady
+        ? consumedUnits(creditState, creditReducer!.aggregation.func)
+        : 0;
       return {
         ...input,
         consumed_units: consumed,
@@ -717,16 +722,12 @@ export class Outpost {
   async actor(input: Customer): Promise<void> {
     return this.measureRead("actor", async (read) => {
       const warmed = await this.warmActor(customerKey(input));
-      await Promise.all(
-        warmed.map(([reducer, local]) => this.waitReady(reducer, local, reducer.meter_ids ?? [])),
-      );
+      await Promise.all(warmed.map(([reducer, local]) => this.waitReady(reducer, local)));
       // Polar sends no snapshot for unique reducers.
       const snapshotted = warmed.filter(
         ([reducer]) => (reducer.aggregation.func as string) !== "unique",
       );
-      read.outcome = !snapshotted.every(([reducer, local]) =>
-        isReady(local, reducer.meter_ids ?? []),
-      )
+      read.outcome = !snapshotted.every(([, local]) => isReady(local))
         ? "not_ready"
         : snapshotted.some(([, local]) => local.missing)
           ? "unknown_customer"
@@ -747,15 +748,17 @@ export class Outpost {
     return warmed;
   }
 
-  private async waitReady(
-    reducer: Reducer,
-    local: LocalState,
-    meterIds: readonly string[],
-  ): Promise<void> {
+  private findReducer(kind: Reducer["kind"], meterId: string): Reducer | undefined {
+    return this.reducers.find(
+      (reducer) => reducer.kind === kind && reducer.meter_ids?.includes(meterId),
+    );
+  }
+
+  private async waitReady(reducer: Reducer, local: LocalState): Promise<void> {
     // Polar sends no snapshot for unique reducers, nor without a connection.
     if ((reducer.aggregation.func as string) === "unique" || !this.connected) return;
     const deadline = Date.now() + (this.options.snapshotTimeout ?? 5_000);
-    while (!isReady(local, meterIds) && Date.now() < deadline)
+    while (!isReady(local) && Date.now() < deadline)
       await waitAtMost(local.changed.promise, deadline - Date.now());
   }
 
@@ -878,11 +881,10 @@ export class Outpost {
       }
       if (!this.actors.has(identity) && this.websocket?.readyState === WebSocket.OPEN) {
         try {
-          for (const meter_id of reducer.meter_ids ?? [])
-            await this.send({
-              type: "meter_usage",
-              payload: { ...customerArguments(customer), meter_id },
-            });
+          await this.send({
+            type: "meter_usage",
+            payload: { ...customerArguments(customer), reducer_id: reducer.id },
+          });
         } catch (error) {
           if (this.failure) throw error;
           // Requested again once reconnected.
@@ -1093,7 +1095,7 @@ export class Outpost {
       this.reconnectAttempts = 0;
     } else if (message.type === "meter_usage") {
       const snapshot = message.payload;
-      const reducer = this.reducers.find((item) => item.meter_ids?.includes(snapshot.meter_id));
+      const reducer = this.reducers.find((item) => item.id === snapshot.reducer_id);
       if (!reducer) return;
       if (snapshot.customer_id !== null && snapshot.external_customer_id !== null) return;
       const customer = customerKey({
@@ -1113,13 +1115,7 @@ export class Outpost {
       }
       if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
         throw new TypeError("Snapshot timestamps must be safe integer microseconds");
-      for (const value of [
-        snapshot.count,
-        snapshot.sum,
-        snapshot.min,
-        snapshot.max,
-        snapshot.credited_units,
-      ])
+      for (const value of [snapshot.count, snapshot.sum, snapshot.min, snapshot.max])
         if (value !== null && !Number.isFinite(value))
           throw new TypeError("Snapshot values must be finite");
       if (!(await this.askConfirmation(identity, customer, snapshot)))
@@ -1131,7 +1127,7 @@ export class Outpost {
         customer_id: customer_id ?? undefined,
         external_customer_id: external_customer_id ?? undefined,
       });
-      const confirmation = this.confirmations.get(`${customer}:${reducer_id}:${snapshot.meter_id}`);
+      const confirmation = this.confirmations.get(`${customer}:${reducer_id}`);
       if (!confirmation) return;
       const confirmed = confirmation.confirmed.get(bucket_start) ?? [];
       confirmed.push(...ids);
@@ -1150,11 +1146,10 @@ export class Outpost {
     snapshot: Snapshot,
   ): Promise<boolean> {
     const started = performance.now();
-    const key = `${identity}:${snapshot.meter_id}`;
-    const superseded = this.confirmations.get(key);
+    const superseded = this.confirmations.get(identity);
     if (superseded) {
       clearTimeout(superseded.timer);
-      this.confirmations.delete(key);
+      this.confirmations.delete(identity);
     }
     const state = this.cache.get(identity)?.state ?? (await this.loadState(identity));
     const sealed = [...state.pending]
@@ -1162,7 +1157,6 @@ export class Outpost {
       .map(([start]) => start);
     if (!sealed.length) return false;
     const confirmation: Confirmation = {
-      key,
       snapshot,
       customer,
       identity,
@@ -1176,7 +1170,6 @@ export class Outpost {
       confirmed: new Map(),
     };
     const redis = this.requireRedis();
-    const reducerId = identity.slice(customer.length + 1);
     for (const bucketStart of sealed) {
       const ids = await redis.hkeys(`${KEY_VERSION}:pending:${identity}:${bucketStart}`);
       for (let offset = 0; offset < ids.length; offset += CONFIRM_BATCH) {
@@ -1185,10 +1178,9 @@ export class Outpost {
           await this.send({
             type: "confirm",
             payload: {
-              reducer_id: reducerId,
+              reducer_id: snapshot.reducer_id,
               ...customerArguments(customer),
               bucket_start: bucketStart,
-              meter_id: snapshot.meter_id,
               ids: batch,
             },
           });
@@ -1206,14 +1198,14 @@ export class Outpost {
       () => this.queue(() => this.settleConfirmation(confirmation, false)),
       this.options.confirmTimeout ?? CONFIRM_TIMEOUT,
     );
-    this.confirmations.set(key, confirmation);
+    this.confirmations.set(identity, confirmation);
     return true;
   }
 
   private async settleConfirmation(confirmation: Confirmation, answered: boolean): Promise<void> {
-    if (this.confirmations.get(confirmation.key) !== confirmation) return;
+    if (this.confirmations.get(confirmation.identity) !== confirmation) return;
     clearTimeout(confirmation.timer);
-    this.confirmations.delete(confirmation.key);
+    this.confirmations.delete(confirmation.identity);
     await this.applySnapshot(
       confirmation.identity,
       confirmation.customer,
@@ -1240,8 +1232,6 @@ export class Outpost {
       generateEpoch(),
       snapshot.cold_until,
       snapshot.version,
-      snapshot.meter_id,
-      snapshot.credited_units,
       snapshot.count,
       snapshot.sum,
       snapshot.min ?? "",
@@ -1252,9 +1242,11 @@ export class Outpost {
       async (span) => {
         const redis = this.requireRedis();
         let applied: [state: string[], replaced: string[]];
+        let before: Record<string, string> | undefined;
         const confirmed = [...(confirmation?.confirmed ?? [])].filter(([, ids]) => ids.length);
         if (confirmed.length) {
           const transaction = redis.multi() as OutpostPipeline;
+          transaction.hgetall(key);
           for (const [bucketStart, ids] of confirmed)
             transaction.outpostConfirm(
               key,
@@ -1272,11 +1264,12 @@ export class Outpost {
           const [error, result] = results[results.length - 1];
           if (error) throw error;
           applied = result as [string[], string[]];
+          before = results[0][1] as Record<string, string>;
         } else {
           applied = await redis.outpostApplySnapshot(key, ...snapshotArguments);
         }
         const [state, replaced] = applied;
-        reportLocalValue(span, snapshot, replaced);
+        reportLocalValue(span, snapshot, replaced, before);
         if (confirmation) {
           span.setAttributes({
             "outpost.pending.asked": confirmation.asked,
@@ -1292,7 +1285,8 @@ export class Outpost {
       },
       {
         "outpost.customer": customer,
-        "outpost.meter_id": snapshot.meter_id,
+        "outpost.reducer_id": snapshot.reducer_id,
+        "outpost.reducer_kind": this.reducers.find((item) => item.id === snapshot.reducer_id)?.kind,
         "outpost.snapshot_version": snapshot.version,
       },
     );

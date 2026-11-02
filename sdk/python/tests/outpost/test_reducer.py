@@ -27,6 +27,7 @@ def test_reduce_buckets(
 ) -> None:
     reducer: Reducer = {
         "id": "usage",
+        "kind": "usage",
         "filter": {"conjunction": "and", "clauses": []},
         "aggregation": {"func": "count"}
         if func == "count"
@@ -79,6 +80,7 @@ def test_empty_statistics(func: str) -> None:
 def test_nested_configuration_and_metadata() -> None:
     reducer: Reducer = {
         "id": "tokens",
+        "kind": "usage",
         "meter_ids": ["meter"],
         "filter": {
             "conjunction": "and",
@@ -197,6 +199,7 @@ def test_contains_filters_ignore_missing_properties(
 def test_non_numeric_aggregation_is_skipped(value: object) -> None:
     reducer: Reducer = {
         "id": "tokens",
+        "kind": "usage",
         "filter": {"conjunction": "and", "clauses": []},
         "aggregation": {"func": "sum", "property": "tokens"},
     }
@@ -214,6 +217,7 @@ def test_non_numeric_aggregation_is_skipped(value: object) -> None:
 def test_non_finite_aggregation_is_rejected(values: list[float]) -> None:
     reducer: Reducer = {
         "id": "tokens",
+        "kind": "usage",
         "filter": {"conjunction": "and", "clauses": []},
         "aggregation": {"func": "sum", "property": "tokens"},
     }
@@ -238,3 +242,22 @@ def test_non_finite_aggregation_is_rejected(values: list[float]) -> None:
 )
 def test_bucket_boundaries_in_microseconds(timestamp: str, expected: int) -> None:
     assert get_bucket_start(datetime.datetime.fromisoformat(timestamp)) == expected
+
+
+def test_credit_reducers_match_no_local_event() -> None:
+    reducer: Reducer = {
+        "id": "credits",
+        "kind": "credit",
+        "filter": {"conjunction": "and", "clauses": []},
+        "aggregation": {"func": "sum", "property": "units"},
+    }
+    event = Event("call", "customer", TIMESTAMP, {"units": 1})
+
+    assert (
+        reduce(
+            with_matchers([reducer]),
+            [event],
+            oldest_bucket_start=get_bucket_start(TIMESTAMP),
+        )
+        == {}
+    )

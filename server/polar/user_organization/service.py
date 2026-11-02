@@ -431,7 +431,7 @@ class UserOrganizationService:
 
     def _get_list_by_user_id_query(
         self, user_id: UUID, ordered: bool = True
-    ) -> Select[tuple[UserOrganization]]:
+    ) -> Select[UserOrganization]:
         stmt = (
             sql.select(UserOrganization)
             .where(

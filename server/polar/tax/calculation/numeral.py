@@ -24,6 +24,7 @@ from .base import (
     TaxCode,
     TaxRecordError,
     TaxServiceProtocol,
+    UnsupportedCountryError,
 )
 
 log: Logger = structlog.get_logger()
@@ -477,11 +478,15 @@ class NumeralTaxService(TaxServiceProtocol):
         trace.get_current_span().set_attribute(
             "numeral.api_version", NUMERAL_API_VERSION
         )
+        postal_code = address.postal_code or ""
+        if address.country == "CA" and not postal_code:
+            postal_code = "A0A0A0"
+
         response = await self.client.post(
             "/tax/manual_line_items",
             json={
                 "order_id": reference,
-                "address_postal_code": address.postal_code or "",
+                "address_postal_code": postal_code,
                 "address_province": address.get_unprefixed_state() or "",
                 "address_country": address.country,
                 "transaction_date_time": int(transaction_date.timestamp()),
@@ -496,7 +501,19 @@ class NumeralTaxService(TaxServiceProtocol):
                 ],
             },
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 400:
+                error: NumeralErrorResponse = e.response.json()
+                if error.get("type") == "INVALID_COUNTRY_CODE" or (
+                    error.get("type") == "ERROR"
+                    and error.get("message", "").startswith(
+                        "Country code must be one of:"
+                    )
+                ):
+                    raise UnsupportedCountryError(address.country) from e
+            raise
         manual_line_item = response.json()
         trace.get_current_span().set_attribute(
             "numeral.line_item_id", manual_line_item["line_item_id"]

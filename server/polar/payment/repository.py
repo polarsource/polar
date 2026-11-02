@@ -92,7 +92,7 @@ class PaymentRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Payment]]:
+    ) -> Select[Payment]:
         statement = self.get_base_statement()
         statement = statement.where(Payment.organization_id.in_(org_ids))
         return statement

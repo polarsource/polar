@@ -2,19 +2,9 @@ import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
-from pytest_mock import MockerFixture
 
 from polar.eventstream.endpoints import subscribe
 from polar.redis import Redis
-
-
-@pytest.fixture(autouse=True)
-def _no_uvicorn_exit(mocker: MockerFixture) -> None:
-    """Ensure _uvicorn_should_exit always returns False during tests."""
-    mocker.patch(
-        "polar.eventstream.endpoints._uvicorn_should_exit",
-        return_value=False,
-    )
 
 
 def _make_request(disconnect_after: int) -> AsyncMock:

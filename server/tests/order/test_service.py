@@ -113,6 +113,7 @@ from polar.tax.calculation import (
     TaxCalculationService,
     get_tax_behavior_from_option,
 )
+from polar.tax.calculation.base import UnsupportedCountryError
 from polar.tax.tax_id import TaxID
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.payment import (
@@ -3781,6 +3782,83 @@ class TestGenerateInvoice:
 
 @pytest.mark.anyio
 class TestHandlePayment:
+    @pytest.mark.parametrize("charged_tax_amount", [0, 100])
+    async def test_tax_recalculated_for_unsupported_country(
+        self,
+        tax_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        charged_tax_amount: int,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("CR"))
+        await save_fixture(customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+            tax_amount=charged_tax_amount,
+            billing_address=customer.billing_address,
+            tax_behavior=TaxBehavior.exclusive,
+            tax_processor=TaxProcessor.stripe,
+            next_payment_attempt_at=utc_now(),
+            payment_lock_acquired_at=utc_now(),
+        )
+        order.tax_calculation_processor_id = "stripe_calculation"
+        await save_fixture(order)
+        tax_service_mock.record.side_effect = UnsupportedCountryError("CR")
+        tax_service_mock.record_amounts.side_effect = UnsupportedCountryError("CR")
+        tax_breakdown = [
+            {
+                "rate_type": "percentage",
+                "rate": 0,
+                "display_name": "",
+                "country": "CR",
+                "state": None,
+                "subdivision": None,
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_supported,
+            }
+        ]
+        tax_service_mock.calculate.return_value = (
+            {
+                "processor_id": None,
+                "amount": 0,
+                "currency": "usd",
+                "tax_behavior": TaxBehavior.exclusive,
+                "tax_breakdown": tax_breakdown,
+            },
+            TaxProcessor.numeral,
+        )
+
+        updated_order = await order_service.handle_payment(session, order, None)
+
+        assert updated_order.status == OrderStatus.paid
+        assert updated_order.tax_amount == charged_tax_amount
+        assert updated_order.tax_transaction_processor_id is None
+        assert updated_order.next_payment_attempt_at is None
+        assert updated_order.payment_lock_acquired_at is None
+
+        if charged_tax_amount:
+            assert updated_order.tax_calculation_processor_id == "stripe_calculation"
+            assert updated_order.tax_processor == TaxProcessor.stripe
+            assert updated_order.tax_breakdown is None
+            tax_service_mock.record_amounts.assert_awaited_once()
+            assert (
+                tax_service_mock.record_amounts.call_args.kwargs["tax_amount"]
+                == charged_tax_amount
+            )
+        else:
+            assert updated_order.tax_calculation_processor_id is None
+            assert updated_order.tax_processor == TaxProcessor.numeral
+            assert updated_order.tax_breakdown == tax_breakdown
+            tax_service_mock.record_amounts.assert_not_called()
+        tax_service_mock.record.assert_awaited_once()
+        tax_service_mock.calculate.assert_awaited_once()
+
     async def test_already_paid_is_idempotent(
         self,
         session: AsyncSession,

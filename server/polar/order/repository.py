@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     CursorResult,
+    NotNullable,
     Select,
     SQLColumnExpression,
     case,
@@ -215,7 +216,7 @@ class OrderRepository(
             func.sum(Order.net_amount - Order.refunded_amount), 0
         )
         statement = (
-            select(Order.product_id)
+            select(NotNullable(Order.product_id))
             .where(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
@@ -492,12 +493,12 @@ class OrderRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Order]]:
+    ) -> Select[Order]:
         return self.get_base_statement().where(Order.organization_id.in_(org_ids))
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
-    ) -> Select[tuple[Order]]:
+    ) -> Select[Order]:
         statement = self.get_base_statement()
 
         if is_user(auth_subject):

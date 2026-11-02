@@ -2363,7 +2363,7 @@ class OrderService:
         if tax_amount != order.tax_amount:
             log.warning(
                 "Tax recalculation differs from the charged tax, "
-                "recording the charged amount",
+                "attempting to record the charged amount",
                 order_id=order.id,
                 charged_tax_amount=order.tax_amount,
                 recalculated_tax_amount=tax_amount,
@@ -2383,6 +2383,11 @@ class OrderService:
                     transaction_date=order.created_at,
                 )
             except UnsupportedCountryError:
+                log.warning(
+                    "Skipping tax recording for unsupported country",
+                    order_id=order.id,
+                    country=order.billing_address.country,
+                )
                 return {}
             return {
                 "tax_processor": tax_processor,

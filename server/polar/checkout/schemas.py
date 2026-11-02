@@ -21,6 +21,7 @@ from polar.custom_field.data import (
 )
 from polar.custom_field.schemas import AttachedCustomField
 from polar.customer.schemas.customer import (
+    CustomerBillingNameInput,
     CustomerID,
     CustomerNameInput,
     ExternalCustomerID,
@@ -315,7 +316,7 @@ class CheckoutCreateBase(
     customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
-    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_billing_name: CustomerBillingNameInput | None = None
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_metadata: MetadataField = Field(
@@ -482,7 +483,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     is_business_customer: bool | None = None
     customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
-    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_billing_name: CustomerBillingNameInput | None = None
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None

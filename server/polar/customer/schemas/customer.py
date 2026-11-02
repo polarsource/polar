@@ -67,6 +67,12 @@ CustomerNameInput = Annotated[
     EmptyStrToNoneValidator,
 ]
 
+CustomerBillingNameInput = Annotated[
+    str,
+    MaxLen(256),
+    EmptyStrToNoneValidator,
+]
+
 
 # --- Create schemas ---
 

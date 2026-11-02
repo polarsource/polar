@@ -2,6 +2,7 @@ from typing import Annotated, Literal
 
 from pydantic import UUID4, AfterValidator, Discriminator, Field, TypeAdapter
 
+from polar.customer.schemas.customer import CustomerBillingNameInput
 from polar.kit.address import Address, AddressInput
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import (
@@ -48,7 +49,7 @@ class CustomerPortalEmbedPolicy(Schema):
 
 
 class CustomerPortalCustomerUpdate(Schema):
-    billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    billing_name: CustomerBillingNameInput | None = None
     billing_address: AddressInput | None = None
     tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     default_payment_method_id: UUID4 | None = None

@@ -6536,6 +6536,37 @@ class TestProcessRetryPayment:
                 session, order, "ctoken_test", PaymentProcessor.stripe
             )
 
+    async def test_process_retry_payment_with_successful_payment(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subscription=subscription,
+            next_payment_attempt_at=utc_now(),
+        )
+        await create_payment(
+            save_fixture, organization, order=order, status=PaymentStatus.succeeded
+        )
+
+        with pytest.raises(PaymentAlreadyInProgress):
+            await order_service.process_retry_payment(
+                session, order, "ctoken_test", PaymentProcessor.stripe
+            )
+
+        stripe_service_mock.create_payment_intent.assert_not_awaited()
+
     async def test_process_retry_payment_lock_held_on_success(
         self,
         stripe_service_mock: MagicMock,

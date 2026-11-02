@@ -2202,6 +2202,8 @@ class OrderService:
                         error=error_message,
                     )
 
+        except PaymentAlreadyInProgress:
+            raise
         except stripe_lib.StripeError as stripe_exc:
             log.warning(
                 "Stripe error during retry payment",

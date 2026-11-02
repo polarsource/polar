@@ -2277,16 +2277,6 @@ class OrderService:
             or order.tax_transaction_processor_id is not None
         ):
             return order
-        return await repository.update(
-            order, update_dict=await self._record_tax_transaction(order)
-        )
-
-    async def _record_tax_transaction(self, order: Order) -> dict[str, Any]:
-        """Book the order's tax with the recording processor.
-
-        Returns the order fields to update.
-        """
-        assert order.tax_calculation_processor_id is not None
         assert order.tax_processor is not None
         assert order.billing_address is not None
         reference = (
@@ -2313,12 +2303,13 @@ class OrderService:
         except CalculationExpiredError, UnsupportedCountryError:
             if order.product is None:
                 raise
-            return await self._recalculate_tax_transaction(order, reference)
-
-        return {
-            "tax_processor": tax_processor,
-            "tax_transaction_processor_id": transaction_id,
-        }
+            update_dict = await self._recalculate_tax_transaction(order, reference)
+        else:
+            update_dict = {
+                "tax_processor": tax_processor,
+                "tax_transaction_processor_id": transaction_id,
+            }
+        return await repository.update(order, update_dict=update_dict)
 
     async def _recalculate_tax_transaction(
         self, order: Order, reference: str

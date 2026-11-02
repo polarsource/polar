@@ -20,7 +20,6 @@ from polar.models import (
     Order,
     Organization,
     Payment,
-    PaymentMethod,
     Wallet,
     WalletTransaction,
 )
@@ -217,98 +216,71 @@ def _resolve_trigger(
     return None
 
 
-async def handle_charge_success(
-    session: AsyncSession, charge: stripe_lib.Charge
-) -> None:
-    organization = await resolve_organization(session, charge)
-    checkout = await resolve_checkout(session, charge)
-    wallet, wallet_transaction = await resolve_wallet(session, charge)
-    order = await resolve_order(session, charge, checkout)
-
-    repository = PaymentRepository.from_session(session)
-    payment = await repository.get_by_processor_id(PaymentProcessor.stripe, charge.id)
-    if payment is None or not payment.is_succeeded:
-        payment = await payment_service.upsert_from_stripe_charge(
-            session,
-            charge,
-            organization,
-            checkout,
-            wallet,
-            order,
-            trigger=_resolve_trigger(charge),
-        )
-
-    payment_method = None
-    if checkout is not None and checkout.should_save_payment_method:
-        payment_method = await payment_method_service.upsert_from_stripe_intent(
-            session, charge, checkout
-        )
-    await session.flush()
-    enqueue_job(
-        "order.process_payment",
-        payment.id,
-        payment_method_id=payment_method.id if payment_method else None,
-        wallet_transaction_id=wallet_transaction.id if wallet_transaction else None,
-    )
-    enqueue_job(
-        "order.process_tax",
-        payment_id=payment.id,
-        wallet_transaction_id=wallet_transaction.id if wallet_transaction else None,
-    )
-
-
 async def handle_success(
     session: AsyncSession, object: stripe_lib.Charge | stripe_lib.SetupIntent
 ) -> None:
-    if object.OBJECT_NAME == "charge":
-        await handle_charge_success(session, object)
-        return
-
     organization = await resolve_organization(session, object)
     checkout = await resolve_checkout(session, object)
     wallet, wallet_transaction = await resolve_wallet(session, object)
     order = await resolve_order(session, object, checkout)
-    payment: Payment | None = None
 
-    if checkout is not None:
-        if object.OBJECT_NAME == "setup_intent":
-            checkout_intent_client_secret = checkout.payment_processor_metadata.get(
-                "intent_client_secret"
+    payment: Payment | None = None
+    if object.OBJECT_NAME == "charge":
+        repository = PaymentRepository.from_session(session)
+        payment = await repository.get_by_processor_id(
+            PaymentProcessor.stripe, object.id
+        )
+        if payment is None or not payment.is_succeeded:
+            payment = await payment_service.upsert_from_stripe_charge(
+                session,
+                object,
+                organization,
+                checkout,
+                wallet,
+                order,
+                trigger=_resolve_trigger(object),
             )
-            if checkout.status == CheckoutStatus.expired or (
-                checkout_intent_client_secret is not None
-                and object.client_secret != checkout_intent_client_secret
+    elif checkout is not None:
+        checkout_intent_client_secret = checkout.payment_processor_metadata.get(
+            "intent_client_secret"
+        )
+        if checkout.status == CheckoutStatus.expired or (
+            checkout_intent_client_secret is not None
+            and object.client_secret != checkout_intent_client_secret
+        ):
+            raise OutdatedCheckoutIntent(checkout.id, object.id)
+        if checkout.status == CheckoutStatus.open:
+            updated_object = await stripe_service.get_setup_intent(object.id)
+            if (
+                updated_object.metadata
+                and updated_object.metadata.get("polar_trial_abuse_detected") == "true"
             ):
                 raise OutdatedCheckoutIntent(checkout.id, object.id)
 
-            # Metadata marker is set when confirmation was denied because of trial abuse detection
-            if checkout.status == CheckoutStatus.open:
-                updated_object = await stripe_service.get_setup_intent(object.id)
-                if (
-                    updated_object.metadata
-                    and updated_object.metadata.get("polar_trial_abuse_detected")
-                    == "true"
-                ):
-                    raise OutdatedCheckoutIntent(checkout.id, object.id)
-
-        payment_method: PaymentMethod | None = None
-        if checkout.should_save_payment_method:
-            payment_method = await payment_method_service.upsert_from_stripe_intent(
-                session, object, checkout
-            )
-
-        await checkout_service.handle_success(
-            session,
-            checkout,
-            payment=payment,
-            payment_method=payment_method,
+    payment_method = None
+    if (
+        checkout is not None
+        and checkout.status != CheckoutStatus.succeeded
+        and checkout.should_save_payment_method
+    ):
+        payment_method = await payment_method_service.upsert_from_stripe_intent(
+            session, object, checkout
         )
-
-    if wallet_transaction is not None:
-        await order_service.create_wallet_order(session, wallet_transaction, payment)
-
-    if order is not None:
-        await order_service.handle_payment(session, order, payment)
+    await session.flush()
+    if (
+        payment is not None
+        or checkout is not None
+        or order is not None
+        or wallet_transaction is not None
+    ):
+        enqueue_job(
+            "order.process_payment",
+            payment_id=payment.id if payment else None,
+            checkout_id=checkout.id if checkout else None,
+            order_id=order.id if order else None,
+            payment_method_id=payment_method.id if payment_method else None,
+            wallet_transaction_id=wallet_transaction.id if wallet_transaction else None,
+        )
 
 
 async def handle_failure(

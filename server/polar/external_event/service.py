@@ -59,13 +59,20 @@ class ExternalEventService:
 
     @contextlib.asynccontextmanager
     async def handle(
-        self, session: AsyncSession, source: ExternalEventSource, event_id: uuid.UUID
+        self,
+        session: AsyncSession,
+        source: ExternalEventSource,
+        event_id: uuid.UUID,
+        *,
+        allow_replay: bool = False,
     ) -> AsyncIterator[ExternalEvent]:
         repository = ExternalEventRepository.from_session(session)
-        event = await repository.get_by_source_and_id(source, event_id)
+        event = await repository.get_by_source_and_id(
+            source, event_id, for_update=allow_replay
+        )
         if event is None:
             raise ExternalEventDoesNotExist(event_id)
-        if event.is_handled:
+        if event.is_handled and not allow_replay:
             raise ExternalEventAlreadyHandled(event_id)
 
         try:
@@ -73,13 +80,16 @@ class ExternalEventService:
         except Exception:
             raise
         else:
-            await repository.update(event, update_dict={"handled_at": utc_now()})
+            if not event.is_handled:
+                await repository.update(event, update_dict={"handled_at": utc_now()})
 
     @contextlib.asynccontextmanager
     async def handle_stripe(
-        self, session: AsyncSession, event_id: uuid.UUID
+        self, session: AsyncSession, event_id: uuid.UUID, *, allow_replay: bool = False
     ) -> AsyncIterator[StripeEvent]:
-        async with self.handle(session, ExternalEventSource.stripe, event_id) as event:
+        async with self.handle(
+            session, ExternalEventSource.stripe, event_id, allow_replay=allow_replay
+        ) as event:
             yield cast(StripeEvent, event)
 
 

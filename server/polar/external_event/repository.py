@@ -25,11 +25,13 @@ class ExternalEventRepository(
     model = ExternalEvent
 
     async def get_by_source_and_id(
-        self, source: ExternalEventSource, id: UUID
+        self, source: ExternalEventSource, id: UUID, *, for_update: bool = False
     ) -> ExternalEvent | None:
         statement = self.get_base_statement().where(
             ExternalEvent.source == source, ExternalEvent.id == id
         )
+        if for_update:
+            statement = statement.with_for_update(of=ExternalEvent)
         return await self.get_one_or_none(statement)
 
     async def get_by_source_and_external_id(

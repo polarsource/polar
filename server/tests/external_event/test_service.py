@@ -3,9 +3,11 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.external_event.service import ExternalEventAlreadyHandled
 from polar.external_event.service import external_event as external_event_service
+from polar.kit.utils import utc_now
 from polar.models import ExternalEvent
-from polar.models.external_event import ExternalEventSource
+from polar.models.external_event import ExternalEventSource, StripeEvent
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
@@ -51,3 +53,28 @@ class TestEnqueue:
         assert event == existing_event
 
         enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.anyio
+class TestHandle:
+    @pytest.mark.parametrize("allow_replay", [False, True])
+    async def test_handled_event_replay_is_explicit(
+        self, session: AsyncSession, save_fixture: SaveFixture, allow_replay: bool
+    ) -> None:
+        handled_at = utc_now()
+        event = StripeEvent(
+            task_name="test", external_id="evt_handled", data={}, handled_at=handled_at
+        )
+        await save_fixture(event)
+
+        if allow_replay:
+            async with external_event_service.handle_stripe(
+                session, event.id, allow_replay=True
+            ) as handled_event:
+                assert handled_event.id == event.id
+        else:
+            with pytest.raises(ExternalEventAlreadyHandled):
+                async with external_event_service.handle_stripe(session, event.id):
+                    pytest.fail("Handled events must not replay by default")
+
+        assert event.handled_at == handled_at

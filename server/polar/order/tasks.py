@@ -80,33 +80,71 @@ class PaymentDoesNotExist(OrderTaskError):
         super().__init__(f"Payment {payment_id} does not exist")
 
 
+class PaymentNotSucceeded(OrderTaskError):
+    def __init__(self, payment_id: uuid.UUID) -> None:
+        self.payment_id = payment_id
+        super().__init__(f"Payment {payment_id} has not succeeded")
+
+
+class CheckoutDoesNotExist(OrderTaskError):
+    def __init__(self, checkout_id: uuid.UUID) -> None:
+        self.checkout_id = checkout_id
+        super().__init__(f"Checkout {checkout_id} does not exist")
+
+
+class WalletTransactionDoesNotExist(OrderTaskError):
+    def __init__(self, wallet_transaction_id: uuid.UUID) -> None:
+        self.wallet_transaction_id = wallet_transaction_id
+        super().__init__(f"Wallet transaction {wallet_transaction_id} does not exist")
+
+
 @actor(actor_name="order.process_payment", priority=TaskPriority.HIGH)
 async def process_payment(
-    payment_id: Annotated[uuid.UUID, LoggableField],
+    payment_id: Annotated[uuid.UUID | None, LoggableField] = None,
+    checkout_id: Annotated[uuid.UUID | None, LoggableField] = None,
+    order_id: Annotated[uuid.UUID | None, LoggableField] = None,
     payment_method_id: Annotated[uuid.UUID | None, LoggableField] = None,
     wallet_transaction_id: Annotated[uuid.UUID | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         payment_repository = PaymentRepository.from_session(session)
-        payment = await payment_repository.get_by_id(payment_id)
-        if payment is None:
-            raise PaymentDoesNotExist(payment_id)
-        if not payment.is_succeeded:
-            raise OrderTaskError(f"Payment {payment_id} has not succeeded")
+        payment = None
+        if payment_id is not None:
+            payment = await payment_repository.get_by_id(payment_id)
+            if payment is None:
+                raise PaymentDoesNotExist(payment_id)
+            checkout_id = payment.checkout_id
 
         checkout = None
-        if payment.checkout_id is not None:
+        if checkout_id is not None:
             checkout_repository = CheckoutRepository.from_session(session)
             checkout = await checkout_repository.get_by_id(
-                payment.checkout_id,
+                checkout_id,
                 options=checkout_repository.get_eager_options(),
                 for_update=True,
             )
             if checkout is None:
-                raise OrderTaskError(f"Checkout {payment.checkout_id} does not exist")
+                raise CheckoutDoesNotExist(checkout_id)
 
-        payment = await payment_repository.get_for_processing(payment_id)
-        assert payment is not None
+        if payment_id is not None:
+            payment = await payment_repository.get_for_processing(payment_id)
+            if payment is None:
+                raise PaymentDoesNotExist(payment_id)
+            if not payment.is_succeeded:
+                raise PaymentNotSucceeded(payment_id)
+            order_id = payment.order_id
+
+        if (
+            checkout is not None
+            and checkout.status == CheckoutStatus.succeeded
+            and order_id is None
+        ):
+            existing_order = await OrderRepository.from_session(
+                session
+            ).get_earliest_by_checkout_id(checkout.id)
+            if existing_order is not None:
+                order_id = existing_order.id
+
         if checkout is not None and checkout.status != CheckoutStatus.succeeded:
             method_repository = PaymentMethodRepository.from_session(session)
             payment_method = (
@@ -122,16 +160,16 @@ async def process_payment(
                 if can_retry():
                     raise Retry() from e
                 raise
-        elif payment.order_id is not None:
+        elif order_id is not None:
             order_repository = OrderRepository.from_session(session)
             order = await order_repository.get_by_id(
-                payment.order_id,
-                options=order_repository.get_eager_options(),
-                for_update=True,
+                order_id, options=order_repository.get_eager_options(), for_update=True
             )
             if order is None:
-                raise OrderDoesNotExist(payment.order_id)
+                raise OrderDoesNotExist(order_id)
             await order_service.handle_payment(session, order, payment)
+            if payment is None and order.tax_calculation_processor_id is not None:
+                enqueue_job("order.process_tax", order_id=order.id)
         elif wallet_transaction_id is not None:
             transaction_repository = WalletTransactionRepository.from_session(session)
             transaction = await transaction_repository.get_by_id(
@@ -140,42 +178,24 @@ async def process_payment(
                 for_update=True,
             )
             if transaction is None:
-                raise OrderTaskError(
-                    f"Wallet transaction {wallet_transaction_id} does not exist"
-                )
+                raise WalletTransactionDoesNotExist(wallet_transaction_id)
             if transaction.order_id is None:
                 await order_service.create_wallet_order(session, transaction, payment)
-            else:
+            elif payment is not None:
                 await payment_repository.update(
                     payment, update_dict={"order_id": transaction.order_id}
                 )
 
-        enqueue_job("transaction.create_payment", payment_id=payment_id)
+        if payment is not None:
+            await session.flush()
+            if payment.order_id is not None:
+                enqueue_job("order.process_tax", order_id=payment.order_id)
+            enqueue_job("transaction.create_payment", payment_id=payment.id)
 
 
 @actor(actor_name="order.process_tax", priority=TaskPriority.LOW)
-async def process_tax(
-    order_id: Annotated[uuid.UUID | None, LoggableField] = None,
-    payment_id: Annotated[uuid.UUID | None, LoggableField] = None,
-    wallet_transaction_id: Annotated[uuid.UUID | None, LoggableField] = None,
-) -> None:
+async def process_tax(order_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:
-        if payment_id is not None:
-            repository = PaymentRepository.from_session(session)
-            payment = await repository.get_by_id(payment_id)
-            if payment is None:
-                raise PaymentDoesNotExist(payment_id)
-            if not payment.is_succeeded:
-                raise OrderTaskError(f"Payment {payment_id} has not succeeded")
-            order_id = payment.order_id
-            if order_id is None:
-                if payment.checkout_id is not None or wallet_transaction_id is not None:
-                    if can_retry():
-                        raise Retry()
-                    raise OrderTaskError(f"Payment {payment_id} has no order yet")
-                return
-        if order_id is None:
-            raise OrderTaskError("Tax processing requires an order or payment ID")
         await order_service.process_tax(session, order_id)
 
 

@@ -532,9 +532,11 @@ class RefundService:
                 refunded_tax_amount=refund.tax_amount,
             )
 
-            # Revert the tax transaction in the tax processor ledger
+            # A refund can arrive before the asynchronous tax-recording task completes.
             if order.stripe_invoice_id is None and order.tax_amount > 0:
                 order = await order_service.process_tax(session, order.id)
+
+            # Revert the tax transaction in the tax processor ledger
             if (
                 order.stripe_invoice_id is None  # Tax managed via Stripe Billing
                 and order.tax_transaction_processor_id

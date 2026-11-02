@@ -152,7 +152,9 @@ async def _webhook_event_send(
     }
 
     delivery = WebhookDelivery(
-        webhook_event_id=webhook_event_id, webhook_endpoint_id=event.webhook_endpoint_id
+        webhook_event_id=webhook_event_id,
+        webhook_endpoint_id=event.webhook_endpoint_id,
+        organization_id=event.webhook_endpoint.organization_id,
     )
 
     client = HTTPXMiddleware.get()

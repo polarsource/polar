@@ -439,6 +439,7 @@ async def test_webhook_delivery_success(
     assert len(deliveries) == 1
     delivery = deliveries[0]
     assert delivery.succeeded is True
+    assert delivery.organization_id == organization.id
     assert delivery.response == expected
 
 

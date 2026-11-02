@@ -1,13 +1,15 @@
-"""Lifecycle and comparison execution are unimplemented; the planning helpers are pure."""
+"""Meter availability and comparison execution are unimplemented."""
 
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from datetime import datetime
 from itertools import pairwise
-from typing import Protocol
 from uuid import UUID
 
+import structlog
+
 from polar.exceptions import PolarError
+from polar.logging import Logger
 from polar.models import BillingInterval, Meter, Subscription
 from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
@@ -16,6 +18,7 @@ from polar.product.guard import is_metered_price
 from polar.reducer.types import UsageWindow
 
 from .comparison import BillingComparison
+from .repository import BillingIntervalRepository
 from .types import (
     IntervalChangePlan,
     MeteredSettlement,
@@ -23,6 +26,8 @@ from .types import (
     SubscriptionMeterBillingState,
     UsageDiagnostic,
 )
+
+log: Logger = structlog.get_logger()
 
 USAGE_POLICIES = {
     SubscriptionStatus.active: UsagePolicy.charge,
@@ -37,7 +42,7 @@ class BillingIntervalConflict(PolarError):
         super().__init__(message, 409)
 
 
-class BillingIntervalService(Protocol):
+class BillingIntervalService:
     async def record_subscription(
         self,
         session: AsyncSession,
@@ -45,8 +50,23 @@ class BillingIntervalService(Protocol):
         *,
         effective_at: datetime,
     ) -> None:
-        """Reconcile terms and split changed endpoints in the caller's transaction."""
-        ...
+        """Reconcile terms in the caller's transaction; failures are logged, not raised."""
+        try:
+            async with session.begin_nested():
+                repository = BillingIntervalRepository.from_session(session)
+                intervals = await repository.get_by_subscription(subscription.id)
+                changes = plan_interval_changes(
+                    intervals,
+                    derive_meter_billing_states(subscription),
+                    effective_at=effective_at,
+                )
+                await repository.apply_changes(subscription, changes)
+        except Exception:
+            log.exception(
+                "Failed to record billing intervals",
+                subscription_id=subscription.id,
+                effective_at=effective_at.isoformat(),
+            )
 
     async def record_meter(
         self,
@@ -56,7 +76,7 @@ class BillingIntervalService(Protocol):
         effective_at: datetime,
     ) -> None:
         """Reconcile availability for the prelocked affected subscription set."""
-        ...
+        raise NotImplementedError
 
     async def compare(
         self,
@@ -64,11 +84,11 @@ class BillingIntervalService(Protocol):
         settlement: MeteredSettlement | UsageDiagnostic,
     ) -> BillingComparison:
         """Capture a request; execution starts in a fresh task transaction."""
-        ...
+        raise NotImplementedError
 
 
 def derive_meter_billing_states(
-    subscription: Subscription, meters: Mapping[UUID, Meter]
+    subscription: Subscription,
 ) -> tuple[SubscriptionMeterBillingState, ...]:
     usage_policy = USAGE_POLICIES.get(subscription.status)
     if subscription.deleted_at is not None or usage_policy is None:
@@ -79,7 +99,7 @@ def derive_meter_billing_states(
         price = subscription_price.product_price
         if not is_metered_price(price):
             continue
-        meter = meters[price.meter_id]
+        meter = price.meter
         if meter.archived_at is not None or meter.deleted_at is not None:
             continue
         if meter.id in states:
@@ -211,3 +231,6 @@ def select_settlement_windows(
 ) -> SettlementWindowSelection:
     """Select claims and deferred history without consulting current subscription state."""
     raise NotImplementedError
+
+
+billing_interval = BillingIntervalService()

@@ -89,7 +89,7 @@ class TestDeriveMeterBillingStates:
     ) -> None:
         subscription.status = status
 
-        assert derive_meter_billing_states(subscription, {meter.id: meter}) == (
+        assert derive_meter_billing_states(subscription) == (
             (SubscriptionMeterBillingState(meter.id, price.id, policy),)
             if policy is not None
             else ()
@@ -100,7 +100,7 @@ class TestDeriveMeterBillingStates:
     ) -> None:
         subscription.deleted_at = CHANGE
 
-        assert derive_meter_billing_states(subscription, {meter.id: meter}) == ()
+        assert derive_meter_billing_states(subscription) == ()
 
     @pytest.mark.parametrize(
         "status", [SubscriptionStatus.active, SubscriptionStatus.paused]
@@ -116,7 +116,7 @@ class TestDeriveMeterBillingStates:
         subscription.status = status
         setattr(meter, unavailable_field, CHANGE)
 
-        assert derive_meter_billing_states(subscription, {meter.id: meter}) == ()
+        assert derive_meter_billing_states(subscription) == ()
 
     def test_uses_retained_metered_prices_in_stable_order(
         self,
@@ -135,9 +135,7 @@ class TestDeriveMeterBillingStates:
             SubscriptionProductPrice.from_price(price),
         ]
 
-        desired_states = derive_meter_billing_states(
-            subscription, {second_meter.id: second_meter, meter.id: meter}
-        )
+        desired_states = derive_meter_billing_states(subscription)
 
         assert desired_states == (
             SubscriptionMeterBillingState(meter.id, price.id, UsagePolicy.charge),
@@ -149,7 +147,7 @@ class TestDeriveMeterBillingStates:
     def test_renewal_discount_and_scheduled_changes_do_not_change_states(
         self, subscription: Subscription, meter: Meter
     ) -> None:
-        original = derive_meter_billing_states(subscription, {meter.id: meter})
+        original = derive_meter_billing_states(subscription)
         subscription.current_period_start = CHANGE
         subscription.current_period_end = END
         subscription.discount_id = uuid4()
@@ -157,13 +155,7 @@ class TestDeriveMeterBillingStates:
         subscription.pause_at_period_end = True
         subscription.cancel_at_period_end = True
 
-        assert derive_meter_billing_states(subscription, {meter.id: meter}) == original
-
-    def test_missing_loaded_meter_is_not_treated_as_ineligible(
-        self, subscription: Subscription
-    ) -> None:
-        with pytest.raises(KeyError):
-            derive_meter_billing_states(subscription, {})
+        assert derive_meter_billing_states(subscription) == original
 
     def test_multiple_prices_for_one_meter_are_ambiguous(
         self, subscription: Subscription, meter: Meter
@@ -177,7 +169,7 @@ class TestDeriveMeterBillingStates:
         with pytest.raises(
             BillingIntervalConflict, match="Multiple subscription prices"
         ):
-            derive_meter_billing_states(subscription, {meter.id: meter})
+            derive_meter_billing_states(subscription)
 
 
 class TestPlanMeterIntervalChange:

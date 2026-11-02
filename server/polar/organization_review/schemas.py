@@ -492,13 +492,9 @@ class PriorFeedbackData(Schema):
 class RiskSignalEntry(Schema):
     """A single risk signal recorded against the organization."""
 
-    source: OrganizationRiskSignal.Source = Field(
-        description="Where the signal came from"
-    )
-    type: OrganizationRiskSignal.Type = Field(description="Signal type")
-    risk_level: OrganizationRiskSignal.RiskLevel = Field(
-        description="Severity of the signal"
-    )
+    source: OrganizationRiskSignal.Source
+    type: OrganizationRiskSignal.Type
+    risk_level: OrganizationRiskSignal.RiskLevel
     description: str | None = None
     created_at: datetime
 

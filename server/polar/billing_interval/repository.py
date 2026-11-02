@@ -1,10 +1,11 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import update
 
 from polar.kit.repository import RepositoryBase
-from polar.models import BillingInterval, Subscription
+from polar.models import BillingInterval, Customer, Subscription
 
 from .types import IntervalChangePlan
 
@@ -17,6 +18,26 @@ class BillingIntervalRepository(RepositoryBase[BillingInterval]):
     ) -> Sequence[BillingInterval]:
         statement = self.get_base_statement().where(
             BillingInterval.subscription_id == subscription_id
+        )
+        return await self.get_all(statement)
+
+    async def get_by_customer_and_meter(
+        self,
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        until: datetime,
+    ) -> Sequence[BillingInterval]:
+        """Intervals of every subscription of the customer starting by `until`."""
+        statement = (
+            self.get_base_statement()
+            .join(Subscription, Subscription.id == BillingInterval.subscription_id)
+            .where(
+                Subscription.customer_id == customer.id,
+                BillingInterval.organization_id == customer.organization_id,
+                BillingInterval.meter_id == meter_id,
+                BillingInterval.period_start <= until,
+            )
         )
         return await self.get_all(statement)
 

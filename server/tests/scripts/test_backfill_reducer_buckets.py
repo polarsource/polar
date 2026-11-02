@@ -247,6 +247,7 @@ class TestBackfillBuckets:
             order_id=next_order.id,
             billable_from=SUBSCRIPTION_START,
             cutoff=END,
+            boundaries=(),
         )
         assert quantities == {meter.id: (Decimal(13), Decimal(0))}
         buckets = (

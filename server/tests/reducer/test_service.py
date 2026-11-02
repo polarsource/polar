@@ -804,6 +804,64 @@ class TestSealBuckets:
             BILLED_AT,
         ]
 
+    async def test_splits_at_boundaries_before_sealing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        max_reducer: Reducer,
+        external_customer: Customer,
+        organization: Organization,
+    ) -> None:
+        for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
+            await create_tokens_event(
+                save_fixture,
+                organization,
+                tokens,
+                timestamp=timestamp,
+                ingested_at=INGESTED_AT,
+            )
+        await reducer_service.sync_bucket(
+            session, max_reducer.id, BUCKET_START, None, "external"
+        )
+
+        await reducer_service._seal_buckets(
+            session,
+            [max_reducer],
+            external_customer,
+            until=NEXT_BUCKET_START,
+            boundaries=(CUTOFF,),
+        )
+
+        assert await get_intervals(session) == [
+            (BUCKET_START, CUTOFF, 1, 1, Decimal(5), True),
+            (CUTOFF, NEXT_BUCKET_START, 1, 1, Decimal(3), True),
+        ]
+
+    async def test_does_not_split_credit_reducers_at_boundaries(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        credit = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+
+        await reducer_service._seal_buckets(
+            session,
+            [credit],
+            customer,
+            until=NEXT_BUCKET_START,
+            boundaries=(CUTOFF,),
+        )
+
+        assert await get_buckets(session) == []
+
     async def test_seals_whole_buckets_up_to_a_boundary(
         self,
         save_fixture: SaveFixture,
@@ -1393,9 +1451,13 @@ class TestSeal:
         )
         seal = mocker.patch.object(reducer_service, "_seal_buckets")
 
-        await reducer_service.seal(session, customer, meter.id, at=CUTOFF)
+        await reducer_service.seal(
+            session, customer, meter.id, at=CUTOFF, boundaries=(START,)
+        )
 
-        seal.assert_called_once_with(session, [usage, credit], customer, until=CUTOFF)
+        seal.assert_called_once_with(
+            session, [usage, credit], customer, until=CUTOFF, boundaries=(START,)
+        )
 
     async def test_logs_failures_without_raising(
         self,
@@ -1409,7 +1471,9 @@ class TestSeal:
         await create_reducer(save_fixture, organization=organization, meters=[meter])
         mocker.patch.object(reducer_service, "_seal_buckets", side_effect=RuntimeError)
 
-        await reducer_service.seal(session, customer, meter.id, at=CUTOFF)
+        await reducer_service.seal(
+            session, customer, meter.id, at=CUTOFF, boundaries=()
+        )
 
         assert await session.get(Meter, meter.id) is not None
 
@@ -1488,11 +1552,19 @@ class TestBill:
             order_id=order_id,
             billable_from=START,
             cutoff=CUTOFF,
+            boundaries=(),
         )
 
         assert quantities == {meter.id: (Decimal(3), Decimal(2))}
         assert seal.call_args_list == [
-            call(session, [usage], customer, since=START, until=CUTOFF),
+            call(
+                session,
+                [usage],
+                customer,
+                since=START,
+                until=CUTOFF,
+                boundaries=(),
+            ),
             call(session, [credit], customer, since=RESET, until=CUTOFF),
         ]
         assert bill.call_args_list == [
@@ -1534,6 +1606,7 @@ class TestBill:
             order_id=order.id,
             billable_from=START,
             cutoff=CUTOFF,
+            boundaries=(),
         )
 
         assert quantities == {meter.id: (Decimal(0), Decimal(4))}
@@ -1561,6 +1634,7 @@ class TestBill:
             order_id=order.id,
             billable_from=START,
             cutoff=CUTOFF,
+            boundaries=(),
         )
 
         assert quantities == {meter.id: (Decimal(0), Decimal(0))}
@@ -1602,6 +1676,7 @@ class TestBill:
             order_id=order.id,
             billable_from=CUTOFF,
             cutoff=NEXT_BUCKET_START,
+            boundaries=(),
         )
 
         assert quantities == {meter.id: (Decimal(3), Decimal(0))}
@@ -1633,6 +1708,7 @@ class TestBill:
             order_id=uuid.uuid4(),
             billable_from=START,
             cutoff=CUTOFF,
+            boundaries=(),
         )
 
         assert quantities == {}

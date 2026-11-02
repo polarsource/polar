@@ -1538,6 +1538,11 @@ class TestCreateOrderItemsFromPending:
             "polar.billing_entry.service.reducer_service.bill",
             return_value={meter.id: (Decimal(10), Decimal(0))},
         )
+        boundary = utc_now() - timedelta(days=1)
+        mocker.patch(
+            "polar.billing_entry.service.billing_interval_service.get_boundaries",
+            return_value=(boundary,),
+        )
         await create_metered_event_billing_entry(
             save_fixture,
             customer=customer,
@@ -1565,6 +1570,7 @@ class TestCreateOrderItemsFromPending:
                 order_id=order.id,
                 billable_from=metered_subscription.started_at,
                 cutoff=cutoff,
+                boundaries=[boundary],
             )
         else:
             bill.assert_not_called()

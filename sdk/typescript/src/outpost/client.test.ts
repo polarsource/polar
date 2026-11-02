@@ -1466,18 +1466,20 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
   const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
   const reader = await start();
   {
-    await using metering = await polar
-      .metering({ outpost: { redisUrl: redisServer.socket } })
-      .start();
-    await metering.track({
-      ...customer,
-      name: "api",
-      external_id: eventId(),
-      timestamp,
-      metadata: { tokens: 2 },
-    });
-    expect((await reader.meter(meter))?.consumed_units).toBe(12);
-    expect(fetch).not.toHaveBeenCalled();
+    const metering = polar.metering({ outpost: { redisUrl: redisServer.socket } });
+    try {
+      await metering.track({
+        ...customer,
+        name: "api",
+        external_id: eventId(),
+        timestamp,
+        metadata: { tokens: 2 },
+      });
+      expect((await reader.meter(meter))?.consumed_units).toBe(12);
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      await metering.close();
+    }
   }
   expect(fetch).toHaveBeenCalledOnce();
 });

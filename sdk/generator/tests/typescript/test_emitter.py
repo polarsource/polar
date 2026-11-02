@@ -34,6 +34,7 @@ def test_emits_metering_and_outpost_submodules(
     for module in (
         "client",
         "buffered",
+        "errors",
         "event",
         "meter",
         "index",

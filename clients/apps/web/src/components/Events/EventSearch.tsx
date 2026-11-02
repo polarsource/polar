@@ -280,11 +280,19 @@ export const EventSearch = ({
           : (index + step + suggestions.length) %
             Math.max(suggestions.length, 1),
       )
-    } else if (e.key === 'Enter' && open && suggestions[highlighted]) {
+    } else if (e.key === 'Enter') {
       e.preventDefault()
-      suggestions[highlighted].apply()
+      const trimmed = input.trim()
+      const isFilter = TOKEN_PATTERN.test(trimmed) || UUID_PATTERN.test(trimmed)
+      const suggestion =
+        suggestions[highlighted] ?? (isFilter ? suggestions[0] : undefined)
+      if (open && suggestion) {
+        suggestion.apply()
+      } else {
+        inputRef.current?.blur()
+      }
     } else if (e.key === 'Escape') {
-      setOpen(false)
+      inputRef.current?.blur()
     } else if (e.key === 'Backspace' && input === '' && chips.length > 0) {
       chips[chips.length - 1].remove()
     }

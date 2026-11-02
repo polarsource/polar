@@ -66,19 +66,21 @@ export function downloadCsvExport<T extends string>(
 
 // fetch instead of window.open: versioned query params need the Polar-Version header
 export async function downloadExport(url: URL, filename: string) {
-  const blob = await fetch(url, {
+  const response = await fetch(url, {
     credentials: 'include',
     headers: { 'Polar-Version': API_VERSION },
-  })
-    .then((response) => (response.ok ? response.blob() : null))
-    .catch(() => null)
-  if (!blob) {
+  }).catch(() => null)
+  const blob = response?.ok ? await response.blob().catch(() => null) : null
+  if (!response || !blob) {
     toast({ title: 'Export failed', description: 'Please try again later' })
     return
   }
   const link = document.createElement('a')
   link.href = URL.createObjectURL(blob)
-  link.download = filename
+  link.download =
+    response.headers
+      .get('Content-Disposition')
+      ?.match(/filename="([^"]+)"/)?.[1] ?? filename
   link.click()
   setTimeout(() => URL.revokeObjectURL(link.href))
 }

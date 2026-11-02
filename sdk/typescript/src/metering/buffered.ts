@@ -165,7 +165,7 @@ export class BufferedMeteringStrategy {
     const timeout = deliveryTimeout(options);
     if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
     const request = this.barrier();
-    if (this.finished) this.finish(request);
+    if (this.finished || this.failure) this.finish(request);
     else {
       this.queue.push(request);
       this.wake?.();

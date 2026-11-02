@@ -580,13 +580,15 @@ it.each([false, true])(
     try {
       await strategy.track(events[0]);
       await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
-      const flushing = strategy.flush();
+      const flushing = strategy.flush({ timeoutMs: 10 });
       const result = expect(flushing).rejects.toMatchObject({
         events: [events[0]],
         failures: [{ events: [events[0]], reason: "worker_error", cause }],
       });
-      release();
       await result;
+      for (let index = 0; index < 3; index++)
+        await expect(strategy.flush({ timeoutMs: 10 })).rejects.toThrow(cause.message);
+      expect(strategy).toHaveProperty("queue", []);
     } finally {
       release();
       await strategy.close({ timeoutMs: 20 }).catch(() => {});

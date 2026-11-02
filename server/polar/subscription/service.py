@@ -2188,7 +2188,7 @@ class SubscriptionService:
                         # End the trial immediately - cycle() below will transition
                         # to active and bill the customer for the new period.
                         subscription.trial_end = subscription.current_period_end = (
-                            utc_now()
+                            subscription_update.applies_at
                         )
                     else:
                         assert new_trial_end is not None
@@ -2202,16 +2202,19 @@ class SubscriptionService:
                 )
                 session.add(subscription)
                 await session.flush()
-                ctx.record_billing_state(effective_at=subscription_update.applies_at)
 
                 if was_trialing and ends_trial:
                     ctx.set_billing_effect("cycle")
-                elif (
-                    (proration_behavior.is_immediate() or interval_changed)
-                    and not was_trialing
-                    and billing_entries
-                ):
-                    ctx.set_billing_effect("invoice")
+                else:
+                    ctx.record_billing_state(
+                        effective_at=subscription_update.applies_at
+                    )
+                    if (
+                        (proration_behavior.is_immediate() or interval_changed)
+                        and not was_trialing
+                        and billing_entries
+                    ):
+                        ctx.set_billing_effect("invoice")
 
                 # When transitioning from non-seat to seat-based pricing, promote
                 # the billing customer to a 'team' customer and claim a seat for

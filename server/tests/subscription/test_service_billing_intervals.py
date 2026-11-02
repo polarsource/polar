@@ -195,6 +195,50 @@ class TestCycle:
 
 
 @pytest.mark.anyio
+class TestUpdateProduct:
+    async def test_ending_trial_replaces_trial_interval_at_change(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        product_recurring_fixed_and_metered: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch.object(subscription_service, "_create_subscription_update_order")
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+        assert subscription.trial_start is not None
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=subscription.trial_start
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product_recurring_fixed_and_metered.id,
+                trial_end="now",
+            )
+
+        trial, charged = await get_intervals(session, subscription)
+        assert trial.usage_policy == UsagePolicy.trial
+        assert trial.period_end == subscription.current_period_start
+        assert charged.usage_policy == UsagePolicy.charge
+        assert charged.period_start == subscription.current_period_start
+        assert charged.product_price_id == next(
+            price.id
+            for price in product_recurring_fixed_and_metered.prices
+            if price.is_metered
+        )
+        assert charged.period_end is None
+
+
+@pytest.mark.anyio
 class TestRevoke:
     async def test_closes_interval(
         self,

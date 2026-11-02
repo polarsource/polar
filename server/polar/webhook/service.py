@@ -1012,7 +1012,7 @@ class WebhookService:
             if updated_count < batch_size:
                 break
 
-    async def archive_delivery_payloads(
+    async def delete_expired_deliveries(
         self,
         session: AsyncSession,
         older_than: datetime.datetime,
@@ -1020,27 +1020,22 @@ class WebhookService:
         sleep_seconds: float = 0.1,
     ) -> int:
         repository = WebhookDeliveryRepository.from_session(session)
-        cursor: tuple[datetime.datetime, UUID] | None = None
-        total_scrubbed = 0
+        total_deleted = 0
 
         while True:
-            page = await repository.get_scrubbable_response_page(
-                older_than=older_than, limit=batch_size, after=cursor
+            ids = await repository.get_expired_ids(
+                older_than=older_than, limit=batch_size
             )
-            if not page:
+            if not ids:
                 break
 
-            await repository.scrub_responses([id for id, _ in page])
+            total_deleted += await repository.delete_by_ids(ids)
             await session.commit()
-
-            total_scrubbed += len(page)
-            last_id, last_created_at = page[-1]
-            cursor = (last_created_at, last_id)
 
             if sleep_seconds > 0:
                 await asyncio.sleep(sleep_seconds)
 
-        return total_scrubbed
+        return total_deleted
 
     async def _get_event_target_endpoints(
         self,

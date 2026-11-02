@@ -2,7 +2,7 @@
 Delete webhook deliveries past the retention period.
 
 Intended to be run manually to clear the backlog of deliveries older than
-`WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD` in chunks, before the recurring
+`WEBHOOK_DELIVERY_RETENTION_PERIOD` in chunks, before the recurring
 cleanup job switches to deleting rows. Safe to interrupt and run again.
 """
 
@@ -28,8 +28,8 @@ configure_script_logging()
 @typer_async
 async def prune_webhook_deliveries(
     older_than_days: int = typer.Option(
-        settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD.days,
-        min=settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD.days,
+        settings.WEBHOOK_DELIVERY_RETENTION_PERIOD.days,
+        min=settings.WEBHOOK_DELIVERY_RETENTION_PERIOD.days,
         help="Delete deliveries created more than this many days ago",
     ),
     batch_size: int = typer.Option(

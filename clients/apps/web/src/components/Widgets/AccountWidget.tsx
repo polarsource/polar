@@ -1,12 +1,14 @@
 import { useOrganizationAccount, useTransactionsSummary } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { PayoutStatus } from '@/components/Payouts/PayoutStatus'
+import { PayoutStatusIcon } from '@/components/Payouts/PayoutStatus'
 import { ClientResponseError } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Card } from '@polar-sh/ui/components/atoms/Card'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useContext } from 'react'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetLink } from './WidgetLink'
 import { WidgetGuard, WidgetRestricted } from './WidgetGuard'
 
 export interface AccountWidgetProps {
@@ -59,42 +61,54 @@ const AccountWidgetContent = ({ className }: AccountWidgetProps) => {
   return (
     <WidgetContainer
       title={WIDGET_TITLE}
-      action={<h2 className="text-lg">{availableBalance}</h2>}
+      headline={
+        <Text variant="heading-m" weight="book">
+          {availableBalance}
+        </Text>
+      }
+      action={<WidgetLink href={`/dashboard/${org.slug}/finance`} />}
       className={className}
     >
       {allPayouts.length > 0 ? (
-        <div className="flex flex-col gap-y-2 pb-6">
+        <Box flexDirection="column" paddingBottom="xl">
           {allPayouts.map((payout) => (
-            <Card
+            <Box
               key={payout.id}
-              className="dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4"
+              alignItems="center"
+              justifyContent="between"
+              columnGap="m"
+              paddingVertical="s"
+              borderTopWidth={1}
+              borderStyle="solid"
+              borderColor="border-secondary"
             >
-              <div className="dark:text-polar-400 flex flex-row items-baseline justify-between text-sm text-gray-700">
-                <span>
-                  {new Date(payout.created_at).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-                <PayoutStatus payout={payout} size="small" />
-              </div>
-              <div className="flex flex-row justify-between gap-x-4">
-                <h3>Payout</h3>
-                <span>
+              <Text color="muted">
+                {new Date(payout.created_at).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </Text>
+              <Box alignItems="center" columnGap="m" flexShrink={0}>
+                <PayoutStatusIcon payout={payout} />
+                <Text tabularNums>
                   {formatCurrency('compact')(payout.amount, payout.currency)}
-                </span>
-              </div>
-            </Card>
+                </Text>
+              </Box>
+            </Box>
           ))}
-        </div>
+        </Box>
       ) : (
-        <div className="dark:bg-polar-800 mb-6 flex flex-1 flex-col items-center justify-center gap-y-2 rounded-lg bg-gray-50 p-8 text-center">
-          <h3>No payouts yet</h3>
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            You may only withdraw funds above $10.
-          </p>
-        </div>
+        <Box
+          flex={1}
+          flexDirection="column"
+          justifyContent="end"
+          rowGap="xs"
+          paddingBottom="xl"
+        >
+          <Text>No payouts yet</Text>
+          <Text color="muted">You may only withdraw funds above $10.</Text>
+        </Box>
       )}
     </WidgetContainer>
   )

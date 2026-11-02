@@ -1,123 +1,118 @@
+import { useHasPermission } from '@/hooks/permissions'
+import { useMetrics } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Button } from '@polar-sh/orbit'
-import { Card } from '@polar-sh/ui/components/atoms/Card'
-import { Status, type StatusColor } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { endOfMonth, format, startOfMonth } from 'date-fns'
 import Link from 'next/link'
 import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetGuard } from './WidgetGuard'
+import { WidgetLink } from './WidgetLink'
 
-const orderStatusBadgeColor = (
-  order: schemas['Order'],
-): StatusColor | undefined => {
-  switch (order.status) {
-    case 'paid':
-      return 'green'
-    case 'pending':
-      return 'yellow'
-    case 'refunded':
-    case 'partially_refunded':
-      return 'purple'
-  }
-}
+const WIDGET_TITLE = 'Orders'
+const VISIBLE_ROWS = 5
 
-interface OrderCardProps {
-  order: schemas['Order']
-}
-
-const OrderCard = ({ order }: OrderCardProps) => {
-  const createdAtDate = new Date(order.created_at)
-
-  const displayDate = createdAtDate.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    hour12: false,
-    hour: 'numeric',
-    minute: 'numeric',
-  })
-
-  return (
-    <Card className="dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60">
-      <div className="dark:text-polar-500 flex flex-row items-baseline justify-between text-sm text-gray-500">
-        <span>{displayDate}</span>
-        <Status
-          color={orderStatusBadgeColor(order)}
-          size="small"
-          status={order.status
-            .split('_')
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-            .join(' ')}
-        />
-      </div>
-      <div className="flex flex-row justify-between gap-x-4">
-        <h3 className="min-w-0 truncate">{order.description}</h3>
-        <span>
-          {formatCurrency('standard')(order.net_amount, order.currency)}
-        </span>
-      </div>
-    </Card>
-  )
-}
-
-export interface OrdersWidgetProps {
+interface OrdersWidgetProps {
   className?: string
 }
-
-const WIDGET_TITLE = 'Latest Orders'
 
 export const OrdersWidget = ({ className }: OrdersWidgetProps) => (
   <WidgetGuard
     permission="sales:read"
     title={WIDGET_TITLE}
-    className={twMerge('min-h-80', className)}
+    className={className}
   >
     <OrdersWidgetContent className={className} />
   </WidgetGuard>
 )
 
 const OrdersWidgetContent = ({ className }: OrdersWidgetProps) => {
-  const { organization: org } = useContext(OrganizationContext)
+  const { organization } = useContext(OrganizationContext)
+  const canReadAnalytics = useHasPermission(organization.id, 'analytics:read')
+  const basePath = `/dashboard/${organization.slug}/sales`
 
-  const orders = useOrders(org.id, { limit: 10, sorting: ['-created_at'] })
+  const { data: orders, isLoading } = useOrders(organization.id, {
+    limit: VISIBLE_ROWS,
+    sorting: ['-created_at'],
+  })
+  const { data: metrics } = useMetrics(
+    {
+      startDate: startOfMonth(new Date()),
+      endDate: endOfMonth(new Date()),
+      organization_id: organization.id,
+      interval: 'month',
+      metrics: ['orders'],
+    },
+    canReadAnalytics,
+  )
+  const thisMonth = metrics?.periods.at(-1)
+  const items = orders?.items ?? []
 
   return (
     <WidgetContainer
       title={WIDGET_TITLE}
-      action={
-        <Link href={`/dashboard/${org.slug}/sales`}>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="rounded-full border-none"
-          >
-            View All
-          </Button>
-        </Link>
+      headline={
+        <Box alignItems="baseline" columnGap="m">
+          <Text variant="heading-m" weight="book">
+            {thisMonth ? (thisMonth.orders ?? 0) : '–'}
+          </Text>
+          {thisMonth && (
+            <Text color="muted">{format(thisMonth.timestamp, 'MMMM')}</Text>
+          )}
+        </Box>
       }
-      className={twMerge('min-h-80', className)}
+      action={<WidgetLink href={basePath} />}
+      className={className}
     >
-      {(orders.data?.items.length ?? 0) > 0 ? (
-        <div className="flex flex-col gap-y-2 pb-6">
-          {orders.data?.items?.map((order) => (
+      {!isLoading && items.length === 0 ? (
+        <Box
+          flex={1}
+          flexDirection="column"
+          justifyContent="end"
+          rowGap="xs"
+          paddingBottom="xl"
+        >
+          <Text>No orders yet</Text>
+          <Text color="muted">
+            Orders will show up here once customers buy.
+          </Text>
+        </Box>
+      ) : (
+        <Box flexDirection="column" paddingBottom="xl">
+          {items.map((order) => (
             <Link
               key={order.id}
-              href={`/dashboard/${org.slug}/sales/${order.id}`}
+              href={`${basePath}/${order.id}`}
+              className="hover:opacity-60"
             >
-              <OrderCard order={order} />
+              <Box
+                alignItems="baseline"
+                justifyContent="between"
+                columnGap="m"
+                paddingVertical="s"
+                borderTopWidth={1}
+                borderStyle="solid"
+                borderColor="border-secondary"
+              >
+                <Box alignItems="baseline" columnGap="s" minWidth={0}>
+                  <Text truncate>{order.description}</Text>
+                  <Text color="muted">
+                    {format(new Date(order.created_at), 'MMM d')}
+                  </Text>
+                </Box>
+                <Text tabularNums>
+                  {formatCurrency('statistics')(
+                    order.net_amount,
+                    order.currency,
+                  )}
+                </Text>
+              </Box>
             </Link>
           ))}
-        </div>
-      ) : (
-        <div className="dark:bg-polar-800 mb-6 flex flex-1 flex-col items-center justify-center gap-y-2 rounded-lg bg-gray-50 p-8 text-center">
-          <h3>No orders found</h3>
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            Your most recent orders will appear here.
-          </p>
-        </div>
+        </Box>
       )}
     </WidgetContainer>
   )

@@ -3253,58 +3253,45 @@ class TestProductProperties:
 
 
 @pytest.mark.anyio
-class TestCheckName:
+class TestRecordNameCheck:
     @pytest.fixture
     def redis(self) -> Redis:
         return FakeAsyncRedis(decode_responses=True)
-
-    async def _signals(
-        self, session: AsyncSession, organization: Organization
-    ) -> list[OrganizationRiskSignal]:
-        repository = OrganizationRiskSignalRepository.from_session(session)
-        return await repository.list_by_organization(organization.id)
 
     async def test_flagged_name(
         self,
         session: AsyncSession,
         redis: Redis,
-        save_fixture: SaveFixture,
         organization: Organization,
+        product: Product,
         user: User,
     ) -> None:
-        product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=None,
-            name="Casino Night",
+        check = ProductNameCheck(category="gambling", phrase="Casino")
+
+        await product_service.record_name_check(
+            session, redis, product, check, user_id=user.id
         )
 
-        await product_service.check_name(session, redis, product, user_id=user.id)
-
-        [signal] = await self._signals(session, organization)
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.list_by_organization(organization.id)
         assert signal.source == OrganizationRiskSignal.Source.POLAR
         assert signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME
         assert signal.risk_level == OrganizationRiskSignal.RiskLevel.ELEVATED
         assert signal.payload == {
             "product_id": str(product.id),
-            "name": "Casino Night",
+            "name": product.name,
             "category": "gambling",
             "phrase": "Casino",
         }
 
     async def test_clean_name_after_warnings(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
     ) -> None:
-        mocker.patch(
-            "polar.product.service.judge_product_name",
-            return_value=ProductNameCheck(category=None, phrase=None),
-        )
         await remember_flagged_name(
             redis, organization.id, user.id, "Stickers", "physical goods"
         )
@@ -3318,9 +3305,16 @@ class TestCheckName:
             name="Stickers Digital",
         )
 
-        await product_service.check_name(session, redis, product, user_id=user.id)
+        await product_service.record_name_check(
+            session,
+            redis,
+            product,
+            ProductNameCheck(category=None, phrase=None),
+            user_id=user.id,
+        )
 
-        [signal] = await self._signals(session, organization)
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.list_by_organization(organization.id)
         assert signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_REVISED
         assert signal.risk_level == OrganizationRiskSignal.RiskLevel.NORMAL
         assert signal.payload["revised_from"] == [
@@ -3330,60 +3324,42 @@ class TestCheckName:
 
     async def test_clean_name_without_warnings(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         redis: Redis,
         organization: Organization,
         product: Product,
         user: User,
     ) -> None:
-        mocker.patch(
-            "polar.product.service.judge_product_name",
-            return_value=ProductNameCheck(category=None, phrase=None),
+        await product_service.record_name_check(
+            session,
+            redis,
+            product,
+            ProductNameCheck(category=None, phrase=None),
+            user_id=user.id,
         )
 
-        await product_service.check_name(session, redis, product, user_id=user.id)
-
-        assert await self._signals(session, organization) == []
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        assert await repository.list_by_organization(organization.id) == []
 
     async def test_without_user_ignores_warnings(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         redis: Redis,
         organization: Organization,
         product: Product,
         user: User,
     ) -> None:
-        mocker.patch(
-            "polar.product.service.judge_product_name",
-            return_value=ProductNameCheck(category=None, phrase=None),
-        )
         await remember_flagged_name(
             redis, organization.id, user.id, "Casino", "gambling"
         )
 
-        await product_service.check_name(session, redis, product, user_id=None)
-
-        assert await self._signals(session, organization) == []
-
-    async def test_model_failure_records_nothing(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        redis: Redis,
-        organization: Organization,
-        product: Product,
-        user: User,
-    ) -> None:
-        mocker.patch("polar.product.service.judge_product_name", return_value=None)
-        await remember_flagged_name(
-            redis, organization.id, user.id, "Casino", "gambling"
+        await product_service.record_name_check(
+            session,
+            redis,
+            product,
+            ProductNameCheck(category=None, phrase=None),
+            user_id=None,
         )
 
-        await product_service.check_name(session, redis, product, user_id=user.id)
-
-        assert await self._signals(session, organization) == []
-        assert await pop_flagged_names(redis, organization.id, user.id) == {
-            "Casino": "gambling"
-        }
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        assert await repository.list_by_organization(organization.id) == []

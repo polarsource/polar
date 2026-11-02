@@ -7,6 +7,7 @@ from pydantic import Field, computed_field
 
 from polar.enums import PayoutAccountType
 from polar.kit.schemas import Schema
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 
 if TYPE_CHECKING:
     from pydantic_ai.usage import RunUsage as Usage
@@ -491,12 +492,12 @@ class PriorFeedbackData(Schema):
 class RiskSignalEntry(Schema):
     """A single risk signal recorded against the organization."""
 
-    source: str = Field(description="Where the signal came from: 'stripe' or 'polar'")
-    type: str = Field(
-        description="Signal type, e.g. fraudulent_website or flagged_product_name"
+    source: OrganizationRiskSignal.Source = Field(
+        description="Where the signal came from"
     )
-    risk_level: str = Field(
-        description="Severity: 'low', 'normal', 'elevated' or 'highest'"
+    type: OrganizationRiskSignal.Type = Field(description="Signal type")
+    risk_level: OrganizationRiskSignal.RiskLevel = Field(
+        description="Severity of the signal"
     )
     description: str | None = None
     created_at: datetime

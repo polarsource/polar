@@ -1995,7 +1995,7 @@ class OrganizationService:
         await risk_signal_repository.update(
             pending,
             update_dict={
-                "risk_level": OrganizationRiskSignal.RiskLevel(signal.risk_level),
+                "risk_level": signal.risk_level,
                 "description": signal.description,
                 "payload": signal.payload,
             },
@@ -2035,7 +2035,7 @@ class OrganizationService:
                 organization,
                 source=OrganizationRiskSignal.Source.STRIPE,
                 type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
-                risk_level=OrganizationRiskSignal.RiskLevel(signal.risk_level),
+                risk_level=signal.risk_level,
                 description=signal.description,
                 payload=signal.payload,
             )

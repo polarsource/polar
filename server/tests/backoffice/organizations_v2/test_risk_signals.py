@@ -108,3 +108,19 @@ class TestRenderRiskSignalsCard:
         )
 
         assert "Stored description." in html
+
+    def test_polar_signal_shows_its_description_and_level(self) -> None:
+        signal = OrganizationRiskSignal(
+            source=OrganizationRiskSignal.Source.POLAR,
+            type=OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_REVISED,
+            risk_level=OrganizationRiskSignal.RiskLevel.NORMAL,
+            description='Product "Stickers Digital" was saved after a warning.',
+            payload={},
+        )
+        signal.created_at = datetime(2026, 8, 13, 15, 48, tzinfo=UTC)
+
+        html = render(signal)
+
+        assert "Flagged Product Name Revised" in html
+        assert "badge-info" in html
+        assert 'Product "Stickers Digital" was saved' in html

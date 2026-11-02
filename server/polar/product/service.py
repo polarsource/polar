@@ -13,6 +13,7 @@ from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
     get_accessible_org_ids,
+    get_accessible_organization,
 )
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
@@ -26,6 +27,7 @@ from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
     PolarError,
     PolarRequestValidationError,
+    ResourceNotFound,
     ValidationError,
 )
 from polar.file.service import file as file_service
@@ -66,10 +68,15 @@ from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from .name_check import judge_product_name, pop_flagged_names
+from .name_check import (
+    check_product_name,
+    pop_flagged_names,
+    remember_flagged_name,
+)
 from .schemas import (
     ExistingProductPrice,
     ProductCreate,
+    ProductNameCheck,
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
     ProductPriceMeteredTiersCreate,
@@ -990,21 +997,42 @@ class ProductService:
             user_id=auth_subject.subject.id if is_user(auth_subject) else None,
         )
 
-    async def check_name(
+    async def check_draft_name(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        name: str,
+        *,
+        organization_id: uuid.UUID | None,
+    ) -> ProductNameCheck:
+        """Check a name typed in the dashboard. Flagged names are remembered so
+        that saving a clean name afterwards can be recorded as a revision."""
+        if organization_id is not None and (
+            await get_accessible_organization(session, auth_subject, organization_id)
+            is None
+        ):
+            raise ResourceNotFound()
+
+        check = await check_product_name(name)
+        if organization_id is not None and check.category is not None:
+            await remember_flagged_name(
+                redis, organization_id, auth_subject.subject.id, name, check.category
+            )
+        return check
+
+    async def record_name_check(
         self,
         session: AsyncSession,
         redis: Redis,
         product: Product,
+        check: ProductNameCheck,
         *,
         user_id: uuid.UUID | None,
     ) -> None:
         """Record a risk signal when a product is saved under a name our Acceptable
         Use Policy check flags, or under a clean name after the user was warned
         about the names they tried first."""
-        check = await judge_product_name(product.name)
-        if check is None:
-            return
-
         flagged_names = (
             await pop_flagged_names(redis, product.organization_id, user_id)
             if user_id is not None

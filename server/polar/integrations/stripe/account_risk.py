@@ -10,7 +10,6 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import StrEnum
 from typing import Any
 
 from polar.exceptions import PolarError
@@ -21,13 +20,7 @@ _NOTES_MARKER = "NOTES:"
 _LINKABLE_SCHEMES = ("http://", "https://")
 
 
-class StripeAccountRiskLevel(StrEnum):
-    LOW = "low"
-    NORMAL = "normal"
-    ELEVATED = "elevated"
-    HIGHEST = "highest"
-    # Evaluation could not complete (e.g. unreachable URL).
-    UNKNOWN = "unknown"
+StripeAccountRiskLevel = OrganizationRiskSignal.RiskLevel
 
 
 # Severe enough to store and flag for a human.

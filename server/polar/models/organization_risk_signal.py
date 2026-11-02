@@ -38,7 +38,8 @@ class OrganizationRiskSignal(RecordModel):
         NORMAL = "normal"
         ELEVATED = "elevated"
         HIGHEST = "highest"
-        # Not evaluated yet, e.g. a Stripe website evaluation still pending.
+        # Not evaluated yet or the evaluation could not complete, e.g. a pending
+        # Stripe website evaluation or an unreachable URL.
         UNKNOWN = "unknown"
 
     __tablename__ = "organization_risk_signals"

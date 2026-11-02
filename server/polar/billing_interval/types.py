@@ -86,12 +86,6 @@ class PricedUsageWindow:
 
 
 @dataclass(frozen=True)
-class SettlementWindowSelection:
-    claim_windows: tuple[UsageWindow, ...]
-    deferred_windows: tuple[UsageWindow, ...]
-
-
-@dataclass(frozen=True)
 class SettlementPlan:
     windows: tuple[PricedUsageWindow, ...]
-    selection: SettlementWindowSelection
+    claim_windows: tuple[UsageWindow, ...]

@@ -1076,21 +1076,34 @@ def _get_quantity(
     function: AggregationFunction,
     buckets: Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]],
 ) -> Decimal:
-    count = sum(bucket[0] for bucket in buckets)
-    total = sum((bucket[1] for bucket in buckets), Decimal(0))
-    minimums = [bucket[2] for bucket in buckets if bucket[2] is not None]
-    maximums = [bucket[3] for bucket in buckets if bucket[3] is not None]
+    return finalize_quantity(
+        merge_summaries([UsageSummary(*bucket) for bucket in buckets]), function
+    )
+
+
+def merge_summaries(summaries: Sequence[UsageSummary]) -> UsageSummary:
+    minimums = [summary.minimum for summary in summaries if summary.minimum is not None]
+    maximums = [summary.maximum for summary in summaries if summary.maximum is not None]
+    return UsageSummary(
+        count=sum(summary.count for summary in summaries),
+        total=sum((summary.total for summary in summaries), Decimal(0)),
+        minimum=min(minimums, default=None),
+        maximum=max(maximums, default=None),
+    )
+
+
+def finalize_quantity(summary: UsageSummary, function: AggregationFunction) -> Decimal:
     match function:
         case AggregationFunction.cnt:
-            return Decimal(count)
+            return Decimal(summary.count)
         case AggregationFunction.sum:
-            return total
+            return summary.total
         case AggregationFunction.avg:
-            return total / count if count else Decimal(0)
+            return summary.total / summary.count if summary.count else Decimal(0)
         case AggregationFunction.min:
-            return min(minimums, default=Decimal(0))
+            return summary.minimum if summary.minimum is not None else Decimal(0)
         case AggregationFunction.max:
-            return max(maximums, default=Decimal(0))
+            return summary.maximum if summary.maximum is not None else Decimal(0)
         case AggregationFunction.unique:
             raise ValueError("Unique aggregations have no reducer buckets")
 

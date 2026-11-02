@@ -40,7 +40,9 @@ from polar.reducer.redis_store import get_reducer_bucket_key
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
+    finalize_quantity,
     get_reducer_bucket_start,
+    merge_summaries,
 )
 from polar.reducer.service import reducer as reducer_service
 from tests.fixtures.database import SaveFixture
@@ -2016,3 +2018,40 @@ class TestSyncCredits:
                 session
             ).get_unsealed_totals(organization.id, credit.id, [(customer.id, None)])
             assert (count, total) == (2, 10)
+
+
+class TestFinalizeQuantity:
+    @pytest.mark.parametrize(
+        ("function", "quantity"),
+        [
+            (AggregationFunction.cnt, Decimal(3)),
+            (AggregationFunction.sum, Decimal(18)),
+            (AggregationFunction.avg, Decimal(6)),
+            (AggregationFunction.min, Decimal(2)),
+            (AggregationFunction.max, Decimal(10)),
+        ],
+    )
+    def test_merges_summaries_before_finalizing(
+        self, function: AggregationFunction, quantity: Decimal
+    ) -> None:
+        summary = merge_summaries(
+            [
+                UsageSummary(2, Decimal(8), Decimal(2), Decimal(6)),
+                UsageSummary(1, Decimal(10), Decimal(10), Decimal(10)),
+            ]
+        )
+
+        assert finalize_quantity(summary, function) == quantity
+
+    @pytest.mark.parametrize(
+        "function",
+        [
+            AggregationFunction.cnt,
+            AggregationFunction.sum,
+            AggregationFunction.avg,
+            AggregationFunction.min,
+            AggregationFunction.max,
+        ],
+    )
+    def test_no_usage_is_zero(self, function: AggregationFunction) -> None:
+        assert finalize_quantity(merge_summaries([]), function) == Decimal(0)

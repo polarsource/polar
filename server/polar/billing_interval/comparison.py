@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal
 
-from polar.reducer.types import ObservedUsage, UsageIncompleteReason, WindowUsage
+from polar.reducer.types import ObservedUsage, UsageIncompleteReason
 
 from .types import (
     LegacyUsage,
@@ -52,12 +52,6 @@ class DiagnosticComparisonCapture:
 type ComparisonCapture = (
     OrderComparisonCapture | PreviewComparisonCapture | DiagnosticComparisonCapture
 )
-
-
-@dataclass(frozen=True)
-class DeferredUsage:
-    usage: WindowUsage
-    reason: Literal["awaiting_resubscription"] = "awaiting_resubscription"
 
 
 @dataclass(frozen=True)
@@ -121,7 +115,6 @@ class CompleteComparison:
     plan: SettlementPlan
     observation: ObservedUsage
     result: EvaluatedComparison
-    deferred_usage: tuple[DeferredUsage, ...]
     status: Literal["complete"] = "complete"
 
 
@@ -131,7 +124,6 @@ class CompleteDiagnosticComparison:
     plan: SettlementPlan
     observation: ObservedUsage
     result: DiagnosticComparison
-    deferred_usage: tuple[DeferredUsage, ...]
     status: Literal["complete"] = "complete"
 
 

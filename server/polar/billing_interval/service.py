@@ -24,7 +24,6 @@ from .repository import BillingIntervalRepository
 from .types import (
     IntervalChangePlan,
     MeteredSettlement,
-    SettlementWindowSelection,
     SubscriptionMeterBillingState,
     UsageDiagnostic,
 )
@@ -326,15 +325,15 @@ def resolve_ownership(
 
 
 def select_settlement_windows(
-    windows: Sequence[UsageWindow],
-    intervals: Sequence[BillingInterval],
-    subscription_starts: Mapping[UUID, datetime | None],
-    price_currencies: Mapping[UUID, str],
-    *,
-    settlement: MeteredSettlement | UsageDiagnostic,
-) -> SettlementWindowSelection:
-    """Select claims and deferred history without consulting current subscription state."""
-    raise NotImplementedError
+    windows: Sequence[UsageWindow], *, billing_subscription_id: UUID
+) -> tuple[UsageWindow, ...]:
+    """The windows a bill charges: those its own subscription owns. Usage of an
+    ended subscription arriving after its final bill is never charged."""
+    return tuple(
+        window
+        for window in windows
+        if window.source_subscription_id == billing_subscription_id
+    )
 
 
 billing_interval = BillingIntervalService()

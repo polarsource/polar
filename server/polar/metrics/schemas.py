@@ -1,5 +1,5 @@
 from datetime import date
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 from pydantic import UUID4, AwareDatetime, Field, create_model
 from pydantic_extra_types.timezone_name import TimeZoneName
@@ -7,10 +7,11 @@ from pydantic_extra_types.timezone_name import TimeZoneName
 from polar.customer.schemas.customer import CustomerID
 from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
 from polar.kit.time_queries import TimeInterval
-from polar.kit.versioning import QuerySchema
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.product import ProductBillingType
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
+from polar.version import V2027_01
 
 from .metrics import METRICS, MetricType
 
@@ -182,6 +183,13 @@ class MetricsParams(QuerySchema):
     )
     product_id: MultipleQueryFilter[ProductID] | None = Field(
         None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
     )
     billing_type: MultipleQueryFilter[ProductBillingType] | None = Field(
         None,

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-const readHash = () => decodeURIComponent(window.location.hash.slice(1)) || null
+const readHash = () => window.location.hash.slice(1) || null
 
 // Sections can mount after the page does (custom dashboards load async), so
 // the scroll is retried whenever `sectionIds` changes until the target exists.

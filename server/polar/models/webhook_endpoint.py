@@ -73,6 +73,7 @@ class WebhookFormat(StrEnum):
     raw = "raw"
     discord = "discord"
     slack = "slack"
+    mcp = "mcp"
 
 
 class WebhookEndpoint(ExternalIDMixin, RecordModel):
@@ -84,6 +85,14 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
             "external_id",
             unique=True,
             postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
+        ),
+        Index(
+            "ix_webhook_endpoints_mcp_subscription",
+            "organization_id",
+            "url",
+            "events",
+            unique=True,
+            postgresql_where=text("format = 'mcp' AND deleted_at IS NULL"),
         ),
     )
 
@@ -101,6 +110,12 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
         APIVersionType, nullable=False, default=CURRENT_API_VERSION
     )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    expires_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=True, default=None
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

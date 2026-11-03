@@ -1,6 +1,6 @@
 import math
 from collections import defaultdict
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, assert_never, cast
@@ -244,7 +244,11 @@ class ReducerService:
                     session, meter_ids, ReducerKind.usage
                 )
                 observed = await self._bill_windows(
-                    session, customer, windows, order_id=order_id
+                    session,
+                    customer,
+                    reducers,
+                    [window for window in windows if window.meter_id in reducers],
+                    order_id=order_id,
                 )
                 if isinstance(observed, IncompleteUsage):
                     log.warning(
@@ -315,24 +319,14 @@ class ReducerService:
         self,
         session: AsyncSession,
         customer: Customer,
+        reducers: Mapping[UUID, Reducer],
         windows: Sequence[UsageWindow],
         *,
         order_id: UUID,
     ) -> UsageResult:
         """Marks the customer's usage in each window as billed by the order, and
-        returns it. The windows' starts and ends become bucket boundaries first."""
-        reducer_repository = ReducerRepository.from_session(session)
-        reducers: dict[UUID, Reducer] = {}
-        for meter_id in sorted({window.meter_id for window in windows}):
-            reducer = await reducer_repository.get_by_meter_and_kind(
-                meter_id, ReducerKind.usage
-            )
-            if reducer is None:
-                return IncompleteUsage("unsupported_reducer_mapping")
-            if isinstance(reducer.aggregation, UniqueAggregation):
-                return IncompleteUsage("unsupported_aggregation")
-            reducers[meter_id] = reducer
-
+        returns it. The windows' starts and ends become bucket boundaries first.
+        `reducers` are the usage reducers by meter id, one for each window's meter."""
         repository = ReducerBucketRepository.from_session(session)
         identities = get_customer_identities(customer)
         boundaries_by_meter: dict[UUID, set[datetime]] = defaultdict(set)

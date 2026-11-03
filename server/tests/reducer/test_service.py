@@ -1533,7 +1533,9 @@ class TestBill:
         customer: Customer,
         meter: Meter,
     ) -> None:
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
+        usage = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
         credit = await create_reducer(
             save_fixture,
             organization=organization,
@@ -1569,7 +1571,9 @@ class TestBill:
         )
 
         assert quantities == {meter.id: (Decimal(3), Decimal(2))}
-        observe.assert_called_once_with(session, customer, [window], order_id=order_id)
+        observe.assert_called_once_with(
+            session, customer, {meter.id: usage}, [window], order_id=order_id
+        )
         seal.assert_called_once_with(
             session, [credit], customer, since=RESET, until=CUTOFF
         )
@@ -1803,6 +1807,43 @@ class TestBillUsageWindows:
             {tokens_meter.id: (Decimal(5), Decimal(0))},
             {tokens_meter.id: (Decimal(0), Decimal(0))},
         ]
+
+    @pytest.mark.parametrize("unique_reducer", [False, True])
+    async def test_skips_meters_without_a_billable_usage_reducer(
+        self,
+        unique_reducer: bool,
+        session: AsyncSession,
+        external_customer: Customer,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        tokens_meter: Meter,
+        order: Order,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=UniqueAggregation(property="user_id"),
+        )
+        if unique_reducer:
+            await create_reducer(
+                save_fixture, organization=organization, meters=[meter]
+            )
+
+        quantities = await reducer_service.bill(
+            session,
+            external_customer,
+            [tokens_meter.id, meter.id],
+            order_id=order.id,
+            windows=[
+                usage_window(tokens_meter, BUCKET_START, CUTOFF),
+                usage_window(meter, BUCKET_START, CUTOFF),
+            ],
+            billable_from=BUCKET_START,
+            cutoff=CUTOFF,
+        )
+
+        assert quantities == {tokens_meter.id: (Decimal(5), Decimal(0))}
 
     async def test_boundary_inside_a_sealed_bucket_bills_nothing(
         self,

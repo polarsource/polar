@@ -236,9 +236,9 @@ def _review_missing(review: OrganizationReview | None) -> str | None:
         return "No organization review has been submitted"
     if review.is_approved:
         return None
-    missing = f"Review verdict is {review.verdict.value}"
+    missing = f"Review verdict is {review.verdict}"
     if review.appeal_decision is not None:
-        missing += f" (appeal {review.appeal_decision.value})"
+        missing += f" (appeal {review.appeal_decision})"
     return missing
 
 

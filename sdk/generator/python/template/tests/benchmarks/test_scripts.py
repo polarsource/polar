@@ -111,8 +111,8 @@ def test_apply_snapshot(
     benchmark: BenchmarkFixture, redis: Redis, buckets: int
 ) -> None:
     sha = redis.script_load(APPLY_SNAPSHOT_SCRIPT)
-    # Same cold_until and version as the seeded state: the script rescans every field and
-    # rewrites the cold summary, but seals no bucket, so the state keeps its size.
+    # The seeded snapshot again, as every instance gets each of Polar's: the script scans
+    # every field, finds nothing to change and writes only the version.
     benchmark(
         redis.evalsha,
         sha,

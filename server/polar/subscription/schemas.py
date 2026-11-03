@@ -31,7 +31,7 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import QuerySchema, Version
+from polar.kit.versioning import QuerySchema, Version, VersionedJsonSchema
 from polar.meter.schemas import Meter
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.openapi import destructive_when_equals
@@ -123,9 +123,13 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
             "The subscription might still be active if `cancel_at_period_end` is `true`."
         )
     )
-    started_at: datetime = Field(
-        description="The timestamp when the subscription started."
-    )
+    started_at: Annotated[
+        datetime,
+        VersionedJsonSchema(
+            lambda schema: {"anyOf": [schema, {"type": "null"}]},
+            up_to=V2026_10,
+        ),
+    ] = Field(description="The timestamp when the subscription started.")
     ends_at: datetime | None = Field(
         description="The timestamp when the subscription will end."
     )

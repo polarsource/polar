@@ -9,7 +9,6 @@ from polar.kit.schemas import (
     CUSTOMER_ID_EXAMPLE,
     IDSchema,
     MultipleQueryFilter,
-    Schema,
     TimestampedSchema,
 )
 from polar.kit.versioning import QuerySchema
@@ -39,25 +38,8 @@ class Wallet(WalletBase):
     """
     A wallet represents a customer's balance in your organization.
 
-    They can top-up their wallet, and use the balance to pay for usage.
+    The balance can be used to pay for usage.
     """
-
-
-class WalletTopUpCreate(Schema):
-    """
-    Request schema to top-up a wallet.
-    """
-
-    amount: int = Field(
-        description="The amount to top-up the wallet by, in cents.", examples=[20_00]
-    )
-    currency: str = Field(
-        pattern="usd",
-        description=(
-            "The currency. Currently, only `usd` is supported. "
-            "It should match the wallet's currency."
-        ),
-    )
 
 
 class WalletListParams(QuerySchema):

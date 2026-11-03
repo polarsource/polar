@@ -102,7 +102,7 @@ interface Confirmation {
   identity: string;
   started: number;
   age: number;
-  superseded: boolean;
+  next?: Snapshot;
   awaited: number;
   messages: number;
   asked: number;
@@ -1118,8 +1118,12 @@ export class Outpost {
       for (const value of [snapshot.count, snapshot.sum, snapshot.min, snapshot.max])
         if (value !== null && !Number.isFinite(value))
           throw new TypeError("Snapshot values must be finite");
-      if (!(await this.askConfirmation(identity, customer, snapshot)))
-        await this.applySnapshot(identity, customer, snapshot);
+      const waiting = this.confirmations.get(identity);
+      if (waiting) {
+        if (snapshot.version >= (waiting.next ?? waiting.snapshot).version) waiting.next = snapshot;
+        return;
+      }
+      await this.receiveSnapshot(identity, customer, snapshot);
     } else if (message.type === "confirmed") {
       const { reducer_id, customer_id, external_customer_id, bucket_start, ids, snapshot } =
         message.payload;
@@ -1137,6 +1141,11 @@ export class Outpost {
     }
   }
 
+  private async receiveSnapshot(identity: string, customer: string, snapshot: Snapshot) {
+    if (!(await this.askConfirmation(identity, customer, snapshot)))
+      await this.applySnapshot(identity, customer, snapshot);
+  }
+
   // Asks Polar which of the pending events in the buckets the snapshot seals it counts. The
   // snapshot Polar answers with applies once it did, or the asking one after confirmTimeout
   // with the events still pending.
@@ -1146,11 +1155,6 @@ export class Outpost {
     snapshot: Snapshot,
   ): Promise<boolean> {
     const started = performance.now();
-    const superseded = this.confirmations.get(identity);
-    if (superseded) {
-      clearTimeout(superseded.timer);
-      this.confirmations.delete(identity);
-    }
     const state = this.cache.get(identity)?.state ?? (await this.loadState(identity));
     const sealed = [...state.pending]
       .filter(([start, statistics]) => start < snapshot.cold_until && statistics.count > 0)
@@ -1163,7 +1167,6 @@ export class Outpost {
       started,
       // Seconds since the oldest bucket asked ended.
       age: (Date.now() * 1_000 - Math.min(...sealed) - BUCKET_SIZE) / 1_000_000,
-      superseded: superseded !== undefined,
       awaited: 0,
       messages: 0,
       asked: 0,
@@ -1213,6 +1216,9 @@ export class Outpost {
       confirmation,
       answered,
     );
+    const next = confirmation.next;
+    if (next && next.version > confirmation.snapshot.version)
+      await this.receiveSnapshot(confirmation.identity, confirmation.customer, next);
   }
 
   // Settles the confirmed events and applies the snapshot in one transaction: a read sees the
@@ -1277,7 +1283,6 @@ export class Outpost {
             "outpost.pending.answered": answered,
             "outpost.pending.messages": confirmation.messages,
             "outpost.pending.age": confirmation.age,
-            "outpost.pending.superseded": confirmation.superseded,
             "outpost.confirm.duration": confirmDuration,
           });
         }

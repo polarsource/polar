@@ -554,6 +554,25 @@ it.each([
   },
 );
 
+it("asks Polar for no snapshot of a unique reducer", async () => {
+  reducers.push({
+    id: "visitors",
+    kind: "usage",
+    meter_ids: ["visitors-meter"],
+    filter: { conjunction: "and", clauses: [] },
+    aggregation: { func: "unique", property: "visitor" } as never,
+  });
+  const outpost = await start({ snapshotTimeout: 0 });
+  const send = vi.spyOn(outpost["websocket"]!, "send");
+  await outpost.actor(customer);
+  const requested = send.mock.calls
+    .map(([data]) => JSON.parse(data as string))
+    .filter(({ type }) => type === "meter_usage")
+    .map(({ payload }) => payload.reducer_id);
+  expect(requested).toEqual(["tokens", "credits"]);
+  expect(outpost["requesting"].size).toBe(2);
+});
+
 it("bounds the snapshot requests it remembers", async () => {
   const outpost = await start({ snapshotTimeout: 0 });
   for (let i = 0; i <= 8192; i++) await outpost.actor({ external_customer_id: `customer-${i}` });

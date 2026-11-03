@@ -104,16 +104,16 @@ describe('billsUsageOnMeterCycle', () => {
 })
 
 describe('formatBilledMeterUnits', () => {
-  it('shows usage beyond the credited units as overage', () => {
+  it('shows usage beyond the credited units as billable', () => {
     expect(
       formatBilledMeterUnits({ consumed_units: 12500, credited_units: 10000 }),
-    ).toBe('2,500 overage')
+    ).toBe('2,500 billable')
   })
 
-  it('shows all usage when nothing is credited', () => {
+  it('shows all usage as billable when nothing is credited', () => {
     expect(
       formatBilledMeterUnits({ consumed_units: 1234, credited_units: 0 }),
-    ).toBe('1,234 used')
+    ).toBe('1,234 billable')
   })
 
   it('hides the units when usage stays within the credited units', () => {

@@ -81,7 +81,5 @@ export const formatBilledMeterUnits = ({
   if (billedUnits === 0) {
     return null
   }
-  return credited_units > 0
-    ? `${formatScalar(billedUnits)} overage`
-    : `${formatScalar(billedUnits)} used`
+  return `${formatScalar(billedUnits)} billable`
 }

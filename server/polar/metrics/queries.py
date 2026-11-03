@@ -41,12 +41,9 @@ from polar.models import (
     User,
 )
 from polar.models.product import ProductBillingType
+from polar.models.transaction import TransactionType
 
-from .fx import (
-    closest_recorded_exchange_rate,
-    recorded_exchange_rate,
-    recorded_exchange_rate_clauses,
-)
+from .fx import closest_recorded_exchange_rate, recorded_exchange_rate
 
 if TYPE_CHECKING:
     from .metrics import SQLMetric
@@ -179,7 +176,10 @@ def get_active_subscriptions_cte(
         .select_from(Transaction)
         .join(Order, Order.id == Transaction.order_id)
         .where(
-            *recorded_exchange_rate_clauses(),
+            Transaction.type == TransactionType.payment,
+            Transaction.presentment_currency.is_not(None),
+            Transaction.currency == "usd",
+            Transaction.exchange_rate.is_not(None),
             Order.created_at >= start_timestamp,
             Order.created_at <= end_timestamp,
             Transaction.order_id.in_(readable_orders_statement),

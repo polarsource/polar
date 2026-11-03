@@ -103,8 +103,8 @@ describe("READ_STATE", () => {
 
 describe("APPLY_SNAPSHOT", () => {
   for (const buckets of BUCKET_COUNTS) {
-    // Same cold_until and version as the seeded state: the script rescans every field and
-    // rewrites the cold summary, but seals no bucket, so the state keeps its size.
+    // The seeded snapshot again, as every instance gets each of Polar's: the script scans
+    // every field, finds nothing to change and writes only the version.
     bench(
       `apply a snapshot to a ${buckets}-bucket state`,
       async () => {

@@ -799,6 +799,53 @@ async def test_duplicate_and_older_snapshots(
     assert await redis.hget(key, "cold:max") is None
 
 
+async def _published_states(redis: Redis, pubsub: PubSub) -> list[typing.Any]:
+    """The full states published on the updates channel, up to a marker sent last."""
+    await redis.publish(
+        "outpost:v1:0:updates", json.dumps({"customer": "drained", "bucket": []})
+    )
+    states = []
+    with anyio.fail_after(1):
+        while True:
+            message = await pubsub.get_message(
+                ignore_subscribe_messages=True, timeout=1
+            )
+            if message is None:
+                continue
+            update = json.loads(message["data"])
+            if update["customer"] == "drained":
+                return states
+            if "state" in update:
+                states.append(update)
+
+
+@pytest.mark.anyio
+async def test_publishes_nothing_for_an_older_snapshot_or_one_already_applied(
+    redis_connection: tuple[str, Redis],
+) -> None:
+    _, redis = redis_connection
+    apply_snapshot = redis.register_script(APPLY_SNAPSHOT_SCRIPT)
+    key = "outpost:v1:state:external:alice:tokens"
+    prefix = ["external:alice:tokens", "outpost:v1:0:updates", "epoch"]
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
+    await apply_snapshot(keys=[key], args=[*prefix, BUCKET, 2, 2, 8, 3, 5])
+    async with redis.pubsub() as pubsub:
+        await pubsub.subscribe("outpost:v1:0:updates")
+        await apply_snapshot(keys=[key], args=[*prefix, BUCKET, 1, 1, 1, 1, 1])
+        # Another SDK may format the same values differently.
+        await apply_snapshot(
+            keys=[key], args=[*prefix, BUCKET, 3, "2", "8.0", "3.0", "5"]
+        )
+        assert await _published_states(redis, pubsub) == []
+        assert await redis.hmget(key, "revision", "cold:sum", "snapshot_version") == [
+            b"1",
+            b"8",
+            b"3",
+        ]
+        await apply_snapshot(keys=[key], args=[*prefix, BUCKET, 4, 3, 9, 3, 5])
+        assert len(await _published_states(redis, pubsub)) == 1
+
+
 @pytest.mark.anyio
 async def test_warmed_reads_do_not_use_redis(
     redis_connection: tuple[str, Redis],
@@ -974,6 +1021,60 @@ async def test_bucket_updates_apply_in_order_and_reload_after_a_missed_revision(
         await redis.hincrby(key, "revision", 1)
         await ingest(writer, 2)
         await wait_for(reader, 25)
+
+
+@pytest.mark.anyio
+async def test_applies_polars_snapshot_once_when_every_instance_receives_it(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    polar_sends: list[typing.Any],
+    exported_spans: list[ReadableSpan],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:v1:state:external:alice:tokens"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
+    async with (
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+        Outpost(url, client=polar_client) as third,
+        redis.pubsub() as pubsub,
+    ):
+        await pubsub.subscribe("outpost:v1:0:updates")
+        with anyio.fail_after(1):
+            for outpost in (first, second, third):
+                await outpost._configured.wait()
+        # Each connection reads the snapshot at its own version.
+        for index, send in enumerate(polar_sends):
+            await send(
+                {
+                    "type": "websocket.send",
+                    "text": json.dumps(
+                        {
+                            "type": "meter_usage",
+                            "payload": {
+                                "customer_id": None,
+                                "external_customer_id": "alice",
+                                "customer_exists": True,
+                                "reducer_id": "tokens",
+                                "cold_until": BUCKET,
+                                "version": 1791807000000001 + index,
+                                "count": 2,
+                                "sum": 8,
+                                "min": 3,
+                                "max": 5,
+                            },
+                        }
+                    ),
+                }
+            )
+        with anyio.fail_after(1):
+            while (
+                sum(span.name == "outpost.snapshot.received" for span in exported_spans)
+                < 3
+            ):
+                await anyio.lowlevel.checkpoint()
+        assert len(await _published_states(redis, pubsub)) == 1
+    assert await redis.hmget(key, "revision", "cold:sum") == [b"1", b"8"]
 
 
 @pytest.mark.anyio

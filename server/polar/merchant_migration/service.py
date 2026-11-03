@@ -13,7 +13,7 @@ from polar.auth.scope import Scope
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
 from polar.customer.repository import CustomerRepository, CustomerStripeIdentity
-from polar.exceptions import PolarError
+from polar.exceptions import NotPermitted, PolarError
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
@@ -486,9 +486,11 @@ class MerchantMigrationService:
             create_schema.organization_id,
             OrganizationPermission.organization_manage,
         )
-        organization = await self._assert_feature_enabled(
-            session, create_schema.organization_id
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            create_schema.organization_id
         )
+        if organization is None:
+            raise NotPermitted()
         if organization.status not in RENEWAL_ENABLED_STATUSES:
             raise OrganizationNotOnboarded()
         if create_schema.source_platform != MerchantMigrationSourcePlatform.stripe:
@@ -2149,15 +2151,6 @@ class MerchantMigrationService:
             livemode=_is_live_key(api_key),
             has_connected_accounts=has_connected_accounts,
         )
-
-    async def _assert_feature_enabled(
-        self, session: AsyncReadSession, organization_id: UUID
-    ) -> Organization:
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(organization_id)
-        if organization is None or not organization.is_merchant_migration_enabled:
-            raise MerchantMigrationNotEnabled()
-        return organization
 
 
 merchant_migration = MerchantMigrationService()

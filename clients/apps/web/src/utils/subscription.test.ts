@@ -116,6 +116,15 @@ describe('formatBilledMeterUnits', () => {
     ).toBe('1,234 billable')
   })
 
+  it('hides the units when the billable usage rounds to zero', () => {
+    expect(
+      formatBilledMeterUnits({
+        consumed_units: 1000.004,
+        credited_units: 1000,
+      }),
+    ).toBeNull()
+  })
+
   it('hides the units when usage stays within the credited units', () => {
     expect(
       formatBilledMeterUnits({ consumed_units: 200, credited_units: 1000 }),

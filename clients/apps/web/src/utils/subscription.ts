@@ -77,9 +77,6 @@ export const formatBilledMeterUnits = ({
   consumed_units,
   credited_units,
 }: BilledMeterUnits): string | null => {
-  const billedUnits = Math.max(0, consumed_units - credited_units)
-  if (billedUnits === 0) {
-    return null
-  }
-  return `${formatScalar(billedUnits)} billable`
+  const billedUnits = formatScalar(Math.max(0, consumed_units - credited_units))
+  return billedUnits === '0' ? null : `${billedUnits} billable`
 }

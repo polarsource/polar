@@ -26,6 +26,7 @@ from polar.metering import (
     ValidateProtocol,
 )
 from polar.metering.buffered import BufferedMeteringStrategy
+from polar.metering.errors import UnknownMeterError
 from polar.outpost import Outpost
 from polar.v2026_04 import PolarAsync
 
@@ -586,6 +587,46 @@ async def test_meter_strategy_is_authoritative(
         meter_id="meter", customer_id="customer", external_customer_id=None
     )
     second.meter.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_meter_unknown_to_its_strategy_is_read_through_the_api(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    send = AsyncMock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "items": [
+                    {
+                        "meter_id": "meter",
+                        "customer_id": "customer",
+                        "consumed_units": 3,
+                        "credited_units": 10,
+                        "balance": 7,
+                        "id": "customer-meter",
+                    }
+                ],
+                "pagination": {"total_count": 1, "max_page": 1},
+            },
+        )
+    )
+    strategy = AsyncMock(spec=MeteringStrategyProtocol)
+    strategy.meter = AsyncMock(
+        side_effect=UnknownMeterError("Outpost reduces no meter")
+    )
+    async with PolarAsync("token", organization_id="org") as polar:
+        monkeypatch.setattr(polar._client, "send_request", send)
+        async with Metering(strategies=[strategy], client=polar._client) as metering:
+            result = await metering.meter(meter_id="meter", customer_id="customer")
+    assert result == CustomerMeter(
+        meter_id="meter",
+        customer_id="customer",
+        consumed_units=3,
+        credited_units=10,
+        balance=7,
+    )
+    assert send.call_args.args[0].url.path == "/v1/customer-meters/"
 
 
 @pytest.mark.anyio

@@ -35,6 +35,7 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar import __version__
 from polar.metering import EventInput
+from polar.metering.errors import UnknownMeterError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     WRITE_BUCKET_SCRIPT,
@@ -636,10 +637,8 @@ async def test_actor_is_idempotent_and_missing_snapshot_is_not_zero(
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         await outpost.actor(external_customer_id="alice")
-        assert (
+        with pytest.raises(UnknownMeterError):
             await outpost.meter(external_customer_id="alice", meter_id="unknown")
-            is None
-        )
         with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
             await outpost.meter(external_customer_id="alice", meter_id="meter")
     assert [
@@ -2612,16 +2611,15 @@ async def test_local_events_never_land_in_a_credit_reducer(
 
 
 @pytest.mark.anyio
-async def test_unknown_meter_reads_none(
+async def test_unknown_meter_is_refused(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     exported_metrics: list[MetricsData],
 ) -> None:
     url, _ = redis_connection
     async with Outpost(url, client=polar_client) as outpost:
-        assert (
-            await outpost.meter(meter_id="other", external_customer_id="alice") is None
-        )
+        with pytest.raises(UnknownMeterError):
+            await outpost.meter(meter_id="other", external_customer_id="alice")
     assert read_outcomes(exported_metrics) == [("meter", "unknown_meter")]
 
 

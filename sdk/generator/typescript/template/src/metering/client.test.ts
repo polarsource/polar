@@ -8,6 +8,7 @@ import type { CustomerMeter } from "./meter";
 import { ClientBase, PolarError, PolarNetworkError } from "../base";
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
 import { BufferedMeteringStrategy } from "./buffered";
+import { UnknownMeterError } from "./errors";
 import {
   Metering,
   MeteringError,
@@ -689,6 +690,32 @@ it.each<CustomerMeter | null | Error>([
       expect.objectContaining({ customer_id: "customer", meter_id: "meter" }),
     );
     expect(second.meter).not.toHaveBeenCalled();
+  } finally {
+    await metering.close();
+  }
+});
+
+it("reads a meter its strategy does not know through the API", async () => {
+  const value = {
+    meter_id: "meter",
+    customer_id: "customer",
+    consumed_units: 3,
+    credited_units: 10,
+    balance: 7,
+  };
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockImplementation(async () => new Response(JSON.stringify({ items: [value] })));
+  const strategy = {
+    start: vi.fn().mockResolvedValue(undefined),
+    track: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+    meter: vi.fn().mockRejectedValue(new UnknownMeterError("Outpost reduces no meter")),
+  };
+  const metering = new Metering({ client, strategies: [strategy] });
+  try {
+    expect(await metering.meter("meter", { customer_id: "customer" })).toEqual(value);
+    expect(new URL(String(fetch.mock.calls[0]![0])).pathname).toBe("/v1/customer-meters/");
   } finally {
     await metering.close();
   }

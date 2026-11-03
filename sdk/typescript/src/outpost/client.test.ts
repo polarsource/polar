@@ -9,6 +9,7 @@ import { WebSocketServer, type WebSocket } from "ws";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
+import { UnknownMeterError } from "../metering/errors";
 import {
   decodeState,
   MissingExternalIdError,
@@ -391,7 +392,9 @@ it("handles configuration asynchronously and reports a missing customer snapshot
     ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
   expect(await result).toBeUndefined();
   await expect(outpost.meter(meter)).rejects.toThrow("snapshot is not ready");
-  expect(await outpost.meter({ ...customer, meter_id: "unknown" })).toBeNull();
+  await expect(outpost.meter({ ...customer, meter_id: "unknown" })).rejects.toThrow(
+    UnknownMeterError,
+  );
 });
 
 it("propagates snapshots, rejects older cutoffs, and counts a late write until Polar confirms it", async () => {
@@ -1301,9 +1304,11 @@ it("arms no timer on a warm read", async () => {
   expect(setTimeout).not.toHaveBeenCalled();
 });
 
-it("reads null for a meter Outpost does not know", async () => {
+it("refuses to read a meter Outpost does not know", async () => {
   const outpost = await start();
-  expect(await outpost.meter({ ...customer, meter_id: "other" })).toBeNull();
+  await expect(outpost.meter({ ...customer, meter_id: "other" })).rejects.toThrow(
+    UnknownMeterError,
+  );
   expect(await readOutcomes(outpost)).toEqual([["meter", "unknown_meter"]]);
 });
 

@@ -189,7 +189,7 @@ export const apply = Command.make('apply', {
       Effect.gen(function* () {
         const billing = yield* BillingConfig
         const { json } = yield* Output
-        const catalog = { name: Option.getOrUndefined(name), publish }
+        const catalog = { name: Option.getOrUndefined(name) }
         const milliseconds = (elapsed: Duration.Duration) =>
           `${Math.round(Duration.toMillis(elapsed))}ms`
         return yield* withProgress(
@@ -263,7 +263,7 @@ export const apply = Command.make('apply', {
                 `Applying ${plural(changeCount(plan.entries), 'change')}`,
               )
               const [elapsed, result] = yield* Effect.timed(
-                billing.apply(config, organization, catalog),
+                billing.apply(config, organization, { ...catalog, publish }),
               )
               yield* progress.finish(`(${milliseconds(elapsed)})`)
               return {

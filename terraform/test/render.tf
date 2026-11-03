@@ -94,14 +94,14 @@ module "test" {
     allowed_hosts          = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
-    web_concurrency        = "2"
+    web_concurrency        = "6"
     forwarded_allow_ips    = local.forwarded_allow_ips
     database_pool_size     = "20"
     postgres_database      = module.planetscale.database_name
     postgres_read_database = module.planetscale.database_name
     pre_deploy_command     = "env POLAR_POSTGRES_USER=${module.planetscale.app_role_username} POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
     redis_db               = "1"
-    plan                   = "pro"
+    plan                   = "pro_plus"
   }
 
   workers = {

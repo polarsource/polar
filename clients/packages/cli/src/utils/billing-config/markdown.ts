@@ -9,6 +9,7 @@ import {
   type Mark,
   fieldChanges,
   lineDiff,
+  updatedBenefits,
   valueLines,
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
@@ -58,12 +59,34 @@ const valueRows = (
     : [`${mark}   ${field}`, ...lines.map((line) => `${mark}     ${line}`)]
 }
 
+const ids = (input: unknown): string[] =>
+  Array.isArray(input) ? input.map((id) => name(id)) : []
+
 const entryLines = (
-  { section, id, action, diff }: AppliedEntry,
+  entry: AppliedEntry,
   document: unknown,
+  updated: ReadonlySet<string>,
 ) => {
+  const { section, id, action, diff } = entry
   const created = action === 'created'
-  const changes = fieldChanges(shownDiff(section, diff, document), section)
+  const benefits = diff.find(({ field }) => field === 'benefits')
+  const grantedBefore = ids(benefits?.before)
+  const granted = ids(benefits?.after)
+  const regranted = granted.filter(
+    (id) => grantedBefore.includes(id) && updated.has(id),
+  )
+  // A product granting an updated benefit lists the same ids before and after
+  const sameIds =
+    grantedBefore.length === granted.length &&
+    granted.every((id) => grantedBefore.includes(id))
+  const changes = fieldChanges(
+    shownDiff(
+      section,
+      sameIds ? diff.filter(({ field }) => field !== 'benefits') : diff,
+      document,
+    ),
+    section,
+  )
   const width = Math.max(
     0,
     ...changes
@@ -90,6 +113,7 @@ const entryLines = (
             ),
           ],
     ),
+    ...regranted.map((id) => `    benefits  ${id} (updated)`),
   ]
 }
 
@@ -161,7 +185,11 @@ export const planMarkdown = (
                   plain(
                     changed
                       .flatMap((entry) =>
-                        entryLines(entry, webhooks.get(name(entry.id))),
+                        entryLines(
+                          entry,
+                          webhooks.get(name(entry.id)),
+                          updatedBenefits(result.entries),
+                        ),
                       )
                       .join('\n'),
                   ),

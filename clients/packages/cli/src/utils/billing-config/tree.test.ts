@@ -206,6 +206,39 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows products that grant an updated benefit', () => {
+    const output = stripAnsi(
+      formatTree(input, [
+        entry('benefits', 'tool_calls', 'updated', [
+          {
+            field: 'properties',
+            before: { meter: 'tool_call', units: 500, rollover: false },
+            after: { meter: 'tool_call', units: 1000, rollover: false },
+          },
+        ]),
+        entry('products', 'pro', 'updated', [
+          {
+            field: 'benefits',
+            before: ['custom_servers', 'tool_calls'],
+            after: ['custom_servers', 'tool_calls'],
+          },
+        ]),
+      ]),
+    )
+    expect(output).toBe(
+      [
+        '  benefits',
+        '  ~ tool_calls',
+        '      properties  500 tool_call credits → 1,000 tool_call credits',
+        '',
+        '  products',
+        '  ~ pro',
+        '      ├ = benefit custom_servers',
+        '      └ ~ benefit tool_calls',
+      ].join('\n'),
+    )
+  })
+
   test('shows a created benefit as private only when it is', () => {
     const output = stripAnsi(
       formatTree(

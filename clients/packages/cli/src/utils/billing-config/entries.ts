@@ -228,5 +228,14 @@ export const planTally = (entries: ReadonlyArray<AppliedEntry>) =>
     counted(entries, 'unchanged', 'unchanged'),
   ].join(', ')
 
+export const updatedBenefits = (entries: ReadonlyArray<AppliedEntry>) =>
+  new Set(
+    entries
+      .filter(
+        ({ section, action }) => section === 'benefits' && action === 'updated',
+      )
+      .map(({ id }) => name(id)),
+  )
+
 export const planSummary = (entries: ReadonlyArray<AppliedEntry>) =>
   `${ui.INDENT}${ui.dim('Plan:')} ${planTally(entries)}`

@@ -1,6 +1,10 @@
 import type { AppliedEntry, RemovalReason } from '@/schemas/BillingConfig'
 import { name, record } from '@/utils/billing-config/describe'
-import { MARKS, formatRows } from '@/utils/billing-config/entries'
+import {
+  MARKS,
+  formatRows,
+  updatedBenefits,
+} from '@/utils/billing-config/entries'
 import {
   type MeterUse,
   benefitSentence,
@@ -64,9 +68,13 @@ export const documents = (input: unknown, section: Section) => {
   return byId
 }
 
-type Grant = { id: string; status: 'kept' | 'added' | 'removed' }
+type Grant = { id: string; status: 'kept' | 'added' | 'removed' | 'updated' }
 
-const grants = (entry: AppliedEntry, product: unknown): Grant[] => {
+const grants = (
+  entry: AppliedEntry,
+  product: unknown,
+  updated: ReadonlySet<string>,
+): Grant[] => {
   const change = entry.diff.find(({ field }) => field === 'benefits')
   if (change === undefined) {
     return ids(record(product)?.['benefits']).map((id) => ({
@@ -78,7 +86,14 @@ const grants = (entry: AppliedEntry, product: unknown): Grant[] => {
   const after = ids(change.after)
   return [
     ...after.map(
-      (id): Grant => ({ id, status: before.includes(id) ? 'kept' : 'added' }),
+      (id): Grant => ({
+        id,
+        status: !before.includes(id)
+          ? 'added'
+          : updated.has(id)
+            ? 'updated'
+            : 'kept',
+      }),
     ),
     ...before
       .filter((id) => !after.includes(id))
@@ -140,6 +155,7 @@ const GRANT_MARKS: Record<Grant['status'], string> = {
   added: ui.green('+'),
   removed: ui.red('-'),
   kept: ui.dim('='),
+  updated: ui.yellow('~'),
 }
 
 const reference = ({ id, status }: Grant): Block => ({
@@ -161,6 +177,8 @@ export const formatTree = (
     webhooks: documents(input, 'webhooks'),
   }
 
+  const updated = updatedBenefits(entries)
+
   const width = Math.max(
     0,
     ...entries
@@ -175,7 +193,7 @@ export const formatTree = (
   const product = (entry: AppliedEntry) => {
     if (entry.action === 'removed') return removal(entry)
     const document = docs.products.get(entry.id)
-    const granted = grants(entry, document)
+    const granted = grants(entry, document, updated)
     const regranted = granted.some(({ status }) => status !== 'kept')
     if (entry.action === 'unchanged' && !regranted) return undefined
     const fresh = entry.action === 'created'

@@ -45,7 +45,6 @@ from polar.reducer.service import (
 )
 from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import (
-    ObservedUsage,
     UsageSummary,
     UsageWindow,
     WindowUsage,
@@ -1548,11 +1547,7 @@ class TestBill:
         observe = mocker.patch.object(
             reducer_service,
             "_bill_windows",
-            return_value=ObservedUsage(
-                windows=(WindowUsage(window, UsageSummary(3, Decimal(3), None, None)),),
-                observed_at=CUTOFF,
-                definitions=(),
-            ),
+            return_value=[WindowUsage(window, UsageSummary(3, Decimal(3), None, None))],
         )
         seal = mocker.patch.object(reducer_service, "_seal_buckets")
         bill = mocker.patch.object(

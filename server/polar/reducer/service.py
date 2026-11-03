@@ -3,7 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, assert_never, cast
+from typing import Any, assert_never
 from uuid import UUID
 
 import logfire
@@ -43,11 +43,6 @@ from . import cache, redis_store
 from .bucket_repository import ReducerBucketRepository, get_customer_identities
 from .repository import ReducerRepository
 from .types import (
-    IncompleteUsage,
-    ObservedUsage,
-    UsageAggregation,
-    UsageDefinition,
-    UsageResult,
     UsageSummary,
     UsageWindow,
     WindowUsage,
@@ -247,12 +242,12 @@ class ReducerService:
             [window for window in windows if window.meter_id in reducers],
             order_id=order_id,
         )
-        if isinstance(observed, IncompleteUsage):
+        if observed is None:
             log.warning(
                 "Incomplete reducer usage",
                 customer_id=customer.id,
                 order_id=order_id,
-                reason=observed.reason,
+                reason="boundary_unavailable",
             )
             return {}
         quantities = {
@@ -260,7 +255,7 @@ class ReducerService:
                 merge_summaries(
                     [
                         usage.summary
-                        for usage in observed.windows
+                        for usage in observed
                         if usage.window.meter_id == meter_id
                     ]
                 ),
@@ -309,9 +304,10 @@ class ReducerService:
         windows: Sequence[UsageWindow],
         *,
         order_id: UUID,
-    ) -> UsageResult:
+    ) -> list[WindowUsage] | None:
         """Marks the customer's usage in each window as billed by the order, and
-        returns it. The windows' starts and ends become bucket boundaries first.
+        returns it, or None if a window's start or end is inside a sealed bucket.
+        The windows' starts and ends become bucket boundaries first.
         `reducers` are the usage reducers by meter id, one for each window's meter."""
         repository = ReducerBucketRepository.from_session(session)
         identities = get_customer_identities(customer)
@@ -336,7 +332,7 @@ class ReducerService:
                     identity,
                     sorted(boundaries),
                 ):
-                    return IncompleteUsage("boundary_unavailable")
+                    return None
 
         usage: list[WindowUsage] = []
         for window in windows:
@@ -357,18 +353,7 @@ class ReducerService:
                     window, merge_summaries([UsageSummary(*row) for row in billed])
                 )
             )
-        return ObservedUsage(
-            windows=tuple(usage),
-            observed_at=utc_now(),
-            definitions=tuple(
-                UsageDefinition(
-                    meter_id,
-                    reducer.id,
-                    cast(UsageAggregation, reducer.aggregation.func),
-                )
-                for meter_id, reducer in sorted(reducers.items())
-            ),
-        )
+        return usage
 
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:
         """Creates the meter's reducer of each kind and updates its usage reducer,

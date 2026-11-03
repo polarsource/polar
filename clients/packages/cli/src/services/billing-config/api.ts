@@ -26,7 +26,7 @@ export interface CatalogOptions {
 // Sections the config API doesn't accept yet
 const UNSUPPORTED_SECTIONS = new Set([''])
 
-const requestBody = (input: unknown, fields: Record<string, unknown>) =>
+const requestBody = (input: unknown, { name }: CatalogOptions) =>
   typeof input === 'object' && input !== null && !Array.isArray(input)
     ? {
         ...Object.fromEntries(
@@ -34,7 +34,7 @@ const requestBody = (input: unknown, fields: Record<string, unknown>) =>
             ([section]) => !UNSUPPORTED_SECTIONS.has(section),
           ),
         ),
-        ...fields,
+        ...(name !== undefined && { catalog_name: name }),
       }
     : input
 
@@ -43,16 +43,14 @@ export const post = (
   path: string,
   config: LoadedConfig,
   organization: ActiveOrganization,
-  { name }: CatalogOptions = {},
+  options: CatalogOptions = {},
 ) =>
   Effect.gen(function* () {
     const request = yield* HttpClientRequest.post(
       yield* apiUrl(organization.environment, path),
     ).pipe(
       withOrganization(organization.id),
-      HttpClientRequest.bodyJson(
-        requestBody(config.input, { catalog_name: name }),
-      ),
+      HttpClientRequest.bodyJson(requestBody(config.input, options)),
     )
     return yield* clients[organization.environment].execute(request)
   })

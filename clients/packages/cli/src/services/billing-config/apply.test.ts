@@ -110,6 +110,15 @@ describe('apply', () => {
     })
   })
 
+  test('keeps a catalog name from the file when no name is given', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
+    const named = { ...JSON.parse(source), catalog_name: 'From file' }
+
+    await run(await write(JSON.stringify(named)))
+
+    expect(await api.requests[0]?.json()).toEqual(named)
+  })
+
   test('maps 422 validation errors onto the file', async () => {
     api.routes[`POST ${applyUrl}`] = Response.json(
       {

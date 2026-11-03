@@ -1103,33 +1103,6 @@ async def test_evicted_customer_is_requested_again_only_once_its_snapshot_is_los
 
 
 @pytest.mark.anyio
-async def test_unique_reducer_asks_polar_for_no_snapshot(
-    redis_connection: tuple[str, Redis],
-    polar_client: httpx.AsyncClient,
-    configuration: dict[str, typing.Any],
-    websocket_requests: list[dict[str, typing.Any]],
-) -> None:
-    url, _ = redis_connection
-    configuration["reducers"].append(
-        {
-            "id": "visitors",
-            "kind": "usage",
-            "meter_ids": ["visitors-meter"],
-            "filter": {"conjunction": "and", "clauses": []},
-            "aggregation": {"func": "unique", "property": "visitor"},
-        }
-    )
-    async with Outpost(url, client=polar_client) as outpost:
-        await outpost.actor(external_customer_id="alice")
-        assert len(outpost._requesting) == 2
-    assert [
-        message["payload"]["reducer_id"]
-        for message in websocket_requests
-        if message["type"] == "meter_usage"
-    ] == ["tokens", "credits"]
-
-
-@pytest.mark.anyio
 async def test_snapshot_requests_remembered_are_bounded(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

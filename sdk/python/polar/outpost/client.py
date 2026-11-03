@@ -952,8 +952,8 @@ class Outpost:
             ]
             if not all(local.is_ready() for _, local in warmed):
                 with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-                    for reducer, local in warmed:
-                        await self._wait_ready(reducer, local)
+                    for _, local in warmed:
+                        await self._wait_ready(local)
             if any(local.missing for _, local in warmed):
                 read.outcome = "unknown_customer"
                 return None
@@ -992,17 +992,11 @@ class Outpost:
             warmed = await self._warm_actor(customer)
             if not all(local.is_ready() for _, local in warmed):
                 with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-                    for reducer, local in warmed:
-                        await self._wait_ready(reducer, local)
-            # Polar sends no snapshot for unique reducers.
-            snapshotted = [
-                (reducer, local)
-                for reducer, local in warmed
-                if reducer["aggregation"]["func"] != "unique"
-            ]
-            if not all(local.is_ready() for _, local in snapshotted):
+                    for _, local in warmed:
+                        await self._wait_ready(local)
+            if not all(local.is_ready() for _, local in warmed):
                 read.outcome = "not_ready"
-            elif any(local.missing for _, local in snapshotted):
+            elif any(local.missing for _, local in warmed):
                 read.outcome = "unknown_customer"
             else:
                 read.outcome = "ready"
@@ -1037,9 +1031,9 @@ class Outpost:
             None,
         )
 
-    async def _wait_ready(self, reducer: Reducer, local: LocalState) -> None:
-        # Polar sends no snapshot for unique reducers, nor without a connection.
-        if reducer["aggregation"]["func"] == "unique" or not self.connected:
+    async def _wait_ready(self, local: LocalState) -> None:
+        # Polar sends no snapshot without a connection.
+        if not self.connected:
             return
         while not local.is_ready():
             await local.changed.wait()
@@ -1159,11 +1153,7 @@ class Outpost:
             requested = identity in self._requesting or (
                 identity in self._actors and local.state.cold_until is not None
             )
-            if (
-                not requested
-                and reducer["aggregation"]["func"] != "unique"
-                and websocket is not None
-            ):
+            if not requested and websocket is not None:
                 try:
                     await websocket.send_json(
                         {

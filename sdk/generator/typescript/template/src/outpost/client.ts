@@ -696,10 +696,7 @@ export class Outpost {
       const creditReducer = this.findReducer("credit", input.meter_id);
       const local = await this.warmCustomer(customer, reducer);
       const creditLocal = creditReducer && (await this.warmCustomer(customer, creditReducer));
-      await Promise.all([
-        this.waitReady(reducer, local),
-        creditReducer && this.waitReady(creditReducer, creditLocal!),
-      ]);
+      await Promise.all([this.waitReady(local), creditLocal && this.waitReady(creditLocal)]);
       if (local.missing || creditLocal?.missing) {
         read.outcome = "unknown_customer";
         return null;
@@ -726,14 +723,10 @@ export class Outpost {
   async actor(input: Customer): Promise<void> {
     return this.measureRead("actor", async (read) => {
       const warmed = await this.warmActor(customerKey(input));
-      await Promise.all(warmed.map(([reducer, local]) => this.waitReady(reducer, local)));
-      // Polar sends no snapshot for unique reducers.
-      const snapshotted = warmed.filter(
-        ([reducer]) => (reducer.aggregation.func as string) !== "unique",
-      );
-      read.outcome = !snapshotted.every(([, local]) => isReady(local))
+      await Promise.all(warmed.map(([, local]) => this.waitReady(local)));
+      read.outcome = !warmed.every(([, local]) => isReady(local))
         ? "not_ready"
-        : snapshotted.some(([, local]) => local.missing)
+        : warmed.some(([, local]) => local.missing)
           ? "unknown_customer"
           : "ready";
     });
@@ -758,9 +751,9 @@ export class Outpost {
     );
   }
 
-  private async waitReady(reducer: Reducer, local: LocalState): Promise<void> {
-    // Polar sends no snapshot for unique reducers, nor without a connection.
-    if ((reducer.aggregation.func as string) === "unique" || !this.connected) return;
+  private async waitReady(local: LocalState): Promise<void> {
+    // Polar sends no snapshot without a connection.
+    if (!this.connected) return;
     const deadline = Date.now() + (this.options.snapshotTimeout ?? 5_000);
     while (!isReady(local) && Date.now() < deadline)
       await waitAtMost(local.changed.promise, deadline - Date.now());
@@ -884,11 +877,7 @@ export class Outpost {
       const requested =
         this.requesting.has(identity) ||
         (this.actors.has(identity) && entry.state.coldUntil !== undefined);
-      if (
-        !requested &&
-        (reducer.aggregation.func as string) !== "unique" &&
-        this.websocket?.readyState === WebSocket.OPEN
-      ) {
+      if (!requested && this.websocket?.readyState === WebSocket.OPEN) {
         try {
           await this.send({
             type: "meter_usage",

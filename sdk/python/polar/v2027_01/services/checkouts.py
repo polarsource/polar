@@ -46,6 +46,7 @@ class CheckoutsSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
@@ -64,6 +65,7 @@ class CheckoutsSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
@@ -88,6 +90,7 @@ class CheckoutsSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "status": status,
@@ -110,6 +113,7 @@ class CheckoutsSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
@@ -128,6 +132,7 @@ class CheckoutsSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
@@ -152,6 +157,7 @@ class CheckoutsSync(SyncServiceBase):
             response = self.list(
                 organization_id=organization_id,
                 product_id=product_id,
+                external_product_id=external_product_id,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 status=status,
@@ -486,6 +492,7 @@ class CheckoutsAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
@@ -504,6 +511,7 @@ class CheckoutsAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
@@ -528,6 +536,7 @@ class CheckoutsAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "status": status,
@@ -550,6 +559,7 @@ class CheckoutsAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
@@ -568,6 +578,7 @@ class CheckoutsAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
@@ -592,6 +603,7 @@ class CheckoutsAsync(AsyncServiceBase):
             response = await self.list(
                 organization_id=organization_id,
                 product_id=product_id,
+                external_product_id=external_product_id,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 status=status,

@@ -769,6 +769,9 @@ class BenefitCustom:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
     properties: BenefitCustomProperties
 
     visibility_configurable: bool
@@ -935,6 +938,9 @@ class BenefitDiscord:
 
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
 
     properties: BenefitDiscordProperties
 
@@ -1105,6 +1111,9 @@ class BenefitDownloadables:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
     properties: BenefitDownloadablesProperties
 
     visibility_configurable: bool
@@ -1225,6 +1234,9 @@ class BenefitFeatureFlag:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
     properties: BenefitFeatureFlagProperties
 
     visibility_configurable: bool
@@ -1341,6 +1353,9 @@ class BenefitGitHubRepository:
 
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
 
     properties: BenefitGitHubRepositoryProperties
 
@@ -2094,6 +2109,9 @@ class BenefitLicenseKeys:
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
     properties: BenefitLicenseKeysProperties
 
     visibility_configurable: bool
@@ -2222,6 +2240,9 @@ class BenefitMeterCredit:
 
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
 
     properties: BenefitMeterCreditProperties
 
@@ -2408,6 +2429,9 @@ class BenefitSlackSharedChannel:
 
     visibility: BenefitVisibility
     """The visibility of the benefit in the customer portal."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
 
     properties: BenefitSlackSharedChannelProperties
 
@@ -4658,7 +4682,7 @@ class CustomerOrderSubscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -5235,7 +5259,7 @@ class CustomerStateSubscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -5400,7 +5424,7 @@ class CustomerSubscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -8428,7 +8452,7 @@ class OrderSubscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None
@@ -9737,7 +9761,7 @@ class Subscription:
     canceled_at: str | None
     """The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."""
 
-    started_at: str | None
+    started_at: str
     """The timestamp when the subscription started."""
 
     ends_at: str | None

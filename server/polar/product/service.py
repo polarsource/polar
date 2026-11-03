@@ -481,6 +481,9 @@ class ProductService:
             )
 
         if update_schema.medias is not None:
+            # Lock the product row and reload product_medias. Two transactions
+            # otherwise both delete the rows and insert the same order values.
+            await session.refresh(product, {"product_medias"}, with_for_update=True)
             medias_errors: list[ValidationError] = []
             try:
                 async with session.begin_nested():

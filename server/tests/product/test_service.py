@@ -2614,6 +2614,95 @@ class TestUpdate:
                     await cleanup_session.commit()
             await engine.dispose()
 
+    async def test_concurrent_medias(self, worker_id: str) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_product_medias",
+            pool_size=4,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+        organization_id: uuid.UUID | None = None
+        account_id: uuid.UUID | None = None
+        user_id: uuid.UUID | None = None
+
+        try:
+            async with sessionmaker() as setup_session:
+                save_fixture = save_fixture_factory(setup_session)
+                user = await create_user(save_fixture)
+                account = await create_account(save_fixture, user)
+                organization = await create_organization(save_fixture, account)
+                files = [
+                    ProductMediaFile(
+                        organization=organization,
+                        name=f"Product Cover {i}",
+                        path=f"/product-cover-{i}.jpg",
+                        mime_type="image/jpeg",
+                        size=1024,
+                        service=FileServiceTypes.product_media,
+                        is_enabled=True,
+                        is_uploaded=True,
+                    )
+                    for i in range(3)
+                ]
+                for file in files:
+                    await save_fixture(file)
+                product = await create_product(
+                    save_fixture,
+                    organization=organization,
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                )
+                await setup_session.commit()
+                organization_id = organization.id
+                account_id = account.id
+                user_id = user.id
+                product_id = product.id
+                file_a_id, file_b_id, file_c_id = (file.id for file in files)
+
+            auth_subject: AuthSubject[Organization] = AuthSubject(
+                organization, set(Scope), None
+            )
+            barrier = asyncio.Barrier(2)
+
+            async def replace(medias: list[uuid.UUID]) -> None:
+                async with sessionmaker() as session:
+                    loaded = await product_service.get(
+                        session, auth_subject, product_id
+                    )
+                    assert loaded is not None
+                    await asyncio.wait_for(barrier.wait(), timeout=30)
+                    await product_service.update(
+                        session, loaded, ProductUpdate(medias=medias), auth_subject
+                    )
+                    await session.commit()
+
+            await asyncio.gather(
+                replace([file_a_id, file_b_id]), replace([file_c_id, file_a_id])
+            )
+
+            async with sessionmaker() as session:
+                updated = await product_service.get(session, auth_subject, product_id)
+                assert updated is not None
+                assert [media.order for media in updated.product_medias] == [0, 1]
+                assert [media.file_id for media in updated.product_medias] in (
+                    [file_a_id, file_b_id],
+                    [file_c_id, file_a_id],
+                )
+        finally:
+            if organization_id is not None:
+                async with sessionmaker() as cleanup_session:
+                    await cleanup_session.execute(
+                        delete(Organization).where(Organization.id == organization_id)
+                    )
+                    await cleanup_session.execute(
+                        delete(Account).where(Account.id == account_id)
+                    )
+                    await cleanup_session.execute(
+                        delete(User).where(User.id == user_id)
+                    )
+                    await cleanup_session.commit()
+            await engine.dispose()
+
 
 @pytest.mark.anyio
 class TestUpdateBenefits:

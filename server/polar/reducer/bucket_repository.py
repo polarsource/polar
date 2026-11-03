@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -45,6 +45,8 @@ from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 
 from .redis_store import BucketId, get_reducer_bucket_key
+
+INGESTED_BEFORE_TIMESTAMP_MARGIN = timedelta(seconds=5)
 
 
 def _is_customer(
@@ -194,6 +196,9 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             ),
             model.timestamp >= bucket_start,
             model.timestamp < bucket_end,
+            # Events are never ingested before their timestamp, beyond clock skew:
+            # this bound lets the identity indexes skip the customer's history.
+            model.ingested_at >= bucket_start - INGESTED_BEFORE_TIMESTAMP_MARGIN,
             _is_customer(model, customer_id, external_customer_id),
             reducer.filter.get_sql_clause(model),
             aggregation.get_sql_clause(model),

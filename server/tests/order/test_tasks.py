@@ -658,6 +658,50 @@ class TestEnqueueStalePaymentLocks:
 
 @pytest.mark.anyio
 class TestProcessStalePaymentLock:
+    async def test_keeps_lock_with_successful_payment(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer)
+        lock_acquired_at = (
+            utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD - timedelta(minutes=1)
+        )
+        next_payment_attempt_at = utc_now() - timedelta(minutes=1)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=lock_acquired_at,
+            next_payment_attempt_at=next_payment_attempt_at,
+        )
+        await create_payment(save_fixture, organization, order=order)
+        await create_payment(
+            save_fixture, organization, order=order, status=PaymentStatus.failed
+        )
+        create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent"
+        )
+
+        await process_stale_payment_lock(order.id)
+
+        updated_order = await OrderRepository.from_session(session).get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == OrderStatus.pending
+        assert updated_order.payment_lock_acquired_at == lock_acquired_at
+        assert updated_order.next_payment_attempt_at == next_payment_attempt_at
+
+        await trigger_payment(
+            order.id, payment_method.id, payment_trigger=PaymentTrigger.retry_dunning
+        )
+
+        create_payment_intent.assert_not_called()
+
     async def test_releases_payment_lock(
         self,
         session: AsyncSession,

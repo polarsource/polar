@@ -51,6 +51,7 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    Payment,
     Product,
     ProductPrice,
     Refund,
@@ -59,6 +60,7 @@ from polar.models import (
 )
 from polar.models.dispute import DisputeStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.refund import RefundStatus
 from polar.models.subscription import SubscriptionStatus
 
@@ -490,6 +492,32 @@ class OrderRepository(
         )
         async for order in self.stream(statement):
             yield order
+
+    async def get_pending_with_succeeded_payment_ids(
+        self, since: datetime, older_than: datetime, *, limit: int
+    ) -> tuple[list[UUID], int]:
+        statement = (
+            select(Order.id, func.count().over())
+            .where(
+                Order.deleted_at.is_(None),
+                Order.status == OrderStatus.pending,
+                Order.created_at > since,
+                func.coalesce(Order.modified_at, Order.created_at) < older_than,
+                select(Payment.id)
+                .where(
+                    Payment.order_id == Order.id,
+                    Payment.deleted_at.is_(None),
+                    Payment.status == PaymentStatus.succeeded,
+                    func.coalesce(Payment.modified_at, Payment.created_at) < older_than,
+                )
+                .exists(),
+            )
+            .order_by(Order.created_at.asc(), Order.id.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        rows = result.fetchall()
+        return [row[0] for row in rows], rows[0][1] if rows else 0
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

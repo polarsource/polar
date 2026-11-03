@@ -27,9 +27,11 @@ from polar.models import (
     Checkout,
     CheckoutProduct,
     Organization,
+    Payment,
     Product,
 )
 from polar.models.checkout import CheckoutStatus
+from polar.models.payment import PaymentStatus
 
 from .sorting import CheckoutSortProperty
 
@@ -51,6 +53,32 @@ class CheckoutRepository(
     RepositoryBase[Checkout],
 ):
     model = Checkout
+
+    async def get_confirmed_with_succeeded_payment_ids(
+        self, since: datetime, older_than: datetime, *, limit: int
+    ) -> tuple[list[UUID], int]:
+        statement = (
+            select(Checkout.id, func.count().over())
+            .where(
+                Checkout.deleted_at.is_(None),
+                Checkout.status == CheckoutStatus.confirmed,
+                Checkout.created_at > since,
+                func.coalesce(Checkout.modified_at, Checkout.created_at) < older_than,
+                select(Payment.id)
+                .where(
+                    Payment.checkout_id == Checkout.id,
+                    Payment.deleted_at.is_(None),
+                    Payment.status == PaymentStatus.succeeded,
+                    func.coalesce(Payment.modified_at, Payment.created_at) < older_than,
+                )
+                .exists(),
+            )
+            .order_by(Checkout.created_at.asc(), Checkout.id.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        rows = result.fetchall()
+        return [row[0] for row in rows], rows[0][1] if rows else 0
 
     @typing.overload
     async def get_by_client_secret(

@@ -253,7 +253,7 @@ export const CreateProductPage = ({
               organization={organization}
               update={false}
               hasMeterCreditBenefit={hasMeterCreditBenefit}
-              nameFlagged={flaggedPhrase !== null}
+              flaggedCategory={flaggedPhrase?.category ?? undefined}
               benefitsSlot={
                 <Benefits
                   organization={organization}
@@ -288,7 +288,7 @@ export const CreateProductPage = ({
                 >
                   Acceptable Use Policy
                 </a>
-                .
+                . Polar is a Merchant of Record for digital products only.
               </>
             }
           />

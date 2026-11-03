@@ -305,6 +305,11 @@ const nextConfig = {
         destination: '/dashboard/:organization/analytics/costs',
         permanent: true,
       },
+      {
+        source: '/dashboard/:organization/analytics/metrics/:metric',
+        destination: '/dashboard/:organization/analytics/metrics#:metric',
+        permanent: false,
+      },
 
       // Account Settings Redirects
       {

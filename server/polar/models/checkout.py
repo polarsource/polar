@@ -112,6 +112,9 @@ class Checkout(
             "created_at",
             postgresql_where="anonymized_at IS NULL AND status = 'expired'",
         ),
+        Index(
+            "ix_checkouts_organization_id_created_at", "organization_id", "created_at"
+        ),
         {
             "postgresql_with": {
                 "autovacuum_vacuum_threshold": 1000,

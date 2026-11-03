@@ -112,24 +112,29 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
-    async def count_granted_customers_by_benefits(
-        self, benefit_ids: Sequence[UUID]
-    ) -> dict[UUID, int]:
-        if not benefit_ids:
+    async def count_granted_customers_by_benefit_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Count the customers granted each benefit, in any of its versions."""
+        if not external_ids:
             return {}
         statement = (
-            select(
-                BenefitGrant.benefit_id, func.count(BenefitGrant.customer_id.distinct())
-            )
+            select(Benefit.external_id, func.count(BenefitGrant.customer_id.distinct()))
+            .join(BenefitGrant, BenefitGrant.benefit_id == Benefit.id)
             .where(
-                BenefitGrant.benefit_id.in_(benefit_ids),
+                Benefit.organization_id == organization_id,
+                Benefit.external_id.in_(external_ids),
                 BenefitGrant.is_granted,
                 ~BenefitGrant.is_deleted,
             )
-            .group_by(BenefitGrant.benefit_id)
+            .group_by(Benefit.external_id)
         )
         result = await self.session.execute(statement)
-        return {benefit_id: count for benefit_id, count in result.tuples()}
+        return {
+            external_id: count
+            for external_id, count in result.tuples()
+            if external_id is not None
+        }
 
     async def list_granted_by_customer(
         self,

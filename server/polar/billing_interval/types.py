@@ -21,14 +21,8 @@ class SubscriptionMeterBillingState:
 
 @dataclass(frozen=True)
 class IntervalChangePlan:
-    """Discard intervals that would start and end at the same time.
-
-    Only intervals created in this transaction may be discarded.
-    """
-
     effective_at: datetime
     close_interval_ids: tuple[UUID, ...] = ()
-    discard_interval_ids: tuple[UUID, ...] = ()
     new_interval_states: tuple[SubscriptionMeterBillingState, ...] = ()
 
 

@@ -50,6 +50,7 @@ export {
   Github,
   Globe,
   GripVertical,
+  History,
   Info,
   Key,
   KeyRound,

@@ -419,8 +419,6 @@ def get_checkouts_cte(
 
     readable_checkouts_statement = (
         select(Checkout.id)
-        .join(CheckoutProduct, CheckoutProduct.checkout_id == Checkout.id)
-        .join(Product, onclause=CheckoutProduct.product_id == Product.id)
         # Performance optimization: filter by created_at (indexed) before JSONB access.
         # Since opened_at >= created_at and opened_at <= expires_at = created_at + TTL:
         # - created_at <= end_timestamp: checkout can't be opened after end if created after end
@@ -438,7 +436,7 @@ def get_checkouts_cte(
 
     if is_user(auth_subject):
         readable_checkouts_statement = readable_checkouts_statement.where(
-            Product.organization_id.in_(
+            Checkout.organization_id.in_(
                 select_accessible_org_ids(
                     auth_subject, permission=OrganizationPermission.analytics_read
                 )
@@ -446,12 +444,19 @@ def get_checkouts_cte(
         )
     elif is_organization(auth_subject):
         readable_checkouts_statement = readable_checkouts_statement.where(
-            Product.organization_id == auth_subject.subject.id
+            Checkout.organization_id == auth_subject.subject.id
         )
 
     if organization_id is not None:
         readable_checkouts_statement = readable_checkouts_statement.where(
-            Product.organization_id.in_(organization_id)
+            Checkout.organization_id.in_(organization_id)
+        )
+
+    # checkout_products has no index on product_id: only join it when filtering
+    # by product, so the planner drives the join from the org-scoped checkouts.
+    if product_id is not None or billing_type is not None:
+        readable_checkouts_statement = readable_checkouts_statement.join(
+            CheckoutProduct, CheckoutProduct.checkout_id == Checkout.id
         )
 
     if product_id is not None:
@@ -460,9 +465,9 @@ def get_checkouts_cte(
         )
 
     if billing_type is not None:
-        readable_checkouts_statement = readable_checkouts_statement.where(
-            Product.billing_type.in_(billing_type)
-        )
+        readable_checkouts_statement = readable_checkouts_statement.join(
+            Product, onclause=CheckoutProduct.product_id == Product.id
+        ).where(Product.billing_type.in_(billing_type))
 
     if customer_id is not None:
         readable_checkouts_statement = readable_checkouts_statement.where(

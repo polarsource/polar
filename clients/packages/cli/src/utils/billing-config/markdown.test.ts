@@ -227,6 +227,27 @@ describe('planMarkdown', () => {
     )
   })
 
+  test('says which updated benefits a product grants', () => {
+    const output = planMarkdown(config, acme, {
+      entries: [
+        { section: 'benefits', id: 'support', action: 'updated', diff: [] },
+        {
+          section: 'products',
+          id: 'pro',
+          action: 'updated',
+          diff: [
+            { field: 'benefits', before: ['support'], after: ['support'] },
+          ],
+        },
+      ],
+      issues: [],
+    })
+    expect(output).toContain(
+      ['  pro', '    benefits  support (updated)'].join('\n'),
+    )
+    expect(output).not.toContain('-   benefits')
+  })
+
   test('diffs settings groups like entries', () => {
     const markdown = planMarkdown(config, acme, {
       entries: [

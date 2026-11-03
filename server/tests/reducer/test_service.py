@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Any, cast
 
 import pytest
+from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -1749,6 +1750,35 @@ async def tokens_events(
 @pytest.mark.anyio
 @pytest.mark.usefixtures("tokens_events")
 class TestBillUsageWindows:
+    async def test_records_a_span_per_window(
+        self,
+        capfire: CaptureLogfire,
+        session: AsyncSession,
+        external_customer: Customer,
+        tokens_meter: Meter,
+        order: Order,
+    ) -> None:
+        await reducer_service.bill(
+            session,
+            external_customer,
+            [tokens_meter.id],
+            order_id=order.id,
+            windows=[usage_window(tokens_meter, BUCKET_START, CUTOFF)],
+            billable_from=BUCKET_START,
+            cutoff=CUTOFF,
+        )
+
+        [span] = [
+            span
+            for span in capfire.exporter.exported_spans
+            if span.name == "Bill reducer buckets"
+            and span.attributes is not None
+            and span.attributes.get("logfire.span_type") == "span"
+        ]
+        assert span.attributes is not None
+        assert span.attributes["meter_id"] == str(tokens_meter.id)
+        assert span.attributes["quantity"] == "5"
+
     async def test_billed_usage_is_not_billed_again(
         self,
         save_fixture: SaveFixture,

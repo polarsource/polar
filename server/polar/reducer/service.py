@@ -337,22 +337,36 @@ class ReducerService:
         usage: list[WindowUsage] = []
         for window in windows:
             reducer = reducers[window.meter_id]
-            await self._seal_buckets(
-                session, [reducer], customer, since=window.start, until=window.end
-            )
-            billed = await repository.mark_as_billed(
-                reducer,
-                identities,
-                order_id,
+            with logfire.span(
+                "Bill reducer buckets",
+                organization_id=str(customer.organization_id),
+                reducer_id=str(reducer.id),
+                customer_id=str(customer.id),
+                order_id=str(order_id),
+                meter_id=str(window.meter_id),
+                subscription_id=str(window.source_subscription_id),
+                interval_id=str(window.interval_id),
                 since=window.start,
                 until=window.end,
-                billed_at=utc_now(),
-            )
-            usage.append(
-                WindowUsage(
-                    window, merge_summaries([UsageSummary(*row) for row in billed])
+            ) as span:
+                await self._seal_buckets(
+                    session, [reducer], customer, since=window.start, until=window.end
                 )
-            )
+                billed = await repository.mark_as_billed(
+                    reducer,
+                    identities,
+                    order_id,
+                    since=window.start,
+                    until=window.end,
+                    billed_at=utc_now(),
+                )
+                summary = merge_summaries([UsageSummary(*row) for row in billed])
+                span.set_attribute("billed_buckets", len(billed))
+                span.set_attribute(
+                    "quantity",
+                    str(finalize_quantity(summary, reducer.aggregation.func)),
+                )
+            usage.append(WindowUsage(window, summary))
         return usage
 
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:

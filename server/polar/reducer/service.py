@@ -3,7 +3,7 @@ from collections import defaultdict
 from collections.abc import Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, assert_never
+from typing import Any, assert_never, cast
 from uuid import UUID
 
 import logfire
@@ -11,7 +11,6 @@ import structlog
 from redis.exceptions import RedisError
 from sqlalchemy import Row
 
-from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncReadSession
@@ -43,6 +42,16 @@ from polar.worker import enqueue_job
 from . import cache, redis_store
 from .bucket_repository import ReducerBucketRepository, get_customer_identities
 from .repository import ReducerRepository
+from .types import (
+    IncompleteUsage,
+    ObservedUsage,
+    UsageAggregation,
+    UsageDefinition,
+    UsageResult,
+    UsageSummary,
+    UsageWindow,
+    WindowUsage,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -221,46 +230,43 @@ class ReducerService:
         meter_ids: Iterable[UUID],
         *,
         order_id: UUID,
+        windows: Sequence[UsageWindow],
         billable_from: datetime,
         cutoff: datetime,
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
-        """Marks the customer's usage within [billable_from, cutoff] and its credits
-        since the latest reset as billed by the order, and returns their quantities
-        per meter. Usage it seals is first split at the billing interval boundaries
-        of the meters."""
+        """Marks the customer's usage in `windows` and its credits since the latest
+        reset, from `billable_from` at the earliest, as billed by the order, and
+        returns their quantities per meter."""
         meter_ids = sorted(meter_ids)
         try:
             async with session.begin_nested():
                 reducers = await self._get_reducers(
                     session, meter_ids, ReducerKind.usage
                 )
-                # The meter.reset at `cutoff` should have sealed this usage already.
-                # That task and this run at roughly the same time, so if it
-                # hasn't run already we seal it here. The one that runs
-                # afterward becomes a no-op.
-                boundaries: set[datetime] = set()
-                for meter_id in reducers:
-                    boundaries.update(
-                        await billing_interval_service.get_boundaries(
-                            session, customer, meter_id, until=cutoff
-                        )
+                observed = await self._bill_windows(
+                    session, customer, windows, order_id=order_id
+                )
+                if isinstance(observed, IncompleteUsage):
+                    log.warning(
+                        "Incomplete reducer usage",
+                        customer_id=customer.id,
+                        order_id=order_id,
+                        reason=observed.reason,
                     )
-                await self._seal_buckets(
-                    session,
-                    list(reducers.values()),
-                    customer,
-                    since=billable_from,
-                    until=cutoff,
-                    boundaries=sorted(boundaries),
-                )
-                quantities = await self._bill_buckets(
-                    session,
-                    list(reducers.values()),
-                    customer,
-                    order_id=order_id,
-                    since=billable_from,
-                    until=cutoff,
-                )
+                    return {}
+                quantities = {
+                    reducer.id: finalize_quantity(
+                        merge_summaries(
+                            [
+                                usage.summary
+                                for usage in observed.windows
+                                if usage.window.meter_id == meter_id
+                            ]
+                        ),
+                        reducer.aggregation.func,
+                    )
+                    for meter_id, reducer in reducers.items()
+                }
                 credit_reducers = await self._get_reducers(
                     session, meter_ids, ReducerKind.credit
                 )
@@ -304,6 +310,85 @@ class ReducerService:
             for meter_id, reducer in reducers.items()
             if reducer.id in quantities
         }
+
+    async def _bill_windows(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        windows: Sequence[UsageWindow],
+        *,
+        order_id: UUID,
+    ) -> UsageResult:
+        """Marks the customer's usage in each window as billed by the order, and
+        returns it. The windows' starts and ends become bucket boundaries first."""
+        reducer_repository = ReducerRepository.from_session(session)
+        reducers: dict[UUID, Reducer] = {}
+        for meter_id in sorted({window.meter_id for window in windows}):
+            reducer = await reducer_repository.get_by_meter_and_kind(
+                meter_id, ReducerKind.usage
+            )
+            if reducer is None:
+                return IncompleteUsage("unsupported_reducer_mapping")
+            if isinstance(reducer.aggregation, UniqueAggregation):
+                return IncompleteUsage("unsupported_aggregation")
+            reducers[meter_id] = reducer
+
+        repository = ReducerBucketRepository.from_session(session)
+        identities = get_customer_identities(customer)
+        boundaries_by_meter: dict[UUID, set[datetime]] = defaultdict(set)
+        for window in windows:
+            boundaries_by_meter[window.meter_id].update((window.start, window.end))
+        await self._lock_buckets(
+            repository,
+            [
+                (reducers[meter_id], get_reducer_bucket_start(at), *identity)
+                for meter_id, boundaries in boundaries_by_meter.items()
+                for at in boundaries
+                for identity in identities
+            ],
+        )
+        for meter_id, boundaries in sorted(boundaries_by_meter.items()):
+            for identity in identities:
+                if not await self._split_at(
+                    repository,
+                    reducers[meter_id],
+                    customer,
+                    identity,
+                    sorted(boundaries),
+                ):
+                    return IncompleteUsage("boundary_unavailable")
+
+        usage: list[WindowUsage] = []
+        for window in windows:
+            reducer = reducers[window.meter_id]
+            await self._seal_buckets(
+                session, [reducer], customer, since=window.start, until=window.end
+            )
+            billed = await repository.mark_as_billed(
+                reducer,
+                identities,
+                order_id,
+                since=window.start,
+                until=window.end,
+                billed_at=utc_now(),
+            )
+            usage.append(
+                WindowUsage(
+                    window, merge_summaries([UsageSummary(*row) for row in billed])
+                )
+            )
+        return ObservedUsage(
+            windows=tuple(usage),
+            observed_at=utc_now(),
+            definitions=tuple(
+                UsageDefinition(
+                    meter_id,
+                    reducer.id,
+                    cast(UsageAggregation, reducer.aggregation.func),
+                )
+                for meter_id, reducer in sorted(reducers.items())
+            ),
+        )
 
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:
         """Creates the meter's reducer of each kind and updates its usage reducer,
@@ -801,9 +886,11 @@ class ReducerService:
         customer: Customer,
         identity: tuple[UUID | None, str | None],
         boundaries: Sequence[datetime],
-    ) -> None:
-        """Makes each boundary a bucket boundary of the customer identity."""
+    ) -> bool:
+        """Makes each boundary a bucket boundary of the customer identity, and
+        returns whether they all are: one inside a sealed bucket can't be."""
         customer_id, external_customer_id = identity
+        all_split = True
         for at in boundaries:
             with logfire.span(
                 "Split reducer buckets",
@@ -827,8 +914,10 @@ class ReducerService:
                         (start, end),
                         split_at=at,
                     )
+                    all_split = all_split and split
                 span.set_attribute("interval", [start.isoformat(), end.isoformat()])
                 span.set_attribute("split", split)
+        return all_split
 
     async def _bill_buckets(
         self,

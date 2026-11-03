@@ -34,11 +34,8 @@ class UsageSummary:
 
 @dataclass(frozen=True)
 class WindowUsage:
-    """The opaque key covers bucket identities, generations, boundaries and summaries."""
-
     window: UsageWindow
     summary: UsageSummary
-    observation_key: str
 
 
 @dataclass(frozen=True)

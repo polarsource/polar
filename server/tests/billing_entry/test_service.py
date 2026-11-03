@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -41,6 +42,7 @@ from polar.product.guard import (
     is_seat_price,
 )
 from polar.product.tiers import Tiers, TierType
+from polar.reducer.types import UsageWindow
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -1538,6 +1540,20 @@ class TestCreateOrderItemsFromPending:
             "polar.billing_entry.service.reducer_service.bill",
             return_value={meter.id: (Decimal(10), Decimal(0))},
         )
+        own, other = (
+            UsageWindow(
+                uuid.uuid4(),
+                subscription_id,
+                meter.id,
+                utc_now() - timedelta(days=1),
+                utc_now(),
+            )
+            for subscription_id in (metered_subscription.id, uuid.uuid4())
+        )
+        mocker.patch(
+            "polar.billing_entry.service.billing_interval_service.get_usage_windows",
+            return_value=(own, other),
+        )
         await create_metered_event_billing_entry(
             save_fixture,
             customer=customer,
@@ -1563,6 +1579,7 @@ class TestCreateOrderItemsFromPending:
                 customer,
                 {meter.id},
                 order_id=order.id,
+                windows=(own,),
                 billable_from=metered_subscription.started_at,
                 cutoff=cutoff,
             )

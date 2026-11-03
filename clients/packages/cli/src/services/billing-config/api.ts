@@ -45,12 +45,14 @@ export const post = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   options: CatalogOptions = {},
+  params: Record<string, string> = {},
 ) =>
   Effect.gen(function* () {
     const request = yield* HttpClientRequest.post(
       yield* apiUrl(organization.environment, path),
     ).pipe(
       withOrganization(organization.id),
+      HttpClientRequest.setUrlParams(params),
       HttpClientRequest.bodyJson(requestBody(config.input, options)),
     )
     return yield* clients[organization.environment].execute(request)

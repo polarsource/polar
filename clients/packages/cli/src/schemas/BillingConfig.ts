@@ -70,6 +70,11 @@ export const Removal = Schema.Struct({
 export const ApplyResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
   removed: Schema.optional(Schema.Array(Removal)),
+  catalog: Schema.optional(
+    Schema.NullOr(
+      Schema.Struct({ after: Schema.Struct({ id: Schema.String }) }),
+    ),
+  ),
   settings: Schema.optional(Schema.NullOr(SettingsResult)),
 })
 
@@ -144,6 +149,7 @@ export const ApplyResult = Schema.Union([
   Schema.Struct({
     status: Schema.Literal('applied'),
     entries: Schema.Array(AppliedEntry),
+    draft: Schema.optionalKey(Schema.Struct({ url: Schema.String })),
     issues: Schema.optionalKey(Schema.Array(ConfigIssue)),
   }),
   Schema.Struct({

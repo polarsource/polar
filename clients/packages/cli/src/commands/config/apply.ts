@@ -39,14 +39,34 @@ const name = Flag.String('name').pipe(
   ),
 )
 
+const publish = Flag.Boolean('publish').pipe(
+  Flag.withDefault(false),
+  Flag.withDescription(
+    'Publish the changes right away instead of saving them as a draft to review in the dashboard',
+  ),
+)
+
 const applied = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   entries: ReadonlyArray<AppliedEntry>,
-) =>
-  unchanged(entries)
-    ? ui.success(`${target(organization)} is up to date, nothing to apply`)
-    : `${ui.INDENT}${config.file} applied to ${target(organization)}: ${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`
+  draft: { url: string } | undefined,
+) => {
+  if (unchanged(entries)) {
+    return [
+      ui.success(`${target(organization)} is up to date, nothing to apply`),
+    ]
+  }
+  const summary = `${plural(entries.length, 'entry', 'entries')} (${tally(entries)})`
+  return draft === undefined
+    ? [
+        `${ui.INDENT}${config.file} applied to ${target(organization)}: ${summary}`,
+      ]
+    : [
+        `${ui.INDENT}${config.file} saved as a draft for ${target(organization)}: ${summary}`,
+        `${ui.INDENT}Review and publish it in the dashboard: ${draft.url}`,
+      ]
+}
 
 const render = (
   config: LoadedConfig,
@@ -57,7 +77,7 @@ const render = (
     ? [ui.blank]
     : [
         ...(unchanged(result.entries) ? [ui.blank] : []),
-        applied(config, organization, result.entries),
+        ...applied(config, organization, result.entries, result.draft),
         ui.blank,
       ]
 
@@ -122,7 +142,13 @@ const approve = (
     ).pipe(Effect.catch(() => say([ui.blank]).pipe(Effect.as(false))))
   })
 
-export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
+export const apply = Command.make('apply', {
+  file,
+  org,
+  confirmed,
+  name,
+  publish,
+}).pipe(
   Command.withDescription(
     'Create or update everything in a billing config file for your organization',
   ),
@@ -130,7 +156,11 @@ export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
     {
       command: 'polar config apply',
       description:
-        'Show what applying polar.config.ts would change, then apply after confirmation',
+        'Show what applying polar.config.ts would change, then save it as a draft after confirmation',
+    },
+    {
+      command: 'polar config apply --publish',
+      description: 'Publish the changes right away instead of saving a draft',
     },
     {
       command: 'polar config apply billing/polar.json',
@@ -155,11 +185,11 @@ export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
   ]),
   output({
     result: ApplyOutput,
-    run: ({ file, org, confirmed, name }, { say }) =>
+    run: ({ file, org, confirmed, name, publish }, { say }) =>
       Effect.gen(function* () {
         const billing = yield* BillingConfig
         const { json } = yield* Output
-        const catalog = { name: Option.getOrUndefined(name) }
+        const catalog = { name: Option.getOrUndefined(name), publish }
         const milliseconds = (elapsed: Duration.Duration) =>
           `${Math.round(Duration.toMillis(elapsed))}ms`
         return yield* withProgress(

@@ -34,7 +34,7 @@ const source = [
 
 let api: ReturnType<typeof fakeHttp>
 
-const run = (file: string, name?: string) =>
+const run = (file: string, name?: string, publish?: boolean) =>
   Effect.runPromise(
     Effect.gen(function* () {
       const clients = {
@@ -43,7 +43,7 @@ const run = (file: string, name?: string) =>
         local: yield* authenticatedClient('local'),
       }
       const config = yield* loader(yield* FileSystem.FileSystem)(file)
-      return yield* apply(clients)(config, acme, { name })
+      return yield* apply(clients)(config, acme, { name, publish })
     }).pipe(
       Effect.provide(Layer.mergeAll(BunServices.layer, api.layer)),
       Effect.provideService(Auth, fakeAuth({ environment: 'sandbox' }).auth),
@@ -77,6 +77,22 @@ const failure = (promise: Promise<unknown>) =>
   )
 
 describe('apply', () => {
+  test('saves a draft and links to it in the dashboard', async () => {
+    api.routes[`POST ${applyUrl}?publish=false`] = Response.json({
+      changes: [{ resource: 'product', external_id: 'pro', action: 'updated' }],
+      catalog: { before: null, after: { id: 'draft-1', name: null } },
+    })
+
+    const result = await run(await write(source), undefined, false)
+
+    expect(result).toMatchObject({
+      status: 'applied',
+      draft: {
+        url: 'https://sandbox.polar.sh/dashboard/acme/products/versions/draft-1',
+      },
+    })
+  })
+
   test('posts the config for the organization and reports what happened', async () => {
     api.routes[`POST ${applyUrl}`] = Response.json({
       changes: [

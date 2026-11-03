@@ -98,6 +98,7 @@ export const registerExecuteTool = Effect.fn('registerExecuteTool')(function* (
         ...intentField,
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
+        title: 'Call the Polar API',
         readOnlyHint: props.readOnly,
         destructiveHint: !props.readOnly,
         openWorldHint: false,

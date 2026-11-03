@@ -163,6 +163,7 @@ test('code mode is the default for every client; ?codemode=false selects operati
       maxLength: 1024,
       examples: ['Set up usage-based billing for an API product'],
     })
+    expect(tool.annotations.title).toBe(tool.title)
   }
   expect(
     (await rpc('tools/list', {}, '?codemode=true')).result.tools,
@@ -195,10 +196,12 @@ test('code mode is the default for every client; ?codemode=false selects operati
       maxLength: 1024,
     })
     expect(tool.inputSchema.required ?? []).not.toContain('intent')
+    expect(tool.annotations.title).toBe(tool.title)
   }
   const annotations = (name: string) =>
     operations.find((tool: { name: string }) => tool.name === name).annotations
   expect(annotations('subscriptions_list')).toEqual({
+    title: expect.any(String),
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,

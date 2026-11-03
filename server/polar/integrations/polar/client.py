@@ -46,6 +46,7 @@ from polar.v2026_04.outputs import (
     CustomerBenefitGrant,
     CustomerPaymentMethod,
     CustomerPortalCustomer,
+    CustomerSession,
     Discount,
     Member,
     Order,
@@ -55,6 +56,7 @@ from polar.v2026_04.outputs import (
 
 from .exceptions import (
     PolarSelfBenefitGrantNotFound,
+    PolarSelfCustomerNotFound,
     PolarSelfOrderNotEligible,
     PolarSelfPaymentMethodInUse,
     PolarSelfPaymentMethodNotFound,
@@ -219,19 +221,19 @@ class PolarSelfClient:
     async def list_customer_orders(
         self,
         *,
-        customer_id: str,
+        external_customer_id: str,
         page: int = 1,
         limit: int = 50,
     ) -> tuple[list[Order], int]:
         with logfire.span(
             "polar.list_customer_orders",
-            customer_id=customer_id,
+            external_customer_id=external_customer_id,
             page=page,
             limit=limit,
         ) as span:
             try:
                 response = await self._sdk.orders.list(
-                    customer_id=customer_id,
+                    external_customer_id=external_customer_id,
                     page=page,
                     limit=limit,
                     sorting=["-created_at"],
@@ -823,13 +825,32 @@ class PolarSelfClient:
     # Customer-portal-scoped operations: create a per-call customer session
     # and act AS THE CUSTOMER. Used for fields the admin API doesn't expose.
 
+    async def _create_customer_session(
+        self,
+        *,
+        external_customer_id: str,
+        external_member_id: str | None,
+    ) -> CustomerSession:
+        try:
+            return await self._sdk.customer_sessions.create(
+                external_customer_id=external_customer_id,
+                external_member_id=external_member_id,
+            )
+        except HTTPValidationError as e:
+            if any(
+                list(item.loc) == ["body", "external_customer_id"]
+                for item in e.error.detail or []
+            ):
+                raise PolarSelfCustomerNotFound(UUID(external_customer_id)) from e
+            raise
+
     async def _create_portal_sdk(
         self,
         *,
         external_customer_id: str,
         external_member_id: str | None,
     ) -> PolarSDK:
-        session = await self._sdk.customer_sessions.create(
+        session = await self._create_customer_session(
             external_customer_id=external_customer_id,
             external_member_id=external_member_id,
         )
@@ -938,7 +959,7 @@ class PolarSelfClient:
             external_member_id=external_member_id,
         ) as span:
             try:
-                session = await self._sdk.customer_sessions.create(
+                session = await self._create_customer_session(
                     external_customer_id=external_customer_id,
                     external_member_id=external_member_id,
                 )

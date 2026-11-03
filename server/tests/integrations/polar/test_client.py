@@ -1,9 +1,11 @@
+import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from polar.base import PolarServerError
+from polar.base import PolarServerError, deserialize
+from polar.v2026_04.errors import HTTPValidationError as SDKHTTPValidationError
 from polar.v2026_04.errors import (
     MissingInvoiceBillingDetails as SDKMissingInvoiceBillingDetails,
 )
@@ -29,7 +31,10 @@ from polar.integrations.polar.client import (
     PolarSelfClientError,
     PolarSelfClientOperationalError,
 )
-from polar.integrations.polar.exceptions import PolarSelfOrderNotEligible
+from polar.integrations.polar.exceptions import (
+    PolarSelfCustomerNotFound,
+    PolarSelfOrderNotEligible,
+)
 
 
 def _client() -> PolarSelfClient:
@@ -61,6 +66,67 @@ def _not_found() -> SDKResourceNotFound:
         404,
         ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
     )
+
+
+def _validation_error(field: str, msg: str) -> SDKHTTPValidationError:
+    return SDKHTTPValidationError(
+        422,
+        deserialize(
+            {
+                "detail": [
+                    {
+                        "type": "value_error",
+                        "loc": ["body", field],
+                        "msg": msg,
+                        "input": "x",
+                    }
+                ]
+            },
+            SDKHTTPValidationError.error_type,
+        ),
+    )
+
+
+@pytest.mark.anyio
+class TestCustomerSessionErrors:
+    async def test_missing_customer_raises_customer_not_found(
+        self, mocker: MockerFixture
+    ) -> None:
+        organization_id = uuid.uuid4()
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customer_sessions,
+            "create",
+            new=AsyncMock(
+                side_effect=_validation_error(
+                    "external_customer_id", "Customer does not exist."
+                )
+            ),
+        )
+
+        with pytest.raises(PolarSelfCustomerNotFound) as exc_info:
+            await client.portal_get_customer(external_customer_id=str(organization_id))
+
+        assert exc_info.value.organization_id == organization_id
+
+    async def test_missing_member_stays_client_error(
+        self, mocker: MockerFixture
+    ) -> None:
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customer_sessions,
+            "create",
+            new=AsyncMock(
+                side_effect=_validation_error(
+                    "external_member_id", "Member does not exist for this customer."
+                )
+            ),
+        )
+
+        with pytest.raises(PolarSelfClientError):
+            await client.portal_create_customer_session(
+                external_customer_id=str(uuid.uuid4()), external_member_id="user"
+            )
 
 
 @pytest.mark.anyio

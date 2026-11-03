@@ -24,6 +24,8 @@ from .types import IntervalChangePlan, SubscriptionMeterBillingState
 
 log: Logger = structlog.get_logger()
 
+BILL_USAGE_LOCK_TIMEOUT = "2s"
+
 USAGE_POLICIES = {
     SubscriptionStatus.active: UsagePolicy.charge,
     SubscriptionStatus.past_due: UsagePolicy.charge,
@@ -112,10 +114,15 @@ class BillingIntervalService:
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
         """Marks the reducer usage the subscription owns on the meters, and its
         credits, as billed by the order, and returns their quantities per meter.
-        Failures are rolled back and logged, so they never affect the order."""
+        Failures, including waiting on a bucket lock for longer than
+        BILL_USAGE_LOCK_TIMEOUT, are rolled back and logged, so they never affect
+        the order."""
         meter_ids = sorted(meter_ids)
+        repository = BillingIntervalRepository.from_session(session)
+        lock_timeout = await repository.get_lock_timeout()
         try:
             async with session.begin_nested():
+                await repository.set_local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT)
                 windows: list[UsageWindow] = []
                 for meter_id in meter_ids:
                     windows.extend(
@@ -123,7 +130,7 @@ class BillingIntervalService:
                             session, subscription.customer, meter_id, cutoff=cutoff
                         )
                     )
-                return await reducer_service.bill(
+                quantities = await reducer_service.bill(
                     session,
                     subscription.customer,
                     meter_ids,
@@ -141,7 +148,9 @@ class BillingIntervalService:
                 order_id=order_id,
                 cutoff=cutoff.isoformat(),
             )
-            return {}
+            quantities = {}
+        await repository.set_local_lock_timeout(lock_timeout)
+        return quantities
 
 
 def get_interval_boundaries(

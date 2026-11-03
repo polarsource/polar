@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import update
 
 from polar.billing_interval.repository import BillingIntervalRepository
+from polar.billing_interval.service import BILL_USAGE_LOCK_TIMEOUT
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.models import Customer, Meter, Product
 from polar.models.subscription import SubscriptionStatus
@@ -110,6 +111,45 @@ class TestBillUsage:
             cutoff=CUTOFF,
         )
 
+    async def test_shortens_the_lock_timeout_only_while_billing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        repository = BillingIntervalRepository.from_session(session)
+        lock_timeout = await repository.get_lock_timeout()
+        while_billing: list[str] = []
+
+        async def record_lock_timeout(
+            *args: object, **kwargs: object
+        ) -> dict[object, object]:
+            while_billing.append(await repository.get_lock_timeout())
+            return {}
+
+        mocker.patch.object(reducer_service, "bill", side_effect=record_lock_timeout)
+
+        await billing_interval_service.bill_usage(
+            session,
+            subscription,
+            [meter.id],
+            order_id=uuid4(),
+            billable_from=EARLIER,
+            cutoff=CUTOFF,
+        )
+
+        assert while_billing == [BILL_USAGE_LOCK_TIMEOUT]
+        assert await repository.get_lock_timeout() == lock_timeout
+
     @pytest.mark.parametrize("failing", ["get_usage_windows", "bill"])
     async def test_failures_are_rolled_back_and_logged(
         self,
@@ -128,6 +168,8 @@ class TestBillUsage:
             status=SubscriptionStatus.active,
         )
         original_name = meter.name
+        repository = BillingIntervalRepository.from_session(session)
+        lock_timeout = await repository.get_lock_timeout()
 
         async def write_then_fail(*args: object, **kwargs: object) -> None:
             await session.execute(
@@ -156,4 +198,5 @@ class TestBillUsage:
         assert quantities == {}
         await session.refresh(meter)
         assert meter.name == original_name
+        assert await repository.get_lock_timeout() == lock_timeout
         log.exception.assert_called_once()

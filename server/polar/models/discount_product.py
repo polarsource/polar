@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Uuid
+from sqlalchemy import ForeignKey, String, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -23,6 +23,9 @@ class DiscountProduct(RecordModel):
         ForeignKey("products.id", ondelete="cascade"),
         primary_key=True,
         index=True,
+    )
+    external_product_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
     )
 
     @declared_attr

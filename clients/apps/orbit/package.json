@@ -19,7 +19,7 @@
     "@polar-sh/orbit": "workspace:*",
     "@polar-sh/ui": "workspace:*",
     "@stylexjs/stylex": "catalog:",
-    "next": "^16.3.6",
+    "next": "^16.4.4",
     "next-themes": "catalog:",
     "react": "19.3.0",
     "react-dom": "19.3.0",

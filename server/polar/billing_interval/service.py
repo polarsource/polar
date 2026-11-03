@@ -1,5 +1,3 @@
-"""Meter availability and comparison execution are unimplemented."""
-
 import dataclasses
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
@@ -12,7 +10,7 @@ import structlog
 
 from polar.exceptions import PolarError
 from polar.logging import Logger
-from polar.models import BillingInterval, Customer, Meter, Subscription
+from polar.models import BillingInterval, Customer, Subscription
 from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -21,14 +19,8 @@ from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageWindow
 from polar.subscription.repository import SubscriptionRepository
 
-from .comparison import BillingComparison
 from .repository import BillingIntervalRepository
-from .types import (
-    IntervalChangePlan,
-    MeteredSettlement,
-    SubscriptionMeterBillingState,
-    UsageDiagnostic,
-)
+from .types import IntervalChangePlan, SubscriptionMeterBillingState
 
 log: Logger = structlog.get_logger()
 
@@ -70,24 +62,6 @@ class BillingIntervalService:
                 subscription_id=subscription.id,
                 effective_at=effective_at.isoformat(),
             )
-
-    async def record_meter(
-        self,
-        session: AsyncSession,
-        meter: Meter,
-        *,
-        effective_at: datetime,
-    ) -> None:
-        """Reconcile availability for the prelocked affected subscription set."""
-        raise NotImplementedError
-
-    async def compare(
-        self,
-        session: AsyncSession,
-        settlement: MeteredSettlement | UsageDiagnostic,
-    ) -> BillingComparison:
-        """Capture a request; execution starts in a fresh task transaction."""
-        raise NotImplementedError
 
     async def get_boundaries(
         self,

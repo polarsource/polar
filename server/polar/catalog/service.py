@@ -1,3 +1,4 @@
+import builtins
 import hashlib
 import json
 import uuid
@@ -5,13 +6,15 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.repository import BenefitRepository
+from polar.checkout_link.repository import CheckoutLinkRepository
+from polar.discount.repository import DiscountRepository
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -87,7 +90,21 @@ def hash_entries(parent_hash: str | None, entries: CatalogEntries) -> str:
 
 class CatalogNotFound(PolarError):
     def __init__(self, id: uuid.UUID) -> None:
-        super().__init__(f"No published catalog with ID {id}.", 404)
+        super().__init__(f"No catalog with ID {id}.", 404)
+
+
+class CatalogNotDraft(PolarError):
+    def __init__(self, id: uuid.UUID) -> None:
+        super().__init__(f"The catalog {id} isn't a draft.", 409)
+
+
+class CatalogDraftOutdated(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Another catalog was published since this draft was created. "
+            "Apply the changes again on top of the live catalog.",
+            409,
+        )
 
 
 class CatalogService:
@@ -138,6 +155,27 @@ class CatalogService:
         )
         return await repository.get_one_or_none(statement)
 
+    async def get_draft_for_write(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: uuid.UUID,
+    ) -> Catalog:
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.products_manage
+        )
+        repository = CatalogRepository.from_session(session)
+        catalog = await repository.get_one_or_none(
+            repository.get_statement_by_org_ids(set(org_ids))
+            .where(Catalog.id == id)
+            .options(joinedload(Catalog.organization))
+        )
+        if catalog is None or not catalog.organization.is_config_as_code_enabled:
+            raise CatalogNotFound(id)
+        if catalog.status != CatalogStatus.draft:
+            raise CatalogNotDraft(id)
+        return catalog
+
     async def _get_readable_org_ids(
         self,
         session: AsyncReadSession,
@@ -157,15 +195,14 @@ class CatalogService:
         organization: Organization,
         id: uuid.UUID | None,
     ) -> Catalog | None:
-        """Return the published catalog with this ID, or the live catalog when
-        `id` is None.
+        """Return the catalog with this ID, or the live catalog when `id` is None.
 
         The live catalog is None before the first publish.
         """
         repository = CatalogRepository.from_session(session)
         if id is None:
             return await repository.get_live(organization.id)
-        catalog = await repository.get_published_by_id(organization.id, id)
+        catalog = await repository.get_by_organization_and_id(organization.id, id)
         if catalog is None:
             raise CatalogNotFound(id)
         return catalog
@@ -173,7 +210,9 @@ class CatalogService:
     async def lists_benefits(self, session: AsyncReadSession, catalog: Catalog) -> bool:
         """Whether the catalog records its benefits. Catalogs published before
         the organization's first one that does were published before benefits
-        were versioned."""
+        were versioned. Drafts always do."""
+        if catalog.status == CatalogStatus.draft:
+            return True
         first = await CatalogBenefitRepository.from_session(
             session
         ).get_first_published_at(catalog.organization_id)
@@ -324,6 +363,33 @@ class CatalogService:
         )
         return catalog
 
+    async def _next_members(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        live: Catalog | None,
+        new_products: Mapping[str, Product],
+        new_benefits: Mapping[str, Benefit],
+        removed: Collection[str],
+        removed_benefits: Collection[str],
+    ) -> tuple[dict[str, Product], dict[str, Benefit]]:
+        products = (
+            {}
+            if live is None
+            else {
+                member.external_id: member.product
+                for member in await CatalogProductRepository.from_session(
+                    session
+                ).get_all_by_catalog(live.id)
+            }
+        )
+        benefits = await self.get_catalog_benefits(session, organization, live)
+        for external_id in removed:
+            products.pop(external_id)
+        for external_id in removed_benefits:
+            benefits.pop(external_id)
+        return {**products, **new_products}, {**benefits, **new_benefits}
+
     async def publish(
         self,
         session: AsyncSession,
@@ -338,28 +404,17 @@ class CatalogService:
     ) -> Catalog:
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
-        product_repository = ProductRepository.from_session(session)
-        benefit_repository = BenefitRepository.from_session(session)
-
-        products = (
-            {}
-            if live is None
-            else {
-                member.external_id: member.product
-                for member in await CatalogProductRepository.from_session(
-                    session
-                ).get_all_by_catalog(live.id)
-            }
+        products, benefits = await self._next_members(
+            session,
+            organization,
+            live,
+            new_products,
+            new_benefits,
+            removed,
+            removed_benefits,
         )
-        benefits = await self.get_catalog_benefits(session, organization, live)
-        for external_id in removed:
-            await product_repository.update(
-                products.pop(external_id), update_dict={"is_current": False}
-            )
-        for external_id in removed_benefits:
-            await benefit_repository.update(
-                benefits.pop(external_id), update_dict={"is_current": False}
-            )
+        replaced = await self._retire(session, organization, live, products, benefits)
+        await self._carry_over_references(session, replaced)
         if live is not None:
             await repository.update(
                 live, update_dict={"status": CatalogStatus.archived}, flush=True
@@ -377,13 +432,190 @@ class CatalogService:
             ),
             flush=True,
         )
-        await self._add_members(
-            session,
-            catalog,
-            {**products, **new_products},
-            {**benefits, **new_benefits},
-        )
+        await self._add_members(session, catalog, products, benefits)
         return catalog
+
+    async def save_draft(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        live: Catalog | None,
+        new_products: Mapping[str, Product],
+        new_benefits: Mapping[str, Benefit],
+        version_hash: str,
+        removed: Collection[str],
+        removed_benefits: Collection[str],
+        name: str | None = None,
+    ) -> Catalog:
+        """Make the organization's draft the next catalog these changes publish.
+
+        The new rows aren't current, so live keeps selling until the draft is
+        published. An existing draft is replaced, and keeps its ID: drafts are
+        only created here, under the catalog lock, so an organization has at most
+        one.
+        """
+        repository = CatalogRepository.from_session(session)
+        await repository.lock(organization.id)
+        products, benefits = await self._next_members(
+            session,
+            organization,
+            live,
+            new_products,
+            new_benefits,
+            removed,
+            removed_benefits,
+        )
+        draft = await repository.get_draft(organization.id)
+        if draft is None:
+            draft = await repository.create(
+                Catalog(organization=organization, status=CatalogStatus.draft),
+                flush=True,
+            )
+        else:
+            await self._clear_draft(session, draft)
+        await repository.update(
+            draft,
+            update_dict={
+                "name": name,
+                "version_hash": version_hash,
+                "parent": live,
+            },
+            flush=True,
+        )
+        await self._add_members(session, draft, products, benefits)
+        return draft
+
+    async def discard_draft(self, session: AsyncSession, draft: Catalog) -> None:
+        repository = CatalogRepository.from_session(session)
+        await repository.lock(draft.organization_id)
+        await self._assert_still_draft(session, draft)
+        await self._clear_draft(session, draft)
+        # A later draft or publish may reach the same contents and hash.
+        await repository.update(draft, update_dict={"version_hash": None})
+        await repository.soft_delete(draft, flush=True)
+
+    async def publish_draft(
+        self, session: AsyncSession, organization: Organization, draft: Catalog
+    ) -> Catalog:
+        """Make the draft live: its new rows become current, the live rows it
+        replaces or leaves out stop being current, and checkout links and
+        discounts follow the new product rows."""
+        repository = CatalogRepository.from_session(session)
+        await repository.lock(organization.id)
+        await self._assert_still_draft(session, draft)
+        live = await repository.get_live(organization.id)
+        if draft.parent_id != (None if live is None else live.id):
+            raise CatalogDraftOutdated()
+
+        products = {
+            member.external_id: member.product
+            for member in await CatalogProductRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+        }
+        benefits = await self.get_catalog_benefits(session, organization, draft)
+        replaced = await self._retire(session, organization, live, products, benefits)
+        product_repository = ProductRepository.from_session(session)
+        for product in products.values():
+            if product.catalog_id == draft.id:
+                await product_repository.update(
+                    product, update_dict={"is_current": True}, flush=True
+                )
+        benefit_repository = BenefitRepository.from_session(session)
+        for benefit in benefits.values():
+            if benefit.catalog_id == draft.id:
+                await benefit_repository.update(
+                    benefit, update_dict={"is_current": True}, flush=True
+                )
+        await self._carry_over_references(session, replaced)
+
+        if live is not None:
+            await repository.update(
+                live, update_dict={"status": CatalogStatus.archived}, flush=True
+            )
+        return await repository.update(
+            draft,
+            update_dict={
+                "status": CatalogStatus.live,
+                "published_at": utc_now(),
+                "name": draft.name
+                or await self.get_default_name(session, organization),
+            },
+            flush=True,
+        )
+
+    async def _retire(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        live: Catalog | None,
+        products: Mapping[str, Product],
+        benefits: Mapping[str, Benefit],
+    ) -> Sequence[tuple[Product, Product]]:
+        """Stop selling the live rows the next catalog replaces or leaves out.
+        Return the replaced products with their replacement."""
+        if live is None:
+            return ()
+        replaced: builtins.list[tuple[Product, Product]] = []
+        product_repository = ProductRepository.from_session(session)
+        for member in await CatalogProductRepository.from_session(
+            session
+        ).get_all_by_catalog(live.id):
+            product = products.get(member.external_id)
+            if product is not None and product.id == member.product_id:
+                continue
+            await product_repository.update(
+                member.product, update_dict={"is_current": False}, flush=True
+            )
+            if product is not None:
+                replaced.append((member.product, product))
+        benefit_repository = BenefitRepository.from_session(session)
+        for external_id, benefit in (
+            await self.get_catalog_benefits(session, organization, live)
+        ).items():
+            next_benefit = benefits.get(external_id)
+            if next_benefit is not None and next_benefit.id == benefit.id:
+                continue
+            await benefit_repository.update(
+                benefit, update_dict={"is_current": False}, flush=True
+            )
+        return replaced
+
+    async def _carry_over_references(
+        self, session: AsyncSession, replaced: Sequence[tuple[Product, Product]]
+    ) -> None:
+        """Point checkout links at the new version, and extend discount
+        restrictions to it: the old version stays billable for existing
+        subscriptions."""
+        checkout_link_repository = CheckoutLinkRepository.from_session(session)
+        discount_repository = DiscountRepository.from_session(session)
+        for previous, product in replaced:
+            await checkout_link_repository.replace_product(previous.id, product.id)
+            await discount_repository.add_product(previous.id, product.id)
+
+    async def _assert_still_draft(self, session: AsyncSession, draft: Catalog) -> None:
+        """Re-read the draft under the catalog lock: a concurrent publish or
+        discard may have committed since it was loaded."""
+        await session.refresh(draft)
+        if draft.status != CatalogStatus.draft or draft.deleted_at is not None:
+            raise CatalogNotDraft(draft.id)
+
+    async def _clear_draft(self, session: AsyncSession, draft: Catalog) -> None:
+        """Delete the draft's memberships and the rows only it lists."""
+        catalog_product_repository = CatalogProductRepository.from_session(session)
+        product_repository = ProductRepository.from_session(session)
+        for member in await catalog_product_repository.get_all_by_catalog(draft.id):
+            if member.product.catalog_id == draft.id:
+                await product_repository.soft_delete(member.product)
+        catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
+        benefit_repository = BenefitRepository.from_session(session)
+        for benefit_member in await catalog_benefit_repository.get_all_by_catalog(
+            draft.id
+        ):
+            if benefit_member.benefit.catalog_id == draft.id:
+                await benefit_repository.soft_delete(benefit_member.benefit)
+        await catalog_product_repository.delete_by_catalog(draft.id)
+        await catalog_benefit_repository.delete_by_catalog(draft.id)
 
     async def _add_members(
         self,

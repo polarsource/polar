@@ -37,13 +37,15 @@ from .service import declarative_config as declarative_config_service
 router = APIRouter(prefix="/config", tags=["config", APITag.private])
 
 CatalogNotFoundResponse = {
-    "description": "No published catalog has this ID.",
+    "description": "No catalog has this ID.",
     "model": CatalogNotFound.schema(),
 }
 
 CatalogQuery = Annotated[
     UUID4 | None,
-    Query(description="ID of a published catalog. Defaults to the live catalog."),
+    Query(
+        description="ID of a catalog, published or draft. Defaults to the live catalog."
+    ),
 ]
 
 
@@ -122,6 +124,14 @@ async def export(
 async def apply(
     config: Config,
     auth_subject: ConfigWrite,
+    publish: bool = Query(
+        True,
+        description=(
+            "Publish the product and benefit changes. With `false`, they're saved "
+            "in the organization's draft catalog, to publish later. Meters, "
+            "settings and webhooks aren't versioned, so they apply right away."
+        ),
+    ),
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> ConfigApplyResult:
@@ -144,7 +154,9 @@ async def apply(
 
     Each section requires the write scope for its resource.
     """
-    return await declarative_config_service.apply(session, redis, auth_subject, config)
+    return await declarative_config_service.apply(
+        session, redis, auth_subject, config, publish=publish
+    )
 
 
 @router.post(

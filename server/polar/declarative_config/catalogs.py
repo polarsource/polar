@@ -1,6 +1,6 @@
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -8,10 +8,8 @@ from pydantic import BaseModel
 from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import CatalogEntries
 from polar.catalog.service import catalog as catalog_service
-from polar.checkout_link.repository import CheckoutLinkRepository
-from polar.discount.repository import DiscountRepository
-from polar.models import Organization, Product
-from polar.postgres import AsyncReadSession, AsyncSession
+from polar.models import Organization
+from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
 
 from .schemas import (
@@ -135,21 +133,3 @@ async def cascade_benefit_changes(
                 )
             )
     return issues
-
-
-async def carry_over_references(
-    session: AsyncSession,
-    changes: Sequence[ProductChange],
-    new_products: Mapping[str, Product],
-) -> None:
-    """Point checkout links at the new version, and extend discount restrictions
-    to it: the old version stays billable for existing subscriptions."""
-    checkout_link_repository = CheckoutLinkRepository.from_session(session)
-    discount_repository = DiscountRepository.from_session(session)
-    for change in changes:
-        new_product = new_products.get(change.config.external_id)
-        if change.existing is not None and new_product is not None:
-            await checkout_link_repository.replace_product(
-                change.existing.id, new_product.id
-            )
-            await discount_repository.add_product(change.existing.id, new_product.id)

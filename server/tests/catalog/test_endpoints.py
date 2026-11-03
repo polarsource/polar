@@ -222,3 +222,45 @@ class TestGet:
         assert json["products"] == [
             {"external_id": "pro", "product_id": str(product_second.id)}
         ]
+
+
+@pytest.mark.anyio
+class TestPublish:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_outdated(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        draft, _, _ = catalogs
+
+        response = await client.post(f"/v1/catalogs/{draft.id}/publish")
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "CatalogDraftOutdated"
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_not_draft(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, _ = catalogs
+
+        response = await client.post(f"/v1/catalogs/{live.id}/publish")
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "CatalogNotDraft"
+
+
+@pytest.mark.anyio
+class TestDiscard:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_discard(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        draft, _, _ = catalogs
+
+        response = await client.delete(f"/v1/catalogs/{draft.id}")
+
+        assert response.status_code == 204
+        assert (await client.get(f"/v1/catalogs/{draft.id}")).status_code == 404

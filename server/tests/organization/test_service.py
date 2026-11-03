@@ -1867,6 +1867,57 @@ class TestGetActivationReadiness:
             [] if reviewed else ["No organization review has been submitted"]
         )
 
+    @pytest.mark.parametrize(
+        "verdict",
+        [OrganizationReview.Verdict.FAIL, OrganizationReview.Verdict.UNCERTAIN],
+    )
+    @pytest.mark.parametrize(
+        "appeal_decision", [None, OrganizationReview.AppealDecision.REJECTED]
+    )
+    async def test_unapproved_review_after_database_reload(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        verdict: OrganizationReview.Verdict,
+        appeal_decision: OrganizationReview.AppealDecision | None,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.status = OrganizationStatus.CREATED
+        organization.details_submitted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        review = OrganizationReview(
+            organization=organization,
+            verdict=verdict,
+            appeal_decision=appeal_decision,
+            risk_score=80.0,
+            violated_sections=[],
+            reason="Not approved",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+        await session.refresh(review)
+
+        assert type(review.verdict) is str
+        if appeal_decision is not None:
+            assert type(review.appeal_decision) is str
+
+        readiness = await organization_service.get_activation_readiness(
+            session, organization
+        )
+
+        expected_missing = f"Review verdict is {verdict}"
+        if appeal_decision is not None:
+            expected_missing += f" (appeal {appeal_decision})"
+        assert readiness.onboarding_ready is True
+        assert readiness.is_ready is False
+        assert [item.missing for item in readiness.missing] == [expected_missing]
+        assert await organization_service.maybe_activate(session, organization) is False
+        assert organization.status == OrganizationStatus.CREATED
+
 
 @pytest.mark.anyio
 class TestBackofficeSubmitAndMaybeActivate:

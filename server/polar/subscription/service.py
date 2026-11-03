@@ -4281,11 +4281,8 @@ class SubscriptionService:
                 subscription.id, options=repository.get_eager_options()
             ),
         )
-        product_repository = ProductRepository.from_session(session)
-        product = await product_repository.get_by_id(
-            subscription.product_id, options=product_repository.get_eager_options()
-        )
-        if product is not None:
+        product = subscription.product
+        if product.deleted_at is None:
             await webhook_service.send(
                 session, product.organization, event_type, subscription
             )

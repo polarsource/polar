@@ -4994,6 +4994,27 @@ class TestUpdateMeters:
 
 
 @pytest.mark.anyio
+class TestSendWebhook:
+    async def test_product_deleted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        subscription: Subscription,
+        webhook_service_send_mock: AsyncMock,
+    ) -> None:
+        product.deleted_at = utc_now()
+        await save_fixture(product)
+        session.expunge_all()
+
+        await subscription_service._send_webhook(
+            session, subscription, WebhookEventType.subscription_updated
+        )
+
+        webhook_service_send_mock.assert_not_called()
+
+
+@pytest.mark.anyio
 class TestEnqueueBenefitsGrants:
     @pytest.mark.parametrize(
         "status", [SubscriptionStatus.incomplete, SubscriptionStatus.incomplete_expired]

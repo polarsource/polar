@@ -1060,34 +1060,62 @@ async def test_evicted_customer_is_reloaded(
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("lost", [False, True])
-async def test_evicted_customer_is_requested_again_only_once_redis_lost_its_snapshot(
+@pytest.mark.parametrize(
+    ("state", "requests"), [("held", 2), ("lost", 4), ("in flight", 2)]
+)
+async def test_evicted_customer_is_requested_again_only_once_its_snapshot_is_lost(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     websocket_requests: list[dict[str, typing.Any]],
+    snapshots: dict[str, dict[str, typing.Any]],
     monkeypatch: pytest.MonkeyPatch,
-    lost: bool,
+    state: str,
+    requests: int,
 ) -> None:
     url, redis = redis_connection
     monkeypatch.setattr("polar.outpost.client.CACHE_SIZE", 2)
-    keys = [
-        f"outpost:v1:state:external:alice:{reducer}"
-        for reducer in ("tokens", "credits")
-    ]
-    for key in keys:
-        await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 1})
+    reducers = ("tokens", "credits")
+    if state != "in flight":
+        for reducer in reducers:
+            snapshots[f"external:alice:{reducer}"] = {
+                "customer_id": None,
+                "external_customer_id": "alice",
+                "version": 1791807000000000,
+                "cold_until": BUCKET,
+                "count": 1,
+                "sum": 10,
+                "min": 10,
+                "max": 10,
+            }
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
         await outpost.actor(external_customer_id="bob")
-        if lost:
-            await redis.delete(*keys)
+        if state == "lost":
+            await redis.delete(
+                *(f"outpost:v1:state:external:alice:{reducer}" for reducer in reducers)
+            )
         await outpost.actor(external_customer_id="alice")
     requested = [
         message["payload"]["external_customer_id"]
         for message in websocket_requests
         if message["type"] == "meter_usage"
     ]
-    assert requested.count("alice") == (4 if lost else 2)
+    assert requested.count("alice") == requests
+
+
+@pytest.mark.anyio
+async def test_snapshot_requests_remembered_are_bounded(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+    monkeypatch.setattr("polar.outpost.client.CACHE_SIZE", 2)
+    monkeypatch.setattr("polar.outpost.client.REQUESTED_SIZE", 4, raising=False)
+    async with Outpost(url, client=polar_client) as outpost:
+        for customer in ("alice", "bob", "carol"):
+            await outpost.actor(external_customer_id=customer)
+        assert len(outpost._actors) == 4
 
 
 @pytest.mark.anyio

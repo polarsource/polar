@@ -515,25 +515,50 @@ it("reloads evicted customers and closes owned connections", async () => {
   await expect(outpost.actor(customer)).rejects.toThrow("start()");
 });
 
-it.each([false, true])(
-  "asks Polar again for an evicted customer only once Redis lost its snapshot (lost: %s)",
-  async (lost) => {
-    await seed();
+it.each([
+  { state: "held", requests: 2 },
+  { state: "lost", requests: 4 },
+  { state: "in flight", requests: 2 },
+])(
+  "asks Polar again for an evicted customer only once its answered snapshot is lost ($state)",
+  async ({ state, requests }) => {
     const outpost = await start({ snapshotTimeout: 0 });
     const send = vi.spyOn(outpost["websocket"]!, "send");
-    await outpost.actor(customer);
+    if (state !== "in flight") {
+      snapshot = {
+        ...customer,
+        customer_id: null,
+        cold_until: bucket,
+        version: 1,
+        count: 1,
+        sum: 10,
+        min: 10,
+        max: 10,
+      };
+      await outpost.actor(customer);
+      await vi.waitFor(() =>
+        expect(outpost["cache"].get("external:alice:credits")?.state?.coldUntil).toBeDefined(),
+      );
+      snapshot = undefined;
+    } else await outpost.actor(customer);
     for (let i = 0; i < 1024; i++) await outpost.actor({ external_customer_id: `customer-${i}` });
     expect(outpost["cache"].has("external:alice:tokens")).toBe(false);
-    if (lost) await redis.del(key, creditKey);
+    if (state === "lost") await redis.del(key, creditKey);
     await outpost.actor(customer);
     const requested = send.mock.calls
       .map(([data]) => JSON.parse(data as string))
       .filter(
         ({ type, payload }) => type === "meter_usage" && payload.external_customer_id === "alice",
       );
-    expect(requested).toHaveLength(lost ? 4 : 2);
+    expect(requested).toHaveLength(requests);
   },
 );
+
+it("bounds the snapshot requests it remembers", async () => {
+  const outpost = await start({ snapshotTimeout: 0 });
+  for (let i = 0; i <= 8192; i++) await outpost.actor({ external_customer_id: `customer-${i}` });
+  expect(outpost["actors"].size).toBe(16_384);
+});
 
 it("ships the Outpost entrypoint for both ESM and CommonJS", async () => {
   const esm = await import(import.meta.resolve("@polar-sh/sdk/outpost"));

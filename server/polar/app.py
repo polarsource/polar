@@ -95,6 +95,7 @@ def configure_cors(app: FastAPI) -> None:
             allow_credentials=True,  # Cookies are allowed, but only there!
             allow_methods=["*"],
             allow_headers=["*"],
+            expose_headers=["Content-Disposition"],
         )
         configs.append(polar_frontend_config)
 

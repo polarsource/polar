@@ -58,7 +58,7 @@ const useFilteredMetrics = (
   metrics: MetricKey[],
   enabled: boolean,
 ) => {
-  const { interval, startDate, endDate, productId } = useMetricsFilters(
+  const { interval, startDate, endDate, productFilter } = useMetricsFilters(
     earliestDateISOString,
   )
   const { data } = useMetrics(
@@ -67,12 +67,12 @@ const useFilteredMetrics = (
       endDate,
       interval,
       organization_id: organizationId,
-      ...(productId && productId.length > 0 ? { product_id: productId } : {}),
+      ...productFilter,
       metrics,
     },
     enabled && metrics.length > 0,
   )
-  return { data, interval, startDate, endDate, productId }
+  return { data, interval, startDate, endDate, productFilter }
 }
 
 // Each built-in group queries its own metrics once it nears the viewport, so
@@ -89,12 +89,13 @@ const BuiltInGroupSection = ({
   deepLinked: boolean
 }) => {
   const { ref, seen } = useHasBeenSeen<HTMLElement>()
-  const { data, interval, startDate, endDate, productId } = useFilteredMetrics(
-    organizationId,
-    earliestDateISOString,
-    group.metrics,
-    seen || deepLinked,
-  )
+  const { data, interval, startDate, endDate, productFilter } =
+    useFilteredMetrics(
+      organizationId,
+      earliestDateISOString,
+      group.metrics,
+      seen || deepLinked,
+    )
 
   return (
     <DashboardSection ref={ref} id={group.slug} title={group.title}>
@@ -107,7 +108,7 @@ const BuiltInGroupSection = ({
           organizationId={organizationId}
           startDate={startDate}
           endDate={endDate}
-          productId={productId ?? undefined}
+          productFilter={productFilter}
         />
       ) : group.slug === 'seats' ? (
         <SeatsContent data={data} interval={interval} />

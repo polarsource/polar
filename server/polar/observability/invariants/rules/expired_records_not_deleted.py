@@ -143,12 +143,11 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         ),
     ),
     CleanupTask(
-        "webhook_delivery.archive",
+        "webhook_delivery.prune",
         WebhookDelivery,
-        lambda cutoff: and_(
-            WebhookDelivery.response.is_not(None),
+        lambda cutoff: (
             WebhookDelivery.created_at
-            < cutoff - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+            < cutoff - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD
         ),
     ),
     # Last: this query is slow on the large webhook_events table and can time out,

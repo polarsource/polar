@@ -79,7 +79,6 @@ async def create_webhook_delivery(
     save_fixture: SaveFixture,
     organization: Organization,
     *,
-    response: str | None,
     created_at: datetime,
 ) -> None:
     webhook_endpoint = await create_webhook_endpoint(
@@ -97,7 +96,7 @@ async def create_webhook_delivery(
             webhook_event=webhook_event,
             succeeded=True,
             http_code=200,
-            response=response,
+            response=None,
             created_at=created_at,
         )
     )
@@ -245,8 +244,7 @@ async def create_deletable_records(
     await create_webhook_delivery(
         save_fixture,
         organization,
-        response="response body",
-        created_at=deletable_at - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        created_at=deletable_at - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD,
     )
     checkout = await create_checkout(
         save_fixture,
@@ -395,13 +393,6 @@ class TestCheck:
             - settings.EMAIL_LOG_RETENTION_PERIOD
             + timedelta(days=1),
             status=EmailLogStatus.failed,
-        )
-        await create_webhook_delivery(
-            save_fixture,
-            organization,
-            response=None,
-            created_at=deletable_at
-            - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
         )
         await save_fixture(
             MerchantMigration(

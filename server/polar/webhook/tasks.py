@@ -289,15 +289,14 @@ async def webhook_event_archive() -> None:
 
 
 @actor(
-    actor_name="webhook_delivery.archive",
+    actor_name="webhook_delivery.prune",
     cron_trigger=CronTrigger(hour=0, minute=30),
     priority=TaskPriority.LOW,
 )
-async def webhook_delivery_archive() -> None:
+async def webhook_delivery_prune() -> None:
     async with AsyncSessionMaker() as session:
-        await webhook_service.archive_delivery_payloads(
-            session,
-            older_than=utc_now() - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        await webhook_service.delete_expired_deliveries(
+            session, older_than=utc_now() - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD
         )
 
 

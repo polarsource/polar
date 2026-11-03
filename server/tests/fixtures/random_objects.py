@@ -1029,7 +1029,7 @@ async def create_customer(
     *,
     organization: Organization,
     external_id: str | None = None,
-    email: str = "customer@example.com",
+    email: str | None = "customer@example.com",
     email_verified: bool = False,
     name: str = "Customer",
     billing_name: str | None = None,

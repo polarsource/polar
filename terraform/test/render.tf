@@ -96,7 +96,7 @@ module "test" {
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "2"
     forwarded_allow_ips    = local.forwarded_allow_ips
-    database_pool_size     = "10"
+    database_pool_size     = "20"
     postgres_database      = module.planetscale.database_name
     postgres_read_database = module.planetscale.database_name
     pre_deploy_command     = "env POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"

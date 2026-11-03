@@ -11,12 +11,14 @@ from polar.models import (
     Catalog,
     Customer,
     Organization,
+    OrganizationRiskSignal,
     Product,
     ProductPriceFixed,
     UserOrganization,
 )
 from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
+from polar.organization_review.repository import OrganizationRiskSignalRepository
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
@@ -1111,3 +1113,156 @@ class TestNameCheck:
         )
 
         assert response.status_code == 401
+
+
+@pytest.mark.anyio
+class TestReportFlaggedName:
+    COACHING = {
+        "name": "Coaching Package",
+        "category": "human services",
+        "flagged_at": "2026-11-02T14:51:02Z",
+    }
+    CASINO = {
+        "name": "Casino Night",
+        "category": "gambling",
+        "phrase": "Casino",
+        "flagged_at": "2026-11-02T14:51:18Z",
+    }
+
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={"attempts": [self.CASINO]},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_other_organization_product(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product_organization_second.id}/flagged-name",
+            json={"attempts": [self.CASINO]},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_unknown_category(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={"attempts": [{**self.CASINO, "category": "not a category"}]},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_renamed_records_one_signal_with_ordered_attempts(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={"attempts": [self.COACHING, self.CASINO]},
+        )
+
+        assert response.status_code == 204
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.list_flagged_product_names(organization.id)
+        assert signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED
+        assert [attempt["name"] for attempt in signal.payload["attempts"]] == [
+            "Coaching Package",
+            "Casino Night",
+        ]
+        assert signal.payload["attempts"][0]["flagged_at"] == "2026-11-02T14:51:02Z"
+        assert signal.payload["product_name"] == product.name
+
+    @pytest.mark.auth
+    async def test_kept_when_any_attempt_is_the_product_name(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={
+                "attempts": [
+                    {**self.CASINO, "name": product.name.upper()},
+                    self.CASINO,
+                ]
+            },
+        )
+
+        assert response.status_code == 204
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.list_flagged_product_names(organization.id)
+        assert signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT
+
+    @pytest.mark.auth
+    async def test_rejects_timestamp_that_cannot_convert_to_utc(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={
+                "attempts": [{**self.CASINO, "flagged_at": "0001-01-01T00:00:00+23:59"}]
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_records_one_report_per_product(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        for attempt in (self.COACHING, self.CASINO):
+            response = await client.post(
+                f"/v1/products/{product.id}/flagged-name",
+                json={"attempts": [attempt]},
+            )
+            assert response.status_code == 204
+
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.list_flagged_product_names(organization.id)
+        assert signal.payload["attempts"][0]["name"] == "Coaching Package"
+
+    @pytest.mark.auth
+    async def test_not_listed_with_general_risk_signals(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={"attempts": [self.CASINO]},
+        )
+
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        assert await repository.list_by_organization(organization.id) == []

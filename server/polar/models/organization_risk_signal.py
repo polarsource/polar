@@ -29,6 +29,8 @@ class OrganizationRiskSignal(RecordModel):
     class Type(StrEnum):
         FRAUDULENT_WEBSITE = "fraudulent_website"
         FRAUDULENT_MERCHANT = "fraudulent_merchant"
+        FLAGGED_PRODUCT_NAME_RENAMED = "flagged_product_name_renamed"
+        FLAGGED_PRODUCT_NAME_KEPT = "flagged_product_name_kept"
 
     class RiskLevel(StrEnum):
         LOW = "low"

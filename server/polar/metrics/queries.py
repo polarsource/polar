@@ -102,29 +102,29 @@ def _get_readable_orders_statement(
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> Select[uuid.UUID]:
-    statement = select(Order.id).join(
-        Product, onclause=Order.product_id == Product.id, isouter=True
-    )
+    statement = select(Order.id)
 
     if is_user(auth_subject):
         statement = statement.where(
-            Product.organization_id.in_(
+            Order.organization_id.in_(
                 select_accessible_org_ids(
                     auth_subject, permission=OrganizationPermission.analytics_read
                 )
             )
         )
     elif is_organization(auth_subject):
-        statement = statement.where(Product.organization_id == auth_subject.subject.id)
+        statement = statement.where(Order.organization_id == auth_subject.subject.id)
 
     if organization_id is not None:
-        statement = statement.where(Product.organization_id.in_(organization_id))
+        statement = statement.where(Order.organization_id.in_(organization_id))
 
     if product_id is not None:
         statement = statement.where(Order.product_id.in_(product_id))
 
     if billing_type is not None:
-        statement = statement.where(Product.billing_type.in_(billing_type))
+        statement = statement.join(
+            Product, onclause=Order.product_id == Product.id
+        ).where(Product.billing_type.in_(billing_type))
 
     if customer_id is not None:
         statement = statement.join(

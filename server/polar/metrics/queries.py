@@ -19,8 +19,11 @@ from sqlalchemy import (
     select,
     text,
     true,
+    union_all,
 )
 from sqlalchemy.dialects.postgresql import TIMESTAMP
+from sqlalchemy.orm import aliased
+from sqlalchemy.sql.selectable import CompoundSelect
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -50,6 +53,8 @@ from .fx import (
 
 if TYPE_CHECKING:
     from .metrics import SQLMetric
+
+SeatSource = type[Subscription] | type[Order]
 
 
 class MetricQuery(StrEnum):
@@ -678,6 +683,47 @@ def get_churn_rate_cte(
     )
 
 
+def _get_seat_source_clauses(
+    source: SeatSource,
+    auth_subject: AuthSubject[User | Organization],
+    *,
+    organization_id: Sequence[uuid.UUID] | None = None,
+    product_id: Sequence[uuid.UUID] | None = None,
+    billing_type: Sequence[ProductBillingType] | None = None,
+    customer_id: Sequence[uuid.UUID] | None = None,
+) -> list[ColumnElement[bool]]:
+    clauses: list[ColumnElement[bool]] = []
+
+    if is_user(auth_subject):
+        clauses.append(
+            source.organization_id.in_(
+                select_accessible_org_ids(
+                    auth_subject, permission=OrganizationPermission.analytics_read
+                )
+            )
+        )
+    elif is_organization(auth_subject):
+        clauses.append(source.organization_id == auth_subject.subject.id)
+
+    if organization_id is not None:
+        clauses.append(source.organization_id.in_(organization_id))
+
+    if product_id is not None:
+        clauses.append(source.product_id.in_(product_id))
+
+    if billing_type is not None:
+        clauses.append(
+            source.product_id.in_(
+                select(Product.id).where(Product.billing_type.in_(billing_type))
+            )
+        )
+
+    if customer_id is not None:
+        clauses.append(source.customer_id.in_(customer_id))
+
+    return clauses
+
+
 def _get_readable_seats_statement(
     auth_subject: AuthSubject[User | Organization],
     *,
@@ -685,45 +731,27 @@ def _get_readable_seats_statement(
     product_id: Sequence[uuid.UUID] | None = None,
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
-) -> Select[uuid.UUID]:
-    statement = (
-        select(CustomerSeat.id)
-        .outerjoin(Subscription, CustomerSeat.subscription_id == Subscription.id)
-        .outerjoin(Order, CustomerSeat.order_id == Order.id)
-        .join(
-            Product,
-            Product.id == func.coalesce(Subscription.product_id, Order.product_id),
-        )
-    )
-
-    if is_user(auth_subject):
-        statement = statement.where(
-            Product.organization_id.in_(
-                select_accessible_org_ids(
-                    auth_subject, permission=OrganizationPermission.analytics_read
+) -> CompoundSelect[uuid.UUID]:
+    return union_all(
+        *(
+            select(CustomerSeat.id)
+            .join(source, seat_source_id == source.id)
+            .where(
+                *_get_seat_source_clauses(
+                    source,
+                    auth_subject,
+                    organization_id=organization_id,
+                    product_id=product_id,
+                    billing_type=billing_type,
+                    customer_id=customer_id,
                 )
             )
+            for source, seat_source_id in (
+                (Subscription, CustomerSeat.subscription_id),
+                (Order, CustomerSeat.order_id),
+            )
         )
-    elif is_organization(auth_subject):
-        statement = statement.where(Product.organization_id == auth_subject.subject.id)
-
-    if organization_id is not None:
-        statement = statement.where(Product.organization_id.in_(organization_id))
-
-    if product_id is not None:
-        statement = statement.where(
-            func.coalesce(Subscription.product_id, Order.product_id).in_(product_id)
-        )
-
-    if billing_type is not None:
-        statement = statement.where(Product.billing_type.in_(billing_type))
-
-    if customer_id is not None:
-        statement = statement.where(
-            func.coalesce(Subscription.customer_id, Order.customer_id).in_(customer_id)
-        )
-
-    return statement
+    )
 
 
 def get_seats_cte(
@@ -797,27 +825,35 @@ def get_seats_cte(
             Subscription.customer_id,
             Order.customer_id,
         )
-        cs_e = CustomerSeat.__table__.alias("cs_earlier")
-        sub_e = Subscription.__table__.alias("sub_earlier")
-        ord_e = Order.__table__.alias("ord_earlier")
-        has_earlier_seat = exists(
-            select(1)
-            .select_from(cs_e)
-            .outerjoin(sub_e, cs_e.c.subscription_id == sub_e.c.id)
-            .outerjoin(ord_e, cs_e.c.order_id == ord_e.c.id)
-            .where(
-                func.coalesce(
-                    sub_e.c.customer_id,
-                    ord_e.c.customer_id,
+        cs_e = aliased(CustomerSeat, name="cs_earlier")
+        has_earlier_seat = or_(
+            *(
+                exists(
+                    select(1)
+                    .select_from(cs_e)
+                    .join(source_e, seat_source_id == source_e.id)
+                    .where(
+                        source_e.customer_id == billing_customer,
+                        interval.sql_date_trunc(
+                            cast(SQLColumnExpression[datetime], cs_e.created_at)
+                        )
+                        < interval.sql_date_trunc(timestamp_column),
+                        *_get_seat_source_clauses(
+                            source_e,
+                            auth_subject,
+                            organization_id=organization_id,
+                            product_id=product_id,
+                            billing_type=billing_type,
+                            customer_id=customer_id,
+                        ),
+                    )
+                    .correlate(CustomerSeat, Subscription, Order, timestamp_series)
                 )
-                == billing_customer,
-                interval.sql_date_trunc(
-                    cast(SQLColumnExpression[datetime], cs_e.c.created_at)
+                for source_e, seat_source_id in (
+                    (aliased(Subscription, name="sub_earlier"), cs_e.subscription_id),
+                    (aliased(Order, name="ord_earlier"), cs_e.order_id),
                 )
-                < interval.sql_date_trunc(timestamp_column),
-                cs_e.c.id.in_(readable_seats_statement),
             )
-            .correlate(CustomerSeat, Subscription, Order, timestamp_series)
         )
         direct_columns.append(
             func.coalesce(

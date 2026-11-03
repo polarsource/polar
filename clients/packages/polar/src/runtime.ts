@@ -48,18 +48,11 @@ export function RuntimeSDK<Config extends RuntimeSDKConfig>(
   const connected = config[runtimeConfig]()
   const sdk = createPolar(sdkOptions)
   const benefits = connected.benefits ?? {}
-  let metering: Promise<Metering> | undefined
-  const startMetering = () =>
-    (metering ??= sdk
-      .metering(meteringOptions)
-      .start()
-      .catch((error: unknown) => {
-        metering = undefined
-        throw error
-      }))
+  let metering: Metering | undefined
+  const getMetering = () => (metering ??= sdk.metering(meteringOptions))
   return {
     sdk,
-    actor: createActor(connected, sdk, startMetering),
+    actor: createActor(connected, sdk, getMetering),
     webhooks: Object.fromEntries(
       Object.entries(connected.webhooks ?? {}).flatMap(([key, endpoint]) =>
         endpoint instanceof HandledWebhookEndpoint
@@ -72,12 +65,12 @@ export function RuntimeSDK<Config extends RuntimeSDKConfig>(
         ? (external_id as BenefitName<Config>)
         : undefined,
     flush: async () => {
-      await (await metering)?.flush()
+      await metering?.flush()
     },
     close: async () => {
-      const started = metering
+      const closing = metering
       metering = undefined
-      await (await started)?.close()
+      await closing?.close()
     },
   }
 }

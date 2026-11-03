@@ -8,7 +8,7 @@ const fakeMetering = () => {
   const track = vi.fn()
   const meter = vi.fn().mockResolvedValue(null)
   const actor = vi.fn().mockResolvedValue({ track, meter })
-  const metering = async () => ({ actor }) as unknown as Metering
+  const metering = () => ({ actor }) as unknown as Metering
   return { metering, actor, track, meter }
 }
 

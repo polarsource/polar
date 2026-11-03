@@ -165,7 +165,7 @@ const toActorInput = (identifier: ActorIdentifier): ActorInput =>
 export const createActor = <Config extends RuntimeSDKConfig>(
   config: Config,
   sdk: Polar,
-  metering: () => Promise<Metering>,
+  metering: () => Metering,
 ): Actor<Config> => {
   // Polar meter ID per deployed meter external ID
   const deployedMeters = new Map<string, string>()
@@ -210,11 +210,13 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       tracked.map(async ({ name, metadata }) => ({
         name,
         timestamp,
+        // Outpost deduplicates by external ID and rejects events without one
+        external_id: crypto.randomUUID(),
         metadata: await validateEvent(name, metadata),
       })),
     )
 
-    const actor = await (await metering()).actor(toActorInput(identifier))
+    const actor = await metering().actor(toActorInput(identifier))
     for (const { metadata, ...event } of events) {
       await actor.track(metadata !== undefined ? { ...event, metadata } : event)
     }
@@ -252,7 +254,7 @@ export const createActor = <Config extends RuntimeSDKConfig>(
       }
 
       const meterId = await getDeployedMeterId(name)
-      const actor = await (await metering()).actor(toActorInput(identifier))
+      const actor = await metering().actor(toActorInput(identifier))
       // A customer meter only exists once credits are granted or a matching
       // event is ingested, so a missing one means a zero balance.
       const customerMeter = await actor.meter(meterId)

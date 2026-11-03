@@ -6,7 +6,6 @@ Create Date: 2026-11-03 13:00:00.000000
 
 """
 
-import sqlalchemy as sa
 from alembic import op
 
 # Polar Custom Imports
@@ -22,18 +21,12 @@ def upgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration.
     # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
     op.execute("SET LOCAL lock_timeout = '5s'")
-    op.add_column(
-        "webhook_deliveries", sa.Column("organization_id", sa.Uuid(), nullable=True)
-    )
-    # NOT VALID skips scanning existing rows; new writes are still checked.
-    op.create_foreign_key(
-        op.f("webhook_deliveries_organization_id_fkey"),
-        "webhook_deliveries",
-        "organizations",
-        ["organization_id"],
-        ["id"],
-        ondelete="CASCADE",
-        postgresql_not_valid=True,
+    # A single statement: Postgres skips the FK validation scan for a column
+    # it is adding, so the constraint is created valid without reading the table.
+    op.execute(
+        "ALTER TABLE webhook_deliveries ADD COLUMN organization_id UUID "
+        "CONSTRAINT webhook_deliveries_organization_id_fkey "
+        "REFERENCES organizations(id) ON DELETE CASCADE"
     )
 
 
@@ -41,9 +34,4 @@ def downgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration.
     # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
     op.execute("SET LOCAL lock_timeout = '5s'")
-    op.drop_constraint(
-        op.f("webhook_deliveries_organization_id_fkey"),
-        "webhook_deliveries",
-        type_="foreignkey",
-    )
     op.drop_column("webhook_deliveries", "organization_id")

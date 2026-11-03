@@ -213,20 +213,23 @@ export const useCurrentProductIds = (
   productIds: string[],
 ) => {
   const enabled = !!organization.feature_settings?.config_as_code_enabled
-  const { data: saved } = useSelectedProducts(
+  const savedQuery = useSelectedProducts(
     { id: enabled ? productIds : [] },
     true,
   )
+  const saved = savedQuery.data
   const externalIds = saved?.flatMap((product) => product.external_id ?? [])
-  const { data: current } = useSelectedProducts(
+  const currentQuery = useSelectedProducts(
     { organization_id: organization.id, external_id: externalIds ?? [] },
     true,
   )
-  if (!enabled || productIds.length === 0 || externalIds?.length === 0) {
-    return productIds
-  }
-  if (!saved || !current) {
+  const current = currentQuery.data
+  if (savedQuery.isLoading || currentQuery.isLoading) {
     return undefined
+  }
+  // Disabled, nothing to map, or a failed lookup: keep the saved IDs.
+  if (!saved || !current) {
+    return productIds
   }
   const currentIds = new Map(
     current.map((product) => [product.external_id, product.id]),

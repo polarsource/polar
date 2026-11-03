@@ -190,7 +190,7 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Update a product."""
-    product = await product_service.get(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id, for_update=True)
 
     if product is None:
         raise ResourceNotFound()
@@ -220,7 +220,7 @@ async def update_v2027_01(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Update a product."""
-    product = await product_service.get(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id, for_update=True)
 
     if product is None:
         raise ResourceNotFound()
@@ -248,7 +248,7 @@ async def update_benefits(
     session: AsyncSession = Depends(get_db_session),
 ) -> Product:
     """Update benefits granted by a product."""
-    product = await product_service.get(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id, for_update=True)
 
     if product is None:
         raise ResourceNotFound()
@@ -287,7 +287,7 @@ async def delete(
     Only products without orders, subscriptions, trials or discounts can be deleted.
     Products that are in use can only be archived.
     """
-    product = await product_service.get(session, auth_subject, id)
+    product = await product_service.get(session, auth_subject, id, for_update=True)
 
     if product is None:
         raise ResourceNotFound()

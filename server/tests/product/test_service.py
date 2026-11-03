@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, call
 import pytest
 import pytest_asyncio
 from pytest_mock import MockerFixture
+from sqlalchemy import event as sqlalchemy_event
 
 from polar.auth.models import AuthSubject
 from polar.custom_field.schemas import AttachedCustomFieldCreate
@@ -345,6 +346,31 @@ class TestGet:
         )
         assert accessible_product is not None
         assert accessible_product.id == product.id
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_for_update(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        product: Product,
+    ) -> None:
+        statements: list[str] = []
+
+        def capture_statement(*args: Any) -> None:
+            statements.append(args[2])
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        sqlalchemy_event.listen(bind, "before_cursor_execute", capture_statement)
+        try:
+            locked_product = await product_service.get(
+                session, auth_subject, product.id, for_update=True
+            )
+        finally:
+            sqlalchemy_event.remove(bind, "before_cursor_execute", capture_statement)
+
+        assert locked_product is not None
+        assert any("FOR UPDATE OF products" in s for s in statements)
 
 
 @pytest.mark.asyncio

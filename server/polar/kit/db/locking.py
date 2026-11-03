@@ -1,6 +1,7 @@
 import uuid
+from collections.abc import Sequence
 
-from sqlalchemy import func, select
+from sqlalchemy import ARRAY, Text, bindparam, func, select
 from sqlalchemy.exc import DBAPIError
 
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
@@ -19,6 +20,27 @@ async def pg_advisory_xact_lock(
     """
     lock_key = func.hashtextextended(f"{namespace}:{key}", 0)
     await session.execute(select(func.pg_advisory_xact_lock(lock_key)))
+
+
+async def pg_advisory_xact_locks(
+    session: AsyncSession | AsyncReadSession,
+    namespace: str,
+    keys: Sequence[str | uuid.UUID],
+) -> None:
+    """
+    Acquire the same locks as ``pg_advisory_xact_lock`` for each key, in one round
+    trip and in the order of ``keys``.
+    """
+    if not keys:
+        return
+    lock_key = func.unnest(
+        bindparam(
+            "lock_keys", [f"{namespace}:{key}" for key in keys], type_=ARRAY(Text)
+        )
+    ).column_valued("lock_key")
+    await session.execute(
+        select(func.pg_advisory_xact_lock(func.hashtextextended(lock_key, 0)))
+    )
 
 
 def is_lock_not_available_error(e: DBAPIError) -> bool:

@@ -31,6 +31,11 @@ from polar.event.system import SystemEvent as SystemEventEnum
         {
             "external_customer_id": "CUSTOMER",
             "name": "EVENT",
+            "metadata": {"max": 2**53 - 1, "min": -(2**53 - 1), "float": 1.5},
+        },
+        {
+            "external_customer_id": "CUSTOMER",
+            "name": "EVENT",
             "metadata": {
                 "_llm": {
                     "vendor": "mistral",
@@ -58,6 +63,42 @@ def test_invalid_metadata_value_too_long() -> None:
                 "metadata": {"key": "a" * 600},
             }
         )
+
+
+@pytest.mark.parametrize("value", [2**53, -(2**53), 1e308, -1e308])
+def test_invalid_metadata_value_out_of_range(value: int | float) -> None:
+    with pytest.raises(ValidationError):
+        EventCreateExternalCustomer.model_validate(
+            {
+                "external_customer_id": "CUSTOMER",
+                "name": "EVENT",
+                "metadata": {"total_tokens": value},
+            }
+        )
+
+
+@pytest.mark.parametrize("total_tokens", [2**53, -(2**53)])
+def test_invalid_llm_tokens_out_of_range(total_tokens: int) -> None:
+    with pytest.raises(ValidationError) as e:
+        EventCreateExternalCustomer.model_validate(
+            {
+                "external_customer_id": "CUSTOMER",
+                "name": "EVENT",
+                "metadata": {
+                    "_llm": {
+                        "vendor": "mistral",
+                        "model": "mistral-medium-2508",
+                        "input_tokens": 10,
+                        "output_tokens": 20,
+                        "total_tokens": total_tokens,
+                    }
+                },
+            }
+        )
+
+    errors = e.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ("metadata", "_llm", "total_tokens")
 
 
 def test_invalid_cost_metadata() -> None:

@@ -1,19 +1,33 @@
+import contextlib
 import secrets
 from collections.abc import Sequence
 from uuid import UUID
 
 import dns.asyncresolver
 import dns.exception
+import dns.resolver
+import structlog
 from sqlalchemy.exc import IntegrityError
 
+from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
+from polar.config import settings
+from polar.email.schemas import DomainVerificationLostEmail, DomainVerificationLostProps
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
+from polar.logging import Logger
 from polar.models import Organization, OrganizationDomain
+from polar.organization.embed_hosts import WILDCARD_PREFIX, is_shared_host
 from polar.postgres import AsyncReadSession, AsyncSession
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 
 from .repository import OrganizationDomainRepository
 from .schemas import OrganizationDomainCreate
+
+log: Logger = structlog.get_logger()
 
 
 class OrganizationDomainAlreadyExists(PolarError):
@@ -46,7 +60,7 @@ class OrganizationDomainVerifiedElsewhere(PolarError):
 async def _lookup_txt(name: str) -> set[str]:
     try:
         answer = await dns.asyncresolver.resolve(name, "TXT", lifetime=5)
-    except dns.exception.DNSException:
+    except dns.resolver.NXDOMAIN, dns.resolver.NoAnswer:
         return set()
     return {b"".join(record.strings).decode() for record in answer}
 
@@ -73,6 +87,13 @@ class OrganizationDomainService:
     ) -> OrganizationDomain | None:
         repository = OrganizationDomainRepository.from_session(session)
         return await repository.get_by_organization_and_id(organization.id, id)
+
+    async def has_verified(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> bool:
+        repository = OrganizationDomainRepository.from_session(session)
+        statement = repository.get_verified_statement_by_organization(organization.id)
+        return await repository.count(statement) > 0
 
     async def create(
         self,
@@ -101,26 +122,125 @@ class OrganizationDomainService:
         await repository.soft_delete(organization_domain)
 
     async def verify(
-        self, session: AsyncSession, organization_domain: OrganizationDomain
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_domain: OrganizationDomain,
     ) -> OrganizationDomain:
         if organization_domain.verified_at is not None:
             return organization_domain
 
-        records = await _lookup_txt(organization_domain.verification_record_name)
+        try:
+            records = await _lookup_txt(organization_domain.verification_record_name)
+        except dns.exception.DNSException as e:
+            raise OrganizationDomainVerificationFailed(organization_domain) from e
         if organization_domain.verification_record_value not in records:
             raise OrganizationDomainVerificationFailed(organization_domain)
 
         repository = OrganizationDomainRepository.from_session(session)
         try:
             async with session.begin_nested():
-                return await repository.update(
+                organization_domain = await repository.update(
                     organization_domain,
-                    update_dict={"verified_at": utc_now()},
+                    update_dict={
+                        "verified_at": utc_now(),
+                        "verification_lost_at": None,
+                    },
                     flush=True,
                 )
         except IntegrityError as e:
             await session.refresh(organization_domain)
             raise OrganizationDomainVerifiedElsewhere(organization_domain.domain) from e
+
+        domain = organization_domain.domain
+        hosts = [domain]
+        if not is_shared_host(f"{WILDCARD_PREFIX}{domain}"):
+            hosts.append(f"{WILDCARD_PREFIX}{domain}")
+        await session.refresh(organization, with_for_update=True)
+        organization.embed_hosts = [
+            *organization.embed_hosts,
+            *(host for host in hosts if host not in organization.embed_hosts),
+        ]
+        return organization_domain
+
+    async def reverify(
+        self, session: AsyncSession, organization: Organization
+    ) -> Sequence[OrganizationDomain]:
+        repository = OrganizationDomainRepository.from_session(session)
+        organization_domains = await repository.get_all(
+            repository.get_statement_by_organization(organization.id)
+        )
+        for organization_domain in organization_domains:
+            if organization_domain.verification_record_value is None:
+                continue
+            if organization_domain.verified_at is None:
+                with contextlib.suppress(
+                    OrganizationDomainVerificationFailed,
+                    OrganizationDomainVerifiedElsewhere,
+                ):
+                    await self.verify(session, organization, organization_domain)
+                continue
+
+            try:
+                records = await _lookup_txt(
+                    organization_domain.verification_record_name
+                )
+            except dns.exception.DNSException as e:
+                log.warning(
+                    "organization_domain.reverify.lookup_failed",
+                    organization_id=str(organization.id),
+                    domain=organization_domain.domain,
+                    error=str(e),
+                )
+                continue
+
+            if organization_domain.verification_record_value not in records:
+                log.info(
+                    "organization_domain.reverify.lost",
+                    organization_id=str(organization.id),
+                    domain=organization_domain.domain,
+                )
+                await repository.update(
+                    organization_domain,
+                    update_dict={
+                        "verified_at": None,
+                        "verification_lost_at": utc_now(),
+                    },
+                )
+                await self._send_lost_email(session, organization, organization_domain)
+        return organization_domains
+
+    async def _send_lost_email(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_domain: OrganizationDomain,
+    ) -> None:
+        assert organization_domain.verification_record_value is not None
+        settings_url = settings.generate_frontend_url(
+            f"/dashboard/{organization.slug}/settings#domains"
+        )
+        members = await user_organization_service.list_by_org(session, organization.id)
+        for member in members:
+            if (
+                OrganizationPermission.organization_manage
+                not in ROLE_PERMISSIONS[member.role]
+            ):
+                continue
+            enqueue_email_template(
+                DomainVerificationLostEmail(
+                    props=DomainVerificationLostProps(
+                        email=member.user.email,
+                        domain=organization_domain.domain,
+                        organization_name=organization.name,
+                        settings_url=settings_url,
+                        record_name=organization_domain.verification_record_name,
+                        record_value=organization_domain.verification_record_value,
+                    )
+                ),
+                to_email_addr=member.user.email,
+                subject=f"{organization_domain.domain} is no longer verified",
+            )
 
 
 organization_domain = OrganizationDomainService()

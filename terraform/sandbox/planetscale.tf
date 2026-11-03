@@ -8,6 +8,11 @@ module "planetscale" {
   region            = "aws-us-east-2"
   cluster_size      = "PS_80_AWS_ARM"
 
+  storage = {
+    storage_iops            = 6000
+    storage_throughput_mibs = 250
+  }
+
   parameters = {
     pgbouncer = {
       default_pool_size = "35"
@@ -43,7 +48,7 @@ locals {
     password      = var.planetscale_app_password
     read_host     = module.planetscale.host
     read_port     = "6432"
-    read_user     = module.planetscale.bouncer_usernames["app"]
+    read_user     = module.planetscale.bouncer_usernames["read"]
     read_password = var.planetscale_app_password
     sslmode       = "verify-full"
     sslrootcert   = "/etc/ssl/certs/ca-certificates.crt"

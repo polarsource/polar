@@ -52,7 +52,7 @@ export const PayoutStatus = ({
     <Tooltip>
       <TooltipTrigger className="cursor-help">{badge}</TooltipTrigger>
       <TooltipContent side="right" className="max-w-64">
-        <p className="text-justify text-sm">{tooltipMessage}</p>
+        <p className="text-left text-sm">{tooltipMessage}</p>
       </TooltipContent>
     </Tooltip>
   )

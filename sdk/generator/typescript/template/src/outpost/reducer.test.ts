@@ -22,6 +22,7 @@ const event = {
 };
 const reducer = (func: "count" | "sum" | "min" | "max" | "avg"): Reducer => ({
   id: "tokens",
+  kind: "usage",
   filter: { conjunction: "and", clauses: [] },
   aggregation: func === "count" ? { func } : { func, property: "tokens" },
 });
@@ -187,5 +188,9 @@ describe("reduction", () => {
         0,
       ),
     ).toThrow();
+  });
+
+  it("matches no local event against a credit reducer", () => {
+    expect(reduce(withMatchers([{ ...reducer("sum"), kind: "credit" }]), [event], 0)).toEqual([]);
   });
 });

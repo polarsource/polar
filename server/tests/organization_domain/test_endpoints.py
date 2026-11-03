@@ -1,9 +1,11 @@
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
+from sqlalchemy import update
 
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain, UserOrganization
+from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 
@@ -303,6 +305,7 @@ class TestVerifyOrganizationDomain:
     async def test_valid(
         self,
         mocker: MockerFixture,
+        session: AsyncSession,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -312,6 +315,8 @@ class TestVerifyOrganizationDomain:
             "polar.organization_domain.service._lookup_txt",
             return_value={"v=spf1 -all", "TOKEN"},
         )
+        organization.embed_hosts = ["localhost:3000", "acme.com"]
+        await save_fixture(organization)
         domain = OrganizationDomain(
             organization=organization,
             domain="acme.com",
@@ -324,3 +329,71 @@ class TestVerifyOrganizationDomain:
         )
         assert response.status_code == 200
         assert response.json()["verified_at"] is not None
+        updated = await session.get(Organization, organization.id)
+        assert updated is not None
+        assert updated.embed_hosts == ["localhost:3000", "acme.com", "*.acme.com"]
+
+    @pytest.mark.auth
+    async def test_valid_concurrent_embed_hosts_update(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        async def lookup_txt(name: str) -> set[str]:
+            await session.execute(
+                update(Organization)
+                .where(Organization.id == organization.id)
+                .values(embed_hosts=["other.com"])
+                .execution_options(synchronize_session=False)
+            )
+            return {"TOKEN"}
+
+        mocker.patch(
+            "polar.organization_domain.service._lookup_txt", side_effect=lookup_txt
+        )
+        domain = OrganizationDomain(
+            organization=organization,
+            domain="acme.com",
+            verification_record_value="TOKEN",
+        )
+        await save_fixture(domain)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/domains/{domain.id}/verify"
+        )
+        assert response.status_code == 200
+        updated = await session.get(Organization, organization.id)
+        assert updated is not None
+        assert updated.embed_hosts == ["other.com", "acme.com", "*.acme.com"]
+
+    @pytest.mark.auth
+    async def test_valid_shared_host(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch(
+            "polar.organization_domain.service._lookup_txt", return_value={"TOKEN"}
+        )
+        domain = OrganizationDomain(
+            organization=organization,
+            domain="github.io",
+            verification_record_value="TOKEN",
+        )
+        await save_fixture(domain)
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/domains/{domain.id}/verify"
+        )
+        assert response.status_code == 200
+        updated = await session.get(Organization, organization.id)
+        assert updated is not None
+        assert updated.embed_hosts == ["github.io"]

@@ -1,38 +1,69 @@
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Protocol, Self
 from uuid import UUID
 
-from polar.models import BillingInterval, Subscription
-from polar.postgres import AsyncSession
+from sqlalchemy import update
+
+from polar.kit.repository import RepositoryBase
+from polar.models import BillingInterval, Customer, Subscription
 
 from .types import IntervalChangePlan
 
 
-class BillingIntervalRepository(Protocol):
-    session: AsyncSession
-
-    @classmethod
-    def from_session(cls, session: AsyncSession) -> Self: ...
+class BillingIntervalRepository(RepositoryBase[BillingInterval]):
+    model = BillingInterval
 
     async def get_by_subscription(
-        self, organization_id: UUID, subscription_id: UUID
+        self, subscription_id: UUID
     ) -> Sequence[BillingInterval]:
-        """Load the complete stream history, including closed intervals."""
-        ...
+        statement = self.get_base_statement().where(
+            BillingInterval.subscription_id == subscription_id
+        )
+        return await self.get_all(statement)
 
-    async def get_by_customer(
-        self, organization_id: UUID, customer_id: UUID, *, cutoff: datetime
+    async def get_by_customer_and_meter(
+        self,
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        until: datetime,
     ) -> Sequence[BillingInterval]:
-        """Load competing history with retained prices and original subscription starts.
-
-        Include ended/deleted subscriptions and trial/paused rows, without current-price
-        or currency filtering. Include starts at the cutoff for recipient selection.
-        """
-        ...
+        """Intervals of every subscription of the customer starting by `until`."""
+        # TODO: No lower bound, so usage an earlier failed seal left unsealed is
+        # still split before it's sealed. Once seal failures raise instead of being
+        # logged (when the reducer bills for real), nothing before the previous
+        # reset can be left unsealed: cap this to intervals ending at or after it.
+        statement = (
+            self.get_base_statement()
+            .join(Subscription, Subscription.id == BillingInterval.subscription_id)
+            .where(
+                Subscription.customer_id == customer.id,
+                BillingInterval.organization_id == customer.organization_id,
+                BillingInterval.meter_id == meter_id,
+                BillingInterval.period_start <= until,
+            )
+        )
+        return await self.get_all(statement)
 
     async def apply_changes(
         self, subscription: Subscription, changes: IntervalChangePlan
-    ) -> tuple[BillingInterval, ...]:
-        """Write a prelocked stream's plan without committing or splitting buckets."""
-        ...
+    ) -> None:
+        if changes.close_interval_ids:
+            await self.session.execute(
+                update(BillingInterval)
+                .where(BillingInterval.id.in_(changes.close_interval_ids))
+                .values(period_end=changes.effective_at)
+            )
+        for state in changes.new_interval_states:
+            await self.create(
+                BillingInterval(
+                    organization_id=subscription.organization_id,
+                    subscription=subscription,
+                    customer_id=subscription.customer_id,
+                    meter_id=state.meter_id,
+                    product_price_id=state.product_price_id,
+                    period_start=changes.effective_at,
+                    usage_policy=state.usage_policy,
+                ),
+                flush=True,
+            )

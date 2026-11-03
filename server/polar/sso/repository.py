@@ -20,7 +20,7 @@ class OrganizationSSOConnectionRepository(
 
     def get_statement_by_organization(
         self, organization_id: UUID
-    ) -> Select[tuple[OrganizationSSOConnection]]:
+    ) -> Select[OrganizationSSOConnection]:
         return self.get_base_statement().where(
             OrganizationSSOConnection.organization_id == organization_id
         )

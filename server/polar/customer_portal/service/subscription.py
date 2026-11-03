@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, select
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.exceptions import PolarError
@@ -105,9 +106,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             (CustomerSubscriptionSortProperty.started_at, True),
         ),
     ) -> tuple[Sequence[Subscription], int]:
-        statement = self._get_readable_subscription_statement(auth_subject).where(
-            Subscription.started_at.is_not(None)
-        )
+        statement = self._get_readable_subscription_statement(auth_subject)
 
         statement = (
             statement.join(Product, onclause=Subscription.product_id == Product.id)
@@ -135,7 +134,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         if query is not None:
             statement = statement.where(Product.name.icontains(query, autoescape=True))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CustomerSubscriptionSortProperty.started_at:
@@ -418,7 +417,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
 
     def _get_readable_subscription_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         return select(Subscription).where(
             ~Subscription.is_deleted,
             Subscription.customer_id == get_customer_id(auth_subject),

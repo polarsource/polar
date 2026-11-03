@@ -16,6 +16,7 @@ import {
   productToCreateForm,
 } from '@/utils/product'
 import { useFlaggedProductName } from '@/hooks/useFlaggedProductName'
+import { usePostHog } from '@/hooks/posthog'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Alert, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -44,6 +45,7 @@ export const CreateProductPage = ({
 }: CreateProductPageProps) => {
   const router = useRouter()
   const { toast } = useToast()
+  const posthog = usePostHog()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const benefitsQuery = useBenefits(organization.id, {
     limit: 200,
@@ -98,7 +100,10 @@ export const CreateProductPage = ({
   })
   const { handleSubmit, setError } = form
   const name = useWatch({ control: form.control, name: 'name' })
-  const flaggedPhrase = useFlaggedProductName(name ?? '')
+  const flaggedPhrase = useFlaggedProductName({
+    organizationId: organization.id,
+    name: name ?? '',
+  })
 
   const onInvalid = useCallback(
     (errors: FieldErrors<ProductEditOrCreateForm>) => {
@@ -166,6 +171,16 @@ export const CreateProductPage = ({
           },
         })
 
+        if (flaggedPhrase && flaggedPhrase.name === productCreate.name.trim()) {
+          posthog.capture('dashboard:products:flagged_name:create', {
+            organization_id: organization.id,
+            product_id: product.id,
+            product_name: product.name,
+            category: flaggedPhrase.category,
+            phrase: flaggedPhrase.phrase,
+          })
+        }
+
         router.push(
           getStatusRedirect(
             returnTo ?? `/dashboard/${organization.slug}/products`,
@@ -193,6 +208,8 @@ export const CreateProductPage = ({
       organization,
       toast,
       setError,
+      flaggedPhrase,
+      posthog,
     ],
   )
 
@@ -236,7 +253,7 @@ export const CreateProductPage = ({
               organization={organization}
               update={false}
               hasMeterCreditBenefit={hasMeterCreditBenefit}
-              nameFlagged={flaggedPhrase !== null}
+              flaggedCategory={flaggedPhrase?.category ?? undefined}
               benefitsSlot={
                 <Benefits
                   organization={organization}
@@ -271,7 +288,7 @@ export const CreateProductPage = ({
                 >
                   Acceptable Use Policy
                 </a>
-                .
+                . Polar is a Merchant of Record for digital products only.
               </>
             }
           />

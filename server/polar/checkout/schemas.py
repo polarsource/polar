@@ -20,7 +20,12 @@ from polar.custom_field.data import (
     CustomFieldDataOutputMixin,
 )
 from polar.custom_field.schemas import AttachedCustomField
-from polar.customer.schemas.customer import CustomerNameInput
+from polar.customer.schemas.customer import (
+    CustomerBillingNameInput,
+    CustomerID,
+    CustomerNameInput,
+    ExternalCustomerID,
+)
 from polar.discount.schemas import (
     DiscountFixedBase,
     DiscountOnceForeverDurationBase,
@@ -45,6 +50,7 @@ from polar.kit.schemas import (
     HttpUrlToStr,
     IDSchema,
     Int32,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     StripValidator,
@@ -55,23 +61,25 @@ from polar.kit.trial import (
     TrialConfigurationOutputMixin,
     TrialInterval,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.checkout import (
     CheckoutBillingAddressFields,
     CheckoutCustomerBillingAddressFields,
     CheckoutStatus,
 )
 from polar.models.discount import DiscountDuration, DiscountType
-from polar.organization.schemas import OrganizationPublicBase
+from polar.organization.schemas import OrganizationID, OrganizationPublicBase
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
+    ProductID,
     ProductMediaList,
     ProductPrice,
     ProductPriceCreateList,
     ProductPriceList,
+    ProductVersionOutputMixin,
 )
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 Amount = Annotated[
     int,
@@ -308,7 +316,7 @@ class CheckoutCreateBase(
     customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
-    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_billing_name: CustomerBillingNameInput | None = None
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     customer_metadata: MetadataField = Field(
@@ -475,7 +483,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     is_business_customer: bool | None = None
     customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
-    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_billing_name: CustomerBillingNameInput | None = None
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
@@ -764,7 +772,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
 class CheckoutOrganization(OrganizationPublicBase): ...
 
 
-class CheckoutProduct(ProductBase):
+class CheckoutProduct(ProductVersionOutputMixin, ProductBase):
     """Product data for a checkout session."""
 
     prices: ProductPriceList
@@ -898,3 +906,33 @@ class CheckoutEmbedPolicy(Schema):
     """The `frame-ancestors` sources admitting the hosts allowed to embed."""
 
     frame_ancestors: list[str]
+
+
+class CheckoutListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    )
+    status: MultipleQueryFilter[CheckoutStatus] | None = Field(
+        None,
+        title="Status Filter",
+        description="Filter by checkout session status.",
+    )
+    query: str | None = Field(None, description="Filter by customer email.")

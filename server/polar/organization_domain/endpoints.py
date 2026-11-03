@@ -134,4 +134,6 @@ async def verify_organization_domain(
     )
     if organization_domain is None:
         raise ResourceNotFound()
-    return await organization_domain_service.verify(session, organization_domain)
+    return await organization_domain_service.verify(
+        session, authz.organization, organization_domain
+    )

@@ -694,7 +694,6 @@ test('tool calls are sent to PostHog as $mcp_tool_call events without the token,
         summary: 'No way to list the events a meter has received',
         details:
           'Tried GET https://api.polar.test/v1/events/ for customer-id 2f1c0e3a-8f7a-4bd1-9c2e-1a2b3c4d5e6f',
-        intent: 'Check that usage events reach the meter',
       },
     })
     await call({ name: 'feedback', arguments: { feedback_type: 'mcp' } })
@@ -704,14 +703,15 @@ test('tool calls are sent to PostHog as $mcp_tool_call events without the token,
     const events = fetchMock.mock.calls
       .filter(([url]) => url === 'https://us.i.posthog.com/capture/')
       .map(([, init]) => JSON.parse(init!.body as string))
-    expect(events).toHaveLength(8)
-    expect(waitUntil).toHaveBeenCalledTimes(8)
+    expect(events).toHaveLength(9)
+    expect(waitUntil).toHaveBeenCalledTimes(9)
     expect(events[3].properties).toMatchObject({
       $mcp_client_name: 'claude-code',
       $mcp_client_version: '2.1.0',
       user_agent: 'claude-code/2.1.0 (darwin)',
       $mcp_error_type: 'validation',
-      intent: 'Count the products. '.repeat(60).slice(0, 1024),
+      $mcp_intent: 'Count the products. '.repeat(60).slice(0, 1024),
+      $mcp_intent_source: 'context_parameter',
     })
     expect(events[5].properties).toMatchObject({
       $mcp_tool_name: 'feedback',
@@ -727,13 +727,26 @@ test('tool calls are sent to PostHog as $mcp_tool_call events without the token,
         category: 'missing_capability',
         summary: 'No way to list the events a meter has received',
         details: 'Tried GET <redacted> for customer-id <redacted>',
-        intent: 'Check that usage events reach the meter',
         mode: 'codemode',
         $mcp_server_name: 'polar',
       }),
     })
     expect(events[6].properties).not.toHaveProperty('$mcp_tool_name')
-    expect(events[7].properties).toMatchObject({
+    expect(events[6].properties).not.toHaveProperty('$mcp_intent')
+    expect(events[6].properties).not.toHaveProperty('$mcp_intent_source')
+    expect(events[7]).toEqual({
+      api_key: 'phc_test',
+      event: '$mcp_missing_capability',
+      distinct_id: events[0].distinct_id,
+      properties: expect.objectContaining({
+        $mcp_source: 'posthog_mcp_analytics',
+        $mcp_intent: 'No way to list the events a meter has received',
+        $mcp_intent_source: 'context_parameter',
+        $mcp_server_name: 'polar',
+      }),
+    })
+    expect(events[7].properties).not.toHaveProperty('summary')
+    expect(events[8].properties).toMatchObject({
       $mcp_tool_name: 'feedback',
       $mcp_error_type: 'validation',
     })
@@ -745,14 +758,17 @@ test('tool calls are sent to PostHog as $mcp_tool_call events without the token,
       api_key: 'phc_test',
       event: '$mcp_tool_call',
       distinct_id: `mcp:${createHmac('sha256', 'analytics-secret-test').update('organization:org-capture').digest('hex').slice(0, 32)}`,
+      timestamp: expect.any(String),
       properties: expect.objectContaining({
         $mcp_tool_name: 'execute',
         $mcp_is_error: false,
         $mcp_server_name: 'polar',
         server: 'polar-mcp',
         mode: 'codemode',
-        intent:
+        $mcp_source: 'posthog_mcp_analytics',
+        $mcp_intent:
           'Count the products in the catalog for <redacted> org <redacted>',
+        $mcp_intent_source: 'context_parameter',
         api_requests: 1,
         api_operations: ['GET /v1/products/ 200'],
         $process_person_profile: false,
@@ -764,7 +780,8 @@ test('tool calls are sent to PostHog as $mcp_tool_call events without the token,
       $mcp_is_error: true,
       $mcp_error_type: 'validation',
     })
-    expect(events[1].properties).not.toHaveProperty('intent')
+    expect(events[1].properties).not.toHaveProperty('$mcp_intent')
+    expect(events[1].properties).not.toHaveProperty('$mcp_intent_source')
     expect(events[2].properties).toMatchObject({
       $mcp_error_status: 404,
       $mcp_error_type: 'api_4xx',

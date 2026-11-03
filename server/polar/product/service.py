@@ -481,6 +481,9 @@ class ProductService:
             )
 
         if update_schema.medias is not None:
+            # Lock the product row and reload product_medias. Two transactions
+            # otherwise both delete the rows and insert the same order values.
+            await session.refresh(product, {"product_medias"}, with_for_update=True)
             medias_errors: list[ValidationError] = []
             try:
                 async with session.begin_nested():
@@ -511,6 +514,11 @@ class ProductService:
                 errors.extend(medias_errors)
 
         if update_schema.attached_custom_fields is not None:
+            # Lock the product row and reload attached_custom_fields. Two
+            # transactions otherwise both delete the rows and insert order=0.
+            await session.refresh(
+                product, {"attached_custom_fields"}, with_for_update=True
+            )
             attached_custom_fields_errors: list[ValidationError] = []
             try:
                 async with session.begin_nested():

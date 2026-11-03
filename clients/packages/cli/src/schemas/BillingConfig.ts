@@ -87,8 +87,10 @@ export const PlanResponse = Schema.Struct({
 export const PruneEntry = Schema.Struct({
   resource: ConfigResource,
   external_id: Schema.String,
-  in_use: Schema.Boolean,
-  referenced_by: Schema.Array(Schema.String),
+  customers_count: Schema.Number,
+  referenced_by: Schema.Array(
+    Schema.Struct({ resource: ConfigResource, external_id: Schema.String }),
+  ),
 })
 export type PruneEntry = typeof PruneEntry.Type
 
@@ -149,48 +151,6 @@ export const ApplyOutput = Schema.Union(
     Schema.Struct({ file: Schema.String, ...member.fields }),
   ),
 )
-
-export const ConfigDocument = Schema.Record(
-  Schema.String,
-  Schema.Union([
-    Schema.Array(Schema.Unknown),
-    Schema.Record(Schema.String, Schema.Unknown),
-  ]),
-)
-export type ConfigDocument = typeof ConfigDocument.Type
-
-export const SkippedResource = Schema.Struct({
-  resource: Schema.String,
-  id: Schema.String,
-  name: Schema.String,
-  reason: Schema.String,
-})
-export type SkippedResource = typeof SkippedResource.Type
-
-export const ConfigExport = Schema.Struct({
-  config: ConfigDocument,
-  skipped: Schema.Array(SkippedResource),
-})
-
-const PulledEntry = Schema.Struct({
-  section: Schema.String,
-  id: Schema.String,
-})
-
-export const PullResult = Schema.Union([
-  Schema.Struct({
-    status: Schema.Literal('written'),
-    file: Schema.String,
-    entries: Schema.Array(PulledEntry),
-    skipped: Schema.Array(SkippedResource),
-  }),
-  Schema.Struct({
-    status: Schema.Literal('conflict'),
-    file: Schema.String,
-    entries: Schema.Array(PulledEntry),
-  }),
-])
-export type PullResult = typeof PullResult.Type
 
 export interface LoadedConfig {
   readonly file: string

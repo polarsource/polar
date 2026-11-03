@@ -23,7 +23,7 @@ from httpx_ws import (
 )
 from opentelemetry import context as otel_context
 from opentelemetry import trace
-from opentelemetry.metrics import Counter, Histogram
+from opentelemetry.metrics import Counter, Histogram, _Gauge
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, StatusCode
@@ -47,6 +47,7 @@ from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
+    BUCKET_SIZE,
     BucketStatistics,
     Reducer,
     ReducerMatcher,
@@ -87,12 +88,18 @@ def _number(value: str) -> int | float:
     return number
 
 
+def _decode(value: str | bytes) -> str:
+    return value.decode() if isinstance(value, bytes) else value
+
+
 def _report_local_value(
-    span: Span, snapshot: "Snapshot", replaced: collections.abc.Sequence[str | bytes]
+    span: Span,
+    snapshot: "Snapshot",
+    replaced: collections.abc.Sequence[str | bytes],
+    # The state before the transaction settled confirmed events out of the pending part.
+    before: collections.abc.Mapping[str | bytes, str | bytes] | None = None,
 ) -> None:
-    decoded = [
-        value.decode() if isinstance(value, bytes) else value for value in replaced
-    ]
+    decoded = [_decode(value) for value in replaced]
     fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
     if "cold_until" not in fields:
         return
@@ -100,7 +107,12 @@ def _report_local_value(
     local = BucketStatistics()
     buckets: dict[str, BucketStatistics] = {}
     pending: dict[str, BucketStatistics] = {}
-    for field, value in fields.items():
+    source = (
+        fields
+        if before is None
+        else {_decode(field): _decode(value) for field, value in before.items()}
+    )
+    for field, value in source.items():
         if field.startswith("cold:"):
             setattr(local, field.removeprefix("cold:"), _number(value))
             continue
@@ -108,6 +120,8 @@ def _report_local_value(
         if kind not in ("bucket", "pending"):
             continue
         start, _, statistic = rest.partition(":")
+        if int(start) >= snapshot["cold_until"]:
+            continue
         group = buckets if kind == "bucket" else pending
         setattr(group.setdefault(start, BucketStatistics()), statistic, _number(value))
     # A bucket already cold before this snapshot was read by its pending part only.
@@ -262,40 +276,44 @@ class ReducerState:
     buckets: dict[int, BucketStatistics]
     # The part of each bucket Polar has not confirmed yet.
     pending: dict[int, BucketStatistics]
-    credited: dict[str, int | float]
 
 
 def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
-    decoded = [
-        value.decode() if isinstance(value, bytes) else value for value in values
-    ]
     epoch = ""
     revision = 0
     cold_until: int | None = None
     cold = BucketStatistics()
     buckets: dict[int, BucketStatistics] = {}
     pending: dict[int, BucketStatistics] = {}
-    credited: dict[str, int | float] = {}
-    for field, value in zip(decoded[::2], decoded[1::2], strict=True):
-        if field.startswith(("bucket:", "pending:")):
-            prefix, _, rest = field.partition(":")
-            timestamp, _, statistic = rest.partition(":")
-            statistics = buckets if prefix == "bucket" else pending
-            start = int(timestamp)
-            bucket = statistics.get(start)
-            if bucket is None:
-                bucket = statistics[start] = BucketStatistics()
-            setattr(bucket, statistic, _number(value))
-        elif field.startswith("cold:"):
-            setattr(cold, field.removeprefix("cold:"), _number(value))
-        elif field.startswith("credited:"):
-            credited[field[9:]] = _number(value)
-        elif field == "epoch":
-            epoch = value
-        elif field == "revision":
-            revision = int(value)
-        elif field == "cold_until":
-            cold_until = int(value)
+    # The statistics each `<group>:<statistic>` field writes to, by group: `cold` and every
+    # `bucket:<start>` or `pending:<start>` seen so far.
+    groups: dict[str, BucketStatistics] = {"cold": cold}
+    # Fields and values alternate: zipping one iterator with itself reads them in pairs.
+    pairs = iter(values)
+    for field, value in zip(pairs, pairs, strict=True):
+        if isinstance(field, bytes):
+            field = field.decode()
+        if isinstance(value, bytes):
+            value = value.decode()
+        group, separator, statistic = field.rpartition(":")
+        bucket = groups.get(group)
+        if bucket is None:
+            if not separator:
+                if field == "epoch":
+                    epoch = value
+                elif field == "revision":
+                    revision = int(value)
+                elif field == "cold_until":
+                    cold_until = int(value)
+                continue
+            kind, _, timestamp = group.partition(":")
+            if kind == "bucket" or kind == "pending":
+                bucket = BucketStatistics()
+                (buckets if kind == "bucket" else pending)[int(timestamp)] = bucket
+                groups[group] = bucket
+            else:
+                continue
+        setattr(bucket, statistic, int(value) if value.isdecimal() else _number(value))
     return ReducerState(
         epoch=epoch,
         revision=revision,
@@ -303,7 +321,6 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
         cold=cold,
         buckets=buckets,
         pending=pending,
-        credited=credited,
     )
 
 
@@ -338,13 +355,9 @@ class LocalState:
     missing: bool = False
     changed: anyio.Event = dataclasses.field(default_factory=anyio.Event)
 
-    def is_ready(self, meter_ids: collections.abc.Iterable[str]) -> bool:
+    def is_ready(self) -> bool:
         state = self.state
-        return self.missing or (
-            state is not None
-            and state.cold_until is not None
-            and all(meter_id in state.credited for meter_id in meter_ids)
-        )
+        return self.missing or (state is not None and state.cold_until is not None)
 
     def notify(self) -> None:
         self.changed.set()
@@ -356,17 +369,16 @@ class Configuration(typing.TypedDict):
 
 
 class Snapshot(typing.TypedDict):
+    reducer_id: str
     customer_id: str | None
     external_customer_id: str | None
     customer_exists: bool
-    meter_id: str
     version: int
     cold_until: int
     count: int
     sum: int | float
     min: int | float | None
     max: int | float | None
-    credited_units: int | float
 
 
 @dataclasses.dataclass
@@ -375,14 +387,17 @@ class IngestResult:
     duplicates: int = 0
 
 
-# A snapshot waiting for Polar to say which of the pending events it counts, one per meter.
+# A snapshot waiting for Polar to say which of the pending events it counts, one per reducer.
 @dataclasses.dataclass
 class _Confirmation:
-    key: str
     snapshot: "Snapshot"
     customer: str
     identity: str
+    started: float
+    age: float
+    superseded: bool
     awaited: int = 0
+    messages: int = 0
     asked: int = 0
     confirmed: dict[int, list[str]] = dataclasses.field(default_factory=dict)
     timer: anyio.CancelScope | None = None
@@ -406,6 +421,8 @@ class Outpost:
         self._ingest_duration: Histogram | None = None
         self._ingest_buckets: Counter | None = None
         self._read_duration: Histogram | None = None
+        self._redis_memory: _Gauge | None = None
+        self._redis_keys: _Gauge | None = None
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
@@ -458,6 +475,8 @@ class Outpost:
             self._read_duration = meter.create_histogram(
                 "outpost.read.duration", unit="s"
             )
+            self._redis_memory = meter.create_gauge("outpost.redis.memory", unit="By")
+            self._redis_keys = meter.create_gauge("outpost.redis.keys")
         try:
             with self._span("outpost.redis.connect"):
                 self._redis = await self._stack.enter_async_context(
@@ -710,36 +729,37 @@ class Outpost:
             if not self._configured.is_set():
                 with anyio.fail_after(5):
                     await self._configured.wait()
-            reducers = self._reducers
-            reducer = next(
-                (
-                    reducer
-                    for reducer in reducers
-                    if meter_id in reducer.get("meter_ids", [])
-                ),
-                None,
-            )
-            if reducer is None:
+            usage = self._find_reducer("usage", meter_id)
+            if usage is None:
                 read.outcome = "unknown_meter"
                 return None
-            local = await self._warm_customer(customer, reducer)
-            if not local.is_ready([meter_id]):
+            credit = self._find_reducer("credit", meter_id)
+            warmed = [
+                (reducer, await self._warm_customer(customer, reducer))
+                for reducer in (usage, credit)
+                if reducer is not None
+            ]
+            if not all(local.is_ready() for _, local in warmed):
                 with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-                    await self._wait_ready(reducer, local, [meter_id])
-            if local.missing:
+                    for reducer, local in warmed:
+                        await self._wait_ready(reducer, local)
+            if any(local.missing for _, local in warmed):
                 read.outcome = "unknown_customer"
                 return None
-            state = local.state
+            state = warmed[0][1].state
             if state is None or state.cold_until is None:
                 raise _NotReadyError("Customer snapshot is not ready")
-            read.outcome = (
-                "ready"
-                if reducer["aggregation"]["func"] == "unique"
-                or meter_id in state.credited
-                else "not_ready"
-            )
-            consumed = consumed_units(state, reducer["aggregation"]["func"])
-            credited = state.credited.get(meter_id, 0)
+            consumed = consumed_units(state, usage["aggregation"]["func"])
+            credited: int | float = 0
+            read.outcome = "ready"
+            if credit is not None:
+                credit_state = warmed[1][1].state
+                if credit_state is not None and credit_state.cold_until is not None:
+                    credited = consumed_units(
+                        credit_state, credit["aggregation"]["func"]
+                    )
+                else:
+                    read.outcome = "not_ready"
             return CustomerMeter(
                 meter_id=meter_id,
                 customer_id=customer_id,
@@ -759,25 +779,17 @@ class Outpost:
         with self._measure_read("actor") as read:
             customer = self._customer_key(customer_id, external_customer_id)
             warmed = await self._warm_actor(customer)
-            if not all(
-                local.is_ready(reducer.get("meter_ids", []))
-                for reducer, local in warmed
-            ):
+            if not all(local.is_ready() for _, local in warmed):
                 with anyio.move_on_after(SNAPSHOT_TIMEOUT):
                     for reducer, local in warmed:
-                        await self._wait_ready(
-                            reducer, local, reducer.get("meter_ids", [])
-                        )
+                        await self._wait_ready(reducer, local)
             # Polar sends no snapshot for unique reducers.
             snapshotted = [
                 (reducer, local)
                 for reducer, local in warmed
                 if reducer["aggregation"]["func"] != "unique"
             ]
-            if not all(
-                local.is_ready(reducer.get("meter_ids", []))
-                for reducer, local in snapshotted
-            ):
+            if not all(local.is_ready() for _, local in snapshotted):
                 read.outcome = "not_ready"
             elif any(local.missing for _, local in snapshotted):
                 read.outcome = "unknown_customer"
@@ -802,13 +814,23 @@ class Outpost:
             for reducer in self._reducers
         ]
 
-    async def _wait_ready(
-        self, reducer: Reducer, local: LocalState, meter_ids: list[str]
-    ) -> None:
+    def _find_reducer(
+        self, kind: typing.Literal["usage", "credit"], meter_id: str
+    ) -> Reducer | None:
+        return next(
+            (
+                reducer
+                for reducer in self._reducers
+                if reducer["kind"] == kind and meter_id in reducer.get("meter_ids", [])
+            ),
+            None,
+        )
+
+    async def _wait_ready(self, reducer: Reducer, local: LocalState) -> None:
         # Polar sends no snapshot for unique reducers, nor without a connection.
         if reducer["aggregation"]["func"] == "unique" or not self.connected:
             return
-        while not local.is_ready(meter_ids):
+        while not local.is_ready():
             await local.changed.wait()
 
     @contextlib.contextmanager
@@ -876,6 +898,8 @@ class Outpost:
         self._ingest_duration = None
         self._ingest_buckets = None
         self._read_duration = None
+        self._redis_memory = None
+        self._redis_keys = None
         with anyio.CancelScope(shield=True):
             if tracer_provider is not None:
                 await anyio.to_thread.run_sync(tracer_provider.shutdown)
@@ -923,16 +947,15 @@ class Outpost:
             websocket = self._websocket
             if identity not in self._actors and websocket is not None:
                 try:
-                    for meter_id in reducer.get("meter_ids", []):
-                        await websocket.send_json(
-                            {
-                                "type": "meter_usage",
-                                "payload": {
-                                    **self._customer_arguments(customer),
-                                    "meter_id": meter_id,
-                                },
-                            }
-                        )
+                    await websocket.send_json(
+                        {
+                            "type": "meter_usage",
+                            "payload": {
+                                **self._customer_arguments(customer),
+                                "reducer_id": reducer["id"],
+                            },
+                        }
+                    )
                 except HTTPXWSException:
                     # Requested again once reconnected.
                     return local
@@ -994,6 +1017,24 @@ class Outpost:
                 local.state = await self._load_state(customer)
                 local.notify()
 
+    async def _report_redis_size(self) -> None:
+        """Includes whatever else the merchant keeps in that Redis."""
+        redis, memory_gauge, keys_gauge = (
+            self._redis,
+            self._redis_memory,
+            self._redis_keys,
+        )
+        if redis is None or memory_gauge is None or keys_gauge is None:
+            return
+        try:
+            memory = await redis.info("memory")
+            keys = await redis.dbsize()
+        except RedisError:
+            # A Redis that refuses INFO or DBSIZE reports nothing.
+            return
+        memory_gauge.set(memory["used_memory"])
+        keys_gauge.set(keys)
+
     async def _listen_redis(
         self,
         *,
@@ -1026,6 +1067,8 @@ class Outpost:
                         await self._receive_redis(message["data"])
                     if anyio.current_time() >= next_refresh:
                         self._report_sync()
+                        assert self._tasks is not None
+                        self._tasks.start_soon(self._report_redis_size)
                         await self._refresh_states()
                         next_refresh = anyio.current_time() + SYNC_INTERVAL
 
@@ -1110,15 +1153,10 @@ class Outpost:
                 self._reconnect_attempts = 0
             elif message["type"] == "meter_usage":
                 snapshot: Snapshot = message["payload"]
-                reducer = next(
-                    (
-                        reducer
-                        for reducer in self._reducers
-                        if snapshot["meter_id"] in reducer.get("meter_ids", [])
-                    ),
-                    None,
-                )
-                if reducer is None:
+                if not any(
+                    reducer["id"] == snapshot["reducer_id"]
+                    for reducer in self._reducers
+                ):
                     continue
                 if (
                     snapshot["customer_id"] is not None
@@ -1128,7 +1166,7 @@ class Outpost:
                 customer = self._customer_key(
                     snapshot["customer_id"], snapshot["external_customer_id"]
                 )
-                identity = f"{customer}:{reducer['id']}"
+                identity = f"{customer}:{snapshot['reducer_id']}"
                 local = self._cache.get(identity)
                 if local is not None:
                     local.missing = not snapshot["customer_exists"]
@@ -1142,7 +1180,6 @@ class Outpost:
                     snapshot["sum"],
                     snapshot["min"],
                     snapshot["max"],
-                    snapshot["credited_units"],
                 ]
                 if any(
                     isinstance(value, float) and not math.isfinite(value)
@@ -1159,7 +1196,7 @@ class Outpost:
                     payload["customer_id"], payload["external_customer_id"]
                 )
                 confirmation = self._confirmations.get(
-                    f"{customer}:{payload['reducer_id']}:{payload['snapshot']['meter_id']}"
+                    f"{customer}:{payload['reducer_id']}"
                 )
                 if confirmation is None:
                     continue
@@ -1182,8 +1219,8 @@ class Outpost:
         """Asks Polar which of the pending events in the buckets the snapshot seals it
         counts. The snapshot Polar answers with applies once it did, or the asking one
         after confirm_timeout with the events still pending."""
-        key = f"{identity}:{snapshot['meter_id']}"
-        superseded = self._confirmations.pop(key, None)
+        started = time.perf_counter()
+        superseded = self._confirmations.pop(identity, None)
         if superseded is not None and superseded.timer is not None:
             superseded.timer.cancel()
         local = self._cache.get(identity)
@@ -1199,8 +1236,15 @@ class Outpost:
         ]
         if not sealed:
             return False
-        confirmation = _Confirmation(key, snapshot, customer, identity)
-        reducer_id = identity[len(customer) + 1 :]
+        confirmation = _Confirmation(
+            snapshot,
+            customer,
+            identity,
+            started=started,
+            # Seconds since the oldest bucket asked ended.
+            age=(time.time_ns() / 1_000 - min(sealed) - BUCKET_SIZE) / 1_000_000,
+            superseded=superseded is not None,
+        )
         assert self._redis is not None
         for bucket_start in sealed:
             ids = await self._redis.hkeys(
@@ -1218,10 +1262,9 @@ class Outpost:
                         {
                             "type": "confirm",
                             "payload": {
-                                "reducer_id": reducer_id,
+                                "reducer_id": snapshot["reducer_id"],
                                 **self._customer_arguments(customer),
                                 "bucket_start": bucket_start,
-                                "meter_id": snapshot["meter_id"],
                                 "ids": batch,
                             },
                         }
@@ -1230,10 +1273,11 @@ class Outpost:
                     # Not connected: the events stay pending until the next snapshot.
                     return False
                 confirmation.awaited += 1
+                confirmation.messages += 1
                 confirmation.asked += len(batch)
         if not confirmation.awaited:
             return False
-        self._confirmations[key] = confirmation
+        self._confirmations[identity] = confirmation
         assert self._tasks is not None
         self._tasks.start_soon(self._expire_confirmation, confirmation)
         return True
@@ -1248,9 +1292,9 @@ class Outpost:
     async def _settle_confirmation(
         self, confirmation: _Confirmation, *, answered: bool
     ) -> None:
-        if self._confirmations.get(confirmation.key) is not confirmation:
+        if self._confirmations.get(confirmation.identity) is not confirmation:
             return
-        del self._confirmations[confirmation.key]
+        del self._confirmations[confirmation.identity]
         if confirmation.timer is not None:
             confirmation.timer.cancel()
         await self._apply_snapshot_now(
@@ -1273,6 +1317,7 @@ class Outpost:
         """Settles the confirmed events and applies the snapshot in one transaction: a
         read sees the bucket either fully local or as Polar's total plus what is still
         pending."""
+        applying = time.perf_counter()
         assert self._redis is not None
         assert self._apply_snapshot is not None
         assert self._confirm_script is not None
@@ -1283,8 +1328,6 @@ class Outpost:
             _generate_epoch(),
             snapshot["cold_until"],
             snapshot["version"],
-            snapshot["meter_id"],
-            snapshot["credited_units"],
             snapshot["count"],
             snapshot["sum"],
             snapshot["min"] if snapshot["min"] is not None else "",
@@ -1301,12 +1344,24 @@ class Outpost:
             "outpost.snapshot.received",
             **{
                 "outpost.customer": customer,
-                "outpost.meter_id": snapshot["meter_id"],
+                "outpost.reducer_id": snapshot["reducer_id"],
                 "outpost.snapshot_version": snapshot["version"],
             },
         ) as span:
+            reducer_kind = next(
+                (
+                    reducer["kind"]
+                    for reducer in self._reducers
+                    if reducer["id"] == snapshot["reducer_id"]
+                ),
+                None,
+            )
+            if reducer_kind is not None:
+                span.set_attribute("outpost.reducer_kind", reducer_kind)
+            before = None
             if confirmed:
                 async with self._redis.pipeline(transaction=True) as pipeline:
+                    pipeline.hgetall(key)
                     for bucket_start, ids in confirmed.items():
                         await self._confirm_script(
                             keys=[
@@ -1327,12 +1382,12 @@ class Outpost:
                         keys=[key], args=snapshot_arguments, client=pipeline
                     )
                     results = await pipeline.execute()
-                state, replaced = results[-1]
+                before, (state, replaced) = results[0], results[-1]
             else:
                 state, replaced = await self._apply_snapshot(
                     keys=[key], args=snapshot_arguments
                 )
-            _report_local_value(span, snapshot, replaced)
+            _report_local_value(span, snapshot, replaced, before)
             if confirmation is not None:
                 span.set_attributes(
                     {
@@ -1341,6 +1396,10 @@ class Outpost:
                             len(ids) for ids in confirmed.values()
                         ),
                         "outpost.pending.answered": answered,
+                        "outpost.pending.messages": confirmation.messages,
+                        "outpost.pending.age": confirmation.age,
+                        "outpost.pending.superseded": confirmation.superseded,
+                        "outpost.confirm.duration": applying - confirmation.started,
                     }
                 )
             await self._receive_state(identity, decode_state(state))

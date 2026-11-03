@@ -657,7 +657,7 @@ class LicenseKeyService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Customer | Member],
-    ) -> Select[tuple[LicenseKey]]:
+    ) -> Select[LicenseKey]:
         repository = LicenseKeyRepository.from_session(session)
         return repository.get_customer_statement(auth_subject).options(
             joinedload(LicenseKey.customer), joinedload(LicenseKey.member)

@@ -1,5 +1,6 @@
 'use client'
 
+import type { MetricsProductFilter } from '@/hooks/queries/metrics'
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
@@ -33,7 +34,7 @@ interface CancellationsStackedChartProps {
   organizationId: string
   startDate: Date
   endDate: Date
-  productId?: string[]
+  productFilter?: MetricsProductFilter
 }
 
 function getPeriodEnd(
@@ -61,7 +62,7 @@ export default function CancellationsStackedChart({
   organizationId,
   startDate,
   endDate,
-  productId,
+  productFilter,
 }: CancellationsStackedChartProps) {
   const { resolvedTheme } = useTheme()
   const isDark = resolvedTheme === 'dark'
@@ -189,7 +190,7 @@ export default function CancellationsStackedChart({
           organizationId={organizationId}
           startDate={modalStartDate}
           endDate={modalEndDate}
-          productId={productId}
+          productFilter={productFilter}
           totalCount={modalTotalCount}
         />
       )}

@@ -67,6 +67,15 @@ export const OrderRefundsSection = ({ order }: { order: schemas['Order'] }) => {
                 ),
             },
             {
+              accessorKey: 'tax_amount',
+              header: 'Tax Amount',
+              cell: ({ row }) =>
+                formatCurrency('standard')(
+                  row.original.tax_amount,
+                  row.original.currency,
+                ),
+            },
+            {
               accessorKey: 'status',
               header: 'Status',
               cell: ({ row }) => (

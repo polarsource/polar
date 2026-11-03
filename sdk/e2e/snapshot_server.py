@@ -15,8 +15,8 @@ from python_client import read_lines
 
 def customer_key(payload: typing.Mapping[str, object]) -> str:
     if payload.get("customer_id") is not None:
-        return f"customer:{payload['customer_id']}:{payload['meter_id']}"
-    return f"external:{payload['external_customer_id']}:{payload['meter_id']}"
+        return f"customer:{payload['customer_id']}:{payload['reducer_id']}"
+    return f"external:{payload['external_customer_id']}:{payload['reducer_id']}"
 
 
 class SnapshotServer:
@@ -44,14 +44,13 @@ class SnapshotServer:
                         "customer_id": payload.get("customer_id"),
                         "external_customer_id": payload.get("external_customer_id"),
                         "customer_exists": False,
-                        "meter_id": payload["meter_id"],
+                        "reducer_id": payload["reducer_id"],
                         "version": 0,
                         "cold_until": 0,
                         "count": 0,
                         "sum": 0,
                         "min": None,
                         "max": None,
-                        "credited_units": 0,
                     }
                     await self._send(websocket, "meter_usage", snapshot)
                 elif message["type"] == "confirm":

@@ -25,7 +25,6 @@ const helpOnlyServices = Layer.mergeAll(
       load: unused,
       plan: unused,
       apply: unused,
-      pull: unused,
       prune: unused,
     }),
   ),

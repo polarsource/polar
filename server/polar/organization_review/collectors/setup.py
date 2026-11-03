@@ -4,7 +4,11 @@ from urllib.parse import urlparse
 import httpx
 import structlog
 
-from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
+from polar.kit.http import (
+    SSRFBlockedError,
+    SSRFSafeTransport,
+    resolve_and_validate_ip,
+)
 from polar.models.checkout_link import CheckoutLink
 from polar.models.webhook_endpoint import WebhookEndpoint
 
@@ -51,6 +55,17 @@ def same_registrable_domain(host_a: str, host_b: str) -> bool:
     if not a or not b:
         return False
     return a == b or a.endswith("." + b) or b.endswith("." + a)
+
+
+def is_same_or_subdomain(host: str, domain: str) -> bool:
+    """Whether `host` is `domain` or one of its subdomains, ignoring `www.` and ports."""
+    host = (urlparse(f"//{host}").hostname or "").removeprefix("www.")
+    domain = domain.lower().removeprefix("www.")
+    return bool(host) and (host == domain or host.endswith("." + domain))
+
+
+def is_on_verified_domain(host: str, verified_domains: list[str]) -> bool:
+    return any(is_same_or_subdomain(host, d) for d in verified_domains)
 
 
 def _is_cross_domain(original_url: str, final_url: str) -> bool:
@@ -100,13 +115,12 @@ async def _resolve_redirect(
 ) -> UrlRedirectInfo:
     """Follow redirects on a URL and return where it ultimately lands.
 
-    Validates scheme and checks for SSRF before making the request.
-    Uses a manual redirect loop to validate each hop against private IPs.
+    Uses a manual redirect loop to validate each hop's scheme. The client's
+    `SSRFSafeTransport` blocks hops that resolve to private IPs.
     """
     try:
         _validate_url_scheme(url)
-        await _validate_url_host(url)
-    except ValueError, SSRFBlockedError:
+    except ValueError:
         return UrlRedirectInfo(original_url=url, error="blocked")
 
     async with semaphore:
@@ -116,17 +130,19 @@ async def _resolve_redirect(
             current_url = url
             hops: list[str] = []
             for _ in range(10):  # max redirect hops
-                response = await client.get(current_url)
+                try:
+                    response = await client.get(current_url)
+                except SSRFBlockedError:
+                    error = "redirect_blocked" if hops else "blocked"
+                    return UrlRedirectInfo(original_url=url, error=error)
                 if response.is_redirect and response.has_redirect_location:
                     next_url = str(response.headers["location"])
                     # Resolve relative redirects
                     if not next_url.startswith(("http://", "https://")):
                         next_url = str(response.url.join(next_url))
-                    # Validate next hop
                     try:
                         _validate_url_scheme(next_url)
-                        await _validate_url_host(next_url)
-                    except ValueError, SSRFBlockedError:
+                    except ValueError:
                         return UrlRedirectInfo(
                             original_url=url, error="redirect_blocked"
                         )
@@ -149,8 +165,6 @@ async def _resolve_redirect(
             )
         except httpx.TimeoutException:
             return UrlRedirectInfo(original_url=url, error="timeout")
-        except SSRFBlockedError:
-            return UrlRedirectInfo(original_url=url, error="blocked")
         except Exception:
             return UrlRedirectInfo(original_url=url, error="connection_error")
 
@@ -213,6 +227,7 @@ async def resolve_url_redirects(urls: list[str]) -> list[UrlRedirectInfo]:
 
     # Pass 1: GET requests (fast)
     async with httpx.AsyncClient(
+        transport=SSRFSafeTransport(),
         follow_redirects=False,  # We follow manually to validate each hop
         timeout=_REDIRECT_TIMEOUT,
         headers={"User-Agent": "Mozilla/5.0 (compatible; PolarReviewBot/1.0)"},

@@ -1,19 +1,16 @@
+from typing import Annotated
+
 from fastapi import Depends, Query
 
-from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Refund
 from polar.openapi import APITag
-from polar.order.schemas import OrderID
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.subscription.schemas import SubscriptionID
 
 from . import auth
 from .schemas import Refund as RefundSchema
-from .schemas import RefundCreate, RefundID
+from .schemas import RefundCreate, RefundListParams
 from .service import RefundedAlready
 from .service import refund as refund_service
 from .sorting import RefundListSorting
@@ -25,47 +22,23 @@ router = APIRouter(
 
 @router.get("/", summary="List Refunds", response_model=ListResource[RefundSchema])
 async def list(
+    filters: Annotated[RefundListParams, Query()],
     pagination: PaginationParamsQuery,
     sorting: RefundListSorting,
     auth_subject: auth.RefundsRead,
-    id: MultipleQueryFilter[RefundID] | None = Query(
-        None, title="RefundID Filter", description="Filter by refund ID."
-    ),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    order_id: MultipleQueryFilter[OrderID] | None = Query(
-        None, title="OrderID Filter", description="Filter by order ID."
-    ),
-    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
-        None, title="SubscriptionID Filter", description="Filter by subscription ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by customer external ID.",
-    ),
-    succeeded: bool | None = Query(
-        None,
-        title="RefundStatus Filter",
-        description="Filter by `succeeded`.",
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[RefundSchema]:
     """List refunds."""
     results, count = await refund_service.list(
         session,
         auth_subject,
-        id=id,
-        organization_id=organization_id,
-        order_id=order_id,
-        subscription_id=subscription_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        succeeded=succeeded,
+        id=filters.id,
+        organization_id=filters.organization_id,
+        order_id=filters.order_id,
+        subscription_id=filters.subscription_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        succeeded=filters.succeeded,
         pagination=pagination,
         sorting=sorting,
     )

@@ -1121,6 +1121,31 @@ export interface components {
       /** Domain */
       domain: string
     }
+    /** DomainVerificationLostEmail */
+    DomainVerificationLostEmail: {
+      /**
+       * Template
+       * @default domain_verification_lost
+       * @constant
+       */
+      template: 'domain_verification_lost'
+      props: components['schemas']['DomainVerificationLostProps']
+    }
+    /** DomainVerificationLostProps */
+    DomainVerificationLostProps: {
+      /** Email */
+      email: string
+      /** Domain */
+      domain: string
+      /** Organization Name */
+      organization_name: string
+      /** Settings Url */
+      settings_url: string
+      /** Record Name */
+      record_name: string
+      /** Record Value */
+      record_value: string
+    }
     /** EmailUpdateEmail */
     EmailUpdateEmail: {
       /**
@@ -2968,9 +2993,11 @@ export interface components {
       canceled_at: string | null
       /**
        * Started At
+       * Format: date-time
        * @description The timestamp when the subscription started.
+       * @example 2026-01-01T00:00:00.000000Z
        */
-      started_at: string | null
+      started_at: string
       /**
        * Ends At
        * @description The timestamp when the subscription will end.

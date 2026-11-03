@@ -761,10 +761,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
         )
 
     @property
-    def is_compass_enabled(self) -> bool:
-        return self.feature_settings.get("compass_enabled", False)
-
-    @property
     def is_config_as_code_enabled(self) -> bool:
         return self.feature_settings.get("config_as_code_enabled", False)
 

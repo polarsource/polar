@@ -1,4 +1,4 @@
-"""Rendering helpers for external risk signals (e.g. Stripe Radar)."""
+"""Rendering helpers for organization risk signals (Stripe Radar, Polar checks)."""
 
 import json
 import re
@@ -40,9 +40,13 @@ def _render_signal_list(signals: Sequence[OrganizationRiskSignal]) -> None:
 
 
 def _render_signal_row(signal: OrganizationRiskSignal) -> None:
-    is_highest = signal.risk_level == OrganizationRiskSignal.HIGHEST_RISK_LEVEL
-    badge_class = "badge-error" if is_highest else "badge-warning"
-    accent = "border-l-error" if is_highest else "border-l-warning"
+    match signal.risk_level:
+        case OrganizationRiskSignal.RiskLevel.HIGHEST:
+            badge_class, accent = "badge-error", "border-l-error"
+        case OrganizationRiskSignal.RiskLevel.ELEVATED:
+            badge_class, accent = "badge-warning", "border-l-warning"
+        case _:
+            badge_class, accent = "badge-info", "border-l-info"
 
     with tag.div(classes=f"border border-base-200 rounded p-3 border-l-4 {accent}"):
         with tag.div(classes="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1"):
@@ -195,8 +199,8 @@ def render_risk_signals_card(signals: Sequence[OrganizationRiskSignal]) -> None:
                 text("Risk Signals")
             with tag.span(classes="text-sm text-base-content/60"):
                 text(
-                    "Raised by external fraud-detection systems. Only "
-                    "high-severity signals are recorded."
+                    "Raised by Stripe's fraud-detection systems (high-severity "
+                    "only) and by Polar's own checks."
                 )
 
         _render_signal_list(signals)
@@ -209,7 +213,7 @@ def render_risk_signals_block(signals: Sequence[OrganizationRiskSignal]) -> None
 
     with tag.div(classes="mb-4"):
         with tag.h3(classes="text-sm font-bold mb-3"):
-            text("External Risk Signals")
+            text("Risk Signals")
         _render_signal_list(signals)
 
 

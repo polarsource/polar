@@ -35,7 +35,7 @@ class CustomerMeterRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[CustomerMeter]]:
+    ) -> Select[CustomerMeter]:
         customer_id = get_customer_id(auth_subject)
 
         # Subquery for meters from active subscriptions

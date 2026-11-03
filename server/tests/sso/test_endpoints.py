@@ -4,8 +4,10 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
+from polar.kit.utils import utc_now
 from polar.models import (
     Organization,
+    OrganizationDomain,
     OrganizationSSOConnection,
     User,
     UserOrganization,
@@ -56,6 +58,11 @@ async def sso_enabled_organization(
         "sso_enabled": True,
     }
     await save_fixture(organization)
+    await save_fixture(
+        OrganizationDomain(
+            organization=organization, domain="example.com", verified_at=utc_now()
+        )
+    )
     return organization
 
 
@@ -210,6 +217,38 @@ class TestCreateSSOConnection:
             },
         )
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_no_verified_domain(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "sso_enabled": True,
+        }
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(organization=organization, domain="example.com")
+        )
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/sso-connections/",
+            json={
+                "configuration": {
+                    "issuer": "https://idp.example.com",
+                    "client_id": "client-id",
+                    "auth_method": "client_secret",
+                    "client_secret": "secret",
+                }
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "SSORequiresVerifiedDomain"
 
     @pytest.mark.auth
     async def test_valid(

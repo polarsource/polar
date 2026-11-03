@@ -1,0 +1,21 @@
+name: "Setup clients"
+description: "Set up pnpm and Node.js, then install the clients workspace"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: pnpm/action-setup@v6.1.0
+      with:
+        package_json_file: clients/package.json
+
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v7.1.0
+      with:
+        node-version-file: .nvmrc
+        cache: "pnpm"
+        cache-dependency-path: "clients/pnpm-lock.yaml"
+
+    - name: 📦 Install dependencies
+      shell: bash
+      working-directory: ./clients
+      run: pnpm install

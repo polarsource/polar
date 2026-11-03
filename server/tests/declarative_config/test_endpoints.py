@@ -10,7 +10,11 @@ from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import METER_TEST_EVENT, create_event, create_meter
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_event,
+    create_meter,
+)
 
 METER = {
     "external_id": "sdk-tool-calls",
@@ -78,6 +82,7 @@ class TestApply:
                     "action": "created",
                 }
             ],
+            "removed": [],
             "catalog": None,
             "settings": None,
         }
@@ -293,6 +298,7 @@ class TestPlan:
         assert response.status_code == 200
         assert response.json() == {
             "changes": [],
+            "removed": [],
             "catalog": None,
             "settings": None,
             "issues": [],
@@ -371,6 +377,23 @@ class TestPlan:
             "before": None,
             "after": "SDK - Tool Calls",
         } in created["diff"]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unknown_catalog(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/plan",
+            params={"catalog_id": str(uuid.uuid4())},
+            json={"meters": [METER], "organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["error"] == "CatalogNotFound"
 
 
 @pytest.mark.anyio
@@ -577,6 +600,27 @@ class TestExport:
         [meter] = response.json()["config"]["meters"]
         assert meter["external_id"] == "my-meter"
 
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        ("catalog_id", "status_code"),
+        [("00000000-0000-4000-8000-000000000000", 404), ("live", 422)],
+    )
+    async def test_catalog_selector(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        catalog_id: str,
+        status_code: int,
+    ) -> None:
+        response = await client.get(
+            "/v1/config/",
+            params={"organization_id": str(organization.id), "catalog_id": catalog_id},
+        )
+
+        assert response.status_code == status_code
+
 
 @pytest.mark.anyio
 class TestPrune:
@@ -602,7 +646,7 @@ class TestPrune:
                 {
                     "resource": "meter",
                     "external_id": "sdk-tool-calls",
-                    "in_use": False,
+                    "customers_count": 0,
                     "referenced_by": [],
                 }
             ]

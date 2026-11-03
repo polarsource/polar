@@ -2,7 +2,8 @@ from collections.abc import Awaitable, Callable
 from inspect import Parameter, Signature
 from typing import Annotated, Any
 
-from fastapi import Depends, Request, Security
+from fastapi import Depends, Security
+from fastapi.requests import HTTPConnection
 from fastapi.security import HTTPBearer, OpenIdConnect
 from makefun import with_signature
 
@@ -74,9 +75,9 @@ def _get_auth_subject_factory(
 
     parameters: list[Parameter] = [
         Parameter(
-            name="request",
+            name="connection",
             kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=Request,
+            annotation=HTTPConnection,
         )
     ]
     if (
@@ -127,12 +128,14 @@ def _get_auth_subject_factory(
     signature = Signature(parameters)
 
     @with_signature(signature)
-    async def get_auth_subject(request: Request, **kwargs: Any) -> AuthSubject[Subject]:
+    async def get_auth_subject(
+        connection: HTTPConnection, **kwargs: Any
+    ) -> AuthSubject[Subject]:
         try:
-            return request.state.auth_subject
+            return connection.state.auth_subject
         except AttributeError as e:
             raise RuntimeError(
-                "AuthSubject is not present in the request state. "
+                "AuthSubject is not present in the connection state. "
                 "Did you forget to add AuthSubjectMiddleware?"
             ) from e
 

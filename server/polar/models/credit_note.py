@@ -64,3 +64,7 @@ class CreditNote(RecordModel):
     @declared_attr
     def refunds(cls) -> Mapped[list["Refund"]]:
         return relationship("Refund", lazy="raise", back_populates="credit_note")
+
+    @property
+    def pdf_filename(self) -> str:
+        return f"CreditNote-{self.number}.pdf"

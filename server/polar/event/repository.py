@@ -2,6 +2,7 @@ from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import (
     UUID as SA_UUID,
@@ -9,6 +10,7 @@ from sqlalchemy import (
 from sqlalchemy import (
     ColumnElement,
     ColumnExpressionArgument,
+    NotNullable,
     Select,
     String,
     and_,
@@ -19,6 +21,7 @@ from sqlalchemy import (
     literal,
     or_,
     select,
+    text,
     tuple_,
     union_all,
     update,
@@ -56,7 +59,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         statement = self.get_base_statement()
         statement = statement.where(Event.organization_id.in_(org_ids))
         return statement
@@ -379,7 +382,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         or still staged."""
         statement = union_all(
             *(
-                select(model.external_id).where(
+                select(NotNullable(model.external_id)).where(
                     model.organization_id == organization_id,
                     model.external_id.in_(external_ids),
                     model.timestamp >= timestamp_from,
@@ -401,6 +404,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return result.scalar_one_or_none()
 
+    def get_meter_resets_statement(
+        self, customer: Customer, meter_id: UUID
+    ) -> Select[Event]:
+        return self.get_base_statement().where(
+            Event.organization_id == customer.organization_id,
+            Event.customer_id == customer.id,
+            Event.source == EventSource.system,
+            Event.name == SystemEvent.meter_reset,
+            Event.user_metadata["meter_id"].as_string() == str(meter_id),
+        )
+
     async def get_latest_meter_reset(
         self,
         customer: Customer,
@@ -409,20 +423,26 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         cutoff: datetime | None = None,
     ) -> Event | None:
         statement = (
-            self.get_base_statement()
-            .where(
-                Event.organization_id == customer.organization_id,
-                Event.customer_id == customer.id,
-                Event.source == EventSource.system,
-                Event.name == SystemEvent.meter_reset,
-                Event.user_metadata["meter_id"].as_string() == str(meter_id),
-            )
+            self.get_meter_resets_statement(customer, meter_id)
             .order_by(Event.timestamp.desc())
             .limit(1)
         )
         if cutoff is not None:
             statement = statement.where(Event.timestamp < cutoff)
         return await self.get_one_or_none(statement)
+
+    async def get_meter_credit_timestamps(
+        self, customer: Customer, meter_id: UUID, *, since: datetime | None
+    ) -> Sequence[datetime]:
+        statement = select(Event.timestamp).where(
+            Event.organization_id == customer.organization_id,
+            Event.customer_id == customer.id,
+            Event.is_meter_credit,
+            Event.user_metadata["meter_id"].as_string() == str(meter_id),
+        )
+        if since is not None:
+            statement = statement.where(Event.timestamp >= since)
+        return (await self.session.scalars(statement)).all()
 
     async def has_meter_reset_ingested_after(
         self, customer: Customer, meter_id: UUID, ingested_after: datetime
@@ -486,7 +506,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.user_metadata["meter_id"].as_string() == str(meter.id),
         )
 
-    def get_meter_statement(self, meter: Meter) -> Select[tuple[Event]]:
+    def get_meter_statement(self, meter: Meter) -> Select[Event]:
         return self.get_base_statement().where(
             Event.organization_id == meter.organization_id,
             self.get_meter_clause(meter),
@@ -584,7 +604,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         price: UUID,
         *,
         cutoff: datetime,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
@@ -655,7 +675,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         meter: UUID,
         *,
         cutoff: datetime,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         """
         Get events for pending billing entries grouped by meter.
         Used for non-summable aggregations where we need to compute across all events
@@ -796,7 +816,9 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         start_timestamp: datetime,
         end_timestamp: datetime,
         interval: TimeInterval,
+        timezone: ZoneInfo,
     ) -> list[datetime]:
+        await self.session.execute(text(f"SET LOCAL TIME ZONE '{timezone.key}'"))
         cte = get_timestamp_series_cte(start_timestamp, end_timestamp, interval)
         result = await self.session.execute(select(cte.c.timestamp))
         return [row[0] for row in result.all()]

@@ -33,7 +33,7 @@ from scripts.helper import (
 cli = typer.Typer()
 
 
-def candidate_statement() -> Select[tuple[UUID]]:
+def candidate_statement() -> Select[UUID]:
     latest_payment = aliased(Payment)
     latest_payment_id = (
         select(latest_payment.id)

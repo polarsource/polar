@@ -13,12 +13,14 @@ from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.models import OrganizationRiskSignal
 from polar.organization_review.analyzer import ReviewAnalyzer, _render_scraped_site
 from polar.organization_review.schemas import (
     CheckoutReturnUrlData,
     CheckoutSuccessUrlData,
     DataSnapshot,
     HistoryData,
+    IntegrationData,
     OrganizationData,
     PaymentMetrics,
     PayoutAccountData,
@@ -28,6 +30,7 @@ from polar.organization_review.schemas import (
     RiskSignalEntry,
     SetupData,
     UrlRedirectInfo,
+    WebhookEndpointData,
     WebsiteData,
     WebsitePage,
 )
@@ -202,7 +205,7 @@ def _stub_analyzer_io(
 class TestBuildPromptRiskSignals:
     def test_no_section_without_signals(self, review_analyzer: ReviewAnalyzer) -> None:
         prompt = review_analyzer._build_prompt(_minimal_snapshot())
-        assert "## External Risk Signals" not in prompt
+        assert "## Risk Signals" not in prompt
 
     def test_renders_signals(self, review_analyzer: ReviewAnalyzer) -> None:
         snapshot = _minimal_snapshot().model_copy(
@@ -210,16 +213,16 @@ class TestBuildPromptRiskSignals:
                 "risk_signals": RiskSignalData(
                     entries=[
                         RiskSignalEntry(
-                            source="stripe",
-                            type="fraudulent_website",
-                            risk_level="elevated",
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                            risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
                             description="Indicators: suspicious_content",
                             created_at=datetime(2026, 7, 1, tzinfo=UTC),
                         ),
                         RiskSignalEntry(
-                            source="stripe",
-                            type="fraudulent_merchant",
-                            risk_level="highest",
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                            risk_level=OrganizationRiskSignal.RiskLevel.HIGHEST,
                             created_at=datetime(2026, 6, 15, tzinfo=UTC),
                         ),
                     ]
@@ -229,7 +232,7 @@ class TestBuildPromptRiskSignals:
 
         prompt = review_analyzer._build_prompt(snapshot)
 
-        assert "## External Risk Signals" in prompt
+        assert "## Risk Signals" in prompt
         assert (
             "- [2026-07-01] stripe: fraudulent_website (risk level: elevated)" in prompt
         )
@@ -243,23 +246,51 @@ class TestBuildPromptRiskSignals:
         )
         assert "omitted" not in prompt
 
+    def test_sorts_by_severity(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "risk_signals": RiskSignalData(
+                    entries=[
+                        RiskSignalEntry(
+                            source=OrganizationRiskSignal.Source.POLAR,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                            risk_level=OrganizationRiskSignal.RiskLevel.NORMAL,
+                            created_at=datetime(2026, 7, 2, tzinfo=UTC),
+                        ),
+                        RiskSignalEntry(
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                            risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
+                            created_at=datetime(2026, 7, 1, tzinfo=UTC),
+                        ),
+                    ]
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert prompt.index("stripe: fraudulent_merchant") < prompt.index(
+            "polar: fraudulent_website"
+        )
+
     def test_caps_signals_and_notes_omission(
         self, review_analyzer: ReviewAnalyzer
     ) -> None:
         entries = [
             RiskSignalEntry(
-                source="stripe",
-                type="fraudulent_website",
-                risk_level="elevated",
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
                 created_at=datetime(2026, 7, 1, tzinfo=UTC),
             )
             for _ in range(24)
         ]
         entries.append(
             RiskSignalEntry(
-                source="stripe",
-                type="fraudulent_merchant",
-                risk_level="highest",
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                risk_level=OrganizationRiskSignal.RiskLevel.HIGHEST,
                 created_at=datetime(2026, 1, 1, tzinfo=UTC),
             )
         )
@@ -272,6 +303,66 @@ class TestBuildPromptRiskSignals:
         # The old 'highest' signal survives the cap because severity sorts first.
         assert "fraudulent_merchant (risk level: highest)" in prompt
         assert "(5 more signal(s) omitted)" in prompt
+
+
+class TestBuildPromptVerifiedDomains:
+    def _snapshot(self, verified_domains: list[str]) -> DataSnapshot:
+        return _minimal_snapshot().model_copy(
+            update={
+                "organization": OrganizationData(
+                    name="Test Org", slug="test-org", website="https://www.acme.com"
+                ),
+                "setup": SetupData(
+                    integration=IntegrationData(
+                        webhook_endpoints=[
+                            WebhookEndpointData(url="https://api.acme.com/hook"),
+                            WebhookEndpointData(url="https://panel.example.net/hook"),
+                        ],
+                        webhook_domains=["api.acme.com", "panel.example.net"],
+                    )
+                ),
+                "verified_domains": verified_domains,
+            }
+        )
+
+    def test_not_verified(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot([]))
+
+        assert "verified via DNS" not in prompt
+
+    def test_verified(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot(["acme.com"]))
+
+        assert (
+            "Website: https://www.acme.com "
+            "(domain verified via DNS by this organization)"
+        ) in prompt
+        assert (
+            "Webhook Domains: api.acme.com "
+            "(domain verified via DNS by this organization), panel.example.net\n"
+        ) in prompt
+
+    def test_verified_subdomain_does_not_cover_parent(
+        self, review_analyzer: ReviewAnalyzer
+    ) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot(["api.acme.com"]))
+
+        assert "Website: https://www.acme.com\n" in prompt
+        assert (
+            "Webhook Domains: api.acme.com "
+            "(domain verified via DNS by this organization), panel.example.net\n"
+        ) in prompt
+
+    def test_verified_host_with_port(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = self._snapshot(["acme.com"])
+        snapshot.setup.integration.webhook_domains = ["api.acme.com:8443"]
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert (
+            "Webhook Domains: api.acme.com:8443 "
+            "(domain verified via DNS by this organization)\n"
+        ) in prompt
 
 
 class TestBuildPromptRedirects:

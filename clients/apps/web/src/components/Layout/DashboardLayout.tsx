@@ -1,7 +1,6 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
-import { CompassIntroModal } from '@/components/Compass/CompassIntroModal'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks/auth'
@@ -42,33 +41,28 @@ const DashboardLayout = (
   }, [organization])
 
   return (
-    <>
-      {props.type !== 'account' && organization && (
-        <CompassIntroModal organization={organization} />
-      )}
-      <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
-        <MobileNav />
-        <div className="hidden md:flex">
-          <DashboardSidebar
-            organization={organization}
-            organizations={organizations ?? []}
-            memberOrganizations={memberOrganizations ?? []}
-            type={props.type}
-          />
-        </div>
-        <div
-          className={twMerge(
-            'relative flex h-full min-w-0 flex-1 flex-col',
-            props.className,
-          )}
-        >
-          {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
-          <main className="relative flex min-h-0 min-w-0 grow flex-col">
-            {props.children}
-          </main>
-        </div>
+    <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
+      <MobileNav />
+      <div className="hidden md:flex">
+        <DashboardSidebar
+          organization={organization}
+          organizations={organizations ?? []}
+          memberOrganizations={memberOrganizations ?? []}
+          type={props.type}
+        />
       </div>
-    </>
+      <div
+        className={twMerge(
+          'relative flex h-full min-w-0 flex-1 flex-col',
+          props.className,
+        )}
+      >
+        {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
+        <main className="relative flex min-h-0 min-w-0 grow flex-col">
+          {props.children}
+        </main>
+      </div>
+    </div>
   )
 }
 
@@ -113,6 +107,7 @@ export interface DashboardBodyProps {
   header?: JSX.Element
   titleActions?: React.ReactNode
   wide?: boolean
+  detailView?: React.ReactNode
 }
 
 export const DashboardBody = ({
@@ -127,6 +122,7 @@ export const DashboardBody = ({
   header,
   titleActions,
   wide = false,
+  detailView,
 }: DashboardBodyProps) => {
   const { currentRoute, currentSubRoute } = useRoute()
 
@@ -159,6 +155,7 @@ export const DashboardBody = ({
       animate="animate"
       exit="exit"
     >
+      {contextViewPlacement === 'left' && detailView}
       <div className="dark:bg-polar-900 dark:border-polar-800 relative flex min-w-0 flex-2 flex-col items-center rounded-2xl border-gray-200 bg-white px-4 md:overflow-y-auto md:border md:px-8 md:shadow-xs">
         <div
           className={twMerge(
@@ -232,6 +229,7 @@ export const DashboardBody = ({
           {contextView}
         </m.div>
       ) : null}
+      {contextViewPlacement === 'right' && detailView}
       {contextView && (
         <Modal
           title={contextViewTitle}

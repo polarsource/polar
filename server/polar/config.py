@@ -119,7 +119,7 @@ class Settings(BaseSettings):
     WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
     WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=90)
-    WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD: timedelta = timedelta(days=90)
+    WEBHOOK_DELIVERY_RETENTION_PERIOD: timedelta = timedelta(days=90)
     WEBHOOK_FAILURE_THRESHOLD: int = 10
 
     WORKER_DEFAULT_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
@@ -190,6 +190,9 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_TTL: timedelta = timedelta(hours=1)
     CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
+    CUSTOMER_SESSION_AUTHENTICATION_SESSION_COOKIE_KEY: str = (
+        "polar_customer_auth_session"
+    )
 
     # Impersonation session
     IMPERSONATION_COOKIE_KEY: str = "polar_original_session"

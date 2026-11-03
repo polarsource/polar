@@ -14,7 +14,8 @@ from polar.models import (
     Checkout,
     CustomerEmailVerification,
     CustomerSession,
-    CustomerSessionCode,
+    CustomerSessionAuthenticationSession,
+    CustomerSessionEmailOTP,
     EmailLog,
     EmailOTP,
     EmailVerification,
@@ -56,9 +57,16 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         lambda cutoff: OAuth2State.expires_at < int(cutoff.timestamp()),
     ),
     CleanupTask(
-        "customer_session_code.delete_expired",
-        CustomerSessionCode,
-        lambda cutoff: CustomerSessionCode.expires_at < cutoff,
+        "customer_session_authentication_session.delete_expired",
+        CustomerSessionAuthenticationSession,
+        lambda cutoff: (
+            CustomerSessionAuthenticationSession.expires_at < int(cutoff.timestamp())
+        ),
+    ),
+    CleanupTask(
+        "customer_session_email_otp.delete_expired",
+        CustomerSessionEmailOTP,
+        lambda cutoff: CustomerSessionEmailOTP.expires_at < int(cutoff.timestamp()),
     ),
     CleanupTask(
         "email_update.delete_expired_record",
@@ -135,12 +143,11 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         ),
     ),
     CleanupTask(
-        "webhook_delivery.archive",
+        "webhook_delivery.prune",
         WebhookDelivery,
-        lambda cutoff: and_(
-            WebhookDelivery.response.is_not(None),
+        lambda cutoff: (
             WebhookDelivery.created_at
-            < cutoff - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+            < cutoff - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD
         ),
     ),
     # Last: this query is slow on the large webhook_events table and can time out,

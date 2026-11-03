@@ -130,7 +130,10 @@ const Checkout = ({
     if (openedTrackedRef.current) return
     openedTrackedRef.current = true
 
-    posthog.capture('storefront:checkout:page:view')
+    posthog.capture('storefront:checkout:page:view', {
+      checkout_id: checkout.id,
+      locale,
+    })
 
     const cookies = document.cookie.split(';')
     const distinctIdCookie = cookies.find((c) =>
@@ -139,7 +142,7 @@ const Checkout = ({
     const distinctId = distinctIdCookie?.split('=')[1]?.trim()
 
     trackCheckoutOpened(distinctId)
-  }, [trackCheckoutOpened, posthog])
+  }, [trackCheckoutOpened, posthog, checkout.id, locale])
 
   const themePreset = getThemePreset(theme)
 

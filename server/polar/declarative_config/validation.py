@@ -9,6 +9,11 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitMeterCreditProperties,
 )
+from polar.catalog.repository import (
+    CatalogBenefitRepository,
+    CatalogProductRepository,
+)
+from polar.catalog.service import catalog as catalog_service
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.kit.currency import PresentmentCurrency
@@ -18,6 +23,7 @@ from polar.meter.schemas import MeterCreateBase
 from polar.meter.service import METER_LOCKED_FIELD_MESSAGE, METER_LOCKED_FIELDS
 from polar.models import (
     Benefit,
+    Catalog,
     Meter,
     Organization,
     Product,
@@ -173,18 +179,17 @@ def _meter_loc(index: int, *path: str | int) -> Loc:
 
 
 def unique_external_ids(
-    resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
+    resource: ConfigResource, external_ids: Sequence[str]
 ) -> list[ConfigIssue]:
     seen: set[str] = set()
     issues: list[ConfigIssue] = []
-    for change in changes:
-        external_id = change.config.external_id
+    for index, external_id in enumerate(external_ids):
         if external_id in seen:
             issues.append(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
                     type=ConfigIssueType.duplicate_external_id,
-                    loc=_loc(resource, change.index, "external_id"),
+                    loc=_loc(resource, index, "external_id"),
                     msg=f"Another {resource} in this config has the same external_id.",
                     input=external_id,
                 )
@@ -373,13 +378,13 @@ async def missing_unlisted_product_currencies(
     changes: Sequence[ProductChange],
     currency: PresentmentCurrency,
 ) -> list[ConfigIssue]:
-    listed = {change.existing.id for change in changes if change.existing}
+    listed = {change.config.external_id for change in changes}
     products = [
         product
         for product in await ProductRepository.from_session(
             session
         ).get_products_without_currency(organization.id, currency)
-        if product.id not in listed
+        if product.external_id not in listed
     ]
     if not products:
         return []
@@ -593,21 +598,27 @@ async def diff_benefits(
     meters: Sequence[MeterChange],
     *,
     for_update: bool,
+    catalog: Catalog | None = None,
 ) -> list[BenefitChange]:
     repository = BenefitRepository.from_session(session)
-    existing_benefits = {
-        benefit.external_id: benefit
-        for benefit in await repository.get_all_by_external_ids(
-            organization.id,
-            [config.external_id for config in benefit_configs],
-            for_update=for_update,
+    catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
+    external_ids = [config.external_id for config in benefit_configs]
+    if catalog is not None and await catalog_service.lists_benefits(session, catalog):
+        benefits = await catalog_benefit_repository.get_benefits_by_external_ids(
+            catalog.id, external_ids, options=repository.get_eager_options()
         )
-    }
+    else:
+        benefits = await repository.get_all_by_external_ids(
+            organization.id, external_ids, for_update=for_update
+        )
+    existing_benefits = {benefit.external_id: benefit for benefit in benefits}
     meter_external_ids = _external_ids_by_id(meters)
     changes: list[BenefitChange] = []
     for index, benefit_config in enumerate(benefit_configs):
         benefit = existing_benefits.get(benefit_config.external_id)
         if benefit is None:
+            if benefit_config.deprecated:
+                continue
             create_dict = _create_update_dict(benefit_config)
             if "properties" in create_dict:
                 create_dict["properties"] = create_dict["properties"].model_dump()
@@ -619,25 +630,51 @@ async def diff_benefits(
                 index,
                 benefit_config,
                 benefit,
-                _get_benefit_update_dict(benefit, benefit_config, properties),
+                # A deprecated benefit leaves the catalog instead of getting a new row.
+                {}
+                if benefit_config.deprecated
+                else _get_benefit_update_dict(benefit, benefit_config, properties),
                 {"properties": properties},
             )
         )
     return changes
 
 
+VERSIONED_BENEFIT_TYPES = frozenset(
+    {BenefitType.feature_flag, BenefitType.meter_credit}
+)
+
+
 def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
-    return [
-        ConfigIssue(
-            severity=ConfigIssueSeverity.error,
-            type=ConfigIssueType.type_changed,
-            loc=_loc(ConfigResource.benefit, change.index, "type"),
-            msg="The type of an existing benefit can't be changed.",
-            input=change.config.type,
-        )
-        for change in changes
-        if change.existing is not None and change.existing.type != change.config.type
-    ]
+    issues: list[ConfigIssue] = []
+    for change in changes:
+        existing = change.existing
+        if existing is None:
+            continue
+        if existing.type not in VERSIONED_BENEFIT_TYPES:
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.not_supported,
+                    loc=_loc(ConfigResource.benefit, change.index, "type"),
+                    msg=(
+                        f"This is a {existing.type} benefit. Only feature flag and "
+                        "meter credit benefits can be managed in the config."
+                    ),
+                    input=change.config.type,
+                )
+            )
+        elif existing.type != change.config.type:
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.type_changed,
+                    loc=_loc(ConfigResource.benefit, change.index, "type"),
+                    msg="The type of an existing benefit can't be changed.",
+                    input=change.config.type,
+                )
+            )
+    return issues
 
 
 _PRODUCT_FIELDS = ("name", "description", "visibility")
@@ -748,20 +785,27 @@ async def diff_products(
     benefits: Sequence[BenefitChange],
     *,
     for_update: bool,
+    catalog: Catalog | None,
 ) -> list[ProductChange]:
     repository = ProductRepository.from_session(session)
-    existing_products = {
-        product.external_id: product
-        for product in await repository.get_all_by_external_ids(
-            organization.id,
-            [config.external_id for config in product_configs],
-            for_update=for_update,
+    external_ids = [config.external_id for config in product_configs]
+    if catalog is None:
+        products = await repository.get_all_by_external_ids(
+            organization.id, external_ids, for_update=for_update
         )
-    }
+    else:
+        products = await CatalogProductRepository.from_session(
+            session
+        ).get_products_by_external_ids(
+            catalog.id, external_ids, options=repository.get_eager_options()
+        )
+    existing_products = {product.external_id: product for product in products}
     meter_external_ids = _external_ids_by_id(meters)
     benefit_external_ids = _external_ids_by_id(benefits)
     changes: list[ProductChange] = []
     for index, product_config in enumerate(product_configs):
+        if product_config.deprecated:
+            continue
         product = existing_products.get(product_config.external_id)
         if product is None:
             create_dict = _create_update_dict(product_config)
@@ -875,6 +919,7 @@ async def check(
     config: Config,
     *,
     for_update: bool,
+    catalog: Catalog | None = None,
 ) -> tuple[ConfigChanges, list[ConfigIssue]]:
     webhooks = await diff_webhooks(
         session, organization, config.webhooks, for_update=for_update
@@ -883,16 +928,35 @@ async def check(
         session, organization, config.meters, for_update=for_update
     )
     benefits = await diff_benefits(
-        session, organization, config.benefits, meters, for_update=for_update
+        session,
+        organization,
+        config.benefits,
+        meters,
+        for_update=for_update,
+        catalog=catalog,
     )
     products = await diff_products(
-        session, organization, config.products, meters, benefits, for_update=for_update
+        session,
+        organization,
+        config.products,
+        meters,
+        benefits,
+        for_update=for_update,
+        catalog=catalog,
     )
     issues = [
-        *unique_external_ids(ConfigResource.webhook, webhooks),
-        *unique_external_ids(ConfigResource.meter, meters),
-        *unique_external_ids(ConfigResource.benefit, benefits),
-        *unique_external_ids(ConfigResource.product, products),
+        *unique_external_ids(
+            ConfigResource.webhook, [webhook.external_id for webhook in config.webhooks]
+        ),
+        *unique_external_ids(
+            ConfigResource.meter, [meter.external_id for meter in config.meters]
+        ),
+        *unique_external_ids(
+            ConfigResource.benefit, [benefit.external_id for benefit in config.benefits]
+        ),
+        *unique_external_ids(
+            ConfigResource.product, [product.external_id for product in config.products]
+        ),
         *invalid_references(config),
         *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),

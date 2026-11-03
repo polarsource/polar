@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import (
     ColumnElement,
     CursorResult,
+    NotNullable,
     Select,
     SQLColumnExpression,
     case,
@@ -50,6 +51,7 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    Payment,
     Product,
     ProductPrice,
     Refund,
@@ -58,6 +60,7 @@ from polar.models import (
 )
 from polar.models.dispute import DisputeStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models.payment import PaymentStatus
 from polar.models.refund import RefundStatus
 from polar.models.subscription import SubscriptionStatus
 
@@ -215,7 +218,7 @@ class OrderRepository(
             func.sum(Order.net_amount - Order.refunded_amount), 0
         )
         statement = (
-            select(Order.product_id)
+            select(NotNullable(Order.product_id))
             .where(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
@@ -490,14 +493,40 @@ class OrderRepository(
         async for order in self.stream(statement):
             yield order
 
+    async def get_pending_with_succeeded_payment_ids(
+        self, since: datetime, older_than: datetime, *, limit: int
+    ) -> tuple[list[UUID], int]:
+        statement = (
+            select(Order.id, func.count().over())
+            .where(
+                Order.deleted_at.is_(None),
+                Order.status == OrderStatus.pending,
+                Order.created_at > since,
+                func.coalesce(Order.modified_at, Order.created_at) < older_than,
+                select(Payment.id)
+                .where(
+                    Payment.order_id == Order.id,
+                    Payment.deleted_at.is_(None),
+                    Payment.status == PaymentStatus.succeeded,
+                    func.coalesce(Payment.modified_at, Payment.created_at) < older_than,
+                )
+                .exists(),
+            )
+            .order_by(Order.created_at.asc(), Order.id.asc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        rows = result.fetchall()
+        return [row[0] for row in rows], rows[0][1] if rows else 0
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Order]]:
+    ) -> Select[Order]:
         return self.get_base_statement().where(Order.organization_id.in_(org_ids))
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
-    ) -> Select[tuple[Order]]:
+    ) -> Select[Order]:
         statement = self.get_base_statement()
 
         if is_user(auth_subject):

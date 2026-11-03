@@ -169,7 +169,7 @@ is present when FastAPI registers the route. It remains unchanged when
 
 ### Changing an existing endpoint
 
-Request schema changes require separate Pydantic models and endpoint
+Request body schema changes require separate Pydantic models and endpoint
 implementations. For example, to rename the `display_name` input field to `name`,
 keep the original endpoint as the fallback and introduce an override in Next:
 
@@ -217,6 +217,52 @@ predates `V2026_10`. Keep the new implementation and marker until `V2026_10`
 itself is removed; then remove the decorator and rename the Python function to
 `update`. Use the same pattern for response or behavior changes that cannot be
 expressed with a field marker.
+
+### Adding a query parameter
+
+Use a `QuerySchema` model with `Version` to add an optional filter without
+duplicating the endpoint:
+
+```python
+from typing import Annotated
+
+from fastapi import Query
+from pydantic import Field
+
+from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import QuerySchema, Version
+from polar.version import V2027_01
+
+
+class ProductListParams(QuerySchema):
+    query: str | None = Field(None, description="Filter by name.")
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(None, description="Filter by external ID.")
+
+
+@router.get("/")
+async def list(filters: Annotated[ProductListParams, Query()]) -> ListResource[Product]:
+    ...
+```
+
+The filter is absent from older OpenAPI documents. Older requests ignore its
+submitted value before validation, including malformed values, and use its model
+default instead. Give unavailable filters a default of `None` so they do not
+affect those requests. In supported versions, normal validation applies.
+
+Query models compose with other query models, individual parameters, and
+dependencies such as pagination and sorting. Define models in the module's
+`schemas.py`, use `Field` for parameter descriptions and constraints, and reuse
+`MultipleQueryFilter` for repeated values. Share a model or inherit it when list,
+export, and reporting endpoints use the same filters. Keep pagination, sorting,
+and metadata parsing as separate dependencies, and forward typed model attributes
+to services.
+
+Keep hidden parameters declared separately with `Query(include_in_schema=False)`;
+FastAPI currently does not honor that flag on flattened model fields.
+Keep separate endpoints for
+version-specific behavior that a query field marker cannot express.
 
 ### Removing an endpoint
 
@@ -315,11 +361,11 @@ The same syntax applies to endpoints:
 ```
 
 <Warning>
-  `Version` controls OpenAPI schema generation and output serialization. It does
-  not change Pydantic validation: the field must still be valid on the model even
-  in versions where it is hidden. To change an input schema, create a
-  version-specific endpoint with a separate request model instead of using
-  `Version`.
+  Outside `QuerySchema`, `Version` controls OpenAPI schema generation and output
+  serialization. It does not change Pydantic validation: the field must still be
+  valid on the model even in versions where it is hidden. To change a request
+  body, create a version-specific endpoint with a separate request model instead
+  of using `Version`.
 </Warning>
 
 ### Cleaning up a removed version

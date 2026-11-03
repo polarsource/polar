@@ -1,5 +1,6 @@
 'use client'
 
+import type { MetricsProductFilter } from '@/hooks/queries/metrics'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { getMetricsRangeDates } from '@polar-sh/client'
 import {
@@ -48,6 +49,16 @@ export function useMetricsFilters(earliestDateISOString: string) {
     'product_id',
     parseAsArrayOf(parseAsString),
   )
+  const [externalProductId, setExternalProductId] = useQueryState(
+    'external_product_id',
+    parseAsArrayOf(parseAsString),
+  )
+  const productFilter: MetricsProductFilter = {
+    ...(productId?.length ? { product_id: productId } : {}),
+    ...(externalProductId?.length
+      ? { external_product_id: externalProductId }
+      : {}),
+  }
 
   return {
     interval,
@@ -58,6 +69,9 @@ export function useMetricsFilters(earliestDateISOString: string) {
     setEndDate,
     productId,
     setProductId,
+    externalProductId,
+    setExternalProductId,
+    productFilter,
     minDate,
   }
 }

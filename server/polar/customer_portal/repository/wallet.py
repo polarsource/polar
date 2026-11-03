@@ -29,7 +29,7 @@ class CustomerWalletRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[Wallet]]:
+    ) -> Select[Wallet]:
         return self.get_base_statement().where(
             Wallet.customer_id == get_customer_id(auth_subject)
         )

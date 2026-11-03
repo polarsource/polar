@@ -5,6 +5,7 @@ import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import ExportOrdersModal from '@/components/Orders/ExportOrdersModal'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
@@ -34,10 +35,11 @@ import {
   useQueryStates,
 } from 'nuqs'
 import React from 'react'
-import SalesFilters from './SalesFilters'
+import SalesFilters, { type ProductFilter } from './SalesFilters'
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
+  external_product_id: parseAsArrayOf(parseAsString),
   status: parseAsStringLiteral(enums.orderStatusValues),
   metadata: parseAsArrayOf(parseAsString),
 }
@@ -55,13 +57,20 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       defaultPageSize: 50,
     })
 
-  const [{ product_id: productId, status, metadata }, setFilters] =
-    useQueryStates(filterParsers)
+  const [
+    {
+      product_id: productId,
+      external_product_id: externalProductId,
+      status,
+      metadata,
+    },
+    setFilters,
+  ] = useQueryStates(filterParsers)
 
   const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
 
-  const onProductSelect = (value: string[]) => {
-    setFilters({ product_id: value.length > 0 ? value : null })
+  const onProductSelect = (value: ProductFilter) => {
+    setFilters(value)
     resetPage()
   }
 
@@ -79,6 +88,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
     status: status ? [status] : undefined,
     created_after: startDate.toISOString(),
     created_before: endDate.toISOString(),
@@ -164,6 +174,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <Truncated>
               <Text as="span">{product.name}</Text>
             </Truncated>
+            <ProductVersionLabel
+              organization={organization}
+              product={product}
+            />
             {product.is_archived && (
               <Status status="Archived" color="red" size="small" />
             )}
@@ -234,6 +248,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     endDate,
     interval: dateRangeToInterval(startDate, endDate),
     product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
     metrics: ['orders', 'revenue', 'average_order_value'],
   })
 
@@ -249,6 +264,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         <SalesFilters
           organization={organization}
           productId={productId}
+          externalProductId={externalProductId}
           onProductSelect={onProductSelect}
           status={status}
           onStatusSelect={onStatusSelect}
@@ -296,6 +312,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       <ExportOrdersModal
         organization={organization}
         productId={productId ?? undefined}
+        externalProductId={externalProductId ?? undefined}
         status={status}
         isShown={isExportModalShown}
         hide={hideExportModal}

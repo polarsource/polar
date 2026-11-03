@@ -4,7 +4,8 @@ import os
 import types
 import typing
 
-from polar import PolarError
+import anyio
+
 from polar.base import AsyncClientBase, parse_response_json
 from polar.logging import get_logger
 from polar.metering.buffered import (
@@ -13,6 +14,14 @@ from polar.metering.buffered import (
     DropReason,
 )
 from polar.metering.client import PolarClient
+from polar.metering.errors import (
+    DeliveryFailure,
+    InvalidActorError,
+    MeteringDeliveryError,
+    MeteringError,
+    MeteringTimeoutError,
+    validate_timeout,
+)
 from polar.metering.events import (
     ContextualEventInput,
     EventCustomerInput,
@@ -25,14 +34,6 @@ if typing.TYPE_CHECKING:
     from polar.outpost import Outpost
 
 log = get_logger(__name__)
-
-
-class MeteringError(PolarError):
-    """Base error for metering configuration and operations."""
-
-
-class InvalidActorError(MeteringError):
-    """Raised when customer or member identifiers are inconsistent."""
 
 
 class MeteringOutpostOptions(typing.TypedDict, total=False):
@@ -79,8 +80,8 @@ class ValidateProtocol(typing.Protocol):
 class FlushProtocol(typing.Protocol):
     """Optional strategy capability for explicit draining."""
 
-    async def flush(self) -> None:
-        """Wait until earlier events are delivered or reported as dropped."""
+    async def flush(self, *, timeout: float = 30.0) -> None:
+        """Confirm earlier events within the given timeout in seconds."""
         ...
 
 
@@ -211,7 +212,15 @@ class Metering:
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> bool | None:
-        await self._close()
+        """Drain strategies and preserve both body and delivery failures."""
+        try:
+            await self._close()
+        except BaseException as error:
+            if exc_value is not None:
+                raise BaseExceptionGroup(
+                    "Metering body and delivery failed", [exc_value, error]
+                ) from None
+            raise
 
     async def _close(self) -> None:
         # In start order: a strategy drains into the ones after it, the buffer into Outpost.
@@ -227,25 +236,40 @@ class Metering:
         if errors:
             raise ExceptionGroup("Metering close failed", errors)
 
-    async def flush(self) -> None:
-        """Flush every capable strategy without closing the helper.
+    async def flush(self, *, timeout: float = 30.0) -> None:
+        """Wait for earlier events without closing the shared helper.
 
-        Call this explicitly in serverless environments before returning the
-        response so pending events are processed while the request is active.
-        Earlier buffered events are delivered or reported to on_dropped before
-        returning. Later events are outside this flush. A successful flush does
-        not guarantee delivery or immediate visibility in Polar's meter reads.
+        Await this before returning a serverless response. A successful flush
+        confirms delivery of earlier buffered events, but not immediate visibility
+        in meter reads. Later events remain outside this caller's boundary.
+
+        Args:
+            timeout: Maximum wait in seconds across all strategies. Defaults to 30.
 
         Raises:
-            ExceptionGroup: One or more strategy flushes failed.
+            MeteringDeliveryError: Earlier events could not be confirmed.
+            MeteringTimeoutError: The caller's wait expired; delivery continues.
+            ExceptionGroup: Multiple strategies failed.
         """
+        validate_timeout(timeout)
+        deadline = anyio.current_time() + timeout
         errors: list[Exception] = []
         for strategy in self.strategies:
             if isinstance(strategy, FlushProtocol):
+                remaining = max(0.0, deadline - anyio.current_time())
                 try:
-                    await strategy.flush()
+                    with anyio.fail_after(remaining):
+                        await strategy.flush(timeout=remaining)
+                except MeteringTimeoutError as error:
+                    errors.append(error)
+                except TimeoutError as error:
+                    failure = MeteringTimeoutError(timeout)
+                    failure.__cause__ = error
+                    errors.append(failure)
                 except Exception as error:  # noqa: BLE001
                     errors.append(error)
+        if len(errors) == 1:
+            raise errors[0]
         if errors:
             raise ExceptionGroup("Metering flush failed", errors)
 
@@ -493,11 +517,14 @@ __all__ = [
     "BufferedMeteringOptions",
     "ContextualEventInput",
     "CustomerMeter",
+    "DeliveryFailure",
     "DropReason",
     "EventInput",
     "InvalidActorError",
     "Metering",
+    "MeteringDeliveryError",
     "MeteringError",
     "MeteringOutpostOptions",
     "MeteringStrategyProtocol",
+    "MeteringTimeoutError",
 ]

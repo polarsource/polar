@@ -391,7 +391,7 @@ test('generated modules typecheck against the public API', async () => {
       ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
     )
   expect(diagnostics).toEqual([])
-})
+}, 30_000)
 
 test('renders free tiers with free() and included()', async () => {
   const source = await Effect.runPromise(

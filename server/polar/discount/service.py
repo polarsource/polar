@@ -6,6 +6,7 @@ from typing import Any, Literal
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -95,7 +96,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 )
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == DiscountSortProperty.created_at:
@@ -442,10 +443,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         ):
             return None
 
-        if products is not None and len(discount.products) > 0:
-            for product in products:
-                if product not in discount.products:
-                    return None
+        if products is not None and not all(
+            discount.applies_to_product(product) for product in products
+        ):
+            return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
             return None
@@ -500,7 +501,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         ):
             return None
 
-        if len(discount.products) > 0 and product not in discount.products:
+        if not discount.applies_to_product(product):
             return None
 
         return discount
@@ -619,7 +620,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization | Agent]
-    ) -> Select[tuple[Discount]]:
+    ) -> Select[Discount]:
         statement = select(Discount).where(~Discount.is_deleted)
 
         if is_user(auth_subject) or is_agent(auth_subject):

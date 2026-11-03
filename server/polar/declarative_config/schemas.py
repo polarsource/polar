@@ -5,6 +5,7 @@ from typing import Annotated, Any, Literal, Self
 from annotated_types import Gt
 from pydantic import (
     UUID4,
+    AfterValidator,
     BaseModel,
     ConfigDict,
     Discriminator,
@@ -21,12 +22,14 @@ from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import IDSchema, Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
+from polar.kit.versioning import QuerySchema
 from polar.kit.visibility import Visibility
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.meter.schemas import MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType, BenefitVisibility
+from polar.models.catalog import CatalogStatus
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
@@ -55,12 +58,13 @@ MAXIMUM_WEBHOOK_ENDPOINTS = 25
 
 
 class ConfigDeprecationMixin(BaseModel):
-    deprecated: bool = Field(
+    deprecated: Annotated[bool | None, AfterValidator(bool)] = Field(
         default=False,
         exclude=True,
         description=(
             "Keeps the resource for customers who still use it, "
-            "but active products and benefits can't reference it."
+            "but active products and benefits can't reference it. "
+            "Leaving it empty is the same as `false`."
         ),
     )
 
@@ -388,7 +392,13 @@ class Config(Schema):
         max_length=MAXIMUM_PRODUCTS,
         description=(
             "Products to create or update, matched by `external_id`. "
-            "Existing products that aren't listed are left untouched."
+            "Deprecated products are never created or updated. They, and live "
+            "products that aren't listed, are left out of the next catalog. "
+            "A product that isn't listed but still has a billable subscription, "
+            "or a scheduled subscription change to it, is an error: mark it "
+            "`deprecated` instead. Products that pulling the "
+            "config doesn't export, and all products when `products` is "
+            "omitted, are left untouched."
         ),
     )
     webhooks: list[ConfigWebhookEndpoint] = Field(
@@ -421,6 +431,7 @@ class ConfigIssueType(StrEnum):
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
     not_supported = "not_supported"
+    removed_in_use = "removed_in_use"
     type_changed = "type_changed"
     unknown_event = "unknown_event"
     unknown_reference = "unknown_reference"
@@ -487,8 +498,27 @@ class ConfigCatalogPlan(Schema):
     )
 
 
+class ConfigRemovalReason(StrEnum):
+    missing = "missing"
+    deprecated = "deprecated"
+
+
+class ConfigRemoval(Schema):
+    resource: ConfigResource = Field(description="The type of resource.")
+    external_id: str = Field(description="The resource's `external_id`.")
+    reason: ConfigRemovalReason = Field(
+        description=(
+            "`missing` when the config doesn't list the resource, "
+            "`deprecated` when it's marked deprecated."
+        )
+    )
+
+
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
+    removed: list[ConfigRemoval] = Field(
+        description="Resources left out of the published catalog."
+    )
     catalog: ConfigCatalogChange | None = Field(
         description="The published catalog, if applying published a new one."
     )
@@ -520,6 +550,9 @@ class ConfigSettingsChange(ConfigSettingsResult):
 
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
+    removed: list[ConfigRemoval] = Field(
+        description="Resources that applying leaves out of the next catalog."
+    )
     catalog: ConfigCatalogPlan | None = Field(
         description="The catalog that applying publishes, if any."
     )
@@ -529,13 +562,26 @@ class ConfigPlan(Schema):
     issues: list[ConfigIssue]
 
 
+class ConfigPruneReference(Schema):
+    resource: ConfigResource = Field(
+        description="The type of the referencing resource."
+    )
+    external_id: str = Field(description="The referencing resource's `external_id`.")
+
+
 class ConfigPruneEntry(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
     external_id: str = Field(description="The resource's `external_id`.")
-    in_use: bool = Field(description="Whether a customer still uses the resource.")
-    referenced_by: list[str] = Field(
+    customers_count: int = Field(
         description=(
-            "External IDs of the products and benefits staying in the config "
+            "Number of customers still using the resource: subscribers for a product, "
+            "customers granted a benefit, from a subscription or an order, and "
+            "subscribers or credit holders for a meter."
+        )
+    )
+    referenced_by: list[ConfigPruneReference] = Field(
+        description=(
+            "The products and benefits staying in the config "
             "that reference the resource."
         )
     )
@@ -671,6 +717,12 @@ class ConfigProductRead(_ConfigRead):
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
     metadata: MetadataOutputType
+    deprecated: Literal[True] | None = Field(
+        description=(
+            "`true` for products that are no longer in the catalog but still "
+            "have customers."
+        ),
+    )
 
 
 class ConfigSettingsPaymentsRead(_ConfigRead):
@@ -705,6 +757,12 @@ class ConfigSkippedResource(Schema):
     )
 
 
+class ConfigExportCatalog(ConfigCatalog):
+    status: Literal[CatalogStatus.live, CatalogStatus.archived] = Field(
+        description="`live` for the catalog new checkouts use, `archived` otherwise."
+    )
+
+
 class ConfigExport(Schema):
     config: ConfigExportDocument = Field(
         description=(
@@ -717,4 +775,19 @@ class ConfigExport(Schema):
             "Resources left out of the exported config. "
             "At most the section's config limit is listed."
         )
+    )
+    catalog: ConfigExportCatalog | None = Field(
+        description=(
+            "The catalog version the products come from. None before the first publish."
+        )
+    )
+
+
+class DeclarativeConfigExportParams(QuerySchema):
+    organization_id: OrganizationID | None = Field(
+        None,
+        description=(
+            "The ID of the organization to export. "
+            "**Required unless you use an organization token.**"
+        ),
     )

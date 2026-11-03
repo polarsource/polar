@@ -1,8 +1,9 @@
 from datetime import datetime
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, AwareDatetime, Field
 
-from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
+from polar.kit.versioning import QuerySchema
 from polar.models.catalog import CatalogStatus
 from polar.organization.schemas import OrganizationID
 
@@ -36,10 +37,45 @@ class CatalogProduct(Schema):
     product_id: UUID4 = Field(description="The product version in this catalog.")
 
 
+class CatalogBenefit(Schema):
+    external_id: str = Field(description="Key of the benefit in the catalog.")
+    benefit_id: UUID4 = Field(description="The benefit version in this catalog.")
+
+
 class CatalogVersion(Catalog):
-    """A catalog version with its products."""
+    """A catalog version with its products and benefits."""
 
     products: list[CatalogProduct] = Field(
         validation_alias="product_members",
         description="The products in this version, ordered by key.",
+    )
+    benefits: list[CatalogBenefit] = Field(
+        validation_alias="benefit_members",
+        description=(
+            "The benefits in this version, ordered by key. Empty for versions "
+            "published before benefits were versioned."
+        ),
+    )
+
+
+class CatalogListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    status: MultipleQueryFilter[CatalogStatus] | None = Field(
+        None, title="Status Filter", description="Filter by catalog status."
+    )
+    published_after: AwareDatetime | None = Field(
+        None,
+        description=(
+            "Only include catalogs published after this date. "
+            "Must include a UTC offset."
+        ),
+    )
+    published_before: AwareDatetime | None = Field(
+        None,
+        description=(
+            "Only include catalogs published before this date. "
+            "Must include a UTC offset."
+        ),
     )

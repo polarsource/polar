@@ -187,17 +187,21 @@ describe('formatTree', () => {
         ]),
         entry('products', 'pro', 'unchanged'),
         entry('products', 'team', 'unchanged'),
+        entry('meters', 'tool_call', 'unchanged'),
       ]),
     )
     expect(output).toBe(
       [
+        '  meters',
+        '  = tool_call  unchanged',
+        '',
         '  benefits',
         '  ~ tool_calls',
         '      properties  500 tool_call credits → 1,000 tool_call credits',
         '',
         '  products',
-        '  = pro   unchanged',
-        '  = team  unchanged',
+        '  = pro        unchanged',
+        '  = team       unchanged',
       ].join('\n'),
     )
   })

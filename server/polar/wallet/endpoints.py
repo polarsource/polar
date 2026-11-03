@@ -1,13 +1,11 @@
+from typing import Annotated
+
 from fastapi import Depends, Query
 
-from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Wallet
-from polar.models.wallet import WalletType
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -18,7 +16,7 @@ from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Wallet as WalletSchema
-from .schemas import WalletID, WalletNotFound, WalletTopUpCreate
+from .schemas import WalletID, WalletListParams, WalletNotFound, WalletTopUpCreate
 from .service import MissingPaymentMethodError, PaymentIntentFailedError
 from .service import wallet as wallet_service
 
@@ -27,33 +25,20 @@ router = APIRouter(prefix="/wallets", tags=["wallets", APITag.private])
 
 @router.get("/", summary="List Wallets", response_model=ListResource[WalletSchema])
 async def list(
+    filters: Annotated[WalletListParams, Query()],
     auth_subject: auth.WalletsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    type: MultipleQueryFilter[WalletType] | None = Query(
-        None, title="Wallet Type Filter", description="Filter by wallet type."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by customer external ID.",
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[WalletSchema]:
     """List wallets."""
     results, count = await wallet_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        type=type,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
+        organization_id=filters.organization_id,
+        type=filters.type,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
         pagination=pagination,
         sorting=sorting,
     )

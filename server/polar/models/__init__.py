@@ -12,13 +12,12 @@ from .billing_entry import BillingEntry
 from .billing_interval import BillingInterval
 from .campaign import Campaign
 from .catalog import Catalog
+from .catalog_benefit import CatalogBenefit
 from .catalog_product import CatalogProduct
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
 from .checkout_link_product import CheckoutLinkProduct
 from .checkout_product import CheckoutProduct
-from .compass_thread import CompassThread
-from .compass_thread_message import CompassThreadMessage
 from .credit_note import CreditNote
 from .credit_note_item import CreditNoteItem
 from .custom_field import CustomField
@@ -30,7 +29,6 @@ from .customer_session import CustomerSession
 from .customer_session_authentication_session import (
     CustomerSessionAuthenticationSession,
 )
-from .customer_session_code import CustomerSessionCode
 from .customer_session_email_otp import CustomerSessionEmailOTP
 from .discord_guild_connection import DiscordGuildConnection
 from .discount import Discount
@@ -158,13 +156,12 @@ __all__ = [
     "BillingInterval",
     "Campaign",
     "Catalog",
+    "CatalogBenefit",
     "CatalogProduct",
     "Checkout",
     "CheckoutLink",
     "CheckoutLinkProduct",
     "CheckoutProduct",
-    "CompassThread",
-    "CompassThreadMessage",
     "CreditNote",
     "CreditNoteItem",
     "CustomField",
@@ -174,7 +171,6 @@ __all__ = [
     "CustomerSeat",
     "CustomerSession",
     "CustomerSessionAuthenticationSession",
-    "CustomerSessionCode",
     "CustomerSessionEmailOTP",
     "DiscordGuildConnection",
     "Discount",

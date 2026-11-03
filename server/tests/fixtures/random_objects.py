@@ -1029,7 +1029,7 @@ async def create_customer(
     *,
     organization: Organization,
     external_id: str | None = None,
-    email: str = "customer@example.com",
+    email: str | None = "customer@example.com",
     email_verified: bool = False,
     name: str = "Customer",
     billing_name: str | None = None,
@@ -1206,6 +1206,7 @@ async def create_benefit(
     deletable: bool = True,
     properties: dict[str, Any] | None = None,
     external_id: str | None = None,
+    is_current: bool = True,
 ) -> Benefit:
     if properties is None:
         properties = {"note": None}
@@ -1218,6 +1219,7 @@ async def create_benefit(
         deletable=deletable,
         properties=properties,
         external_id=external_id,
+        is_current=is_current,
     )
     await save_fixture(benefit)
     return benefit
@@ -1313,7 +1315,7 @@ async def create_subscription(
         trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
-        started_at=started_at,
+        started_at=started_at or created_at or now,
         ended_at=ended_at,
         ends_at=ends_at,
         organization=product.organization,

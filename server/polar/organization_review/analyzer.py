@@ -1,5 +1,6 @@
 import asyncio
 import functools
+from urllib.parse import urlparse
 
 import structlog
 from pydantic_ai import Agent
@@ -8,6 +9,7 @@ from polar.config import settings
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.observability.baggage import organization_baggage
 
+from .collectors.setup import is_on_verified_domain
 from .known_domains import known_domains_for_prompt, match_known_domain
 from .policy import fetch_policy_content
 from .schemas import (
@@ -23,6 +25,14 @@ from .schemas import (
 from .thresholds import thresholds_for_prompt
 
 log = structlog.get_logger(__name__)
+
+_RISK_SIGNAL_SEVERITY_ORDER: dict[OrganizationRiskSignal.RiskLevel, int] = {
+    OrganizationRiskSignal.RiskLevel.UNKNOWN: 0,
+    OrganizationRiskSignal.RiskLevel.LOW: 1,
+    OrganizationRiskSignal.RiskLevel.NORMAL: 2,
+    OrganizationRiskSignal.RiskLevel.ELEVATED: 3,
+    OrganizationRiskSignal.RiskLevel.HIGHEST: 4,
+}
 
 SYSTEM_PROMPT = f"""\
 You are an expert compliance and risk analyst for Polar, a Merchant of Record platform \
@@ -604,7 +614,7 @@ DENY.
 - If the appeal asserts something that directly contradicts hard data \
 (prohibited products visible on Polar, Stripe account fraud indicators \
 such as fraudulent verification documents), DENY regardless of the \
-appeal text. Probabilistic entries under "## External Risk Signals" are \
+appeal text. Probabilistic entries under "## Risk Signals" are \
 NOT hard data by themselves — weigh them together with the appeal. Do \
 NOT use prior denied or blocked organizations as a signal at the appeal \
 stage — judge this organization on its own merits and the appeal text.
@@ -651,12 +661,17 @@ POLICY_NOTE = (
 )
 
 
-def _annotate_domains(domains: list[str]) -> str:
-    """Join domain names, tagging known service domains for the AI agent."""
+_VERIFIED_DOMAIN_TAG = "(domain verified via DNS by this organization)"
+
+
+def _annotate_domains(domains: list[str], verified_domains: list[str]) -> str:
+    """Join domain names, tagging known service and verified domains for the AI agent."""
     parts = []
     for d in domains:
         if match_known_domain(d) is not None:
             parts.append(f"{d} (known service)")
+        elif is_on_verified_domain(d, verified_domains):
+            parts.append(f"{d} {_VERIFIED_DOMAIN_TAG}")
         else:
             parts.append(d)
     return ", ".join(parts)
@@ -789,7 +804,12 @@ class ReviewAnalyzer:
         parts.append(f"Name: {org.name}")
         parts.append(f"Slug: {org.slug}")
         if org.website:
-            parts.append(f"Website: {org.website}")
+            if is_on_verified_domain(
+                urlparse(org.website).hostname or "", snapshot.verified_domains
+            ):
+                parts.append(f"Website: {org.website} {_VERIFIED_DOMAIN_TAG}")
+            else:
+                parts.append(f"Website: {org.website}")
         if org.email:
             parts.append(f"Org Support Email: {org.email}")
         if org.about:
@@ -846,7 +866,7 @@ class ReviewAnalyzer:
             for url in setup.checkout_success_urls.unique_urls:
                 parts.append(f"  - {url}")
             parts.append(
-                f"Success URL Domains: {_annotate_domains(setup.checkout_success_urls.domains)}"
+                f"Success URL Domains: {_annotate_domains(setup.checkout_success_urls.domains, snapshot.verified_domains)}"
             )
             if setup.checkout_success_urls.redirect_results:
                 redirected = [
@@ -871,7 +891,7 @@ class ReviewAnalyzer:
             for url in setup.checkout_return_urls.unique_urls:
                 parts.append(f"  - {url}")
             parts.append(
-                f"Return URL Domains: {_annotate_domains(setup.checkout_return_urls.domains)}"
+                f"Return URL Domains: {_annotate_domains(setup.checkout_return_urls.domains, snapshot.verified_domains)}"
             )
             if setup.checkout_return_urls.redirect_results:
                 redirected = [
@@ -913,7 +933,10 @@ class ReviewAnalyzer:
                 status = "enabled" if ep.enabled else "DISABLED"
                 parts.append(f"  - {ep.url} ({status})")
             parts.append(
-                f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
+                "Webhook Domains: "
+                + _annotate_domains(
+                    setup.integration.webhook_domains, snapshot.verified_domains
+                )
             )
         else:
             parts.append("No webhook endpoints configured.")
@@ -1063,27 +1086,25 @@ class ReviewAnalyzer:
                     "These are NOT actual disputes and are not counted in Disputes above."
                 )
 
-        # External risk signals (e.g. Stripe Radar for Platforms)
         risk_signals = snapshot.risk_signals
         if risk_signals.entries:
-            parts.append("\n## External Risk Signals")
+            parts.append("\n## Risk Signals")
             parts.append(
-                "⚠️ The following risk signals were raised against this organization "
-                "by external fraud-detection systems. Only signals at 'elevated' or "
-                "'highest' severity are recorded, so every entry below is significant. "
-                "They are probabilistic — not proof of fraud on their own — but treat "
-                "them as strong corroborating evidence: verify whether the website and "
-                "products match what the signal flags, and weigh them into "
+                "⚠️ The following risk signals were raised against this organization. "
+                "'stripe' signals come from Stripe's fraud-detection systems and are "
+                "only recorded at 'elevated' or 'highest' severity, so treat them as "
+                "strong corroborating evidence. 'polar' signals come from our own "
+                "checks; they are weaker heuristics that can have innocent "
+                "explanations, so weigh them by their risk level. All signals are "
+                "probabilistic, not proof on their own: verify whether the website "
+                "and products match what the signal flags, and weigh them into "
                 "POLICY_COMPLIANCE and PRODUCT_LEGITIMACY."
             )
             # Highest severity first so the cap never drops the worst signals.
             entries = sorted(
                 risk_signals.entries,
-                key=lambda e: (
-                    0
-                    if e.risk_level == OrganizationRiskSignal.HIGHEST_RISK_LEVEL
-                    else 1
-                ),
+                key=lambda e: _RISK_SIGNAL_SEVERITY_ORDER[e.risk_level],
+                reverse=True,
             )
             shown = entries[:20]
             for signal in shown:

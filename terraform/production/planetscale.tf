@@ -16,6 +16,14 @@ module "planetscale" {
         }
       }
     }
+    read = {
+      target = "replica"
+      parameters = {
+        pgbouncer = {
+          track_extra_parameters = "IntervalStyle,statement_timeout"
+        }
+      }
+    }
   }
 }
 

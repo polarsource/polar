@@ -72,9 +72,7 @@ class PaymentMethodRepository(
         )
         return await self.get_one_or_none(statement)
 
-    def get_by_customer_statement(
-        self, customer_id: UUID
-    ) -> Select[tuple[PaymentMethod]]:
+    def get_by_customer_statement(self, customer_id: UUID) -> Select[PaymentMethod]:
         return self.get_base_statement().where(PaymentMethod.customer_id == customer_id)
 
     async def get_all_by_processor_id(

@@ -25,8 +25,12 @@ const formatExportRange = (range: DateRange): string => {
   return from === to ? from : `${from} – ${to}`
 }
 
+const gmtOffsetFormatter = new Intl.DateTimeFormat('en', {
+  timeZoneName: 'shortOffset',
+})
+
 const formatGMTOffset = (date: Date = new Date()): string =>
-  new Intl.DateTimeFormat('en', { timeZoneName: 'shortOffset' })
+  gmtOffsetFormatter
     .formatToParts(date)
     .find((part) => part.type === 'timeZoneName')?.value ?? 'Local'
 

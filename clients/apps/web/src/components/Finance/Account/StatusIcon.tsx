@@ -46,13 +46,19 @@ const STATUS_APPEARANCE: Record<
 interface Props {
   status: schemas['OrganizationReviewCheckStatus']
   reasons?: schemas['OrganizationReviewCheckReason'][] | null
+  icon?: 'waiting' | 'dashed'
 }
 
-export const StatusIcon = ({ status, reasons }: Props) => {
+export const StatusIcon = ({ status, reasons, icon }: Props) => {
   const isWaiting =
-    status === 'pending' &&
-    (reasons ?? []).some((reason) => WAITING_REASONS.has(reason))
-  const Icon = isWaiting ? ClockIcon : STATUS_ICONS[status]
+    icon === 'waiting' ||
+    (status === 'pending' &&
+      (reasons ?? []).some((reason) => WAITING_REASONS.has(reason)))
+  const Icon = isWaiting
+    ? ClockIcon
+    : icon === 'dashed'
+      ? CircleDashedIcon
+      : STATUS_ICONS[status]
   const appearance = STATUS_APPEARANCE[status]
 
   return (
@@ -68,7 +74,7 @@ export const StatusIcon = ({ status, reasons }: Props) => {
     >
       <AnimatePresence mode="popLayout" initial={false}>
         <m.span
-          key={`${status}-${isWaiting}`}
+          key={`${status}-${isWaiting}-${icon}`}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}

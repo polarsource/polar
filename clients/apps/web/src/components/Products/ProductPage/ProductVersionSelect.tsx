@@ -2,7 +2,7 @@ import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
 import { useProductVersions } from '@/hooks/queries/products'
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Check, ChevronDown } from '@polar-sh/orbit/icons'
 import {
@@ -110,9 +110,7 @@ export const ProductVersionSelect = ({
               >
                 <Text truncate>{version.name}</Text>
                 {version.isCurrent ? (
-                  <Text variant="caption" color="muted">
-                    Current
-                  </Text>
+                  <Status status="Current" color="gray" size="small" />
                 ) : null}
                 <Box flex={1} />
                 {version.id === selected.id ? (

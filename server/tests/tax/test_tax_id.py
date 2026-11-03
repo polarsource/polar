@@ -15,6 +15,9 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
             ),
         ),
         ("FR61954506077", "FR", ("FR61954506077", TaxIDFormat.eu_vat)),
+        ("GR149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
+        ("EL149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
+        ("gr 149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
         (
             "91-1144442",
             "US",

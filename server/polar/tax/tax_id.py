@@ -265,6 +265,20 @@ class StdNumValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+def _normalize_eu_vat(number: str) -> str:
+    if number.startswith("GR"):
+        return f"EL{number[2:]}"
+    return number
+
+
+class EUVATValidator(StdNumValidator):
+    def __init__(self) -> None:
+        super().__init__(TaxIDFormat.eu_vat)
+
+    def validate(self, number: str, country: str) -> str:
+        return _normalize_eu_vat(super().validate(number, country))
+
+
 class CAGSTHSTValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         number = stdnum.ca.bn.compact(number)
@@ -517,6 +531,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return ZAVATValidator()
         case TaxIDFormat.mu_tan:
             return MUTANValidator()
+        case TaxIDFormat.eu_vat:
+            return EUVATValidator()
         case _:
             return StdNumValidator(tax_id_type)
 

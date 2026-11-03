@@ -6,7 +6,7 @@ from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
@@ -164,12 +164,9 @@ class CatalogService:
         org_ids = await get_accessible_org_ids(
             session, auth_subject, permission=OrganizationPermission.products_manage
         )
-        repository = CatalogRepository.from_session(session)
-        catalog = await repository.get_one_or_none(
-            repository.get_statement_by_org_ids(set(org_ids))
-            .where(Catalog.id == id)
-            .options(joinedload(Catalog.organization))
-        )
+        catalog = await CatalogRepository.from_session(
+            session
+        ).get_by_id_with_organization(set(org_ids), id)
         if catalog is None or not catalog.organization.is_config_as_code_enabled:
             raise CatalogNotFound(id)
         if catalog.status != CatalogStatus.draft:

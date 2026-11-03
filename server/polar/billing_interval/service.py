@@ -119,10 +119,11 @@ class BillingIntervalService:
         the order."""
         meter_ids = sorted(meter_ids)
         repository = BillingIntervalRepository.from_session(session)
-        lock_timeout = await repository.get_lock_timeout()
         try:
-            async with session.begin_nested():
-                await repository.set_local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT)
+            async with (
+                repository.local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT),
+                session.begin_nested(),
+            ):
                 windows: list[UsageWindow] = []
                 for meter_id in meter_ids:
                     windows.extend(
@@ -149,7 +150,6 @@ class BillingIntervalService:
                 cutoff=cutoff.isoformat(),
             )
             quantities = {}
-        await repository.set_local_lock_timeout(lock_timeout)
         return quantities
 
 

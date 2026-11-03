@@ -1,4 +1,5 @@
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from datetime import datetime
 from uuid import UUID
 
@@ -51,8 +52,17 @@ class BillingIntervalRepository(RepositoryBase[BillingInterval]):
         )
         return result.scalar_one()
 
-    async def set_local_lock_timeout(self, lock_timeout: str) -> None:
-        """Sets it until the transaction ends. Releasing a savepoint keeps it."""
+    @asynccontextmanager
+    async def local_lock_timeout(self, lock_timeout: str) -> AsyncIterator[None]:
+        """Restores the previous value on exit, since releasing a savepoint keeps it."""
+        previous = await self.get_lock_timeout()
+        await self._set_local_lock_timeout(lock_timeout)
+        try:
+            yield
+        finally:
+            await self._set_local_lock_timeout(previous)
+
+    async def _set_local_lock_timeout(self, lock_timeout: str) -> None:
         await self.session.execute(
             select(func.set_config("lock_timeout", lock_timeout, True))
         )

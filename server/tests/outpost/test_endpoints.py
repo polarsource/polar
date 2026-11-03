@@ -22,6 +22,7 @@ from pytest_mock import MockerFixture
 from polar.auth.dependencies import _get_auth_subject_factory
 from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
+from polar.meter.aggregation import UniqueAggregation
 from polar.models import (
     Customer,
     Meter,
@@ -41,6 +42,7 @@ from tests.fixtures import AuthSubjectFixture, SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
     create_event,
+    create_meter,
     create_reducer,
 )
 
@@ -123,6 +125,35 @@ class TestOutpost:
                 assert reducer_payload["aggregation"] == meter.aggregation.model_dump(
                     mode="json"
                 )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_request_configuration_without_unique_reducers(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        visitors = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Visitors",
+            aggregation=UniqueAggregation(property="visitor"),
+        )
+        await create_reducer(save_fixture, organization=organization, meters=[visitors])
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json({"type": "configuration"})
+            response = await websocket.receive_json()
+
+        assert [payload["id"] for payload in response["payload"]["reducers"]] == [
+            str(reducer.id)
+        ]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_request_answered_while_an_earlier_one_is_handled(

@@ -106,9 +106,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             (CustomerSubscriptionSortProperty.started_at, True),
         ),
     ) -> tuple[Sequence[Subscription], int]:
-        statement = self._get_readable_subscription_statement(auth_subject).where(
-            Subscription.started_at.is_not(None)
-        )
+        statement = self._get_readable_subscription_statement(auth_subject)
 
         statement = (
             statement.join(Product, onclause=Subscription.product_id == Product.id)

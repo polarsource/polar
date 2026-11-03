@@ -262,13 +262,8 @@ def get_active_subscriptions_cte(
         Subscription,
         isouter=True,
         onclause=and_(
-            or_(
-                Subscription.started_at.is_(None),
-                interval.sql_date_trunc(
-                    cast(SQLColumnExpression[datetime], Subscription.started_at)
-                )
-                <= interval.sql_date_trunc(timestamp_column),
-            ),
+            interval.sql_date_trunc(Subscription.started_at)
+            <= interval.sql_date_trunc(timestamp_column),
             or_(
                 func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
                 interval.sql_date_trunc(
@@ -281,10 +276,7 @@ def get_active_subscriptions_cte(
             ),
             Subscription.id.in_(readable_subscriptions_statement),
             # Filter to only include subscriptions that overlap with the original bounds
-            or_(
-                Subscription.started_at.is_(None),
-                Subscription.started_at <= end_timestamp,
-            ),
+            Subscription.started_at <= end_timestamp,
             or_(
                 func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(None),
                 func.coalesce(Subscription.ended_at, Subscription.ends_at)
@@ -613,10 +605,7 @@ def get_churn_rate_cte(
         case(
             (
                 and_(
-                    or_(
-                        Subscription.started_at.is_(None),
-                        Subscription.started_at <= window_start,
-                    ),
+                    Subscription.started_at <= window_start,
                     or_(
                         func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
                             None
@@ -646,10 +635,7 @@ def get_churn_rate_cte(
             Subscription.id.in_(readable_subscriptions_statement),
             or_(
                 and_(
-                    or_(
-                        Subscription.started_at.is_(None),
-                        Subscription.started_at <= window_start,
-                    ),
+                    Subscription.started_at <= window_start,
                     or_(
                         func.coalesce(Subscription.ended_at, Subscription.ends_at).is_(
                             None

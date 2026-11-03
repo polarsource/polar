@@ -612,7 +612,6 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         statement = (
             repository.get_readable_statement(auth_subject)
-            .where(Subscription.started_at.is_not(None))
             .join(Subscription.product)
             .join(Subscription.customer)
             .join(Subscription.discount, isouter=True)
@@ -702,10 +701,7 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         statement = (
             repository.get_readable_statement(auth_subject)
-            .where(
-                Subscription.id == id,
-                Subscription.started_at.is_not(None),
-            )
+            .where(Subscription.id == id)
             .options(*repository.get_eager_options())
         )
 
@@ -1699,7 +1695,6 @@ class SubscriptionService:
             session, subscription, WebhookEventType.subscription_created
         )
 
-        assert subscription.started_at is not None
         await event_service.create_event(
             session,
             build_system_event(

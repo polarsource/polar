@@ -21,6 +21,7 @@ from polar.kit.versioning import (
     APIVersion,
     QuerySchema,
     Version,
+    VersionedJsonSchema,
     add_versioned_routers,
     api_version_context,
     prune_version_omitted_schemas,
@@ -425,3 +426,31 @@ def test_rejects_overlapping_versioned_routes() -> None:
             [next_version],
             next_version,
         )
+
+
+@pytest.mark.parametrize(
+    ("api_version", "expected"),
+    [
+        (APIVersion(2026, 1), {"type": "string"}),
+        (CURRENT_VERSION, {"anyOf": [{"type": "string"}, {"type": "null"}]}),
+        (NEXT_VERSION, {"type": "string"}),
+    ],
+)
+def test_versioned_json_schema(
+    api_version: APIVersion, expected: dict[str, Any]
+) -> None:
+    class Resource(BaseModel):
+        value: Annotated[
+            str,
+            VersionedJsonSchema(
+                lambda schema: {"anyOf": [schema, {"type": "null"}]},
+                starting_from=CURRENT_VERSION,
+                up_to=CURRENT_VERSION,
+            ),
+        ]
+
+    with api_version_context(api_version):
+        schema = Resource.model_json_schema(mode="serialization")
+        assert schema["required"] == ["value"]
+        assert schema["properties"]["value"] == {**expected, "title": "Value"}
+        assert Resource(value="present").model_dump() == {"value": "present"}

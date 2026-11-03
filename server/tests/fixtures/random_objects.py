@@ -1315,7 +1315,7 @@ async def create_subscription(
         trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
-        started_at=started_at,
+        started_at=started_at or created_at or now,
         ended_at=ended_at,
         ends_at=ends_at,
         organization=product.organization,

@@ -224,8 +224,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     canceled_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
-    started_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    started_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, index=True
     )
     ends_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True

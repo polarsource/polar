@@ -219,6 +219,27 @@ def Version(
     return field_info
 
 
+class VersionedJsonSchema:
+    def __init__(
+        self,
+        override: Callable[[JsonSchemaValue], JsonSchemaValue],
+        *,
+        starting_from: APIVersion | None = None,
+        up_to: APIVersion | None = None,
+    ) -> None:
+        self.override = override
+        self.version_range = _VersionRange(starting_from=starting_from, up_to=up_to)
+
+    def __get_pydantic_json_schema__(
+        self, core_schema: CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        schema = handler(core_schema)
+        version = _ACTIVE_API_VERSION.get()
+        if version is not None and self.version_range.includes(version):
+            return self.override(schema)
+        return schema
+
+
 def _iter_model_classes(
     cls: type[BaseModel] = BaseModel,
 ) -> Generator[type[BaseModel]]:

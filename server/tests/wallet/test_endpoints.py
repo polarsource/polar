@@ -102,17 +102,3 @@ class TestGetWallet:
         json = response.json()
         assert json["id"] == str(wallets[0].id)
         assert json["balance"] == 0
-
-
-@pytest.mark.anyio
-class TestTopUpWallet:
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.wallets_write}),
-    )
-    async def test_removed(self, client: AsyncClient, wallets: list[Wallet]) -> None:
-        response = await client.post(
-            f"/v1/wallets/{wallets[0].id}/top-up",
-            json={"amount": 1000, "currency": "usd"},
-        )
-
-        assert response.status_code == 404

@@ -43,6 +43,7 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
 from polar.metering.client import PolarClient
+from polar.metering.errors import UnknownMeterError
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.event import Event
@@ -735,7 +736,7 @@ class Outpost:
             usage = self._find_reducer("usage", meter_id)
             if usage is None:
                 read.outcome = "unknown_meter"
-                return None
+                raise UnknownMeterError(f"Outpost reduces no meter {meter_id}")
             credit = self._find_reducer("credit", meter_id)
             warmed = [
                 (reducer, await self._warm_customer(customer, reducer))
@@ -845,7 +846,7 @@ class Outpost:
         except (UnavailableRedisError, RedisConnectionError, RedisTimeoutError):
             read.outcome = "redis_unavailable"
             raise
-        except (TimeoutError, _NotReadyError):
+        except (TimeoutError, _NotReadyError, UnknownMeterError):
             raise
         except Exception:
             read.outcome = "error"

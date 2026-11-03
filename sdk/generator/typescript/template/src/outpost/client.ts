@@ -17,6 +17,7 @@ import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import WebSocket from "ws";
 
+import { UnknownMeterError } from "../metering/errors";
 import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
@@ -690,7 +691,7 @@ export class Outpost {
       const reducer = this.findReducer("usage", input.meter_id);
       if (!reducer) {
         read.outcome = "unknown_meter";
-        return null;
+        throw new UnknownMeterError(`Outpost reduces no meter ${input.meter_id}`);
       }
       const creditReducer = this.findReducer("credit", input.meter_id);
       const local = await this.warmCustomer(customer, reducer);
@@ -1077,7 +1078,8 @@ export class Outpost {
       return await run(read);
     } catch (error) {
       if (error instanceof UnavailableRedisError) read.outcome = "redis_unavailable";
-      else if (!(error instanceof NotReadyError)) read.outcome = "error";
+      else if (!(error instanceof NotReadyError || error instanceof UnknownMeterError))
+        read.outcome = "error";
       throw error;
     } finally {
       this.readDuration?.record((performance.now() - started) / 1000, {

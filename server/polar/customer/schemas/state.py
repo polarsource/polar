@@ -87,7 +87,7 @@ class CustomerStateSubscription(
         ),
         examples=[None],
     )
-    started_at: datetime | None = Field(
+    started_at: datetime = Field(
         description="The timestamp when the subscription started.",
         examples=["2025-01-03T13:37:00Z"],
     )

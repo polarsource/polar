@@ -180,14 +180,10 @@ async def generate_csv(
     )
 
     repository = SubscriptionRepository.from_session(session)
-    statement = (
-        repository.get_readable_statement(auth_subject)
-        .where(Subscription.started_at.is_not(None))
-        .options(
-            joinedload(Subscription.customer),
-            joinedload(Subscription.product),
-            joinedload(Subscription.discount),
-        )
+    statement = repository.get_readable_statement(auth_subject).options(
+        joinedload(Subscription.customer),
+        joinedload(Subscription.product),
+        joinedload(Subscription.discount),
     )
     if organization_id is not None:
         statement = statement.where(Subscription.organization_id.in_(organization_id))

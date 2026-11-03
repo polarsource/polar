@@ -123,7 +123,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
             "The subscription might still be active if `cancel_at_period_end` is `true`."
         )
     )
-    started_at: datetime | None = Field(
+    started_at: datetime = Field(
         description="The timestamp when the subscription started."
     )
     ends_at: datetime | None = Field(

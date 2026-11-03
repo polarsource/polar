@@ -45,7 +45,7 @@ class OAuth2TokenRepository(
         return await self.get_one_or_none(statement)
 
     async def revoke_scoped_to_organization(self, organization_id: UUID) -> None:
-        """Revoke tokens explicitly down-scoped to an organization."""
+        """Revoke organization-subject and explicitly down-scoped tokens."""
         now = int(time.time())
         scoped_token_ids = (
             select(OAuth2TokenOrganization.oauth2_token_id)
@@ -55,7 +55,10 @@ class OAuth2TokenRepository(
         statement = (
             update(OAuth2Token)
             .where(
-                OAuth2Token.id.in_(scoped_token_ids),
+                or_(
+                    OAuth2Token.id.in_(scoped_token_ids),
+                    OAuth2Token.organization_id == organization_id,
+                ),
                 or_(
                     OAuth2Token.access_token_revoked_at == 0,
                     OAuth2Token.refresh_token_revoked_at == 0,

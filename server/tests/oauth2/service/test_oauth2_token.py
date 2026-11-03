@@ -394,8 +394,10 @@ class TestDeleteExpired:
 
 @pytest.mark.anyio
 class TestRevokeForSSOEnforcement:
+    @pytest.mark.parametrize("legacy", [False, True])
     async def test_revokes_token_scoped_to_org(
         self,
+        legacy: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         oauth2_client: OAuth2Client,
@@ -405,11 +407,12 @@ class TestRevokeForSSOEnforcement:
         token = await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
-            access_token="polar_at_u_sso1",
-            refresh_token="polar_rt_u_sso1",
+            access_token=f"polar_at_{'o' if legacy else 'u'}_sso1",
+            refresh_token=f"polar_rt_{'o' if legacy else 'u'}_sso1",
             scopes=["openid"],
-            user=user,
-            organizations=[organization],
+            user=None if legacy else user,
+            organization=organization if legacy else None,
+            organizations=None if legacy else [organization],
         )
 
         await oauth2_token_service.revoke_for_sso_enforcement(session, organization.id)
@@ -443,8 +446,10 @@ class TestRevokeForSSOEnforcement:
         await session.refresh(token)
         assert token.access_token_revoked_at
 
+    @pytest.mark.parametrize("legacy", [False, True])
     async def test_ignores_token_scoped_to_other_org(
         self,
+        legacy: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         oauth2_client: OAuth2Client,
@@ -455,17 +460,19 @@ class TestRevokeForSSOEnforcement:
         token = await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
-            access_token="polar_at_u_sso4",
-            refresh_token="polar_rt_u_sso4",
+            access_token=f"polar_at_{'o' if legacy else 'u'}_sso4",
+            refresh_token=f"polar_rt_{'o' if legacy else 'u'}_sso4",
             scopes=["openid"],
-            user=user,
-            organizations=[organization_second],
+            user=None if legacy else user,
+            organization=organization_second if legacy else None,
+            organizations=None if legacy else [organization_second],
         )
 
         await oauth2_token_service.revoke_for_sso_enforcement(session, organization.id)
 
         await session.refresh(token)
         assert not token.access_token_revoked_at
+        assert not token.refresh_token_revoked_at
 
     async def test_ignores_unrestricted_token(
         self,
@@ -490,8 +497,10 @@ class TestRevokeForSSOEnforcement:
         await session.refresh(token)
         assert not token.access_token_revoked_at
 
+    @pytest.mark.parametrize("legacy", [False, True])
     async def test_leaves_fully_revoked_token_untouched(
         self,
+        legacy: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         oauth2_client: OAuth2Client,
@@ -501,11 +510,12 @@ class TestRevokeForSSOEnforcement:
         token = await create_oauth2_token(
             save_fixture,
             client=oauth2_client,
-            access_token="polar_at_u_sso6",
-            refresh_token="polar_rt_u_sso6",
+            access_token=f"polar_at_{'o' if legacy else 'u'}_sso6",
+            refresh_token=f"polar_rt_{'o' if legacy else 'u'}_sso6",
             scopes=["openid"],
-            user=user,
-            organizations=[organization],
+            user=None if legacy else user,
+            organization=organization if legacy else None,
+            organizations=None if legacy else [organization],
             access_token_revoked_at=1,
             refresh_token_revoked_at=1,
         )

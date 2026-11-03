@@ -934,24 +934,33 @@ class OrderService:
             assert checkout.tax_behavior is not None
             assert order.billing_address is not None
             assert order.product is not None
-            transaction_id, tax_processor = await tax_calculation_service.record(
-                checkout.tax_processor,
-                checkout.tax_processor_id,
-                amount=checkout.net_amount,
-                tax_amount=checkout.tax_amount or 0,
-                currency=checkout.currency,
-                address=order.billing_address,
-                tax_code=order.product.tax_code,
-                reference=f"checkout:{checkout.id}",
-                transaction_date=order.created_at,
-            )
-            await repository.update(
-                order,
-                update_dict={
-                    "tax_processor": tax_processor,
-                    "tax_transaction_processor_id": transaction_id,
-                },
-            )
+            try:
+                transaction_id, tax_processor = await tax_calculation_service.record(
+                    checkout.tax_processor,
+                    checkout.tax_processor_id,
+                    amount=checkout.net_amount,
+                    tax_amount=checkout.tax_amount or 0,
+                    currency=checkout.currency,
+                    address=order.billing_address,
+                    tax_code=order.product.tax_code,
+                    reference=f"checkout:{checkout.id}",
+                    transaction_date=order.created_at,
+                )
+            except UnsupportedCountryError:
+                log.warning(
+                    "Skipping tax recording for unsupported country",
+                    order_id=order.id,
+                    checkout_id=checkout.id,
+                    country=order.billing_address.country,
+                )
+            else:
+                await repository.update(
+                    order,
+                    update_dict={
+                        "tax_processor": tax_processor,
+                        "tax_transaction_processor_id": transaction_id,
+                    },
+                )
 
         await self._on_order_created(session, order)
 

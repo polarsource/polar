@@ -552,6 +552,79 @@ class TestUpdate:
 
 
 @pytest.mark.anyio
+class TestCreateOrderFromCheckout:
+    @pytest.mark.parametrize("recurring", [False, True])
+    @pytest.mark.parametrize("charged_tax_amount", [0, 320])
+    async def test_unsupported_tax_recording_country(
+        self,
+        tax_service_mock: MagicMock,
+        publish_checkout_event_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        product: Product,
+        customer: Customer,
+        recurring: bool,
+        charged_tax_amount: int,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("MX"))
+        await save_fixture(customer)
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product if recurring else product_one_time],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            tax_amount=charged_tax_amount,
+            tax_behavior=TaxBehavior.exclusive,
+        )
+        checkout.tax_processor_id = "stripe_calculation"
+        checkout.tax_breakdown = [
+            {
+                "rate_type": "percentage",
+                "rate": 0.16,
+                "display_name": "VAT",
+                "country": "MX",
+                "state": None,
+                "subdivision": None,
+                "amount": charged_tax_amount,
+                "taxability_reason": TaxabilityReason.standard_rated,
+            }
+        ]
+        await save_fixture(checkout)
+        tax_service_mock.record.side_effect = UnsupportedCountryError("MX")
+
+        if recurring:
+            subscription = await create_subscription(
+                save_fixture, product=product, customer=customer
+            )
+            order = await order_service.create_from_checkout_subscription(
+                session,
+                checkout,
+                subscription,
+                OrderBillingReasonInternal.subscription_create,
+            )
+        else:
+            order = await order_service.create_from_checkout_one_time(session, checkout)
+
+        assert order.status == OrderStatus.paid
+        assert order.net_amount == checkout.net_amount
+        assert order.tax_amount == charged_tax_amount
+        assert order.total_amount == checkout.net_amount + charged_tax_amount
+        assert order.tax_behavior == checkout.tax_behavior
+        assert order.tax_breakdown == checkout.tax_breakdown
+        assert order.tax_processor is None
+        assert order.tax_transaction_processor_id is None
+        tax_service_mock.record.assert_awaited_once()
+        assert (
+            tax_service_mock.record.call_args.kwargs["tax_amount"] == charged_tax_amount
+        )
+        tax_service_mock.calculate.assert_not_called()
+        publish_checkout_event_mock.assert_awaited_once_with(
+            checkout.client_secret, CheckoutEvent.order_created
+        )
+
+
+@pytest.mark.anyio
 class TestCreateFromCheckoutOneTime:
     async def test_tax_reference_survives_order_creation_rollback(
         self,

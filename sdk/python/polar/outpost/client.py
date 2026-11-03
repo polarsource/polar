@@ -1142,8 +1142,7 @@ class Outpost:
             local = LocalState()
             self._cache[identity] = local
             if len(self._cache) > CACHE_SIZE:
-                evicted, _ = self._cache.popitem(last=False)
-                self._actors.discard(evicted)
+                self._cache.popitem(last=False)
         self._cache.move_to_end(identity)
         if local.state is not None and identity in self._actors:
             return local
@@ -1152,7 +1151,9 @@ class Outpost:
                 local.state = await self._load_state(identity)
                 local.notify()
             websocket = self._websocket
-            if identity not in self._actors and websocket is not None:
+            # Polar's pushes keep an evicted state current in Redis, unless Redis has dropped it.
+            requested = identity in self._actors and local.state.cold_until is not None
+            if not requested and websocket is not None:
                 try:
                     await websocket.send_json(
                         {

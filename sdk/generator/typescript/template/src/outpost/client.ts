@@ -864,11 +864,7 @@ export class Outpost {
     if (!local) {
       local = { pending: Promise.resolve(), missing: false, changed: signal() };
       this.cache.set(identity, local);
-      if (this.cache.size > CACHE_SIZE) {
-        const evicted = this.cache.keys().next().value!;
-        this.cache.delete(evicted);
-        this.actors.delete(evicted);
-      }
+      if (this.cache.size > CACHE_SIZE) this.cache.delete(this.cache.keys().next().value!);
     }
     this.cache.delete(identity);
     this.cache.set(identity, local);
@@ -879,7 +875,9 @@ export class Outpost {
         entry.state = await this.loadState(identity);
         notify(entry);
       }
-      if (!this.actors.has(identity) && this.websocket?.readyState === WebSocket.OPEN) {
+      // Polar's pushes keep an evicted state current in Redis, unless Redis has dropped it.
+      const requested = this.actors.has(identity) && entry.state.coldUntil !== undefined;
+      if (!requested && this.websocket?.readyState === WebSocket.OPEN) {
         try {
           await this.send({
             type: "meter_usage",

@@ -41,12 +41,12 @@ async def seal(
         customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
-        reset_at = datetime.fromisoformat(at)
+        seal_at = datetime.fromisoformat(at)
         boundaries = await billing_interval_service.get_boundaries(
-            session, customer, meter_id, until=reset_at
+            session, customer, meter_id, until=seal_at
         )
         await reducer_service.seal(
-            session, customer, meter_id, at=reset_at, boundaries=boundaries
+            session, customer, meter_id, at=seal_at, boundaries=boundaries
         )
 
 

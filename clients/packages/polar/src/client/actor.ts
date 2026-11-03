@@ -5,10 +5,7 @@ import {
   getCustomerMeter,
 } from '../internal/api/customer-meters'
 import { ingestEvents } from '../internal/api/events'
-import {
-  assertBenefitDeployed,
-  findBenefitGrant,
-} from '../internal/api/benefits'
+import { findBenefitGrant } from '../internal/api/benefits'
 import { getDeployedMeter } from '../internal/api/meters'
 import { matchesMeter } from '../internal/meter'
 import type {
@@ -166,7 +163,6 @@ export const createActor = <Config extends RuntimeSDKConfig>(
   const latestIngestedAt = new Map<string, Date>()
   // Polar meter ID per deployed meter external ID
   const deployedMeters = new Map<string, string>()
-  const deployedBenefits = new Set<string>()
   const cacheKey = (identifier: ActorIdentifier, externalMeterId: string) =>
     identifier.customerId !== undefined
       ? `customer:${identifier.customerId}:${externalMeterId}`
@@ -262,13 +258,6 @@ export const createActor = <Config extends RuntimeSDKConfig>(
         toMemberIdentifier(identifier),
         name,
       )
-      // A missing grant means no access, unless the benefit itself isn't
-      // deployed, which we check once per benefit.
-      if (grant === undefined && !deployedBenefits.has(name)) {
-        await assertBenefitDeployed(sdk, name)
-      }
-      deployedBenefits.add(name)
-
       // Deploying the config sets the benefit's metadata to the declared keys.
       return grant === undefined
         ? { granted: false }

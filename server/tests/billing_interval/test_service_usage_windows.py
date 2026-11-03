@@ -1,12 +1,17 @@
 from datetime import UTC, datetime
+from decimal import Decimal
+from uuid import uuid4
 
 import pytest
+from pytest_mock import MockerFixture
+from sqlalchemy import update
 
 from polar.billing_interval.repository import BillingIntervalRepository
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.models import Customer, Meter, Product
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageWindow
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_subscription
@@ -54,3 +59,101 @@ class TestGetUsageWindows:
         assert windows == (
             UsageWindow(interval.id, earlier.id, meter.id, EARLIER, CUTOFF),
         )
+
+
+@pytest.mark.anyio
+class TestBillUsage:
+    async def test_bills_only_the_subscriptions_own_windows(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        own, other = (
+            UsageWindow(uuid4(), subscription_id, meter.id, EARLIER, CUTOFF)
+            for subscription_id in (subscription.id, uuid4())
+        )
+        mocker.patch.object(
+            billing_interval_service, "get_usage_windows", return_value=(own, other)
+        )
+        bill = mocker.patch.object(
+            reducer_service, "bill", return_value={meter.id: (Decimal(3), Decimal(0))}
+        )
+        order_id = uuid4()
+
+        quantities = await billing_interval_service.bill_usage(
+            session,
+            subscription,
+            [meter.id],
+            order_id=order_id,
+            billable_from=EARLIER,
+            cutoff=CUTOFF,
+        )
+
+        assert quantities == {meter.id: (Decimal(3), Decimal(0))}
+        bill.assert_called_once_with(
+            session,
+            customer,
+            [meter.id],
+            order_id=order_id,
+            windows=(own,),
+            billable_from=EARLIER,
+            cutoff=CUTOFF,
+        )
+
+    @pytest.mark.parametrize("failing", ["get_usage_windows", "bill"])
+    async def test_failures_are_rolled_back_and_logged(
+        self,
+        failing: str,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        original_name = meter.name
+
+        async def write_then_fail(*args: object, **kwargs: object) -> None:
+            await session.execute(
+                update(Meter).where(Meter.id == meter.id).values(name="Written")
+            )
+            raise RuntimeError
+
+        mocker.patch.object(
+            billing_interval_service
+            if failing == "get_usage_windows"
+            else reducer_service,
+            failing,
+            side_effect=write_then_fail,
+        )
+        log = mocker.patch("polar.billing_interval.service.log")
+
+        quantities = await billing_interval_service.bill_usage(
+            session,
+            subscription,
+            [meter.id],
+            order_id=uuid4(),
+            billable_from=EARLIER,
+            cutoff=CUTOFF,
+        )
+
+        assert quantities == {}
+        await session.refresh(meter)
+        assert meter.name == original_name
+        log.exception.assert_called_once()

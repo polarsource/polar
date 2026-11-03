@@ -1689,31 +1689,6 @@ class TestBill:
             (CUTOFF, NEXT_BUCKET_START, order.id),
         ]
 
-    async def test_logs_failures_without_raising(
-        self,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-        meter: Meter,
-    ) -> None:
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
-        mocker.patch.object(reducer_service, "_bill_windows", side_effect=RuntimeError)
-
-        quantities = await reducer_service.bill(
-            session,
-            customer,
-            [meter.id],
-            order_id=uuid.uuid4(),
-            windows=(),
-            billable_from=START,
-            cutoff=CUTOFF,
-        )
-
-        assert quantities == {}
-        assert await session.get(Meter, meter.id) is not None
-
 
 SUM_TOKENS = PropertyAggregation(func=AggregationFunction.sum, property="tokens")
 

@@ -236,76 +236,62 @@ class ReducerService:
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
         """Marks the customer's usage in `windows` and its credits since the latest
         reset, from `billable_from` at the earliest, as billed by the order, and
-        returns their quantities per meter."""
+        returns their quantities per meter. Raises on failure: the caller rolls
+        it back."""
         meter_ids = sorted(meter_ids)
-        try:
-            async with session.begin_nested():
-                reducers = await self._get_reducers(
-                    session, meter_ids, ReducerKind.usage
-                )
-                observed = await self._bill_windows(
-                    session,
-                    customer,
-                    reducers,
-                    [window for window in windows if window.meter_id in reducers],
-                    order_id=order_id,
-                )
-                if isinstance(observed, IncompleteUsage):
-                    log.warning(
-                        "Incomplete reducer usage",
-                        customer_id=customer.id,
-                        order_id=order_id,
-                        reason=observed.reason,
-                    )
-                    return {}
-                quantities = {
-                    reducer.id: finalize_quantity(
-                        merge_summaries(
-                            [
-                                usage.summary
-                                for usage in observed.windows
-                                if usage.window.meter_id == meter_id
-                            ]
-                        ),
-                        reducer.aggregation.func,
-                    )
-                    for meter_id, reducer in reducers.items()
-                }
-                credit_reducers = await self._get_reducers(
-                    session, meter_ids, ReducerKind.credit
-                )
-                event_repository = EventRepository.from_session(session)
-                credits: dict[UUID, Decimal] = {}
-                for meter_id, credit_reducer in credit_reducers.items():
-                    reset = await event_repository.get_latest_meter_reset(
-                        customer, meter_id, cutoff=cutoff
-                    )
-                    since = (
-                        billable_from
-                        if reset is None
-                        else max(billable_from, reset.timestamp)
-                    )
-                    await self._seal_buckets(
-                        session, [credit_reducer], customer, since=since, until=cutoff
-                    )
-                    billed = await self._bill_buckets(
-                        session,
-                        [credit_reducer],
-                        customer,
-                        order_id=order_id,
-                        since=since,
-                        until=cutoff,
-                    )
-                    credits[meter_id] = billed[credit_reducer.id]
-        except Exception:
-            log.exception(
-                "Failed to bill reducer buckets",
+        reducers = await self._get_reducers(session, meter_ids, ReducerKind.usage)
+        observed = await self._bill_windows(
+            session,
+            customer,
+            reducers,
+            [window for window in windows if window.meter_id in reducers],
+            order_id=order_id,
+        )
+        if isinstance(observed, IncompleteUsage):
+            log.warning(
+                "Incomplete reducer usage",
                 customer_id=customer.id,
-                meter_ids=meter_ids,
                 order_id=order_id,
-                cutoff=cutoff.isoformat(),
+                reason=observed.reason,
             )
             return {}
+        quantities = {
+            reducer.id: finalize_quantity(
+                merge_summaries(
+                    [
+                        usage.summary
+                        for usage in observed.windows
+                        if usage.window.meter_id == meter_id
+                    ]
+                ),
+                reducer.aggregation.func,
+            )
+            for meter_id, reducer in reducers.items()
+        }
+        credit_reducers = await self._get_reducers(
+            session, meter_ids, ReducerKind.credit
+        )
+        event_repository = EventRepository.from_session(session)
+        credits: dict[UUID, Decimal] = {}
+        for meter_id, credit_reducer in credit_reducers.items():
+            reset = await event_repository.get_latest_meter_reset(
+                customer, meter_id, cutoff=cutoff
+            )
+            since = (
+                billable_from if reset is None else max(billable_from, reset.timestamp)
+            )
+            await self._seal_buckets(
+                session, [credit_reducer], customer, since=since, until=cutoff
+            )
+            billed = await self._bill_buckets(
+                session,
+                [credit_reducer],
+                customer,
+                order_id=order_id,
+                since=since,
+                until=cutoff,
+            )
+            credits[meter_id] = billed[credit_reducer.id]
         return {
             meter_id: (
                 quantities[reducer.id],

@@ -2,8 +2,9 @@
 
 import dataclasses
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
+from decimal import Decimal
 from itertools import pairwise
 from uuid import UUID
 
@@ -16,6 +17,7 @@ from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
+from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageWindow
 from polar.subscription.repository import SubscriptionRepository
 
@@ -123,6 +125,49 @@ class BillingIntervalService:
             list({interval.subscription_id for interval in intervals})
         )
         return resolve_ownership(intervals, subscription_starts, cutoff=cutoff)
+
+    async def bill_usage(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        meter_ids: Iterable[UUID],
+        *,
+        order_id: UUID,
+        billable_from: datetime,
+        cutoff: datetime,
+    ) -> dict[UUID, tuple[Decimal, Decimal]]:
+        """Marks the reducer usage the subscription owns on the meters, and its
+        credits, as billed by the order, and returns their quantities per meter.
+        Failures are rolled back and logged, so they never affect the order."""
+        meter_ids = sorted(meter_ids)
+        try:
+            async with session.begin_nested():
+                windows: list[UsageWindow] = []
+                for meter_id in meter_ids:
+                    windows.extend(
+                        await self.get_usage_windows(
+                            session, subscription.customer, meter_id, cutoff=cutoff
+                        )
+                    )
+                return await reducer_service.bill(
+                    session,
+                    subscription.customer,
+                    meter_ids,
+                    order_id=order_id,
+                    windows=select_settlement_windows(
+                        windows, billing_subscription_id=subscription.id
+                    ),
+                    billable_from=billable_from,
+                    cutoff=cutoff,
+                )
+        except Exception:
+            log.exception(
+                "Failed to bill reducer usage",
+                subscription_id=subscription.id,
+                order_id=order_id,
+                cutoff=cutoff.isoformat(),
+            )
+            return {}
 
 
 def get_interval_boundaries(

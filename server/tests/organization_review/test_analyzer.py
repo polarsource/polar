@@ -13,6 +13,7 @@ from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.models import OrganizationRiskSignal
 from polar.organization_review.analyzer import ReviewAnalyzer, _render_scraped_site
 from polar.organization_review.schemas import (
     CheckoutReturnUrlData,
@@ -204,7 +205,7 @@ def _stub_analyzer_io(
 class TestBuildPromptRiskSignals:
     def test_no_section_without_signals(self, review_analyzer: ReviewAnalyzer) -> None:
         prompt = review_analyzer._build_prompt(_minimal_snapshot())
-        assert "## External Risk Signals" not in prompt
+        assert "## Risk Signals" not in prompt
 
     def test_renders_signals(self, review_analyzer: ReviewAnalyzer) -> None:
         snapshot = _minimal_snapshot().model_copy(
@@ -212,16 +213,16 @@ class TestBuildPromptRiskSignals:
                 "risk_signals": RiskSignalData(
                     entries=[
                         RiskSignalEntry(
-                            source="stripe",
-                            type="fraudulent_website",
-                            risk_level="elevated",
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                            risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
                             description="Indicators: suspicious_content",
                             created_at=datetime(2026, 7, 1, tzinfo=UTC),
                         ),
                         RiskSignalEntry(
-                            source="stripe",
-                            type="fraudulent_merchant",
-                            risk_level="highest",
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                            risk_level=OrganizationRiskSignal.RiskLevel.HIGHEST,
                             created_at=datetime(2026, 6, 15, tzinfo=UTC),
                         ),
                     ]
@@ -231,7 +232,7 @@ class TestBuildPromptRiskSignals:
 
         prompt = review_analyzer._build_prompt(snapshot)
 
-        assert "## External Risk Signals" in prompt
+        assert "## Risk Signals" in prompt
         assert (
             "- [2026-07-01] stripe: fraudulent_website (risk level: elevated)" in prompt
         )
@@ -245,23 +246,51 @@ class TestBuildPromptRiskSignals:
         )
         assert "omitted" not in prompt
 
+    def test_sorts_by_severity(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "risk_signals": RiskSignalData(
+                    entries=[
+                        RiskSignalEntry(
+                            source=OrganizationRiskSignal.Source.POLAR,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                            risk_level=OrganizationRiskSignal.RiskLevel.NORMAL,
+                            created_at=datetime(2026, 7, 2, tzinfo=UTC),
+                        ),
+                        RiskSignalEntry(
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                            risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
+                            created_at=datetime(2026, 7, 1, tzinfo=UTC),
+                        ),
+                    ]
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert prompt.index("stripe: fraudulent_merchant") < prompt.index(
+            "polar: fraudulent_website"
+        )
+
     def test_caps_signals_and_notes_omission(
         self, review_analyzer: ReviewAnalyzer
     ) -> None:
         entries = [
             RiskSignalEntry(
-                source="stripe",
-                type="fraudulent_website",
-                risk_level="elevated",
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
                 created_at=datetime(2026, 7, 1, tzinfo=UTC),
             )
             for _ in range(24)
         ]
         entries.append(
             RiskSignalEntry(
-                source="stripe",
-                type="fraudulent_merchant",
-                risk_level="highest",
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                risk_level=OrganizationRiskSignal.RiskLevel.HIGHEST,
                 created_at=datetime(2026, 1, 1, tzinfo=UTC),
             )
         )

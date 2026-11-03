@@ -472,7 +472,7 @@ class TestDetailRiskSignals:
         )
 
         assert response.status_code == 200
-        assert "External Risk Signals" in response.text
+        assert "Risk Signals" in response.text
         assert "Fraudulent Website" in response.text
 
     async def test_reviews_section_without_signals(

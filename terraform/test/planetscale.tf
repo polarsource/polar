@@ -23,17 +23,37 @@ module "planetscale" {
       track_extra_parameters = "IntervalStyle,statement_timeout"
     }
   }
+
+  bouncers = {
+    app = {
+      parameters = {
+        pgbouncer = {
+          default_pool_size      = "12"
+          track_extra_parameters = "IntervalStyle,statement_timeout"
+        }
+      }
+    }
+    read = {
+      target = "replica"
+      parameters = {
+        pgbouncer = {
+          default_pool_size      = "12"
+          track_extra_parameters = "IntervalStyle,statement_timeout"
+        }
+      }
+    }
+  }
 }
 
 locals {
   planetscale_postgres_config = {
     host          = module.planetscale.host
     port          = "6432"
-    user          = module.planetscale.app_role_username
+    user          = module.planetscale.bouncer_usernames["app"]
     password      = var.planetscale_app_password
     read_host     = module.planetscale.host
     read_port     = "6432"
-    read_user     = module.planetscale.app_role_username
+    read_user     = module.planetscale.bouncer_usernames["read"]
     read_password = var.planetscale_app_password
     sslmode       = "verify-full"
     sslrootcert   = "/etc/ssl/certs/ca-certificates.crt"

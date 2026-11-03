@@ -450,7 +450,7 @@ jobs:
     with:
       environment: sandbox
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
-      render-worker-service-ids: "srv-d089jj7diees73934kgg,srv-dajtvp5g1s2s73c683og"
+      render-worker-service-ids: "srv-d089jj7diees73934kgg,srv-dajtvp5g1s2s73c683og,srv-dbc6vi4s728c73e7fo5g"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -474,7 +474,7 @@ jobs:
     with:
       environment: test
       render-api-service-id: "srv-d8ffbc42m8qs73e7lv30"
-      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770"
+      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770,srv-dbktog5bedkc73eht8i0"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}

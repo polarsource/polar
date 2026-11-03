@@ -14,6 +14,7 @@ from uuid import UUID
 
 import typer
 from sqlalchemy import Select, exists, func, select
+from sqlalchemy.orm import with_polymorphic
 
 from polar.billing_interval.service import USAGE_POLICIES
 from polar.billing_interval.service import billing_interval as billing_interval_service
@@ -22,6 +23,8 @@ from polar.models import (
     BillingInterval,
     Meter,
     ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     Subscription,
     SubscriptionProductPrice,
 )
@@ -36,16 +39,18 @@ cli = typer.Typer()
 def subscriptions_without_intervals_statement() -> Select[Subscription]:
     """Live subscriptions with a metered price on an available meter and no
     billing interval."""
+    price = with_polymorphic(
+        ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+    )
     return select(Subscription).where(
         ~Subscription.is_deleted,
         Subscription.status.in_(USAGE_POLICIES),
         exists().where(
             SubscriptionProductPrice.subscription_id == Subscription.id,
             ~SubscriptionProductPrice.is_deleted,
-            ProductPrice.id == SubscriptionProductPrice.product_price_id,
-            ProductPrice.is_metered,
-            # The subclass attribute would add a polymorphic filter and drop tiered prices.
-            Meter.id == ProductPrice.__table__.c.meter_id,
+            price.id == SubscriptionProductPrice.product_price_id,
+            price.is_metered,
+            Meter.id == price.ProductPriceMeteredUnit.meter_id,
             Meter.archived_at.is_(None),
             Meter.deleted_at.is_(None),
         ),

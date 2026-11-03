@@ -4,16 +4,22 @@ import pytest
 
 from polar.billing_interval.repository import BillingIntervalRepository
 from polar.billing_interval.service import billing_interval as billing_interval_service
-from polar.models import Customer, Meter, Product, Subscription
+from polar.enums import SubscriptionRecurringInterval
+from polar.models import Customer, Meter, Organization, Product, Subscription
 from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.product.tiers import Tiers, TierType
 from scripts.backfill_billing_intervals import (
     backfill_batch,
     count_subscriptions_without_intervals,
 )
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_subscription
+from tests.fixtures.random_objects import (
+    create_product,
+    create_product_price_metered_tiers,
+    create_subscription,
+)
 
 PERIOD_START = datetime(2026, 1, 1, tzinfo=UTC)
 PERIOD_END = datetime(2026, 2, 1, tzinfo=UTC)
@@ -98,6 +104,43 @@ class TestBackfillBatch:
 
         assert await get_history(session, subscription) == history
         assert await count_subscriptions_without_intervals(session) == 0
+
+    async def test_records_tiered_metered_prices(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[],
+        )
+        price = await create_product_price_metered_tiers(
+            save_fixture,
+            product=product,
+            meter=meter,
+            tiers=Tiers.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [{"bound": None, "unit_amount": "10"}],
+                }
+            ),
+        )
+        product.prices.append(price)
+        subscription = await create_period_subscription(
+            save_fixture, product, customer, SubscriptionStatus.active
+        )
+
+        count, _ = await backfill_batch(session, after_id=None, limit=10, dry_run=False)
+
+        assert count == 1
+        assert await get_history(session, subscription) == [
+            (UsagePolicy.charge, PERIOD_START, None)
+        ]
 
     async def test_skips_subscriptions_without_an_available_metered_price(
         self,

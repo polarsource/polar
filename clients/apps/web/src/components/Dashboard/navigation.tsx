@@ -165,7 +165,7 @@ export const useAccountRoutes = (): RouteWithActive[] => {
 const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'home',
-    title: 'Home',
+    title: 'Overview',
     icon: <SpaceDashboardOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}`,
     checkIsActive: (currentRoute: string) =>

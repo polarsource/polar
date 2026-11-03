@@ -1,17 +1,14 @@
 import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import {
-  KeyboardArrowDown,
-  KeyboardArrowUp,
-  RemoveOutlined,
-} from '@polar-sh/orbit/icons'
 import { formatCurrency } from '@polar-sh/currency'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { ArrowDownRight, ArrowUpRight } from '@polar-sh/orbit/icons'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { useContext } from 'react'
-import { twMerge } from 'tailwind-merge'
-import { Spinner } from '@polar-sh/orbit'
+import { SegmentedBars } from './SegmentedBars'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetLink } from './WidgetLink'
 import { WidgetGuard } from './WidgetGuard'
 
 interface RevenueWidgetProps {
@@ -19,31 +16,7 @@ interface RevenueWidgetProps {
 }
 
 const WIDGET_TITLE = 'Revenue'
-
-type PeriodTrend =
-  | { type: 'change'; value: number }
-  | { type: 'new' }
-  | { type: 'none' }
-
-const getPeriodTrend = (
-  current: number,
-  previous: number | undefined,
-): PeriodTrend => {
-  if (previous === undefined) {
-    return { type: 'none' }
-  }
-
-  if (previous === 0) {
-    return current > 0 ? { type: 'new' } : { type: 'none' }
-  }
-
-  const value = ((current - previous) / Math.abs(previous)) * 100
-  if (!Number.isFinite(value) || value === 0) {
-    return { type: 'none' }
-  }
-
-  return { type: 'change', value }
-}
+const MONTHS = 6
 
 const RevenueWidget = ({ className }: RevenueWidgetProps) => (
   <WidgetGuard
@@ -55,112 +28,98 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => (
   </WidgetGuard>
 )
 
+const Change = ({
+  current,
+  previous,
+}: {
+  current: number
+  previous: number
+}) => {
+  if (previous === 0) return null
+  const change = ((current - previous) / Math.abs(previous)) * 100
+  if (!Number.isFinite(change) || Math.round(change) === 0) return null
+  const Arrow = change > 0 ? ArrowUpRight : ArrowDownRight
+
+  return (
+    <Text>
+      <Box
+        as="span"
+        display="inline-block"
+        marginRight="xs"
+        color={change > 0 ? 'text-success' : 'text-danger'}
+      >
+        <Arrow className="inline h-4 w-4 align-[-2px]" />
+      </Box>
+      {Math.abs(change).toFixed(0)}%
+    </Text>
+  )
+}
+
 const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
 
-  const revenueMetrics = useMetrics({
-    startDate: startOfMonth(subMonths(new Date(), 2)),
+  const { data, isLoading } = useMetrics({
+    startDate: startOfMonth(subMonths(new Date(), MONTHS - 1)),
     endDate: endOfMonth(new Date()),
     organization_id: organization.id,
     interval: 'month',
     metrics: ['revenue'],
   })
 
-  const maxRevenue = Math.max(
-    1,
-    ...(revenueMetrics.data?.periods.map((period) => period.revenue ?? 0) ??
-      []),
-  )
+  const today = new Date()
+  const { data: previousToDate } = useMetrics({
+    startDate: startOfMonth(subMonths(today, 1)),
+    endDate: subMonths(today, 1),
+    organization_id: organization.id,
+    interval: 'month',
+    metrics: ['revenue'],
+  })
+
+  const periods = data?.periods ?? []
+  const currentMonth = periods.at(-1)
+  const current = currentMonth?.revenue ?? 0
+  const previous = previousToDate?.totals.revenue ?? 0
 
   return (
     <WidgetContainer
       title={WIDGET_TITLE}
+      headline={
+        <Box alignItems="baseline" columnGap="m">
+          <Text variant="heading-m" weight="book">
+            {formatCurrency('statistics')(current, 'usd')}
+          </Text>
+          {data && previousToDate && (
+            <Change current={current} previous={previous} />
+          )}
+          {currentMonth && (
+            <Text color="muted">{format(currentMonth.timestamp, 'MMMM')}</Text>
+          )}
+        </Box>
+      }
       action={
-        <span className="dark:text-polar-500 text-gray-500">Last 3 Months</span>
+        <WidgetLink
+          href={`/dashboard/${organization.slug}/analytics/metrics`}
+        />
       }
       className={className}
     >
-      <div className="grid flex-1 grid-cols-3 gap-4 pb-6">
-        {revenueMetrics.data?.periods.map((period, index, array) => {
-          const revenue = period.revenue ?? 0
-          const previous =
-            index > 0 ? (array[index - 1].revenue ?? 0) : undefined
-          const trend = getPeriodTrend(revenue, previous)
-          const isTrendingUp =
-            trend.type === 'new' || (trend.type === 'change' && trend.value > 0)
-
-          return (
-            <div key={period.timestamp} className="flex flex-col gap-y-2">
-              <Tooltip>
-                <TooltipTrigger className="relative min-h-48 flex-1 overflow-hidden rounded-lg bg-[repeating-linear-gradient(-45deg,rgba(0,0,0,0.08),rgba(0,0,0,0.08)_2px,transparent_2px,transparent_8px)] dark:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.04),rgba(255,255,255,0.04)_2px,transparent_2px,transparent_8px)]">
-                  {revenueMetrics.isLoading ? (
-                    <div className="dark:bg-polar-700 flex h-full w-full items-center justify-center rounded-lg bg-gray-200">
-                      <Spinner />
-                    </div>
-                  ) : (
-                    <div
-                      className={twMerge(
-                        'absolute bottom-0 w-full rounded-lg',
-                        index === array.length - 1
-                          ? 'bg-indigo-400 dark:bg-indigo-700'
-                          : 'dark:bg-polar-700 bg-gray-400',
-                      )}
-                      style={{
-                        height: `${(revenue / maxRevenue) * 100}%`,
-                      }}
-                    />
-                  )}
-                </TooltipTrigger>
-                <TooltipContent>
-                  <span>
-                    {formatCurrency('compact')(revenue, 'usd')} in{' '}
-                    {format(period.timestamp, 'MMMM')}
-                  </span>
-                </TooltipContent>
-              </Tooltip>
-              <div className="flex flex-col text-left">
-                <span className="text-sm">
-                  {format(period.timestamp, 'MMMM')}
-                </span>
-                <div className="flex flex-row items-center justify-between gap-x-2">
-                  <span className="dark:text-polar-500 text-sm text-gray-500">
-                    {formatCurrency('statistics')(revenue, 'usd')}
-                  </span>
-                  {trend.type === 'none' ? (
-                    <span className="dark:bg-polar-700 dark:text-polar-500 flex flex-row items-center gap-x-1 rounded-xs bg-gray-100 p-0.5 text-xs text-gray-500">
-                      <RemoveOutlined fontSize="inherit" />
-                    </span>
-                  ) : (
-                    <Tooltip>
-                      <TooltipTrigger
-                        className={twMerge(
-                          'flex flex-row items-center gap-x-1 rounded-xs p-0.5 text-xs',
-                          isTrendingUp
-                            ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60'
-                            : 'bg-red-100 text-red-600 dark:bg-red-950/60',
-                        )}
-                      >
-                        {isTrendingUp ? (
-                          <KeyboardArrowUp fontSize="inherit" />
-                        ) : (
-                          <KeyboardArrowDown fontSize="inherit" />
-                        )}
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <span className="text-xs">
-                          {trend.type === 'new'
-                            ? 'New'
-                            : `${trend.value.toFixed(0)}%`}
-                        </span>
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <Box
+        flexDirection="column"
+        flex={1}
+        justifyContent="end"
+        paddingBottom="xl"
+      >
+        <SegmentedBars
+          loading={isLoading}
+          bars={periods.map((period, index) => ({
+            key: period.timestamp,
+            label: format(period.timestamp, 'MMM'),
+            value: period.revenue ?? 0,
+            tooltip: `${formatCurrency('compact')(period.revenue ?? 0, 'usd')} in ${format(period.timestamp, 'MMMM')}`,
+            highlighted: index === periods.length - 1,
+          }))}
+        />
+      </Box>
     </WidgetContainer>
   )
 }

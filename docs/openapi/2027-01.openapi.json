@@ -5921,6 +5921,30 @@
             "description": "Filter by product ID."
           },
           {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
+          },
+          {
             "name": "product_billing_type",
             "in": "query",
             "required": false,
@@ -6435,6 +6459,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "status",
@@ -8186,6 +8234,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "customer_id",
@@ -10345,6 +10417,30 @@
             "description": "Filter by product ID."
           },
           {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
+          },
+          {
             "name": "billing_type",
             "in": "query",
             "required": false,
@@ -11200,6 +11296,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "billing_type",
@@ -31764,6 +31884,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitCustomProperties"
           },
@@ -31787,6 +31920,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -32462,6 +32596,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDiscordProperties"
           },
@@ -32485,6 +32632,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -33161,6 +33309,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDownloadablesProperties"
           },
@@ -33184,6 +33345,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -33693,6 +33855,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitFeatureFlagProperties"
           },
@@ -33716,6 +33891,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -34182,6 +34358,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitGitHubRepositoryProperties"
           },
@@ -34205,6 +34394,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -36871,6 +37061,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitLicenseKeysProperties"
           },
@@ -36894,6 +37097,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -37499,6 +37703,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitMeterCreditProperties"
           },
@@ -37522,6 +37739,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -38257,6 +38475,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitSlackSharedChannelProperties"
           },
@@ -38280,6 +38511,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -40123,7 +40355,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -40349,7 +40582,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -42266,7 +42500,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -42766,7 +43001,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -44415,7 +44651,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -44799,7 +45036,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -51604,7 +51842,8 @@
           "billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"

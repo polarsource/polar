@@ -2958,6 +2958,10 @@ export interface BenefitCustom {
    */
   visibility: BenefitVisibility;
   /**
+   * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
    * properties
    */
   properties: BenefitCustomProperties;
@@ -3289,6 +3293,10 @@ export interface BenefitDiscord {
    * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
+  /**
+   * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+   */
+  catalog_id: string | null;
   /**
    * properties
    */
@@ -3652,6 +3660,10 @@ export interface BenefitDownloadables {
    */
   visibility: BenefitVisibility;
   /**
+   * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
    * properties
    */
   properties: BenefitDownloadablesProperties;
@@ -3927,6 +3939,10 @@ export interface BenefitFeatureFlag {
    */
   visibility: BenefitVisibility;
   /**
+   * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
    * properties
    */
   properties: BenefitFeatureFlagProperties;
@@ -4181,6 +4197,10 @@ export interface BenefitGitHubRepository {
    * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
+  /**
+   * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+   */
+  catalog_id: string | null;
   /**
    * properties
    */
@@ -5449,6 +5469,10 @@ export interface BenefitLicenseKeys {
    */
   visibility: BenefitVisibility;
   /**
+   * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
    * properties
    */
   properties: BenefitLicenseKeysProperties;
@@ -5754,6 +5778,10 @@ export interface BenefitMeterCredit {
    * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
+  /**
+   * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+   */
+  catalog_id: string | null;
   /**
    * properties
    */
@@ -6128,6 +6156,10 @@ export interface BenefitSlackSharedChannel {
    * The visibility of the benefit in the customer portal.
    */
   visibility: BenefitVisibility;
+  /**
+   * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+   */
+  catalog_id: string | null;
   /**
    * properties
    */
@@ -11113,7 +11145,7 @@ export interface CustomerOrderSubscription {
   /**
    * The timestamp when the subscription started.
    */
-  started_at: string | null;
+  started_at: string;
   /**
    * The timestamp when the subscription will end.
    */
@@ -12154,7 +12186,7 @@ export interface CustomerStateSubscription {
   /**
    * The timestamp when the subscription started.
    */
-  started_at: string | null;
+  started_at: string;
   /**
    * The timestamp when the subscription will end.
    */
@@ -12380,7 +12412,7 @@ export interface CustomerSubscription {
   /**
    * The timestamp when the subscription started.
    */
-  started_at: string | null;
+  started_at: string;
   /**
    * The timestamp when the subscription will end.
    */
@@ -18447,7 +18479,7 @@ export interface OrderSubscription {
   /**
    * The timestamp when the subscription started.
    */
-  started_at: string | null;
+  started_at: string;
   /**
    * The timestamp when the subscription will end.
    */
@@ -21740,7 +21772,7 @@ export interface Subscription {
   /**
    * The timestamp when the subscription started.
    */
-  started_at: string | null;
+  started_at: string;
   /**
    * The timestamp when the subscription will end.
    */

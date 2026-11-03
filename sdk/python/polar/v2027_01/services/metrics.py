@@ -39,6 +39,7 @@ class MetricsSync(SyncServiceBase):
         interval: TimeInterval,
         organization_id: str | list[str] | None = None,
         product_id: str | list[str] | None = None,
+        external_product_id: str | list[str] | None = None,
         billing_type: ProductBillingType | list[ProductBillingType] | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
@@ -59,6 +60,7 @@ class MetricsSync(SyncServiceBase):
             interval: Interval between two timestamps.
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned.
@@ -83,6 +85,7 @@ class MetricsSync(SyncServiceBase):
                 "interval": interval,
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "billing_type": billing_type,
                 "customer_id": customer_id,
                 "metrics": metrics,
@@ -105,6 +108,7 @@ class MetricsSync(SyncServiceBase):
         interval: TimeInterval,
         organization_id: str | list[str] | None = None,
         product_id: str | list[str] | None = None,
+        external_product_id: str | list[str] | None = None,
         billing_type: ProductBillingType | list[ProductBillingType] | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
@@ -123,6 +127,7 @@ class MetricsSync(SyncServiceBase):
             interval: Interval between two timestamps.
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to include in the export. If not provided, all metrics are exported.
@@ -147,6 +152,7 @@ class MetricsSync(SyncServiceBase):
                 "interval": interval,
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "billing_type": billing_type,
                 "customer_id": customer_id,
                 "metrics": metrics,
@@ -405,6 +411,7 @@ class MetricsAsync(AsyncServiceBase):
         interval: TimeInterval,
         organization_id: str | list[str] | None = None,
         product_id: str | list[str] | None = None,
+        external_product_id: str | list[str] | None = None,
         billing_type: ProductBillingType | list[ProductBillingType] | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
@@ -425,6 +432,7 @@ class MetricsAsync(AsyncServiceBase):
             interval: Interval between two timestamps.
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned.
@@ -449,6 +457,7 @@ class MetricsAsync(AsyncServiceBase):
                 "interval": interval,
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "billing_type": billing_type,
                 "customer_id": customer_id,
                 "metrics": metrics,
@@ -471,6 +480,7 @@ class MetricsAsync(AsyncServiceBase):
         interval: TimeInterval,
         organization_id: str | list[str] | None = None,
         product_id: str | list[str] | None = None,
+        external_product_id: str | list[str] | None = None,
         billing_type: ProductBillingType | list[ProductBillingType] | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
@@ -489,6 +499,7 @@ class MetricsAsync(AsyncServiceBase):
             interval: Interval between two timestamps.
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to include in the export. If not provided, all metrics are exported.
@@ -513,6 +524,7 @@ class MetricsAsync(AsyncServiceBase):
                 "interval": interval,
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "billing_type": billing_type,
                 "customer_id": customer_id,
                 "metrics": metrics,

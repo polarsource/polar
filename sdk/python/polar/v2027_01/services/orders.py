@@ -45,6 +45,7 @@ class OrdersSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         product_billing_type: ProductBillingType
         | builtins.list[ProductBillingType]
         | None = None,
@@ -71,6 +72,7 @@ class OrdersSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             product_billing_type: Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             discount_id: Filter by discount ID.
             customer_id: Filter by customer ID.
@@ -101,6 +103,7 @@ class OrdersSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "product_billing_type": product_billing_type,
                 "discount_id": discount_id,
                 "customer_id": customer_id,
@@ -129,6 +132,7 @@ class OrdersSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         product_billing_type: ProductBillingType
         | builtins.list[ProductBillingType]
         | None = None,
@@ -155,6 +159,7 @@ class OrdersSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             product_billing_type: Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             discount_id: Filter by discount ID.
             customer_id: Filter by customer ID.
@@ -185,6 +190,7 @@ class OrdersSync(SyncServiceBase):
             response = self.list(
                 organization_id=organization_id,
                 product_id=product_id,
+                external_product_id=external_product_id,
                 product_billing_type=product_billing_type,
                 discount_id=discount_id,
                 customer_id=customer_id,
@@ -254,6 +260,7 @@ class OrdersSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         status: OrderStatus | builtins.list[OrderStatus] | None = None,
         created_after: str | None = None,
         created_before: str | None = None,
@@ -270,6 +277,7 @@ class OrdersSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             status: Filter by order status.
             created_after: Only include orders created after this date. Must include a UTC offset.
             created_before: Only include orders created before this date. Must include a UTC offset.
@@ -292,6 +300,7 @@ class OrdersSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "status": status,
                 "created_after": created_after,
                 "created_before": created_before,
@@ -586,6 +595,7 @@ class OrdersAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         product_billing_type: ProductBillingType
         | builtins.list[ProductBillingType]
         | None = None,
@@ -612,6 +622,7 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             product_billing_type: Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             discount_id: Filter by discount ID.
             customer_id: Filter by customer ID.
@@ -642,6 +653,7 @@ class OrdersAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "product_billing_type": product_billing_type,
                 "discount_id": discount_id,
                 "customer_id": customer_id,
@@ -670,6 +682,7 @@ class OrdersAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         product_billing_type: ProductBillingType
         | builtins.list[ProductBillingType]
         | None = None,
@@ -696,6 +709,7 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             product_billing_type: Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             discount_id: Filter by discount ID.
             customer_id: Filter by customer ID.
@@ -726,6 +740,7 @@ class OrdersAsync(AsyncServiceBase):
             response = await self.list(
                 organization_id=organization_id,
                 product_id=product_id,
+                external_product_id=external_product_id,
                 product_billing_type=product_billing_type,
                 discount_id=discount_id,
                 customer_id=customer_id,
@@ -796,6 +811,7 @@ class OrdersAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         status: OrderStatus | builtins.list[OrderStatus] | None = None,
         created_after: str | None = None,
         created_before: str | None = None,
@@ -812,6 +828,7 @@ class OrdersAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             status: Filter by order status.
             created_after: Only include orders created after this date. Must include a UTC offset.
             created_before: Only include orders created before this date. Must include a UTC offset.
@@ -834,6 +851,7 @@ class OrdersAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "status": status,
                 "created_after": created_after,
                 "created_before": created_before,

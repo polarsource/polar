@@ -233,12 +233,12 @@ An event counts locally until Polar confirms storage or the buffer gives it up.
 
 #### Outpost
 
-| Option            | Default                          | Meaning                                                        |
-| ----------------- | -------------------------------- | -------------------------------------------------------------- |
-| `redisUrl`        | `REDIS_URL` environment variable | Redis instance used by Outpost.                                |
-| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                      |
-| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot.       |
-| `confirmTimeout`  | `2000`                           | Milliseconds a snapshot waits for Polar to confirm its events. |
+| Option            | Default                          | Meaning                                                    |
+| ----------------- | -------------------------------- | ---------------------------------------------------------- |
+| `redisUrl`        | `REDIS_URL` environment variable | Redis instance used by Outpost.                            |
+| `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                  |
+| `snapshotTimeout` | `5000`                           | Milliseconds a cold read waits for its initial snapshot.   |
+| `confirmTimeout`  | `2000`                           | Milliseconds a snapshot waits for Polar to confirm events. |
 
 Telemetry can also be disabled with `POLAR_OUTPOST_TELEMETRY=0`.
 

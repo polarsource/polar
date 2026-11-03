@@ -38967,7 +38967,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -41066,7 +41067,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -41693,7 +41695,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -42136,7 +42139,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -43831,7 +43835,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -44229,7 +44234,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -50903,7 +50909,8 @@
           "billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -55053,170 +55060,6 @@
           "-balance"
         ],
         "title": "CustomerWalletSortProperty"
-      },
-      "DeprecatedWebhookEndpointCreateWithSecret": {
-        "properties": {
-          "url": {
-            "type": "string",
-            "maxLength": 2083,
-            "minLength": 1,
-            "format": "uri",
-            "title": "Url",
-            "description": "The URL where the webhook events will be sent.",
-            "examples": [
-              "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
-            ]
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "An optional name for the webhook endpoint to help organize and identify it."
-          },
-          "api_version": {
-            "type": "string",
-            "enum": [
-              "2026-04"
-            ],
-            "title": "Api Version",
-            "description": "The API version that'll be used in event payloads.",
-            "default": "2026-10"
-          },
-          "format": {
-            "$ref": "#/components/schemas/WebhookFormat",
-            "description": "The format of the webhook payload."
-          },
-          "events": {
-            "items": {
-              "$ref": "#/components/schemas/WebhookEventType"
-            },
-            "type": "array",
-            "title": "Events",
-            "description": "The events that will trigger the webhook."
-          },
-          "organization_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4",
-                "description": "The organization ID.",
-                "examples": [
-                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Organization Id",
-            "description": "The organization ID associated with the webhook endpoint. **Required unless you use an organization token.**"
-          }
-        },
-        "type": "object",
-        "required": [
-          "url",
-          "format",
-          "events"
-        ],
-        "title": "DeprecatedWebhookEndpointCreateWithSecret"
-      },
-      "DeprecatedWebhookEndpointUpdateWithSecret": {
-        "properties": {
-          "url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri",
-                "description": "The URL where the webhook events will be sent.",
-                "examples": [
-                  "https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Url"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "An optional name for the webhook endpoint to help organize and identify it."
-          },
-          "api_version": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "2026-04"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Api Version",
-            "description": "The API version that'll be used in event payloads."
-          },
-          "format": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/WebhookFormat",
-                "description": "The format of the webhook payload."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "events": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/WebhookEventType"
-                },
-                "type": "array",
-                "description": "The events that will trigger the webhook."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Events"
-          },
-          "enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enabled",
-            "description": "Whether the webhook endpoint is enabled.",
-            "x-tool-destructive-when": {
-              "equals": false
-            }
-          }
-        },
-        "type": "object",
-        "title": "DeprecatedWebhookEndpointUpdateWithSecret"
       },
       "Discount": {
         "oneOf": [

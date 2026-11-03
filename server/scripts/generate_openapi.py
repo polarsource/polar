@@ -14,7 +14,6 @@ from polar.kit.versioning import (
     finalize_versioned_routes,
     routes_for_version,
 )
-from polar.openapi import get_openapi
 from polar.version import CURRENT_API_VERSION, VERSIONS
 
 if __name__ == "__main__":
@@ -45,6 +44,7 @@ if __name__ == "__main__":
         os.environ["POLAR_ENV"] = "testing"
 
     from polar.api import router
+    from polar.openapi import get_openapi
     from polar.webhook.webhooks import get_webhook_routes
 
     route_contexts = tuple(iter_route_contexts(router.routes))

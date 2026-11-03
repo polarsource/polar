@@ -392,23 +392,16 @@ class Metering:
             InvalidActorError: Exactly one customer identifier was not provided.
         """
         _validate_actor(customer_id, None, external_customer_id, None)
-        reader = next(
-            (
-                strategy
-                for strategy in self.strategies
-                if isinstance(strategy, MeterProtocol)
-            ),
-            None,
-        )
-        if reader is not None:
-            try:
-                return await reader.meter(
-                    meter_id=meter_id,
-                    customer_id=customer_id,
-                    external_customer_id=external_customer_id,
-                )
-            except UnknownMeterError:
-                pass
+        for strategy in self.strategies:
+            if isinstance(strategy, MeterProtocol):
+                try:
+                    return await strategy.meter(
+                        meter_id=meter_id,
+                        customer_id=customer_id,
+                        external_customer_id=external_customer_id,
+                    )
+                except UnknownMeterError:
+                    pass
         request = self._client.build_request(
             method="GET",
             url="/v1/customer-meters/",

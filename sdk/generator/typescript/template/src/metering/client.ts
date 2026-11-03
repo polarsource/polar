@@ -222,11 +222,13 @@ export class Metering {
     const starting = this.begin();
     try {
       await starting;
-      const reader = this.strategies.find((strategy) => strategy.meter);
-      try {
-        if (reader) return await reader.meter!({ ...input, meter_id: meterId });
-      } catch (error) {
-        if (!(error instanceof UnknownMeterError)) throw error;
+      for (const strategy of this.strategies) {
+        if (!strategy.meter) continue;
+        try {
+          return await strategy.meter({ ...input, meter_id: meterId });
+        } catch (error) {
+          if (!(error instanceof UnknownMeterError)) throw error;
+        }
       }
       const request = this.client.buildRequest(
         "GET",

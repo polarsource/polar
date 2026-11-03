@@ -24,6 +24,7 @@ from sqlalchemy.sql.selectable import CompoundSelect
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.kit.utils import utc_now
+from polar.member.repository import MemberRepository
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -52,7 +53,8 @@ from polar.models import (
     SubscriptionUpdate,
     TrialRedemption,
 )
-from polar.models.discount import DiscountFixed, DiscountPercentage
+from polar.models.discount import DiscountFixed, DiscountPercentage, DiscountType
+from polar.models.member import MemberRole
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, create_async_engine
 
@@ -604,7 +606,7 @@ class ProductTransferService:
                 for association in discount.discount_products
                 if association.product_id in product_ids
             ]
-            new_discount = discount.type.get_model()(
+            new_discount = DiscountType(discount.type).get_model()(
                 organization_id=self.target_organization_id,
                 name=discount.name,
                 type=discount.type,
@@ -842,8 +844,55 @@ class ProductTransferService:
             members = await session.scalars(
                 select(Member).where(Member.customer_id == customer.id)
             )
+            target_members = list(
+                await MemberRepository.from_session(session).list_by_customer(
+                    new_customer.id
+                )
+            )
             member_map: dict[UUID, Member] = {}
             for member in members:
+                if member.deleted_at is None:
+                    matches = [
+                        target_member
+                        for target_member in target_members
+                        if target_member.email.lower() == member.email.lower()
+                        or (
+                            member.external_id is not None
+                            and target_member.external_id == member.external_id
+                        )
+                    ]
+                    if len(matches) > 1:
+                        raise CustomerSplitError(
+                            f"Member {member.id} matches different target members "
+                            "by email and external ID."
+                        )
+                    if matches:
+                        matched_member = matches[0]
+                        if (
+                            member.external_id is not None
+                            and matched_member.external_id is not None
+                            and member.external_id != matched_member.external_id
+                        ) or matched_member in member_map.values():
+                            raise CustomerSplitError(
+                                f"Member {member.id} has a conflicting target identity."
+                            )
+                        if matched_member.external_id is None:
+                            matched_member.external_id = member.external_id
+                        matched_member._oauth_accounts = {
+                            **member.oauth_accounts,
+                            **matched_member.oauth_accounts,
+                        }
+                        member_map[member.id] = matched_member
+                        self.transfer_stats["members_reused"] += 1
+                        continue
+                    if member.role == MemberRole.owner and any(
+                        target_member.role == MemberRole.owner
+                        for target_member in target_members
+                    ):
+                        raise CustomerSplitError(
+                            f"Customer {new_customer.id} already has a different owner; "
+                            f"cannot copy owner member {member.id}."
+                        )
                 new_member = Member(
                     customer=new_customer,
                     organization_id=self.target_organization_id,
@@ -856,8 +905,10 @@ class ProductTransferService:
                 )
                 session.add(new_member)
                 member_map[member.id] = new_member
+                if new_member.deleted_at is None:
+                    target_members.append(new_member)
+                self.transfer_stats["members_copied"] += 1
             await session.flush()
-            self.transfer_stats["members_copied"] += len(member_map)
 
             # Update all orders for transferring products to use the new customer
             orders_result = await session.execute(

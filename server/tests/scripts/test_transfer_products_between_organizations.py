@@ -334,15 +334,19 @@ class TestProductTransferService:
         await session.refresh(order)
         assert order.customer_id == new_customer.id
 
+    @pytest.mark.parametrize("target_match", [None, "email", "external_id"])
     async def test_customer_splitting_copies_members_and_remaps_entitlements(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         organization_second: Organization,
+        target_match: str | None,
     ) -> None:
         customer = await create_customer(
-            save_fixture, organization=organization, email=None
+            save_fixture,
+            organization=organization,
+            email="team@example.com" if target_match else None,
         )
         customer.type = CustomerType.team
         owner = await create_member(
@@ -354,8 +358,30 @@ class TestProductTransferService:
             external_id="owner-123",
         )
         owner._oauth_accounts = {
-            "github:123": {"account_id": "123", "access_token": "test-token"}
+            "github:123": {"account_id": "123", "access_token": "test-token"},
+            "discord:123": {"account_id": "123", "access_token": "discord-token"},
         }
+        target_customer = None
+        target_member = None
+        if target_match:
+            target_customer = await create_customer(
+                save_fixture, organization=organization_second, email=customer.email
+            )
+            target_customer.type = CustomerType.team
+            target_member = await create_member(
+                save_fixture,
+                customer=target_customer,
+                organization=organization_second,
+                email="OWNER@example.com"
+                if target_match == "email"
+                else "renamed@example.com",
+                external_id=None if target_match == "email" else owner.external_id,
+                role=MemberRole.billing_manager,
+            )
+            target_member._oauth_accounts = {
+                "github:123": {"account_id": "123", "access_token": "target-token"},
+                "github:456": {"account_id": "456", "access_token": "other-token"},
+            }
         deleted_member = await create_member(
             save_fixture,
             customer=customer,
@@ -434,7 +460,7 @@ class TestProductTransferService:
         await service.split_customers(session)
         await session.flush()
 
-        new_customer = service.new_customers_map[customer.id]
+        new_customer = target_customer or service.new_customers_map[customer.id]
         await session.refresh(new_customer)
         assert new_customer.type == CustomerType.team
         copied_members = (
@@ -443,12 +469,25 @@ class TestProductTransferService:
             )
         ).all()
         assert len(copied_members) == 2
-        copied_owner = next(m for m in copied_members if m.role == MemberRole.owner)
+        copied_owner = next(m for m in copied_members if m.deleted_at is None)
         assert copied_owner.id != owner.id
-        assert copied_owner.email == owner.email
-        assert copied_owner.name == owner.name
-        assert copied_owner.external_id == owner.external_id
-        assert copied_owner.oauth_accounts == owner.oauth_accounts
+        if target_member:
+            assert copied_owner.id == target_member.id
+            assert copied_owner.role == MemberRole.billing_manager
+            assert copied_owner.external_id == owner.external_id
+            assert copied_owner.oauth_accounts == {
+                "github:123": {"account_id": "123", "access_token": "target-token"},
+                "github:456": {"account_id": "456", "access_token": "other-token"},
+                "discord:123": {"account_id": "123", "access_token": "discord-token"},
+            }
+            assert service.transfer_stats["members_reused"] == 1
+            assert service.transfer_stats["members_copied"] == 1
+        else:
+            assert copied_owner.email == owner.email
+            assert copied_owner.name == owner.name
+            assert copied_owner.external_id == owner.external_id
+            assert copied_owner.oauth_accounts == owner.oauth_accounts
+            assert copied_owner.role == MemberRole.owner
         assert all(m.organization_id == organization_second.id for m in copied_members)
         assert next(
             m for m in copied_members if m.email == deleted_member.email
@@ -464,6 +503,60 @@ class TestProductTransferService:
         await session.refresh(owner)
         assert owner.customer_id == customer.id
         assert owner.organization_id == organization.id
+
+    @pytest.mark.parametrize("collision", ["different_members", "external_id", "owner"])
+    async def test_customer_splitting_rejects_conflicting_members(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        organization_second: Organization,
+        collision: str,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        target_customer = await create_customer(
+            save_fixture, organization=organization_second, email=customer.email
+        )
+        source_member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="owner@example.com",
+            external_id="source-member",
+            role=MemberRole.owner,
+        )
+        target_member = await create_member(
+            save_fixture,
+            customer=target_customer,
+            organization=organization_second,
+            email="other@example.com" if collision == "owner" else source_member.email,
+            external_id="target-member",
+            role=MemberRole.owner,
+        )
+        if collision == "different_members":
+            await create_member(
+                save_fixture,
+                customer=target_customer,
+                organization=organization_second,
+                email="second@example.com",
+                external_id=source_member.external_id,
+            )
+        service = ProductTransferService(organization.id, organization_second.id)
+        service.customers_to_split = [customer]
+        expected_message = {
+            "different_members": "matches different target members",
+            "external_id": "conflicting target identity",
+            "owner": "already has a different owner",
+        }[collision]
+
+        with pytest.raises(CustomerSplitError, match=expected_message):
+            await service.split_customers(session)
+
+        for member in (source_member, target_member):
+            await session.refresh(member)
+            assert member.role == MemberRole.owner
+        assert source_member.customer_id == customer.id
+        assert target_member.customer_id == target_customer.id
 
     async def test_customer_splitting_with_existing_email_in_target(
         self,
@@ -1019,6 +1112,9 @@ class TestProductTransferService:
 
         service = ProductTransferService(organization.id, organization_second.id)
         service.products = [product_transfer]
+        await session.flush()
+        await session.refresh(discount, attribute_names=["type"])
+        assert type(discount.type) is str
         await service.execute_transfer(session)
 
         new_discount = service.new_discounts_map[discount.id]

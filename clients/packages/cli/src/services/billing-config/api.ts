@@ -12,6 +12,7 @@ import {
   type ConfigResource,
   type EntryResult,
   type LoadedConfig,
+  type Removal,
   type SettingsResult,
 } from '@/schemas/BillingConfig'
 import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
@@ -91,17 +92,37 @@ const settingsEntries = (
   }))
 }
 
+// A deprecated resource is still listed in `changes`, its removal replaces that entry
 export const entries = (
   results: ReadonlyArray<typeof EntryResult.Type>,
   settings?: typeof SettingsResult.Type | null,
+  removed: ReadonlyArray<typeof Removal.Type> = [],
 ) => [
   ...settingsEntries(settings),
-  ...results.map(
-    (entry): AppliedEntry => ({
-      section: SECTIONS[entry.resource],
-      id: entry.external_id,
-      action: entry.action,
-      diff: entry.diff ?? [],
+  ...results
+    .filter(
+      (entry) =>
+        !removed.some(
+          (removal) =>
+            removal.resource === entry.resource &&
+            removal.external_id === entry.external_id,
+        ),
+    )
+    .map(
+      (entry): AppliedEntry => ({
+        section: SECTIONS[entry.resource],
+        id: entry.external_id,
+        action: entry.action,
+        diff: entry.diff ?? [],
+      }),
+    ),
+  ...removed.map(
+    (removal): AppliedEntry => ({
+      section: SECTIONS[removal.resource],
+      id: removal.external_id,
+      action: 'removed',
+      reason: removal.reason,
+      diff: [],
     }),
   ),
 ]

@@ -7627,7 +7627,6 @@
         "tags": [
           "refunds",
           "public",
-          "mcp",
           "cli"
         ],
         "summary": "Create Refund",

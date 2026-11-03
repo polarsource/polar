@@ -15,12 +15,15 @@ from .service import RefundedAlready
 from .service import refund as refund_service
 from .sorting import RefundListSorting
 
-router = APIRouter(
-    prefix="/refunds", tags=["refunds", APITag.public, APITag.mcp, APITag.cli]
+router = APIRouter(prefix="/refunds", tags=["refunds", APITag.public])
+
+
+@router.get(
+    "/",
+    summary="List Refunds",
+    response_model=ListResource[RefundSchema],
+    tags=[APITag.mcp, APITag.cli],
 )
-
-
-@router.get("/", summary="List Refunds", response_model=ListResource[RefundSchema])
 async def list(
     filters: Annotated[RefundListParams, Query()],
     pagination: PaginationParamsQuery,
@@ -55,6 +58,7 @@ async def list(
     summary="Create Refund",
     response_model=RefundSchema,
     status_code=201,
+    tags=[APITag.cli],
     responses={
         201: {"description": "Refund created."},
         403: {

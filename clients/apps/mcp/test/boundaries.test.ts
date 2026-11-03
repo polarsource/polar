@@ -83,6 +83,8 @@ test('only methods and paths of exposed operations are allowed', () => {
   expect(isAllowedOperation('PATCH', `/v1/orders/${id}`)).toBe(true)
   expect(isAllowedOperation('GET', '/v1/oauth2/userinfo')).toBe(false)
   expect(isAllowedOperation('DELETE', `/v1/orders/${id}`)).toBe(false)
+  expect(isAllowedOperation('GET', '/v1/refunds/')).toBe(true)
+  expect(isAllowedOperation('POST', '/v1/refunds/')).toBe(false)
 })
 
 test('unexposed paths keep only the words an API path has at the same position', () => {

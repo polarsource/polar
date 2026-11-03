@@ -1060,6 +1060,37 @@ async def test_evicted_customer_is_reloaded(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("lost", [False, True])
+async def test_evicted_customer_is_requested_again_only_once_redis_lost_its_snapshot(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    websocket_requests: list[dict[str, typing.Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    lost: bool,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.CACHE_SIZE", 2)
+    keys = [
+        f"outpost:v1:state:external:alice:{reducer}"
+        for reducer in ("tokens", "credits")
+    ]
+    for key in keys:
+        await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 1})
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        await outpost.actor(external_customer_id="bob")
+        if lost:
+            await redis.delete(*keys)
+        await outpost.actor(external_customer_id="alice")
+    requested = [
+        message["payload"]["external_customer_id"]
+        for message in websocket_requests
+        if message["type"] == "meter_usage"
+    ]
+    assert requested.count("alice") == (4 if lost else 2)
+
+
+@pytest.mark.anyio
 async def test_websocket_connection_and_cleanup() -> None:
     messages: list[dict[str, typing.Any]] = []
 

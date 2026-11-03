@@ -515,6 +515,26 @@ it("reloads evicted customers and closes owned connections", async () => {
   await expect(outpost.actor(customer)).rejects.toThrow("start()");
 });
 
+it.each([false, true])(
+  "asks Polar again for an evicted customer only once Redis lost its snapshot (lost: %s)",
+  async (lost) => {
+    await seed();
+    const outpost = await start({ snapshotTimeout: 0 });
+    const send = vi.spyOn(outpost["websocket"]!, "send");
+    await outpost.actor(customer);
+    for (let i = 0; i < 1024; i++) await outpost.actor({ external_customer_id: `customer-${i}` });
+    expect(outpost["cache"].has("external:alice:tokens")).toBe(false);
+    if (lost) await redis.del(key, creditKey);
+    await outpost.actor(customer);
+    const requested = send.mock.calls
+      .map(([data]) => JSON.parse(data as string))
+      .filter(
+        ({ type, payload }) => type === "meter_usage" && payload.external_customer_id === "alice",
+      );
+    expect(requested).toHaveLength(lost ? 4 : 2);
+  },
+);
+
 it("ships the Outpost entrypoint for both ESM and CommonJS", async () => {
   const esm = await import(import.meta.resolve("@polar-sh/sdk/outpost"));
   const cjs = createRequire(import.meta.url)("@polar-sh/sdk/outpost");

@@ -14,6 +14,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.user_organization import OrganizationRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -103,6 +104,27 @@ class TestListSeats:
 @pytest.mark.anyio
 @pytest.mark.keep_session_state
 class TestAssignSeat:
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_finance_role_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        user_organization.role = OrganizationRole.finance
+        await save_fixture(user_organization)
+
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                "subscription_id": str(subscription_with_seats.id),
+                "email": "new-member@example.com",
+            },
+        )
+
+        assert response.status_code == 403
+
     @pytest.mark.auth(SEAT_AUTH)
     async def test_assign_seat_with_email_success(
         self,
@@ -549,6 +571,21 @@ class TestClaimSeat:
 @pytest.mark.anyio
 class TestRevokeSeat:
     @pytest.mark.auth(SEAT_AUTH)
+    async def test_finance_role_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        user_organization.role = OrganizationRole.finance
+        await save_fixture(user_organization)
+
+        response = await client.delete(f"/v1/customer-seats/{customer_seat_pending.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(SEAT_AUTH)
     async def test_revoke_seat_success(
         self,
         client: AsyncClient,
@@ -793,6 +830,23 @@ class TestOrderBasedSeats:
 
 @pytest.mark.anyio
 class TestResendInvitation:
+    @pytest.mark.auth(SEAT_AUTH)
+    async def test_finance_role_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer_seat_pending: CustomerSeat,
+    ) -> None:
+        user_organization.role = OrganizationRole.finance
+        await save_fixture(user_organization)
+
+        response = await client.post(
+            f"/v1/customer-seats/{customer_seat_pending.id}/resend"
+        )
+
+        assert response.status_code == 404
+
     async def test_anonymous(
         self,
         client: AsyncClient,

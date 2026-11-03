@@ -4,7 +4,8 @@ from fastapi import Depends, Query, Request
 from pydantic import UUID4
 from sse_starlette import EventSourceResponse
 
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, ResourceNotFound
@@ -90,6 +91,10 @@ async def assign_seat(
 
     container = subscription or order
     assert container is not None  # Already validated above
+
+    await assert_resource_permission(
+        session, auth_subject, container, OrganizationPermission.customers_manage
+    )
 
     seat = await seat_service.assign_seat(
         session,
@@ -191,7 +196,9 @@ async def revoke_seat(
 ) -> CustomerSeat:
     """Revoke a customer seat."""
     seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids(session, auth_subject)
+    org_ids = await get_accessible_org_ids(
+        session, auth_subject, permission=OrganizationPermission.customers_manage
+    )
 
     seat = await seat_repository.get_by_id_and_org_ids(
         org_ids,
@@ -225,7 +232,9 @@ async def resend_invitation(
 ) -> CustomerSeat:
     """Resend an invitation for a pending customer seat."""
     seat_repository = CustomerSeatRepository.from_session(session)
-    org_ids = await get_accessible_org_ids(session, auth_subject)
+    org_ids = await get_accessible_org_ids(
+        session, auth_subject, permission=OrganizationPermission.customers_manage
+    )
 
     seat = await seat_repository.get_by_id_and_org_ids(
         org_ids,

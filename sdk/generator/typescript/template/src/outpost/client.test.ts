@@ -991,6 +991,42 @@ it("applies a snapshot Polar did not confirm in time, keeping its events pending
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("3");
 });
 
+it("waits for a confirmation before confirming a newer snapshot", async () => {
+  const outpost = await warm();
+  const events = Array.from({ length: 10 }, (_, i) => usage(`event-${i}`, 10));
+  for (const event of events) await outpost.track(event);
+  answerConfirm = false;
+  snapshot = sealing(0, 0);
+  const other = await start({ confirmTimeout: 10_000 });
+  await other.actor(customer);
+  await vi.waitFor(() => expect(confirmRequests).toHaveLength(1));
+  const polar = connections.at(-1)!;
+  const answer = (ids: string[], answered: Record<string, unknown>) =>
+    polar.send(
+      JSON.stringify({
+        type: "confirmed",
+        payload: {
+          ...customer,
+          customer_id: null,
+          reducer_id: "tokens",
+          bucket_start: bucket,
+          ids,
+          snapshot: { customer_exists: true, ...answered },
+        },
+      }),
+    );
+  const newer = { ...sealing(4, 40), version: 1791807000000006 };
+  polar.send(JSON.stringify({ type: "meter_usage", payload: { customer_exists: true, ...newer } }));
+  // Polar answers the first confirmation as it stood when asked: nothing stored yet.
+  answer([], sealing(0, 0));
+  await vi.waitFor(() => expect(confirmRequests).toHaveLength(2));
+  answer(
+    events.slice(0, 4).map((event) => event.external_id),
+    newer,
+  );
+  await vi.waitFor(async () => expect((await other.meter(meter))?.consumed_units).toBe(100));
+});
+
 it("asks for a bucket's pending events a thousand at a time", async () => {
   const outpost = await warm();
   for (let i = 0; i < 1_001; i++) await outpost.track(usage(`event-${i}`, 1));

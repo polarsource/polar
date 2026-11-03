@@ -43,6 +43,7 @@ from polar.outpost.client import (
     PolarOutpostError,
     RedisReconnectBackoff,
     ReducerState,
+    Snapshot,
     UnavailableRedisError,
     _backoff_delay,
     _is_connection_error,
@@ -1734,6 +1735,149 @@ async def test_applies_a_snapshot_polar_did_not_confirm_in_time(
     assert sum(request["type"] == "confirm" for request in websocket_requests) == 1
     assert await redis.hget(key, "cold:count") == b"3"
     assert await _pending_count(redis) == b"3"
+
+
+@pytest.mark.anyio
+async def test_waits_for_a_confirmation_before_confirming_a_newer_snapshot(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
+    confirmations: dict[str, bool],
+    polar_sends: list[typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    newer = {**_sealing(4, 40), "version": 1791807000000006}
+
+    async def send(message: dict[str, typing.Any]) -> None:
+        await polar_sends[-1]({"type": "websocket.send", "text": json.dumps(message)})
+
+    async def answer(ids: list[str], answered: dict[str, typing.Any]) -> None:
+        await send(
+            {
+                "type": "confirmed",
+                "payload": {
+                    "reducer_id": "tokens",
+                    "customer_id": None,
+                    "external_customer_id": "alice",
+                    "bucket_start": BUCKET,
+                    "ids": ids,
+                    "snapshot": {
+                        **answered,
+                        "customer_exists": True,
+                        "reducer_id": "tokens",
+                    },
+                },
+            }
+        )
+
+    def confirmed(count: int) -> collections.abc.Callable[[], typing.Awaitable[bool]]:
+        async def asked() -> bool:
+            return (
+                sum(request["type"] == "confirm" for request in websocket_requests)
+                == count
+            )
+
+        return asked
+
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(10):
+            await outpost.track(_usage(f"event-{index}", 10))
+        confirmations["answer"] = False
+        snapshots["external:alice:tokens"] = _sealing(0, 0)
+        async with Outpost(url, client=polar_client, confirm_timeout=10) as other:
+            await other.actor(external_customer_id="alice")
+            await _wait_for(confirmed(1))
+            await send(
+                {
+                    "type": "meter_usage",
+                    "payload": {
+                        **newer,
+                        "customer_exists": True,
+                        "reducer_id": "tokens",
+                    },
+                }
+            )
+            # Polar answers the first confirmation as it stood when asked: nothing stored yet.
+            await answer([], _sealing(0, 0))
+            await _wait_for(confirmed(2))
+            await answer([f"event-{index}" for index in range(4)], newer)
+
+            async def settled() -> bool:
+                return await _consumed(other) == 100
+
+            await _wait_for(settled)
+
+
+@pytest.mark.anyio
+async def test_a_timed_out_confirmation_keeps_a_newer_one_waiting(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
+    confirmations: dict[str, bool],
+    polar_sends: list[typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    identity = "external:alice:tokens"
+    first = _sealing(0, 0)
+    newer = {**_sealing(2, 20), "version": 1791807000000006}
+    newest = {**_sealing(3, 30), "version": 1791807000000007}
+
+    async def push(snapshot: dict[str, typing.Any]) -> None:
+        payload = {**snapshot, "customer_exists": True, "reducer_id": "tokens"}
+        await polar_sends[-1](
+            {
+                "type": "websocket.send",
+                "text": json.dumps({"type": "meter_usage", "payload": payload}),
+            }
+        )
+
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(3):
+            await outpost.track(_usage(f"event-{index}", 10))
+        confirmations["answer"] = False
+        snapshots[identity] = first
+        async with Outpost(url, client=polar_client, confirm_timeout=0.2) as other:
+            blocked = anyio.Event()
+            resumed = anyio.Event()
+            apply = other._apply_snapshot_now
+
+            async def held(
+                identity: str,
+                customer: str,
+                snapshot: Snapshot,
+                *args: typing.Any,
+                **kwargs: typing.Any,
+            ) -> None:
+                if snapshot["version"] == first["version"]:
+                    blocked.set()
+                    await resumed.wait()
+                await apply(identity, customer, snapshot, *args, **kwargs)
+
+            monkeypatch.setattr(other, "_apply_snapshot_now", held)
+            await other.actor(external_customer_id="alice")
+            await push(newer)
+            # The first confirmation times out and applies its snapshot while the newest
+            # one arrives.
+            with anyio.fail_after(1):
+                await blocked.wait()
+            await push(newest)
+            await anyio.sleep(0.05)
+            resumed.set()
+
+            async def newest_applied() -> bool:
+                version = await redis.hget(
+                    f"outpost:v1:state:{identity}", "snapshot_version"
+                )
+                return version == str(newest["version"]).encode()
+
+            await _wait_for(newest_applied)
 
 
 @pytest.mark.anyio

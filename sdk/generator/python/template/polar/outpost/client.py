@@ -396,7 +396,7 @@ class _Confirmation:
     identity: str
     started: float
     age: float
-    superseded: bool
+    next: "Snapshot | None" = None
     awaited: int = 0
     messages: int = 0
     asked: int = 0
@@ -440,6 +440,7 @@ class Outpost:
         self._confirm_script: AsyncScript | None = None
         self._confirm_timeout = confirm_timeout
         self._confirmations: dict[str, _Confirmation] = {}
+        self._confirming = anyio.Lock()
         self._read_state: AsyncScript | None = None
         self._cache: collections.OrderedDict[str, LocalState] = (
             collections.OrderedDict()
@@ -1201,32 +1202,46 @@ class Outpost:
                     for value in statistics
                 ):
                     raise ValueError("Snapshot values must be finite")
-                if not await self._ask_confirmation(
-                    websocket, identity, customer, snapshot
-                ):
-                    await self._apply_snapshot_now(identity, customer, snapshot)
+                async with self._confirming:
+                    waiting = self._confirmations.get(identity)
+                    if waiting is None:
+                        await self._receive_snapshot(identity, customer, snapshot)
+                    elif (
+                        snapshot["version"]
+                        >= (waiting.next or waiting.snapshot)["version"]
+                    ):
+                        waiting.next = snapshot
             elif message["type"] == "confirmed":
                 payload = message["payload"]
                 customer = self._customer_key(
                     payload["customer_id"], payload["external_customer_id"]
                 )
-                confirmation = self._confirmations.get(
-                    f"{customer}:{payload['reducer_id']}"
-                )
-                if confirmation is None:
-                    continue
-                confirmation.confirmed.setdefault(payload["bucket_start"], []).extend(
-                    payload["ids"]
-                )
-                if payload["snapshot"]["version"] >= confirmation.snapshot["version"]:
-                    confirmation.snapshot = payload["snapshot"]
-                confirmation.awaited -= 1
-                if confirmation.awaited == 0:
-                    await self._settle_confirmation(confirmation, answered=True)
+                async with self._confirming:
+                    confirmation = self._confirmations.get(
+                        f"{customer}:{payload['reducer_id']}"
+                    )
+                    if confirmation is None:
+                        continue
+                    confirmation.confirmed.setdefault(
+                        payload["bucket_start"], []
+                    ).extend(payload["ids"])
+                    if (
+                        payload["snapshot"]["version"]
+                        >= confirmation.snapshot["version"]
+                    ):
+                        confirmation.snapshot = payload["snapshot"]
+                    confirmation.awaited -= 1
+                    if confirmation.awaited == 0:
+                        await self._settle_confirmation(confirmation, answered=True)
+
+    async def _receive_snapshot(
+        self, identity: str, customer: str, snapshot: Snapshot
+    ) -> None:
+        if not await self._ask_confirmation(identity, customer, snapshot):
+            await self._apply_snapshot_now(identity, customer, snapshot)
 
     async def _ask_confirmation(
         self,
-        websocket: AsyncWebSocketSession,
         identity: str,
         customer: str,
         snapshot: Snapshot,
@@ -1235,9 +1250,9 @@ class Outpost:
         counts. The snapshot Polar answers with applies once it did, or the asking one
         after confirm_timeout with the events still pending."""
         started = time.perf_counter()
-        superseded = self._confirmations.pop(identity, None)
-        if superseded is not None and superseded.timer is not None:
-            superseded.timer.cancel()
+        websocket = self._websocket
+        if websocket is None:
+            return False
         local = self._cache.get(identity)
         state = (
             local.state
@@ -1258,7 +1273,6 @@ class Outpost:
             started=started,
             # Seconds since the oldest bucket asked ended.
             age=(time.time_ns() / 1_000 - min(sealed) - BUCKET_SIZE) / 1_000_000,
-            superseded=superseded is not None,
         )
         assert self._redis is not None
         for bucket_start in sealed:
@@ -1302,7 +1316,8 @@ class Outpost:
             confirmation.timer = timer
             await anyio.sleep(self._confirm_timeout)
         if not timer.cancel_called:
-            await self._settle_confirmation(confirmation, answered=False)
+            async with self._confirming:
+                await self._settle_confirmation(confirmation, answered=False)
 
     async def _settle_confirmation(
         self, confirmation: _Confirmation, *, answered: bool
@@ -1319,6 +1334,14 @@ class Outpost:
             confirmation,
             answered=answered,
         )
+        next_snapshot = confirmation.next
+        if (
+            next_snapshot is not None
+            and next_snapshot["version"] > confirmation.snapshot["version"]
+        ):
+            await self._receive_snapshot(
+                confirmation.identity, confirmation.customer, next_snapshot
+            )
 
     async def _apply_snapshot_now(
         self,
@@ -1413,7 +1436,6 @@ class Outpost:
                         "outpost.pending.answered": answered,
                         "outpost.pending.messages": confirmation.messages,
                         "outpost.pending.age": confirmation.age,
-                        "outpost.pending.superseded": confirmation.superseded,
                         "outpost.confirm.duration": applying - confirmation.started,
                     }
                 )

@@ -44,6 +44,7 @@ import {
 import { createMeterProvider, createTracerProvider, isTelemetryEnabled } from "./telemetry";
 
 const CACHE_SIZE = 1024;
+const REQUESTED_SIZE = 16 * CACHE_SIZE;
 const SYNC_INTERVAL = 30_000;
 const TIMEOUT = 5_000;
 const CONFIRM_TIMEOUT = 2_000;
@@ -363,6 +364,7 @@ export class Outpost {
   private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
   private readonly actors = new Set<string>();
+  private readonly requesting = new Set<string>();
   private readonly confirmations = new Map<string, Confirmation>();
   private configured = signal();
   private isConfigured = false;
@@ -533,6 +535,7 @@ export class Outpost {
     await Promise.allSettled([...closed, this.messages, this.synchronizing]);
     this.cache.clear();
     this.actors.clear();
+    this.requesting.clear();
     this.reducers = [];
     this.matchers = [];
     const tracerProvider = this.tracerProvider;
@@ -829,6 +832,7 @@ export class Outpost {
     }
     this.websocket = websocket;
     this.actors.clear();
+    this.requesting.clear();
     await this.send({ type: "configuration" });
   }
 
@@ -876,7 +880,9 @@ export class Outpost {
         notify(entry);
       }
       // Polar's pushes keep an evicted state current in Redis, unless Redis has dropped it.
-      const requested = this.actors.has(identity) && entry.state.coldUntil !== undefined;
+      const requested =
+        this.requesting.has(identity) ||
+        (this.actors.has(identity) && entry.state.coldUntil !== undefined);
       if (!requested && this.websocket?.readyState === WebSocket.OPEN) {
         try {
           await this.send({
@@ -889,6 +895,9 @@ export class Outpost {
           return;
         }
         this.actors.add(identity);
+        if (this.actors.size > REQUESTED_SIZE)
+          this.actors.delete(this.actors.values().next().value!);
+        this.requesting.add(identity);
       }
     });
     return entry;
@@ -1101,6 +1110,7 @@ export class Outpost {
         external_customer_id: snapshot.external_customer_id ?? undefined,
       });
       const identity = `${customer}:${reducer.id}`;
+      this.requesting.delete(identity);
       const local = this.cache.get(identity);
       if (local) {
         local.missing = !snapshot.customer_exists;

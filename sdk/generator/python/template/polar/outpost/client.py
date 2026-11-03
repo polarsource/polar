@@ -233,6 +233,7 @@ async def connect_websocket(
 # cold from Polar's snapshot and never reads the previous keys.
 KEY_VERSION = "outpost:v1"
 CACHE_SIZE = 1024
+REQUESTED_SIZE = 16 * CACHE_SIZE
 REDIS_TIMEOUT = 5.0
 REDIS_RECONNECT_DELAY = 0.1
 MAX_REDIS_RECONNECT_DELAY = 2.0
@@ -432,7 +433,8 @@ class Outpost:
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
         self._matchers: list[ReducerMatcher] = []
-        self._actors: set[str] = set()
+        self._actors: dict[str, None] = {}
+        self._requesting: set[str] = set()
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
         self._confirm_script: AsyncScript | None = None
@@ -536,6 +538,7 @@ class Outpost:
             self._reducers = []
             self._matchers = []
             self._actors.clear()
+            self._requesting.clear()
             self._apply_snapshot = None
             self._confirm_script = None
             self._confirmations.clear()
@@ -945,7 +948,9 @@ class Outpost:
                 local.notify()
             websocket = self._websocket
             # Polar's pushes keep an evicted state current in Redis, unless Redis has dropped it.
-            requested = identity in self._actors and local.state.cold_until is not None
+            requested = identity in self._requesting or (
+                identity in self._actors and local.state.cold_until is not None
+            )
             if not requested and websocket is not None:
                 try:
                     await websocket.send_json(
@@ -960,7 +965,10 @@ class Outpost:
                 except HTTPXWSException:
                     # Requested again once reconnected.
                     return local
-                self._actors.add(identity)
+                self._actors[identity] = None
+                if len(self._actors) > REQUESTED_SIZE:
+                    del self._actors[next(iter(self._actors))]
+                self._requesting.add(identity)
         return local
 
     async def _load_state(self, customer: str) -> ReducerState:
@@ -1108,6 +1116,7 @@ class Outpost:
                         )
                     self._websocket = websocket
                     self._actors.clear()
+                    self._requesting.clear()
                     await websocket.send_json({"type": "configuration"})
                     if not started:
                         task_status.started()
@@ -1168,13 +1177,14 @@ class Outpost:
                     snapshot["customer_id"], snapshot["external_customer_id"]
                 )
                 identity = f"{customer}:{snapshot['reducer_id']}"
+                self._requesting.discard(identity)
                 local = self._cache.get(identity)
                 if local is not None:
                     local.missing = not snapshot["customer_exists"]
                     local.notify()
                 if not snapshot["customer_exists"]:
                     # Asked again on the next read, in case it was created since.
-                    self._actors.discard(identity)
+                    self._actors.pop(identity, None)
                     continue
                 statistics = [
                     snapshot["count"],

@@ -1111,7 +1111,7 @@ async def test_snapshot_requests_remembered_are_bounded(
 ) -> None:
     url, _ = redis_connection
     monkeypatch.setattr("polar.outpost.client.CACHE_SIZE", 2)
-    monkeypatch.setattr("polar.outpost.client.REQUESTED_SIZE", 4, raising=False)
+    monkeypatch.setattr("polar.outpost.client.REQUESTED_SIZE", 4)
     async with Outpost(url, client=polar_client) as outpost:
         for customer in ("alice", "bob", "carol"):
             await outpost.actor(external_customer_id=customer)

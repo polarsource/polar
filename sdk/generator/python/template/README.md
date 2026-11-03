@@ -218,24 +218,52 @@ Pass a dictionary instead of `True` to configure it.
 The metering helper queues events in memory and sends them in batches of up to `batch_size`
 events, or every `batch_interval` seconds. `track()` never waits for the HTTP request.
 
-On a long-running server, let the interval deliver. Leaving the `async with polar.metering()`
-block drains the queue; it waits up to `shutdown_timeout`.
+On a long-running server, keep one metering context open for the application's lifetime
+and let background batching deliver events. Share it between requests on the same event loop.
+Leaving the context drains the queue within `shutdown_timeout` (30 seconds by default) and
+raises if any earlier, unacknowledged events could not be confirmed.
 
-In serverless environments such as Vercel or AWS Lambda, the process may stop when the handler
-returns. Call `flush()` once per request before returning. `flush()` returns once every event
-queued before it is delivered or reported to `on_dropped`. Events queued by other requests in
-the meantime share the same HTTP requests, so concurrent handlers don't send one event each.
+In serverless environments such as Vercel or AWS Lambda, await `flush(timeout=30)` before
+returning from each request. It confirms events queued before the call without closing the
+shared helper. Concurrent handlers share HTTP batches.
 
 ```python
 async def handle_request() -> dict[str, bool]:
     await metering.track(name="api_request", external_customer_id="customer_123")
-    await metering.flush()
+    await metering.flush(timeout=30)
     return {"ok": True}
 ```
 
-When Polar answers `429 Too Many Requests`, the helper keeps the events, waits for the
-`Retry-After` delay, then sends them in full batches. A `flush()` in flight returns after that
-wait. The rate limit counts requests, not events, so batching is what keeps you under it.
+For a handler that owns its own helper, context exit drains automatically:
+
+```python
+async def handle_request() -> dict[str, bool]:
+    async with polar.metering(buffered={"shutdown_timeout": 30}) as metering:
+        await metering.track(name="api_request", external_customer_id="customer_123")
+    return {"ok": True}
+```
+
+A successful `flush()` confirms delivery. Failed delivery raises `MeteringDeliveryError`,
+importable from `polar.metering`. Its `events` contains the unconfirmed events; each item in
+`failures` includes `events`, a `reason`, and the original `cause`. Drops are still logged
+and passed to `on_dropped`. A completed flush acknowledges the reported failures, so a later
+flush reports only subsequent outcomes. Overlapping flushes each observe their own boundary.
+Periodically flush long-running helpers to observe failures and release their retained records.
+
+If the wait expires, `flush()` raises `MeteringTimeoutError`. Timeout and caller cancellation
+do not stop background delivery or other callers, and leave failures observable by a later
+flush or context exit. The flush timeout bounds the caller's wait; `shutdown_timeout` bounds
+context cleanup. Both are independent of the HTTP client's request timeout. Shutdown may
+interrupt delivery callbacks when its deadline expires. If both the context body and delivery
+fail, exit raises an exception group preserving both errors.
+
+When Polar answers `429 Too Many Requests`, the helper waits for `Retry-After`, then sends
+full batches. A flush waits for this delivery only up to its timeout. The rate limit counts
+requests, not events, so batching keeps request volume down.
+
+The buffer is in memory: forced process termination can still lose events. Choose deadlines
+that fit within the function's execution limit; use durable storage when delivery must survive
+termination. A timeout means delivery is unconfirmed, so blindly retrying may duplicate events.
 
 ### Options
 
@@ -247,7 +275,7 @@ The metering helper buffers events in memory and sends them in batches to Polar.
 | ------------------ | ------- | ---------------------------------------------------------- |
 | `batch_size`       | `100`   | Maximum events per HTTP request.                           |
 | `batch_interval`   | `1.0`   | Seconds to collect a batch, starting with its first event. |
-| `shutdown_timeout` | `5.0`   | Seconds allowed to drain on context exit.                  |
+| `shutdown_timeout` | `30.0`   | Seconds allowed to drain on context exit.                  |
 | `max_attempts`     | `3`     | Total attempts per batch, including the first.             |
 | `on_delivered`     | `None`  | Async callback receiving the events Polar accepted.        |
 | `on_dropped`       | `None`  | Async callback receiving the dropped events and reason.    |

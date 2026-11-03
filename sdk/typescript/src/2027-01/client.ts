@@ -92,7 +92,7 @@ export function createPolar(options: PolarOptions) {
      * Pass false to disable; explicit options require a Redis URL.
      * @param options.strategies Replace all defaults with custom strategies. Cannot be
      * combined with buffered or outpost.
-     * @returns An metering helper to start before use.
+     * @returns A metering helper that starts on its first operation.
      */
     metering: (options?: MeteringOptions) => createMetering(services, client, options),
   };

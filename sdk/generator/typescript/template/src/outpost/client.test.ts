@@ -7,8 +7,8 @@ import { createRequire } from "node:module";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { WebSocketServer, type WebSocket } from "ws";
 
-import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
 import { ClientBase } from "../base";
+import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
 import {
   decodeState,
   MissingExternalIdError,
@@ -752,7 +752,11 @@ it("settles an event the previous SDK version left pending", async () => {
   const outpost = await warm();
   await outpost.track(usage("new", 10));
   // What WRITE_BUCKET used to store per event: count, sum, min and max, as strings.
-  await redis.hset(`outpost:v1:pending:external:alice:tokens:${bucket}`, "old", '["1","7","7","7"]');
+  await redis.hset(
+    `outpost:v1:pending:external:alice:tokens:${bucket}`,
+    "old",
+    '["1","7","7","7"]',
+  );
   await redis.hincrby(key, `pending:${bucket}:count`, 1);
   await redis.hincrbyfloat(key, `pending:${bucket}:sum`, 7);
   await outpost.confirm([usage("old", 7)]);
@@ -1487,18 +1491,20 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
   const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
   const reader = await start();
   {
-    await using metering = await polar
-      .metering({ outpost: { redisUrl: redisServer.socket } })
-      .start();
-    await metering.track({
-      ...customer,
-      name: "api",
-      external_id: eventId(),
-      timestamp,
-      metadata: { tokens: 2 },
-    });
-    expect((await reader.meter(meter))?.consumed_units).toBe(12);
-    expect(fetch).not.toHaveBeenCalled();
+    const metering = polar.metering({ outpost: { redisUrl: redisServer.socket } });
+    try {
+      await metering.track({
+        ...customer,
+        name: "api",
+        external_id: eventId(),
+        timestamp,
+        metadata: { tokens: 2 },
+      });
+      expect((await reader.meter(meter))?.consumed_units).toBe(12);
+      expect(fetch).not.toHaveBeenCalled();
+    } finally {
+      await metering.close();
+    }
   }
   expect(fetch).toHaveBeenCalledOnce();
 });

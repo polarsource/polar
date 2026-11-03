@@ -11,6 +11,7 @@ import {
   type PlanResult,
 } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
+import type { CatalogOptions } from '@/services/billing-config/api'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { keys, runCli, stripAnsi } from '@/utils/test-utils/cli'
@@ -129,7 +130,20 @@ const run = async (
   args: ReadonlyArray<string> = [],
   options: Parameters<typeof runCli>[2] = {},
 ) => {
-  const applied = vi.fn(() => Effect.succeed(result))
+  const planned = vi.fn(
+    (
+      _config: LoadedConfig,
+      _organization: unknown,
+      _options?: CatalogOptions,
+    ) => Effect.succeed(plan),
+  )
+  const applied = vi.fn(
+    (
+      _config: LoadedConfig,
+      _organization: unknown,
+      _options?: CatalogOptions,
+    ) => Effect.succeed(result),
+  )
   const cli = runCli(apply, ['polar.json', ...args], options)
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
@@ -137,7 +151,7 @@ const run = async (
         BillingConfig,
         BillingConfig.of({
           load: () => Effect.succeed(config),
-          plan: () => Effect.succeed(plan),
+          plan: planned,
           apply: applied,
           prune: () => Effect.die('unused'),
         }),
@@ -157,6 +171,9 @@ const run = async (
     terminal: stripAnsi(cli.terminal()),
     failed: exit._tag === 'Failure',
     applied: applied.mock.calls.length,
+    names: [...planned.mock.calls, ...applied.mock.calls].map(
+      ([, , options]) => options?.name,
+    ),
     exit,
   }
 }
@@ -189,6 +206,18 @@ describe('polar config apply', () => {
     expect(output).toMatch(
       /╯\n\n {2}Apply\n {2}╭─+╮\n {2}│ {2}Applying 1 change \(\d+ms\) *│\n {2}╰─+╯\n {2}polar\.json applied to Acme/,
     )
+  })
+
+  test('plans and applies with --name as the catalog version name', async () => {
+    const result = { status: 'applied', entries: [created] } as const
+    const plan = { entries: [created], issues: [] }
+    expect((await run(plan, result, ['--confirm'])).names).toEqual([
+      undefined,
+      undefined,
+    ])
+    expect(
+      (await run(plan, result, ['--confirm', '--name', 'Spring launch'])).names,
+    ).toEqual(['Spring launch', 'Spring launch'])
   })
 
   test.each(['-c', '--aladåb'])(

@@ -19,16 +19,23 @@ import type { ApiClient } from '@/services/client'
 
 export type Clients = Record<PolarEnvironment, ApiClient>
 
+export interface CatalogOptions {
+  readonly name?: string | undefined
+}
+
 // Sections the config API doesn't accept yet
 const UNSUPPORTED_SECTIONS = new Set([''])
 
-const stripUnsupported = (input: unknown): unknown =>
+const requestBody = (input: unknown, fields: Record<string, unknown>) =>
   typeof input === 'object' && input !== null && !Array.isArray(input)
-    ? Object.fromEntries(
-        Object.entries(input).filter(
-          ([section]) => !UNSUPPORTED_SECTIONS.has(section),
+    ? {
+        ...Object.fromEntries(
+          Object.entries(input).filter(
+            ([section]) => !UNSUPPORTED_SECTIONS.has(section),
+          ),
         ),
-      )
+        ...fields,
+      }
     : input
 
 export const post = (
@@ -36,13 +43,16 @@ export const post = (
   path: string,
   config: LoadedConfig,
   organization: ActiveOrganization,
+  { name }: CatalogOptions = {},
 ) =>
   Effect.gen(function* () {
     const request = yield* HttpClientRequest.post(
       yield* apiUrl(organization.environment, path),
     ).pipe(
       withOrganization(organization.id),
-      HttpClientRequest.bodyJson(stripUnsupported(config.input)),
+      HttpClientRequest.bodyJson(
+        requestBody(config.input, { catalog_name: name }),
+      ),
     )
     return yield* clients[organization.environment].execute(request)
   })

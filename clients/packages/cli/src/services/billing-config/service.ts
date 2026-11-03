@@ -7,6 +7,7 @@ import type {
   PlanResult,
   PruneEntry,
 } from '@/schemas/BillingConfig'
+import type { CatalogOptions } from '@/services/billing-config/api'
 import { apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
@@ -20,10 +21,12 @@ export class BillingConfig extends Context.Service<
     plan: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: CatalogOptions,
     ) => Effect.Effect<PlanResult, AuthError | BillingConfigError>
     apply: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: CatalogOptions,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
     prune: <R>(
       config: LoadedConfig,

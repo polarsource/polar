@@ -91,7 +91,6 @@ class TestListBenefits:
 @pytest.mark.anyio
 class TestListBenefitsFilters:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.benefits_read}))
-    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_draft_catalog(
         self,
         save_fixture: SaveFixture,

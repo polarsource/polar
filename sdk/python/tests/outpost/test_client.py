@@ -1060,6 +1060,92 @@ async def test_evicted_customer_is_reloaded(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("state", "requests"), [("held", 2), ("lost", 4), ("in flight", 2)]
+)
+async def test_evicted_customer_is_requested_again_only_once_its_snapshot_is_lost(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    websocket_requests: list[dict[str, typing.Any]],
+    snapshots: dict[str, dict[str, typing.Any]],
+    monkeypatch: pytest.MonkeyPatch,
+    state: str,
+    requests: int,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.CACHE_SIZE", 2)
+    reducers = ("tokens", "credits")
+    if state != "in flight":
+        for reducer in reducers:
+            snapshots[f"external:alice:{reducer}"] = {
+                "customer_id": None,
+                "external_customer_id": "alice",
+                "version": 1791807000000000,
+                "cold_until": BUCKET,
+                "count": 1,
+                "sum": 10,
+                "min": 10,
+                "max": 10,
+            }
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        await outpost.actor(external_customer_id="bob")
+        if state == "lost":
+            await redis.delete(
+                *(f"outpost:v1:state:external:alice:{reducer}" for reducer in reducers)
+            )
+        await outpost.actor(external_customer_id="alice")
+    requested = [
+        message["payload"]["external_customer_id"]
+        for message in websocket_requests
+        if message["type"] == "meter_usage"
+    ]
+    assert requested.count("alice") == requests
+
+
+@pytest.mark.anyio
+async def test_unique_reducer_asks_polar_for_no_snapshot(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+    websocket_requests: list[dict[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    configuration["reducers"].append(
+        {
+            "id": "visitors",
+            "kind": "usage",
+            "meter_ids": ["visitors-meter"],
+            "filter": {"conjunction": "and", "clauses": []},
+            "aggregation": {"func": "unique", "property": "visitor"},
+        }
+    )
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        assert len(outpost._requesting) == 2
+    assert [
+        message["payload"]["reducer_id"]
+        for message in websocket_requests
+        if message["type"] == "meter_usage"
+    ] == ["tokens", "credits"]
+
+
+@pytest.mark.anyio
+async def test_snapshot_requests_remembered_are_bounded(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+    monkeypatch.setattr("polar.outpost.client.CACHE_SIZE", 2)
+    monkeypatch.setattr("polar.outpost.client.REQUESTED_SIZE", 4)
+    async with Outpost(url, client=polar_client) as outpost:
+        for customer in ("alice", "bob", "carol"):
+            await outpost.actor(external_customer_id=customer)
+        assert len(outpost._actors) == 4
+
+
+@pytest.mark.anyio
 async def test_websocket_connection_and_cleanup() -> None:
     messages: list[dict[str, typing.Any]] = []
 

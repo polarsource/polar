@@ -34,7 +34,7 @@ async def warm_outpost() -> Outpost:
     outpost._reducers = [REDUCER]
     identity = f"external:alice:{REDUCER['id']}"
     outpost._cache[identity] = LocalState(state=decode_state(encode_state(1)))
-    outpost._actors.add(identity)
+    outpost._actors[identity] = None
     return outpost
 
 

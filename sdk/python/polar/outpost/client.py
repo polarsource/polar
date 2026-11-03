@@ -1158,7 +1158,11 @@ class Outpost:
             requested = identity in self._requesting or (
                 identity in self._actors and local.state.cold_until is not None
             )
-            if not requested and websocket is not None:
+            if (
+                not requested
+                and reducer["aggregation"]["func"] != "unique"
+                and websocket is not None
+            ):
                 try:
                     await websocket.send_json(
                         {

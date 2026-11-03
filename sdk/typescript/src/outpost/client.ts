@@ -883,7 +883,11 @@ export class Outpost {
       const requested =
         this.requesting.has(identity) ||
         (this.actors.has(identity) && entry.state.coldUntil !== undefined);
-      if (!requested && this.websocket?.readyState === WebSocket.OPEN) {
+      if (
+        !requested &&
+        (reducer.aggregation.func as string) !== "unique" &&
+        this.websocket?.readyState === WebSocket.OPEN
+      ) {
         try {
           await this.send({
             type: "meter_usage",

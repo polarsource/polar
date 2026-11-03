@@ -110,6 +110,27 @@ describe('polar config plan', () => {
     )
   })
 
+  test('shows removals and asks to apply them', async () => {
+    const { output, failed } = await run({
+      entries: [
+        {
+          section: 'products',
+          id: 'legacy',
+          action: 'removed',
+          reason: 'missing',
+          diff: [],
+        },
+      ],
+      issues: [],
+    })
+    expect(failed).toBe(false)
+    expect(output).toMatch(/│ {2}- legacy {2}not in config *│/)
+    expect(output).toContain(
+      'Changes       0 to change, 0 to add, 1 to remove, 0 unchanged',
+    )
+    expect(output).toContain('Run polar config apply to apply it.')
+  })
+
   test('shows the catalog change once, in the summary', async () => {
     const { output } = await run({
       entries,

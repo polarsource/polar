@@ -58,15 +58,26 @@ export const SettingsResult = Schema.Struct({
   diff: Schema.optional(Schema.Array(FieldChange)),
 })
 
+const RemovalReason = Schema.Literals(['missing', 'deprecated'])
+export type RemovalReason = typeof RemovalReason.Type
+
+export const Removal = Schema.Struct({
+  resource: ConfigResource,
+  external_id: Schema.String,
+  reason: RemovalReason,
+})
+
 export const ApplyResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  removed: Schema.optional(Schema.Array(Removal)),
   settings: Schema.optional(Schema.NullOr(SettingsResult)),
 })
 
 export const AppliedEntry = Schema.Struct({
   section: Schema.String,
   id: Schema.String,
-  action: EntryAction,
+  action: Schema.Literals([...EntryAction.literals, 'removed']),
+  reason: Schema.optionalKey(RemovalReason),
   diff: Schema.Array(FieldChange),
 })
 export type AppliedEntry = typeof AppliedEntry.Type
@@ -79,6 +90,7 @@ export type CatalogPlan = typeof CatalogPlan.Type
 
 export const PlanResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  removed: Schema.optional(Schema.Array(Removal)),
   catalog: Schema.optional(Schema.NullOr(CatalogPlan)),
   settings: Schema.optional(Schema.NullOr(SettingsResult)),
   issues: Schema.Array(ServerError),

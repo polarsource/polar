@@ -71,7 +71,7 @@ const entryLines = (
       .map(({ field }) => field.length),
   )
   return [
-    `${created ? '+' : ' '} ${name(id)}`,
+    `${created ? '+' : action === 'removed' ? '-' : ' '} ${name(id)}`,
     ...changes.flatMap(({ field, before, after }) =>
       created ||
       !isSet(before) ||
@@ -118,7 +118,7 @@ const metadata = (
     ['Config', `\`${config.file}\``],
     [
       'Changes',
-      `${count('updated')} to change, ${count('created')} to add, ${count('unchanged')} unchanged`,
+      `${count('updated')} to change, ${count('created')} to add, ${count('removed') > 0 ? `${count('removed')} to remove, ` : ''}${count('unchanged')} unchanged`,
     ],
     ...(catalog
       ? [['Catalog', escape(catalogChange(catalog, (text) => text))]]

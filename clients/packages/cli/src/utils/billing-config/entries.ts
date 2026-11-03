@@ -16,6 +16,7 @@ export const MARKS: Record<Action, string> = {
   created: ui.green('+'),
   updated: ui.yellow('~'),
   unchanged: ui.dim('='),
+  removed: ui.red('-'),
 }
 
 const INLINE_LIMIT = 40
@@ -184,12 +185,14 @@ const DONE: Labels = {
   created: 'created',
   updated: 'updated',
   unchanged: 'unchanged',
+  removed: 'removed',
 }
 
 const COLORS: Record<Action, Color> = {
   created: ui.green,
   updated: ui.yellow,
   unchanged: ui.dim,
+  removed: ui.red,
 }
 
 const count = (entries: ReadonlyArray<AppliedEntry>, action: Action) =>
@@ -205,17 +208,23 @@ const counted = (
 }
 
 export const tally = (entries: ReadonlyArray<AppliedEntry>) =>
-  (['created', 'updated', 'unchanged'] as const)
+  (['created', 'updated', 'removed', 'unchanged'] as const)
+    .filter((action) => action !== 'removed' || count(entries, action) > 0)
     .map((action) => counted(entries, action, DONE[action]))
     .join(', ')
 
 export const changeCount = (entries: ReadonlyArray<AppliedEntry>) =>
-  count(entries, 'created') + count(entries, 'updated')
+  count(entries, 'created') +
+  count(entries, 'updated') +
+  count(entries, 'removed')
 
 export const planTally = (entries: ReadonlyArray<AppliedEntry>) =>
   [
     counted(entries, 'updated', 'to change'),
     counted(entries, 'created', 'to add'),
+    ...(count(entries, 'removed') > 0
+      ? [counted(entries, 'removed', 'to remove')]
+      : []),
     counted(entries, 'unchanged', 'unchanged'),
   ].join(', ')
 

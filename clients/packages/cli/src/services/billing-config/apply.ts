@@ -39,7 +39,7 @@ export const apply =
           yield* HttpClientResponse.schemaBodyJson(ApplyResponse)(response)
         return {
           status: 'applied',
-          entries: entries(body.changes, body.settings),
+          entries: entries(body.changes, body.settings, body.removed),
         } satisfies ApplyResult
       }
       const invalid =

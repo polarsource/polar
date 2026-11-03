@@ -1,4 +1,4 @@
-import type { AppliedEntry } from '@/schemas/BillingConfig'
+import type { AppliedEntry, RemovalReason } from '@/schemas/BillingConfig'
 import { name, record } from '@/utils/billing-config/describe'
 import { MARKS, formatRows } from '@/utils/billing-config/entries'
 import {
@@ -88,6 +88,11 @@ const grants = (entry: AppliedEntry, product: unknown): Grant[] => {
 
 type Block = { readonly head: string; readonly body: ReadonlyArray<string> }
 
+const REASONS: Record<RemovalReason, string> = {
+  missing: 'not in config',
+  deprecated: 'deprecated',
+}
+
 // Facts describe what is new; an update is told by its diff rows alone.
 const describe = (
   mark: string,
@@ -156,7 +161,19 @@ export const formatTree = (
     webhooks: documents(input, 'webhooks'),
   }
 
+  const width = Math.max(
+    0,
+    ...entries
+      .filter(({ action }) => action === 'unchanged' || action === 'removed')
+      .map((entry) => entry.id.length),
+  )
+
+  const removal = ({ id, reason }: AppliedEntry) => [
+    `${TOP}${MARKS.removed} ${ui.bold(id.padEnd(width))}  ${reason ? ui.dim(REASONS[reason]) : ''}`,
+  ]
+
   const product = (entry: AppliedEntry) => {
+    if (entry.action === 'removed') return removal(entry)
     const document = docs.products.get(entry.id)
     const granted = grants(entry, document)
     const regranted = granted.some(({ status }) => status !== 'kept')
@@ -186,6 +203,7 @@ export const formatTree = (
 
   const plain = (entry: AppliedEntry, section: string) => {
     if (entry.action === 'unchanged') return undefined
+    if (entry.action === 'removed') return removal(entry)
     const document = isSection(section)
       ? docs[section].get(entry.id)
       : undefined
@@ -202,12 +220,6 @@ export const formatTree = (
     ]
   }
 
-  const width = Math.max(
-    0,
-    ...entries
-      .filter((entry) => entry.action === 'unchanged')
-      .map((entry) => entry.id.length),
-  )
   return [
     ...new Set([
       'settings',

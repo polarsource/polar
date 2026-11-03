@@ -127,6 +127,43 @@ describe('plan', () => {
     ])
   })
 
+  test('lists removals, in place of the deprecated entry', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [
+        {
+          resource: 'benefit',
+          external_id: 'support',
+          action: 'unchanged',
+          diff: [],
+        },
+      ],
+      removed: [
+        { resource: 'benefit', external_id: 'support', reason: 'deprecated' },
+        { resource: 'product', external_id: 'legacy', reason: 'missing' },
+      ],
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.entries).toEqual([
+      {
+        section: 'benefits',
+        id: 'support',
+        action: 'removed',
+        reason: 'deprecated',
+        diff: [],
+      },
+      {
+        section: 'products',
+        id: 'legacy',
+        action: 'removed',
+        reason: 'missing',
+        diff: [],
+      },
+    ])
+  })
+
   test('keeps the catalog the plan publishes', async () => {
     api.routes[`POST ${planUrl}`] = Response.json({
       changes: [],

@@ -2178,7 +2178,9 @@ class SubscriptionService:
                     not was_trialing
                     and subscription.current_meter_period_end is not None
                 ):
-                    self._enqueue_meter_cycle_order(subscription, utc_now())
+                    self._enqueue_meter_cycle_order(
+                        subscription, subscription_update.applies_at
+                    )
 
                 interval_changed = subscription_update.is_interval_changed()
                 ctx.set_previous_product(previous_product)

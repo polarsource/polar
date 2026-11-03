@@ -6242,6 +6242,55 @@ class TestUpdateProduct:
         assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
         subscription_service.check_meter_cycle_lag(updated)
 
+    async def test_settles_old_product_at_applies_at(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.initialize_meter_period(
+            subscription.current_period_start, containing=utc_now()
+        )
+        await save_fixture(subscription)
+
+        applies_at = utc_now() - timedelta(seconds=1)
+        mocker.patch("polar.subscription.update.utc_now", return_value=applies_at)
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        settle_mock.assert_called_once_with(subscription, applies_at)
+
     async def test_trial_to_equal_trial_succeeds(
         self,
         session: AsyncSession,

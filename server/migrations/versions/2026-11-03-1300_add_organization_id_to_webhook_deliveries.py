@@ -17,61 +17,33 @@ down_revision = "3b83f6b7a95c"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
-CONSTRAINT_NAME = "webhook_deliveries_organization_id_fkey"
-
 
 def upgrade() -> None:
-    # Each step commits on its own, so the short lock the FK takes is released
-    # before VALIDATE scans the table under a lock that blocks no writes.
-    with op.get_context().autocommit_block():
-        op.execute("SET lock_timeout = '5s'")
-        try:
-            op.execute(
-                "ALTER TABLE webhook_deliveries "
-                "ADD COLUMN IF NOT EXISTS organization_id UUID"
-            )
-
-            validated: bool | None = None
-            if not op.get_context().as_sql:
-                validated = op.get_bind().scalar(
-                    sa.text(
-                        "SELECT convalidated FROM pg_constraint "
-                        f"WHERE conname = '{CONSTRAINT_NAME}' "
-                        "AND conrelid = 'webhook_deliveries'::regclass"
-                    )
-                )
-
-            if validated is None:
-                op.create_foreign_key(
-                    op.f(CONSTRAINT_NAME),
-                    "webhook_deliveries",
-                    "organizations",
-                    ["organization_id"],
-                    ["id"],
-                    ondelete="CASCADE",
-                    postgresql_not_valid=True,
-                )
-            if not validated:
-                op.execute(
-                    "ALTER TABLE webhook_deliveries "
-                    f"VALIDATE CONSTRAINT {CONSTRAINT_NAME}"
-                )
-        finally:
-            op.execute("RESET lock_timeout")
+    # Ensures we don't break app by applying a deadlock-inducing migration.
+    # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
+    op.execute("SET LOCAL lock_timeout = '5s'")
+    op.add_column(
+        "webhook_deliveries", sa.Column("organization_id", sa.Uuid(), nullable=True)
+    )
+    # NOT VALID skips scanning existing rows; new writes are still checked.
+    op.create_foreign_key(
+        op.f("webhook_deliveries_organization_id_fkey"),
+        "webhook_deliveries",
+        "organizations",
+        ["organization_id"],
+        ["id"],
+        ondelete="CASCADE",
+        postgresql_not_valid=True,
+    )
 
 
 def downgrade() -> None:
-    with op.get_context().autocommit_block():
-        op.execute("SET lock_timeout = '5s'")
-        try:
-            op.drop_constraint(
-                op.f(CONSTRAINT_NAME),
-                "webhook_deliveries",
-                type_="foreignkey",
-                if_exists=True,
-            )
-            op.execute(
-                "ALTER TABLE webhook_deliveries DROP COLUMN IF EXISTS organization_id"
-            )
-        finally:
-            op.execute("RESET lock_timeout")
+    # Ensures we don't break app by applying a deadlock-inducing migration.
+    # CREATE INDEX CONCURRENTLY needs its own, far larger timeout -- see ADR-0006.
+    op.execute("SET LOCAL lock_timeout = '5s'")
+    op.drop_constraint(
+        op.f("webhook_deliveries_organization_id_fkey"),
+        "webhook_deliveries",
+        type_="foreignkey",
+    )
+    op.drop_column("webhook_deliveries", "organization_id")

@@ -110,6 +110,10 @@ module "test" {
       custom_domains     = [{ name = "worker-test.polar.sh" }]
       dramatiq_prom_port = "10000"
     }
+    worker-test-event-mover = {
+      start_command      = "uv run python -m polar.event.mover"
+      dramatiq_prom_port = "10001"
+    }
   }
 
   environment_groups = module.backend_environment[0].environment_groups

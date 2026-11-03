@@ -14,6 +14,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.user_organization import OrganizationRole
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -30,6 +31,93 @@ SEAT_AUTH = AuthSubjectFixture(
         Scope.customer_seats_write,
     }
 )
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(SEAT_AUTH)
+@pytest.mark.parametrize("role", list(OrganizationRole))
+@pytest.mark.parametrize("container_type", ["subscription", "order"])
+class TestOrganizationPermissions:
+    @pytest.fixture
+    async def seat(
+        self,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        role: OrganizationRole,
+        container_type: str,
+        subscription_with_seats: Subscription,
+        order_with_seats: Order,
+        customer: Customer,
+    ) -> CustomerSeat:
+        user_organization.role = role
+        await save_fixture(user_organization)
+        return await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats
+            if container_type == "subscription"
+            else None,
+            order=order_with_seats if container_type == "order" else None,
+            customer=customer,
+            email="seat-holder@example.com",
+        )
+
+    async def test_assign(
+        self,
+        client: AsyncClient,
+        seat: CustomerSeat,
+        role: OrganizationRole,
+    ) -> None:
+        container_field = "subscription_id" if seat.subscription_id else "order_id"
+        container_id = seat.subscription_id or seat.order_id
+        response = await client.post(
+            "/v1/customer-seats",
+            json={
+                container_field: str(container_id),
+                "email": "new-member@example.com",
+            },
+        )
+
+        assert response.status_code == (
+            403 if role == OrganizationRole.finance else 200
+        )
+        if role != OrganizationRole.finance:
+            assert response.json()["member_id"] is not None
+            assert response.json()["status"] == "pending"
+
+    async def test_revoke(
+        self,
+        client: AsyncClient,
+        seat: CustomerSeat,
+        role: OrganizationRole,
+        session: AsyncSession,
+    ) -> None:
+        seat_id = seat.id
+        response = await client.delete(f"/v1/customer-seats/{seat_id}")
+
+        assert response.status_code == (
+            404 if role == OrganizationRole.finance else 200
+        )
+        stored_seat = await session.get(CustomerSeat, seat_id)
+        assert stored_seat is not None
+        assert stored_seat.status == (
+            SeatStatus.pending
+            if role == OrganizationRole.finance
+            else SeatStatus.revoked
+        )
+
+    async def test_resend(
+        self,
+        client: AsyncClient,
+        seat: CustomerSeat,
+        role: OrganizationRole,
+    ) -> None:
+        response = await client.post(f"/v1/customer-seats/{seat.id}/resend")
+
+        assert response.status_code == (
+            404 if role == OrganizationRole.finance else 200
+        )
+        if role != OrganizationRole.finance:
+            assert response.json()["status"] == "pending"
 
 
 @pytest.mark.anyio

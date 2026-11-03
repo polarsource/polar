@@ -1,4 +1,5 @@
 import { Client, schemas, unwrap } from '@polar-sh/client'
+import { formatScalar } from './formatters'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
@@ -64,3 +65,23 @@ export const billsUsageOnMeterCycle = (
   subscription.current_meter_period_end != null &&
   new Date(subscription.current_meter_period_end) <
     new Date(subscription.current_period_end)
+
+export type BilledMeterUnits = Pick<
+  schemas['SubscriptionMeter'],
+  'consumed_units' | 'credited_units'
+>
+
+// Mirrors `get_amount_and_label` on metered prices: only units beyond the
+// credited ones are billed.
+export const formatBilledMeterUnits = ({
+  consumed_units,
+  credited_units,
+}: BilledMeterUnits): string | null => {
+  const billedUnits = Math.max(0, consumed_units - credited_units)
+  if (billedUnits === 0) {
+    return null
+  }
+  return credited_units > 0
+    ? `${formatScalar(billedUnits)} overage`
+    : `${formatScalar(billedUnits)} used`
+}

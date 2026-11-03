@@ -19,6 +19,7 @@ from polar.payment_method.repository import PaymentMethodRepository
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
+from polar.wallet.repository import WalletTransactionRepository
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -70,6 +71,22 @@ class OrderDoesNotExist(OrderTaskError):
         super().__init__(message)
 
 
+class PaymentDoesNotExist(OrderTaskError):
+    def __init__(self, payment_id: uuid.UUID) -> None:
+        self.payment_id = payment_id
+        message = f"The payment with id {payment_id} does not exist."
+        super().__init__(message)
+
+
+class WalletTransactionDoesNotExist(OrderTaskError):
+    def __init__(self, wallet_transaction_id: uuid.UUID) -> None:
+        self.wallet_transaction_id = wallet_transaction_id
+        message = (
+            f"The wallet transaction with id {wallet_transaction_id} does not exist."
+        )
+        super().__init__(message)
+
+
 def _defer_until_grace_period_elapsed(
     cutoff: datetime, actor_name: str, /, *args: Any, **kwargs: Any
 ) -> bool:
@@ -100,6 +117,58 @@ async def order_created(order_id: Annotated[uuid.UUID, LoggableField]) -> None:
         )
         if order is None:
             raise OrderDoesNotExist(order_id)
+
+
+@actor(actor_name="order.paid", priority=TaskPriority.HIGH)
+async def order_paid(
+    order_id: Annotated[uuid.UUID, LoggableField],
+    payment_id: Annotated[uuid.UUID | None, LoggableField] = None,
+) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options(), for_update=True
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        payment = None
+        if payment_id is not None:
+            payment = await PaymentRepository.from_session(session).get_by_id(
+                payment_id
+            )
+            if payment is None:
+                raise PaymentDoesNotExist(payment_id)
+
+        await order_service.handle_payment(session, order, payment)
+
+
+@actor(actor_name="order.wallet_order", priority=TaskPriority.HIGH)
+async def wallet_order(
+    wallet_transaction_id: Annotated[uuid.UUID, LoggableField],
+    payment_id: Annotated[uuid.UUID | None, LoggableField] = None,
+) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = WalletTransactionRepository.from_session(session)
+        wallet_transaction = await repository.get_by_id(
+            wallet_transaction_id,
+            options=repository.get_eager_options(),
+            for_update=True,
+        )
+        if wallet_transaction is None:
+            raise WalletTransactionDoesNotExist(wallet_transaction_id)
+        if wallet_transaction.order_id is not None:
+            return
+
+        payment = None
+        if payment_id is not None:
+            payment = await PaymentRepository.from_session(session).get_by_id(
+                payment_id
+            )
+            if payment is None:
+                raise PaymentDoesNotExist(payment_id)
+
+        await order_service.create_wallet_order(session, wallet_transaction, payment)
 
 
 @actor(
@@ -468,6 +537,13 @@ async def process_stale_payment_lock(
             return
 
         payment_repository = PaymentRepository.from_session(session)
+        if await payment_repository.get_succeeded_by_order(order.id) is not None:
+            log.info(
+                "Successful payment already recorded, keeping payment lock",
+                order_id=order.id,
+            )
+            return
+
         if await payment_repository.has_pending_sepa_debit_for_order(order.id):
             log.info(
                 "SEPA debit still pending, keeping payment lock", order_id=order.id

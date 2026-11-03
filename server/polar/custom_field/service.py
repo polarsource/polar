@@ -14,6 +14,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.orm import contains_eager
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -70,7 +71,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         if type is not None:
             statement = statement.where(CustomField.type.in_(type))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CustomFieldSortProperty.created_at:
@@ -253,7 +254,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
 
     def _get_readable_custom_field_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[CustomField]]:
+    ) -> Select[CustomField]:
         statement = (
             select(CustomField)
             .where(~CustomField.is_deleted)

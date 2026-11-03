@@ -187,6 +187,42 @@ describe('formatTree', () => {
         ]),
         entry('products', 'pro', 'unchanged'),
         entry('products', 'team', 'unchanged'),
+        entry('meters', 'tool_call', 'unchanged'),
+      ]),
+    )
+    expect(output).toBe(
+      [
+        '  meters',
+        '  = tool_call  unchanged',
+        '',
+        '  benefits',
+        '  ~ tool_calls',
+        '      properties  500 tool_call credits → 1,000 tool_call credits',
+        '',
+        '  products',
+        '  = pro        unchanged',
+        '  = team       unchanged',
+      ].join('\n'),
+    )
+  })
+
+  test('shows products that grant an updated benefit', () => {
+    const output = stripAnsi(
+      formatTree(input, [
+        entry('benefits', 'tool_calls', 'updated', [
+          {
+            field: 'properties',
+            before: { meter: 'tool_call', units: 500, rollover: false },
+            after: { meter: 'tool_call', units: 1000, rollover: false },
+          },
+        ]),
+        entry('products', 'pro', 'updated', [
+          {
+            field: 'benefits',
+            before: ['custom_servers', 'tool_calls'],
+            after: ['custom_servers', 'tool_calls'],
+          },
+        ]),
       ]),
     )
     expect(output).toBe(
@@ -196,8 +232,9 @@ describe('formatTree', () => {
         '      properties  500 tool_call credits → 1,000 tool_call credits',
         '',
         '  products',
-        '  = pro   unchanged',
-        '  = team  unchanged',
+        '  ~ pro',
+        '      ├ = benefit custom_servers',
+        '      └ ~ benefit tool_calls',
       ].join('\n'),
     )
   })
@@ -491,40 +528,49 @@ describe('formatTree', () => {
   })
 
   test('redacts both sides of an updated webhook url by their own format', () => {
-    const after = 'https://app:pw@app.test/hook?token=new'
-    const output = stripAnsi(
-      formatTree(
-        {
-          webhooks: [
-            {
-              external_id: 'app',
-              url: after,
-              format: 'raw',
-              events: ['order.paid'],
-              api_version: '2027-01',
-            },
+    const stdout: { columns?: number | undefined } = process.stdout
+    const columns = stdout.columns
+    stdout.columns = 80
+    try {
+      const after = 'https://app:pw@app.test/hook?token=new'
+      const output = stripAnsi(
+        formatTree(
+          {
+            webhooks: [
+              {
+                external_id: 'app',
+                url: after,
+                format: 'raw',
+                events: ['order.paid'],
+                api_version: '2027-01',
+              },
+            ],
+          },
+          [
+            entry('webhooks', 'app', 'updated', [
+              {
+                field: 'url',
+                before: 'https://hooks.slack.com/services/T0/B0/token',
+                after,
+              },
+              { field: 'format', before: 'slack', after: 'raw' },
+            ]),
           ],
-        },
+        ),
+      )
+      expect(output).toBe(
         [
-          entry('webhooks', 'app', 'updated', [
-            {
-              field: 'url',
-              before: 'https://hooks.slack.com/services/T0/B0/token',
-              after,
-            },
-            { field: 'format', before: 'slack', after: 'raw' },
-          ]),
-        ],
-      ),
-    )
-    expect(output).toBe(
-      [
-        '  webhooks',
-        '  ~ app',
-        '      url     https://hooks.slack.com/*** → https://***@app.test/hook?token=***',
-        '      format  "slack" → "raw"',
-      ].join('\n'),
-    )
+          '  webhooks',
+          '  ~ app',
+          '      url',
+          '        - https://hooks.slack.com/***',
+          '        + https://***@app.test/hook?token=***',
+          '      format  "slack" → "raw"',
+        ].join('\n'),
+      )
+    } finally {
+      stdout.columns = columns
+    }
   })
 
   test('falls back to ids when the config has no matching entry', () => {
@@ -536,59 +582,6 @@ describe('formatTree', () => {
       ]),
     )
     expect(output).toBe(['  meters', '  + tokens'].join('\n'))
-  })
-
-  test('describes a created discount', () => {
-    const output = stripAnsi(
-      formatTree(
-        {
-          ...input,
-          discounts: [
-            {
-              external_id: 'launch',
-              name: 'Launch',
-              type: 'percentage',
-              basis_points: 1250,
-              duration: 'repeating',
-              duration_in_months: 3,
-              code: 'LAUNCH',
-              products: ['pro', 'team'],
-              max_redemptions: 500,
-            },
-            {
-              external_id: 'welcome',
-              name: 'Welcome',
-              type: 'fixed',
-              amounts: { usd: 1000, eur: 900 },
-              duration: 'once',
-              products: [],
-            },
-          ],
-        },
-        [
-          entry('discounts', 'launch', 'created', [
-            { field: 'name', before: null, after: 'Launch' },
-            { field: 'basis_points', before: null, after: 1250 },
-          ]),
-          entry('discounts', 'welcome', 'created'),
-        ],
-      ),
-    )
-    expect(output).toBe(
-      [
-        '  discounts',
-        '  + launch',
-        '      value        12.5% off',
-        '      duration     3 months',
-        '      code         LAUNCH',
-        '      products     pro, team',
-        '      redemptions  500',
-        '  + welcome',
-        '      value     $10 / €9 off',
-        '      duration  once',
-        '      products  all',
-      ].join('\n'),
-    )
   })
 
   test('lists a section it has no sentences for, with every field', () => {

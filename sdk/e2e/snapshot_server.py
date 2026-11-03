@@ -15,14 +15,16 @@ from python_client import read_lines
 
 def customer_key(payload: typing.Mapping[str, object]) -> str:
     if payload.get("customer_id") is not None:
-        return f"customer:{payload['customer_id']}:{payload['meter_id']}"
-    return f"external:{payload['external_customer_id']}:{payload['meter_id']}"
+        return f"customer:{payload['customer_id']}:{payload['reducer_id']}"
+    return f"external:{payload['external_customer_id']}:{payload['reducer_id']}"
 
 
 class SnapshotServer:
     def __init__(self) -> None:
         self.configuration: Configuration = {"reducers": []}
         self.snapshots: dict[str, Snapshot] = {}
+        # The external ids Polar stored: a confirm request is answered with those among them.
+        self.ingested: set[str] = set()
         self.clients: dict[WebSocket, anyio.Lock] = {}
 
     async def websocket(self, websocket: WebSocket) -> None:
@@ -42,16 +44,34 @@ class SnapshotServer:
                         "customer_id": payload.get("customer_id"),
                         "external_customer_id": payload.get("external_customer_id"),
                         "customer_exists": False,
-                        "meter_id": payload["meter_id"],
+                        "reducer_id": payload["reducer_id"],
                         "version": 0,
                         "cold_until": 0,
                         "count": 0,
                         "sum": 0,
                         "min": None,
                         "max": None,
-                        "credited_units": 0,
                     }
                     await self._send(websocket, "meter_usage", snapshot)
+                elif message["type"] == "confirm":
+                    payload = message["payload"]
+                    snapshot = self.snapshots[customer_key(payload)]
+                    await self._send(
+                        websocket,
+                        "confirmed",
+                        {
+                            "reducer_id": payload["reducer_id"],
+                            "customer_id": payload.get("customer_id"),
+                            "external_customer_id": payload.get("external_customer_id"),
+                            "bucket_start": payload["bucket_start"],
+                            "ids": [
+                                external_id
+                                for external_id in payload["ids"]
+                                if external_id in self.ingested
+                            ],
+                            "snapshot": snapshot,
+                        },
+                    )
                 else:
                     await websocket.close(code=1008, reason="Unknown message")
                     return
@@ -74,6 +94,8 @@ class SnapshotServer:
             self.snapshots[customer_key(snapshot)] = snapshot
             for websocket in list(self.clients):
                 await self._send(websocket, "meter_usage", snapshot)
+        elif operation == "ingested":
+            self.ingested.update(event["external_id"] for event in arguments["events"])
         else:
             raise ValueError(f"Unknown operation: {operation}")
 
@@ -84,7 +106,7 @@ class SnapshotServer:
                     await websocket.close(code=code)
 
     async def _send(
-        self, websocket: WebSocket, type: str, payload: Configuration | Snapshot
+        self, websocket: WebSocket, type: str, payload: typing.Mapping[str, object]
     ) -> None:
         lock = self.clients.get(websocket)
         if lock is None:

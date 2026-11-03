@@ -158,6 +158,7 @@ describe('CheckoutHeroPrice', () => {
           prices: [],
           benefits: [],
           medias: [],
+          catalog_id: null,
           description: null,
           is_archived: false,
           organization_id: 'org_1',

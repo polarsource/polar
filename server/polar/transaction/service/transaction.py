@@ -7,6 +7,7 @@ from typing import Any, cast
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload, subqueryload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -80,7 +81,7 @@ class TransactionService(BaseTransactionService):
         if exclude_platform_fees:
             statement = statement.where(Transaction.platform_fee_type.is_(None))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == TransactionSortProperty.created_at:
@@ -282,7 +283,7 @@ class TransactionService(BaseTransactionService):
 
     def _get_readable_transactions_statement(
         self, auth_subject: AuthSubject[User]
-    ) -> Select[Any]:
+    ) -> Select[*tuple[Any, ...]]:
         readable_org_ids = select_accessible_org_ids(
             auth_subject, permission=OrganizationPermission.finance_read
         )

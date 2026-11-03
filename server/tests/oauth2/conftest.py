@@ -91,8 +91,10 @@ def save_fixture(sync_session: Session) -> SaveFixture:
 
 @pytest.fixture(autouse=True)
 def override_get_authorization_server(sync_session: Session) -> Iterator[None]:
-    authorization_server = AuthorizationServer.build(sync_session)
-    app.dependency_overrides[get_authorization_server] = lambda: authorization_server
+    # Built per request, as in production: the registered grants depend on settings.
+    app.dependency_overrides[get_authorization_server] = lambda: (
+        AuthorizationServer.build(sync_session)
+    )
     yield
     app.dependency_overrides.pop(get_authorization_server)
 

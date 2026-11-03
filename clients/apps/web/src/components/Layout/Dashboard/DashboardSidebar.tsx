@@ -5,10 +5,12 @@ import { NotificationsPopover } from '@/components/Notifications/NotificationsPo
 import { OmniSearch } from '@/components/Search/OmniSearch'
 import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
-import LockOutlined from '@mui/icons-material/LockOutlined'
-import Search from '@mui/icons-material/Search'
+import {
+  ArrowOutwardOutlined,
+  KeyboardArrowDown,
+  LockOutlined,
+  Search,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Button } from '@polar-sh/orbit'
 import {
@@ -28,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -37,6 +39,8 @@ import { PolarLogotype } from '../Public/PolarLogotype'
 import {
   AccountNavigation,
   OrganizationNavigation,
+  SettingsNavigationHeader,
+  useIsSettingsPath,
 } from './DashboardNavigation'
 import { useOrganizationSubscription } from '@/hooks/queries'
 
@@ -56,6 +60,8 @@ export const DashboardSidebar = ({
   const logout = useLogout()
 
   const [searchOpen, setSearchOpen] = useState(false)
+  const isSettingsPath = useIsSettingsPath(organization)
+  const isSubSidebar = type === 'account' || isSettingsPath
 
   const canManageBilling = useHasPermission(
     organization?.id,
@@ -122,7 +128,7 @@ export const DashboardSidebar = ({
             }
           />
         </div>
-        <motion.div
+        <m.div
           className="flex flex-row items-center gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -135,10 +141,16 @@ export const DashboardSidebar = ({
             onClick={() => setSearchOpen(true)}
             aria-label="Search"
           >
-            <Search fontSize="small" aria-hidden="true" />
+            <Search size={16} aria-hidden="true" />
           </Button>
-        </motion.div>
+        </m.div>
       </SidebarHeader>
+
+      {type === 'organization' && organization && isSettingsPath && (
+        <div className="px-2 pt-2">
+          <SettingsNavigationHeader organization={organization} />
+        </div>
+      )}
 
       <SidebarContent className="gap-4 px-2 py-2">
         {type === 'organization' && organization && (
@@ -148,7 +160,7 @@ export const DashboardSidebar = ({
             organization={organization}
           />
         )}
-        <motion.div
+        <m.div
           className="flex flex-col items-center gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -158,10 +170,10 @@ export const DashboardSidebar = ({
           {type === 'organization' && organization && (
             <OrganizationNavigation organization={organization} />
           )}
-        </motion.div>
+        </m.div>
       </SidebarContent>
       <SidebarFooter>
-        {isOnFreePlan && (
+        {isOnFreePlan && !isSubSidebar && (
           <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-2 rounded-sm border border-gray-100 bg-white p-4">
             <h3 className="text-sm">Introducing Polar Plans</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -176,22 +188,26 @@ export const DashboardSidebar = ({
           </div>
         )}
 
-        {type === 'organization' && organization && (
-          <SupportButton organization={organization} />
+        {!isSubSidebar && (
+          <>
+            {type === 'organization' && organization && (
+              <SupportButton organization={organization} />
+            )}
+            <a
+              className={twMerge(
+                'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',
+                'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
+              )}
+              href="https://polar.sh/docs"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
+              <span className="ml-4 font-medium">Documentation</span>
+            </a>
+            <Separator />
+          </>
         )}
-        <a
-          className={twMerge(
-            'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',
-            'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
-          )}
-          href="https://polar.sh/docs"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-          <span className="ml-4 font-medium">Documentation</span>
-        </a>
-        <Separator />
         {type === 'organization' && organization && (
           <SidebarMenu>
             <SidebarMenuItem>
@@ -264,11 +280,6 @@ export const DashboardSidebar = ({
                       New Organization
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem
-                    onClick={() => router.push('/dashboard/account')}
-                  >
-                    User Settings
-                  </DropdownMenuItem>
                   {!CONFIG.IS_SANDBOX && (
                     <DropdownMenuItem
                       onClick={() =>

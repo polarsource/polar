@@ -52,7 +52,8 @@ export const CurrencySelector = ({
   const baseCurrencies = useMemo(() => {
     if (!excludeCurrencies || excludeCurrencies.length === 0)
       return allCurrencies
-    return allCurrencies.filter((c) => !excludeCurrencies.includes(c.code))
+    const excluded = new Set(excludeCurrencies)
+    return allCurrencies.filter((c) => !excluded.has(c.code))
   }, [excludeCurrencies])
 
   const filteredCurrencies = useMemo(() => {

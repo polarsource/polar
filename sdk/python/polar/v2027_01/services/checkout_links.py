@@ -15,8 +15,6 @@ from polar.v2027_01.errors import (
     ResourceNotFound,
 )
 from polar.v2027_01.inputs import (
-    CheckoutLinkCreateProduct,
-    CheckoutLinkCreateProductPrice,
     CheckoutLinkCreateProducts,
     CheckoutLinkUpdate,
 )
@@ -132,39 +130,12 @@ class CheckoutLinksSync(SyncServiceBase):
                 break
             page += 1
 
-    @typing.overload
-    def create(
-        self,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-        **kwargs: typing.Unpack[CheckoutLinkCreateProductPrice],
-    ) -> CheckoutLink: ...
-
-    @typing.overload
-    def create(
-        self,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-        **kwargs: typing.Unpack[CheckoutLinkCreateProduct],
-    ) -> CheckoutLink: ...
-
-    @typing.overload
     def create(
         self,
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkCreateProducts],
-    ) -> CheckoutLink: ...
-
-    def create(
-        self,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-        **kwargs: typing.Any,
     ) -> CheckoutLink:
         """
         Create a checkout link.
@@ -432,39 +403,12 @@ class CheckoutLinksAsync(AsyncServiceBase):
                 break
             page += 1
 
-    @typing.overload
-    async def create(
-        self,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-        **kwargs: typing.Unpack[CheckoutLinkCreateProductPrice],
-    ) -> CheckoutLink: ...
-
-    @typing.overload
-    async def create(
-        self,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-        **kwargs: typing.Unpack[CheckoutLinkCreateProduct],
-    ) -> CheckoutLink: ...
-
-    @typing.overload
     async def create(
         self,
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutLinkCreateProducts],
-    ) -> CheckoutLink: ...
-
-    async def create(
-        self,
-        *,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-        **kwargs: typing.Any,
     ) -> CheckoutLink:
         """
         Create a checkout link.

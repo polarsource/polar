@@ -31,7 +31,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -234,13 +234,16 @@ class OrganizationFeatureSettings(Schema):
             "disputes on its behalf. Requires `disputes_enabled`."
         ),
     )
-    compass_enabled: bool = Field(
-        False,
-        description=(
-            "If this organization has the split product navigation "
-            "(Billing / Compass / Customers) enabled in the dashboard"
+    compass_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(
+            description=(
+                "If this organization has the split product navigation "
+                "(Billing / Compass / Customers) enabled in the dashboard"
+            ),
         ),
-    )
+    ] = False
     merchant_migration_enabled: bool = Field(
         False,
         description=(
@@ -248,16 +251,6 @@ class OrganizationFeatureSettings(Schema):
             "provider (e.g. Stripe) to Polar."
         ),
     )
-    agentic_payments_enabled: Annotated[
-        bool,
-        Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "If this organization accepts payments from AI agents "
-                "through Stripe shared payment tokens."
-            ),
-        ),
-    ] = False
     staged_events_ingest_enabled: Annotated[
         bool,
         Version(starting_from=V2027_01),
@@ -1027,3 +1020,7 @@ class OrganizationPayoutAccountSet(Schema):
     payout_account_id: UUID4 = Field(
         description="ID of the payout account to set on the organization."
     )
+
+
+class OrganizationListParams(QuerySchema):
+    slug: str | None = Field(None, description="Filter by slug.")

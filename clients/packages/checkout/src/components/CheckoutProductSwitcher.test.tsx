@@ -15,7 +15,7 @@ const themePreset = {} as Parameters<
 const noopUpdate = vi.fn().mockResolvedValue({} as ProductCheckoutPublic)
 
 describe('CheckoutProductSwitcher', () => {
-  describe('single product, no legacy prices', () => {
+  describe('single product', () => {
     it('returns null', () => {
       const checkout = createCheckout({
         products: [createCheckout().product],

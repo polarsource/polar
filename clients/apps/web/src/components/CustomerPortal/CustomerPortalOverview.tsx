@@ -3,7 +3,7 @@
 import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import { AllInclusiveOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Fragment } from 'react'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'

@@ -191,14 +191,15 @@ export const describeFailure = (error: unknown): Failure => {
   }
 }
 
+const helpFlags = new Set(['help', 'h'])
+
 export const outcomeOf = (
   exit: Exit.Exit<unknown, unknown>,
   flags: ReadonlyArray<string> = [],
 ): Pick<CommandOutcome, 'outcome' | 'error' | 'errorMessage' | 'errorCode'> => {
   if (Exit.isSuccess(exit)) {
     return {
-      outcome:
-        flags.includes('help') || flags.includes('h') ? 'help' : 'success',
+      outcome: flags.some((flag) => helpFlags.has(flag)) ? 'help' : 'success',
     }
   }
   if (Cause.hasInterruptsOnly(exit.cause)) return { outcome: 'interrupted' }

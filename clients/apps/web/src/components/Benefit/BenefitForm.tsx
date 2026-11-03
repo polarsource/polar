@@ -26,7 +26,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { usePathname } from 'next/navigation'
 import React, { useMemo } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
@@ -45,8 +45,8 @@ export const NewBenefitForm = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const { watch } = useFormContext<schemas['BenefitCreate']>()
-  const type = watch('type')
+  const { control } = useFormContext<schemas['BenefitCreate']>()
+  const type = useWatch({ control, name: 'type' })
 
   return <BenefitForm organization={organization} type={type} />
 }
@@ -202,10 +202,10 @@ const DiscordBenefitForm = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const { control, watch } = useFormContext<schemas['BenefitDiscordCreate']>()
+  const { control } = useFormContext<schemas['BenefitDiscordCreate']>()
   const pathname = usePathname()
-  const description = watch('description')
-  const guildId = watch('properties.guild_id')
+  const description = useWatch({ control, name: 'description' })
+  const guildId = useWatch({ control, name: 'properties.guild_id' })
 
   const authorizeURL = useMemo(() => {
     const searchParams = new URLSearchParams()

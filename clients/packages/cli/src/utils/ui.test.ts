@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { stripAnsi } from '@/utils/test-utils/cli'
+import pc from 'picocolors'
 import * as ui from '@/utils/ui'
 
 const ESC = String.fromCharCode(27)
@@ -91,5 +92,21 @@ describe('ui', () => {
     expect(stripAnsi(ui.timestamp(date))).toBe('13:05:09')
     expect(stripAnsi(ui.timestamp())).toMatch(/^\d{2}:\d{2}:\d{2}$/)
     expect(stripAnsi(ui.duration(12.6))).toBe('13ms')
+  })
+
+  describe('box', () => {
+    test('wraps long lines with a hanging indent and keeps colors', () => {
+      const colors = pc.createColors(true)
+      const long = `  catalog  ${colors.red(`"${'a'.repeat(130)}"`)} → "b"`
+      const rows = ui.box(long).split('\n')
+      expect(rows.length).toBeGreaterThan(3)
+      for (const row of rows.slice(1, -1)) {
+        expect(Bun.stringWidth(stripAnsi(row))).toBe(
+          Bun.stringWidth(stripAnsi(rows[0] ?? '')),
+        )
+      }
+      expect(stripAnsi(rows[2] ?? '')).toMatch(/^ {2}│ {4}"a+/)
+      expect(rows[2]).toContain(colors.red('').slice(0, 5))
+    })
   })
 })

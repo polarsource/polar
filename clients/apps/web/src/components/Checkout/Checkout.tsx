@@ -4,14 +4,14 @@ import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { useAuth } from '@/hooks/auth'
 import { useCheckoutConfirmedRedirect } from '@/hooks/checkout'
 import { usePostHog } from '@/hooks/posthog'
+import { useTrackCheckoutOpened } from '@/hooks/queries/checkouts'
 import { useOrganizationPaymentStatus } from '@/hooks/queries/org'
-import { getServerURL } from '@/utils/api'
 import {
   isExpiredCheckoutError,
   isOrderSummaryCollapsible,
 } from '@/utils/checkout'
 import { getResizedImage } from '@/utils/getResizedImage'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from '@polar-sh/orbit/icons'
 import {
   CheckoutForm,
   CheckoutHeroPrice,
@@ -122,12 +122,18 @@ const Checkout = ({
   const collapsedOrderSummary =
     hasProductCheckout(checkout) && isOrderSummaryCollapsible(checkout)
 
+  const { mutate: trackCheckoutOpened } = useTrackCheckoutOpened(
+    checkout.client_secret,
+  )
   const openedTrackedRef = useRef(false)
   useEffect(() => {
     if (openedTrackedRef.current) return
     openedTrackedRef.current = true
 
-    posthog.capture('storefront:checkout:page:view')
+    posthog.capture('storefront:checkout:page:view', {
+      checkout_id: checkout.id,
+      locale,
+    })
 
     const cookies = document.cookie.split(';')
     const distinctIdCookie = cookies.find((c) =>
@@ -135,17 +141,8 @@ const Checkout = ({
     )
     const distinctId = distinctIdCookie?.split('=')[1]?.trim()
 
-    fetch(
-      getServerURL(`/v1/checkouts/client/${checkout.client_secret}/opened`),
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ distinct_id: distinctId }),
-      },
-    ).catch(() => {
-      // Silently ignore - don't affect checkout experience
-    })
-  }, [checkout.client_secret, posthog])
+    trackCheckoutOpened(distinctId)
+  }, [trackCheckoutOpened, posthog, checkout.id, locale])
 
   const themePreset = getThemePreset(theme)
 
@@ -398,6 +395,7 @@ const Checkout = ({
             disabled={disableCheckout}
             isUpdatePending={isUpdatePending}
             locale={locale}
+            webMCP
           />
         </div>
       </div>

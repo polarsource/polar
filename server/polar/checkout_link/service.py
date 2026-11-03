@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -36,7 +37,6 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.service import product as product_service
 
 from .schemas import (
-    CheckoutLinkCreate,
     CheckoutLinkCreateProduct,
     CheckoutLinkCreateProductPrice,
     CheckoutLinkCreateProducts,
@@ -81,7 +81,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 CheckoutLink.checkout_link_products
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CheckoutLinkSortProperty.created_at:
@@ -126,7 +126,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
     async def create(
         self,
         session: AsyncSession,
-        checkout_link_create: CheckoutLinkCreate,
+        checkout_link_create: CheckoutLinkCreateProducts
+        | CheckoutLinkCreateProduct
+        | CheckoutLinkCreateProductPrice,
         auth_subject: AuthSubject[User | Organization | Agent],
     ) -> CheckoutLink:
         if isinstance(checkout_link_create, CheckoutLinkCreateProducts):

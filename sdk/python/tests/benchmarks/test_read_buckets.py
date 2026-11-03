@@ -38,7 +38,7 @@ def consumed_of(buckets: int) -> int:
 def local_buckets(redis_socket: str) -> collections.abc.Iterator[None]:
     client = Redis(unix_socket_path=redis_socket)
     for buckets in BUCKET_COUNTS:
-        key = f"outpost:state:external:{customer_of(buckets)}:{REDUCER['id']}"
+        key = f"outpost:v1:state:external:{customer_of(buckets)}:{REDUCER['id']}"
         client.hset(key, items=encode_state(buckets))
     client.close()
     yield

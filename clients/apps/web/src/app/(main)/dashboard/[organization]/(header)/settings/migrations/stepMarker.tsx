@@ -1,6 +1,5 @@
 import { Text, TextColor } from '@polar-sh/orbit'
-import { Check, Circle } from 'lucide-react'
-
+import { Check, Circle } from '@polar-sh/orbit/icons'
 // Shared by the top-level stepper and the card-transfer checklist so the two
 // stay one visual language.
 

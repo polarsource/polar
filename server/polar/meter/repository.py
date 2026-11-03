@@ -23,7 +23,7 @@ class MeterRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Meter]]:
+    ) -> Select[Meter]:
         return self.get_base_statement().where(Meter.organization_id.in_(org_ids))
 
     async def get_readable_by_id(
@@ -54,7 +54,7 @@ class MeterRepository(
             statement = statement.with_for_update()
         return await self.get_all(statement)
 
-    def get_organization_statement(self, organization_id: UUID) -> Select[tuple[Meter]]:
+    def get_organization_statement(self, organization_id: UUID) -> Select[Meter]:
         return (
             self.get_base_statement()
             .where(

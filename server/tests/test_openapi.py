@@ -21,7 +21,7 @@ from polar.openapi import (
     open_world,
 )
 from polar.routing import APIRouter
-from polar.version import V2027_01, VERSIONS
+from polar.version import V2026_10, V2027_01, VERSIONS
 
 
 @pytest.mark.anyio
@@ -311,3 +311,15 @@ class TestDestructiveToolAnnotations:
         async def update(id: str, body: WidgetUpdate) -> None: ...
 
         assert get_tool_annotations(router, "patch", "/widgets/{id}") == []
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(("version", "included"), [(V2026_10, True), (V2027_01, False)])
+async def test_legacy_recurring_product_price_schema(
+    version: APIVersion, included: bool, client: AsyncClient
+) -> None:
+    response = await client.get(f"{version}/openapi.json")
+    assert response.status_code == 200
+
+    schemas = response.json()["components"]["schemas"]
+    assert ("LegacyRecurringProductPrice" in schemas) is included

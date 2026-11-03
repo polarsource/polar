@@ -1,11 +1,13 @@
-import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
-import BoltOutlined from '@mui/icons-material/BoltOutlined'
-import GppMaybeOutlined from '@mui/icons-material/GppMaybeOutlined'
-import HourglassEmptyOutlined from '@mui/icons-material/HourglassEmptyOutlined'
-import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined'
-import PersonAddAltOutlined from '@mui/icons-material/PersonAddAltOutlined'
-import PersonRemoveOutlined from '@mui/icons-material/PersonRemoveOutlined'
-import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
+import {
+  AutorenewOutlined,
+  BoltOutlined,
+  GppMaybeOutlined,
+  HourglassEmptyOutlined,
+  InsertDriveFileOutlined,
+  PersonAddAltOutlined,
+  PersonRemoveOutlined,
+  ShoppingBagOutlined,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { DEFAULT_LOCALE } from '@polar-sh/i18n'

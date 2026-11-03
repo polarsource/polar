@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { Plus } from 'lucide-react'
+import { Plus } from '@polar-sh/orbit/icons'
 import { parseAsBoolean, useQueryState } from 'nuqs'
 import { useEffect, useState } from 'react'
 import CreateBenefitModalContent from '../../Benefit/CreateBenefitModalContent'

@@ -1,5 +1,5 @@
 output "planetscale" {
-  description = "PlanetScale connection details and SQL to bootstrap application schema ownership."
+  description = "PlanetScale connection details and SQL to grant application schema access."
   value       = module.planetscale
 }
 

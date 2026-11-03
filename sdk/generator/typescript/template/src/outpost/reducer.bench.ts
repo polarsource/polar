@@ -57,6 +57,7 @@ const any = (...clauses: (Filter | FilterClause)[]): Filter => ({ conjunction: "
 
 const reducerOf = (id: string, filter: Filter, aggregation: Aggregation): Reducer => ({
   id,
+  kind: "usage",
   filter,
   aggregation,
 });

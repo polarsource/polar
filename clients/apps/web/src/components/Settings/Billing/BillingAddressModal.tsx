@@ -20,7 +20,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 
 export const BillingAddressModal = ({
   organizationId,
@@ -40,9 +40,9 @@ export const BillingAddressModal = ({
     },
   })
 
-  const { control, handleSubmit, watch, setValue, reset } = form
+  const { control, handleSubmit, setValue, reset } = form
   // oxlint-disable-next-line react-hooks/incompatible-library
-  const country = watch('billing_address.country')
+  const country = useWatch({ control, name: 'billing_address.country' })
 
   useEffect(() => {
     if (details) {

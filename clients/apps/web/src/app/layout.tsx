@@ -14,6 +14,7 @@ import { schemas } from '@polar-sh/client'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Viewport } from 'next/types'
 import {
+  PolarMotionProvider,
   PolarNuqsProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
@@ -77,9 +78,11 @@ export default async function RootLayout({
             <PolarPostHogProvider>
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
-                  {CONFIG.IS_SANDBOX && <SandboxBanner />}
-                  <SessionRefreshModal />
-                  {children}
+                  <PolarMotionProvider>
+                    {CONFIG.IS_SANDBOX && <SandboxBanner />}
+                    <SessionRefreshModal />
+                    {children}
+                  </PolarMotionProvider>
                 </PolarNuqsProvider>
               </PolarQueryClientProvider>
             </PolarPostHogProvider>

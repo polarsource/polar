@@ -28,8 +28,10 @@ const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
 const nextConfig = {
   allowedDevOrigins: ['127.0.0.1', '*.taildbff7b.ts.net'],
   reactStrictMode: true,
+  reactCompiler: true,
   experimental: {
     useTypeScriptCli: false,
+    optimizePackageImports: ['@polar-sh/orbit/icons'],
   },
   transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
@@ -303,6 +305,11 @@ const nextConfig = {
         destination: '/dashboard/:organization/analytics/costs',
         permanent: true,
       },
+      {
+        source: '/dashboard/:organization/analytics/metrics/:metric',
+        destination: '/dashboard/:organization/analytics/metrics#:metric',
+        permanent: false,
+      },
 
       // Account Settings Redirects
       {
@@ -314,7 +321,7 @@ const nextConfig = {
       // Access tokens redirect
       {
         source: '/settings/tokens',
-        destination: '/account/developer',
+        destination: '/dashboard/account/developer',
         permanent: false,
       },
 

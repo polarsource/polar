@@ -45,6 +45,10 @@ async def main() -> None:
                         await outpost.track(event)
                     print(json.dumps({"result": None}), flush=True)
                     continue
+                if operation == "confirm":
+                    await outpost.confirm(command["arguments"]["events"])
+                    print(json.dumps({"result": None}), flush=True)
+                    continue
                 methods = {
                     "read": outpost.meter,
                     "actor": outpost.actor,

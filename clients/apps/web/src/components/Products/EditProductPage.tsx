@@ -25,7 +25,7 @@ import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FieldErrors } from 'react-hook-form'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
@@ -85,7 +85,8 @@ export const EditProductPage = ({
       metadata: metadataToEntries(product.metadata),
     },
   })
-  const { handleSubmit, setError, formState } = form
+  const { control, handleSubmit, setError } = form
+  const formState = useFormState({ control })
 
   const onInvalid = useCallback(
     (errors: FieldErrors<ProductEditOrCreateForm>) => {

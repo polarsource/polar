@@ -51,7 +51,7 @@ export default function UserDeleteSettings() {
 
   return (
     <>
-      <SettingsGroup>
+      <SettingsGroup title="Danger Zone">
         <SettingsGroupItem
           title="Delete Account"
           description="Permanently delete your account and all associated data. This action cannot be undone."

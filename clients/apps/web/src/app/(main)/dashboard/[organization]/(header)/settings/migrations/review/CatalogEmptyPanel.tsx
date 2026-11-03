@@ -50,16 +50,10 @@ export function CatalogEmptyPanel({
       textAlign="center"
     >
       <Box flexDirection="column" rowGap="xs" alignItems="center">
-        <Text
-          variant="heading-xs"
-          as="h3"
-          color={failed ? 'danger' : 'default'}
-        >
+        <Text variant="title" as="h3" color={failed ? 'danger' : 'default'}>
           {title}
         </Text>
-        <Text variant="caption" color="muted">
-          {description}
-        </Text>
+        <Text color="muted">{description}</Text>
       </Box>
       {onRerunPrecheck && (
         <Button

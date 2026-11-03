@@ -1,3 +1,4 @@
+import ManagedAsCodeGuard from '@/components/Auth/ManagedAsCodeGuard'
 import OrganizationPermissionGuard from '@/components/Auth/OrganizationPermissionGuard'
 import { permissionDeniedMessage } from '@/utils/permissions'
 
@@ -17,7 +18,9 @@ export default async function Layout({
       message={permissionDeniedMessage('products:manage')}
       standalone
     >
-      {children}
+      <ManagedAsCodeGuard organizationSlug={organization} standalone>
+        {children}
+      </ManagedAsCodeGuard>
     </OrganizationPermissionGuard>
   )
 }

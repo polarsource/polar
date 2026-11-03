@@ -1,9 +1,9 @@
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, ValidationError, create_model
+from pydantic import BaseModel, Field, create_model
 from sqlalchemy.exc import IntegrityError
 from typing_extensions import TypeForm
 
@@ -15,11 +15,11 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import catalog as catalog_service
-from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Organization, Product, User
+from polar.models import Agent, Benefit, Organization, Product, User
+from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -33,37 +33,36 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, catalogs, discounts, products, validation
+from . import benefits, catalogs, products, removals, validation
 from .auth import SECTION_SCOPES
+from .export import EXPORTED_SECTIONS, export_config
 from .schemas import (
-    MAXIMUM_METERS,
     Config,
     ConfigAction,
     ConfigApplyResult,
     ConfigBenefitMeterCredit,
+    ConfigCatalog,
+    ConfigCatalogChange,
+    ConfigCatalogPlan,
     ConfigChange,
     ConfigExport,
-    ConfigExportDocument,
-    ConfigExportMeter,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
-    ConfigMeter,
     ConfigPlan,
     ConfigProductPriceMeteredTiers,
     ConfigProductPriceMeteredUnit,
     ConfigPrune,
     ConfigPruneEntry,
+    ConfigPruneReference,
+    ConfigRemoval,
     ConfigResource,
     ConfigResult,
     ConfigSettingsChange,
     ConfigSettingsResult,
-    ConfigSkippedMeter,
-    ConfigSkippedReason,
 )
 from .validation import (
     BenefitChange,
-    DiscountChange,
     MeterChange,
     ProductChange,
     ResourceChange,
@@ -77,18 +76,30 @@ _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
 _WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
 
 
+def _assert_scopes(
+    auth_subject: AuthSubject[User | Organization | Agent],
+    sections: Iterable[str],
+    *,
+    write: bool,
+) -> None:
+    for section in sections:
+        read_scope, write_scope = SECTION_SCOPES[section]
+        required = {write_scope} if write else {read_scope, write_scope}
+        if not auth_subject.scopes & required:
+            raise InsufficientScopeError({str(scope) for scope in required})
+
+
 def _assert_section_scopes(
     auth_subject: AuthSubject[User | Organization | Agent],
     config: Config,
     *,
     write: bool,
 ) -> None:
-    for section, (read_scope, write_scope) in SECTION_SCOPES.items():
-        if section not in config.model_fields_set:
-            continue
-        required = {write_scope} if write else {read_scope, write_scope}
-        if not auth_subject.scopes & required:
-            raise InsufficientScopeError({str(scope) for scope in required})
+    _assert_scopes(
+        auth_subject,
+        (section for section in SECTION_SCOPES if section in config.model_fields_set),
+        write=write,
+    )
 
 
 # Webhook endpoints are managed with `organization_manage`, which product
@@ -176,6 +187,15 @@ class ConfigInvalid(PolarError):
         return cls._schema
 
 
+def _removed_external_ids(
+    removed: Sequence[ConfigRemoval],
+) -> tuple[list[str], list[str]]:
+    return (
+        [r.external_id for r in removed if r.resource == ConfigResource.product],
+        [r.external_id for r in removed if r.resource == ConfigResource.benefit],
+    )
+
+
 class DeclarativeConfigService:
     async def apply(
         self,
@@ -200,16 +220,29 @@ class DeclarativeConfigService:
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
-        issues.extend(catalogs.benefit_issues(changes))
+        removed, removal_issues = await removals.products(session, organization, config)
+        issues.extend(removal_issues)
+        removed += await removals.benefits(session, organization, config)
+        issues.extend(
+            await catalogs.cascade_benefit_changes(
+                session, organization, changes, removed
+            )
+        )
         errors = [
             issue for issue in issues if issue.severity == ConfigIssueSeverity.error
         ]
         if errors:
             raise ConfigInvalid(errors)
 
+        removed_products, removed_benefits = _removed_external_ids(removed)
         live = await catalog_service.get_or_create_live(session, organization)
         _, version_hash = await catalog_service.get_next_version_hash(
-            session, organization, catalogs.product_definitions(changes)
+            session,
+            organization,
+            live,
+            catalogs.definitions(changes),
+            removed_products,
+            removed_benefits,
         )
         settings_result = await self._apply_settings(
             session, organization, changes.settings
@@ -220,10 +253,10 @@ class DeclarativeConfigService:
         meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
         )
-        benefit_results, benefit_ids = await self._apply_benefits(
+        benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
             session, redis, auth_subject, organization, changes.benefits, meter_ids
         )
-        product_results, product_ids, new_products = await self._apply_products(
+        product_results, new_products = await self._apply_products(
             session,
             auth_subject,
             organization,
@@ -231,14 +264,24 @@ class DeclarativeConfigService:
             meter_ids,
             benefit_ids,
         )
-        if new_products:
+        catalog: ConfigCatalogChange | None = None
+        if new_products or new_benefits or removed:
             assert version_hash is not None
-            await catalog_service.publish(
-                session, organization, live, new_products, version_hash
+            before = None if live is None else ConfigCatalog.model_validate(live)
+            published = await catalog_service.publish(
+                session,
+                organization,
+                live,
+                new_products,
+                new_benefits,
+                version_hash,
+                removed_products,
+                removed_benefits,
+                name=config.catalog_name,
             )
-        discount_results = await self._apply_discounts(
-            session, auth_subject, organization, changes.discounts, product_ids
-        )
+            catalog = ConfigCatalogChange(
+                before=before, after=ConfigCatalog.model_validate(published)
+            )
         await catalogs.carry_over_references(session, changes.products, new_products)
         if (
             changes.settings is not None
@@ -258,8 +301,9 @@ class DeclarativeConfigService:
                 *meter_results,
                 *benefit_results,
                 *product_results,
-                *discount_results,
             ],
+            removed=removed,
+            catalog=catalog,
             settings=settings_result,
         )
 
@@ -268,35 +312,70 @@ class DeclarativeConfigService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
+        catalog_id: UUID | None = None,
     ) -> ConfigPlan:
         _assert_section_scopes(auth_subject, config, write=False)
         organization = await self._get_organization(
             session, auth_subject, config, OrganizationPermission.products_read
         )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        base = await catalog_service.resolve(session, organization, catalog_id)
+        archived_base = (
+            base if base is not None and base.status != CatalogStatus.live else None
+        )
         changes, issues = await validation.check(
-            session, organization, config, for_update=False
+            session,
+            organization,
+            config,
+            for_update=False,
+            catalog=archived_base,
         )
-        issues.extend(catalogs.benefit_issues(changes))
-        catalog_before, catalog_after = await catalog_service.get_next_version_hash(
-            session, organization, catalogs.product_definitions(changes)
+        removed, removal_issues = await removals.products(
+            session, organization, config, catalog=archived_base
         )
-        product_changes = self._plan_changes(ConfigResource.product, changes.products)
+        issues.extend(removal_issues)
+        removed += await removals.benefits(
+            session, organization, config, catalog=archived_base
+        )
+        issues.extend(
+            await catalogs.cascade_benefit_changes(
+                session, organization, changes, removed
+            )
+        )
+        catalog: ConfigCatalogPlan | None = None
+        # Apply publishes on top of live, so planning against an archived
+        # catalog has no next catalog.
+        catalog_before, catalog_after = (
+            (None, None)
+            if archived_base is not None
+            else await catalog_service.get_next_version_hash(
+                session,
+                organization,
+                base,
+                catalogs.definitions(changes),
+                *_removed_external_ids(removed),
+            )
+        )
         if catalog_after is not None and catalog_after != catalog_before:
-            catalogs.add_catalog_diffs(
-                product_changes,
-                changes.products,
-                catalog_before,
-                catalog_after,
+            catalog = ConfigCatalogPlan(
+                before=None if base is None else ConfigCatalog.model_validate(base),
+                name=config.catalog_name
+                if config.catalog_name is not None
+                else await catalog_service.get_default_name(
+                    session,
+                    organization,
+                    after_baseline=base is None and catalog_before is not None,
+                ),
             )
         return ConfigPlan(
             changes=[
                 *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
-                *product_changes,
-                *self._plan_changes(ConfigResource.discount, changes.discounts),
+                *self._plan_changes(ConfigResource.product, changes.products),
             ],
+            removed=removed,
+            catalog=catalog,
             settings=None
             if changes.settings is None
             else ConfigSettingsChange(
@@ -316,7 +395,6 @@ class DeclarativeConfigService:
             session, auth_subject, config, OrganizationPermission.products_read
         )
         meter_repository = MeterRepository.from_session(session)
-        benefit_repository = BenefitRepository.from_session(session)
         product_repository = ProductRepository.from_session(session)
         subscription_repository = SubscriptionRepository.from_session(session)
         grant_repository = BenefitGrantRepository.from_session(session)
@@ -331,63 +409,52 @@ class DeclarativeConfigService:
                 organization.id, [meter.external_id for meter in deprecated_meters]
             )
         }
-        benefit_ids = {
-            benefit.external_id: benefit.id
-            for benefit in await benefit_repository.get_all_by_external_ids(
+        product_customers = await product_repository.count_customers_by_external_ids(
+            organization.id, [p.external_id for p in deprecated_products]
+        )
+        benefit_customers = (
+            await grant_repository.count_granted_customers_by_benefit_external_ids(
                 organization.id, [b.external_id for b in deprecated_benefits]
             )
-        }
-        product_ids = {
-            product.external_id: product.id
-            for product in await product_repository.get_all_by_external_ids(
-                organization.id, [p.external_id for p in deprecated_products]
-            )
-        }
+        )
+        meter_customers = await subscription_repository.count_customers_by_meters(
+            organization.id, list(meter_ids.values())
+        )
 
         # Products first: a deprecated benefit or meter stays while a kept product uses it
         product_entries: list[ConfigPruneEntry] = []
         kept_products = [p for p in config.products if not p.deprecated]
         for product in deprecated_products:
-            product_id = product_ids.get(product.external_id)
-            in_use = (
-                product_id is not None
-                and await subscription_repository.exists_billable_by_product(product_id)
-            )
-            referenced_by = [
-                discount.external_id
-                for discount in config.discounts
-                if product.external_id in discount.products
-            ]
-            if in_use or referenced_by:
+            customers = product_customers.get(product.external_id, 0)
+            if customers:
                 kept_products.append(product)
             product_entries.append(
                 ConfigPruneEntry(
                     resource=ConfigResource.product,
                     external_id=product.external_id,
-                    in_use=in_use,
-                    referenced_by=referenced_by,
+                    customers_count=customers,
+                    referenced_by=[],
                 )
             )
 
         benefit_entries: list[ConfigPruneEntry] = []
         kept_benefits = [b for b in config.benefits if not b.deprecated]
         for benefit in deprecated_benefits:
-            benefit_id = benefit_ids.get(benefit.external_id)
-            in_use = benefit_id is not None and (
-                await grant_repository.exists_granted_by_benefit(benefit_id)
-            )
+            customers = benefit_customers.get(benefit.external_id, 0)
             referenced_by = [
-                product.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.product, external_id=product.external_id
+                )
                 for product in kept_products
                 if benefit.external_id in product.benefits
             ]
-            if in_use or referenced_by:
+            if customers or referenced_by:
                 kept_benefits.append(benefit)
             benefit_entries.append(
                 ConfigPruneEntry(
                     resource=ConfigResource.benefit,
                     external_id=benefit.external_id,
-                    in_use=in_use,
+                    customers_count=customers,
                     referenced_by=referenced_by,
                 )
             )
@@ -395,12 +462,11 @@ class DeclarativeConfigService:
         meter_entries: list[ConfigPruneEntry] = []
         for meter in deprecated_meters:
             meter_id = meter_ids.get(meter.external_id)
-            in_use = meter_id is not None and (
-                await subscription_repository.exists_billable_by_meter(meter_id)
-                or await grant_repository.exists_granted_by_meter(meter_id)
-            )
+            customers = 0 if meter_id is None else meter_customers.get(meter_id, 0)
             products_on_meter = [
-                product.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.product, external_id=product.external_id
+                )
                 for product in kept_products
                 if any(
                     isinstance(
@@ -412,7 +478,9 @@ class DeclarativeConfigService:
                 )
             ]
             benefits_on_meter = [
-                benefit.external_id
+                ConfigPruneReference(
+                    resource=ConfigResource.benefit, external_id=benefit.external_id
+                )
                 for benefit in kept_benefits
                 if isinstance(benefit, ConfigBenefitMeterCredit)
                 and benefit.properties.meter == meter.external_id
@@ -422,7 +490,7 @@ class DeclarativeConfigService:
                 ConfigPruneEntry(
                     resource=ConfigResource.meter,
                     external_id=meter.external_id,
-                    in_use=in_use,
+                    customers_count=customers,
                     referenced_by=referenced_by,
                 )
             )
@@ -434,55 +502,17 @@ class DeclarativeConfigService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: UUID | None,
+        catalog_id: UUID | None = None,
     ) -> ConfigExport:
+        _assert_scopes(auth_subject, EXPORTED_SECTIONS, write=False)
         organization = await self._get_organization(
             session,
             auth_subject,
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
         )
-        repository = MeterRepository.from_session(session)
-        meters: list[ConfigExportMeter] = []
-        skipped: list[ConfigSkippedMeter] = []
-        statement = repository.get_organization_statement(organization.id)
-        async for meter in repository.stream(statement):
-            reason: ConfigSkippedReason | None = None
-            if meter.external_id is None:
-                reason = ConfigSkippedReason.missing_external_id
-            elif meter.archived_at is not None:
-                reason = ConfigSkippedReason.archived
-            elif len(meters) >= MAXIMUM_METERS:
-                reason = ConfigSkippedReason.over_limit
-            else:
-                try:
-                    meter_config = ConfigMeter(
-                        external_id=meter.external_id,
-                        name=meter.name,
-                        unit=meter.unit,
-                        custom_label=meter.custom_label,
-                        custom_multiplier=meter.custom_multiplier,
-                        filter=meter.filter,
-                        aggregation=meter.aggregation,
-                        metadata=meter.user_metadata,
-                    )
-                except ValidationError:
-                    reason = ConfigSkippedReason.invalid
-                else:
-                    meters.append(
-                        ConfigExportMeter.model_validate(
-                            meter_config, from_attributes=True
-                        )
-                    )
-            if reason is not None:
-                skipped.append(
-                    ConfigSkippedMeter(
-                        resource=ConfigResource.meter,
-                        id=meter.id,
-                        name=meter.name,
-                        reason=reason,
-                    )
-                )
-        return ConfigExport(config=ConfigExportDocument(meters=meters), skipped=skipped)
+        catalog = await catalog_service.resolve(session, organization, catalog_id)
+        return await export_config(session, organization, catalog)
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]
@@ -653,15 +683,20 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Benefit]]:
         repository = BenefitRepository.from_session(session)
         results: list[ConfigResult] = []
         benefit_ids: dict[str, UUID] = {}
+        new_benefits: dict[str, Benefit] = {}
         for change in changes:
             benefit = change.existing
-            if benefit is None:
+            if benefit is None or change.update_dict:
                 try:
                     async with session.begin_nested():
+                        if benefit is not None:
+                            await repository.update(
+                                benefit, update_dict={"is_current": False}, flush=True
+                            )
                         benefit = await benefit_service.user_create(
                             session,
                             redis,
@@ -675,23 +710,24 @@ class DeclarativeConfigService:
                             auth_subject,
                             declarative_config=True,
                         )
-                        await repository.update(
-                            benefit,
-                            update_dict={"external_id": change.config.external_id},
-                        )
+                        update_dict: dict[str, Any] = {
+                            "external_id": change.config.external_id
+                        }
+                        if change.existing is not None:
+                            update_dict["is_tax_applicable"] = (
+                                change.existing.is_tax_applicable
+                            )
+                            # Metadata left out of the config is kept, as on update.
+                            if "metadata" not in change.config.model_fields_set:
+                                update_dict["user_metadata"] = (
+                                    change.existing.user_metadata
+                                )
+                        await repository.update(benefit, update_dict=update_dict)
                 except IntegrityError as e:
                     if _constraint_name(e) != _BENEFIT_EXTERNAL_ID_INDEX:
                         raise
                     raise ConfigBenefitConflict() from e
-            elif change.update_dict:
-                await benefit_service.update(
-                    session,
-                    redis,
-                    benefit,
-                    benefits.benefit_update(change, meter_ids),
-                    auth_subject,
-                    declarative_config=True,
-                )
+                new_benefits[change.config.external_id] = benefit
             benefit_ids[change.config.external_id] = benefit.id
             results.append(
                 ConfigResult(
@@ -700,7 +736,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, benefit_ids
+        return results, benefit_ids, new_benefits
 
     async def _apply_products(
         self,
@@ -710,7 +746,7 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
-    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Product]]:
+    ) -> tuple[list[ConfigResult], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
             str(id): external_id
@@ -718,7 +754,6 @@ class DeclarativeConfigService:
             for external_id, id in ids.items()
         }
         results: list[ConfigResult] = []
-        product_ids: dict[str, UUID] = {}
         new_products: dict[str, Product] = {}
         for change in changes:
             config = change.config
@@ -767,7 +802,6 @@ class DeclarativeConfigService:
                     )
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
-            product_ids[config.external_id] = product.id
             if (change.existing is None or copy_on_write) and not product.is_archived:
                 new_products[config.external_id] = product
             results.append(
@@ -777,49 +811,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, product_ids, new_products
-
-    async def _apply_discounts(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization | Agent],
-        organization: Organization,
-        changes: Sequence[DiscountChange],
-        product_ids: dict[str, UUID],
-    ) -> list[ConfigResult]:
-        external_ids = {str(id): external_id for external_id, id in product_ids.items()}
-        results: list[ConfigResult] = []
-        for change in changes:
-            try:
-                if change.existing is None:
-                    await discount_service.create(
-                        session,
-                        discounts.discount_create(
-                            change.config,
-                            None if is_organization(auth_subject) else organization.id,
-                            product_ids,
-                        ),
-                        auth_subject,
-                        declarative_config=True,
-                    )
-                elif change.update_dict:
-                    await discount_service.update(
-                        session,
-                        change.existing,
-                        discounts.discount_update(change, product_ids),
-                        auth_subject,
-                        declarative_config=True,
-                    )
-            except PolarRequestValidationError as e:
-                raise discounts.discount_error(e, change.index, external_ids) from e
-            results.append(
-                ConfigResult(
-                    resource=ConfigResource.discount,
-                    external_id=change.config.external_id,
-                    action=change.action,
-                )
-            )
-        return results
+        return results, new_products
 
 
 declarative_config = DeclarativeConfigService()

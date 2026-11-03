@@ -1,5 +1,7 @@
 import { DateRange } from '@/components/Metrics/DateRangePicker'
+import { toast } from '@/components/Toast/use-toast'
 import { getServerURL } from '@/utils/api'
+import { API_VERSION } from '@polar-sh/client'
 import { ExportColumnConfig, ExportColumnGroup } from './ExportColumns'
 
 export interface ExportSelection<T extends string> {
@@ -22,12 +24,18 @@ export function createExportColumnConfig<T extends string>(
     ),
   ) as Record<T, string>
 
-  const order = (selected: T[]): T[] =>
-    all.filter((column) => selected.includes(column))
+  const order = (selected: T[]): T[] => {
+    const selectedColumns = new Set(selected)
+    return all.filter((column) => selectedColumns.has(column))
+  }
 
-  const isDefault = (selected: T[]): boolean =>
-    selected.length === defaults.length &&
-    defaults.every((column) => selected.includes(column))
+  const isDefault = (selected: T[]): boolean => {
+    const selectedColumns = new Set(selected)
+    return (
+      selected.length === defaults.length &&
+      defaults.every((column) => selectedColumns.has(column))
+    )
+  }
 
   const summarize = (selected: T[]): string => {
     if (selected.length === 0) return 'No fields selected'
@@ -53,5 +61,26 @@ export function downloadCsvExport<T extends string>(
   for (const column of selection.columns) {
     url.searchParams.append('columns', column)
   }
-  window.open(url, '_blank')
+  return downloadExport(url, `polar-${endpoint.split('/')[2]}.csv`)
+}
+
+// fetch instead of window.open: versioned query params need the Polar-Version header
+export async function downloadExport(url: URL, filename: string) {
+  const response = await fetch(url, {
+    credentials: 'include',
+    headers: { 'Polar-Version': API_VERSION },
+  }).catch(() => null)
+  const blob = response?.ok ? await response.blob().catch(() => null) : null
+  if (!response || !blob) {
+    toast({ title: 'Export failed', description: 'Please try again later' })
+    return
+  }
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download =
+    response.headers
+      .get('Content-Disposition')
+      ?.match(/filename="([^"]+)"/)?.[1] ?? filename
+  link.click()
+  setTimeout(() => URL.revokeObjectURL(link.href))
 }

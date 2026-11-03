@@ -23,7 +23,7 @@ from httpx_ws import (
 )
 from opentelemetry import context as otel_context
 from opentelemetry import trace
-from opentelemetry.metrics import Counter, Histogram
+from opentelemetry.metrics import Counter, Histogram, _Gauge
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.trace import Span, StatusCode
@@ -43,10 +43,12 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
 from polar.metering.client import PolarClient
+from polar.metering.errors import UnknownMeterError
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
+    BUCKET_SIZE,
     BucketStatistics,
     Reducer,
     ReducerMatcher,
@@ -87,30 +89,50 @@ def _number(value: str) -> int | float:
     return number
 
 
+def _decode(value: str | bytes) -> str:
+    return value.decode() if isinstance(value, bytes) else value
+
+
 def _report_local_value(
-    span: Span, snapshot: "Snapshot", replaced: collections.abc.Sequence[str | bytes]
+    span: Span,
+    snapshot: "Snapshot",
+    replaced: collections.abc.Sequence[str | bytes],
+    # The state before the transaction settled confirmed events out of the pending part.
+    before: collections.abc.Mapping[str | bytes, str | bytes] | None = None,
 ) -> None:
-    decoded = [
-        value.decode() if isinstance(value, bytes) else value for value in replaced
-    ]
+    decoded = [_decode(value) for value in replaced]
     fields = dict(zip(decoded[::2], decoded[1::2], strict=True))
     if "cold_until" not in fields:
         return
+    previous = int(fields["cold_until"])
     local = BucketStatistics()
     buckets: dict[str, BucketStatistics] = {}
-    for field, value in fields.items():
+    pending: dict[str, BucketStatistics] = {}
+    source = (
+        fields
+        if before is None
+        else {_decode(field): _decode(value) for field, value in before.items()}
+    )
+    for field, value in source.items():
         if field.startswith("cold:"):
             setattr(local, field.removeprefix("cold:"), _number(value))
-        elif field.startswith("bucket:"):
-            _, start, statistic = field.split(":")
-            setattr(
-                buckets.setdefault(start, BucketStatistics()), statistic, _number(value)
-            )
-    for bucket in buckets.values():
-        local.add(bucket)
+            continue
+        kind, _, rest = field.partition(":")
+        if kind not in ("bucket", "pending"):
+            continue
+        start, _, statistic = rest.partition(":")
+        if int(start) >= snapshot["cold_until"]:
+            continue
+        group = buckets if kind == "bucket" else pending
+        setattr(group.setdefault(start, BucketStatistics()), statistic, _number(value))
+    # A bucket already cold before this snapshot was read by its pending part only.
+    for start, bucket in buckets.items():
+        local.add(
+            pending.get(start, BucketStatistics()) if int(start) < previous else bucket
+        )
     span.set_attributes(
         {
-            "outpost.local.cold_until": int(fields["cold_until"]),
+            "outpost.local.cold_until": previous,
             "outpost.local.count": local.count,
             "outpost.local.sum": local.sum,
             "outpost.snapshot.count": snapshot["count"],
@@ -208,101 +230,241 @@ async def connect_websocket(
         yield websocket
 
 
+# Every key and the channel carry the layout version. A new layout takes a new version, starts
+# cold from Polar's snapshot and never reads the previous keys.
+KEY_VERSION = "outpost:v1"
 CACHE_SIZE = 1024
+REQUESTED_SIZE = 16 * CACHE_SIZE
 REDIS_TIMEOUT = 5.0
 REDIS_RECONNECT_DELAY = 0.1
 MAX_REDIS_RECONNECT_DELAY = 2.0
 SYNC_INTERVAL = 30.0
 RECONNECT_DELAY = 0.5
 SNAPSHOT_TIMEOUT = 5.0
+CONFIRM_TIMEOUT = 2.0
+# Pending ids per confirm request: Polar refuses a bigger one.
+CONFIRM_BATCH = 1000
 MAX_RECONNECT_DELAY = 30.0
 
 READ_STATE_SCRIPT = """
 if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[1], 'revision', '0')
 end
+redis.call('EXPIRE', KEYS[1], 86400)
 return redis.call('HGETALL', KEYS[1])
 """
 
 WRITE_BUCKET_SCRIPT = """
-local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
-if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
-    return {}
+local bucket = 'bucket:' .. ARGV[4] .. ':'
+local pending = 'pending:' .. ARGV[4] .. ':'
+local fields = {'epoch', 'revision'}
+for _, prefix in ipairs({bucket, pending}) do
+    for _, statistic in ipairs({'count', 'sum', 'min', 'max'}) do
+        table.insert(fields, prefix .. statistic)
+    end
 end
-local prefix = 'bucket:' .. ARGV[4] .. ':'
-local total = tonumber(redis.call('HGET', KEYS[1], prefix .. 'sum') or '0') + tonumber(ARGV[6])
+local function reply()
+    local values = redis.call('HMGET', KEYS[1], unpack(fields))
+    local update = {}
+    for i, field in ipairs(fields) do
+        if values[i] then
+            table.insert(update, field)
+            table.insert(update, values[i])
+        end
+    end
+    return update
+end
+local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + tonumber(ARGV[6])
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
-redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[6])
-redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[5])
 for i, func in ipairs({'min', 'max'}) do
     local raw = ARGV[6 + i]
     if raw ~= '' then
         local value = tonumber(raw)
         assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
-        local stored = redis.call('HGET', KEYS[1], prefix .. func)
-        local previous = stored and tonumber(stored)
-        if not previous or (func == 'min' and value < previous)
-            or (func == 'max' and value > previous) then
-            redis.call('HSET', KEYS[1], prefix .. func, raw)
+    end
+end
+-- One event pending: its value, or nothing when it only counts. An external_id Polar has not
+-- confirmed yet: tracking it again changes nothing.
+assert(ARGV[5] == '1', 'One event per write')
+local entry = ARGV[7] ~= '' and ARGV[6] or ''
+if redis.call('HSETNX', KEYS[2], ARGV[9], entry) == 0 then
+    return reply()
+end
+-- Every local event counts in its bucket; the pending part is what Polar has not confirmed.
+for _, prefix in ipairs({bucket, pending}) do
+    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[6])
+    redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[5])
+    for i, func in ipairs({'min', 'max'}) do
+        local raw = ARGV[6 + i]
+        if raw ~= '' then
+            local value = tonumber(raw)
+            local stored = redis.call('HGET', KEYS[1], prefix .. func)
+            local previous = stored and tonumber(stored)
+            if not previous or (func == 'min' and value < previous)
+                or (func == 'max' and value > previous) then
+                redis.call('HSET', KEYS[1], prefix .. func, raw)
+            end
         end
     end
 end
+-- Events nobody confirms are forgotten an hour after the last write to their bucket. A state
+-- nobody reads, writes or snapshots for a day is forgotten too: the next read rebuilds it from
+-- Polar's snapshot.
+redis.call('EXPIRE', KEYS[2], 3900)
 
 if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
-local fields = {'epoch', 'revision', prefix .. 'count', prefix .. 'sum', prefix .. 'min', prefix .. 'max'}
-local values = redis.call('HMGET', KEYS[1], unpack(fields))
-local bucket = {}
-for i, field in ipairs(fields) do
-    if values[i] then
-        table.insert(bucket, field)
-        table.insert(bucket, values[i])
-    end
-end
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], bucket = bucket}))
-return bucket
+redis.call('EXPIRE', KEYS[1], 86400)
+local update = reply()
+redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], bucket = update}))
+return update
 """
 
 WRITE_BUCKET_SHA = hashlib.sha1(WRITE_BUCKET_SCRIPT.encode()).hexdigest()
 
-APPLY_SNAPSHOT_SCRIPT = """
-local cutoff = tonumber(ARGV[4])
-local current = redis.call('HGET', KEYS[1], 'cold_until')
-if current and tonumber(current) > cutoff then
-    return {redis.call('HGETALL', KEYS[1]), {}}
+CONFIRM_SCRIPT = """
+local bucket = 'bucket:' .. ARGV[4] .. ':'
+local pending = 'pending:' .. ARGV[4] .. ':'
+local BATCH = 1000
+-- Polar received the events but no snapshot counts them yet: a cold bucket keeps them
+-- pending for the snapshot that will, a hot one counts them whole either way.
+if ARGV[5] == '1' then
+    local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
+    if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
+        return {}
+    end
 end
-local replaced = {}
-local version = tonumber(ARGV[5])
-local previous = redis.call('HGET', KEYS[1], 'snapshot_version')
-if not previous or version >= tonumber(previous) then
-    if current then replaced = {'cold_until', current} end
-    for _, field in ipairs(redis.call('HKEYS', KEYS[1])) do
-        if string.sub(field, 1, 5) == 'cold:'
-            or (string.sub(field, 1, 7) == 'bucket:'
-                and tonumber(string.match(field, '^bucket:(%-?%d+):')) < cutoff) then
-            table.insert(replaced, field)
-            table.insert(replaced, redis.call('HGET', KEYS[1], field))
-            redis.call('HDEL', KEYS[1], field)
+local ids = {}
+for i = 6, #ARGV do table.insert(ids, ARGV[i]) end
+local gone, seen = {}, {}
+local removed, sum = 0, 0
+local current = redis.call('HMGET', KEYS[1], pending .. 'min', pending .. 'max')
+local min, max = tonumber(current[1]), tonumber(current[2])
+local extremum = false
+-- An entry is the event's value, or nothing when it only counts. Earlier SDK versions stored
+-- the event's count, sum, min and max as a JSON array; their entries expire within the hour.
+local function value_of(entry)
+    if entry:sub(1, 1) == '[' then
+        local legacy = cjson.decode(entry)
+        entry = legacy[3] ~= '' and legacy[2] or ''
+    end
+    return entry ~= '' and tonumber(entry) or nil
+end
+for offset = 1, #ids, BATCH do
+    local last = math.min(offset + BATCH - 1, #ids)
+    local entries = redis.call('HMGET', KEYS[2], unpack(ids, offset, last))
+    for i, entry in ipairs(entries) do
+        local id = ids[offset + i - 1]
+        if entry and not seen[id] then
+            seen[id] = true
+            table.insert(gone, id)
+            removed = removed + 1
+            local value = value_of(entry)
+            if value then
+                sum = sum + value
+                if value == min or value == max then extremum = true end
+            end
         end
     end
-    redis.call('HSET', KEYS[1], 'cold_until', ARGV[4], 'snapshot_version', ARGV[5],
-        'cold:count', ARGV[8], 'cold:sum', ARGV[9])
-    if ARGV[10] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[10]) end
-    if ARGV[11] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[11]) end
 end
-local credit_version = redis.call('HGET', KEYS[1], 'credited_version:' .. ARGV[6])
-if not credit_version or version >= tonumber(credit_version) then
-    redis.call('HSET', KEYS[1], 'credited:' .. ARGV[6], ARGV[7],
-        'credited_version:' .. ARGV[6], ARGV[5])
+if removed == 0 then
+    return {}
+end
+for offset = 1, #gone, BATCH do
+    redis.call('HDEL', KEYS[2], unpack(gone, offset, math.min(offset + BATCH - 1, #gone)))
+end
+local count = tonumber(redis.call('HINCRBY', KEYS[1], pending .. 'count', -removed))
+redis.call('HINCRBYFLOAT', KEYS[1], pending .. 'sum', -sum)
+if count <= 0 then
+    redis.call('HDEL', KEYS[1], pending .. 'count', pending .. 'sum', pending .. 'min', pending .. 'max')
+    local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
+    -- Polar counts the whole bucket once it is cold: the local copy has nothing left to add.
+    if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
+        redis.call('HDEL', KEYS[1], bucket .. 'count', bucket .. 'sum', bucket .. 'min', bucket .. 'max')
+    end
+elseif extremum then
+    -- Extrema cannot be decremented: read them off the events still pending.
+    min, max = nil, nil
+    for _, entry in ipairs(redis.call('HVALS', KEYS[2])) do
+        local value = value_of(entry)
+        if value then
+            if not min or value < min then min = value end
+            if not max or value > max then max = value end
+        end
+    end
+    for func, value in pairs({min = min, max = max}) do
+        redis.call('HSET', KEYS[1], pending .. func, tostring(value))
+    end
+    if not min then redis.call('HDEL', KEYS[1], pending .. 'min') end
+    if not max then redis.call('HDEL', KEYS[1], pending .. 'max') end
 end
 
 if not redis.call('HGET', KEYS[1], 'epoch') then
     redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
 end
 redis.call('HINCRBY', KEYS[1], 'revision', 1)
+redis.call('EXPIRE', KEYS[1], 86400)
+-- A confirmation can drop a bucket, which a bucket update cannot express: send the whole state.
 local state = redis.call('HGETALL', KEYS[1])
+redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
+return state
+"""
+
+CONFIRM_SHA = hashlib.sha1(CONFIRM_SCRIPT.encode()).hexdigest()
+
+APPLY_SNAPSHOT_SCRIPT = """
+local cutoff = tonumber(ARGV[4])
+local state = redis.call('HGETALL', KEYS[1])
+local fields = {}
+for i = 1, #state, 2 do fields[state[i]] = state[i + 1] end
+local current = fields['cold_until']
+if current and tonumber(current) > cutoff then
+    return {state, {}}
+end
+local replaced = {}
+local version = tonumber(ARGV[5])
+local previous = fields['snapshot_version']
+if not previous or version >= tonumber(previous) then
+    if current then replaced = {'cold_until', current} end
+    -- Polar's totals now cover the buckets before the cutoff. The local copy of each is
+    -- reported with its pending part, and kept while events Polar has not confirmed remain
+    -- pending in it, for an hour at most: that pending part is what the local read adds on
+    -- top of Polar's totals.
+    local function sealed(start)
+        local pending = fields['pending:' .. start .. ':count']
+        return not pending or tonumber(pending) <= 0 or tonumber(start) + 3600000000 < cutoff
+    end
+    local dropped = {}
+    for field, value in pairs(fields) do
+        if string.sub(field, 1, 5) == 'cold:' then
+            table.insert(replaced, field)
+            table.insert(replaced, value)
+            table.insert(dropped, field)
+        else
+            local kind, start = string.match(field, '^(%a+):(%-?%d+):')
+            if (kind == 'bucket' or kind == 'pending') and tonumber(start) < cutoff then
+                table.insert(replaced, field)
+                table.insert(replaced, value)
+                if sealed(start) then table.insert(dropped, field) end
+            end
+        end
+    end
+    for i = 1, #dropped, 1000 do
+        redis.call('HDEL', KEYS[1], unpack(dropped, i, math.min(i + 999, #dropped)))
+    end
+    redis.call('HSET', KEYS[1], 'cold_until', ARGV[4], 'snapshot_version', ARGV[5],
+        'cold:count', ARGV[6], 'cold:sum', ARGV[7])
+    if ARGV[8] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[8]) end
+    if ARGV[9] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[9]) end
+end
+if not fields['epoch'] then
+    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
+end
+redis.call('HINCRBY', KEYS[1], 'revision', 1)
+redis.call('EXPIRE', KEYS[1], 86400)
+state = redis.call('HGETALL', KEYS[1])
 redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
 return {state, replaced}
 """
@@ -321,70 +483,90 @@ class ReducerState:
     cold_until: int | None
     cold: BucketStatistics
     buckets: dict[int, BucketStatistics]
-    credited: dict[str, int | float]
+    # The part of each bucket Polar has not confirmed yet.
+    pending: dict[int, BucketStatistics]
 
 
 def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
-    decoded = [
-        value.decode() if isinstance(value, bytes) else value for value in values
-    ]
     epoch = ""
     revision = 0
     cold_until: int | None = None
     cold = BucketStatistics()
     buckets: dict[int, BucketStatistics] = {}
-    credited: dict[str, int | float] = {}
-    for field, value in zip(decoded[::2], decoded[1::2], strict=True):
-        if field.startswith("bucket:"):
-            timestamp, _, statistic = field[7:].partition(":")
-            start = int(timestamp)
-            bucket = buckets.get(start)
-            if bucket is None:
-                bucket = buckets[start] = BucketStatistics()
-            setattr(bucket, statistic, _number(value))
-        elif field.startswith("cold:"):
-            setattr(cold, field[5:], _number(value))
-        elif field.startswith("credited:"):
-            credited[field[9:]] = _number(value)
-        elif field == "epoch":
-            epoch = value
-        elif field == "revision":
-            revision = int(value)
-        elif field == "cold_until":
-            cold_until = int(value)
+    pending: dict[int, BucketStatistics] = {}
+    # The statistics each `<group>:<statistic>` field writes to, by group: `cold` and every
+    # `bucket:<start>` or `pending:<start>` seen so far.
+    groups: dict[str, BucketStatistics] = {"cold": cold}
+    # Fields and values alternate: zipping one iterator with itself reads them in pairs.
+    pairs = iter(values)
+    for field, value in zip(pairs, pairs, strict=True):
+        if isinstance(field, bytes):
+            field = field.decode()
+        if isinstance(value, bytes):
+            value = value.decode()
+        group, separator, statistic = field.rpartition(":")
+        bucket = groups.get(group)
+        if bucket is None:
+            if not separator:
+                if field == "epoch":
+                    epoch = value
+                elif field == "revision":
+                    revision = int(value)
+                elif field == "cold_until":
+                    cold_until = int(value)
+                continue
+            kind, _, timestamp = group.partition(":")
+            if kind == "bucket" or kind == "pending":
+                bucket = BucketStatistics()
+                (buckets if kind == "bucket" else pending)[int(timestamp)] = bucket
+                groups[group] = bucket
+            else:
+                continue
+        setattr(bucket, statistic, int(value) if value.isdecimal() else _number(value))
     return ReducerState(
         epoch=epoch,
         revision=revision,
         cold_until=cold_until,
         cold=cold,
         buckets=buckets,
-        credited=credited,
+        pending=pending,
     )
 
 
+# Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
+# them, and every local event in the buckets Polar has not sealed yet.
 def consumed_units(state: ReducerState, func: str) -> int | float:
-    assert state.cold_until is not None
-    combined = dataclasses.replace(state.cold)
-    for bucket_start, statistics in state.buckets.items():
-        if bucket_start >= state.cold_until:
-            combined.add(statistics)
-    return combined.quantity(func)
+    cold_until = state.cold_until
+    assert cold_until is not None
+    cold = state.cold
+    count, total, low, high = cold.count, cold.sum, cold.min, cold.max
+    parts = [s for start, s in state.pending.items() if start < cold_until]
+    parts += [s for start, s in state.buckets.items() if start >= cold_until]
+    for statistics in parts:
+        count += statistics.count
+        total += statistics.sum
+        if statistics.min is not None and (low is None or statistics.min < low):
+            low = statistics.min
+        if statistics.max is not None and (high is None or statistics.max > high):
+            high = statistics.max
+    if isinstance(total, float) and not math.isfinite(total):
+        raise ValueError("Aggregation values must be finite")
+    return BucketStatistics(count, total, low, high).quantity(func)
 
 
 @dataclasses.dataclass
 class LocalState:
     state: ReducerState | None = None
-    lock: anyio.Lock = dataclasses.field(default_factory=anyio.Lock)
+    # Uncontended, the lock is taken without yielding to the event loop.
+    lock: anyio.Lock = dataclasses.field(
+        default_factory=functools.partial(anyio.Lock, fast_acquire=True)
+    )
     missing: bool = False
     changed: anyio.Event = dataclasses.field(default_factory=anyio.Event)
 
-    def is_ready(self, meter_ids: collections.abc.Iterable[str]) -> bool:
+    def is_ready(self) -> bool:
         state = self.state
-        return self.missing or (
-            state is not None
-            and state.cold_until is not None
-            and all(meter_id in state.credited for meter_id in meter_ids)
-        )
+        return self.missing or (state is not None and state.cold_until is not None)
 
     def notify(self) -> None:
         self.changed.set()
@@ -396,17 +578,16 @@ class Configuration(typing.TypedDict):
 
 
 class Snapshot(typing.TypedDict):
+    reducer_id: str
     customer_id: str | None
     external_customer_id: str | None
     customer_exists: bool
-    meter_id: str
     version: int
     cold_until: int
     count: int
     sum: int | float
     min: int | float | None
     max: int | float | None
-    credited_units: int | float
 
 
 @dataclasses.dataclass
@@ -415,9 +596,30 @@ class IngestResult:
     duplicates: int = 0
 
 
+# A snapshot waiting for Polar to say which of the pending events it counts, one per reducer.
+@dataclasses.dataclass
+class _Confirmation:
+    snapshot: "Snapshot"
+    customer: str
+    identity: str
+    started: float
+    age: float
+    next: "Snapshot | None" = None
+    awaited: int = 0
+    messages: int = 0
+    asked: int = 0
+    confirmed: dict[int, list[str]] = dataclasses.field(default_factory=dict)
+    timer: anyio.CancelScope | None = None
+
+
 class Outpost:
     def __init__(
-        self, redis_url: str, *, client: httpx.AsyncClient, telemetry: bool = True
+        self,
+        redis_url: str,
+        *,
+        client: httpx.AsyncClient,
+        telemetry: bool = True,
+        confirm_timeout: float = CONFIRM_TIMEOUT,
     ) -> None:
         self.redis_url = redis_url
         self._client = client
@@ -428,6 +630,8 @@ class Outpost:
         self._ingest_duration: Histogram | None = None
         self._ingest_buckets: Counter | None = None
         self._read_duration: Histogram | None = None
+        self._redis_memory: _Gauge | None = None
+        self._redis_keys: _Gauge | None = None
         self._stack = contextlib.AsyncExitStack()
         self._redis: Redis | None = None
         self._websocket: AsyncWebSocketSession | None = None
@@ -437,9 +641,14 @@ class Outpost:
         self._tasks: anyio.abc.TaskGroup | None = None
         self._reducers: list[Reducer] = []
         self._matchers: list[ReducerMatcher] = []
-        self._actors: set[str] = set()
+        self._actors: dict[str, None] = {}
+        self._requesting: set[str] = set()
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
+        self._confirm_script: AsyncScript | None = None
+        self._confirm_timeout = confirm_timeout
+        self._confirmations: dict[str, _Confirmation] = {}
+        self._confirming = anyio.Lock()
         self._read_state: AsyncScript | None = None
         self._cache: collections.OrderedDict[str, LocalState] = (
             collections.OrderedDict()
@@ -477,14 +686,17 @@ class Outpost:
             self._read_duration = meter.create_histogram(
                 "outpost.read.duration", unit="s"
             )
+            self._redis_memory = meter.create_gauge("outpost.redis.memory", unit="By")
+            self._redis_keys = meter.create_gauge("outpost.redis.keys")
         try:
             with self._span("outpost.redis.connect"):
                 self._redis = await self._stack.enter_async_context(
                     connect_redis(self.redis_url)
                 )
-            self._channel = f"outpost:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
+            self._channel = f"{KEY_VERSION}:{self._redis.connection_pool.connection_kwargs.get('db', 0)}:updates"
             self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
+            self._confirm_script = self._redis.register_script(CONFIRM_SCRIPT)
             self._tasks = await self._stack.enter_async_context(
                 anyio.create_task_group()
             )
@@ -504,6 +716,8 @@ class Outpost:
                 self._reducers = []
                 self._matchers = []
                 self._apply_snapshot = None
+                self._confirm_script = None
+                self._confirmations.clear()
                 self._read_state = None
                 self._cache.clear()
                 await self._shutdown_telemetry()
@@ -533,7 +747,10 @@ class Outpost:
             self._reducers = []
             self._matchers = []
             self._actors.clear()
+            self._requesting.clear()
             self._apply_snapshot = None
+            self._confirm_script = None
+            self._confirmations.clear()
             self._read_state = None
             self._cache.clear()
             await self._shutdown_telemetry()
@@ -581,39 +798,49 @@ class Outpost:
             await self._warm_actor(parsed.external_customer_id)
             assert self._redis is not None
             writes: list[tuple[str, list[str | int | float]]] = []
-            async with self._redis.pipeline(transaction=False) as pipeline:
-                for (customer, reducer_id, bucket_start), statistics in updates.items():
-                    identity = f"{customer}:{reducer_id}"
-                    arguments: list[str | int | float] = [
-                        f"outpost:state:{identity}",
-                        identity,
-                        self._channel,
-                        _generate_epoch(),
-                        bucket_start,
-                        statistics.count,
-                        statistics.sum,
-                        statistics.min if statistics.min is not None else "",
-                        statistics.max if statistics.max is not None else "",
+            for (customer, reducer_id, bucket_start), statistics in updates.items():
+                identity = f"{customer}:{reducer_id}"
+                arguments: list[str | int | float] = [
+                    f"{KEY_VERSION}:state:{identity}",
+                    f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
+                    identity,
+                    self._channel,
+                    _generate_epoch(),
+                    bucket_start,
+                    statistics.count,
+                    statistics.sum,
+                    statistics.min if statistics.min is not None else "",
+                    statistics.max if statistics.max is not None else "",
+                    typing.cast(str, event["external_id"]),
+                ]
+                writes.append((identity, arguments))
+            # Most events match one reducer: one EVALSHA writes its bucket. A pipeline only
+            # pays off for several writes, and closing it costs two extra event-loop turns.
+            if len(writes) == 1:
+                try:
+                    states = [
+                        await self._redis.evalsha(WRITE_BUCKET_SHA, 2, *writes[0][1])
                     ]
-                    writes.append((identity, arguments))
-                    pipeline.evalsha(WRITE_BUCKET_SHA, 1, *arguments)
-                states = await pipeline.execute(raise_on_error=False)
+                except NoScriptError as error:
+                    states = [error]
+            else:
+                async with self._redis.pipeline(transaction=False) as pipeline:
+                    for _, arguments in writes:
+                        pipeline.evalsha(WRITE_BUCKET_SHA, 2, *arguments)
+                    states = await pipeline.execute(raise_on_error=False)
             first_error: Exception | None = None
             for (identity, arguments), state in zip(writes, states, strict=True):
                 # Redis caches the script with the first EVAL, so this happens once per server.
                 if isinstance(state, NoScriptError):
                     try:
                         state = await self._redis.eval(
-                            WRITE_BUCKET_SCRIPT, 1, *arguments
+                            WRITE_BUCKET_SCRIPT, 2, *arguments
                         )
                     except RedisError as error:
                         state = error
                 if isinstance(state, Exception):
                     if first_error is None:
                         first_error = state
-                    continue
-                # Empty when the bucket is older than the last snapshot: nothing changed.
-                if not state:
                     continue
                 await self._receive_state(identity, decode_state(state), bucket=True)
             if first_error is not None:
@@ -625,6 +852,80 @@ class Outpost:
             attributes = {"outpost.outcome": outcome}
             if self._ingest_duration is not None:
                 self._ingest_duration.record(time.perf_counter() - started, attributes)
+
+    async def confirm(self, events: collections.abc.Sequence[EventInput]) -> None:
+        """Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
+
+        Args:
+            events: Tracked events, including their external_id.
+        """
+        await self._settle(events, hot_only=False)
+
+    async def acknowledge(self, events: collections.abc.Sequence[EventInput]) -> None:
+        """Settle events Polar has received, in the buckets no snapshot has sealed yet.
+        Events of a sealed bucket stay pending until a snapshot counts them.
+
+        Args:
+            events: Tracked events, including their external_id.
+        """
+        await self._settle(events, hot_only=True)
+
+    @_raise_redis_unavailable
+    async def _settle(
+        self, events: collections.abc.Sequence[EventInput], *, hot_only: bool
+    ) -> None:
+        self._require_redis()
+        if not self._configured.is_set():
+            with anyio.fail_after(5):
+                await self._configured.wait()
+        groups: dict[tuple[str, int], list[str]] = {}
+        for event in events:
+            self.validate(event)
+            parsed = self._parse_event(event)
+            updates = reduce(
+                self._matchers,
+                [parsed],
+                oldest_bucket_start=get_bucket_start(parsed.timestamp),
+            )
+            for customer, reducer_id, bucket_start in updates:
+                identity = f"{customer}:{reducer_id}"
+                groups.setdefault((identity, bucket_start), []).append(
+                    typing.cast(str, event["external_id"])
+                )
+        assert self._redis is not None
+        confirmations: list[tuple[str, list[str | int]]] = []
+        async with self._redis.pipeline(transaction=False) as pipeline:
+            for (identity, bucket_start), ids in groups.items():
+                arguments: list[str | int] = [
+                    f"{KEY_VERSION}:state:{identity}",
+                    f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
+                    identity,
+                    self._channel,
+                    _generate_epoch(),
+                    bucket_start,
+                    "1" if hot_only else "",
+                    *ids,
+                ]
+                confirmations.append((identity, arguments))
+                pipeline.evalsha(CONFIRM_SHA, 2, *arguments)
+            states = await pipeline.execute(raise_on_error=False)
+        first_error: Exception | None = None
+        for (identity, arguments), state in zip(confirmations, states, strict=True):
+            if isinstance(state, NoScriptError):
+                try:
+                    state = await self._redis.eval(CONFIRM_SCRIPT, 2, *arguments)
+                except RedisError as error:
+                    state = error
+            if isinstance(state, Exception):
+                if first_error is None:
+                    first_error = state
+                continue
+            # Nothing settled: the state did not change.
+            if not state:
+                continue
+            await self._receive_state(identity, decode_state(state))
+        if first_error is not None:
+            raise first_error
 
     @_raise_redis_unavailable
     async def meter(
@@ -640,36 +941,37 @@ class Outpost:
             if not self._configured.is_set():
                 with anyio.fail_after(5):
                     await self._configured.wait()
-            reducers = self._reducers
-            reducer = next(
-                (
-                    reducer
-                    for reducer in reducers
-                    if meter_id in reducer.get("meter_ids", [])
-                ),
-                None,
-            )
-            if reducer is None:
+            usage = self._find_reducer("usage", meter_id)
+            if usage is None:
                 read.outcome = "unknown_meter"
-                return None
-            local = await self._warm_customer(customer, reducer)
-            if not local.is_ready([meter_id]):
+                raise UnknownMeterError(f"Outpost reduces no meter {meter_id}")
+            credit = self._find_reducer("credit", meter_id)
+            warmed = [
+                (reducer, await self._warm_customer(customer, reducer))
+                for reducer in (usage, credit)
+                if reducer is not None
+            ]
+            if not all(local.is_ready() for _, local in warmed):
                 with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-                    await self._wait_ready(reducer, local, [meter_id])
-            if local.missing:
+                    for _, local in warmed:
+                        await self._wait_ready(local)
+            if any(local.missing for _, local in warmed):
                 read.outcome = "unknown_customer"
                 return None
-            state = local.state
+            state = warmed[0][1].state
             if state is None or state.cold_until is None:
                 raise _NotReadyError("Customer snapshot is not ready")
-            read.outcome = (
-                "ready"
-                if reducer["aggregation"]["func"] == "unique"
-                or meter_id in state.credited
-                else "not_ready"
-            )
-            consumed = consumed_units(state, reducer["aggregation"]["func"])
-            credited = state.credited.get(meter_id, 0)
+            consumed = consumed_units(state, usage["aggregation"]["func"])
+            credited: int | float = 0
+            read.outcome = "ready"
+            if credit is not None:
+                credit_state = warmed[1][1].state
+                if credit_state is not None and credit_state.cold_until is not None:
+                    credited = consumed_units(
+                        credit_state, credit["aggregation"]["func"]
+                    )
+                else:
+                    read.outcome = "not_ready"
             return CustomerMeter(
                 meter_id=meter_id,
                 customer_id=customer_id,
@@ -689,27 +991,13 @@ class Outpost:
         with self._measure_read("actor") as read:
             customer = self._customer_key(customer_id, external_customer_id)
             warmed = await self._warm_actor(customer)
-            if not all(
-                local.is_ready(reducer.get("meter_ids", []))
-                for reducer, local in warmed
-            ):
+            if not all(local.is_ready() for _, local in warmed):
                 with anyio.move_on_after(SNAPSHOT_TIMEOUT):
-                    for reducer, local in warmed:
-                        await self._wait_ready(
-                            reducer, local, reducer.get("meter_ids", [])
-                        )
-            # Polar sends no snapshot for unique reducers.
-            snapshotted = [
-                (reducer, local)
-                for reducer, local in warmed
-                if reducer["aggregation"]["func"] != "unique"
-            ]
-            if not all(
-                local.is_ready(reducer.get("meter_ids", []))
-                for reducer, local in snapshotted
-            ):
+                    for _, local in warmed:
+                        await self._wait_ready(local)
+            if not all(local.is_ready() for _, local in warmed):
                 read.outcome = "not_ready"
-            elif any(local.missing for _, local in snapshotted):
+            elif any(local.missing for _, local in warmed):
                 read.outcome = "unknown_customer"
             else:
                 read.outcome = "ready"
@@ -732,13 +1020,23 @@ class Outpost:
             for reducer in self._reducers
         ]
 
-    async def _wait_ready(
-        self, reducer: Reducer, local: LocalState, meter_ids: list[str]
-    ) -> None:
-        # Polar sends no snapshot for unique reducers, nor without a connection.
-        if reducer["aggregation"]["func"] == "unique" or not self.connected:
+    def _find_reducer(
+        self, kind: typing.Literal["usage", "credit"], meter_id: str
+    ) -> Reducer | None:
+        return next(
+            (
+                reducer
+                for reducer in self._reducers
+                if reducer["kind"] == kind and meter_id in reducer.get("meter_ids", [])
+            ),
+            None,
+        )
+
+    async def _wait_ready(self, local: LocalState) -> None:
+        # Polar sends no snapshot without a connection.
+        if not self.connected:
             return
-        while not local.is_ready(meter_ids):
+        while not local.is_ready():
             await local.changed.wait()
 
     @contextlib.contextmanager
@@ -750,7 +1048,7 @@ class Outpost:
         except (UnavailableRedisError, RedisConnectionError, RedisTimeoutError):
             read.outcome = "redis_unavailable"
             raise
-        except (TimeoutError, _NotReadyError):
+        except (TimeoutError, _NotReadyError, UnknownMeterError):
             raise
         except Exception:
             read.outcome = "error"
@@ -806,6 +1104,8 @@ class Outpost:
         self._ingest_duration = None
         self._ingest_buckets = None
         self._read_duration = None
+        self._redis_memory = None
+        self._redis_keys = None
         with anyio.CancelScope(shield=True):
             if tracer_provider is not None:
                 await anyio.to_thread.run_sync(tracer_provider.shutdown)
@@ -841,8 +1141,7 @@ class Outpost:
             local = LocalState()
             self._cache[identity] = local
             if len(self._cache) > CACHE_SIZE:
-                evicted, _ = self._cache.popitem(last=False)
-                self._actors.discard(evicted)
+                self._cache.popitem(last=False)
         self._cache.move_to_end(identity)
         if local.state is not None and identity in self._actors:
             return local
@@ -851,29 +1150,35 @@ class Outpost:
                 local.state = await self._load_state(identity)
                 local.notify()
             websocket = self._websocket
-            if identity not in self._actors and websocket is not None:
+            # Polar's pushes keep an evicted state current in Redis, unless Redis has dropped it.
+            requested = identity in self._requesting or (
+                identity in self._actors and local.state.cold_until is not None
+            )
+            if not requested and websocket is not None:
                 try:
-                    for meter_id in reducer.get("meter_ids", []):
-                        await websocket.send_json(
-                            {
-                                "type": "meter_usage",
-                                "payload": {
-                                    **self._customer_arguments(customer),
-                                    "meter_id": meter_id,
-                                },
-                            }
-                        )
+                    await websocket.send_json(
+                        {
+                            "type": "meter_usage",
+                            "payload": {
+                                **self._customer_arguments(customer),
+                                "reducer_id": reducer["id"],
+                            },
+                        }
+                    )
                 except HTTPXWSException:
                     # Requested again once reconnected.
                     return local
-                self._actors.add(identity)
+                self._actors[identity] = None
+                if len(self._actors) > REQUESTED_SIZE:
+                    del self._actors[next(iter(self._actors))]
+                self._requesting.add(identity)
         return local
 
     async def _load_state(self, customer: str) -> ReducerState:
         assert self._read_state is not None
         epoch = _generate_epoch()
         state = await self._read_state(
-            keys=[f"outpost:state:{customer}"],
+            keys=[f"{KEY_VERSION}:state:{customer}"],
             args=[epoch],
         )
         return decode_state(state)
@@ -897,6 +1202,7 @@ class Outpost:
                 state = await self._load_state(customer)
             elif bucket:
                 current.buckets.update(state.buckets)
+                current.pending.update(state.pending)
                 current.revision = state.revision
                 state = current
             local.state = state
@@ -922,6 +1228,24 @@ class Outpost:
             async with local.lock:
                 local.state = await self._load_state(customer)
                 local.notify()
+
+    async def _report_redis_size(self) -> None:
+        """Includes whatever else the merchant keeps in that Redis."""
+        redis, memory_gauge, keys_gauge = (
+            self._redis,
+            self._redis_memory,
+            self._redis_keys,
+        )
+        if redis is None or memory_gauge is None or keys_gauge is None:
+            return
+        try:
+            memory = await redis.info("memory")
+            keys = await redis.dbsize()
+        except RedisError:
+            # A Redis that refuses INFO or DBSIZE reports nothing.
+            return
+        memory_gauge.set(memory["used_memory"])
+        keys_gauge.set(keys)
 
     async def _listen_redis(
         self,
@@ -955,6 +1279,8 @@ class Outpost:
                         await self._receive_redis(message["data"])
                     if anyio.current_time() >= next_refresh:
                         self._report_sync()
+                        assert self._tasks is not None
+                        self._tasks.start_soon(self._report_redis_size)
                         await self._refresh_states()
                         next_refresh = anyio.current_time() + SYNC_INTERVAL
 
@@ -993,6 +1319,7 @@ class Outpost:
                         )
                     self._websocket = websocket
                     self._actors.clear()
+                    self._requesting.clear()
                     await websocket.send_json({"type": "configuration"})
                     if not started:
                         task_status.started()
@@ -1039,15 +1366,10 @@ class Outpost:
                 self._reconnect_attempts = 0
             elif message["type"] == "meter_usage":
                 snapshot: Snapshot = message["payload"]
-                reducer = next(
-                    (
-                        reducer
-                        for reducer in self._reducers
-                        if snapshot["meter_id"] in reducer.get("meter_ids", [])
-                    ),
-                    None,
-                )
-                if reducer is None:
+                if not any(
+                    reducer["id"] == snapshot["reducer_id"]
+                    for reducer in self._reducers
+                ):
                     continue
                 if (
                     snapshot["customer_id"] is not None
@@ -1057,54 +1379,265 @@ class Outpost:
                 customer = self._customer_key(
                     snapshot["customer_id"], snapshot["external_customer_id"]
                 )
-                identity = f"{customer}:{reducer['id']}"
+                identity = f"{customer}:{snapshot['reducer_id']}"
+                self._requesting.discard(identity)
                 local = self._cache.get(identity)
                 if local is not None:
                     local.missing = not snapshot["customer_exists"]
                     local.notify()
                 if not snapshot["customer_exists"]:
                     # Asked again on the next read, in case it was created since.
-                    self._actors.discard(identity)
+                    self._actors.pop(identity, None)
                     continue
                 statistics = [
                     snapshot["count"],
                     snapshot["sum"],
                     snapshot["min"],
                     snapshot["max"],
-                    snapshot["credited_units"],
                 ]
                 if any(
                     isinstance(value, float) and not math.isfinite(value)
                     for value in statistics
                 ):
                     raise ValueError("Snapshot values must be finite")
-                assert self._apply_snapshot is not None
-                with self._span(
-                    "outpost.snapshot.received",
-                    **{
-                        "outpost.customer": customer,
-                        "outpost.meter_id": snapshot["meter_id"],
-                        "outpost.snapshot_version": snapshot["version"],
-                    },
-                ) as span:
-                    state, replaced = await self._apply_snapshot(
-                        keys=[f"outpost:state:{identity}"],
-                        args=[
-                            identity,
-                            self._channel,
-                            _generate_epoch(),
-                            snapshot["cold_until"],
-                            snapshot["version"],
-                            snapshot["meter_id"],
-                            snapshot["credited_units"],
-                            snapshot["count"],
-                            snapshot["sum"],
-                            snapshot["min"] if snapshot["min"] is not None else "",
-                            snapshot["max"] if snapshot["max"] is not None else "",
-                        ],
+                async with self._confirming:
+                    waiting = self._confirmations.get(identity)
+                    if waiting is None:
+                        await self._receive_snapshot(identity, customer, snapshot)
+                    elif (
+                        snapshot["version"]
+                        >= (waiting.next or waiting.snapshot)["version"]
+                    ):
+                        waiting.next = snapshot
+            elif message["type"] == "confirmed":
+                payload = message["payload"]
+                customer = self._customer_key(
+                    payload["customer_id"], payload["external_customer_id"]
+                )
+                async with self._confirming:
+                    confirmation = self._confirmations.get(
+                        f"{customer}:{payload['reducer_id']}"
                     )
-                    _report_local_value(span, snapshot, replaced)
-                    await self._receive_state(identity, decode_state(state))
+                    if confirmation is None:
+                        continue
+                    confirmation.confirmed.setdefault(
+                        payload["bucket_start"], []
+                    ).extend(payload["ids"])
+                    if (
+                        payload["snapshot"]["version"]
+                        >= confirmation.snapshot["version"]
+                    ):
+                        confirmation.snapshot = payload["snapshot"]
+                    confirmation.awaited -= 1
+                    if confirmation.awaited == 0:
+                        await self._settle_confirmation(confirmation, answered=True)
+
+    async def _receive_snapshot(
+        self, identity: str, customer: str, snapshot: Snapshot
+    ) -> None:
+        if not await self._ask_confirmation(identity, customer, snapshot):
+            await self._apply_snapshot_now(identity, customer, snapshot)
+
+    async def _ask_confirmation(
+        self,
+        identity: str,
+        customer: str,
+        snapshot: Snapshot,
+    ) -> bool:
+        """Asks Polar which of the pending events in the buckets the snapshot seals it
+        counts. The snapshot Polar answers with applies once it did, or the asking one
+        after confirm_timeout with the events still pending."""
+        started = time.perf_counter()
+        websocket = self._websocket
+        if websocket is None:
+            return False
+        local = self._cache.get(identity)
+        state = (
+            local.state
+            if local is not None and local.state is not None
+            else await self._load_state(identity)
+        )
+        sealed = [
+            start
+            for start, statistics in state.pending.items()
+            if start < snapshot["cold_until"] and statistics.count > 0
+        ]
+        if not sealed:
+            return False
+        confirmation = _Confirmation(
+            snapshot,
+            customer,
+            identity,
+            started=started,
+            # Seconds since the oldest bucket asked ended.
+            age=(time.time_ns() / 1_000 - min(sealed) - BUCKET_SIZE) / 1_000_000,
+        )
+        assert self._redis is not None
+        for bucket_start in sealed:
+            ids = await self._redis.hkeys(
+                f"{KEY_VERSION}:pending:{identity}:{bucket_start}"
+            )
+            for offset in range(0, len(ids), CONFIRM_BATCH):
+                batch = [
+                    external_id.decode()
+                    if isinstance(external_id, bytes)
+                    else external_id
+                    for external_id in ids[offset : offset + CONFIRM_BATCH]
+                ]
+                try:
+                    await websocket.send_json(
+                        {
+                            "type": "confirm",
+                            "payload": {
+                                "reducer_id": snapshot["reducer_id"],
+                                **self._customer_arguments(customer),
+                                "bucket_start": bucket_start,
+                                "ids": batch,
+                            },
+                        }
+                    )
+                except HTTPXWSException:
+                    # Not connected: the events stay pending until the next snapshot.
+                    return False
+                confirmation.awaited += 1
+                confirmation.messages += 1
+                confirmation.asked += len(batch)
+        if not confirmation.awaited:
+            return False
+        self._confirmations[identity] = confirmation
+        assert self._tasks is not None
+        self._tasks.start_soon(self._expire_confirmation, confirmation)
+        return True
+
+    async def _expire_confirmation(self, confirmation: _Confirmation) -> None:
+        with anyio.CancelScope() as timer:
+            confirmation.timer = timer
+            await anyio.sleep(self._confirm_timeout)
+        if not timer.cancel_called:
+            async with self._confirming:
+                await self._settle_confirmation(confirmation, answered=False)
+
+    async def _settle_confirmation(
+        self, confirmation: _Confirmation, *, answered: bool
+    ) -> None:
+        if self._confirmations.get(confirmation.identity) is not confirmation:
+            return
+        del self._confirmations[confirmation.identity]
+        if confirmation.timer is not None:
+            confirmation.timer.cancel()
+        await self._apply_snapshot_now(
+            confirmation.identity,
+            confirmation.customer,
+            confirmation.snapshot,
+            confirmation,
+            answered=answered,
+        )
+        next_snapshot = confirmation.next
+        if (
+            next_snapshot is not None
+            and next_snapshot["version"] > confirmation.snapshot["version"]
+        ):
+            await self._receive_snapshot(
+                confirmation.identity, confirmation.customer, next_snapshot
+            )
+
+    async def _apply_snapshot_now(
+        self,
+        identity: str,
+        customer: str,
+        snapshot: Snapshot,
+        confirmation: _Confirmation | None = None,
+        *,
+        answered: bool = False,
+    ) -> None:
+        """Settles the confirmed events and applies the snapshot in one transaction: a
+        read sees the bucket either fully local or as Polar's total plus what is still
+        pending."""
+        applying = time.perf_counter()
+        assert self._redis is not None
+        assert self._apply_snapshot is not None
+        assert self._confirm_script is not None
+        key = f"{KEY_VERSION}:state:{identity}"
+        snapshot_arguments: list[str | int | float] = [
+            identity,
+            self._channel,
+            _generate_epoch(),
+            snapshot["cold_until"],
+            snapshot["version"],
+            snapshot["count"],
+            snapshot["sum"],
+            snapshot["min"] if snapshot["min"] is not None else "",
+            snapshot["max"] if snapshot["max"] is not None else "",
+        ]
+        confirmed = {
+            bucket_start: ids
+            for bucket_start, ids in (
+                confirmation.confirmed.items() if confirmation is not None else ()
+            )
+            if ids
+        }
+        with self._span(
+            "outpost.snapshot.received",
+            **{
+                "outpost.customer": customer,
+                "outpost.reducer_id": snapshot["reducer_id"],
+                "outpost.snapshot_version": snapshot["version"],
+            },
+        ) as span:
+            reducer_kind = next(
+                (
+                    reducer["kind"]
+                    for reducer in self._reducers
+                    if reducer["id"] == snapshot["reducer_id"]
+                ),
+                None,
+            )
+            if reducer_kind is not None:
+                span.set_attribute("outpost.reducer_kind", reducer_kind)
+            before = None
+            if confirmed:
+                async with self._redis.pipeline(transaction=True) as pipeline:
+                    pipeline.hgetall(key)
+                    for bucket_start, ids in confirmed.items():
+                        await self._confirm_script(
+                            keys=[
+                                key,
+                                f"{KEY_VERSION}:pending:{identity}:{bucket_start}",
+                            ],
+                            args=[
+                                identity,
+                                self._channel,
+                                _generate_epoch(),
+                                bucket_start,
+                                "",
+                                *ids,
+                            ],
+                            client=pipeline,
+                        )
+                    await self._apply_snapshot(
+                        keys=[key], args=snapshot_arguments, client=pipeline
+                    )
+                    results = await pipeline.execute()
+                before, (state, replaced) = results[0], results[-1]
+            else:
+                state, replaced = await self._apply_snapshot(
+                    keys=[key], args=snapshot_arguments
+                )
+            _report_local_value(span, snapshot, replaced, before)
+            if confirmation is not None:
+                span.set_attributes(
+                    {
+                        "outpost.pending.asked": confirmation.asked,
+                        "outpost.pending.confirmed": sum(
+                            len(ids) for ids in confirmed.values()
+                        ),
+                        "outpost.pending.answered": answered,
+                        "outpost.pending.messages": confirmation.messages,
+                        "outpost.pending.age": confirmation.age,
+                        "outpost.confirm.duration": applying - confirmation.started,
+                    }
+                )
+            await self._receive_state(identity, decode_state(state))
 
     def _parse_event(self, event: EventInput) -> Event:
         customer = self._customer_key(

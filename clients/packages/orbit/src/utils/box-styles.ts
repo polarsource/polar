@@ -355,9 +355,11 @@ export const colorStyles = stylex.create({
   'text-primary': { color: textColors['text-primary'] },
   'text-secondary': { color: textColors['text-secondary'] },
   'text-tertiary': { color: textColors['text-tertiary'] },
+  'text-disabled': { color: textColors['text-disabled'] },
   'text-success': { color: textColors['text-success'] },
   'text-danger': { color: textColors['text-danger'] },
   'text-warning': { color: textColors['text-warning'] },
+  'text-accent': { color: textColors['text-accent'] },
 })
 
 export const borderColorStyles = stylex.create({

@@ -440,6 +440,7 @@ async def test_webhook_delivery_success(
     delivery = deliveries[0]
     assert delivery.succeeded is True
     assert delivery.response == expected
+    assert delivery.organization_id == organization.id
 
 
 @pytest.mark.anyio
@@ -494,6 +495,8 @@ async def test_webhook_delivery_500(
     assert len(deliveries) == settings.WEBHOOK_MAX_RETRIES
     for delivery in deliveries:
         assert delivery.succeeded is False
+    assert deliveries[0].organization_id == organization.id
+    assert deliveries[-1].organization_id == organization.id
 
 
 @pytest.mark.anyio

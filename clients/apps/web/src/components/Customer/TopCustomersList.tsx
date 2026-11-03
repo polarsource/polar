@@ -12,8 +12,7 @@ import { useTopCustomers } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Alert, Avatar } from '@polar-sh/orbit'
-import { TrendingUp } from 'lucide-react'
-
+import { TrendingUp } from '@polar-sh/orbit/icons'
 interface TopCustomersListProps {
   organization: schemas['Organization']
   start: Date

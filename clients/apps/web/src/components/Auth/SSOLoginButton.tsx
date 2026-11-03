@@ -2,7 +2,7 @@ import { useToast } from '@/components/Toast/use-toast'
 import { useOrgAuthSessionStart } from '@/hooks'
 import { usePostHog } from '@/hooks/posthog'
 import { getSSOAuthorizeLoginURL } from '@/utils/auth'
-import Key from '@mui/icons-material/Key'
+import { KeyFilled as Key } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, type ButtonProps } from '@polar-sh/orbit'
 

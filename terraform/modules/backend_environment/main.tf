@@ -33,6 +33,10 @@ locals {
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
     },
+    { for name, value in {
+      POLAR_DATABASE_STATEMENT_CACHE_SIZE          = var.backend_config.database_statement_cache_size
+      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE = var.backend_config.database_prepared_statement_cache_size
+    } : name => tostring(value) if value != null },
     var.backend_config.backoffice_host != null ? {
       POLAR_BACKOFFICE_HOST = var.backend_config.backoffice_host
     } : {},
@@ -176,7 +180,7 @@ locals {
     } : {},
   ) : {}
 
-  slo_report_environment_variables = var.slo_report_config != null ? {
+  slo_report_environment_variables = try(var.slo_report_config.slack_channel, null) != null ? {
     POLAR_SLACK_CHANNEL = var.slo_report_config.slack_channel
   } : {}
 
@@ -199,7 +203,6 @@ locals {
 
   polar_self_environment_variables = var.polar_self_config != null ? {
     POLAR_POLAR_ORGANIZATION_ID  = var.polar_self_config.organization_id
-    POLAR_POLAR_FREE_PRODUCT_ID  = var.polar_self_config.free_product_id
     POLAR_POLAR_API_URL          = var.polar_self_config.api_url
     POLAR_POLAR_SCALE_PRODUCT_ID = var.polar_self_config.scale_product_id
   } : {}

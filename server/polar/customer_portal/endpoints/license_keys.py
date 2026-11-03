@@ -1,10 +1,9 @@
 from textwrap import dedent
-from typing import cast
+from typing import Annotated, cast
 
 from fastapi import Depends, Query
 from pydantic import UUID4
 
-from polar.benefit.schemas import BenefitID
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
@@ -35,6 +34,9 @@ from polar.postgres import get_db_session
 from polar.routing import APIRouter
 
 from .. import auth
+from ..schemas.license_key import (
+    CustomerPortalLicenseKeyListParams,
+)
 
 router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
 
@@ -67,17 +69,15 @@ ACTIVATE_LICENSE_KEY_MINTLIFY_CONTENT = dedent(
     },
 )
 async def list(
+    filters: Annotated[CustomerPortalLicenseKeyListParams, Query()],
     auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
-    benefit_id: BenefitID | None = Query(
-        None, description="Filter by a specific benefit"
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[LicenseKeyRead]:
     results, count = await license_key_service.get_customer_list(
         session,
         auth_subject,
-        benefit_id=benefit_id,
+        benefit_id=filters.benefit_id,
         pagination=pagination,
     )
 

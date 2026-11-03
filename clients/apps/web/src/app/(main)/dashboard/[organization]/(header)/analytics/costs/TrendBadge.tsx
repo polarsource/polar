@@ -4,7 +4,7 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
-import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Minus } from '@polar-sh/orbit/icons'
 import { fmtPct } from './utils'
 
 interface TrendBadgeProps {

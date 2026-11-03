@@ -3,7 +3,7 @@
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
-import ArrowForward from '@mui/icons-material/ArrowForward'
+import { ArrowForward } from '@polar-sh/orbit/icons'
 import { Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {

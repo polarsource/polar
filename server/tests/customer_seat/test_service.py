@@ -27,6 +27,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Account,
     Customer,
+    Order,
     Organization,
     Product,
     Subscription,
@@ -34,18 +35,24 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import CustomerSeat, SeatStatus
+from polar.models.dispute import DisputeStatus
+from polar.models.order import OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
 from tests.fixtures.random_objects import (
     create_account,
     create_customer,
     create_customer_seat,
+    create_dispute,
     create_member,
     create_order_with_seats,
     create_organization,
+    create_payment,
     create_product,
+    create_refund,
     create_subscription_with_seats,
     create_user,
 )
@@ -2900,3 +2907,155 @@ class TestAssignSeatConcurrency:
                 await cleanup_session.execute(delete(User).where(User.id == user.id))
                 await cleanup_session.commit()
             await engine.dispose()
+
+
+async def _load_order(session: AsyncSession, order: Order) -> Order:
+    session.expunge_all()
+    repository = OrderRepository.from_session(session)
+    loaded = await repository.get_by_id(
+        order.id, options=repository.get_eager_options()
+    )
+    assert loaded is not None
+    return loaded
+
+
+class TestRevokeAllSeatsForOrder:
+    @pytest.mark.anyio
+    async def test_revokes_claimed_and_pending_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        order_with_seats: Order,
+    ) -> None:
+        claimed_customer = await create_customer(
+            save_fixture, organization=organization, email="claimed@example.com"
+        )
+        pending_customer = await create_customer(
+            save_fixture, organization=organization, email="pending@example.com"
+        )
+        claimed_seat = await create_customer_seat(
+            save_fixture,
+            order=order_with_seats,
+            customer=claimed_customer,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+        pending_seat = await create_customer_seat(
+            save_fixture,
+            order=order_with_seats,
+            customer=pending_customer,
+            status=SeatStatus.pending,
+            invitation_token="PENDING_TOKEN",
+        )
+        already_revoked_seat = await create_customer_seat(
+            save_fixture,
+            order=order_with_seats,
+            status=SeatStatus.revoked,
+            revoked_at=utc_now(),
+        )
+        order = await _load_order(session, order_with_seats)
+
+        with patch("polar.customer_seat.service.enqueue_job") as enqueue_job_mock:
+            revoked_count = await seat_service.revoke_all_seats_for_order(
+                session, order
+            )
+
+        assert revoked_count == 2
+
+        revoke_calls = [
+            c
+            for c in enqueue_job_mock.call_args_list
+            if c.args[0] == "benefit.enqueue_benefits_grants"
+        ]
+        assert {c.kwargs["customer_id"] for c in revoke_calls} == {
+            claimed_customer.id,
+            pending_customer.id,
+        }
+        assert all(c.kwargs["task"] == "revoke" for c in revoke_calls)
+        assert all(c.kwargs["order_id"] == order.id for c in revoke_calls)
+
+        for seat in (claimed_seat, pending_seat):
+            refreshed = await session.get(CustomerSeat, seat.id)
+            assert refreshed is not None
+            assert refreshed.status == SeatStatus.revoked
+            assert refreshed.customer_id is None
+            assert refreshed.invitation_token is None
+
+        refreshed_revoked = await session.get(CustomerSeat, already_revoked_seat.id)
+        assert refreshed_revoked is not None
+        assert refreshed_revoked.revoked_at == already_revoked_seat.revoked_at
+
+
+class TestAssignSeatOnRevokedOrder:
+    @pytest.mark.anyio
+    async def test_blocked_after_revoking_refund(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        order_with_seats: Order,
+    ) -> None:
+        payment = await create_payment(
+            save_fixture, organization, order=order_with_seats
+        )
+        refund = await create_refund(save_fixture, order_with_seats, payment)
+        refund.revoke_benefits = True
+        await save_fixture(refund)
+        order = await _load_order(session, order_with_seats)
+
+        with pytest.raises(SeatNotAvailable):
+            await seat_service.assign_seat(
+                session, order, email="new-holder@example.com"
+            )
+
+    @pytest.mark.anyio
+    async def test_blocked_after_closed_dispute(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        order_with_seats: Order,
+    ) -> None:
+        payment = await create_payment(
+            save_fixture, organization, order=order_with_seats
+        )
+        await create_dispute(
+            save_fixture, order_with_seats, payment, status=DisputeStatus.lost
+        )
+        order = await _load_order(session, order_with_seats)
+
+        with pytest.raises(SeatNotAvailable):
+            await seat_service.assign_seat(
+                session, order, email="new-holder@example.com"
+            )
+
+    @pytest.mark.anyio
+    async def test_allowed_after_non_revoking_refund_and_open_dispute(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        order_with_seats: Order,
+    ) -> None:
+        payment = await create_payment(
+            save_fixture, organization, order=order_with_seats
+        )
+        await create_refund(save_fixture, order_with_seats, payment)
+        await create_dispute(
+            save_fixture,
+            order_with_seats,
+            payment,
+            status=DisputeStatus.needs_response,
+        )
+        order_with_seats.status = OrderStatus.partially_refunded
+        await save_fixture(order_with_seats)
+        order = await _load_order(session, order_with_seats)
+
+        with patch("polar.customer_seat.service.send_seat_invitation_email"):
+            seat = await seat_service.assign_seat(
+                session, order, email="new-holder@example.com"
+            )
+
+        assert seat.order_id == order.id
+        assert seat.status == SeatStatus.pending

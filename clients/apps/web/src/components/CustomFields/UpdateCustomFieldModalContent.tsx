@@ -5,7 +5,7 @@ import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import CustomFieldForm from './CustomFieldForm'
 
@@ -28,11 +28,8 @@ const UpdateCustomFieldModalContent = ({
     },
   })
 
-  const {
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError } = form
+  const { errors } = useFormState({ control })
 
   const onSubmit = useCallback(
     async (customFieldUpdate: schemas['CustomFieldUpdate']) => {

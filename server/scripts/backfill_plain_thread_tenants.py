@@ -228,8 +228,7 @@ async def backfill(
 
     if not settings.POLAR_SELF_ENABLED:
         typer.echo(
-            "POLAR_ACCESS_TOKEN, POLAR_ORGANIZATION_ID, or POLAR_FREE_PRODUCT_ID "
-            "is not configured, aborting."
+            "POLAR_ACCESS_TOKEN or POLAR_ORGANIZATION_ID is not configured, aborting."
         )
         raise typer.Exit(1)
 

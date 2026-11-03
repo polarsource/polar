@@ -1,7 +1,10 @@
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { buildCustomerDashboardPath } from '@/utils/customer'
-import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
-import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
+import { buildEventDashboardPath } from '@/utils/event'
+import {
+  KeyboardArrowDownOutlined,
+  KeyboardArrowRightOutlined,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
@@ -94,9 +97,7 @@ export const EventRow = ({
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation()
       e.preventDefault()
-      router.push(
-        `/dashboard/${organization.slug}/analytics/events/${event.id}`,
-      )
+      router.push(buildEventDashboardPath(organization.slug, event.id))
     },
     [organization, event.id, router],
   )
@@ -163,7 +164,7 @@ export const EventRow = ({
             {isExpanded ? (
               renderEventLink ? (
                 <Link
-                  href={`/dashboard/${organization.slug}/analytics/events/${event.id}`}
+                  href={buildEventDashboardPath(organization.slug, event.id)}
                   className="flex flex-col"
                   onClick={(e) => {
                     e.stopPropagation()

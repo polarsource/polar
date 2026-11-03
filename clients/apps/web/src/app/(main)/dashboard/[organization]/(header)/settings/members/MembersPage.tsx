@@ -12,8 +12,7 @@ import {
   useListOrganizationMembers,
   useRemoveOrganizationMember,
 } from '@/hooks/queries/org'
-import Add from '@mui/icons-material/Add'
-import MoreVert from '@mui/icons-material/MoreVert'
+import { Add, MoreVert } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
@@ -226,6 +225,7 @@ export default function ClientPage({
   return (
     <DashboardBody
       wrapperClassName="max-w-(--breakpoint-md)!"
+      title="Members"
       className="flex flex-col gap-y-8"
       header={
         canManageMembers ? (

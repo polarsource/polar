@@ -3,10 +3,10 @@ import {
   CircleCheck,
   Info,
   LoaderCircle,
+  type LucideIcon,
   TriangleAlert,
   X,
-  type LucideIcon,
-} from 'lucide-react'
+} from '../icons'
 import type { CSSProperties, ReactNode } from 'react'
 import { Box } from './Box'
 import { ButtonGroup, type ButtonGroupActions } from './ButtonGroup'
@@ -16,8 +16,8 @@ import { Text, type TextColor } from './Text'
 
 export type AlertVariant = 'info' | 'warning' | 'danger' | 'success'
 
-// The variant is the only styling lever: it picks the icon, the tinted surface
-// and the accent color so callers never reach for an icon or a color token.
+// The variant is the only styling lever: it picks the icon and its accent
+// color so callers never reach for an icon or a color token.
 const variantStyles: Record<
   AlertVariant,
   {
@@ -45,12 +45,12 @@ const variantStyles: Record<
 
 export interface AlertProps {
   /**
-   * Picks the icon, surface tint and accent color in one go. Use it to map the
+   * Picks the icon and its accent color in one go. Use it to map the
    * alert to its meaning rather than styling icon and colors by hand.
    */
   variant?: AlertVariant
   /**
-   * The headline of the alert, rendered in the variant's accent color.
+   * The headline of the alert, in the default text color.
    */
   title: string
   /**
@@ -111,8 +111,11 @@ export const Alert = ({
       columnGap="m"
       rowGap="xs"
       alignItems="center"
-      backgroundColor="background-card"
-      borderRadius="s"
+      backgroundColor="background-secondary"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-secondary"
+      borderRadius="m"
       paddingVertical="l"
       paddingHorizontal="xl"
       flexGrow={1}
@@ -124,7 +127,7 @@ export const Alert = ({
           className={loading ? 'animate-spin' : undefined}
         />
       </Text>
-      <Text color={accentColor} variant="title" wrap="pretty">
+      <Text variant="title" wrap="pretty">
         {title}
       </Text>
       {onDismiss && (
@@ -141,7 +144,7 @@ export const Alert = ({
             transitionProperty="opacity"
             transitionDuration="fast"
           >
-            <Text as="span" color={accentColor} style={iconBoxStyle}>
+            <Text as="span" color="muted" style={iconBoxStyle}>
               <X size={16} aria-hidden />
             </Text>
           </Box>

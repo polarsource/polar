@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import NotNullable, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.kit.repository.base import (
@@ -63,6 +63,7 @@ class OrganizationReviewRepository(
             reviewed_at=reviewed_at,
         )
         self.session.add(agent_review)
+        await self.session.flush()
         return agent_review
 
     async def get_latest_agent_review(
@@ -447,7 +448,7 @@ class OrganizationReviewRepository(
         """
         cutoff = utc_now() - timedelta(days=months * 30)
         statement = (
-            select(Checkout.return_url)
+            select(NotNullable(Checkout.return_url))
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout.return_url.is_not(None),
@@ -470,7 +471,7 @@ class OrganizationReviewRepository(
         """
         cutoff = utc_now() - timedelta(days=months * 30)
         statement = (
-            select(Checkout._success_url)
+            select(NotNullable(Checkout._success_url))
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout._success_url.is_not(None),
@@ -538,7 +539,7 @@ class OrganizationRiskSignalRepository(
             .where(
                 OrganizationRiskSignal.organization_id == organization_id,
                 OrganizationRiskSignal.risk_level
-                != OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+                != OrganizationRiskSignal.RiskLevel.UNKNOWN,
             )
             .order_by(OrganizationRiskSignal.created_at.desc())
             .limit(limit)

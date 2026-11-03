@@ -5,7 +5,6 @@ import type { AcceptedLocale } from '@polar-sh/i18n'
 
 import { ProductCheckoutPublic } from '../guards'
 import { getDiscountDisplay } from '../utils/discount'
-import { isLegacyRecurringPrice } from '../utils/product'
 import AmountLabel from './AmountLabel'
 import MeteredPricesDisplay from './MeteredPricesDisplay'
 import ProductPriceLabel from './ProductPriceLabel'
@@ -25,11 +24,7 @@ const CheckoutProductAmountLabel = ({
       <AmountLabel
         amount={checkout.total_amount}
         currency={checkout.currency ?? product_price.price_currency}
-        interval={
-          isLegacyRecurringPrice(product_price)
-            ? product_price.recurring_interval
-            : product.recurring_interval
-        }
+        interval={product.recurring_interval}
         intervalCount={product.recurring_interval_count}
         mode="compact"
         locale={locale}
@@ -48,11 +43,7 @@ const CheckoutProductAmountLabel = ({
       <AmountLabel
         amount={checkout.total_amount}
         currency={checkout.currency}
-        interval={
-          isLegacyRecurringPrice(product_price)
-            ? product_price.recurring_interval
-            : product.recurring_interval
-        }
+        interval={product.recurring_interval}
         intervalCount={product.recurring_interval_count}
         mode="compact"
         locale={locale}

@@ -5,12 +5,13 @@ import type {
   BillingConfigError,
   LoadedConfig,
   PlanResult,
-  PullResult,
+  PruneEntry,
 } from '@/schemas/BillingConfig'
+import type { CatalogOptions } from '@/services/billing-config/api'
 import { apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
-import { pull } from '@/services/billing-config/pull'
+import { prune } from '@/services/billing-config/prune'
 import { authenticatedClient } from '@/services/client'
 
 export class BillingConfig extends Context.Service<
@@ -20,16 +21,24 @@ export class BillingConfig extends Context.Service<
     plan: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: CatalogOptions,
     ) => Effect.Effect<PlanResult, AuthError | BillingConfigError>
     apply: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: CatalogOptions,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
-    pull: (
+    prune: <R>(
+      config: LoadedConfig,
       organization: ActiveOrganization,
-      file: string | undefined,
-      force: boolean,
-    ) => Effect.Effect<PullResult, AuthError | BillingConfigError>
+      confirm: (
+        entries: ReadonlyArray<PruneEntry>,
+      ) => Effect.Effect<void, BillingConfigError, R>,
+    ) => Effect.Effect<
+      { entries: ReadonlyArray<PruneEntry>; removed: boolean },
+      AuthError | BillingConfigError,
+      R
+    >
   }
 >()('BillingConfig') {}
 
@@ -45,7 +54,7 @@ const make = Effect.gen(function* () {
     load,
     plan: plan(clients),
     apply: apply(clients),
-    pull: pull(fs, load, clients),
+    prune: prune(fs, load, clients),
   })
 })
 

@@ -422,7 +422,7 @@ class EventService:
 
         repository = EventRepository.from_session(session)
         timestamps = await repository.get_timestamp_series(
-            start_timestamp, end_timestamp, interval
+            start_timestamp, end_timestamp, interval, timezone
         )
 
         type _EventKey = tuple[str, str]  # (organization_id, name)
@@ -1077,6 +1077,21 @@ class EventService:
         event = await repository.create(event, flush=True)
         # Temporarily
         await self._create_meter_events(session, [event])
+        if event.is_meter_credit:
+            await reducer_service.add_credit(session, event)
+        elif (
+            event.source == EventSource.system and event.name == SystemEvent.meter_reset
+        ):
+            assert event.customer_id is not None
+            customer = await CustomerRepository.from_session(session).get_by_id(
+                event.customer_id
+            )
+            if customer is not None:
+                meter_id = uuid.UUID(event.user_metadata["meter_id"])
+                await reducer_service.seal_credits(
+                    session, customer, meter_id, at=event.timestamp
+                )
+                reducer_service.enqueue_seal(customer.id, meter_id, at=event.timestamp)
 
         enqueue_events(event.id)
 
@@ -1200,7 +1215,7 @@ class EventService:
 
         if meter_event_rows:
             await session.execute(
-                insert(MeterEvent).values(meter_event_rows).on_conflict_do_nothing()
+                insert(MeterEvent).on_conflict_do_nothing(), meter_event_rows
             )
 
     def _event_matches_meter(self, event: Event, meter: Meter) -> bool:

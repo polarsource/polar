@@ -4,13 +4,13 @@ from uuid import UUID
 
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
-from polar.models import Organization, OrganizationDomain, OrganizationSSOConnection
+from polar.models import Organization, OrganizationSSOConnection
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .repository import (
-    OrganizationDomainRepository,
-    OrganizationSSOConnectionRepository,
-)
+from .repository import OrganizationSSOConnectionRepository
 from .schemas import (
     OrganizationSSOConnectionCreate,
     OrganizationSSOConnectionUpdate,
@@ -35,6 +35,13 @@ class LastSSOConnectionRequired(PolarError):
         )
 
 
+class SSORequiresVerifiedDomain(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization must verify a domain before setting up SSO.", 409
+        )
+
+
 class OrganizationSSOConnectionService:
     async def list(
         self,
@@ -49,21 +56,6 @@ class OrganizationSSOConnectionService:
         statement = repository.get_statement_by_organization(organization.id).order_by(
             OrganizationSSOConnection.created_at.desc()
         )
-        return await paginate(session, statement, pagination=pagination)
-
-    async def list_domains(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-        *,
-        pagination: PaginationParams,
-    ) -> tuple[Sequence[OrganizationDomain], int]:
-        if not organization.is_sso_enabled:
-            raise SSONotEnabled(organization)
-        repository = OrganizationDomainRepository.from_session(session)
-        statement = repository.get_verified_statement_by_organization(
-            organization.id
-        ).order_by(OrganizationDomain.domain)
         return await paginate(session, statement, pagination=pagination)
 
     async def get(
@@ -85,6 +77,8 @@ class OrganizationSSOConnectionService:
     ) -> OrganizationSSOConnection:
         if not organization.is_sso_enabled:
             raise SSONotEnabled(organization)
+        if not await organization_domain_service.has_verified(session, organization):
+            raise SSORequiresVerifiedDomain()
         repository = OrganizationSSOConnectionRepository.from_session(session)
         connection = OrganizationSSOConnection(
             organization=organization,

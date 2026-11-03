@@ -14,6 +14,11 @@ export const local = Flag.Boolean('local').pipe(
   Flag.withDescription('Use a local Polar stack on 127.0.0.1'),
   Flag.withHidden,
 )
+export const confirm = Flag.Boolean('confirm').pipe(
+  Flag.withAlias('c'),
+  Flag.withDefault(false),
+  Flag.withDescription('Skip the confirmation prompt'),
+)
 export const org = Flag.String('org').pipe(
   Flag.optional,
   Flag.withDescription('Organization ID or slug for this invocation only'),

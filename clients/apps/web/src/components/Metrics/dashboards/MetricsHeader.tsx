@@ -27,6 +27,8 @@ export function MetricsHeader({
     setEndDate,
     productId,
     setProductId,
+    externalProductId,
+    setExternalProductId,
     minDate,
   } = useMetricsFilters(earliestDateISOString)
 
@@ -56,12 +58,17 @@ export function MetricsHeader({
     [interval, setStartDate, setEndDate, setInterval],
   )
 
-  const onProductSelect = useCallback(
-    (value: string[]) => {
-      setProductId(value.length > 0 ? value : null)
-    },
-    [setProductId],
-  )
+  const filterByExternalId =
+    !!organization.feature_settings?.config_as_code_enabled && !productId
+
+  const onProductSelect = (value: string[]) => {
+    const selected = value.length > 0 ? value : null
+    if (filterByExternalId) {
+      setExternalProductId(selected)
+    } else {
+      setProductId(selected)
+    }
+  }
 
   return (
     <div className="flex flex-col items-center gap-2 lg:flex-row">
@@ -84,10 +91,11 @@ export function MetricsHeader({
       <div className="w-full lg:w-auto">
         <ProductSelect
           organization={organization}
-          value={productId ?? []}
+          value={(filterByExternalId ? externalProductId : productId) ?? []}
           onChange={onProductSelect}
           includeArchived={true}
           className="w-auto"
+          filterByExternalId={filterByExternalId}
         />
       </div>
     </div>

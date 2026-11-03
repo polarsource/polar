@@ -14,8 +14,10 @@ import {
   DataTableSortingState,
   getAPIParams,
 } from '@/utils/datatable'
-import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
-import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
+import {
+  KeyboardArrowDownOutlined,
+  KeyboardArrowRightOutlined,
+} from '@polar-sh/orbit/icons'
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {

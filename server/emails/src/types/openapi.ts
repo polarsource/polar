@@ -366,6 +366,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitCustomProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -443,6 +448,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitDiscordProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -528,6 +538,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitDownloadablesProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -607,6 +622,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitFeatureFlagProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -681,6 +701,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -786,6 +811,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitLicenseKeysProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -868,6 +898,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitMeterCreditProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -947,6 +982,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -1120,6 +1160,31 @@ export interface components {
       url: string
       /** Domain */
       domain: string
+    }
+    /** DomainVerificationLostEmail */
+    DomainVerificationLostEmail: {
+      /**
+       * Template
+       * @default domain_verification_lost
+       * @constant
+       */
+      template: 'domain_verification_lost'
+      props: components['schemas']['DomainVerificationLostProps']
+    }
+    /** DomainVerificationLostProps */
+    DomainVerificationLostProps: {
+      /** Email */
+      email: string
+      /** Domain */
+      domain: string
+      /** Organization Name */
+      organization_name: string
+      /** Settings Url */
+      settings_url: string
+      /** Record Name */
+      record_name: string
+      /** Record Value */
+      record_value: string
     }
     /** EmailUpdateEmail */
     EmailUpdateEmail: {
@@ -2346,12 +2411,6 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
-       * Agentic Payments Enabled
-       * @description If this organization accepts payments from AI agents through Stripe shared payment tokens.
-       * @default false
-       */
-      agentic_payments_enabled: boolean
-      /**
        * Staged Events Ingest Enabled
        * @description If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
        * @default false
@@ -2974,9 +3033,11 @@ export interface components {
       canceled_at: string | null
       /**
        * Started At
+       * Format: date-time
        * @description The timestamp when the subscription started.
+       * @example 2026-01-01T00:00:00.000000Z
        */
-      started_at: string | null
+      started_at: string
       /**
        * Ends At
        * @description The timestamp when the subscription will end.

@@ -3,7 +3,7 @@ from typing import Annotated
 from polar.exceptions import PolarTaskError
 from polar.observability.task_logging import LoggableField
 from polar.worker import (
-    AsyncSessionMaker,
+    AsyncReadSessionMaker,
     CronTrigger,
     TaskPriority,
     actor,
@@ -54,5 +54,5 @@ async def check_invariant(invariant_cls_name: Annotated[str, LoggableField]) -> 
     except StopIteration as e:
         raise InvariantDoesNotExistError(invariant_cls_name) from e
 
-    async with AsyncSessionMaker() as session:
+    async with AsyncReadSessionMaker() as session:
         await invariant_service.check(session, invariant_cls)

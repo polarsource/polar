@@ -5,14 +5,17 @@ import pytest
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
+    Catalog,
     Customer,
     Organization,
     Product,
     ProductPriceFixed,
     UserOrganization,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
@@ -305,6 +308,62 @@ class TestGetProduct:
         assert price["maximum_units"] is None
         assert "seat_tiers" not in price
         assert "price_per_seat" not in price
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_price_type_before_2027_01(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        price = response.json()["prices"][0]
+        assert price["type"] == "recurring"
+        assert price["recurring_interval"] == product.recurring_interval
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_price_type_2027_01(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        price = response.json()["prices"][0]
+        assert "type" not in price
+        assert "recurring_interval" not in price
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_catalog_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        catalog = Catalog(
+            organization=organization,
+            version_hash="abc123",
+            status=CatalogStatus.archived,
+            published_at=utc_now(),
+        )
+        await save_fixture(catalog)
+        product.catalog = catalog
+        await save_fixture(product)
+
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["catalog_id"] == str(catalog.id)
 
 
 @pytest.mark.anyio
@@ -1025,3 +1084,30 @@ class TestDeleteProduct:
 
         response = await client.get(f"/v1/products/{product.id}")
         assert response.status_code == 404
+
+
+@pytest.mark.anyio
+class TestNameCheck:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Casino Night"}
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_flagged_by_word_list(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Casino Night"}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"category": "gambling", "phrase": "Casino"}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_organization_token_rejected(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Casino Night"}
+        )
+
+        assert response.status_code == 401

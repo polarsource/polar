@@ -45,7 +45,7 @@ const SCENARIOS: Scenario[] = [
 
 const newestBucketStart = (scenario: Scenario) => COLD_UNTIL + (scenario.buckets - 1) * BUCKET_SIZE;
 const stateKey = (scenario: Scenario, reducer: string) =>
-  `outpost:state:external:${scenario.customer}:${reducer}`;
+  `outpost:v1:state:external:${scenario.customer}:${reducer}`;
 
 let redisServer: RedisServer;
 let redis: Redis;

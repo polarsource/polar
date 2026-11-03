@@ -73,4 +73,20 @@ describe('SwitchRecordModal', () => {
     expect(screen.getByText('active')).toBeTruthy()
     expect(screen.getByText('Stripe subscription ID')).toBeTruthy()
   })
+
+  it('keeps the tax setting visible but disabled when read-only', () => {
+    render(
+      <SwitchRecordModal
+        row={row}
+        migrationId="mig_1"
+        readOnly
+        onClose={() => {}}
+      />,
+    )
+
+    expect(screen.getByText('Tax after switch')).toBeTruthy()
+    expect((screen.getByRole('combobox') as HTMLButtonElement).disabled).toBe(
+      true,
+    )
+  })
 })

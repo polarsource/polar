@@ -83,7 +83,7 @@ jobs:
     concurrency:
       group: deploy-backend-${{ inputs.environment }}
       cancel-in-progress: false
-    if: always() && inputs.skip-backend != true
+    if: ${{ !cancelled() && inputs.skip-backend != true }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
@@ -95,7 +95,7 @@ jobs:
 
       - name: Deploy Backend to Render
         run: |
-          ./.github/workflows/deploy_server.sh \
+          exec ./.github/workflows/deploy_server.sh \
             "${{ steps.tag.outputs.tag }}" \
             "${{ inputs.has-migrations }}" \
             "${{ inputs.render-api-service-id }}" \
@@ -165,7 +165,7 @@ jobs:
   update-backend-tag:
     name: "Update deployed/backend-${{ inputs.environment }} tag"
     needs: deploy-backend
-    if: always() && needs.deploy-backend.result == 'success' && inputs.skip-backend != true && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.deploy-backend.result == 'success' && inputs.skip-backend != true && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -182,7 +182,7 @@ jobs:
   update-frontend-tag:
     name: "Update deployed/frontend-${{ inputs.environment }} tag"
     needs: promote-frontend
-    if: always() && needs.promote-frontend.result == 'success' && inputs.skip-frontend != true && github.ref == 'refs/heads/main'
+    if: ${{ !cancelled() && needs.promote-frontend.result == 'success' && inputs.skip-frontend != true && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

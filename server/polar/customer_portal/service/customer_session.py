@@ -1,33 +1,19 @@
-import secrets
-import string
 import uuid
 from dataclasses import dataclass
-from math import ceil
 
 import structlog
-from sqlalchemy.exc import DBAPIError
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
-from polar.customer_portal.repository.customer_session_code import (
-    CustomerSessionCodeRepository,
-)
 from polar.email.schemas import CustomerSessionCodeEmail, CustomerSessionCodeProps
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError
-from polar.kit.crypto import get_token_hash
-from polar.kit.db.locking import is_lock_not_available_error
-from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
-from polar.member_session.service import member_session as member_session_service
 from polar.models import (
-    CustomerSession,
-    CustomerSessionCode,
-    MemberSession,
+    Member,
     Organization,
 )
-from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 
 log = structlog.get_logger()
@@ -78,32 +64,13 @@ class CustomerSelectionRequired(CustomerSessionError):
 
 
 class CustomerSessionService:
-    async def request(
-        self,
-        session: AsyncSession,
-        email: str,
-        organization_id: uuid.UUID,
-        customer_id: uuid.UUID | None = None,
-    ) -> tuple[CustomerSessionCode, str]:
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(organization_id)
-        if organization is None:
-            raise OrganizationDoesNotExist(organization_id)
-
-        customer_session_code, code = await self._request_with_member_lookup(
-            session, email, organization, customer_id
-        )
-
-        session.add(customer_session_code)
-        return customer_session_code, code
-
-    async def _request_with_member_lookup(
+    async def get_member(
         self,
         session: AsyncSession,
         email: str,
         organization: Organization,
         customer_id: uuid.UUID | None,
-    ) -> tuple[CustomerSessionCode, str]:
+    ) -> Member:
         """
         Member-based lookup with disambiguation.
 
@@ -138,38 +105,23 @@ class CustomerSessionService:
             )
             if target_member is None:
                 raise CustomerDoesNotExist(email, organization)
-            member = target_member
-        elif len(members) == 1:
-            member = members[0]
-        else:
-            customer_options = [
-                CustomerOption(id=m.customer.id, name=m.customer.name) for m in members
-            ]
-            raise CustomerSelectionRequired(customer_options)
+            return target_member
 
-        code, code_hash = self._generate_code_hash()
-        customer_session_code = CustomerSessionCode(
-            code=code_hash,
-            email=member.email,
-            customer=member.customer,
-        )
-        return customer_session_code, code
+        if len(members) == 1:
+            return members[0]
 
-    async def send(
+        customer_options = [
+            CustomerOption(id=m.customer.id, name=m.customer.name) for m in members
+        ]
+        raise CustomerSelectionRequired(customer_options)
+
+    def send_code(
         self,
-        session: AsyncSession,
-        customer_session_code: CustomerSessionCode,
+        organization: Organization,
+        email: str,
         code: str,
+        code_lifetime_minutes: int,
     ) -> None:
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(
-            customer_session_code.customer.organization_id
-        )
-        assert organization is not None
-
-        delta = customer_session_code.expires_at - utc_now()
-        code_lifetime_minutes = ceil(delta.seconds / 60)
-
         domain = settings.frontend_hostname
 
         # Recipient is the login email (member.email in the member flow); the
@@ -178,7 +130,7 @@ class CustomerSessionService:
             CustomerSessionCodeEmail(
                 props=CustomerSessionCodeProps.model_validate(
                     {
-                        "email": customer_session_code.email,
+                        "email": email,
                         "organization": organization,
                         "code": code,
                         "code_lifetime_minutes": code_lifetime_minutes,
@@ -190,7 +142,7 @@ class CustomerSessionService:
                 )
             ),
             **organization.email_from_reply,
-            to_email_addr=customer_session_code.email,
+            to_email_addr=email,
             subject=f"Access your {organization.name} purchases",
         )
 
@@ -203,59 +155,6 @@ class CustomerSessionService:
                 "║                                                          ║\n"
                 "╚══════════════════════════════════════════════════════════╝"
             )
-
-    async def authenticate(
-        self, session: AsyncSession, code: str
-    ) -> tuple[str, CustomerSession | MemberSession]:
-        code_repository = CustomerSessionCodeRepository.from_session(session)
-        try:
-            customer_session_code = await code_repository.get_valid_by_code_for_update(
-                code
-            )
-        except DBAPIError as e:
-            if is_lock_not_available_error(e):
-                raise CustomerSessionCodeInvalidOrExpired() from e
-            raise
-
-        if customer_session_code is None:
-            raise CustomerSessionCodeInvalidOrExpired()
-
-        customer = customer_session_code.customer
-        if (
-            customer.email is not None
-            and customer_session_code.email.lower() == customer.email.lower()
-        ):
-            customer_repository = CustomerRepository.from_session(session)
-            await customer_repository.update(
-                customer, update_dict={"email_verified": True}
-            )
-
-        await session.delete(customer_session_code)
-
-        member_repository = MemberRepository.from_session(session)
-
-        # Look up member by (customer, email) - unique combination
-        member = await member_repository.get_by_customer_and_email(
-            customer, customer_session_code.email
-        )
-
-        if member is None:
-            # Member not found - code is no longer valid for this email
-            raise CustomerSessionCodeInvalidOrExpired()
-
-        return await member_session_service.create_member_session(session, member)
-
-    async def delete_expired(self, session: AsyncSession) -> None:
-        repository = CustomerSessionCodeRepository.from_session(session)
-        await repository.delete_expired()
-
-    def _generate_code_hash(self) -> tuple[str, str]:
-        code = "".join(
-            secrets.choice(string.ascii_uppercase + string.digits)
-            for _ in range(settings.CUSTOMER_SESSION_CODE_LENGTH)
-        )
-        code_hash = get_token_hash(code)
-        return code, code_hash
 
 
 customer_session = CustomerSessionService()

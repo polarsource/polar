@@ -9,6 +9,7 @@ def test_loads_every_outpost_script() -> None:
     assert set(emitter.load_outpost_scripts()) == {
         "read_state",
         "write_bucket",
+        "confirm",
         "apply_snapshot",
     }
 

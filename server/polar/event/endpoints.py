@@ -1,16 +1,11 @@
-import re
 from collections.abc import Sequence
-from datetime import date
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from annotated_types import Len, Predicate
 from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
-from pydantic import UUID4, AwareDatetime, ValidationError
-from pydantic_extra_types.timezone_name import TimeZoneName
+from pydantic import UUID4, ValidationError
 
-from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import (
     NotPermitted,
     PolarRequestValidationError,
@@ -22,15 +17,11 @@ from polar.kit.pagination import (
     ListResourceWithCursorPagination,
     PaginationParamsQuery,
 )
-from polar.kit.schemas import MultipleQueryFilter
-from polar.kit.time_queries import TimeInterval, is_under_limits
+from polar.kit.time_queries import is_under_limits
 from polar.kit.versioning import version
 from polar.meter.filter import Filter
-from polar.meter.schemas import MeterID
 from polar.models import Event
-from polar.models.event import EventSource
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -42,35 +33,31 @@ from polar.routing import APIRouter
 from polar.version import V2027_01
 
 from . import auth, sorting
-from .schemas import Event as EventSchema
 from .schemas import (
+    AggregateField,
     EventID,
+    EventListNamesParams,
+    EventListParams,
+    EventListStatisticsTimeseriesParams,
     EventName,
     EventsIngest,
     EventsIngestResponse,
+    EventStatisticsByPropertyParams,
+    EventStatisticsByVarianceParams,
+    EventStatisticsParams,
     EventTypeAdapter,
     ListCustomerStats,
     ListPropertyGroupStats,
     ListStatisticsTimeseries,
     ListVarianceEvents,
 )
+from .schemas import Event as EventSchema
 from .service import event as event_service
 
 router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
 
 EventNotFound = {"description": "Event not found.", "model": ResourceNotFound.schema()}
-
-_aggregate_field_regex = re.compile(r"^[a-zA-Z0-9_.]+$")
-
-
-def _validate_aggregate_field(value: str) -> bool:
-    return _aggregate_field_regex.match(value) is not None
-
-
-type AggregateField = Annotated[
-    str, Len(min_length=1, max_length=255), Predicate(_validate_aggregate_field)
-]
 
 
 @router.get(
@@ -81,61 +68,16 @@ type AggregateField = Annotated[
     openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
 )
 async def list(
+    filters: Annotated[EventListParams, Query()],
     auth_subject: auth.EventRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
-    filter: str | None = Query(
-        None,
-        description=(
-            "Filter events following filter clauses. "
-            "JSON string following the same schema a meter filter clause. "
-        ),
-    ),
-    start_timestamp: AwareDatetime | None = Query(
-        None, description="Filter events after this timestamp."
-    ),
-    end_timestamp: AwareDatetime | None = Query(
-        None, description="Filter events before this timestamp."
-    ),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by external customer ID.",
-    ),
-    meter_id: MeterID | None = Query(
-        None, title="MeterID Filter", description="Filter by a meter filter clause."
-    ),
-    name: MultipleQueryFilter[str] | None = Query(
-        None, title="Name Filter", description="Filter by event name."
-    ),
-    source: MultipleQueryFilter[EventSource] | None = Query(
-        None, title="Source Filter", description="Filter by event source."
-    ),
     event_type_id: UUID4 | None = Query(
         None,
         title="Event Type ID Filter",
         description="Filter by event type ID.",
         include_in_schema=False,
-    ),
-    query: str | None = Query(
-        None, title="Query", description="Query to filter events."
-    ),
-    parent_id: EventID | None = Query(
-        None,
-        description="When combined with depth, use this event as the anchor instead of root events.",
-    ),
-    depth: int | None = Query(
-        None,
-        ge=0,
-        le=5,
-        description="Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events.",
     ),
     aggregate_fields: Sequence[AggregateField] = Query(
         default=[],
@@ -155,32 +97,32 @@ async def list(
     # Manually parse the filter string to a Filter object as FastAPI does not
     # support complex schemas in query parameters.
     parsed_filter: Filter | None = None
-    if filter is not None:
+    if filters.filter is not None:
         try:
-            parsed_filter = Filter.model_validate_json(filter)
+            parsed_filter = Filter.model_validate_json(filters.filter)
         except ValidationError as e:
             raise RequestValidationError(e.errors()) from e
 
-    if query is not None and organization_id is None:
+    if filters.query is not None and filters.organization_id is None:
         raise RequestValidationError(
             [
                 {
                     "type": "value_error",
                     "msg": "Query is only supported when organization_id is provided.",
                     "loc": ("query", "query"),
-                    "input": query,
+                    "input": filters.query,
                 }
             ]
         )
 
-    if query is not None and len(query) < 3:
+    if filters.query is not None and len(filters.query) < 3:
         raise RequestValidationError(
             [
                 {
                     "type": "query",
                     "msg": "Query must be at least 3 characters.",
                     "loc": ("query", "query"),
-                    "input": query,
+                    "input": filters.query,
                 }
             ]
         )
@@ -189,21 +131,21 @@ async def list(
         session,
         auth_subject,
         filter=parsed_filter,
-        start_timestamp=start_timestamp,
-        end_timestamp=end_timestamp,
-        organization_id=organization_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        meter_id=meter_id,
-        name=name,
-        source=source,
+        start_timestamp=filters.start_timestamp,
+        end_timestamp=filters.end_timestamp,
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        meter_id=filters.meter_id,
+        name=filters.name,
+        source=filters.source,
         event_type_id=event_type_id,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,
-        query=query,
-        parent_id=parent_id,
-        depth=depth,
+        query=filters.query,
+        parent_id=filters.parent_id,
+        depth=filters.depth,
         aggregate_fields=aggregate_fields,
         cursor_pagination=cursor_pagination,
     )
@@ -230,33 +172,8 @@ async def list(
     response_model=ListPropertyGroupStats,
 )
 async def get_statistics_by_property(
+    filters: Annotated[EventStatisticsByPropertyParams, Query()],
     auth_subject: auth.EventRead,
-    property: AggregateField = Query(
-        ...,
-        description="Metadata property path to group by (e.g., _llm.model, _llm.vendor).",
-    ),
-    start_date: date = Query(..., description="Start date."),
-    end_date: date = Query(..., description="End date."),
-    timezone: TimeZoneName = Query(
-        default="UTC",
-        description="Timezone to use for the dates. Default is UTC.",
-    ),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by external customer ID.",
-    ),
-    aggregate_fields: Sequence[AggregateField] = Query(
-        default=["_cost.amount"],
-        description="Metadata field paths to aggregate.",
-    ),
-    limit: int = Query(default=200, le=1000),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListPropertyGroupStats:
     """
@@ -267,15 +184,15 @@ async def get_statistics_by_property(
     return await event_service.list_property_group_stats(
         session,
         auth_subject,
-        property=property,
-        start_date=start_date,
-        end_date=end_date,
-        timezone=ZoneInfo(timezone),
-        organization_id=organization_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        aggregate_fields=tuple(aggregate_fields),
-        limit=limit,
+        property=filters.property,
+        start_date=filters.start_date,
+        end_date=filters.end_date,
+        timezone=ZoneInfo(filters.timezone),
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        aggregate_fields=tuple(filters.aggregate_fields),
+        limit=filters.limit,
     )
 
 
@@ -286,29 +203,8 @@ async def get_statistics_by_property(
     response_model=ListCustomerStats,
 )
 async def get_statistics_by_customer(
+    filters: Annotated[EventStatisticsParams, Query()],
     auth_subject: auth.EventRead,
-    start_date: date = Query(..., description="Start date."),
-    end_date: date = Query(..., description="End date."),
-    timezone: TimeZoneName = Query(
-        default="UTC",
-        description="Timezone to use for the dates. Default is UTC.",
-    ),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by external customer ID.",
-    ),
-    aggregate_fields: Sequence[AggregateField] = Query(
-        default=["_cost.amount"],
-        description="Metadata field paths to aggregate.",
-    ),
-    limit: int = Query(default=200, le=1000),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListCustomerStats:
     """
@@ -320,14 +216,14 @@ async def get_statistics_by_customer(
     return await event_service.list_customer_stats(
         session,
         auth_subject,
-        start_date=start_date,
-        end_date=end_date,
-        timezone=ZoneInfo(timezone),
-        organization_id=organization_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        aggregate_fields=tuple(aggregate_fields),
-        limit=limit,
+        start_date=filters.start_date,
+        end_date=filters.end_date,
+        timezone=ZoneInfo(filters.timezone),
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        aggregate_fields=tuple(filters.aggregate_fields),
+        limit=filters.limit,
     )
 
 
@@ -338,32 +234,8 @@ async def get_statistics_by_customer(
     response_model=ListVarianceEvents,
 )
 async def get_statistics_by_variance(
+    filters: Annotated[EventStatisticsByVarianceParams, Query()],
     auth_subject: auth.EventRead,
-    start_date: date = Query(..., description="Start date."),
-    end_date: date = Query(..., description="End date."),
-    timezone: TimeZoneName = Query(
-        default="UTC",
-        description="Timezone to use for the dates. Default is UTC.",
-    ),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by external customer ID.",
-    ),
-    name: MultipleQueryFilter[str] | None = Query(
-        None, title="Name Filter", description="Filter by event name."
-    ),
-    aggregate_fields: Sequence[AggregateField] = Query(
-        default=["_cost.amount"],
-        description="Metadata field paths to aggregate.",
-    ),
-    limit: int = Query(default=100, le=1000),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListVarianceEvents:
     """
@@ -375,15 +247,15 @@ async def get_statistics_by_variance(
     return await event_service.list_variance_events(
         session,
         auth_subject,
-        start_date=start_date,
-        end_date=end_date,
-        timezone=ZoneInfo(timezone),
-        organization_id=organization_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        name=name,
-        aggregate_fields=tuple(aggregate_fields),
-        limit=limit,
+        start_date=filters.start_date,
+        end_date=filters.end_date,
+        timezone=ZoneInfo(filters.timezone),
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        name=filters.name,
+        aggregate_fields=tuple(filters.aggregate_fields),
+        limit=filters.limit,
     )
 
 
@@ -395,58 +267,10 @@ async def get_statistics_by_variance(
     response_model=ListStatisticsTimeseries,
 )
 async def list_statistics_timeseries(
+    filters: Annotated[EventListStatisticsTimeseriesParams, Query()],
     auth_subject: auth.EventRead,
     metadata: MetadataQuery,
     hierarchy_sorting: sorting.EventStatisticsSorting,
-    start_date: date = Query(
-        ...,
-        description="Start date.",
-    ),
-    end_date: date = Query(..., description="End date."),
-    timezone: TimeZoneName = Query(
-        default="UTC",
-        description="Timezone to use for the dates. Default is UTC.",
-    ),
-    interval: TimeInterval = Query(..., description="Interval between two dates."),
-    filter: str | None = Query(
-        None,
-        description=(
-            "Filter events following filter clauses. "
-            "JSON string following the same schema a meter filter clause. "
-        ),
-    ),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by external customer ID.",
-    ),
-    meter_id: MeterID | None = Query(
-        None, title="MeterID Filter", description="Filter by a meter filter clause."
-    ),
-    name: MultipleQueryFilter[str] | None = Query(
-        None, title="Name Filter", description="Filter by event name."
-    ),
-    source: MultipleQueryFilter[EventSource] | None = Query(
-        None, title="Source Filter", description="Filter by event source."
-    ),
-    event_type_id: UUID4 | None = Query(
-        None,
-        title="Event Type ID Filter",
-        description="Filter by event type ID.",
-    ),
-    query: str | None = Query(
-        None, title="Query", description="Query to filter events."
-    ),
-    aggregate_fields: Sequence[AggregateField] = Query(
-        default=["_cost.amount"],
-        description="Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields.",
-    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListStatisticsTimeseries:
     """
@@ -457,7 +281,7 @@ async def list_statistics_timeseries(
     across all periods.
     """
     # Validate interval limits
-    if not is_under_limits(start_date, end_date, interval):
+    if not is_under_limits(filters.start_date, filters.end_date, filters.interval):
         raise PolarRequestValidationError(
             [
                 {
@@ -467,39 +291,39 @@ async def list_statistics_timeseries(
                         "Use a larger interval or reduce the date range."
                     ),
                     "type": "value_error",
-                    "input": (start_date, end_date, interval),
+                    "input": (filters.start_date, filters.end_date, filters.interval),
                 }
             ]
         )
 
     # Parse filter if provided
     parsed_filter: Filter | None = None
-    if filter is not None:
+    if filters.filter is not None:
         try:
-            parsed_filter = Filter.model_validate_json(filter)
+            parsed_filter = Filter.model_validate_json(filters.filter)
         except ValidationError as e:
             raise RequestValidationError(e.errors()) from e
 
-    if query is not None and organization_id is None:
+    if filters.query is not None and filters.organization_id is None:
         raise RequestValidationError(
             [
                 {
                     "type": "value_error",
                     "msg": "Query is only supported when organization_id is provided.",
                     "loc": ("query", "query"),
-                    "input": query,
+                    "input": filters.query,
                 }
             ]
         )
 
-    if query is not None and len(query) < 3:
+    if filters.query is not None and len(filters.query) < 3:
         raise RequestValidationError(
             [
                 {
                     "type": "query",
                     "msg": "Query must be at least 3 characters.",
                     "loc": ("query", "query"),
-                    "input": query,
+                    "input": filters.query,
                 }
             ]
         )
@@ -507,21 +331,21 @@ async def list_statistics_timeseries(
     return await event_service.list_statistics_timeseries(
         session,
         auth_subject,
-        start_date=start_date,
-        end_date=end_date,
-        timezone=ZoneInfo(timezone),
-        interval=interval,
+        start_date=filters.start_date,
+        end_date=filters.end_date,
+        timezone=ZoneInfo(filters.timezone),
+        interval=filters.interval,
         filter=parsed_filter,
-        organization_id=organization_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        meter_id=meter_id,
-        name=name,
-        source=source,
-        event_type_id=event_type_id,
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        meter_id=filters.meter_id,
+        name=filters.name,
+        source=filters.source,
+        event_type_id=filters.event_type_id,
         metadata=metadata,
-        query=query,
-        aggregate_fields=tuple(aggregate_fields),
+        query=filters.query,
+        aggregate_fields=tuple(filters.aggregate_fields),
         hierarchy_stats_sorting=hierarchy_sorting,
     )
 
@@ -533,37 +357,21 @@ async def list_statistics_timeseries(
     tags=[APITag.mcp, APITag.cli],
 )
 async def list_names(
+    filters: Annotated[EventListNamesParams, Query()],
     auth_subject: auth.EventNamesRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.EventNamesSorting,
     session: AsyncReadSession = Depends(get_db_read_session),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer ID."
-    ),
-    external_customer_id: MultipleQueryFilter[str] | None = Query(
-        None,
-        title="ExternalCustomerID Filter",
-        description="Filter by external customer ID.",
-    ),
-    source: MultipleQueryFilter[EventSource] | None = Query(
-        None, title="Source Filter", description="Filter by event source."
-    ),
-    query: str | None = Query(
-        None, title="Query", description="Query to filter event names."
-    ),
 ) -> ListResource[EventName]:
     """List event names."""
     results, count = await event_service.list_names(
         session,
         auth_subject,
-        organization_id=organization_id,
-        customer_id=customer_id,
-        external_customer_id=external_customer_id,
-        source=source,
-        query=query,
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        source=filters.source,
+        query=filters.query,
         pagination=pagination,
         sorting=sorting,
     )

@@ -23,6 +23,7 @@ type Surface =
   | 'global'
 
 type Category =
+  | 'agent'
   | 'benefits'
   | 'checkout'
   | 'subscriptions'
@@ -30,6 +31,7 @@ type Category =
   | 'organizations'
   | 'onboarding'
   | 'issues'
+  | 'products'
 
 type Noun = string
 

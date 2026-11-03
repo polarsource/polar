@@ -37,6 +37,7 @@ describe('home', () => {
     const output = await render(fakeAuth({ sessions: [] }), fakeOrganizations())
 
     expect(output).toContain(`Polar CLI ${VERSION}`)
+    expect(output).toMatch(/^ {2}▄▄▄▄▄████ {2}██ {5}Polar CLI /m)
     expect(output).toContain('Not logged in')
     expect(output).toContain('polar auth login --sandbox')
     expect(output).not.toContain('Try next')

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Box } from '@polar-sh/orbit/Box'
 import { Input } from '@polar-sh/orbit'
-import { Search, Mail } from 'lucide-react'
+import { Mail, Search } from '@polar-sh/orbit/icons'
 import {
   Example,
   PageHeader,

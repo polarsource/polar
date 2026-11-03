@@ -2,7 +2,7 @@
 
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import type { schemas } from '@polar-sh/client'
-import { X } from 'lucide-react'
+import { X } from '@polar-sh/orbit/icons'
 import { useCallback, useEffect, useRef } from 'react'
 
 interface CheckoutEmbedCloseProps {
@@ -22,6 +22,10 @@ const CheckoutEmbedClose: React.FC<
   }, [checkout])
 
   useEffect(() => {
+    const layoutElement = document.getElementById('polar-embed-layout')
+    if (!layoutElement) {
+      return
+    }
     const outsideClickListener = (event: MouseEvent) => {
       const target = event.target as Node
       if (closeButtonRef.current?.contains(target)) {
@@ -32,14 +36,10 @@ const CheckoutEmbedClose: React.FC<
         onClose()
       }
     }
-    document
-      .getElementById('polar-embed-layout')
-      ?.addEventListener('click', outsideClickListener)
+    layoutElement.addEventListener('click', outsideClickListener)
 
     return () => {
-      document
-        .getElementById('polar-embed-layout')
-        ?.removeEventListener('click', outsideClickListener)
+      layoutElement.removeEventListener('click', outsideClickListener)
     }
   }, [onClose])
 

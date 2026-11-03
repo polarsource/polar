@@ -6,7 +6,7 @@ import type { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { useCallback, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 
 interface ChangeEmailFormProps {
   customer: schemas['CustomerPortalCustomer']
@@ -17,15 +17,12 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
   const [successEmail, setSuccessEmail] = useState<string | null>(null)
   const emailUpdateRequest = useCustomerEmailUpdateRequest()
 
-  const {
-    register,
-    handleSubmit,
-    setError,
-    reset,
-    formState: { errors },
-  } = useForm<{ email: string }>({
+  const { control, register, handleSubmit, setError, reset } = useForm<{
+    email: string
+  }>({
     defaultValues: { email: '' },
   })
+  const { errors } = useFormState({ control })
 
   const onSubmit = useCallback(
     async (data: { email: string }) => {

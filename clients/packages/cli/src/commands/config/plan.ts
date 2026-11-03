@@ -11,12 +11,14 @@ import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { commentOnPullRequest } from '@/services/pull-request-comment'
 import { planMarkdown } from '@/utils/billing-config/markdown'
-import { planSummary } from '@/utils/billing-config/entries'
 import {
-  changes,
   errors,
+  fixErrors,
   found,
-  summary,
+  next,
+  overview,
+  runApply,
+  sections,
   target,
   unchanged,
 } from '@/utils/billing-config/review'
@@ -31,16 +33,17 @@ const render = (
   organization: ActiveOrganization,
   result: PlanResult,
 ) => [
-  ...changes(config, organization, result),
-  ui.blank,
-  ...(result.issues.length > 0
-    ? [summary(result.issues)]
+  ...sections(config, result),
+  ...overview(config, organization, result),
+  ...(errors(result.issues) > 0
+    ? next(fixErrors(result.issues))
     : unchanged(result.entries)
-      ? [ui.success(`${target(organization)} is up to date, nothing to apply`)]
-      : [
-          planSummary(result.entries),
-          `${ui.INDENT}${ui.dim('Run')} ${ui.command('polar config apply')} ${ui.dim('to apply it.')}`,
-        ]),
+      ? [
+          ui.blank,
+          ui.success(`${target(organization)} is up to date, nothing to apply`),
+        ]
+      : next(runApply)),
+  ui.blank,
 ]
 
 export const plan = Command.make('plan', { file, org, prComment }).pipe(
@@ -78,6 +81,7 @@ export const plan = Command.make('plan', { file, org, prComment }).pipe(
         const planned = yield* withProgress(
           (progress) =>
             Effect.gen(function* () {
+              yield* progress.open('Preflight')
               yield* progress.start('Reading')
               const config = yield* billing.load(Option.getOrUndefined(file))
               yield* progress.finish(config.file)

@@ -71,6 +71,14 @@ class IngestStep(TimelineStep):
     operation: typing.ClassVar[typing.Literal["ingest"]] = "ingest"
 
 
+# Polar ingested these events: the client stops counting them as pending.
+@dataclasses.dataclass(frozen=True)
+class ConfirmStep(TimelineStep):
+    client: str
+    arguments: IngestArguments
+    operation: typing.ClassVar[typing.Literal["confirm"]] = "confirm"
+
+
 @dataclasses.dataclass(frozen=True)
 class ReadStep(TimelineStep):
     client: str
@@ -121,14 +129,24 @@ class SnapshotStep(TimelineStep):
     operation: typing.ClassVar[typing.Literal["snapshot"]] = "snapshot"
 
 
+# Polar stored these events: it confirms them when a client asks before applying a snapshot.
+@dataclasses.dataclass(frozen=True)
+class IngestedStep(TimelineStep):
+    arguments: IngestArguments
+    client: typing.ClassVar[typing.Literal["polar"]] = "polar"
+    operation: typing.ClassVar[typing.Literal["ingested"]] = "ingested"
+
+
 Step: typing.TypeAlias = (
     IngestStep
+    | ConfirmStep
     | ReadStep
     | ActorStep
     | RestartStep
     | DisconnectStep
     | RedisStep
     | SnapshotStep
+    | IngestedStep
 )
 
 
@@ -315,7 +333,7 @@ async def run(
     customers = set()
     payloads = [*scenario.snapshots]
     for step in scenario.steps:
-        if isinstance(step, IngestStep):
+        if isinstance(step, IngestStep | ConfirmStep):
             payloads.extend(step.arguments["events"])
         elif not isinstance(step, RestartStep | RedisStep):
             payloads.append(step.arguments)
@@ -337,7 +355,7 @@ async def run(
         stack.callback(proxy_tasks.cancel_scope.cancel)
         await proxy_tasks.start(proxy.serve)
         keys = [
-            f"outpost:state:{customer}:{reducer['id']}"
+            f"outpost:v1:state:{customer}:{reducer['id']}"
             for customer in customers
             for reducer in scenario.configuration["reducers"]
         ]

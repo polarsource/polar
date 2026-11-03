@@ -27,6 +27,7 @@ from polar.event.system import (
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.math import non_negative_running_sum
+from polar.kit.metadata import get_nested_metadata_attr
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
@@ -38,10 +39,9 @@ from polar.meter.aggregation import (
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
-from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
-from polar.reducer.repository import ReducerRepository
-from polar.reducer.service import get_customer_identities
+from polar.redis import Redis
+from polar.reducer.service import reducer as reducer_service
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
@@ -126,11 +126,7 @@ class CustomerMeterService:
         return await repository.get_one_or_none(statement)
 
     async def update_customer(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        *,
-        lookback: timedelta = settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD,
+        self, session: AsyncSession, redis: Redis, customer: Customer
     ) -> None:
         repository = MeterRepository.from_session(session)
         statement = (
@@ -144,9 +140,13 @@ class CustomerMeterService:
 
         updated = False
         async for meter in repository.stream(statement):
-            _, meter_updated = await self.update_customer_meter(
-                session, customer, meter, lookback=lookback
+            customer_meter, meter_updated = await self.update_customer_meter(
+                session, customer, meter
             )
+            if meter_updated and customer_meter is not None:
+                await reducer_service.log_customer_meter_comparison(
+                    session, redis, customer_meter
+                )
             updated = updated or meter_updated
 
         if updated:
@@ -158,8 +158,6 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
-        *,
-        lookback: timedelta = settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD,
     ) -> tuple[CustomerMeter | None, bool]:
         repository = CustomerMeterRepository.from_session(session)
         # Use FOR UPDATE NOWAIT to serialize access and ensure visibility of
@@ -185,7 +183,9 @@ class CustomerMeterService:
         # Optimization: only look for events ingested after the maximum debounce window
         # This avoids scanning all historical events
         # when checking if there are new events to process.
-        ingested_at_lower_bound = utc_now() - lookback
+        ingested_at_lower_bound = (
+            utc_now() - settings.CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD
+        )
 
         with logfire.span("get_latest_event"):
             last_event = await self._get_latest_current_window_event(
@@ -226,22 +226,6 @@ class CustomerMeterService:
             customer_meter.credited_units - customer_meter.consumed_units
         )
         customer_meter.last_balanced_event = last_event
-
-        # Temporary: reducer values carry the credits until credits are reducers.
-        reducer = await ReducerRepository.from_session(session).get_by_meter_id(
-            meter.id
-        )
-        if reducer is not None:
-            for customer_id, external_customer_id in get_customer_identities(customer):
-                enqueue_outpost_event(
-                    customer.organization_id,
-                    {
-                        "type": "reducer_bucket",
-                        "reducer_id": reducer.id,
-                        "customer_id": customer_id,
-                        "external_customer_id": external_customer_id,
-                    },
-                )
 
         return await repository.update(customer_meter), True
 
@@ -602,7 +586,7 @@ class CustomerMeterService:
         cutoff: datetime | None = None,
         *,
         include_system_events: bool = True,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         """Build statement for events by customer_id or external_id (no LIMIT)."""
         statement = event_repository.get_base_statement().where(
             Event.organization_id == meter.organization_id,
@@ -647,7 +631,7 @@ class CustomerMeterService:
         by_external_id: bool = False,
         ingested_at_lower_bound: datetime | None = None,
         cutoff: datetime | None = None,
-    ) -> Select[tuple[Event]]:
+    ) -> Select[Event]:
         """Build a LIMIT 1 statement for getting the latest event."""
         statement = self._build_events_statement(
             event_repository,
@@ -742,9 +726,9 @@ class CustomerMeterService:
             if prop in Event._filterable_fields:
                 _, attr = Event._filterable_fields[prop]
                 return func.cast(attr, Float)
-            return Event.user_metadata[prop].as_float()
+            return get_nested_metadata_attr(Event, prop).as_float()
         elif isinstance(meter.aggregation, UniqueAggregation):
-            return Event.user_metadata[meter.aggregation.property]
+            return get_nested_metadata_attr(Event, meter.aggregation.property)
         return Event.id
 
     def _get_outer_aggregation(self, meter: Meter, column: Any) -> Any:

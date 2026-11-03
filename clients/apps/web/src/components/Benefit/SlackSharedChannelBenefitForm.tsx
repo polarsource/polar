@@ -27,7 +27,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast } from '../Toast/use-toast'
 import { ChannelNamePreview } from './ChannelNamePreview'
@@ -47,12 +47,15 @@ export const SlackSharedChannelBenefitForm = ({
   update = false,
   benefitId,
 }: Props) => {
-  const { control, setValue, watch } =
+  const { control, setValue } =
     useFormContext<schemas['BenefitSlackSharedChannelCreate']>()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const description = watch('description')
-  const linkedIntegrationId = watch('properties.slack_integration_id')
+  const description = useWatch({ control, name: 'description' })
+  const linkedIntegrationId = useWatch({
+    control,
+    name: 'properties.slack_integration_id',
+  })
   const integrationIdFromUrl =
     searchParams?.get('slack_integration_id') ?? undefined
   const [selectedIntegrationId, setSelectedIntegrationId] = useState<

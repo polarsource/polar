@@ -12,7 +12,6 @@ from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
 from polar.models import Benefit, Customer, Member, Organization, User
 from polar.models.benefit_grant import BenefitGrantScopeArgs
-from polar.reducer.service import reducer as reducer_service
 
 from ..base.service import BenefitPropertiesValidationError, BenefitServiceProtocol
 from .properties import BenefitGrantMeterCreditProperties, BenefitMeterCreditProperties
@@ -76,7 +75,7 @@ class BenefitMeterCreditService(
                 self.session, customer, meter
             )
 
-            reset_event = await event_service.create_event(
+            await event_service.create_event(
                 self.session,
                 build_system_event(
                     SystemEvent.meter_reset,
@@ -86,9 +85,6 @@ class BenefitMeterCreditService(
                         "meter_id": str(meter_id),
                     },
                 ),
-            )
-            reducer_service.enqueue_seal(
-                customer.id, meter_id, at=reset_event.timestamp
             )
 
             if rollover_units > 0:

@@ -79,8 +79,14 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
           <motion.div
             initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            exit={{
+              x: '100%',
+              opacity: 0,
+              transition: { duration: 0.2, ease: [0.3, 0, 1, 1] },
+            }}
+            // Mirrors the `slow` duration + `decelerate` easing tokens; a tween
+            // settles without the overshoot an underdamped spring produces.
+            transition={{ duration: 0.32, ease: [0, 0, 0, 1] }}
             className={twMerge(
               'dark:bg-polar-900 relative z-10 flex h-full max-h-full w-full flex-col overflow-y-auto bg-white shadow-sm md:fixed md:top-0 md:right-0 md:bottom-0 md:h-auto md:w-[540px] dark:text-white',
               className,
@@ -126,7 +132,7 @@ const CloseButton = (props: { className?: string; hide: () => void }) => {
     <button
       type="button"
       className={twMerge(
-        'dark:text-polar-600 dark:hover:text-polar-500/70 cursor-pointer text-gray-300 hover:text-gray-400',
+        'dark:text-polar-400 cursor-pointer text-gray-500 transition-colors hover:text-gray-900 dark:hover:text-white',
         props.className,
       )}
       onClick={() => props.hide()}

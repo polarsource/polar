@@ -5,7 +5,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { useBenefitFiles } from '@/hooks/queries/benefits'
 import { useDownloadFile } from '@/hooks/queries/files'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import { ArrowDownward } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
   Button,

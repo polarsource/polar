@@ -4,18 +4,14 @@ import {
   useTranslations,
   type AcceptedLocale,
 } from '@polar-sh/i18n'
-import {
-  getMeteredTiers,
-  isLegacyRecurringPrice,
-  isMeteredPrice,
-} from '../utils/product'
+import { getMeteredTiers, isMeteredPrice } from '../utils/product'
 import { getBasePricePerUnit } from '../utils/units'
 import AmountLabel from './AmountLabel'
 import MeteredPriceLabel from './MeteredPriceLabel'
 
 interface ProductPriceLabelProps {
   product: schemas['CheckoutProduct']
-  price: schemas['ProductPrice'] | schemas['LegacyRecurringProductPrice']
+  price: schemas['ProductPrice']
   locale?: AcceptedLocale
   mode?: 'compact' | 'standard'
 }
@@ -33,11 +29,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       <AmountLabel
         amount={price.price_amount}
         currency={price.price_currency}
-        interval={
-          isLegacyRecurringPrice(price)
-            ? price.recurring_interval
-            : product.recurring_interval
-        }
+        interval={product.recurring_interval}
         intervalCount={product.recurring_interval_count}
         mode={mode}
         locale={locale}

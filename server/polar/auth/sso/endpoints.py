@@ -25,12 +25,10 @@ from polar.models import Organization, OrganizationSSOConnection
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
+from polar.organization_domain.repository import OrganizationDomainRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.sso.repository import (
-    OrganizationDomainRepository,
-    OrganizationSSOConnectionRepository,
-)
+from polar.sso.repository import OrganizationSSOConnectionRepository
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository

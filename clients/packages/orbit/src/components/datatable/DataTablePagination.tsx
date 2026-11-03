@@ -4,7 +4,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-} from 'lucide-react'
+} from '../../icons'
 import { Button } from '../Button'
 import {
   Select,

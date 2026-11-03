@@ -42,6 +42,7 @@ export const listCheckouts = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
       status?: CheckoutStatus | CheckoutStatus[] | null;
@@ -56,6 +57,7 @@ export const listCheckouts = (client: ClientBase) => {
     const queryParams = {
       organization_id: query?.organization_id,
       product_id: query?.product_id,
+      external_product_id: query?.external_product_id,
       customer_id: query?.customer_id,
       external_customer_id: query?.external_customer_id,
       status: query?.status,
@@ -95,6 +97,7 @@ export const iterListCheckouts = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       customer_id?: string | string[] | null;
       external_customer_id?: string | string[] | null;
       status?: CheckoutStatus | CheckoutStatus[] | null;

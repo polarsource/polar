@@ -1,6 +1,7 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
 import { withDeprecation } from './deprecation'
+import type { KeepDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
 import type { Currency } from './money'
 import {
@@ -212,10 +213,11 @@ class ProductBuilder<
   Benefit extends string,
   P extends Prices<Meter> | undefined,
   Billing extends Recurring | OneTime | undefined,
+  Granted extends Benefit = never,
 > extends withDeprecation(withMetadata(withVisibility(Builder))) {
   readonly trialPeriod: Trial | undefined = undefined
   readonly meterPeriod: MeterCycle | undefined = undefined
-  readonly benefits: ReadonlyArray<Benefit> = []
+  readonly benefits: ReadonlyArray<Granted> = []
   readonly descriptionText: string | undefined = undefined
 
   constructor(
@@ -226,36 +228,51 @@ class ProductBuilder<
     super()
   }
 
-  prices(
-    ...prices: Prices<Meter>
-  ): ProductBuilder<Meter, Benefit, Prices<Meter>, Billing> {
-    return this.with<ProductBuilder<Meter, Benefit, Prices<Meter>, Billing>>({
-      priceList: prices,
-    })
+  prices<const Priced extends Prices<Meter>>(
+    ...prices: Priced
+  ): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, Priced, Billing, Granted>
+  > {
+    return this.with({ priceList: prices })
   }
 
   recurring(
     cadence: keyof typeof cadences,
-  ): ProductBuilder<Meter, Benefit, P, Recurring>
+  ): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  >
   recurring(
     count: number,
     interval: Interval,
-  ): ProductBuilder<Meter, Benefit, P, Recurring>
-  recurring(...args: Cycle): ProductBuilder<Meter, Benefit, P, Recurring> {
+  ): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  >
+  recurring(
+    ...args: Cycle
+  ): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  > {
     const [interval, count] = cycleOf(args)
     const billing: Recurring = {
       recurring_interval: interval,
       recurring_interval_count: count,
     }
-    return this.with<ProductBuilder<Meter, Benefit, P, Recurring>>({ billing })
+    return this.with({ billing })
   }
 
-  once(): ProductBuilder<Meter, Benefit, P, OneTime> {
+  once(): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, OneTime, Granted>
+  > {
     const billing: OneTime = {
       recurring_interval: null,
       recurring_interval_count: null,
     }
-    return this.with<ProductBuilder<Meter, Benefit, P, OneTime>>({
+    return this.with({
       billing,
       trialPeriod: undefined,
       meterPeriod: undefined,
@@ -263,10 +280,10 @@ class ProductBuilder<
   }
 
   trial(
-    this: ProductBuilder<Meter, Benefit, P, Recurring>,
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
     count: number,
     interval: Interval,
-  ): ProductBuilder<Meter, Benefit, P, Recurring> {
+  ): this {
     return this.with({
       trialPeriod: {
         trial_interval: unitOf(interval),
@@ -276,25 +293,27 @@ class ProductBuilder<
   }
 
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring>,
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
     cadence: keyof typeof cadences,
-  ): ProductBuilder<Meter, Benefit, P, Recurring>
+  ): this
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring>,
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
     count: number,
     interval: Interval,
-  ): ProductBuilder<Meter, Benefit, P, Recurring>
+  ): this
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring>,
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
     ...args: Cycle
-  ): ProductBuilder<Meter, Benefit, P, Recurring> {
+  ): this {
     const [interval, count] = cycleOf(args)
     return this.with({
       meterPeriod: { meter_interval: interval, meter_interval_count: count },
     })
   }
 
-  grants(benefits: ReadonlyArray<Benefit>): this {
+  grants<const Grant extends Benefit>(
+    benefits: ReadonlyArray<Grant>,
+  ): KeepDeprecation<this, ProductBuilder<Meter, Benefit, P, Billing, Grant>> {
     return this.with({ benefits })
   }
 
@@ -307,7 +326,8 @@ class ProductBuilder<
 export type ProductDefinition<
   Meter extends string = string,
   Benefit extends string = string,
-> = ProductBuilder<Meter, Benefit, Prices<Meter>, Recurring | OneTime>
+  Granted extends Benefit = Benefit,
+> = ProductBuilder<Meter, Benefit, Prices<Meter>, Recurring | OneTime, Granted>
 
 export const product = <
   Meter extends string = string,
@@ -362,5 +382,7 @@ export type ProductHelpers<Meter extends string, Benefit extends string> = {
   readonly seats: typeof seats
   readonly units: typeof units
   readonly tier: typeof tier
-  readonly meter: (meter: Meter) => ReturnType<typeof metered<Meter>>
+  readonly meter: <const Priced extends Meter>(
+    meter: Priced,
+  ) => ReturnType<typeof metered<Priced>>
 }

@@ -12,6 +12,7 @@ import {
   type ConfigResource,
   type EntryResult,
   type LoadedConfig,
+  type Removal,
   type SettingsResult,
 } from '@/schemas/BillingConfig'
 import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
@@ -19,16 +20,23 @@ import type { ApiClient } from '@/services/client'
 
 export type Clients = Record<PolarEnvironment, ApiClient>
 
+export interface CatalogOptions {
+  readonly name?: string | undefined
+}
+
 // Sections the config API doesn't accept yet
 const UNSUPPORTED_SECTIONS = new Set([''])
 
-const stripUnsupported = (input: unknown): unknown =>
+const requestBody = (input: unknown, { name }: CatalogOptions) =>
   typeof input === 'object' && input !== null && !Array.isArray(input)
-    ? Object.fromEntries(
-        Object.entries(input).filter(
-          ([section]) => !UNSUPPORTED_SECTIONS.has(section),
+    ? {
+        ...Object.fromEntries(
+          Object.entries(input).filter(
+            ([section]) => !UNSUPPORTED_SECTIONS.has(section),
+          ),
         ),
-      )
+        ...(name !== undefined && { catalog_name: name }),
+      }
     : input
 
 export const post = (
@@ -36,13 +44,14 @@ export const post = (
   path: string,
   config: LoadedConfig,
   organization: ActiveOrganization,
+  options: CatalogOptions = {},
 ) =>
   Effect.gen(function* () {
     const request = yield* HttpClientRequest.post(
       yield* apiUrl(organization.environment, path),
     ).pipe(
       withOrganization(organization.id),
-      HttpClientRequest.bodyJson(stripUnsupported(config.input)),
+      HttpClientRequest.bodyJson(requestBody(config.input, options)),
     )
     return yield* clients[organization.environment].execute(request)
   })
@@ -53,11 +62,10 @@ export const errorName = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.orElseSucceed(() => undefined),
   )
 
-const SECTIONS = {
+export const SECTIONS = {
   meter: 'meters',
   benefit: 'benefits',
   product: 'products',
-  discount: 'discounts',
   webhook: 'webhooks',
 } as const satisfies Record<typeof ConfigResource.Type, string>
 
@@ -92,22 +100,42 @@ const settingsEntries = (
   }))
 }
 
+// A deprecated resource is still listed in `changes`, its removal replaces that entry
 export const entries = (
   results: ReadonlyArray<typeof EntryResult.Type>,
   settings?: typeof SettingsResult.Type | null,
+  removed: ReadonlyArray<typeof Removal.Type> = [],
 ) => [
   ...settingsEntries(settings),
-  ...results.map(
-    (entry): AppliedEntry => ({
-      section: SECTIONS[entry.resource],
-      id: entry.external_id,
-      action: entry.action,
-      diff: entry.diff ?? [],
+  ...results
+    .filter(
+      (entry) =>
+        !removed.some(
+          (removal) =>
+            removal.resource === entry.resource &&
+            removal.external_id === entry.external_id,
+        ),
+    )
+    .map(
+      (entry): AppliedEntry => ({
+        section: SECTIONS[entry.resource],
+        id: entry.external_id,
+        action: entry.action,
+        diff: entry.diff ?? [],
+      }),
+    ),
+  ...removed.map(
+    (removal): AppliedEntry => ({
+      section: SECTIONS[removal.resource],
+      id: removal.external_id,
+      action: 'removed',
+      reason: removal.reason,
+      diff: [],
     }),
   ),
 ]
 
-// Settings, benefits, products, discounts and webhooks sections need their own scope on top of the meters one
+// Settings, benefits, products and webhooks sections need their own scope on top of the meters one
 export const requiredScopes = (
   config: LoadedConfig,
   access: 'read' | 'write',
@@ -116,7 +144,7 @@ export const requiredScopes = (
     typeof config.input === 'object' && config.input !== null
       ? config.input
       : {}
-  return ['meters', 'benefits', 'products', 'discounts', 'settings', 'webhooks']
+  return ['meters', 'benefits', 'products', 'settings', 'webhooks']
     .filter((section) => section === 'meters' || section in input)
     .map(
       (section) =>

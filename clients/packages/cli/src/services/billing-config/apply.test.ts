@@ -34,7 +34,7 @@ const source = [
 
 let api: ReturnType<typeof fakeHttp>
 
-const run = (file: string) =>
+const run = (file: string, name?: string) =>
   Effect.runPromise(
     Effect.gen(function* () {
       const clients = {
@@ -43,7 +43,7 @@ const run = (file: string) =>
         local: yield* authenticatedClient('local'),
       }
       const config = yield* loader(yield* FileSystem.FileSystem)(file)
-      return yield* apply(clients)(config, acme)
+      return yield* apply(clients)(config, acme, { name })
     }).pipe(
       Effect.provide(Layer.mergeAll(BunServices.layer, api.layer)),
       Effect.provideService(Auth, fakeAuth({ environment: 'sandbox' }).auth),
@@ -97,6 +97,26 @@ describe('apply', () => {
         { section: 'products', id: 'pro', action: 'updated', diff: [] },
       ],
     })
+  })
+
+  test('sends the catalog name alongside the config', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
+
+    await run(await write(source), 'Spring launch')
+
+    expect(await api.requests[0]?.json()).toEqual({
+      ...JSON.parse(source),
+      catalog_name: 'Spring launch',
+    })
+  })
+
+  test('keeps a catalog name from the file when no name is given', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
+    const named = { ...JSON.parse(source), catalog_name: 'From file' }
+
+    await run(await write(JSON.stringify(named)))
+
+    expect(await api.requests[0]?.json()).toEqual(named)
   })
 
   test('maps 422 validation errors onto the file', async () => {

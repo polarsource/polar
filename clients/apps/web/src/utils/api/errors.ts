@@ -8,9 +8,10 @@ export const setValidationErrors = <TFieldValues extends FieldValues>(
   slice: number = 1,
   discriminators?: string[] | undefined,
 ): void => {
+  const discriminatorSet = new Set(discriminators)
   errors.forEach((error) => {
     let loc = error.loc.slice(slice)
-    if (discriminators && discriminators.includes(loc[0] as string)) {
+    if (discriminatorSet.has(loc[0] as string)) {
       loc = loc.slice(1)
     }
     const fieldPath = (loc.join('.') || 'root') as FieldPath<TFieldValues>
@@ -32,6 +33,7 @@ export const setProductValidationErrors = <TFieldValues extends FieldValues>(
   slice: number = 1,
   discriminators?: string[] | undefined,
 ): void => {
+  const discriminatorSet = new Set(discriminators)
   errors.forEach((error) => {
     // Skip errors with no message or invalid message
     if (
@@ -50,7 +52,7 @@ export const setProductValidationErrors = <TFieldValues extends FieldValues>(
       const segmentStr = String(segment)
 
       // Skip if in explicit discriminators list
-      if (discriminators && discriminators.includes(segmentStr)) {
+      if (discriminatorSet.has(segmentStr)) {
         return false
       }
 

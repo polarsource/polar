@@ -6,13 +6,13 @@ from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
 from datetime import datetime
 from decimal import Decimal
-from typing import cast
+from typing import Literal, cast
 
 import logfire
 import structlog
 from babel.dates import format_date
-from sqlalchemy.util.typing import Literal
 
+from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.math import non_negative_running_sum
@@ -30,7 +30,6 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
-from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
 from .types import BillingEntrySelector, PendingByMeter, PendingByPrice
@@ -79,14 +78,19 @@ class BillingEntryService:
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
         consumed_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+        credited_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+        net_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
         async for line_item, selector in line_items:
             if (
                 isinstance(line_item, MeteredLineItem)
                 and line_item.price.meter.aggregation.func != AggregationFunction.unique
             ):
-                consumed_units[line_item.price.meter_id] += Decimal(
-                    str(line_item.consumed_units)
-                )
+                meter_id = line_item.price.meter_id
+                units = Decimal(str(line_item.consumed_units))
+                consumed_units[meter_id] += units
+                credited_units[meter_id] += line_item.credited_units
+                # Each line item bills its own net units.
+                net_units[meter_id] += max(Decimal(0), units - line_item.credited_units)
             order_item = OrderItem(
                 id=uuid.uuid4(),
                 label=line_item.label,
@@ -120,8 +124,7 @@ class BillingEntryService:
             else:
                 await repository.update_order_item_id(selector, order_item.id)
 
-        billable_from = subscription.trial_end or subscription.started_at
-        if consumed_units and billable_from is not None:
+        if consumed_units:
             order_id = next(iter(item_entries_map)).order_id
             with logfire.span(
                 "Bill and compare reducer usage",
@@ -130,30 +133,43 @@ class BillingEntryService:
                 order_id=str(order_id),
                 cutoff=cutoff,
             ) as span:
-                quantities = await reducer_service.bill(
+                quantities = await billing_interval_service.bill_usage(
                     session,
-                    subscription.customer,
+                    subscription,
                     set(consumed_units),
                     order_id=order_id,
-                    billable_from=billable_from,
                     cutoff=cutoff,
                 )
+                reducer_net_units = {
+                    meter_id: max(Decimal(0), usage - credits)
+                    for meter_id, (usage, credits) in quantities.items()
+                }
                 span.set_attribute(
                     "quantities",
                     {
                         str(meter_id): {
-                            "legacy": str(units),
-                            "reducer": str(quantities.get(meter_id)),
+                            "legacy": {
+                                "usage": str(consumed_units[meter_id]),
+                                "credits": str(credited_units[meter_id]),
+                                "net": str(net),
+                            },
+                            "reducer": {
+                                "usage": str(quantities[meter_id][0]),
+                                "credits": str(quantities[meter_id][1]),
+                                "net": str(reducer_net_units[meter_id]),
+                            }
+                            if meter_id in quantities
+                            else None,
                         }
-                        for meter_id, units in consumed_units.items()
+                        for meter_id, net in net_units.items()
                     },
                 )
                 span.set_attribute(
                     "match",
                     all(
-                        meter_id in quantities
-                        and math.isclose(quantities[meter_id], units)
-                        for meter_id, units in consumed_units.items()
+                        meter_id in reducer_net_units
+                        and math.isclose(reducer_net_units[meter_id], net)
+                        for meter_id, net in net_units.items()
                     ),
                 )
 

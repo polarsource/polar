@@ -22,6 +22,7 @@
     "polar-cli/schemas-are-pure": "error",
     "polar-cli/service-facade": "error",
     "polar-cli/service-boundaries": "error",
+    "polar-cli/shared-flags": "error",
     "polar-cli/test-colocation": "error",
     "polar-cli/utils-boundaries": "error",
     "no-console": "error"

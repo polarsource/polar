@@ -12,7 +12,6 @@ SECTION_SCOPES = {
     "meters": (Scope.meters_read, Scope.meters_write),
     "benefits": (Scope.benefits_read, Scope.benefits_write),
     "products": (Scope.products_read, Scope.products_write),
-    "discounts": (Scope.discounts_read, Scope.discounts_write),
     "webhooks": (Scope.webhooks_read, Scope.webhooks_write),
 }
 

@@ -1,5 +1,6 @@
 import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { schemas, unwrap } from '@polar-sh/client'
@@ -138,11 +139,24 @@ export const useTOTPEnable = () =>
   useMutation({
     mutationFn: (code: string) =>
       api.POST('/v1/auth/totp/enable', { body: { code } }),
+    onSuccess: async (result) => {
+      if (result.error) return
+      await getQueryClient().invalidateQueries({ queryKey: ['totp', 'status'] })
+    },
   })
 
 export const useTOTPDelete = () =>
   useMutation({
     mutationFn: () => api.DELETE('/v1/auth/totp'),
+    onSuccess: async (result) => {
+      if (result.error) return
+      await Promise.all([
+        getQueryClient().invalidateQueries({ queryKey: ['totp', 'status'] }),
+        getQueryClient().invalidateQueries({
+          queryKey: ['backup-codes', 'status'],
+        }),
+      ])
+    },
   })
 
 export const useBackupCodesStatus = () =>
@@ -160,4 +174,10 @@ export const useBackupCodesStatus = () =>
 export const useBackupCodesEnroll = () =>
   useMutation({
     mutationFn: () => api.POST('/v1/auth/backup-codes', {}),
+    onSuccess: async (result) => {
+      if (result.error) return
+      await getQueryClient().invalidateQueries({
+        queryKey: ['backup-codes', 'status'],
+      })
+    },
   })

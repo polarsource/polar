@@ -3,8 +3,7 @@
 import { Spinner } from '@polar-sh/orbit'
 import { useCustomers, useCustomersByIds } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
-import Close from '@mui/icons-material/Close'
-import Search from '@mui/icons-material/Search'
+import { Close, SearchFilled as Search } from '@polar-sh/orbit/icons'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
@@ -45,6 +44,7 @@ export const CustomerSelector = ({
   )
 
   const selectedCustomerQueries = useCustomersByIds(selectedCustomerIds ?? [])
+  const selectedCustomerIdSet = new Set(selectedCustomerIds)
 
   const selectedCustomers = useMemo(() => {
     if (!selectedCustomerIds || selectedCustomerIds.length === 0) {
@@ -122,7 +122,7 @@ export const CustomerSelector = ({
                     key={customer.id}
                     size="small"
                     className="flex flex-row items-center gap-3 p-3"
-                    selected={selectedCustomerIds?.includes(customer.id)}
+                    selected={selectedCustomerIdSet.has(customer.id)}
                     onSelect={(e) => {
                       e.preventDefault()
                       handleToggleCustomer(customer.id)
@@ -178,7 +178,7 @@ export const CustomerSelector = ({
               <Button
                 size="icon"
                 variant="ghost"
-                className="dark:text-polar-500 size-6 text-gray-500 opacity-0 transition-all group-hover:opacity-100"
+                className="dark:text-polar-500 size-6 text-gray-500 opacity-0 transition-[opacity,background-color] group-hover:opacity-100"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleToggleCustomer(customer.id)

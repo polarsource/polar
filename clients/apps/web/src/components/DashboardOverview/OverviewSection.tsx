@@ -14,9 +14,9 @@ import {
   getChartRangeParams,
 } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { SegmentedControl } from '@polar-sh/orbit'
+import { SegmentedControl, Text } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
-import { Settings2 } from 'lucide-react'
+import { Settings2 } from '@polar-sh/orbit/icons'
 import React from 'react'
 import {
   MetricSelectorModalContent,
@@ -63,11 +63,11 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
   return (
     <div className="flex flex-col gap-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <h2 className="text-2xl font-medium text-gray-900 dark:text-white">
-          Overview
-        </h2>
+        <Text as="h2" variant="heading-xxs">
+          Metrics
+        </Text>
         {canReadAnalytics ? (
-          <div className="flex items-center justify-between md:gap-x-4">
+          <div className="flex items-center justify-between gap-x-4">
             <SegmentedControl
               options={(
                 Object.entries(CHART_RANGES) as [ChartRange, string][]

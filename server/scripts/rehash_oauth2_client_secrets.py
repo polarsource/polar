@@ -41,7 +41,7 @@ def _stale_clause() -> ColumnElement[bool]:
     )
 
 
-def _stale_batch(batch_size: int) -> Select[tuple[OAuth2Client]]:
+def _stale_batch(batch_size: int) -> Select[OAuth2Client]:
     return (
         select(OAuth2Client)
         .where(_stale_clause())

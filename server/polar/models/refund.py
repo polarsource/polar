@@ -22,6 +22,7 @@ from polar.kit.metadata import MetadataMixin
 
 if TYPE_CHECKING:
     from polar.models import (
+        CreditNote,
         Customer,
         Dispute,
         Order,
@@ -50,6 +51,8 @@ class RefundReason(StrEnum):
     service_disruption = "service_disruption"
     satisfaction_guarantee = "satisfaction_guarantee"
     dispute_prevention = "dispute_prevention"
+    tax_refund = "tax_refund"
+    vat_reverse_charge_correction = "vat_reverse_charge_correction"
     other = "other"
 
     @classmethod
@@ -159,6 +162,14 @@ class Refund(MetadataMixin, RecordModel):
     @declared_attr
     def order(cls) -> Mapped["Order | None"]:
         return relationship("Order", lazy="raise")
+
+    credit_note_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("credit_notes.id"), nullable=True, index=True, default=None
+    )
+
+    @declared_attr
+    def credit_note(cls) -> Mapped["CreditNote | None"]:
+        return relationship("CreditNote", lazy="raise", back_populates="refunds")
 
     subscription_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("subscriptions.id"), nullable=True, index=True
@@ -293,3 +304,18 @@ class Refund(MetadataMixin, RecordModel):
             processor_receipt_number=stripe_refund.receipt_number,
             processor_balance_transaction_id=balance_transaction_id,
         )
+
+    def apply_stripe(self, stripe_refund: stripe_lib.Refund) -> None:
+        self.status = RefundStatus(stripe_refund.status or "pending")
+        failure_reason = getattr(stripe_refund, "failure_reason", None)
+        self.failure_reason = RefundFailureReason.from_stripe(failure_reason)
+        self.destination_details = getattr(stripe_refund, "destination_details", {})
+        self.processor_id = stripe_refund.id
+        self.processor_reason = (
+            stripe_refund.reason if stripe_refund.reason else "other"
+        )
+        self.processor_receipt_number = stripe_refund.receipt_number
+        if stripe_refund.balance_transaction:
+            self.processor_balance_transaction_id = str(
+                stripe_refund.balance_transaction
+            )

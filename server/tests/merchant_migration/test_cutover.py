@@ -2118,6 +2118,11 @@ class TestSkips:
                 id="customer-credit-since-the-import",
             ),
             pytest.param(
+                {"has_pending_invoice_items": True},
+                "pending charges or credits on Stripe",
+                id="pending-invoice-items-since-the-import",
+            ),
+            pytest.param(
                 {"managed_payments": True},
                 "Stripe Managed Payments",
                 id="sold-through-managed-payments",

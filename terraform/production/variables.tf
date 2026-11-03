@@ -2,6 +2,12 @@
 # Variables
 # =============================================================================
 
+variable "planetscale_organization" {
+  description = "PlanetScale organization slug."
+  type        = string
+  sensitive   = true
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string
@@ -352,11 +358,6 @@ variable "polar_organization_id" {
   type        = string
 }
 
-variable "polar_free_product_id" {
-  description = "Polar free-tier product ID"
-  type        = string
-}
-
 variable "polar_scale_product_id" {
   description = "Polar Scale-tier product ID"
   type        = string
@@ -387,7 +388,7 @@ variable "lambda_worker_tailscale_token" {
 }
 
 variable "ec2_tailscale_oauth_client_secret" {
-  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
+  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production, and DNS write permission"
   type        = string
   sensitive   = true
 }

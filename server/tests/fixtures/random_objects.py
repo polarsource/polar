@@ -9,8 +9,9 @@ from decimal import Decimal
 from typing import Any, Literal, TypeIs, Unpack
 
 import pytest
+from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
 
-from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
+from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
 from polar.enums import (
     EmailSender,
     PaymentProcessor,
@@ -20,7 +21,6 @@ from polar.enums import (
     TaxProcessor,
 )
 from polar.kit.address import Address
-from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -47,8 +47,6 @@ from polar.models import (
     EventType,
     File,
     IssueReward,
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     Member,
     Meter,
     MeterEvent,
@@ -130,8 +128,8 @@ from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
-    ProductPriceType,
 )
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import SubscriptionStatus
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -147,6 +145,7 @@ from polar.models.user_organization import OrganizationRole
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
+from polar.oauth2.constants import CLAIM_GRANT_TYPE
 from polar.product.price_set import PriceSet
 from polar.product.tiers import SeatTierType, Tiers, TierType
 from polar.tax.calculation import TaxBreakdownItem
@@ -253,7 +252,15 @@ async def create_agent(
             "client_name": "Test Agent",
             "token_endpoint_auth_method": "none",
             "redirect_uris": [],
-            "scope": " ".join(sorted(UNCLAIMED_AGENT_SCOPES)),
+            "grant_types": [JWT_BEARER_GRANT_TYPE, CLAIM_GRANT_TYPE],
+            "response_types": [],
+            "scope": " ".join(
+                sorted(
+                    CLAIMED_AGENT_SCOPES
+                    if status == AgentStatus.claimed
+                    else UNCLAIMED_AGENT_SCOPES
+                )
+            ),
         }
     )
     agent = Agent(
@@ -861,70 +868,6 @@ async def create_product_fixed_and_seat(
 
 
 @typing.overload
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: Literal[ProductPriceAmountType.fixed],
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    amount: int = 1000,
-) -> LegacyRecurringProductPriceFixed: ...
-
-
-@typing.overload
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: Literal[ProductPriceAmountType.custom],
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    minimum_amount: int | None = None,
-    maximum_amount: int | None = None,
-    preset_amount: int | None = None,
-) -> LegacyRecurringProductPriceCustom: ...
-
-
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: ProductPriceAmountType,
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    amount: int | None = 1000,
-    minimum_amount: int | None = None,
-    maximum_amount: int | None = None,
-    preset_amount: int | None = None,
-) -> LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom:
-    product_price: LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
-    if amount_type == ProductPriceAmountType.fixed:
-        product_price = LegacyRecurringProductPriceFixed(
-            price_amount=amount,
-            price_currency=PresentmentCurrency.usd,
-            tax_behavior=None,
-            product=product,
-            is_archived=False,
-        )
-    elif amount_type == ProductPriceAmountType.custom:
-        product_price = LegacyRecurringProductPriceCustom(
-            price_currency=PresentmentCurrency.usd,
-            tax_behavior=None,
-            minimum_amount=minimum_amount,
-            maximum_amount=maximum_amount,
-            preset_amount=preset_amount,
-            product=product,
-            is_archived=False,
-        )
-    else:
-        raise ValueError("Invalid amount_type")
-
-    product_price.type = ProductPriceType.recurring
-    product_price.recurring_interval = recurring_interval
-
-    await save_fixture(product_price)
-    return product_price
-
-
-@typing.overload
 async def create_discount(
     save_fixture: SaveFixture,
     *,
@@ -1086,7 +1029,7 @@ async def create_customer(
     *,
     organization: Organization,
     external_id: str | None = None,
-    email: str = "customer@example.com",
+    email: str | None = "customer@example.com",
     email_verified: bool = False,
     name: str = "Customer",
     billing_name: str | None = None,
@@ -1263,6 +1206,7 @@ async def create_benefit(
     deletable: bool = True,
     properties: dict[str, Any] | None = None,
     external_id: str | None = None,
+    is_current: bool = True,
 ) -> Benefit:
     if properties is None:
         properties = {"note": None}
@@ -1275,6 +1219,7 @@ async def create_benefit(
         deletable=deletable,
         properties=properties,
         external_id=external_id,
+        is_current=is_current,
     )
     await save_fixture(benefit)
     return benefit
@@ -1328,9 +1273,6 @@ async def create_subscription(
 
     recurring_interval = product.recurring_interval
     recurring_interval_count = product.recurring_interval_count
-    if product.is_legacy_recurring_price:
-        recurring_interval = product.prices[0].recurring_interval
-        recurring_interval_count = 1
     if not recurring_interval:
         recurring_interval = SubscriptionRecurringInterval.month
     if not recurring_interval_count:
@@ -1373,7 +1315,7 @@ async def create_subscription(
         trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
-        started_at=started_at,
+        started_at=started_at or created_at or now,
         ended_at=ended_at,
         ends_at=ends_at,
         organization=product.organization,
@@ -1568,39 +1510,6 @@ async def product_recurring_custom_price(
         recurring_interval=SubscriptionRecurringInterval.month,
         prices=[(50, None, None, "usd")],
     )
-
-
-@pytest.fixture
-async def product_recurring_monthly_and_yearly(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    product = await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        prices=[],
-    )
-
-    monthly_price = await create_legacy_recurring_product_price(
-        save_fixture,
-        amount_type=ProductPriceAmountType.fixed,
-        product=product,
-        recurring_interval=SubscriptionRecurringInterval.month,
-    )
-    product.prices.append(monthly_price)
-    product.all_prices.append(monthly_price)
-
-    yearly_price = await create_legacy_recurring_product_price(
-        save_fixture,
-        amount_type=ProductPriceAmountType.fixed,
-        product=product,
-        recurring_interval=SubscriptionRecurringInterval.year,
-    )
-    product.prices.append(yearly_price)
-    product.all_prices.append(yearly_price)
-
-    await save_fixture(product)
-    return product
 
 
 @pytest.fixture
@@ -2393,6 +2302,7 @@ async def create_reducer(
     *,
     organization: Organization,
     meters: Sequence[Meter],
+    kind: ReducerKind = ReducerKind.usage,
 ) -> Reducer:
     """Create a reducer with the filter and aggregation of the first meter,
     used by all the given meters."""
@@ -2401,6 +2311,7 @@ async def create_reducer(
         organization=organization,
         filter=meter.filter,
         aggregation=meter.aggregation,
+        kind=kind,
     )
     await save_fixture(reducer)
     for m in meters:

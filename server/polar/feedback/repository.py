@@ -21,7 +21,7 @@ class FeedbackRepository(
 
     def get_by_status_statement(
         self, status: FeedbackStatus, *, sort: str = "recency"
-    ) -> Select[tuple[Feedback]]:
+    ) -> Select[Feedback]:
         statement = self.get_base_statement().where(Feedback.status == status)
         if sort == "tier":
             # Opt-in: highest support tier first, recency as the tiebreaker.

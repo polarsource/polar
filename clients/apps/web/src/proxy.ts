@@ -27,6 +27,7 @@ const IS_SANDBOX =
 // App routes allowed on sandbox — everything else (marketing, docs) is blocked
 // Strings match by prefix, RegExps are tested directly
 const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
+  '/agent',
   '/login',
   '/auth',
   '/dashboard',
@@ -329,6 +330,17 @@ export async function proxy(request: NextRequest) {
   if (eventsPathMatch) {
     const redirectURL = request.nextUrl.clone()
     redirectURL.pathname = `/dashboard/${eventsPathMatch[1]}/analytics/events${eventsPathMatch[2] || ''}`
+    return NextResponse.redirect(redirectURL, { status: 308 })
+  }
+
+  // Events: /dashboard/{org}/analytics/events/{id} -> /dashboard/{org}/analytics/events?event={id}
+  const eventDetailMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/analytics\/events\/([^/]+)$/,
+  )
+  if (eventDetailMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${eventDetailMatch[1]}/analytics/events`
+    redirectURL.searchParams.set('event', eventDetailMatch[2])
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 

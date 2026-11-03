@@ -3,8 +3,21 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
-from sqlalchemy.orm import joinedload
+from sqlalchemy import (
+    ColumnElement,
+    Select,
+    String,
+    and_,
+    case,
+    false,
+    func,
+    literal,
+    or_,
+    select,
+    true,
+    update,
+)
+from sqlalchemy.orm import joinedload, with_polymorphic
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -34,7 +47,8 @@ from polar.models.discount import (
 )
 from polar.models.order import OrderStatus
 from polar.models.organization import (
-    OrganizationCapabilities,
+    CAPABILITY_NAMES,
+    STATUS_CAPABILITIES,
     OrganizationStatus,
     SnoozeType,
 )
@@ -61,6 +75,36 @@ SUBSCRIPTION_CANCELLATION_STATUSES = (
     OrganizationStatus.BLOCKED,
     OrganizationStatus.OFFBOARDED,
 )
+
+
+def _transition_capabilities_expression(
+    previous_statuses: Sequence[OrganizationStatus], status: OrganizationStatus
+) -> ColumnElement[typing.Any]:
+    def _bool(value: bool) -> ColumnElement[bool]:
+        return true() if value else false()
+
+    new_defaults = STATUS_CAPABILITIES[status]
+    entries: list[ColumnElement[typing.Any]] = []
+    for name in CAPABILITY_NAMES:
+        current = Organization.capabilities[name].as_boolean()
+        is_previous_default = or_(
+            *(
+                and_(
+                    Organization.status == previous_status,
+                    func.coalesce(
+                        current,
+                        _bool(STATUS_CAPABILITIES[previous_status][name]),
+                    )
+                    == _bool(STATUS_CAPABILITIES[previous_status][name]),
+                )
+                for previous_status in previous_statuses
+            )
+        )
+        entries.append(literal(name, String))
+        entries.append(
+            case((is_previous_default, _bool(new_defaults[name])), else_=current)
+        )
+    return func.jsonb_build_object(*entries)
 
 
 class OrganizationRepository(
@@ -342,7 +386,7 @@ class OrganizationRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Organization]]:
+    ) -> Select[Organization]:
         return self.get_base_statement().where(
             Organization.id.in_(org_ids),
             Organization.status != OrganizationStatus.BLOCKED,
@@ -405,10 +449,11 @@ class OrganizationRepository(
         temporarily free by a once/repeating discount are still counted,
         since they will become paid when the discount expires.
         """
+        discount = with_polymorphic(Discount, [DiscountPercentage])
         statement = (
             select(func.count(Subscription.id))
             .join(Customer, Subscription.customer_id == Customer.id)
-            .outerjoin(Discount, Subscription.discount_id == Discount.id)
+            .outerjoin(discount, Subscription.discount_id == discount.id)
             .where(
                 Subscription.organization_id == organization_id,
                 ~Customer.is_deleted,
@@ -418,9 +463,9 @@ class OrganizationRepository(
                     & (
                         Subscription.discount_id.is_(None)
                         | (
-                            (Discount.type == DiscountType.percentage)
-                            & (DiscountPercentage.basis_points == 10000)
-                            & (Discount.duration == DiscountDuration.forever)
+                            (discount.type == DiscountType.percentage)
+                            & (discount.DiscountPercentage.basis_points == 10000)
+                            & (discount.duration == DiscountDuration.forever)
                         )
                     )
                 ),
@@ -435,7 +480,6 @@ class OrganizationRepository(
         *,
         next_review_threshold: int | None,
         min_threshold: int,
-        active_capabilities: OrganizationCapabilities,
         now: datetime,
     ) -> Organization | None:
         """Atomically transition a REVIEW or SNOOZED organization to ACTIVE.
@@ -449,6 +493,9 @@ class OrganizationRepository(
         server-side from the current row (floored at ``min_threshold``) so
         that N concurrent confirms doubling at once cannot collapse onto a
         shared stale snapshot.
+
+        Capabilities move to the ACTIVE defaults, except manual overrides,
+        as in `Organization.set_status`.
         """
         threshold_expr = (
             func.greatest(Organization.next_review_threshold * 2, min_threshold)
@@ -467,7 +514,10 @@ class OrganizationRepository(
             .values(
                 status=OrganizationStatus.ACTIVE,
                 status_updated_at=now,
-                capabilities=active_capabilities,
+                capabilities=_transition_capabilities_expression(
+                    [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED],
+                    OrganizationStatus.ACTIVE,
+                ),
                 next_review_threshold=threshold_expr,
                 initially_reviewed_at=func.coalesce(
                     Organization.initially_reviewed_at, now

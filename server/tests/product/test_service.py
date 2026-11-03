@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from decimal import Decimal
 from typing import Any
@@ -5,15 +6,20 @@ from unittest.mock import AsyncMock, call
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import delete
 
 from polar.auth.models import AuthSubject
+from polar.auth.scope import Scope
+from polar.config import settings
 from polar.custom_field.schemas import AttachedCustomFieldCreate
 from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
 from polar.models import (
+    Account,
     Benefit,
     Customer,
     File,
@@ -24,6 +30,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.file import FileServiceTypes, ProductMediaFile
 from polar.models.organization import OrganizationStatus
@@ -59,17 +66,25 @@ from polar.product.service import product as product_service
 from polar.product.sorting import ProductSortProperty
 from polar.product.tiers import Tiers, TiersInput, TierType
 from tests.fixtures.auth import AuthSubjectFixture
-from tests.fixtures.database import SaveFixture
+from tests.fixtures.database import (
+    SaveFixture,
+    get_database_url,
+    save_fixture_factory,
+)
 from tests.fixtures.random_objects import (
     METER_ID,
+    create_account,
     create_benefit,
     create_checkout_link,
+    create_custom_field,
     create_discount,
     create_meter,
     create_order,
+    create_organization,
     create_product,
     create_subscription,
     create_trial_redemption,
+    create_user,
     set_product_benefits,
 )
 
@@ -2325,160 +2340,6 @@ class TestUpdate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_valid_explicit_null_recurring_interval_on_legacy_product(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        product_recurring_monthly_and_yearly.recurring_interval = (
-            SubscriptionRecurringInterval.month
-        )
-        product_recurring_monthly_and_yearly.recurring_interval_count = 1
-        await save_fixture(product_recurring_monthly_and_yearly)
-
-        update_schema = ProductUpdate(
-            recurring_interval=None,
-            recurring_interval_count=None,
-        )
-        updated_product = await product_service.update(
-            session,
-            product_recurring_monthly_and_yearly,
-            update_schema,
-            auth_subject,
-        )
-
-        assert updated_product.recurring_interval is None
-        assert updated_product.recurring_interval_count is None
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_valid_change_recurring_interval_count_on_legacy_product(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        update_schema = ProductUpdate(recurring_interval_count=3)
-
-        updated_product = await product_service.update(
-            session,
-            product_recurring_monthly_and_yearly,
-            update_schema,
-            auth_subject,
-        )
-
-        assert updated_product.recurring_interval_count == 3
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_invalid_legacy_product_price_with_new_price(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        update_schema = ProductUpdate(
-            prices=[
-                ExistingProductPrice(
-                    id=product_recurring_monthly_and_yearly.prices[0].id
-                ),
-                ProductPriceFixedCreate(
-                    amount_type=ProductPriceAmountType.fixed,
-                    price_amount=12000,
-                    price_currency=PresentmentCurrency.usd,
-                ),
-            ]
-        )
-
-        with pytest.raises(PolarRequestValidationError):
-            await product_service.update(
-                session,
-                product_recurring_monthly_and_yearly,
-                update_schema,
-                auth_subject,
-            )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_valid_legacy_product_price_kept(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        update_schema = ProductUpdate(
-            prices=[
-                ExistingProductPrice(
-                    id=product_recurring_monthly_and_yearly.prices[0].id
-                ),
-                ExistingProductPrice(
-                    id=product_recurring_monthly_and_yearly.prices[1].id
-                ),
-            ]
-        )
-        updated_product = await product_service.update(
-            session,
-            product_recurring_monthly_and_yearly,
-            update_schema,
-            auth_subject,
-        )
-
-        assert len(updated_product.prices) == 2
-        assert (
-            updated_product.prices[0].id
-            == product_recurring_monthly_and_yearly.prices[0].id
-        )
-        assert (
-            updated_product.prices[1].id
-            == product_recurring_monthly_and_yearly.prices[1].id
-        )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_valid_legacy_product_price_replaced(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        product_recurring_monthly_and_yearly: Product,
-        user_organization: UserOrganization,
-    ) -> None:
-        update_schema = ProductUpdate(
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[
-                ProductPriceFixedCreate(
-                    amount_type=ProductPriceAmountType.fixed,
-                    price_amount=12000,
-                    price_currency=PresentmentCurrency.usd,
-                ),
-            ],
-        )
-        updated_product = await product_service.update(
-            session,
-            product_recurring_monthly_and_yearly,
-            update_schema,
-            auth_subject,
-        )
-
-        assert len(updated_product.prices) == 1
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
     async def test_invalid_several_static_prices(
         self,
         auth_subject: AuthSubject[User],
@@ -2656,6 +2517,191 @@ class TestUpdate:
             )
 
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
+
+    async def test_concurrent_attached_custom_fields(self, worker_id: str) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_product_custom_fields",
+            pool_size=4,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+        organization_id: uuid.UUID | None = None
+        account_id: uuid.UUID | None = None
+        user_id: uuid.UUID | None = None
+
+        try:
+            async with sessionmaker() as setup_session:
+                save_fixture = save_fixture_factory(setup_session)
+                user = await create_user(save_fixture)
+                account = await create_account(save_fixture, user)
+                organization = await create_organization(save_fixture, account)
+                field_a = await create_custom_field(
+                    save_fixture,
+                    type=CustomFieldType.text,
+                    slug="field-a",
+                    organization=organization,
+                )
+                field_b = await create_custom_field(
+                    save_fixture,
+                    type=CustomFieldType.text,
+                    slug="field-b",
+                    organization=organization,
+                )
+                product = await create_product(
+                    save_fixture,
+                    organization=organization,
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                    attached_custom_fields=[(field_a, False)],
+                )
+                await setup_session.commit()
+                organization_id = organization.id
+                account_id = account.id
+                user_id = user.id
+                product_id = product.id
+                field_a_id = field_a.id
+                field_b_id = field_b.id
+
+            auth_subject: AuthSubject[Organization] = AuthSubject(
+                organization, set(Scope), None
+            )
+            barrier = asyncio.Barrier(2)
+
+            async def replace(custom_field_id: uuid.UUID) -> None:
+                async with sessionmaker() as session:
+                    loaded = await product_service.get(
+                        session, auth_subject, product_id
+                    )
+                    assert loaded is not None
+                    await asyncio.wait_for(barrier.wait(), timeout=30)
+                    await product_service.update(
+                        session,
+                        loaded,
+                        ProductUpdate(
+                            attached_custom_fields=[
+                                AttachedCustomFieldCreate(
+                                    custom_field_id=custom_field_id,
+                                    required=False,
+                                )
+                            ]
+                        ),
+                        auth_subject,
+                    )
+                    await session.commit()
+
+            await asyncio.gather(replace(field_a_id), replace(field_b_id))
+
+            async with sessionmaker() as session:
+                updated = await product_service.get(session, auth_subject, product_id)
+                assert updated is not None
+                assert [field.order for field in updated.attached_custom_fields] == [0]
+                assert updated.attached_custom_fields[0].custom_field_id in {
+                    field_a_id,
+                    field_b_id,
+                }
+        finally:
+            if organization_id is not None:
+                async with sessionmaker() as cleanup_session:
+                    await cleanup_session.execute(
+                        delete(Organization).where(Organization.id == organization_id)
+                    )
+                    await cleanup_session.execute(
+                        delete(Account).where(Account.id == account_id)
+                    )
+                    await cleanup_session.execute(
+                        delete(User).where(User.id == user_id)
+                    )
+                    await cleanup_session.commit()
+            await engine.dispose()
+
+    async def test_concurrent_medias(self, worker_id: str) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_product_medias",
+            pool_size=4,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+        organization_id: uuid.UUID | None = None
+        account_id: uuid.UUID | None = None
+        user_id: uuid.UUID | None = None
+
+        try:
+            async with sessionmaker() as setup_session:
+                save_fixture = save_fixture_factory(setup_session)
+                user = await create_user(save_fixture)
+                account = await create_account(save_fixture, user)
+                organization = await create_organization(save_fixture, account)
+                files = [
+                    ProductMediaFile(
+                        organization=organization,
+                        name=f"Product Cover {i}",
+                        path=f"/product-cover-{i}.jpg",
+                        mime_type="image/jpeg",
+                        size=1024,
+                        service=FileServiceTypes.product_media,
+                        is_enabled=True,
+                        is_uploaded=True,
+                    )
+                    for i in range(3)
+                ]
+                for file in files:
+                    await save_fixture(file)
+                product = await create_product(
+                    save_fixture,
+                    organization=organization,
+                    recurring_interval=SubscriptionRecurringInterval.month,
+                )
+                await setup_session.commit()
+                organization_id = organization.id
+                account_id = account.id
+                user_id = user.id
+                product_id = product.id
+                file_a_id, file_b_id, file_c_id = (file.id for file in files)
+
+            auth_subject: AuthSubject[Organization] = AuthSubject(
+                organization, set(Scope), None
+            )
+            barrier = asyncio.Barrier(2)
+
+            async def replace(medias: list[uuid.UUID]) -> None:
+                async with sessionmaker() as session:
+                    loaded = await product_service.get(
+                        session, auth_subject, product_id
+                    )
+                    assert loaded is not None
+                    await asyncio.wait_for(barrier.wait(), timeout=30)
+                    await product_service.update(
+                        session, loaded, ProductUpdate(medias=medias), auth_subject
+                    )
+                    await session.commit()
+
+            await asyncio.gather(
+                replace([file_a_id, file_b_id]), replace([file_c_id, file_a_id])
+            )
+
+            async with sessionmaker() as session:
+                updated = await product_service.get(session, auth_subject, product_id)
+                assert updated is not None
+                assert [media.order for media in updated.product_medias] == [0, 1]
+                assert [media.file_id for media in updated.product_medias] in (
+                    [file_a_id, file_b_id],
+                    [file_c_id, file_a_id],
+                )
+        finally:
+            if organization_id is not None:
+                async with sessionmaker() as cleanup_session:
+                    await cleanup_session.execute(
+                        delete(Organization).where(Organization.id == organization_id)
+                    )
+                    await cleanup_session.execute(
+                        delete(Account).where(Account.id == account_id)
+                    )
+                    await cleanup_session.execute(
+                        delete(User).where(User.id == user_id)
+                    )
+                    await cleanup_session.commit()
+            await engine.dispose()
 
 
 @pytest.mark.anyio

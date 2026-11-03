@@ -110,6 +110,11 @@ export const NavList = ({
                   </span>
                 )}
               </span>
+              {route.trailing && (
+                <span className="ml-auto flex text-[15px]">
+                  {route.trailing}
+                </span>
+              )}
             </Link>
           </SidebarMenuButton>
           {(isMobile ? expandedRoute === route.link : route.isActive) &&

@@ -30,6 +30,12 @@ variable "volume_size" {
   }
 }
 
+variable "volume_iops" {
+  description = "io2 provisioned IOPS. Defaults to a value scaled to volume_size."
+  type        = number
+  default     = null
+}
+
 variable "permissions_boundary_arn" {
   description = "Permissions boundary for the instance role."
   type        = string

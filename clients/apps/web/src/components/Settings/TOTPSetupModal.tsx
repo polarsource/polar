@@ -11,7 +11,7 @@ import {
   InputOTPSlot,
 } from '@polar-sh/ui/components/atoms/InputOTP'
 import QRCode from 'react-qr-code'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { toast } from '../Toast/use-toast'
 
@@ -22,6 +22,7 @@ export interface TOTPSetupModalProps {
 }
 
 const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
+  const codeInputId = useId()
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [enrollment, setEnrollment] = useState<
@@ -84,11 +85,15 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="dark:text-polar-300 text-center text-sm font-medium text-gray-700">
+          <label
+            htmlFor={codeInputId}
+            className="dark:text-polar-300 text-center text-sm font-medium text-gray-700"
+          >
             Enter the 6-digit code from your app
           </label>
           <div className="flex flex-col items-center gap-4">
             <InputOTP
+              id={codeInputId}
               maxLength={6}
               minLength={6}
               inputMode="numeric"

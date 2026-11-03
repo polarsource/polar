@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-outpost = ["redis[hiredis]>=5.0.4", "httpx-ws>=0.9.0", "anyio>=4.0.0", "opentelemetry-sdk>=1.30.0", "opentelemetry-exporter-otlp-proto-common>=1.30.0"]
+outpost = ["redis[hiredis]>=5.0.4", "httpx-ws>=0.9.0", "anyio>=4.5.0", "opentelemetry-sdk>=1.30.0", "opentelemetry-exporter-otlp-proto-common>=1.30.0"]
 
 [project.urls]
 homepage = "https://polar.sh"

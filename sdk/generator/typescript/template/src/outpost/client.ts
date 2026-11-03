@@ -7,6 +7,7 @@ import {
   trace,
   type Attributes,
   type Counter,
+  type Gauge,
   type Histogram,
   type Span,
   type Tracer,
@@ -16,6 +17,7 @@ import { randomUUID } from "node:crypto";
 import { once } from "node:events";
 import WebSocket from "ws";
 
+import { UnknownMeterError } from "../metering/errors";
 import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
@@ -25,6 +27,7 @@ import {
   reduce,
   withMatchers,
   getBucketStart,
+  BUCKET_SIZE,
   type Aggregation,
   type Reducer,
   type ReducerMatchers,
@@ -33,42 +36,81 @@ import {
   addStatistics,
   quantity,
 } from "./reducer";
-import { READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT, APPLY_SNAPSHOT_SCRIPT } from "./scripts";
+import {
+  READ_STATE_SCRIPT,
+  WRITE_BUCKET_SCRIPT,
+  CONFIRM_SCRIPT,
+  APPLY_SNAPSHOT_SCRIPT,
+} from "./scripts";
 import { createMeterProvider, createTracerProvider, isTelemetryEnabled } from "./telemetry";
 
 const CACHE_SIZE = 1024;
+const REQUESTED_SIZE = 16 * CACHE_SIZE;
 const SYNC_INTERVAL = 30_000;
 const TIMEOUT = 5_000;
+const CONFIRM_TIMEOUT = 2_000;
+// Pending ids per confirm request: Polar refuses a bigger one.
+const CONFIRM_BATCH = 1_000;
 const RECONNECT_DELAY = 500;
 const MAX_RECONNECT_DELAY = 30_000;
 const REDIS_RECONNECT_DELAY = 100;
 const MAX_REDIS_RECONNECT_DELAY = 2_000;
+// Every key and the channel carry the layout version. A new layout takes a new version, starts
+// cold from Polar's snapshot and never reads the previous keys.
+const KEY_VERSION = "outpost:v1";
+const BUCKET_PREFIX = "bucket:";
+const PENDING_PREFIX = "pending:";
+const COLD_PREFIX = "cold:";
 export interface State {
   epoch: string;
   revision: bigint;
   coldUntil?: number;
   cold: BucketStatistics;
   buckets: Map<number, BucketStatistics>;
-  credited: Record<string, number>;
+  // The part of each bucket Polar has not confirmed yet.
+  pending: Map<number, BucketStatistics>;
 }
 type Customer = Parameters<typeof customerKey>[0];
 interface Snapshot {
+  reducer_id: string;
   customer_id: string | null;
   external_customer_id: string | null;
   customer_exists: boolean;
-  meter_id: string;
   cold_until: number;
   version: number;
   count: number;
   sum: number;
   min: number | null;
   max: number | null;
-  credited_units: number;
+}
+interface Confirmed {
+  reducer_id: string;
+  customer_id: string | null;
+  external_customer_id: string | null;
+  bucket_start: number;
+  ids: string[];
+  // Read with the ids: it counts exactly those.
+  snapshot: Snapshot;
 }
 type Message =
   | { type: "connection"; payload: { id: string } }
   | { type: "configuration"; payload: { reducers: Reducer[] } }
-  | { type: "meter_usage"; payload: Snapshot };
+  | { type: "meter_usage"; payload: Snapshot }
+  | { type: "confirmed"; payload: Confirmed };
+// A snapshot waiting for Polar to say which of the pending events it counts, one per reducer.
+interface Confirmation {
+  snapshot: Snapshot;
+  customer: string;
+  identity: string;
+  started: number;
+  age: number;
+  next?: Snapshot;
+  awaited: number;
+  messages: number;
+  asked: number;
+  confirmed: Map<number, string[]>;
+  timer?: ReturnType<typeof setTimeout>;
+}
 type StateUpdate = { customer: string } & ({ state: string[] } | { bucket: string[] });
 interface LocalState {
   state?: State;
@@ -84,7 +126,9 @@ interface OutpostRedis extends Redis {
   ): Promise<[state: string[], replaced: string[]]>;
 }
 interface OutpostPipeline extends ChainableCommander {
-  outpostWriteBucket(key: string, ...args: (string | number)[]): this;
+  outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
+  outpostConfirm(key: string, pendingKey: string, ...args: (string | number)[]): this;
+  outpostApplySnapshot(key: string, ...args: (string | number)[]): this;
 }
 
 const generateEpoch = (): string => randomUUID().replaceAll("-", "");
@@ -152,10 +196,8 @@ const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
     clearTimeout(timer);
   }
 };
-const isReady = (local: LocalState, meterIds: readonly string[]): boolean =>
-  local.missing ||
-  (local.state?.coldUntil !== undefined &&
-    meterIds.every((meterId) => meterId in local.state!.credited));
+const isReady = (local: LocalState): boolean =>
+  local.missing || local.state?.coldUntil !== undefined;
 const notify = (local: LocalState): void => {
   local.changed.resolve();
   local.changed = signal();
@@ -182,28 +224,37 @@ export const decodeState = (value: string[]): State => {
     coldUntil: undefined,
     cold: emptyStatistics(),
     buckets: new Map(),
-    credited: {},
+    pending: new Map(),
   };
   for (let i = 0; i < value.length; i += 2) {
     const field = value[i];
     const raw = value[i + 1];
-    if (field.startsWith("bucket:")) {
+    const buckets = field.startsWith(BUCKET_PREFIX)
+      ? state.buckets
+      : field.startsWith(PENDING_PREFIX)
+        ? state.pending
+        : undefined;
+    if (buckets) {
+      const prefix = buckets === state.buckets ? BUCKET_PREFIX : PENDING_PREFIX;
       const separator = field.lastIndexOf(":");
-      const start = Number(field.slice(7, separator));
-      let bucket = state.buckets.get(start);
-      if (!bucket) state.buckets.set(start, (bucket = emptyStatistics()));
+      const start = Number(field.slice(prefix.length, separator));
+      let bucket = buckets.get(start);
+      if (!bucket) buckets.set(start, (bucket = emptyStatistics()));
       bucket[field.slice(separator + 1) as keyof BucketStatistics] = number(raw);
-    } else if (field.startsWith("cold:"))
-      state.cold[field.slice(5) as keyof BucketStatistics] = number(raw);
-    else if (field.startsWith("credited:")) state.credited[field.slice(9)] = number(raw);
+    } else if (field.startsWith(COLD_PREFIX))
+      state.cold[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(raw);
     else if (field === "epoch") state.epoch = raw;
     else if (field === "revision") state.revision = BigInt(raw);
     else if (field === "cold_until") state.coldUntil = number(raw);
   }
   return state;
 };
+// Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
+// them, and every local event in the buckets Polar has not sealed yet.
 export const consumedUnits = (state: State, func: Aggregation["func"]): number => {
   const combined = { ...state.cold };
+  for (const [start, statistics] of state.pending)
+    if (start < state.coldUntil!) addStatistics(combined, statistics);
   for (const [start, statistics] of state.buckets)
     if (start >= state.coldUntil!) addStatistics(combined, statistics);
   return quantity(combined, func);
@@ -212,26 +263,41 @@ export const consumedUnits = (state: State, func: Aggregation["func"]): number =
 const isClose = (a: number, b: number): boolean =>
   Math.abs(a - b) <= 1e-9 * Math.max(Math.abs(a), Math.abs(b));
 
-const reportLocalValue = (span: Span, snapshot: Snapshot, replaced: string[]): void => {
+const reportLocalValue = (
+  span: Span,
+  snapshot: Snapshot,
+  replaced: string[],
+  // The state before the transaction settled confirmed events out of the pending part.
+  before?: Record<string, string>,
+): void => {
   const fields: Record<string, string> = {};
   for (let index = 0; index < replaced.length; index += 2)
     fields[replaced[index]] = replaced[index + 1];
   if (fields.cold_until === undefined) return;
+  const previous = Number(fields.cold_until);
   const local = emptyStatistics();
   const buckets = new Map<string, BucketStatistics>();
-  for (const [field, value] of Object.entries(fields)) {
-    if (field.startsWith("cold:")) {
-      local[field.slice(5) as keyof BucketStatistics] = number(value);
-    } else if (field.startsWith("bucket:")) {
-      const [, start, statistic] = field.split(":");
-      const bucket = buckets.get(start) ?? emptyStatistics();
-      bucket[statistic as keyof BucketStatistics] = number(value);
-      buckets.set(start, bucket);
+  const pending = new Map<string, BucketStatistics>();
+  for (const [field, value] of Object.entries(before ?? fields)) {
+    if (field.startsWith(COLD_PREFIX)) {
+      local[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(value);
+      continue;
     }
+    const [kind, start, statistic] = field.split(":");
+    if ((kind !== "bucket" && kind !== "pending") || Number(start) >= snapshot.cold_until) continue;
+    const group = kind === "bucket" ? buckets : pending;
+    const statistics = group.get(start) ?? emptyStatistics();
+    statistics[statistic as keyof BucketStatistics] = number(value);
+    group.set(start, statistics);
   }
-  for (const bucket of buckets.values()) addStatistics(local, bucket);
+  // A bucket already cold before this snapshot was read by its pending part only.
+  for (const [start, bucket] of buckets)
+    addStatistics(
+      local,
+      Number(start) < previous ? (pending.get(start) ?? emptyStatistics()) : bucket,
+    );
   span.setAttributes({
-    "outpost.local.cold_until": Number(fields.cold_until),
+    "outpost.local.cold_until": previous,
     "outpost.local.count": local.count,
     "outpost.local.sum": local.sum,
     "outpost.snapshot.count": snapshot.count,
@@ -276,6 +342,11 @@ export interface OutpostOptions {
   telemetry?: boolean;
   /** How long a read of a cold customer waits for its first snapshot, in milliseconds. */
   snapshotTimeout?: number;
+  /**
+   * How long a snapshot waits for Polar to confirm the pending events it counts, in
+   * milliseconds. Defaults to 2000; the snapshot then applies with the events still pending.
+   */
+  confirmTimeout?: number;
 }
 export class Outpost {
   private redis?: OutpostRedis;
@@ -288,10 +359,14 @@ export class Outpost {
   private ingestDuration?: Histogram;
   private ingestBuckets?: Counter;
   private readDuration?: Histogram;
+  private redisMemory?: Gauge;
+  private redisKeys?: Gauge;
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly cache = new Map<string, LocalState>();
   private readonly actors = new Set<string>();
+  private readonly requesting = new Set<string>();
+  private readonly confirmations = new Map<string, Confirmation>();
   private configured = signal();
   private isConfigured = false;
   private synced = signal();
@@ -342,6 +417,8 @@ export class Outpost {
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
       this.readDuration = meter.createHistogram("outpost.read.duration", { unit: "s" });
+      this.redisMemory = meter.createGauge("outpost.redis.memory", { unit: "By" });
+      this.redisKeys = meter.createGauge("outpost.redis.keys");
     }
     try {
       this.redis = new Redis(this.redisUrl, {
@@ -361,9 +438,10 @@ export class Outpost {
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
       this.redis.defineCommand("outpostWriteBucket", {
-        numberOfKeys: 1,
+        numberOfKeys: 2,
         lua: WRITE_BUCKET_SCRIPT,
       });
+      this.redis.defineCommand("outpostConfirm", { numberOfKeys: 2, lua: CONFIRM_SCRIPT });
       this.redis.defineCommand("outpostApplySnapshot", {
         numberOfKeys: 1,
         lua: APPLY_SNAPSHOT_SCRIPT,
@@ -388,7 +466,7 @@ export class Outpost {
       ).catch((error: unknown) => {
         throw redisUnavailable(error);
       });
-      this.channel = `outpost:${this.redis.options.db}:updates`;
+      this.channel = `${KEY_VERSION}:${this.redis.options.db}:updates`;
       this.subscriber = this.redis.duplicate({ lazyConnect: true, autoResubscribe: false });
       const subscriber = this.subscriber;
       this.subscriber.on("error", () => {});
@@ -412,6 +490,7 @@ export class Outpost {
       await this.connectWebsocket();
       this.refreshTimer = setInterval(() => {
         this.reportSync();
+        void this.reportRedisSize();
         if (this.synchronizing) return;
         void this.synchronize();
       }, SYNC_INTERVAL);
@@ -426,6 +505,8 @@ export class Outpost {
   async close(): Promise<void> {
     clearInterval(this.refreshTimer);
     clearTimeout(this.reconnectTimer);
+    for (const confirmation of this.confirmations.values()) clearTimeout(confirmation.timer);
+    this.confirmations.clear();
     this.reportSync();
     const websocket = this.websocket;
     const connections = [this.subscriber, this.redis].filter(
@@ -455,6 +536,7 @@ export class Outpost {
     await Promise.allSettled([...closed, this.messages, this.synchronizing]);
     this.cache.clear();
     this.actors.clear();
+    this.requesting.clear();
     this.reducers = [];
     this.matchers = [];
     const tracerProvider = this.tracerProvider;
@@ -465,6 +547,8 @@ export class Outpost {
     this.ingestDuration = undefined;
     this.ingestBuckets = undefined;
     this.readDuration = undefined;
+    this.redisMemory = undefined;
+    this.redisKeys = undefined;
     await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
   }
 
@@ -497,7 +581,8 @@ export class Outpost {
         const identity = `${update.customer}:${update.reducer}`;
         const statistics = update.statistics;
         pipeline.outpostWriteBucket(
-          `outpost:state:${identity}`,
+          `${KEY_VERSION}:state:${identity}`,
+          `${KEY_VERSION}:pending:${identity}:${update.bucketStart}`,
           identity,
           this.channel,
           generateEpoch(),
@@ -506,6 +591,7 @@ export class Outpost {
           statistics.sum,
           statistics.min ?? "",
           statistics.max ?? "",
+          event.external_id!,
         );
       }
       const results = await pipeline.exec().catch((error: unknown) => {
@@ -518,8 +604,6 @@ export class Outpost {
           firstError ??= error;
           continue;
         }
-        // Empty when the bucket is older than the last snapshot: nothing changed.
-        if (!(state as string[]).length) continue;
         const update = updates[index];
         const identity = `${update.customer}:${update.reducer}`;
         await this.receiveState(identity, decodeState(state as string[]), true);
@@ -534,31 +618,99 @@ export class Outpost {
     }
   }
 
+  /**
+   * Settle events Polar has ingested: their usage stays in its bucket, no longer pending.
+   *
+   * @param events Tracked events, including their external_id.
+   */
+  async confirm(events: EventInput[]): Promise<void> {
+    await this.settle(events, false);
+  }
+
+  /**
+   * Settle events Polar has received, in the buckets no snapshot has sealed yet. Events of a
+   * sealed bucket stay pending until a snapshot counts them.
+   *
+   * @param events Tracked events, including their external_id.
+   */
+  async acknowledge(events: EventInput[]): Promise<void> {
+    await this.settle(events, true);
+  }
+
+  private async settle(events: EventInput[], hotOnly: boolean): Promise<void> {
+    const redis = this.requireRedis();
+    await this.waitConfigured();
+    const groups = new Map<string, { identity: string; bucketStart: number; ids: string[] }>();
+    for (const event of events) {
+      this.validate(event);
+      const parsed = parseEvent(event);
+      for (const update of reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp))) {
+        const identity = `${update.customer}:${update.reducer}`;
+        const key = `${identity}:${update.bucketStart}`;
+        let group = groups.get(key);
+        if (!group)
+          groups.set(key, (group = { identity, bucketStart: update.bucketStart, ids: [] }));
+        group.ids.push(event.external_id!);
+      }
+    }
+    const confirmations = [...groups.values()];
+    const pipeline = redis.pipeline() as OutpostPipeline;
+    for (const { identity, bucketStart, ids } of confirmations)
+      pipeline.outpostConfirm(
+        `${KEY_VERSION}:state:${identity}`,
+        `${KEY_VERSION}:pending:${identity}:${bucketStart}`,
+        identity,
+        this.channel,
+        generateEpoch(),
+        bucketStart,
+        hotOnly ? "1" : "",
+        ...ids,
+      );
+    const results = await pipeline.exec().catch((error: unknown) => {
+      throw redisUnavailable(error);
+    });
+    if (results === null) throw new UnavailableRedisError();
+    let firstError: Error | undefined;
+    for (const [index, [error, state]] of results.entries()) {
+      if (error) {
+        firstError ??= error;
+        continue;
+      }
+      // Nothing settled: the state did not change.
+      if (!(state as string[]).length) continue;
+      await this.receiveState(confirmations[index].identity, decodeState(state as string[]));
+    }
+    if (firstError) throw redisUnavailable(firstError);
+  }
+
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
     return this.measureRead("meter", async (read) => {
       const customer = customerKey(input);
       this.requireRedis();
       await this.waitConfigured();
-      const reducer = this.reducers.find((item) => item.meter_ids?.includes(input.meter_id));
+      const reducer = this.findReducer("usage", input.meter_id);
       if (!reducer) {
         read.outcome = "unknown_meter";
-        return null;
+        throw new UnknownMeterError(`Outpost reduces no meter ${input.meter_id}`);
       }
+      const creditReducer = this.findReducer("credit", input.meter_id);
       const local = await this.warmCustomer(customer, reducer);
-      await this.waitReady(reducer, local, [input.meter_id]);
-      if (local.missing) {
+      const creditLocal = creditReducer && (await this.warmCustomer(customer, creditReducer));
+      await Promise.all([this.waitReady(local), creditLocal && this.waitReady(creditLocal)]);
+      if (local.missing || creditLocal?.missing) {
         read.outcome = "unknown_customer";
         return null;
       }
       const state = local.state;
       if (!state || state.coldUntil === undefined)
         throw new NotReadyError("Customer snapshot is not ready");
-      read.outcome =
-        (reducer.aggregation.func as string) === "unique" || input.meter_id in state.credited
-          ? "ready"
-          : "not_ready";
+      const creditState = creditLocal?.state;
+      const creditReady = creditState?.coldUntil !== undefined;
+      read.outcome = !creditLocal || creditReady ? "ready" : "not_ready";
       const consumed = consumedUnits(state, reducer.aggregation.func);
-      const credited = state.credited[input.meter_id] ?? 0;
+      const credited = creditReady
+        ? consumedUnits(creditState, creditReducer!.aggregation.func)
+        : 0;
       return {
         ...input,
         consumed_units: consumed,
@@ -571,18 +723,10 @@ export class Outpost {
   async actor(input: Customer): Promise<void> {
     return this.measureRead("actor", async (read) => {
       const warmed = await this.warmActor(customerKey(input));
-      await Promise.all(
-        warmed.map(([reducer, local]) => this.waitReady(reducer, local, reducer.meter_ids ?? [])),
-      );
-      // Polar sends no snapshot for unique reducers.
-      const snapshotted = warmed.filter(
-        ([reducer]) => (reducer.aggregation.func as string) !== "unique",
-      );
-      read.outcome = !snapshotted.every(([reducer, local]) =>
-        isReady(local, reducer.meter_ids ?? []),
-      )
+      await Promise.all(warmed.map(([, local]) => this.waitReady(local)));
+      read.outcome = !warmed.every(([, local]) => isReady(local))
         ? "not_ready"
-        : snapshotted.some(([, local]) => local.missing)
+        : warmed.some(([, local]) => local.missing)
           ? "unknown_customer"
           : "ready";
     });
@@ -601,15 +745,17 @@ export class Outpost {
     return warmed;
   }
 
-  private async waitReady(
-    reducer: Reducer,
-    local: LocalState,
-    meterIds: readonly string[],
-  ): Promise<void> {
-    // Polar sends no snapshot for unique reducers, nor without a connection.
-    if ((reducer.aggregation.func as string) === "unique" || !this.connected) return;
+  private findReducer(kind: Reducer["kind"], meterId: string): Reducer | undefined {
+    return this.reducers.find(
+      (reducer) => reducer.kind === kind && reducer.meter_ids?.includes(meterId),
+    );
+  }
+
+  private async waitReady(local: LocalState): Promise<void> {
+    // Polar sends no snapshot without a connection.
+    if (!this.connected) return;
     const deadline = Date.now() + (this.options.snapshotTimeout ?? 5_000);
-    while (!isReady(local, meterIds) && Date.now() < deadline)
+    while (!isReady(local) && Date.now() < deadline)
       await waitAtMost(local.changed.promise, deadline - Date.now());
   }
 
@@ -643,12 +789,7 @@ export class Outpost {
     });
     websocket.on("error", () => {});
     websocket.on("message", (data) => {
-      this.messages = this.messages
-        .then(() => this.receiveWebsocket(data.toString()))
-        .catch((error: unknown) => {
-          if (isRedisConnectionError(error)) websocket.terminate();
-          else this.fail(error);
-        });
+      this.queue(() => this.receiveWebsocket(data.toString()), websocket);
     });
     websocket.on("close", () => {
       if (this.websocket !== websocket) return;
@@ -685,6 +826,7 @@ export class Outpost {
     }
     this.websocket = websocket;
     this.actors.clear();
+    this.requesting.clear();
     await this.send({ type: "configuration" });
   }
 
@@ -720,11 +862,7 @@ export class Outpost {
     if (!local) {
       local = { pending: Promise.resolve(), missing: false, changed: signal() };
       this.cache.set(identity, local);
-      if (this.cache.size > CACHE_SIZE) {
-        const evicted = this.cache.keys().next().value!;
-        this.cache.delete(evicted);
-        this.actors.delete(evicted);
-      }
+      if (this.cache.size > CACHE_SIZE) this.cache.delete(this.cache.keys().next().value!);
     }
     this.cache.delete(identity);
     this.cache.set(identity, local);
@@ -735,19 +873,25 @@ export class Outpost {
         entry.state = await this.loadState(identity);
         notify(entry);
       }
-      if (!this.actors.has(identity) && this.websocket?.readyState === WebSocket.OPEN) {
+      // Polar's pushes keep an evicted state current in Redis, unless Redis has dropped it.
+      const requested =
+        this.requesting.has(identity) ||
+        (this.actors.has(identity) && entry.state.coldUntil !== undefined);
+      if (!requested && this.websocket?.readyState === WebSocket.OPEN) {
         try {
-          for (const meter_id of reducer.meter_ids ?? [])
-            await this.send({
-              type: "meter_usage",
-              payload: { ...customerArguments(customer), meter_id },
-            });
+          await this.send({
+            type: "meter_usage",
+            payload: { ...customerArguments(customer), reducer_id: reducer.id },
+          });
         } catch (error) {
           if (this.failure) throw error;
           // Requested again once reconnected.
           return;
         }
         this.actors.add(identity);
+        if (this.actors.size > REQUESTED_SIZE)
+          this.actors.delete(this.actors.values().next().value!);
+        this.requesting.add(identity);
       }
     });
     return entry;
@@ -757,7 +901,7 @@ export class Outpost {
     const epoch = generateEpoch();
     return decodeState(
       await this.requireRedis()
-        .outpostReadState(`outpost:state:${customer}`, epoch)
+        .outpostReadState(`${KEY_VERSION}:state:${customer}`, epoch)
         .catch((error: unknown) => {
           throw redisUnavailable(error);
         }),
@@ -776,6 +920,7 @@ export class Outpost {
         state = await this.loadState(customer);
       else if (bucket) {
         for (const [start, statistics] of state.buckets) current.buckets.set(start, statistics);
+        for (const [start, statistics] of state.pending) current.pending.set(start, statistics);
         current.revision = state.revision;
         state = current;
       }
@@ -803,6 +948,20 @@ export class Outpost {
     }).end();
     this.syncReceived = 0;
     this.syncApplied = 0;
+  }
+
+  // Includes whatever else the merchant keeps in that Redis.
+  private async reportRedisSize(): Promise<void> {
+    const redis = this.redis;
+    if (!this.redisMemory || !this.redisKeys || redis?.status !== "ready") return;
+    try {
+      const [memory, keys] = await Promise.all([redis.info("memory"), redis.dbsize()]);
+      const used = /^used_memory:(\d+)/m.exec(memory);
+      if (used) this.redisMemory?.record(Number(used[1]));
+      this.redisKeys?.record(keys);
+    } catch {
+      // A Redis that refuses INFO or DBSIZE reports nothing.
+    }
   }
 
   private synchronize(): Promise<void> {
@@ -858,6 +1017,14 @@ export class Outpost {
     for (const local of this.cache.values()) local.state = undefined;
   }
 
+  // Messages and what they trigger run one at a time, in order.
+  private queue(work: () => Promise<void>, websocket = this.websocket): void {
+    this.messages = this.messages.then(work).catch((error: unknown) => {
+      if (isRedisConnectionError(error)) websocket?.terminate();
+      else this.fail(error);
+    });
+  }
+
   private fail(error: unknown): void {
     this.failure = error instanceof Error ? error : new PolarError(String(error));
     this.configured.resolve();
@@ -900,7 +1067,8 @@ export class Outpost {
       return await run(read);
     } catch (error) {
       if (error instanceof UnavailableRedisError) read.outcome = "redis_unavailable";
-      else if (!(error instanceof NotReadyError)) read.outcome = "error";
+      else if (!(error instanceof NotReadyError || error instanceof UnknownMeterError))
+        read.outcome = "error";
       throw error;
     } finally {
       this.readDuration?.record((performance.now() - started) / 1000, {
@@ -929,7 +1097,7 @@ export class Outpost {
       this.reconnectAttempts = 0;
     } else if (message.type === "meter_usage") {
       const snapshot = message.payload;
-      const reducer = this.reducers.find((item) => item.meter_ids?.includes(snapshot.meter_id));
+      const reducer = this.reducers.find((item) => item.id === snapshot.reducer_id);
       if (!reducer) return;
       if (snapshot.customer_id !== null && snapshot.external_customer_id !== null) return;
       const customer = customerKey({
@@ -937,6 +1105,7 @@ export class Outpost {
         external_customer_id: snapshot.external_customer_id ?? undefined,
       });
       const identity = `${customer}:${reducer.id}`;
+      this.requesting.delete(identity);
       const local = this.cache.get(identity);
       if (local) {
         local.missing = !snapshot.customer_exists;
@@ -949,41 +1118,185 @@ export class Outpost {
       }
       if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
         throw new TypeError("Snapshot timestamps must be safe integer microseconds");
-      for (const value of [
-        snapshot.count,
-        snapshot.sum,
-        snapshot.min,
-        snapshot.max,
-        snapshot.credited_units,
-      ])
+      for (const value of [snapshot.count, snapshot.sum, snapshot.min, snapshot.max])
         if (value !== null && !Number.isFinite(value))
           throw new TypeError("Snapshot values must be finite");
-      await this.trace(
-        "outpost.snapshot.received",
-        async (span) => {
-          const [state, replaced] = await this.requireRedis().outpostApplySnapshot(
-            `outpost:state:${identity}`,
-            identity,
-            this.channel,
-            generateEpoch(),
-            snapshot.cold_until,
-            snapshot.version,
-            snapshot.meter_id,
-            snapshot.credited_units,
-            snapshot.count,
-            snapshot.sum,
-            snapshot.min ?? "",
-            snapshot.max ?? "",
-          );
-          reportLocalValue(span, snapshot, replaced);
-          await this.receiveState(identity, decodeState(state));
-        },
-        {
-          "outpost.customer": customer,
-          "outpost.meter_id": snapshot.meter_id,
-          "outpost.snapshot_version": snapshot.version,
-        },
-      );
+      const waiting = this.confirmations.get(identity);
+      if (waiting) {
+        if (snapshot.version >= (waiting.next ?? waiting.snapshot).version) waiting.next = snapshot;
+        return;
+      }
+      await this.receiveSnapshot(identity, customer, snapshot);
+    } else if (message.type === "confirmed") {
+      const { reducer_id, customer_id, external_customer_id, bucket_start, ids, snapshot } =
+        message.payload;
+      const customer = customerKey({
+        customer_id: customer_id ?? undefined,
+        external_customer_id: external_customer_id ?? undefined,
+      });
+      const confirmation = this.confirmations.get(`${customer}:${reducer_id}`);
+      if (!confirmation) return;
+      const confirmed = confirmation.confirmed.get(bucket_start) ?? [];
+      confirmed.push(...ids);
+      confirmation.confirmed.set(bucket_start, confirmed);
+      if (snapshot.version >= confirmation.snapshot.version) confirmation.snapshot = snapshot;
+      if (--confirmation.awaited === 0) await this.settleConfirmation(confirmation, true);
     }
+  }
+
+  private async receiveSnapshot(identity: string, customer: string, snapshot: Snapshot) {
+    if (!(await this.askConfirmation(identity, customer, snapshot)))
+      await this.applySnapshot(identity, customer, snapshot);
+  }
+
+  // Asks Polar which of the pending events in the buckets the snapshot seals it counts. The
+  // snapshot Polar answers with applies once it did, or the asking one after confirmTimeout
+  // with the events still pending.
+  private async askConfirmation(
+    identity: string,
+    customer: string,
+    snapshot: Snapshot,
+  ): Promise<boolean> {
+    const started = performance.now();
+    const state = this.cache.get(identity)?.state ?? (await this.loadState(identity));
+    const sealed = [...state.pending]
+      .filter(([start, statistics]) => start < snapshot.cold_until && statistics.count > 0)
+      .map(([start]) => start);
+    if (!sealed.length) return false;
+    const confirmation: Confirmation = {
+      snapshot,
+      customer,
+      identity,
+      started,
+      // Seconds since the oldest bucket asked ended.
+      age: (Date.now() * 1_000 - Math.min(...sealed) - BUCKET_SIZE) / 1_000_000,
+      awaited: 0,
+      messages: 0,
+      asked: 0,
+      confirmed: new Map(),
+    };
+    const redis = this.requireRedis();
+    for (const bucketStart of sealed) {
+      const ids = await redis.hkeys(`${KEY_VERSION}:pending:${identity}:${bucketStart}`);
+      for (let offset = 0; offset < ids.length; offset += CONFIRM_BATCH) {
+        const batch = ids.slice(offset, offset + CONFIRM_BATCH);
+        try {
+          await this.send({
+            type: "confirm",
+            payload: {
+              reducer_id: snapshot.reducer_id,
+              ...customerArguments(customer),
+              bucket_start: bucketStart,
+              ids: batch,
+            },
+          });
+        } catch {
+          // Not connected: the events stay pending until the next snapshot.
+          return false;
+        }
+        confirmation.awaited += 1;
+        confirmation.messages += 1;
+        confirmation.asked += batch.length;
+      }
+    }
+    if (!confirmation.awaited) return false;
+    confirmation.timer = setTimeout(
+      () => this.queue(() => this.settleConfirmation(confirmation, false)),
+      this.options.confirmTimeout ?? CONFIRM_TIMEOUT,
+    );
+    this.confirmations.set(identity, confirmation);
+    return true;
+  }
+
+  private async settleConfirmation(confirmation: Confirmation, answered: boolean): Promise<void> {
+    if (this.confirmations.get(confirmation.identity) !== confirmation) return;
+    clearTimeout(confirmation.timer);
+    this.confirmations.delete(confirmation.identity);
+    await this.applySnapshot(
+      confirmation.identity,
+      confirmation.customer,
+      confirmation.snapshot,
+      confirmation,
+      answered,
+    );
+    const next = confirmation.next;
+    if (next && next.version > confirmation.snapshot.version)
+      await this.receiveSnapshot(confirmation.identity, confirmation.customer, next);
+  }
+
+  // Settles the confirmed events and applies the snapshot in one transaction: a read sees the
+  // bucket either fully local or as Polar's total plus what is still pending.
+  private async applySnapshot(
+    identity: string,
+    customer: string,
+    snapshot: Snapshot,
+    confirmation?: Confirmation,
+    answered = false,
+  ): Promise<void> {
+    const confirmDuration = confirmation && (performance.now() - confirmation.started) / 1_000;
+    const key = `${KEY_VERSION}:state:${identity}`;
+    const snapshotArguments: (string | number)[] = [
+      identity,
+      this.channel,
+      generateEpoch(),
+      snapshot.cold_until,
+      snapshot.version,
+      snapshot.count,
+      snapshot.sum,
+      snapshot.min ?? "",
+      snapshot.max ?? "",
+    ];
+    await this.trace(
+      "outpost.snapshot.received",
+      async (span) => {
+        const redis = this.requireRedis();
+        let applied: [state: string[], replaced: string[]];
+        let before: Record<string, string> | undefined;
+        const confirmed = [...(confirmation?.confirmed ?? [])].filter(([, ids]) => ids.length);
+        if (confirmed.length) {
+          const transaction = redis.multi() as OutpostPipeline;
+          transaction.hgetall(key);
+          for (const [bucketStart, ids] of confirmed)
+            transaction.outpostConfirm(
+              key,
+              `${KEY_VERSION}:pending:${identity}:${bucketStart}`,
+              identity,
+              this.channel,
+              generateEpoch(),
+              bucketStart,
+              "",
+              ...ids,
+            );
+          transaction.outpostApplySnapshot(key, ...snapshotArguments);
+          const results = await transaction.exec();
+          if (results === null) throw new UnavailableRedisError();
+          const [error, result] = results[results.length - 1];
+          if (error) throw error;
+          applied = result as [string[], string[]];
+          before = results[0][1] as Record<string, string>;
+        } else {
+          applied = await redis.outpostApplySnapshot(key, ...snapshotArguments);
+        }
+        const [state, replaced] = applied;
+        reportLocalValue(span, snapshot, replaced, before);
+        if (confirmation) {
+          span.setAttributes({
+            "outpost.pending.asked": confirmation.asked,
+            "outpost.pending.confirmed": confirmed.reduce((sum, [, ids]) => sum + ids.length, 0),
+            "outpost.pending.answered": answered,
+            "outpost.pending.messages": confirmation.messages,
+            "outpost.pending.age": confirmation.age,
+            "outpost.confirm.duration": confirmDuration,
+          });
+        }
+        await this.receiveState(identity, decodeState(state));
+      },
+      {
+        "outpost.customer": customer,
+        "outpost.reducer_id": snapshot.reducer_id,
+        "outpost.reducer_kind": this.reducers.find((item) => item.id === snapshot.reducer_id)?.kind,
+        "outpost.snapshot_version": snapshot.version,
+      },
+    );
   }
 }

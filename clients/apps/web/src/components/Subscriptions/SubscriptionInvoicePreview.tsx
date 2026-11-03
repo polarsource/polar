@@ -8,7 +8,10 @@ import { OrderSection } from '@/components/Orders/OrderSection'
 import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
 import { isFreePrice, isSeatBasedPrice } from '@/utils/product'
-import { billsUsageOnMeterCycle } from '@/utils/subscription'
+import {
+  billsUsageOnMeterCycle,
+  formatBilledMeterUnits,
+} from '@/utils/subscription'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -100,6 +103,7 @@ const SubscriptionInvoicePreview = ({
     ...(hasMeters ? subscription.meters : []).map((meter) => ({
       id: meter.id,
       label: meter.meter.name,
+      description: formatBilledMeterUnits(meter),
       amount: meter.amount,
     })),
   ]

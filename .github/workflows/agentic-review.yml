@@ -66,6 +66,7 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.PYDANTIC_AI_GATEWAY_API_KEY }}
           github_token: ${{ github.token }}
+          allowed_bots: github-merge-queue
           claude_args: >-
             --model claude-opus-5-5
             --max-turns 100
@@ -172,4 +173,5 @@ jobs:
           git apply --index --3way "$REVIEW_DIR/changes.patch"
           git -c user.name="github-actions[bot]" -c user.email="github-actions[bot]@users.noreply.github.com" commit -m "$title"
           git push origin "$branch"
-          gh pr create --draft --base main --head "$branch" --title "$title" --body-file "$REVIEW_DIR/body.md" --reviewer "$REVIEWERS"
+          pr_url=$(gh pr create --draft --base main --head "$branch" --title "$title" --body-file "$REVIEW_DIR/body.md" --reviewer "$REVIEWERS")
+          gh pr comment "$pr_url" --body "@cubic-dev-ai review"

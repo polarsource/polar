@@ -7,7 +7,7 @@ import { useSupportCaseChat } from '@/components/SupportCase/useSupportCaseChat'
 import { useReplyToSupportCase, useSupportCase } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Text } from '@polar-sh/orbit'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle } from '@polar-sh/orbit/icons'
 import { useCallback } from 'react'
 
 const EVENT_LABELS: Record<string, string> = {

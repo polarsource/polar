@@ -4,7 +4,7 @@ from typing import Annotated
 
 import anyio.to_thread
 import structlog
-from anyio import create_memory_object_stream, create_task_group
+from anyio import Semaphore, create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from fastapi import Body, Depends, Response, WebSocket
 
@@ -16,7 +16,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import stream
-from .auth import OutpostWrite, authenticate
+from .auth import OutpostWrite
 from .schemas import (
     ConnectionOutgoingMessage,
     ConnectionOutgoingMessagePayload,
@@ -28,6 +28,9 @@ from .service import outpost as outpost_service
 log: Logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/outpost", tags=["outpost", APITag.private])
+
+# Requests one connection handles at once, each in its own session.
+CONCURRENT_REQUESTS = 4
 
 
 async def send_messages(
@@ -45,12 +48,25 @@ async def handle_messages(
     incoming_receive_stream: MemoryObjectReceiveStream[str],
     outgoing_send_stream: MemoryObjectSendStream[OutgoingMessage],
 ) -> None:
-    async with incoming_receive_stream, outgoing_send_stream:
-        async for payload in incoming_receive_stream:
+    semaphore = Semaphore(CONCURRENT_REQUESTS)
+
+    async def handle_message(payload: str) -> None:
+        try:
             async with sessionmaker() as session:
                 await outpost_service.handle_incoming_message(
                     session, organization, payload, outgoing_send_stream
                 )
+        finally:
+            semaphore.release()
+
+    async with (
+        incoming_receive_stream,
+        outgoing_send_stream,
+        create_task_group() as task_group,
+    ):
+        async for payload in incoming_receive_stream:
+            await semaphore.acquire()
+            task_group.start_soon(handle_message, payload)
 
 
 async def handle_events(
@@ -71,10 +87,13 @@ async def handle_events(
 
 
 @router.websocket("/")
-async def outpost(websocket: WebSocket, redis: Redis = Depends(get_redis)) -> None:
-    auth_subject = await authenticate(websocket)
-    if auth_subject is None:
-        return
+async def outpost(
+    websocket: WebSocket,
+    auth_subject: OutpostWrite,
+    redis: Redis = Depends(get_redis),
+) -> None:
+    await websocket.accept()
+    log.debug("WebSocket connection accepted", subject_id=auth_subject.subject.id)
 
     sessionmaker: AsyncSessionMaker = websocket.state.async_sessionmaker
     connection_id = uuid.uuid4()

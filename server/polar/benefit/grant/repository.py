@@ -24,6 +24,7 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
+from polar.order.repository import order_benefits_revoked_clause
 
 from .sorting import BenefitGrantSortProperty
 
@@ -38,7 +39,7 @@ class BenefitGrantRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[BenefitGrant]]:
+    ) -> Select[BenefitGrant]:
         statement = self.get_base_statement().join(
             Benefit, BenefitGrant.benefit_id == Benefit.id
         )
@@ -111,33 +112,29 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
-    async def exists_granted_by_benefit(self, benefit_id: UUID) -> bool:
+    async def count_granted_customers_by_benefit_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Count the customers granted each benefit, in any of its versions."""
+        if not external_ids:
+            return {}
         statement = (
-            select(BenefitGrant.id)
+            select(Benefit.external_id, func.count(BenefitGrant.customer_id.distinct()))
+            .join(BenefitGrant, BenefitGrant.benefit_id == Benefit.id)
             .where(
-                BenefitGrant.benefit_id == benefit_id,
+                Benefit.organization_id == organization_id,
+                Benefit.external_id.in_(external_ids),
                 BenefitGrant.is_granted,
                 ~BenefitGrant.is_deleted,
             )
-            .limit(1)
+            .group_by(Benefit.external_id)
         )
         result = await self.session.execute(statement)
-        return result.first() is not None
-
-    async def exists_granted_by_meter(self, meter_id: UUID) -> bool:
-        statement = (
-            select(BenefitGrant.id)
-            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
-            .where(
-                Benefit.type == BenefitType.meter_credit,
-                Benefit.properties["meter_id"].as_string() == str(meter_id),
-                BenefitGrant.is_granted,
-                ~BenefitGrant.is_deleted,
-            )
-            .limit(1)
-        )
-        result = await self.session.execute(statement)
-        return result.first() is not None
+        return {
+            external_id: count
+            for external_id, count in result.tuples()
+            if external_id is not None
+        }
 
     async def list_granted_by_customer(
         self,
@@ -222,6 +219,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
+                ~order_benefits_revoked_clause(BenefitGrant.order_id),
             )
         )
         return await self.get_all(statement)
@@ -243,6 +241,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
+                ~order_benefits_revoked_clause(BenefitGrant.order_id),
             )
         )
         return await self.get_all(statement)

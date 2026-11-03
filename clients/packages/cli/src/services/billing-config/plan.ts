@@ -8,6 +8,7 @@ import {
   ValidationErrors,
 } from '@/schemas/BillingConfig'
 import {
+  type CatalogOptions,
   type Clients,
   entries,
   post,
@@ -19,19 +20,25 @@ import { issues } from '@/services/billing-config/issues'
 
 export const plan =
   (clients: Clients) =>
-  (config: LoadedConfig, organization: ActiveOrganization) =>
+  (
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+    options: CatalogOptions = {},
+  ) =>
     Effect.gen(function* () {
       const response = yield* post(
         clients,
         '/config/plan',
         config,
         organization,
+        options,
       )
       if (response.status === 200) {
         const body =
           yield* HttpClientResponse.schemaBodyJson(PlanResponse)(response)
         return {
-          entries: entries(body.changes, body.settings),
+          entries: entries(body.changes, body.settings, body.removed),
+          ...(body.catalog ? { catalog: body.catalog } : {}),
           issues: issues(config, body.issues),
         } satisfies PlanResult
       }

@@ -2,7 +2,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import Column, ColumnElement, and_, or_, select
+from sqlalchemy import Column, ColumnElement, and_, func, or_, select
 from sqlalchemy.sql.visitors import iterate
 
 from polar.checkout.repository import expired_pending_anonymization
@@ -14,18 +14,21 @@ from polar.models import (
     Checkout,
     CustomerEmailVerification,
     CustomerSession,
-    CustomerSessionCode,
+    CustomerSessionAuthenticationSession,
+    CustomerSessionEmailOTP,
     EmailLog,
     EmailOTP,
     EmailVerification,
     ExternalEvent,
     MemberSession,
+    MerchantMigration,
     OAuth2State,
     OAuth2Token,
     UserSession,
     WebhookDelivery,
     WebhookEvent,
 )
+from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
 
 from .base import Invariant, InvariantError
 
@@ -54,9 +57,16 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         lambda cutoff: OAuth2State.expires_at < int(cutoff.timestamp()),
     ),
     CleanupTask(
-        "customer_session_code.delete_expired",
-        CustomerSessionCode,
-        lambda cutoff: CustomerSessionCode.expires_at < cutoff,
+        "customer_session_authentication_session.delete_expired",
+        CustomerSessionAuthenticationSession,
+        lambda cutoff: (
+            CustomerSessionAuthenticationSession.expires_at < int(cutoff.timestamp())
+        ),
+    ),
+    CleanupTask(
+        "customer_session_email_otp.delete_expired",
+        CustomerSessionEmailOTP,
+        lambda cutoff: CustomerSessionEmailOTP.expires_at < int(cutoff.timestamp()),
     ),
     CleanupTask(
         "email_update.delete_expired_record",
@@ -123,12 +133,21 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
         ),
     ),
     CleanupTask(
-        "webhook_delivery.archive",
-        WebhookDelivery,
+        "merchant_migration.close_idle",
+        MerchantMigration,
         lambda cutoff: and_(
-            WebhookDelivery.response.is_not(None),
+            MerchantMigration.deleted_at.is_(None),
+            MerchantMigration.step.not_in(MERCHANT_MIGRATION_FINISHED_STEPS),
+            func.coalesce(MerchantMigration.modified_at, MerchantMigration.created_at)
+            < cutoff - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
+        ),
+    ),
+    CleanupTask(
+        "webhook_delivery.prune",
+        WebhookDelivery,
+        lambda cutoff: (
             WebhookDelivery.created_at
-            < cutoff - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+            < cutoff - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD
         ),
     ),
     # Last: this query is slow on the large webhook_events table and can time out,

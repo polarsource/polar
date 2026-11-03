@@ -15,6 +15,9 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
             ),
         ),
         ("FR61954506077", "FR", ("FR61954506077", TaxIDFormat.eu_vat)),
+        ("GR149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
+        ("EL149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
+        ("gr 149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
         (
             "91-1144442",
             "US",
@@ -92,6 +95,9 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("49098576", "NZ", ("49098576", TaxIDFormat.nz_gst)),
         ("49-098-576", "NZ", ("49098576", TaxIDFormat.nz_gst)),
         ("136410132", "NZ", ("136410132", TaxIDFormat.nz_gst)),
+        # ZA VAT: 10 digits starting with 4
+        ("4123456789", "ZA", ("4123456789", TaxIDFormat.za_vat)),
+        ("412 345 6789", "ZA", ("4123456789", TaxIDFormat.za_vat)),
     ],
 )
 def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> None:
@@ -132,6 +138,8 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("1234567", "HK"),  # Too short (7 digits)
         ("49098577", "NZ"),  # Wrong check digit
         ("1234567", "NZ"),  # Too short (7 digits)
+        ("3123456789", "ZA"),  # Does not start with 4
+        ("4١٢٣٤٥٦٧٨٩", "ZA"),  # Non-ASCII digits
     ],
 )
 def test_validate_tax_id_invalid(number: str, country: str) -> None:

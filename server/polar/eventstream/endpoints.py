@@ -6,7 +6,6 @@ import structlog
 from fastapi import Depends, Request
 from redis.exceptions import ConnectionError
 from sse_starlette.sse import EventSourceResponse
-from uvicorn import Server
 
 from polar.auth.models import is_user
 from polar.authz.dependencies import AuthorizeOrgAccess, AuthorizeWebUserRead
@@ -21,29 +20,6 @@ from .service import Receivers
 router = APIRouter(prefix="/stream", tags=["stream"], include_in_schema=False)
 
 log = structlog.get_logger()
-
-
-def _uvicorn_should_exit() -> bool:
-    """
-    Hacky way to check if Uvicorn server is shutting down, by retrieving
-    it from the running asyncio tasks.
-
-    We do this because the exit signal handler monkey-patch made by sse_starlette
-    doesn't work when running Uvicorn from the CLI,
-    preventing a graceful shutdown when a SSE connection is open.
-    """
-    try:
-        for task in asyncio.all_tasks():
-            coroutine = task.get_coro()
-            if coroutine is not None:
-                frame = coroutine.cr_frame  # type: ignore
-                if frame is not None:
-                    args = frame.f_locals
-                    if (self := args.get("self")) and isinstance(self, Server):
-                        return self.should_exit
-    except RuntimeError:
-        pass
-    return False
 
 
 # Maximum lifetime for a single SSE connection.
@@ -69,7 +45,7 @@ async def subscribe(
             HTTP_SSE_CONNECTIONS_OPENED.labels(endpoint=endpoint).inc()
 
         try:
-            while not _uvicorn_should_exit():
+            while True:
                 if await request.is_disconnected():
                     break
 

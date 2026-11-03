@@ -34,7 +34,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import React from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import CustomFieldTypeLabel from './CustomFieldTypeLabel'
 import SortableOptionRow from './SortableOptionRow'
 
@@ -93,13 +93,13 @@ const CustomFieldTextProperties = () => {
 }
 
 const CustomFieldComparableProperties = () => {
-  const { control, watch } = useFormContext<
+  const { control } = useFormContext<
     (schemas['CustomFieldCreate'] | schemas['CustomFieldUpdate']) & {
       type: 'number' | 'datetime'
     }
   >()
-  const geValue = watch('properties.ge')
-  const leValue = watch('properties.le')
+  const geValue = useWatch({ control, name: 'properties.ge' })
+  const leValue = useWatch({ control, name: 'properties.le' })
 
   return (
     <>
@@ -272,10 +272,10 @@ interface CustomFieldFormBaseProps {
 }
 
 const CustomFieldForm: React.FC<CustomFieldFormBaseProps> = ({ update }) => {
-  const { control, watch } = useFormContext<
+  const { control } = useFormContext<
     schemas['CustomFieldCreate'] | schemas['CustomFieldUpdate']
   >()
-  const type = watch('type')
+  const type = useWatch({ control, name: 'type' })
 
   return (
     <>

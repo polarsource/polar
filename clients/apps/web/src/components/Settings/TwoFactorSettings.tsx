@@ -7,8 +7,7 @@ import {
   useTOTPDelete,
 } from '@/hooks'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import { Button } from '@polar-sh/orbit'
-import { ListGroup } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useState } from 'react'
@@ -16,8 +15,11 @@ import TOTPSetupModal from './TOTPSetupModal'
 import BackupCodesModal from './BackupCodesModal'
 import BackupCodesRegenerateModal from './BackupCodesRegenerateModal'
 import { toast } from '../Toast/use-toast'
-import { KeyRoundIcon, ShieldCheckIcon } from 'lucide-react'
-
+import {
+  KeyRound as KeyRoundIcon,
+  ShieldCheck as ShieldCheckIcon,
+} from '@polar-sh/orbit/icons'
+import { SettingsGroup, SettingsGroupRow } from './SettingsGroup'
 const AuthenticationMethod = ({
   icon,
   title,
@@ -32,12 +34,10 @@ const AuthenticationMethod = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-center">
-        <div className="self-start">{icon}</div>
+        <div className="flex self-start md:self-center">{icon}</div>
         <div className="grow">
-          <div className="font-medium">{title}</div>
-          <div className="dark:text-polar-500 text-sm text-gray-500">
-            {subtitle}
-          </div>
+          <Text variant="title">{title}</Text>
+          <Text color="muted">{subtitle}</Text>
         </div>
         <div className="flex-0">{action}</div>
       </div>
@@ -87,15 +87,14 @@ const TwoFactorSettings = () => {
       })
       return
     }
-    await totpStatus.refetch()
     hideDeleteConfirmModal()
     toast({ title: 'Two-factor authentication disabled' })
   }
 
   return (
     <div>
-      <ListGroup>
-        <ListGroup.Item>
+      <SettingsGroup>
+        <SettingsGroupRow>
           <AuthenticationMethod
             icon={<ShieldCheckIcon />}
             title="Authenticator App"
@@ -107,6 +106,7 @@ const TwoFactorSettings = () => {
             action={
               totpStatus.data?.enabled ? (
                 <Button
+                  size="sm"
                   variant="secondary"
                   onClick={showDeleteConfirmModal}
                   loading={totpDelete.isPending}
@@ -114,14 +114,16 @@ const TwoFactorSettings = () => {
                   Disable
                 </Button>
               ) : (
-                <Button onClick={showTOTPModal}>Set Up</Button>
+                <Button size="sm" onClick={showTOTPModal}>
+                  Set Up
+                </Button>
               )
             }
           />
-        </ListGroup.Item>
+        </SettingsGroupRow>
 
         {totpStatus.data?.enabled && (
-          <ListGroup.Item>
+          <SettingsGroupRow>
             <AuthenticationMethod
               icon={<KeyRoundIcon />}
               title="Backup Codes"
@@ -134,6 +136,7 @@ const TwoFactorSettings = () => {
                 backupCodesStatus.data?.codes &&
                 backupCodesStatus.data.codes > 0 ? (
                   <Button
+                    size="sm"
                     variant="secondary"
                     onClick={showBackupCodesRegenerateModal}
                     loading={backupCodesEnroll.isPending}
@@ -142,6 +145,7 @@ const TwoFactorSettings = () => {
                   </Button>
                 ) : (
                   <Button
+                    size="sm"
                     onClick={async () => {
                       const { data, error } =
                         await backupCodesEnroll.mutateAsync()
@@ -155,7 +159,6 @@ const TwoFactorSettings = () => {
                       }
                       if (data?.codes) {
                         setNewBackupCodes(data.codes)
-                        await backupCodesStatus.refetch()
                         showBackupCodesModal()
                       }
                     }}
@@ -166,16 +169,15 @@ const TwoFactorSettings = () => {
                 )
               }
             />
-          </ListGroup.Item>
+          </SettingsGroupRow>
         )}
-      </ListGroup>
+      </SettingsGroup>
 
       <TOTPSetupModal
         isShown={isTOTPModalShown}
         hide={hideTOTPModal}
         onEnabled={async () => {
           hideTOTPModal()
-          await totpStatus.refetch()
           const { data, error } = await backupCodesEnroll.mutateAsync()
           if (error) {
             toast({
@@ -187,7 +189,6 @@ const TwoFactorSettings = () => {
           }
           if (data?.codes) {
             setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
             showBackupCodesModal()
           }
         }}
@@ -218,7 +219,6 @@ const TwoFactorSettings = () => {
           }
           if (data?.codes) {
             setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
             showBackupCodesModal()
             return data
           }

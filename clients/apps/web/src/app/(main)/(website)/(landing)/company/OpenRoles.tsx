@@ -1,4 +1,4 @@
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
@@ -14,6 +14,10 @@ const JOBS = [
       {
         role: 'Product Engineering',
         link: 'https://jobs.ashbyhq.com/polar/d2f09190-24ec-444f-8642-98596af4a793',
+      },
+      {
+        role: 'Merchant Operations',
+        link: 'https://jobs.ashbyhq.com/polar/24a6409b-30e7-445a-b997-8411a5e75933',
       },
     ],
   },

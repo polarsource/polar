@@ -1,4 +1,12 @@
-export { Metering, MeteringError, InvalidActorError } from "./client";
+export { Metering } from "./client";
+export {
+  MeteringError,
+  InvalidActorError,
+  MeteringDeliveryError,
+  MeteringTimeoutError,
+  UnknownMeterError,
+} from "./errors";
+export type { DeliveryOptions, DeliveryFailure } from "./errors";
 export type {
   ActorInput,
   ActorMetering,

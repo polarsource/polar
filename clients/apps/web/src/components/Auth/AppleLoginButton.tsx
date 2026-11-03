@@ -1,7 +1,7 @@
 import { useAuthSessionStart } from '@/hooks'
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { useToast } from '@/components/Toast/use-toast'
-import Apple from '@mui/icons-material/Apple'
+import { Apple } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, type ButtonProps } from '@polar-sh/orbit'
 import { getAppleAuthorizeURL } from '@/utils/auth'

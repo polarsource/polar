@@ -2,13 +2,13 @@ from datetime import UTC, datetime
 
 from polar.integrations.stripe.account_risk import (
     MerchantRiskSignal,
-    StripeAccountRiskLevel,
     WebsiteRiskSignal,
     is_account_risk_event,
     parse_account_signal,
     parse_merchant_payload,
     parse_website_payload,
 )
+from polar.models import OrganizationRiskSignal
 
 WEBSITE = "v2.signals.account_signal.fraudulent_website_ready"
 MERCHANT = "v2.signals.account_signal.fraudulent_merchant_ready"
@@ -107,7 +107,7 @@ class TestParseAccountSignal:
 
         assert isinstance(result, MerchantRiskSignal)
         assert result.account_id == "acct_123"
-        assert result.risk_level == StripeAccountRiskLevel.ELEVATED
+        assert result.risk_level == OrganizationRiskSignal.RiskLevel.ELEVATED
         assert result.description is not None
         assert "owner_email" in result.description
 
@@ -116,7 +116,7 @@ class TestParseAccountSignal:
 
         assert isinstance(result, WebsiteRiskSignal)
         assert result.evaluation_id == "acctevl_456"
-        assert result.risk_level == StripeAccountRiskLevel.ELEVATED
+        assert result.risk_level == OrganizationRiskSignal.RiskLevel.ELEVATED
         assert result.description is not None
         assert "no verifiable identity" in result.description
 

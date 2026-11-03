@@ -36,7 +36,11 @@ def get_property_reader(property: str) -> PropertyReader:
     def read(event: Event) -> typing.Any:
         value: typing.Any = event.metadata
         for part in path:
-            if not isinstance(value, collections.abc.Mapping):
+            # Metadata is almost always a dict: checking its type first is cheaper
+            # than isinstance against collections.abc.Mapping.
+            if type(value) is not dict and not isinstance(
+                value, collections.abc.Mapping
+            ):
                 return None
             value = value.get(part)
         return value

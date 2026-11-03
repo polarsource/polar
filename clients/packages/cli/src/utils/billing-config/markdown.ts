@@ -9,17 +9,19 @@ import {
   type Mark,
   fieldChanges,
   lineDiff,
+  updatedBenefits,
   valueLines,
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
-import { errors, unchanged } from '@/utils/billing-config/review'
+import { catalogChange, errors, unchanged } from '@/utils/billing-config/review'
+import { shownDiff } from '@/utils/billing-config/sentences'
+import { documents } from '@/utils/billing-config/tree'
 
 const HEADINGS: Record<string, string> = {
   settings: 'Settings',
   meters: 'Meters',
   benefits: 'Benefits',
   products: 'Products',
-  discounts: 'Discounts',
 }
 
 const heading = (section: string) => {
@@ -55,9 +57,34 @@ const valueRows = (
     : [`${mark}   ${field}`, ...lines.map((line) => `${mark}     ${line}`)]
 }
 
-const entryLines = ({ section, id, action, diff }: AppliedEntry) => {
+const ids = (input: unknown): string[] =>
+  Array.isArray(input) ? input.map((id) => name(id)) : []
+
+const entryLines = (
+  entry: AppliedEntry,
+  document: unknown,
+  updated: ReadonlySet<string>,
+) => {
+  const { section, id, action, diff } = entry
   const created = action === 'created'
-  const changes = fieldChanges(diff, section)
+  const benefits = diff.find(({ field }) => field === 'benefits')
+  const grantedBefore = ids(benefits?.before)
+  const granted = ids(benefits?.after)
+  const regranted = granted.filter(
+    (id) => grantedBefore.includes(id) && updated.has(id),
+  )
+  // A product granting an updated benefit lists the same ids before and after
+  const sameIds =
+    grantedBefore.length === granted.length &&
+    granted.every((id) => grantedBefore.includes(id))
+  const changes = fieldChanges(
+    shownDiff(
+      section,
+      sameIds ? diff.filter(({ field }) => field !== 'benefits') : diff,
+      document,
+    ),
+    section,
+  )
   const width = Math.max(
     0,
     ...changes
@@ -65,7 +92,7 @@ const entryLines = ({ section, id, action, diff }: AppliedEntry) => {
       .map(({ field }) => field.length),
   )
   return [
-    `${created ? '+' : ' '} ${name(id)}`,
+    `${created ? '+' : action === 'removed' ? '-' : ' '} ${name(id)}`,
     ...changes.flatMap(({ field, before, after }) =>
       created ||
       !isSet(before) ||
@@ -84,6 +111,7 @@ const entryLines = ({ section, id, action, diff }: AppliedEntry) => {
             ),
           ],
     ),
+    ...regranted.map((id) => `    benefits  ${id} (updated)`),
   ]
 }
 
@@ -102,14 +130,26 @@ const callout = (
 const metadata = (
   config: LoadedConfig,
   organization: ActiveOrganization,
-  { entries }: PlanResult,
+  { entries, catalog }: PlanResult,
 ) => {
   const count = (action: AppliedEntry['action']) =>
     entries.filter((entry) => entry.action === action).length
+  const columns = [
+    ['Organization', escape(organization.name)],
+    ['Environment', organization.environment],
+    ['Config', `\`${config.file}\``],
+    [
+      'Changes',
+      `${count('updated')} to change, ${count('created')} to add, ${count('removed') > 0 ? `${count('removed')} to remove, ` : ''}${count('unchanged')} unchanged`,
+    ],
+    ...(catalog
+      ? [['Catalog', escape(catalogChange(catalog, (text) => text))]]
+      : []),
+  ]
   return [
-    '| Organization | Environment | Config | Changes |',
-    '| --- | --- | --- | --- |',
-    `| ${escape(organization.name)} | ${organization.environment} | \`${config.file}\` | ${count('updated')} to change, ${count('created')} to add, ${count('unchanged')} unchanged |`,
+    `| ${columns.map(([label]) => label).join(' | ')} |`,
+    `| ${columns.map(() => '---').join(' | ')} |`,
+    `| ${columns.map(([, value]) => value).join(' | ')} |`,
   ].join('\n')
 }
 
@@ -130,6 +170,7 @@ export const planMarkdown = (
             ...result.entries.map(({ section }) => section),
           ]),
         ].flatMap((section) => {
+          const webhooks = documents(config.input, 'webhooks')
           const changed = result.entries.filter(
             (entry) =>
               entry.section === section && entry.action !== 'unchanged',
@@ -139,7 +180,17 @@ export const planMarkdown = (
             : [
                 `#### ${escape(heading(section))}`,
                 codeBlock(
-                  plain(changed.flatMap(entryLines).join('\n')),
+                  plain(
+                    changed
+                      .flatMap((entry) =>
+                        entryLines(
+                          entry,
+                          webhooks.get(name(entry.id)),
+                          updatedBenefits(result.entries),
+                        ),
+                      )
+                      .join('\n'),
+                  ),
                   'diff',
                 ),
               ]

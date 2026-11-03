@@ -6,6 +6,7 @@ from typing import Any, Literal
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -13,10 +14,6 @@ from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
-)
-from polar.declarative_config.guard import (
-    DeclarativeConfigManaged,
-    assert_catalog_editable,
 )
 from polar.discount.repository import (
     DiscountRedemptionRepository,
@@ -99,7 +96,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 )
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == DiscountSortProperty.created_at:
@@ -135,7 +132,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
         notify: bool = True,
-        declarative_config: bool = False,
     ) -> Discount:
         """``notify=False`` skips the webhook, for bulk internal writes such as a
         catalog import."""
@@ -148,8 +144,6 @@ class DiscountService(ResourceServiceReader[Discount]):
             organization.id,
             OrganizationPermission.products_manage,
         )
-        if not declarative_config and organization.is_config_as_code_enabled:
-            raise DeclarativeConfigManaged()
 
         repository = DiscountRepository.from_session(session)
 
@@ -267,14 +261,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount: Discount,
         discount_update: DiscountUpdate,
         auth_subject: AuthSubject[User | Organization | Agent],
-        *,
-        declarative_config: bool = False,
     ) -> Discount:
         await assert_resource_permission(
             session, auth_subject, discount, OrganizationPermission.products_manage
         )
-        if not declarative_config:
-            await assert_catalog_editable(session, discount.organization_id)
 
         if (
             "duration" in discount_update.model_fields_set
@@ -418,7 +408,6 @@ class DiscountService(ResourceServiceReader[Discount]):
         await assert_resource_permission(
             session, auth_subject, discount, OrganizationPermission.products_manage
         )
-        await assert_catalog_editable(session, discount.organization_id)
         discount.set_deleted_at()
         session.add(discount)
 
@@ -454,10 +443,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         ):
             return None
 
-        if products is not None and len(discount.products) > 0:
-            for product in products:
-                if product not in discount.products:
-                    return None
+        if products is not None and not all(
+            discount.applies_to_product(product) for product in products
+        ):
+            return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
             return None
@@ -512,7 +501,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         ):
             return None
 
-        if len(discount.products) > 0 and product not in discount.products:
+        if not discount.applies_to_product(product):
             return None
 
         return discount
@@ -631,7 +620,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization | Agent]
-    ) -> Select[tuple[Discount]]:
+    ) -> Select[Discount]:
         statement = select(Discount).where(~Discount.is_deleted)
 
         if is_user(auth_subject) or is_agent(auth_subject):

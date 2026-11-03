@@ -1,6 +1,19 @@
 # Shared tooling for the Render and Lambda builds.
 FROM ghcr.io/astral-sh/uv:0.13.4 AS uv
-FROM tailscale/tailscale:v1.98.4 AS tailscale
+
+# Keep the published containerboot helper; install client and daemon from release archives.
+FROM tailscale/tailscale:v1.104.2 AS tailscale
+ARG TARGETARCH
+ARG TAILSCALE_VERSION
+RUN version="${TAILSCALE_VERSION:?Set the TAILSCALE_VERSION build argument}" \
+  && sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+    -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates \
+  && wget -q "https://pkgs.tailscale.com/stable/tailscale_${version}_${TARGETARCH}.tgz" -O /tmp/tailscale.tgz \
+  && tar xzf /tmp/tailscale.tgz --strip-components=1 -C /usr/local/bin \
+    "tailscale_${version}_${TARGETARCH}/tailscale" \
+    "tailscale_${version}_${TARGETARCH}/tailscaled" \
+  && rm /tmp/tailscale.tgz
 
 # Build the email renderer and backoffice assets with the same Node/pnpm setup.
 FROM node:24-slim AS node-builder

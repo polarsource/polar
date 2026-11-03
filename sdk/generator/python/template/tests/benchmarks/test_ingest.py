@@ -34,7 +34,7 @@ class Scenario:
         return COLD_UNTIL + (self.buckets - 1) * BUCKET_SIZE
 
     def state_key(self, reducer: str) -> str:
-        return f"outpost:state:external:{self.customer}:{reducer}"
+        return f"outpost:v1:state:external:{self.customer}:{reducer}"
 
 
 ONE_REDUCER = {

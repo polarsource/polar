@@ -2,7 +2,7 @@
 
 import { Slot } from '@radix-ui/react-slot'
 import { cva } from 'class-variance-authority'
-import { PanelLeft } from 'lucide-react'
+import { PanelLeft } from '@polar-sh/orbit/icons'
 import * as React from 'react'
 
 import { Button } from '@polar-sh/orbit/ui/button'

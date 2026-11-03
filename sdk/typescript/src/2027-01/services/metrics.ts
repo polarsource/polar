@@ -36,6 +36,7 @@ export const getMetrics = (client: ClientBase) => {
       interval: TimeInterval;
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       billing_type?: ProductBillingType | ProductBillingType[] | null;
       customer_id?: string | string[] | null;
       metrics?: string[] | null;
@@ -50,6 +51,7 @@ export const getMetrics = (client: ClientBase) => {
       interval: query.interval,
       organization_id: query?.organization_id,
       product_id: query?.product_id,
+      external_product_id: query?.external_product_id,
       billing_type: query?.billing_type,
       customer_id: query?.customer_id,
       metrics: query?.metrics,
@@ -83,6 +85,7 @@ export const exportMetrics = (client: ClientBase) => {
       interval: TimeInterval;
       organization_id?: string | string[] | null;
       product_id?: string | string[] | null;
+      external_product_id?: string | string[] | null;
       billing_type?: ProductBillingType | ProductBillingType[] | null;
       customer_id?: string | string[] | null;
       metrics?: string[] | null;
@@ -97,6 +100,7 @@ export const exportMetrics = (client: ClientBase) => {
       interval: query.interval,
       organization_id: query?.organization_id,
       product_id: query?.product_id,
+      external_product_id: query?.external_product_id,
       billing_type: query?.billing_type,
       customer_id: query?.customer_id,
       metrics: query?.metrics,

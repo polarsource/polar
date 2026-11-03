@@ -162,7 +162,9 @@ export function IsoBox({
       {poly(top, fill?.top ?? '')}
       {poly(left, fill?.left ?? '')}
       {poly(right, fill?.right ?? '')}
-      {showAnchors ? verts.map((v, i) => <Anchor key={i} at={v} />) : null}
+      {showAnchors
+        ? verts.map((v) => <Anchor key={v.join(',')} at={v} />)
+        : null}
     </g>
   )
 }

@@ -28,7 +28,7 @@ beforeAll(async () => {
   await once(redis, "ready");
   for (const buckets of BUCKET_COUNTS)
     await redis.hset(
-      `outpost:state:external:${customerOf(buckets)}:${REDUCER.id}`,
+      `outpost:v1:state:external:${customerOf(buckets)}:${REDUCER.id}`,
       ...encodeState(buckets),
     );
   redis.disconnect();

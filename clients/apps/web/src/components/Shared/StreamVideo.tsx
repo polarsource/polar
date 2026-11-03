@@ -1,7 +1,6 @@
 'use client'
 
-import VolumeOff from '@mui/icons-material/VolumeOff'
-import VolumeUp from '@mui/icons-material/VolumeUp'
+import { VolumeOff, VolumeUp } from '@polar-sh/orbit/icons'
 import { Stream, StreamPlayerApi } from '@cloudflare/stream-react'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useEffect, useRef, useState } from 'react'

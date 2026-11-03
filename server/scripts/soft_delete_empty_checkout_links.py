@@ -46,7 +46,7 @@ _has_no_product = and_(
 )
 
 
-def empty_count_statement() -> Select[tuple[int]]:
+def empty_count_statement() -> Select[int]:
     return select(func.count()).select_from(CheckoutLink).where(_has_no_product)
 
 

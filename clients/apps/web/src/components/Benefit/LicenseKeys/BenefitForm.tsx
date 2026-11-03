@@ -20,27 +20,27 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 
 export const LicenseKeysBenefitForm = () => {
-  const { control, watch, setValue } =
+  const { control, setValue } =
     useFormContext<schemas['BenefitLicenseKeysCreate']>()
 
-  const expires = watch('properties.expires', undefined)
+  const expires = useWatch({ control, name: 'properties.expires' })
   const showExpirationFields = !!expires
   const defaultExpiration: schemas['BenefitLicenseKeyExpirationProperties'] = {
     ttl: 1,
     timeframe: 'year',
   }
 
-  const activations = watch('properties.activations', undefined)
+  const activations = useWatch({ control, name: 'properties.activations' })
   const showActivationFields = !!activations
   const defaultActivations: schemas['BenefitLicenseKeyActivationProperties'] = {
     limit: 5,
     enable_customer_admin: true,
   }
 
-  const limitUsage = watch('properties.limit_usage', undefined)
+  const limitUsage = useWatch({ control, name: 'properties.limit_usage' })
   const [showLimitUsage, setShowLimitUsage] = useState(!!limitUsage)
 
   return (

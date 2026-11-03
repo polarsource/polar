@@ -161,7 +161,7 @@ describe('formatRows', () => {
   })
 })
 
-describe('formatRows for tiered prices and discounts', () => {
+describe('formatRows for tiered prices', () => {
   const servers = (usd: string) => [
     {
       amount_type: 'unit_based',
@@ -196,30 +196,6 @@ describe('formatRows for tiered prices and discounts', () => {
       ].join('\n'),
     )
   })
-
-  test('reads discount values, durations and product scopes', () => {
-    const output = stripAnsi(
-      formatRows(
-        '',
-        [
-          { field: 'type', before: 'percentage', after: 'fixed' },
-          { field: 'basis_points', before: 2000, after: null },
-          { field: 'amounts', before: null, after: { usd: 1000, eur: 900 } },
-          { field: 'duration', before: 'repeating', after: 'once' },
-          { field: 'duration_in_months', before: 3, after: null },
-          { field: 'products', before: [], after: ['pro'] },
-        ],
-        'updated',
-      ).join('\n'),
-    )
-    expect(output).toBe(
-      [
-        'value     20% off → $10 / €9 off',
-        'duration  3 months → once',
-        'products  all products → pro',
-      ].join('\n'),
-    )
-  })
 })
 
 describe('lineDiff', () => {
@@ -235,6 +211,27 @@ describe('lineDiff', () => {
     ])
     expect(text(['a', 'b'], ['a'])).toEqual(['  a', '- b'])
     expect(text(['a'], ['b'])).toEqual(['- a', '+ b'])
+  })
+})
+
+describe('formatRows with wide values', () => {
+  test('stacks a change that would not fit on one row', () => {
+    const before =
+      '4c12c56eb4452fe6ff96fc1f1c5d6865863b2ccdb79a71f33b82b4f48e85d957'
+    const after =
+      'bb3fc5e5582aebd4d08beccdef425659478ac62cfb44f39cf6ab9dfe6834529c'
+    const output = stripAnsi(
+      formatRows(
+        '      ',
+        [{ field: 'catalog', before, after }],
+        'updated',
+      ).join('\n'),
+    )
+    expect(output).toBe(
+      ['      catalog', `        - "${before}"`, `        + "${after}"`].join(
+        '\n',
+      ),
+    )
   })
 })
 

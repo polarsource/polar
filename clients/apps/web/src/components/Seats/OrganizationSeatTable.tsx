@@ -5,7 +5,7 @@ import {
   useResendOrganizationSeatInvitation,
   useRevokeOrganizationSeat,
 } from '@/hooks/queries/seats'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
   Button,

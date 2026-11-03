@@ -114,6 +114,16 @@ class Discount(MetadataMixin, ExternalIDMixin, RecordModel):
     def is_applicable(self, product: "Product", currency: str) -> bool:
         raise NotImplementedError()
 
+    def applies_to_product(self, product: "Product") -> bool:
+        if len(self.products) == 0 or product in self.products:
+            return True
+        if not self.organization.is_config_as_code_enabled:
+            return False
+        # Restricting a product also covers its other catalog versions
+        return product.external_id is not None and product.external_id in {
+            p.external_id for p in self.products if p.deleted_at is None
+        }
+
     def is_repetition_expired(
         self,
         discount_applied_at: datetime,
@@ -185,10 +195,7 @@ class DiscountFixed(Discount):
         if currency not in self.amounts:
             return False
 
-        if len(self.products) == 0:
-            return True
-
-        return product in self.products
+        return self.applies_to_product(product)
 
     def get_discount_amount(self, amount: int, currency: str) -> int:
         return min(self.amounts[currency], amount)
@@ -252,9 +259,7 @@ class DiscountPercentage(Discount):
         return [self.get_discount_amount(amount, currency) for amount in amounts]
 
     def is_applicable(self, product: "Product", currency: str) -> bool:
-        if len(self.products) == 0:
-            return True
-        return product in self.products
+        return self.applies_to_product(product)
 
     __mapper_args__ = {
         "polymorphic_identity": DiscountType.percentage,

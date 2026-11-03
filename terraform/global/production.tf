@@ -535,17 +535,6 @@ resource "tfe_variable" "polar_organization_id_production" {
   }
 }
 
-resource "tfe_variable" "polar_free_product_id_production" {
-  key             = "polar_free_product_id"
-  category        = "terraform"
-  description     = "Polar free-tier product ID"
-  variable_set_id = tfe_variable_set.production.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "polar_scale_product_id_production" {
   key             = "polar_scale_product_id"
   category        = "terraform"
@@ -926,10 +915,21 @@ resource "tfe_variable" "private_backoffice_tailscale_ip_production" {
   }
 }
 
+resource "tfe_variable" "ec2_tailscale_oauth_client_id_production" {
+  key             = "ec2_tailscale_oauth_client_id"
+  category        = "terraform"
+  description     = "ID of the Tailscale OAuth client used by the EC2 router in production"
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "ec2_tailscale_oauth_client_secret_production" {
   key             = "ec2_tailscale_oauth_client_secret"
   category        = "terraform"
-  description     = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
+  description     = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production, and DNS write permission"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 
@@ -1010,4 +1010,12 @@ resource "tfe_variable" "redis_private_link_host_production" {
   lifecycle {
     ignore_changes = [value]
   }
+}
+
+resource "tfe_variable" "planetscale_app_password_production" {
+  key             = "planetscale_app_password"
+  category        = "terraform"
+  description     = "PlanetScale application role password for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
 }

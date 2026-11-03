@@ -5,6 +5,7 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Organization
 from polar.auth.permission import OrganizationPermission
@@ -65,7 +66,7 @@ class OrganizationAccessTokenService:
                 OrganizationAccessToken.organization_id.in_(organization_id)
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == OrganizationAccessTokenSortProperty.created_at:

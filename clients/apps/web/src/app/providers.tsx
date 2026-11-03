@@ -4,7 +4,9 @@ import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
+import { redactClaimTokens } from '@/utils/telemetry'
 import { QueryClientProvider } from '@tanstack/react-query'
+import { domAnimation, LazyMotion } from 'motion/react'
 import { ThemeProvider } from 'next-themes'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
@@ -25,6 +27,7 @@ if (typeof window !== 'undefined' && CONFIG.POSTHOG_TOKEN) {
     persistence: cookieConsentGiven() === 'yes' ? 'localStorage' : 'memory',
     bootstrap: distinctId ? { distinctID: distinctId } : undefined,
     disable_surveys: true,
+    before_send: (event) => redactClaimTokens(event),
   })
 }
 
@@ -96,4 +99,8 @@ export function PolarQueryClientProvider({
 
 export function PolarNuqsProvider({ children }: PropsWithChildren) {
   return <NuqsAdapter>{children}</NuqsAdapter>
+}
+
+export function PolarMotionProvider({ children }: PropsWithChildren) {
+  return <LazyMotion features={domAnimation}>{children}</LazyMotion>
 }

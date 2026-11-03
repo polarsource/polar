@@ -22,6 +22,7 @@ from polar.benefit.strategies.meter_credit.properties import (
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
+from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
 from polar.config import settings
@@ -41,7 +42,6 @@ from polar.email.sender import enqueue_email_template
 from polar.enums import (
     PaymentMode,
     SubscriptionProrationBehavior,
-    SubscriptionRecurringInterval,
     TaxBehavior,
 )
 from polar.event.service import event as event_service
@@ -99,7 +99,6 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
-    ProductPrice,
     ProductPriceFixed,
     ProductPriceSeatUnit,
     ProductPriceUnit,
@@ -130,7 +129,6 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
-from polar.reducer.service import reducer as reducer_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -501,6 +499,7 @@ class SubscriptionUpdateContext:
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
         self._has_changes = True
         self._previous_product: Product | None = None
+        self._billing_state_effective_at: datetime | None = None
 
     async def __aenter__(self) -> Self:
         return self
@@ -514,6 +513,13 @@ class SubscriptionUpdateContext:
         # Don't trigger side effects if an exception was raised within the context
         if value is not None:
             return
+
+        if self._billing_state_effective_at is not None:
+            await billing_interval_service.record_subscription(
+                self.session,
+                self.subscription,
+                effective_at=self._billing_state_effective_at,
+            )
 
         match self._billing_effect:
             case "cycle":
@@ -566,6 +572,10 @@ class SubscriptionUpdateContext:
     ) -> None:
         self._billing_effect = effect
 
+    def record_billing_state(self, *, effective_at: datetime) -> None:
+        """Record the billing state on exit, before the billing effect runs."""
+        self._billing_state_effective_at = effective_at
+
     def add_event_metadata(
         self, **metadata: Unpack[SubscriptionUpdatedMetadataFields]
     ) -> None:
@@ -580,6 +590,7 @@ class SubscriptionService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        external_product_id: Sequence[str] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
         external_customer_id: Sequence[str] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
@@ -601,7 +612,6 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         statement = (
             repository.get_readable_statement(auth_subject)
-            .where(Subscription.started_at.is_not(None))
             .join(Subscription.product)
             .join(Subscription.customer)
             .join(Subscription.discount, isouter=True)
@@ -614,6 +624,9 @@ class SubscriptionService:
 
         if product_id is not None:
             statement = statement.where(Subscription.product_id.in_(product_id))
+
+        if external_product_id is not None:
+            statement = statement.where(Product.external_id.in_(external_product_id))
 
         if customer_id is not None:
             statement = statement.where(Subscription.customer_id.in_(customer_id))
@@ -688,10 +701,7 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         statement = (
             repository.get_readable_statement(auth_subject)
-            .where(
-                Subscription.id == id,
-                Subscription.started_at.is_not(None),
-            )
+            .where(Subscription.id == id)
             .options(*repository.get_eager_options())
         )
 
@@ -728,15 +738,6 @@ class SubscriptionService:
                     "type": "value_error",
                     "loc": ("body", "product_id"),
                     "msg": "Product is not a recurring product.",
-                    "input": subscription_create.product_id,
-                }
-            )
-        elif product.is_legacy_recurring_price:
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": ("body", "product_id"),
-                    "msg": "Legacy recurring products are not supported.",
                     "input": subscription_create.product_id,
                 }
             )
@@ -875,6 +876,9 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.create(subscription, flush=True)
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=current_period_start
+        )
 
         # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
         if product.has_seat_based_price:
@@ -1012,6 +1016,7 @@ class SubscriptionService:
         """
         assert subscription.status == SubscriptionStatus.paused
         repository = SubscriptionRepository.from_session(session)
+        now = utc_now()
 
         await repository.release_scheduler_lock(subscription)
         subscription.status = (
@@ -1036,12 +1041,15 @@ class SubscriptionService:
             subscription.customer_cancellation_reason = customer_cancellation_reason
         subscription.payment_method = payment_method
         subscription.initialize_meter_period(
-            None if trial_end else current_period_start, containing=utc_now()
+            None if trial_end else current_period_start, containing=now
         )
 
         # Flushed so the returned subscription carries `payment_method_id`, which
         # the cutover records, and not just the relationship.
         subscription = await repository.update(subscription, flush=True)
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=now
+        )
 
         await self.enqueue_benefits_grants(session, subscription)
         await self._on_subscription_updated(session, subscription)
@@ -1078,19 +1086,10 @@ class SubscriptionService:
 
         currency = checkout.currency
         currency_prices = PriceSet.from_prices(checkout.prices[product.id], currency)
-        recurring_interval: SubscriptionRecurringInterval
-        recurring_interval_count: int
-        subscription_prices: list[ProductPrice]
-        if product.is_legacy_recurring_price:
-            # For legacy products, use only the selected price from checkout
-            subscription_prices = [checkout.product_price]
-            recurring_interval = subscription_prices[0].recurring_interval
-            recurring_interval_count = 1
-        else:
-            assert is_recurring_product(product)
-            recurring_interval = product.recurring_interval
-            recurring_interval_count = product.recurring_interval_count
-            subscription_prices = list(currency_prices)
+        assert is_recurring_product(product)
+        recurring_interval = product.recurring_interval
+        recurring_interval_count = product.recurring_interval_count
+        subscription_prices = list(currency_prices)
 
         subscription_product_prices: list[SubscriptionProductPrice] = []
         for price in subscription_prices:
@@ -1186,6 +1185,10 @@ class SubscriptionService:
                 previous_is_canceled=previous_is_canceled,
             )
 
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=current_period_start
+        )
+
         # Auto-upgrade customer to 'team' type when subscribing to a seat-based product
         if product.has_seat_based_price:
             await customer_service.upgrade_to_team(session, customer)
@@ -1251,6 +1254,9 @@ class SubscriptionService:
                 subscription = await self.clear_pending_update(
                     session, ctx, subscription
                 )
+            await billing_interval_service.record_subscription(
+                session, subscription, effective_at=cycle_at
+            )
             await self.enqueue_benefits_grants(session, subscription)
             repository = SubscriptionRepository.from_session(session)
             return await repository.release_scheduler_lock(subscription)
@@ -1350,6 +1356,10 @@ class SubscriptionService:
         # trial conversion).
         if not revoke:
             subscription.initialize_meter_period(subscription.current_period_start)
+
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=cycle_at
+        )
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.release_scheduler_lock(subscription)
@@ -1518,7 +1528,7 @@ class SubscriptionService:
         rollover_units = await customer_meter_service.get_rollover_units(
             session, customer, meter, cutoff=reset_at
         )
-        reset_event = await event_service.create_event(
+        await event_service.create_event(
             session,
             build_system_event(
                 SystemEvent.meter_reset,
@@ -1528,7 +1538,6 @@ class SubscriptionService:
                 timestamp=reset_at,
             ),
         )
-        reducer_service.enqueue_seal(customer.id, meter.id, at=reset_event.timestamp)
         if rollover_units > 0:
             await event_service.create_event(
                 session,
@@ -1686,7 +1695,6 @@ class SubscriptionService:
             session, subscription, WebhookEventType.subscription_created
         )
 
-        assert subscription.started_at is not None
         await event_service.create_event(
             session,
             build_system_event(
@@ -1750,6 +1758,7 @@ class SubscriptionService:
                     product_id=update.product_id,
                     proration_behavior=update.proration_behavior,
                     discount=update.discount,
+                    trial_end=update.trial_end,
                 )
             # Only update discount if product is not being updated,
             # otherwise it will be handled in update_product()
@@ -1883,6 +1892,18 @@ class SubscriptionService:
                 ]
             )
 
+        if not product.is_current:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is no longer sold. Use the current version.",
+                        "input": product_id,
+                    }
+                ]
+            )
+
         if product.visibility not in allowed_visibilities:
             raise PolarRequestValidationError(
                 [
@@ -1902,18 +1923,6 @@ class SubscriptionService:
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": "Product is not recurring.",
-                        "input": product_id,
-                    }
-                ]
-            )
-
-        if product.is_legacy_recurring_price:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": "Product has legacy recurring prices.",
                         "input": product_id,
                     }
                 ]
@@ -2068,6 +2077,7 @@ class SubscriptionService:
         product_id: uuid.UUID,
         proration_behavior: SubscriptionProrationBehavior | None = None,
         discount: uuid.UUID | Literal["unset"] | None = None,
+        trial_end: datetime | Literal["now"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> Subscription:
         previous_product = subscription.product
@@ -2087,7 +2097,10 @@ class SubscriptionService:
         new_trial_end: datetime | None = None
         ends_trial = False
         if was_trialing:
-            new_trial_end = self._resolve_trial_end(subscription, product)
+            if isinstance(trial_end, datetime):
+                new_trial_end = trial_end
+            else:
+                new_trial_end = self._resolve_trial_end(subscription, product)
             ends_trial = new_trial_end is None
 
         # Add event for the subscription plan change
@@ -2160,7 +2173,9 @@ class SubscriptionService:
                     not was_trialing
                     and subscription.current_meter_period_end is not None
                 ):
-                    self._enqueue_meter_cycle_order(subscription, utc_now())
+                    self._enqueue_meter_cycle_order(
+                        subscription, subscription_update.applies_at
+                    )
 
                 interval_changed = subscription_update.is_interval_changed()
                 ctx.set_previous_product(previous_product)
@@ -2170,7 +2185,7 @@ class SubscriptionService:
                         # End the trial immediately - cycle() below will transition
                         # to active and bill the customer for the new period.
                         subscription.trial_end = subscription.current_period_end = (
-                            utc_now()
+                            subscription_update.applies_at
                         )
                     else:
                         assert new_trial_end is not None
@@ -2187,12 +2202,16 @@ class SubscriptionService:
 
                 if was_trialing and ends_trial:
                     ctx.set_billing_effect("cycle")
-                elif (
-                    (proration_behavior.is_immediate() or interval_changed)
-                    and not was_trialing
-                    and billing_entries
-                ):
-                    ctx.set_billing_effect("invoice")
+                else:
+                    ctx.record_billing_state(
+                        effective_at=subscription_update.applies_at
+                    )
+                    if (
+                        (proration_behavior.is_immediate() or interval_changed)
+                        and not was_trialing
+                        and billing_entries
+                    ):
+                        ctx.set_billing_effect("invoice")
 
                 # When transitioning from non-seat to seat-based pricing, promote
                 # the billing customer to a 'team' customer and claim a seat for
@@ -2467,9 +2486,11 @@ class SubscriptionService:
                             }
                         ]
                     )
+                now = utc_now()
                 subscription.status = SubscriptionStatus.trialing
-                subscription.trial_start = utc_now()
+                subscription.trial_start = now
                 subscription.trial_end = subscription.current_period_end = trial_end
+                ctx.record_billing_state(effective_at=now)
 
         await self._realign_pending_update_cycle(session, subscription)
 
@@ -2827,6 +2848,7 @@ class SubscriptionService:
             subscription = await self.clear_pending_update(session, ctx, subscription)
 
         subscription.status = SubscriptionStatus.active
+        ctx.record_billing_state(effective_at=now)
         subscription.cancel_at_period_end = False
         subscription.canceled_at = None
         subscription.ends_at = None
@@ -2961,6 +2983,7 @@ class SubscriptionService:
         subscription.status = SubscriptionStatus.active
         subscription.paused_at = None
         subscription.resumes_at = None
+        ctx.record_billing_state(effective_at=now)
         await repository.release_scheduler_lock(subscription)
 
         # Start a fresh billing period from now and charge immediately.
@@ -3120,6 +3143,7 @@ class SubscriptionService:
             subscription.ends_at = now
             subscription.ended_at = now
             subscription.status = SubscriptionStatus.canceled
+            ctx.record_billing_state(effective_at=now)
             if revoke_benefits:
                 await self.enqueue_benefits_grants(session, subscription)
         else:
@@ -3222,6 +3246,13 @@ class SubscriptionService:
         # Usage of the current meter cycle is settled before any pending update
         # applies, on its own order ahead of this invoice.
         usage_billed_on_meter_cycle = self.bills_usage_on_meter_cycle(subscription)
+        # The renewal order bills the current product's usage; summed before the
+        # pending update replaces its prices and drops its meters.
+        metered_amount = (
+            0
+            if usage_billed_on_meter_cycle
+            else sum(meter.amount for meter in subscription.meters)
+        )
 
         # Apply any pending subscription update (product change, seats change)
         pending_update = subscription.pending_update
@@ -3260,12 +3291,6 @@ class SubscriptionService:
             base_price = 0
         else:
             base_price = sum(p.amount for p in subscription.subscription_product_prices)
-
-        metered_amount = (
-            0
-            if usage_billed_on_meter_cycle
-            else sum(meter.amount for meter in subscription.meters)
-        )
 
         items = [
             OrderItem(

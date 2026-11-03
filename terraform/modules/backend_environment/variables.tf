@@ -25,6 +25,8 @@ variable "pydantic_ai_gateway_secrets" {
 variable "backend_config" {
   type = object({
     environment                                      = optional(string, null)
+    database_statement_cache_size                    = optional(number, null)
+    database_prepared_statement_cache_size           = optional(number, null)
     base_url                                         = string
     backoffice_host                                  = optional(string, null)
     checkout_link_host                               = optional(string, null)
@@ -181,7 +183,7 @@ variable "prometheus_config" {
 variable "slo_report_config" {
   type = object({
     slack_bot_token = string
-    slack_channel   = string
+    slack_channel   = optional(string)
   })
   default   = null
   sensitive = true
@@ -192,7 +194,6 @@ variable "polar_self_config" {
     access_token     = string
     webhook_secret   = string
     organization_id  = string
-    free_product_id  = string
     scale_product_id = string
     api_url          = string
   })

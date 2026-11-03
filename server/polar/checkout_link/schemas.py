@@ -16,16 +16,17 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
-    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
+    ProductID,
     ProductMediaList,
     ProductPrice,
     ProductPriceList,
@@ -140,14 +141,6 @@ class CheckoutLinkCreateProducts(CheckoutLinkCreateBase):
     )
 
 
-CheckoutLinkCreate = Annotated[
-    CheckoutLinkCreateProductPrice
-    | CheckoutLinkCreateProduct
-    | CheckoutLinkCreateProducts,
-    SetSchemaReference("CheckoutLinkCreate"),
-]
-
-
 class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     """Schema to update an existing checkout link."""
 
@@ -249,4 +242,13 @@ class CheckoutLink(CheckoutLinkBase):
             validation_alias=AliasPath("products", 0, "prices", 0),
             deprecated="Use `products` instead.",
         )
+    )
+
+
+class CheckoutLinkListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
     )

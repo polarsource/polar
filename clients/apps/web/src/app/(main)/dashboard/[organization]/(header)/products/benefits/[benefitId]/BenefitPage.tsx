@@ -3,6 +3,7 @@
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
 import { BenefitDetails } from '@/components/Benefit/BenefitDetails'
+import { BenefitVersionBanner } from '@/components/Benefit/BenefitVersionBanner'
 import { DownloadablesSection } from '@/components/Benefit/Downloadables/DownloadablesSection'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
@@ -210,6 +211,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           rowGap="4xl"
           paddingBottom="2xl"
         >
+          <BenefitVersionBanner organization={organization} benefit={benefit} />
           <BenefitDetails benefit={benefit} organization={organization} />
           {benefit.type === 'downloadables' && (
             <DownloadablesSection benefit={benefit} />

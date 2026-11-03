@@ -159,6 +159,21 @@ jobs:
           tb build
           tb test run
 
+  # Required by the migrations-lock ruleset, toggled by migrations-lock.yml / migrations-unlock.yml
+  no-migrations:
+    name: "Server: No migrations"
+    needs: changes
+    if: >-
+      vars.MIGRATIONS_LOCKED == 'true' &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if migrations changed
+        if: needs.changes.outputs.migrations == 'true'
+        run: |
+          echo "::error::This change contains database migrations, which are currently locked."
+          exit 1
+
   migration-check:
     name: "Server: Migration Check 📚"
     needs: changes

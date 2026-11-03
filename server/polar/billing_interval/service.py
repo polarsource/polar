@@ -1,9 +1,8 @@
-"""Meter availability and comparison execution are unimplemented."""
-
 import dataclasses
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from datetime import UTC, datetime
+from decimal import Decimal
 from itertools import pairwise
 from uuid import UUID
 
@@ -11,25 +10,21 @@ import structlog
 
 from polar.exceptions import PolarError
 from polar.logging import Logger
-from polar.models import BillingInterval, Customer, Meter, Subscription
+from polar.models import BillingInterval, Customer, Subscription
 from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
+from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageWindow
 from polar.subscription.repository import SubscriptionRepository
 
-from .comparison import BillingComparison
 from .repository import BillingIntervalRepository
-from .types import (
-    IntervalChangePlan,
-    MeteredSettlement,
-    SettlementWindowSelection,
-    SubscriptionMeterBillingState,
-    UsageDiagnostic,
-)
+from .types import IntervalChangePlan, SubscriptionMeterBillingState
 
 log: Logger = structlog.get_logger()
+
+BILL_USAGE_LOCK_TIMEOUT = "2s"
 
 USAGE_POLICIES = {
     SubscriptionStatus.active: UsagePolicy.charge,
@@ -70,24 +65,6 @@ class BillingIntervalService:
                 effective_at=effective_at.isoformat(),
             )
 
-    async def record_meter(
-        self,
-        session: AsyncSession,
-        meter: Meter,
-        *,
-        effective_at: datetime,
-    ) -> None:
-        """Reconcile availability for the prelocked affected subscription set."""
-        raise NotImplementedError
-
-    async def compare(
-        self,
-        session: AsyncSession,
-        settlement: MeteredSettlement | UsageDiagnostic,
-    ) -> BillingComparison:
-        """Capture a request; execution starts in a fresh task transaction."""
-        raise NotImplementedError
-
     async def get_boundaries(
         self,
         session: AsyncSession,
@@ -124,6 +101,54 @@ class BillingIntervalService:
             list({interval.subscription_id for interval in intervals})
         )
         return resolve_ownership(intervals, subscription_starts, cutoff=cutoff)
+
+    async def bill_usage(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        meter_ids: Iterable[UUID],
+        *,
+        order_id: UUID,
+        cutoff: datetime,
+    ) -> dict[UUID, tuple[Decimal, Decimal]]:
+        """Marks the reducer usage the subscription owns on the meters, and its
+        credits, as billed by the order, and returns their quantities per meter.
+        Failures, including waiting on a bucket lock for longer than
+        BILL_USAGE_LOCK_TIMEOUT, are rolled back and logged, so they never affect
+        the order."""
+        meter_ids = sorted(meter_ids)
+        repository = BillingIntervalRepository.from_session(session)
+        try:
+            async with (
+                repository.local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT),
+                session.begin_nested(),
+            ):
+                windows: list[UsageWindow] = []
+                for meter_id in meter_ids:
+                    windows.extend(
+                        await self.get_usage_windows(
+                            session, subscription.customer, meter_id, cutoff=cutoff
+                        )
+                    )
+                quantities = await reducer_service.bill(
+                    session,
+                    subscription.customer,
+                    meter_ids,
+                    order_id=order_id,
+                    windows=select_settlement_windows(
+                        windows, billing_subscription_id=subscription.id
+                    ),
+                    cutoff=cutoff,
+                )
+        except Exception:
+            log.exception(
+                "Failed to bill reducer usage",
+                subscription_id=subscription.id,
+                order_id=order_id,
+                cutoff=cutoff.isoformat(),
+            )
+            quantities = {}
+        return quantities
 
 
 def get_interval_boundaries(
@@ -326,15 +351,15 @@ def resolve_ownership(
 
 
 def select_settlement_windows(
-    windows: Sequence[UsageWindow],
-    intervals: Sequence[BillingInterval],
-    subscription_starts: Mapping[UUID, datetime | None],
-    price_currencies: Mapping[UUID, str],
-    *,
-    settlement: MeteredSettlement | UsageDiagnostic,
-) -> SettlementWindowSelection:
-    """Select claims and deferred history without consulting current subscription state."""
-    raise NotImplementedError
+    windows: Sequence[UsageWindow], *, billing_subscription_id: UUID
+) -> tuple[UsageWindow, ...]:
+    """The windows a bill charges: those its own subscription owns. Usage of an
+    ended subscription arriving after its final bill is never charged."""
+    return tuple(
+        window
+        for window in windows
+        if window.source_subscription_id == billing_subscription_id
+    )
 
 
 billing_interval = BillingIntervalService()

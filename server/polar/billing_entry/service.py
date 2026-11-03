@@ -12,6 +12,7 @@ import logfire
 import structlog
 from babel.dates import format_date
 
+from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.math import non_negative_running_sum
@@ -29,7 +30,6 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
-from polar.reducer.service import reducer as reducer_service
 
 from .repository import BillingEntryRepository
 from .types import BillingEntrySelector, PendingByMeter, PendingByPrice
@@ -124,8 +124,7 @@ class BillingEntryService:
             else:
                 await repository.update_order_item_id(selector, order_item.id)
 
-        billable_from = subscription.trial_end or subscription.started_at
-        if consumed_units and billable_from is not None:
+        if consumed_units:
             order_id = next(iter(item_entries_map)).order_id
             with logfire.span(
                 "Bill and compare reducer usage",
@@ -134,12 +133,11 @@ class BillingEntryService:
                 order_id=str(order_id),
                 cutoff=cutoff,
             ) as span:
-                quantities = await reducer_service.bill(
+                quantities = await billing_interval_service.bill_usage(
                     session,
-                    subscription.customer,
+                    subscription,
                     set(consumed_units),
                     order_id=order_id,
-                    billable_from=billable_from,
                     cutoff=cutoff,
                 )
                 reducer_net_units = {

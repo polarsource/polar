@@ -3,9 +3,9 @@ from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, cast
-from unittest.mock import call
 
 import pytest
+from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -40,9 +40,16 @@ from polar.reducer.redis_store import get_reducer_bucket_key
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import (
     REDUCER_BUCKET_SIZE,
+    finalize_quantity,
     get_reducer_bucket_start,
+    merge_summaries,
 )
 from polar.reducer.service import reducer as reducer_service
+from polar.reducer.types import (
+    UsageSummary,
+    UsageWindow,
+    WindowUsage,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
@@ -1517,7 +1524,7 @@ async def add_credit(
 
 @pytest.mark.anyio
 class TestBill:
-    async def test_seals_then_bills_the_meters_usage_and_credit_reducers(
+    async def test_bills_the_windows_usage_and_the_credits(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -1537,15 +1544,15 @@ class TestBill:
         )
         for timestamp in (RESET, CUTOFF):
             await create_reset_event(save_fixture, customer, meter, timestamp)
-        seal = mocker.patch.object(reducer_service, "_seal_buckets")
-        get_boundaries = mocker.patch(
-            "polar.reducer.service.billing_interval_service.get_boundaries",
-            return_value=(START,),
-        )
-        bill = mocker.patch.object(
+        window = usage_window(meter, START, CUTOFF)
+        observe = mocker.patch.object(
             reducer_service,
-            "_bill_buckets",
-            side_effect=[{usage.id: Decimal(3)}, {credit.id: Decimal(2)}],
+            "_bill_windows",
+            return_value=[WindowUsage(window, UsageSummary(3, Decimal(3), None, None))],
+        )
+        seal = mocker.patch.object(reducer_service, "_seal_buckets")
+        bill = mocker.patch.object(
+            reducer_service, "_bill_buckets", return_value={credit.id: Decimal(2)}
         )
         order_id = uuid.uuid4()
 
@@ -1554,38 +1561,20 @@ class TestBill:
             customer,
             [meter.id],
             order_id=order_id,
-            billable_from=START,
+            windows=[window],
             cutoff=CUTOFF,
         )
 
         assert quantities == {meter.id: (Decimal(3), Decimal(2))}
-        assert seal.call_args_list == [
-            call(
-                session,
-                [usage],
-                customer,
-                since=START,
-                until=CUTOFF,
-                boundaries=[START],
-            ),
-            call(session, [credit], customer, since=RESET, until=CUTOFF),
-        ]
-        get_boundaries.assert_called_once_with(
-            session, customer, meter.id, until=CUTOFF
+        observe.assert_called_once_with(
+            session, customer, {meter.id: usage}, [window], order_id=order_id
         )
-        assert bill.call_args_list == [
-            call(
-                session, [usage], customer, order_id=order_id, since=START, until=CUTOFF
-            ),
-            call(
-                session,
-                [credit],
-                customer,
-                order_id=order_id,
-                since=RESET,
-                until=CUTOFF,
-            ),
-        ]
+        seal.assert_called_once_with(
+            session, [credit], customer, since=RESET, until=CUTOFF
+        )
+        bill.assert_called_once_with(
+            session, [credit], customer, order_id=order_id, since=RESET, until=CUTOFF
+        )
 
     async def test_bills_the_credits_since_the_latest_reset(
         self,
@@ -1610,7 +1599,7 @@ class TestBill:
             customer,
             [meter.id],
             order_id=order.id,
-            billable_from=START,
+            windows=(),
             cutoff=CUTOFF,
         )
 
@@ -1637,13 +1626,13 @@ class TestBill:
             customer,
             [meter.id],
             order_id=order.id,
-            billable_from=START,
+            windows=(),
             cutoff=CUTOFF,
         )
 
         assert quantities == {meter.id: (Decimal(0), Decimal(0))}
 
-    async def test_splits_at_billable_from_without_a_reset(
+    async def test_bills_the_usage_in_the_windows(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1678,7 +1667,7 @@ class TestBill:
             external_customer,
             [meter.id],
             order_id=order.id,
-            billable_from=CUTOFF,
+            windows=[usage_window(meter, CUTOFF, NEXT_BUCKET_START)],
             cutoff=NEXT_BUCKET_START,
         )
 
@@ -1691,30 +1680,6 @@ class TestBill:
             (BUCKET_START, CUTOFF, None),
             (CUTOFF, NEXT_BUCKET_START, order.id),
         ]
-
-    async def test_logs_failures_without_raising(
-        self,
-        mocker: MockerFixture,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-        meter: Meter,
-    ) -> None:
-        await create_reducer(save_fixture, organization=organization, meters=[meter])
-        mocker.patch.object(reducer_service, "_seal_buckets", side_effect=RuntimeError)
-
-        quantities = await reducer_service.bill(
-            session,
-            customer,
-            [meter.id],
-            order_id=uuid.uuid4(),
-            billable_from=START,
-            cutoff=CUTOFF,
-        )
-
-        assert quantities == {}
-        assert await session.get(Meter, meter.id) is not None
 
 
 SUM_TOKENS = PropertyAggregation(func=AggregationFunction.sum, property="tokens")
@@ -1742,6 +1707,170 @@ async def rollup_tokens(
     ]
     await reducer_service.rollup(session, redis, organization.id, events)
     return meter
+
+
+@pytest.fixture
+async def tokens_meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
+    meter = await create_meter(
+        save_fixture,
+        organization=organization,
+        aggregation=PropertyAggregation(
+            func=AggregationFunction.max, property="tokens"
+        ),
+    )
+    await create_reducer(save_fixture, organization=organization, meters=[meter])
+    return meter
+
+
+def usage_window(meter: Meter, start: datetime, end: datetime) -> UsageWindow:
+    return UsageWindow(uuid.uuid4(), uuid.uuid4(), meter.id, start, end)
+
+
+@pytest.fixture
+async def tokens_events(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    mocker.patch("polar.reducer.service.utc_now", return_value=BILLED_AT)
+    for timestamp, tokens in ((CLOSED, 5), (CUTOFF, 3)):
+        await create_tokens_event(
+            save_fixture,
+            organization,
+            tokens,
+            timestamp=timestamp,
+            ingested_at=INGESTED_AT,
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.usefixtures("tokens_events")
+class TestBillUsageWindows:
+    async def test_records_a_span_per_window(
+        self,
+        capfire: CaptureLogfire,
+        session: AsyncSession,
+        external_customer: Customer,
+        tokens_meter: Meter,
+        order: Order,
+    ) -> None:
+        await reducer_service.bill(
+            session,
+            external_customer,
+            [tokens_meter.id],
+            order_id=order.id,
+            windows=[usage_window(tokens_meter, BUCKET_START, CUTOFF)],
+            cutoff=CUTOFF,
+        )
+
+        [span] = [
+            span
+            for span in capfire.exporter.exported_spans
+            if span.name == "Bill reducer buckets"
+            and span.attributes is not None
+            and span.attributes.get("logfire.span_type") == "span"
+        ]
+        assert span.attributes is not None
+        assert span.attributes["meter_id"] == str(tokens_meter.id)
+        assert span.attributes["quantity"] == "5"
+
+    async def test_billed_usage_is_not_billed_again(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        external_customer: Customer,
+        tokens_meter: Meter,
+        order: Order,
+    ) -> None:
+        window = usage_window(tokens_meter, BUCKET_START, CUTOFF)
+        second_order = await create_order(save_fixture, customer=external_customer)
+
+        quantities = [
+            await reducer_service.bill(
+                session,
+                external_customer,
+                [tokens_meter.id],
+                order_id=order_id,
+                windows=[window],
+                cutoff=CUTOFF,
+            )
+            for order_id in (order.id, second_order.id)
+        ]
+
+        assert quantities == [
+            {tokens_meter.id: (Decimal(5), Decimal(0))},
+            {tokens_meter.id: (Decimal(0), Decimal(0))},
+        ]
+
+    @pytest.mark.parametrize("unique_reducer", [False, True])
+    async def test_skips_meters_without_a_billable_usage_reducer(
+        self,
+        unique_reducer: bool,
+        session: AsyncSession,
+        external_customer: Customer,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        tokens_meter: Meter,
+        order: Order,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=UniqueAggregation(property="user_id"),
+        )
+        if unique_reducer:
+            await create_reducer(
+                save_fixture, organization=organization, meters=[meter]
+            )
+
+        quantities = await reducer_service.bill(
+            session,
+            external_customer,
+            [tokens_meter.id, meter.id],
+            order_id=order.id,
+            windows=[
+                usage_window(tokens_meter, BUCKET_START, CUTOFF),
+                usage_window(meter, BUCKET_START, CUTOFF),
+            ],
+            cutoff=CUTOFF,
+        )
+
+        assert quantities == {tokens_meter.id: (Decimal(5), Decimal(0))}
+
+    async def test_boundary_inside_a_sealed_bucket_bills_nothing(
+        self,
+        session: AsyncSession,
+        external_customer: Customer,
+        tokens_meter: Meter,
+        order: Order,
+    ) -> None:
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            tokens_meter.id, ReducerKind.usage
+        )
+        assert reducer is not None
+        await reducer_service.sync_bucket(
+            session, reducer.id, BUCKET_START, None, "external"
+        )
+        await reducer_service.seal(
+            session,
+            external_customer,
+            tokens_meter.id,
+            at=NEXT_BUCKET_START,
+            boundaries=(),
+        )
+
+        quantities = await reducer_service.bill(
+            session,
+            external_customer,
+            [tokens_meter.id],
+            order_id=order.id,
+            windows=[usage_window(tokens_meter, BUCKET_START, CUTOFF)],
+            cutoff=CUTOFF,
+        )
+
+        assert quantities == {}
+        assert not any(bucket.order_id for bucket in await get_buckets(session))
 
 
 @pytest.mark.anyio
@@ -2016,3 +2145,40 @@ class TestSyncCredits:
                 session
             ).get_unsealed_totals(organization.id, credit.id, [(customer.id, None)])
             assert (count, total) == (2, 10)
+
+
+class TestFinalizeQuantity:
+    @pytest.mark.parametrize(
+        ("function", "quantity"),
+        [
+            (AggregationFunction.cnt, Decimal(3)),
+            (AggregationFunction.sum, Decimal(18)),
+            (AggregationFunction.avg, Decimal(6)),
+            (AggregationFunction.min, Decimal(2)),
+            (AggregationFunction.max, Decimal(10)),
+        ],
+    )
+    def test_merges_summaries_before_finalizing(
+        self, function: AggregationFunction, quantity: Decimal
+    ) -> None:
+        summary = merge_summaries(
+            [
+                UsageSummary(2, Decimal(8), Decimal(2), Decimal(6)),
+                UsageSummary(1, Decimal(10), Decimal(10), Decimal(10)),
+            ]
+        )
+
+        assert finalize_quantity(summary, function) == quantity
+
+    @pytest.mark.parametrize(
+        "function",
+        [
+            AggregationFunction.cnt,
+            AggregationFunction.sum,
+            AggregationFunction.avg,
+            AggregationFunction.min,
+            AggregationFunction.max,
+        ],
+    )
+    def test_no_usage_is_zero(self, function: AggregationFunction) -> None:
+        assert finalize_quantity(merge_summaries([]), function) == Decimal(0)

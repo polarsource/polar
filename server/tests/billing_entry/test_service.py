@@ -1535,7 +1535,7 @@ class TestCreateOrderItemsFromPending:
         metered_subscription: Subscription,
     ) -> None:
         bill = mocker.patch(
-            "polar.billing_entry.service.reducer_service.bill",
+            "polar.billing_entry.service.billing_interval_service.bill_usage",
             return_value={meter.id: (Decimal(10), Decimal(0))},
         )
         await create_metered_event_billing_entry(
@@ -1560,10 +1560,9 @@ class TestCreateOrderItemsFromPending:
         if billed:
             bill.assert_called_once_with(
                 session,
-                customer,
+                metered_subscription,
                 {meter.id},
                 order_id=order.id,
-                billable_from=metered_subscription.started_at,
                 cutoff=cutoff,
             )
         else:
@@ -1585,7 +1584,7 @@ class TestCreateOrderItemsFromPending:
         organization: Organization,
     ) -> None:
         mocker.patch(
-            "polar.billing_entry.service.reducer_service.bill",
+            "polar.billing_entry.service.billing_interval_service.bill_usage",
             return_value={meter.id: (Decimal(15), reducer_credits)},
         )
         product_old = await create_product(

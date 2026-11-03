@@ -11,6 +11,7 @@ from polar.billing_interval.service import (
     plan_meter_interval_change,
     resolve_meter_interval_history,
     resolve_ownership,
+    select_settlement_windows,
 )
 from polar.billing_interval.types import (
     IntervalChangePlan,
@@ -576,3 +577,16 @@ class TestResolveOwnership:
             window(ended, day(1), day(3)),
             window(resubscribed, day(5), day(7)),
         )
+
+
+class TestSelectSettlementWindows:
+    def test_charges_only_the_billed_subscriptions_windows(self) -> None:
+        own = owned_interval(UUID(int=10), day(1), None)
+        ended = owned_interval(UUID(int=20), day(1), day(3))
+
+        windows = select_settlement_windows(
+            [window(own, day(1), day(5)), window(ended, day(1), day(3))],
+            billing_subscription_id=own.subscription_id,
+        )
+
+        assert windows == (window(own, day(1), day(5)),)

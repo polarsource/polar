@@ -1,8 +1,9 @@
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import update
+from sqlalchemy import func, select, update
 
 from polar.kit.repository import RepositoryBase
 from polar.models import BillingInterval, Customer, Subscription
@@ -44,6 +45,27 @@ class BillingIntervalRepository(RepositoryBase[BillingInterval]):
             )
         )
         return await self.get_all(statement)
+
+    async def get_lock_timeout(self) -> str:
+        result = await self.session.execute(
+            select(func.current_setting("lock_timeout"))
+        )
+        return result.scalar_one()
+
+    @asynccontextmanager
+    async def local_lock_timeout(self, lock_timeout: str) -> AsyncIterator[None]:
+        """Restores the previous value on exit, since releasing a savepoint keeps it."""
+        previous = await self.get_lock_timeout()
+        await self._set_local_lock_timeout(lock_timeout)
+        try:
+            yield
+        finally:
+            await self._set_local_lock_timeout(previous)
+
+    async def _set_local_lock_timeout(self, lock_timeout: str) -> None:
+        await self.session.execute(
+            select(func.set_config("lock_timeout", lock_timeout, True))
+        )
 
     async def apply_changes(
         self, subscription: Subscription, changes: IntervalChangePlan

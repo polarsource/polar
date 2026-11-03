@@ -11,6 +11,7 @@ from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.models import Customer, OrderItem, Organization, Product, ReducerBucket
 from polar.models.billing_entry import BillingEntryType
 from polar.reducer.service import reducer as reducer_service
+from polar.reducer.types import UsageWindow
 from scripts.backfill_reducer_buckets import backfill_organization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -245,7 +246,7 @@ class TestBackfillBuckets:
             customer,
             [meter.id],
             order_id=next_order.id,
-            billable_from=SUBSCRIPTION_START,
+            windows=[UsageWindow(uuid4(), uuid4(), meter.id, SUBSCRIPTION_START, END)],
             cutoff=END,
         )
         assert quantities == {meter.id: (Decimal(13), Decimal(0))}

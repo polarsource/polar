@@ -240,7 +240,7 @@ jobs:
         run: uv sync --frozen --all-extras
 
       - name: Install Redis
-        uses: shogo82148/actions-setup-redis@v1.59.0
+        uses: shogo82148/actions-setup-redis@v1.60.0
         with:
           redis-version: "7.4"
           auto-start: false

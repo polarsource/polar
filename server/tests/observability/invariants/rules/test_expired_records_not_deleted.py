@@ -93,6 +93,7 @@ async def create_webhook_delivery(
     await save_fixture(
         WebhookDelivery(
             webhook_endpoint=webhook_endpoint,
+            organization_id=webhook_endpoint.organization_id,
             webhook_event=webhook_event,
             succeeded=True,
             http_code=200,

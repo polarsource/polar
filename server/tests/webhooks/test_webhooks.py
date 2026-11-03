@@ -482,6 +482,7 @@ async def test_webhook_delivery_500(
             WebhookDelivery(
                 webhook_event_id=event.id,
                 webhook_endpoint_id=endpoint.id,
+                organization_id=endpoint.organization_id,
                 succeeded=False,
             )
         )
@@ -536,6 +537,7 @@ async def test_webhook_delivery_http_error(
             WebhookDelivery(
                 webhook_event_id=event.id,
                 webhook_endpoint_id=endpoint.id,
+                organization_id=endpoint.organization_id,
                 succeeded=False,
             )
         )

@@ -1,6 +1,12 @@
 import pytest
 
-from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
+from polar.tax.tax_id import (
+    InvalidTaxID,
+    TaxID,
+    TaxIDFormat,
+    to_stripe_tax_id,
+    validate_tax_id,
+)
 
 
 @pytest.mark.parametrize(
@@ -15,6 +21,9 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
             ),
         ),
         ("FR61954506077", "FR", ("FR61954506077", TaxIDFormat.eu_vat)),
+        ("GR149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
+        ("EL149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
+        ("gr 149592838", "GR", ("EL149592838", TaxIDFormat.eu_vat)),
         (
             "91-1144442",
             "US",
@@ -142,3 +151,15 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
 def test_validate_tax_id_invalid(number: str, country: str) -> None:
     with pytest.raises(InvalidTaxID):
         validate_tax_id(number, country)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (("GR149592838", TaxIDFormat.eu_vat), "EL149592838"),
+        (("EL149592838", TaxIDFormat.eu_vat), "EL149592838"),
+        (("FR61954506077", TaxIDFormat.eu_vat), "FR61954506077"),
+    ],
+)
+def test_to_stripe_tax_id_eu_vat(value: TaxID, expected: str) -> None:
+    assert to_stripe_tax_id(value) == {"type": "eu_vat", "value": expected}

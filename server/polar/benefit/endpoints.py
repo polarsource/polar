@@ -68,6 +68,7 @@ async def list(
         id_in=filters.id,
         id_not_in=filters.exclude_id,
         external_id=filters.external_id,
+        is_current=filters.is_current,
         metadata=metadata,
         query=filters.query,
         pagination=pagination,

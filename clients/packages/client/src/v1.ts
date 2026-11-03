@@ -47855,6 +47855,8 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Exclude benefits with these IDs. */
         exclude_id?: string | string[] | null
+        /** @description Filter on current benefit versions. If `false`, only previous versions are returned. Defaults to current versions only, unless filtering by `id`. */
+        is_current?: boolean | null
         /** @description Filter by description. */
         query?: string | null
         /** @description Page number, defaults to 1. */

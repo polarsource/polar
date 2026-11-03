@@ -279,6 +279,14 @@ class BenefitListParams(QuerySchema):
     exclude_id: MultipleQueryFilter[BenefitID] | None = Field(
         None, title="Exclude IDs", description="Exclude benefits with these IDs."
     )
+    is_current: Annotated[bool | None, Version(starting_from=V2027_01)] = Field(
+        None,
+        description=(
+            "Filter on current benefit versions. "
+            "If `false`, only previous versions are returned. "
+            "Defaults to current versions only, unless filtering by `id`."
+        ),
+    )
     query: str | None = Field(None, title="Query", description="Filter by description.")
 
 

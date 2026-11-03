@@ -47,6 +47,7 @@ class BenefitService:
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
+        is_current: bool | None = None,
         visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -69,7 +70,10 @@ class BenefitService:
 
         if id_in is not None:
             statement = statement.where(Benefit.id.in_(id_in))
-        else:
+
+        if is_current is not None:
+            statement = statement.where(Benefit.is_current.is_(is_current))
+        elif id_in is None:
             statement = statement.where(Benefit.is_current)
 
         if id_not_in is not None:

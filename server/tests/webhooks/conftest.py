@@ -82,6 +82,7 @@ async def webhook_delivery(
 ) -> WebhookDelivery:
     delivery = WebhookDelivery(
         webhook_endpoint_id=webhook_endpoint_organization.id,
+        organization_id=webhook_endpoint_organization.organization_id,
         webhook_event_id=webhook_event_organization.id,
         http_code=200,
         succeeded=True,

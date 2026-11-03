@@ -351,6 +351,7 @@ class TestCountEarlierPendingEvents:
             WebhookDelivery(
                 webhook_event=delivered_event,
                 webhook_endpoint=webhook_endpoint_organization,
+                organization_id=webhook_endpoint_organization.organization_id,
                 succeeded=True,
                 http_code=200,
             )
@@ -386,6 +387,7 @@ class TestCountEarlierPendingEvents:
             WebhookDelivery(
                 webhook_event=delivered_event,
                 webhook_endpoint=webhook_endpoint_organization,
+                organization_id=webhook_endpoint_organization.organization_id,
                 succeeded=False,
                 http_code=None,
             )
@@ -470,6 +472,7 @@ class TestDeleteExpiredDeliveries:
     ) -> WebhookDelivery:
         delivery = WebhookDelivery(
             webhook_endpoint=endpoint,
+            organization_id=endpoint.organization_id,
             webhook_event=event,
             succeeded=True,
             http_code=200,

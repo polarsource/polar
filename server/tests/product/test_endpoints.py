@@ -36,7 +36,6 @@ from tests.fixtures.random_objects import (
 @pytest.mark.anyio
 class TestListProducts:
     @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_draft_catalog(
         self,
         save_fixture: SaveFixture,

@@ -20,6 +20,7 @@ async def create_delivery(
     delivery = WebhookDelivery(
         webhook_endpoint=endpoint,
         webhook_event=event,
+        organization_id=endpoint.organization_id,
         succeeded=True,
         http_code=200,
         response=response,

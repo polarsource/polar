@@ -94,6 +94,7 @@ async def create_webhook_delivery(
         WebhookDelivery(
             webhook_endpoint=webhook_endpoint,
             webhook_event=webhook_event,
+            organization=organization,
             succeeded=True,
             http_code=200,
             response=None,

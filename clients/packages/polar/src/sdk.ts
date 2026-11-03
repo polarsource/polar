@@ -13,3 +13,10 @@ export type {
   PolarOptions,
   RequestOptions,
 } from '@polar-sh/sdk/2027-01'
+
+export type {
+  ActorInput,
+  ActorMetering,
+  Metering,
+  MeteringOptions,
+} from '@polar-sh/sdk/metering'

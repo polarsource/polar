@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import {
   callTool,
   createProCheckout,
@@ -13,6 +14,7 @@ import {
   purchaseTopUp,
   type TopUp,
 } from '../polar'
+import { readOutpost } from '../outpost'
 
 const COOKIE = 'external_customer_id'
 
@@ -42,14 +44,29 @@ export async function call(server: 'builtin' | 'custom', count: number) {
   if (!externalId) redirect('/')
   if (!CALL_COUNTS.includes(count)) throw new Error(`Invalid count ${count}`)
 
-  return callTool(externalId, server, count)
+  const result = await callTool(externalId, server, count)
+  after(() => polar.flush())
+  return result
 }
 
 export async function getBalance() {
   const externalId = await getExternalCustomerId()
   if (!externalId) redirect('/')
 
-  return polar.actor({ externalCustomerId: externalId }).balance('tool_call')
+  const start = performance.now()
+  const { balance } = await polar
+    .actor({ externalCustomerId: externalId })
+    .balance('tool_call')
+  const readMs = performance.now() - start
+
+  return { balance, readMs, outpost: await readOutpost(externalId) }
+}
+
+export async function getOutpost() {
+  const externalId = await getExternalCustomerId()
+  if (!externalId) redirect('/')
+
+  return readOutpost(externalId)
 }
 
 export async function upgrade() {

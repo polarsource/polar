@@ -48,7 +48,10 @@ export const useCatalogVersionLabels = (
         }),
       )
       return new Map(
-        data.items.map(({ id, name, status }) => [id, { name, status }]),
+        data.items.map(({ id, name, status, published_at }) => [
+          id,
+          { name, status, published_at },
+        ]),
       )
     },
     retry: defaultRetry,

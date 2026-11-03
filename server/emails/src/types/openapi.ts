@@ -2993,9 +2993,11 @@ export interface components {
       canceled_at: string | null
       /**
        * Started At
+       * Format: date-time
        * @description The timestamp when the subscription started.
+       * @example 2026-01-01T00:00:00.000000Z
        */
-      started_at: string | null
+      started_at: string
       /**
        * Ends At
        * @description The timestamp when the subscription will end.

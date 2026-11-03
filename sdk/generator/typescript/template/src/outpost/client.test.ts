@@ -475,6 +475,77 @@ it("applies another instance's bucket updates and reloads after a missed revisio
   await vi.waitFor(async () => expect((await reader.meter(meter))?.consumed_units).toBe(25));
 });
 
+// The full states published on the updates channel until `drain`, which publishes a marker
+// after everything already sent.
+const listenStates = async () => {
+  const listener = redis.duplicate();
+  const states: unknown[] = [];
+  let onDrained = () => {};
+  listener.on("message", (_channel, data) => {
+    const update = JSON.parse(data);
+    if (update.customer === "drained") onDrained();
+    else if ("state" in update) states.push(update);
+  });
+  await listener.subscribe("outpost:v1:0:updates");
+  const drain = async () => {
+    const drained = new Promise<void>((resolve) => (onDrained = resolve));
+    await redis.publish("outpost:v1:0:updates", JSON.stringify({ customer: "drained", bucket: [] }));
+    await drained;
+    return states;
+  };
+  return { drain, close: () => listener.disconnect() };
+};
+
+it("applies Polar's snapshot once when every instance receives it", async () => {
+  await seed();
+  await Promise.all([start(), start(), start()]);
+  await vi.waitFor(() => expect(connections).toHaveLength(3));
+  const listener = await listenStates();
+  // Each connection reads the snapshot at its own version.
+  for (const [index, ws] of connections.entries())
+    ws.send(
+      JSON.stringify({
+        type: "meter_usage",
+        payload: {
+          ...customer,
+          customer_id: null,
+          customer_exists: true,
+          reducer_id: "tokens",
+          cold_until: bucket,
+          version: 1791807000000001 + index,
+          count: 2,
+          sum: 8,
+          min: 3,
+          max: 5,
+        },
+      }),
+    );
+  await vi.waitFor(() =>
+    expect(exported.filter((span) => span.name === "outpost.snapshot.received")).toHaveLength(3),
+  );
+  expect(await listener.drain()).toHaveLength(1);
+  expect(await redis.hget(key, "revision")).toBe("1");
+  expect(await redis.hget(key, "cold:sum")).toBe("8");
+  listener.close();
+});
+
+it("publishes nothing for an older snapshot or one already applied", async () => {
+  await seed();
+  await applySnapshot("external:alice:tokens", bucket, 2, 2, 8, 3, 5);
+  const listener = await listenStates();
+  await applySnapshot("external:alice:tokens", bucket, 1, 1, 1, 1, 1);
+  await applySnapshot("external:alice:tokens", bucket, 3, 2, 8, 3, 5);
+  expect(await listener.drain()).toHaveLength(0);
+  expect(await redis.hmget(key, "revision", "cold:sum", "snapshot_version")).toEqual([
+    "1",
+    "8",
+    "3",
+  ]);
+  await applySnapshot("external:alice:tokens", bucket, 4, 3, 9, 3, 5);
+  expect(await listener.drain()).toHaveLength(1);
+  listener.close();
+});
+
 it("repairs a missed notification on periodic refresh", async () => {
   await seed();
   vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });

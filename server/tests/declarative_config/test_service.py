@@ -14,6 +14,7 @@ from polar.catalog.repository import (
     CatalogProductRepository,
     CatalogRepository,
 )
+from polar.catalog.service import catalog as catalog_service
 from polar.catalog.service import compute_version_hash
 from polar.declarative_config.schemas import (
     Config,
@@ -4265,3 +4266,106 @@ class TestExport:
     ) -> None:
         with pytest.raises(InsufficientScopeError):
             await declarative_config_service.export(session, auth_subject, None)
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestCatalogDrafts:
+    async def test_apply_saves_and_replaces_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [BETA_BENEFIT], "products": [pro]}),
+        )
+        catalogs_repo = CatalogRepository.from_session(session)
+        products_repo = ProductRepository.from_session(session)
+        live = await catalogs_repo.get_live(organization.id)
+        [live_pro] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+
+        first = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT], "products": [MONTHLY_PRO_25]}
+            ),
+            publish=False,
+        )
+        second = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                    "products": [{**MONTHLY_PRO_25, "benefits": ["beta"]}],
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await catalogs_repo.get_draft(organization.id)
+        assert draft is not None
+        assert live is not None
+        assert first.catalog is not None
+        assert second.catalog is not None
+        assert first.catalog.after.id == second.catalog.after.id == draft.id
+        assert await catalogs_repo.get_live(organization.id) == live
+        assert await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        ) == [live_pro]
+        members = {
+            member.external_id: member.product
+            for member in await CatalogProductRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+        }
+        assert (members["pro"].is_current, members["pro"].catalog_id) == (
+            False,
+            draft.id,
+        )
+        assert [b.description for b in members["pro"].benefits] == ["Early access"]
+
+        published = await catalog_service.publish_draft(session, organization, draft)
+
+        await session.refresh(live_pro)
+        [current_pro] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        assert (published.status, published.name) == (CatalogStatus.live, "v2")
+        assert (live_pro.is_current, current_pro.id) == (False, members["pro"].id)
+        await session.refresh(live)
+        assert live.status == CatalogStatus.archived
+
+    async def test_publish_discards_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        config = Config.model_validate({"products": [MONTHLY_PRO]})
+        await declarative_config_service.apply(
+            session, redis, auth_subject, config, publish=False
+        )
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config, publish=True
+        )
+
+        assert result.catalog is not None
+        assert (
+            await CatalogRepository.from_session(session).get_draft(organization.id)
+            is None
+        )

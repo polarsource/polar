@@ -3716,6 +3716,35 @@ export interface paths {
     get: operations['catalogs:get']
     put?: never
     post?: never
+    /**
+     * Discard Draft Catalog
+     * @description Discard the draft catalog and the product and benefit versions only it has.
+     *
+     *     **Scopes**: `products:write`
+     */
+    delete: operations['catalogs:discard']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/catalogs/{id}/publish': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Publish Draft Catalog
+     * @description Publish the draft catalog. Its new products and benefits replace the live
+     *     ones for new sales. Existing customers stay on their versions until moved.
+     *
+     *     **Scopes**: `products:write`
+     */
+    post: operations['catalogs:publish']
     delete?: never
     options?: never
     head?: never
@@ -13686,6 +13715,17 @@ export interface components {
        */
       benefit_id: string
     }
+    /** CatalogDraftOutdated */
+    CatalogDraftOutdated: {
+      /**
+       * Error
+       * @example CatalogDraftOutdated
+       * @constant
+       */
+      error: 'CatalogDraftOutdated'
+      /** Detail */
+      detail: string
+    }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
       /**
@@ -13705,6 +13745,17 @@ export interface components {
        * @constant
        */
       error: 'CatalogImportNotReady'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogNotDraft */
+    CatalogNotDraft: {
+      /**
+       * Error
+       * @example CatalogNotDraft
+       * @constant
+       */
+      error: 'CatalogNotDraft'
       /** Detail */
       detail: string
     }
@@ -16352,7 +16403,7 @@ export interface components {
     ConfigCatalogChange: {
       /** @description The live catalog before applying. `None` if no catalog exists to replace. */
       before: components['schemas']['ConfigCatalog'] | null
-      /** @description The catalog applying published. */
+      /** @description The catalog applying published, or the draft it saved. */
       after: components['schemas']['ConfigCatalog']
     }
     /** ConfigCatalogPlan */
@@ -52891,6 +52942,104 @@ export interface operations {
       }
     }
   }
+  'catalogs:discard': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Draft discarded. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description No catalog with this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description The catalog isn't a draft. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotDraft']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:publish': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Catalog']
+        }
+      }
+      /** @description No catalog with this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description The catalog isn't a draft, or another catalog was published since the draft was created. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CatalogNotDraft']
+            | components['schemas']['CatalogDraftOutdated']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'custom-fields:list': {
     parameters: {
       query?: {
@@ -62556,7 +62705,7 @@ export interface operations {
       query?: {
         /** @description The ID of the organization to export. **Required unless you use an organization token.** */
         organization_id?: string | null
-        /** @description ID of a published catalog. Defaults to the live catalog. */
+        /** @description ID of a catalog, published or draft. Defaults to the live catalog. */
         catalog_id?: string | null
       }
       header?: never
@@ -62594,7 +62743,7 @@ export interface operations {
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
-      /** @description No published catalog has this ID. */
+      /** @description No catalog has this ID. */
       404: {
         headers: {
           [name: string]: unknown
@@ -62616,7 +62765,10 @@ export interface operations {
   }
   'config:apply': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Publish the product and benefit changes. With `false`, they're saved in the organization's draft catalog, to publish later. Meters, settings and webhooks aren't versioned, so they apply right away. */
+        publish?: boolean
+      }
       header?: never
       path?: never
       cookie?: never
@@ -62684,7 +62836,7 @@ export interface operations {
   'config:plan': {
     parameters: {
       query?: {
-        /** @description ID of a published catalog. Defaults to the live catalog. */
+        /** @description ID of a catalog, published or draft. Defaults to the live catalog. */
         catalog_id?: string | null
       }
       header?: never
@@ -62726,7 +62878,7 @@ export interface operations {
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
-      /** @description No published catalog has this ID. */
+      /** @description No catalog has this ID. */
       404: {
         headers: {
           [name: string]: unknown

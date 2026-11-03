@@ -11,3 +11,10 @@ _CatalogRead = Authenticator(
     allowed_subjects={User, Organization, Agent},
 )
 CatalogRead = Annotated[AuthSubject[User | Organization | Agent], Depends(_CatalogRead)]
+
+# Publishing or discarding a draft is for members and organization tokens.
+_CatalogWrite = Authenticator(
+    required_scopes={Scope.products_write},
+    allowed_subjects={User, Organization},
+)
+CatalogWrite = Annotated[AuthSubject[User | Organization], Depends(_CatalogWrite)]

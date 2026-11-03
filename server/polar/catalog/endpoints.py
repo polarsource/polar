@@ -7,12 +7,18 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Catalog
 from polar.openapi import APITag
-from polar.postgres import AsyncReadSession, get_db_read_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Catalog as CatalogSchema
 from .schemas import CatalogListParams, CatalogVersion
+from .service import CatalogDraftOutdated, CatalogNotDraft, CatalogNotFound
 from .service import catalog as catalog_service
 
 router = APIRouter(prefix="/catalogs", tags=["catalogs", APITag.private])
@@ -46,7 +52,7 @@ async def list(
     )
 
 
-CatalogNotFound = {
+CatalogNotFoundResponse = {
     "description": "Catalog not found.",
     "model": ResourceNotFound.schema(),
 }
@@ -56,7 +62,7 @@ CatalogNotFound = {
     "/{id}",
     summary="Get Catalog",
     response_model=CatalogVersion,
-    responses={404: CatalogNotFound},
+    responses={404: CatalogNotFoundResponse},
 )
 async def get(
     id: UUID4,
@@ -68,3 +74,58 @@ async def get(
     if catalog is None:
         raise ResourceNotFound()
     return catalog
+
+
+DraftNotFound = {
+    "description": "No catalog with this ID.",
+    "model": CatalogNotFound.schema(),
+}
+
+
+@router.post(
+    "/{id}/publish",
+    summary="Publish Draft Catalog",
+    response_model=CatalogSchema,
+    responses={
+        404: DraftNotFound,
+        409: {
+            "description": (
+                "The catalog isn't a draft, or another catalog was published "
+                "since the draft was created."
+            ),
+            "model": CatalogNotDraft.schema() | CatalogDraftOutdated.schema(),
+        },
+    },
+)
+async def publish(
+    id: UUID4,
+    auth_subject: auth.CatalogWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Catalog:
+    """Publish the draft catalog. Its new products and benefits replace the live
+    ones for new sales. Existing customers stay on their versions until moved."""
+    draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
+    return await catalog_service.publish_draft(session, draft.organization, draft)
+
+
+@router.delete(
+    "/{id}",
+    summary="Discard Draft Catalog",
+    status_code=204,
+    responses={
+        204: {"description": "Draft discarded."},
+        404: DraftNotFound,
+        409: {
+            "description": "The catalog isn't a draft.",
+            "model": CatalogNotDraft.schema(),
+        },
+    },
+)
+async def discard(
+    id: UUID4,
+    auth_subject: auth.CatalogWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Discard the draft catalog and the product and benefit versions only it has."""
+    draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
+    await catalog_service.discard_draft(session, draft)

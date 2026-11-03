@@ -31,6 +31,7 @@ from polar.models import (
     Agent,
     Benefit,
     BillingEntry,
+    Catalog,
     Checkout,
     CheckoutLink,
     CheckoutLinkProduct,
@@ -514,6 +515,8 @@ async def create_product(
     trial_interval_count: int | None = None,
     is_tax_applicable: bool = True,
     external_id: str | None = None,
+    is_current: bool = True,
+    catalog: Catalog | None = None,
 ) -> Product:
     recurring_interval_count = (
         None if recurring_interval is None else recurring_interval_count
@@ -535,6 +538,8 @@ async def create_product(
         trial_interval=trial_interval,
         trial_interval_count=trial_interval_count,
         external_id=external_id,
+        is_current=is_current,
+        catalog=catalog,
         all_prices=[],
         prices=[],
         product_benefits=[],

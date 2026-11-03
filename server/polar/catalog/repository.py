@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -35,21 +35,28 @@ class CatalogRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_draft(self, organization_id: UUID) -> Catalog | None:
+        statement = self.get_base_statement().where(
+            Catalog.organization_id == organization_id,
+            Catalog.status == CatalogStatus.draft,
+        )
+        return await self.get_one_or_none(statement)
+
     async def count_by_organization(self, organization_id: UUID) -> int:
-        """Count the organization's catalogs, soft-deleted ones included."""
+        """Count the organization's catalogs, soft-deleted ones included.
+        Drafts don't count, so a discarded draft leaves no gap in the names."""
         return await self.count(
             self.get_base_statement(include_deleted=True).where(
-                Catalog.organization_id == organization_id
+                Catalog.organization_id == organization_id,
+                Catalog.status != CatalogStatus.draft,
             )
         )
 
-    async def get_published_by_id(
+    async def get_by_organization_and_id(
         self, organization_id: UUID, id: UUID
     ) -> Catalog | None:
         statement = self.get_base_statement().where(
-            Catalog.id == id,
-            Catalog.organization_id == organization_id,
-            Catalog.status != CatalogStatus.draft,
+            Catalog.id == id, Catalog.organization_id == organization_id
         )
         return await self.get_one_or_none(statement)
 
@@ -114,6 +121,13 @@ class CatalogProductRepository(
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
 
+    async def delete_by_catalog(self, catalog_id: UUID) -> None:
+        """Delete a draft's memberships. They aren't history, and the next
+        apply lists the same `external_id`s again."""
+        await self.session.execute(
+            delete(CatalogProduct).where(CatalogProduct.catalog_id == catalog_id)
+        )
+
     async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogProduct]:
         statement = (
             self.get_base_statement()
@@ -169,6 +183,13 @@ class CatalogBenefitRepository(
         )
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
+
+    async def delete_by_catalog(self, catalog_id: UUID) -> None:
+        """Delete a draft's memberships. They aren't history, and the next
+        apply lists the same `external_id`s again."""
+        await self.session.execute(
+            delete(CatalogBenefit).where(CatalogBenefit.catalog_id == catalog_id)
+        )
 
     async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogBenefit]:
         statement = (

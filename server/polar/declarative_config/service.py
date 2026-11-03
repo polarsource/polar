@@ -203,6 +203,8 @@ class DeclarativeConfigService:
         redis: Redis,
         auth_subject: AuthSubject[User | Organization | Agent],
         config: Config,
+        *,
+        publish: bool = True,
     ) -> ConfigApplyResult:
         _assert_section_scopes(auth_subject, config, write=True)
         organization = await self._get_organization(
@@ -216,7 +218,9 @@ class DeclarativeConfigService:
                 OrganizationPermission.organization_manage,
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
-        await CatalogRepository.from_session(session).lock(organization.id)
+        catalog_repository = CatalogRepository.from_session(session)
+        await catalog_repository.lock(organization.id)
+        draft = await catalog_repository.get_draft(organization.id)
         changes, issues = await validation.check(
             session, organization, config, for_update=True
         )
@@ -235,6 +239,8 @@ class DeclarativeConfigService:
             raise ConfigInvalid(errors)
 
         removed_products, removed_benefits = _removed_external_ids(removed)
+        if draft is not None and publish:
+            await catalog_service.discard_draft(session, draft)
         live = await catalog_service.get_or_create_live(session, organization)
         _, version_hash = await catalog_service.get_next_version_hash(
             session,
@@ -254,7 +260,13 @@ class DeclarativeConfigService:
             session, organization, changes.meters
         )
         benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
-            session, redis, auth_subject, organization, changes.benefits, meter_ids
+            session,
+            redis,
+            auth_subject,
+            organization,
+            changes.benefits,
+            meter_ids,
+            draft=not publish,
         )
         product_results, new_products = await self._apply_products(
             session,
@@ -263,12 +275,14 @@ class DeclarativeConfigService:
             changes.products,
             meter_ids,
             benefit_ids,
+            draft=not publish,
         )
         catalog: ConfigCatalogChange | None = None
         if new_products or new_benefits or removed:
             assert version_hash is not None
             before = None if live is None else ConfigCatalog.model_validate(live)
-            published = await catalog_service.publish(
+            save = catalog_service.publish if publish else catalog_service.save_draft
+            after = await save(
                 session,
                 organization,
                 live,
@@ -280,9 +294,11 @@ class DeclarativeConfigService:
                 name=config.catalog_name,
             )
             catalog = ConfigCatalogChange(
-                before=before, after=ConfigCatalog.model_validate(published)
+                before=before, after=ConfigCatalog.model_validate(after)
             )
-        await catalogs.carry_over_references(session, changes.products, new_products)
+        elif draft is not None and not publish:
+            await catalog_service.discard_draft(session, draft)
+
         if (
             changes.settings is not None
             and changes.settings.action == ConfigAction.updated
@@ -683,6 +699,8 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
+        *,
+        draft: bool,
     ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Benefit]]:
         repository = BenefitRepository.from_session(session)
         results: list[ConfigResult] = []
@@ -693,7 +711,8 @@ class DeclarativeConfigService:
             if benefit is None or change.update_dict:
                 try:
                     async with session.begin_nested():
-                        if benefit is not None:
+                        # A draft's new row isn't current, so the live one stays.
+                        if benefit is not None and not draft:
                             await repository.update(
                                 benefit, update_dict={"is_current": False}, flush=True
                             )
@@ -711,7 +730,8 @@ class DeclarativeConfigService:
                             declarative_config=True,
                         )
                         update_dict: dict[str, Any] = {
-                            "external_id": change.config.external_id
+                            "external_id": change.config.external_id,
+                            "is_current": not draft,
                         }
                         if change.existing is not None:
                             update_dict["is_tax_applicable"] = (
@@ -722,7 +742,9 @@ class DeclarativeConfigService:
                                 update_dict["user_metadata"] = (
                                     change.existing.user_metadata
                                 )
-                        await repository.update(benefit, update_dict=update_dict)
+                        await repository.update(
+                            benefit, update_dict=update_dict, flush=True
+                        )
                 except IntegrityError as e:
                     if _constraint_name(e) != _BENEFIT_EXTERNAL_ID_INDEX:
                         raise
@@ -746,6 +768,8 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
+        *,
+        draft: bool,
     ) -> tuple[list[ConfigResult], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
@@ -763,7 +787,7 @@ class DeclarativeConfigService:
                 if product is None or copy_on_write:
                     try:
                         async with session.begin_nested():
-                            if product is not None:
+                            if product is not None and not draft:
                                 await repository.update(
                                     product,
                                     update_dict={"is_current": False},
@@ -786,7 +810,12 @@ class DeclarativeConfigService:
                                     change.existing, product
                                 )
                             await repository.update(
-                                product, update_dict={"external_id": config.external_id}
+                                product,
+                                update_dict={
+                                    "external_id": config.external_id,
+                                    "is_current": not draft,
+                                },
+                                flush=True,
                             )
                     except IntegrityError as e:
                         if _constraint_name(e) != _PRODUCT_EXTERNAL_ID_INDEX:

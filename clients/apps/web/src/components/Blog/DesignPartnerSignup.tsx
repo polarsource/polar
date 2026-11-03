@@ -24,8 +24,8 @@ export const DesignPartnerSignup = () => (
           direct line to our team as we iterate together.
         </Text>
         <Text as="p" variant="body" color="muted">
-          We review every application and will reach out if it looks like a
-          good fit.
+          We review every application and will reach out if it looks like a good
+          fit.
         </Text>
       </Box>
     </Box>

@@ -296,7 +296,12 @@ class DeclarativeConfigService:
             catalog = ConfigCatalogChange(
                 before=before, after=ConfigCatalog.model_validate(after)
             )
-        elif draft is not None and not publish:
+        elif (
+            draft is not None
+            and not publish
+            and {"products", "benefits"} & config.model_fields_set
+        ):
+            # The config describes the catalog and matches live: no draft left.
             await catalog_service.discard_draft(session, draft)
 
         if (

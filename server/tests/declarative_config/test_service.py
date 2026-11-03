@@ -4373,6 +4373,34 @@ class TestCatalogDrafts:
         await session.refresh(live)
         assert live.status == CatalogStatus.archived
 
+    async def test_apply_without_catalog_sections_keeps_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+            publish=False,
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
+            publish=False,
+        )
+
+        assert (
+            await CatalogRepository.from_session(session).get_draft(organization.id)
+            is not None
+        )
+
     async def test_publish_discards_the_draft(
         self,
         session: AsyncSession,

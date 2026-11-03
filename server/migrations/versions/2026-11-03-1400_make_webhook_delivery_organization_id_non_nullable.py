@@ -24,18 +24,11 @@ def upgrade() -> None:
     # Instead, validate a NOT VALID check constraint, which only takes
     # SHARE UPDATE EXCLUSIVE and doesn't block reads or writes. SET NOT NULL
     # then trusts the validated constraint and skips the scan.
+    # Autocommit releases the ACCESS EXCLUSIVE lock taken by ADD CONSTRAINT
+    # before VALIDATE scans the table; one transaction would hold it throughout.
     with op.get_context().autocommit_block():
         try:
             op.execute("SET lock_timeout = '5s'")
-            op.execute(
-                """
-                UPDATE webhook_deliveries
-                SET organization_id = webhook_endpoints.organization_id
-                FROM webhook_endpoints
-                WHERE webhook_deliveries.webhook_endpoint_id = webhook_endpoints.id
-                AND webhook_deliveries.organization_id IS NULL
-                """
-            )
             op.execute(
                 f"ALTER TABLE webhook_deliveries "
                 f"DROP CONSTRAINT IF EXISTS {CHECK_CONSTRAINT_NAME}"

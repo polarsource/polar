@@ -6677,30 +6677,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/wallets/{id}/top-up': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Top-Up Wallet
-     * @description Top-up a wallet by adding funds to its balance.
-     *
-     *     The customer should have a valid payment method on file.
-     *
-     *     **Scopes**: `wallets:write`
-     */
-    post: operations['wallets:top_up']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/payout-accounts/': {
     parameters: {
       query?: never
@@ -27749,17 +27725,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** MissingPaymentMethodError */
-    MissingPaymentMethodError: {
-      /**
-       * Error
-       * @example MissingPaymentMethodError
-       * @constant
-       */
-      error: 'MissingPaymentMethodError'
-      /** Detail */
-      detail: string
-    }
     /** MissingStripeScopes */
     MissingStripeScopes: {
       /**
@@ -32789,17 +32754,6 @@ export interface components {
        * @constant
        */
       error: 'PaymentFailed'
-      /** Detail */
-      detail: string
-    }
-    /** PaymentIntentFailedError */
-    PaymentIntentFailedError: {
-      /**
-       * Error
-       * @example PaymentIntentFailedError
-       * @constant
-       */
-      error: 'PaymentIntentFailedError'
       /** Detail */
       detail: string
     }
@@ -40720,7 +40674,7 @@ export interface components {
      * Wallet
      * @description A wallet represents a customer's balance in your organization.
      *
-     *     They can top-up their wallet, and use the balance to pay for usage.
+     *     The balance can be used to pay for usage.
      */
     Wallet: {
       /**
@@ -40766,23 +40720,6 @@ export interface components {
      * @enum {string}
      */
     WalletSortProperty: 'created_at' | '-created_at' | 'balance' | '-balance'
-    /**
-     * WalletTopUpCreate
-     * @description Request schema to top-up a wallet.
-     */
-    WalletTopUpCreate: {
-      /**
-       * Amount
-       * @description The amount to top-up the wallet by, in cents.
-       * @example 2000
-       */
-      amount: number
-      /**
-       * Currency
-       * @description The currency. Currently, only `usd` is supported. It should match the wallet's currency.
-       */
-      currency: string
-    }
     /**
      * WalletType
      * @enum {string}
@@ -63645,76 +63582,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Wallet']
-        }
-      }
-      /** @description Wallet not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'wallets:top_up': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The wallet ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['WalletTopUpCreate']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Wallet']
-        }
-      }
-      /** @description Wallet topped up successfully. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description The payment request failed. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['PaymentIntentFailedError']
-        }
-      }
-      /** @description No payment method available. */
-      402: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MissingPaymentMethodError']
         }
       }
       /** @description Wallet not found. */

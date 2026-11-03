@@ -6,18 +6,12 @@ from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Wallet
 from polar.openapi import APITag
-from polar.postgres import (
-    AsyncReadSession,
-    AsyncSession,
-    get_db_read_session,
-    get_db_session,
-)
+from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.routing import APIRouter
 
 from . import auth, sorting
 from .schemas import Wallet as WalletSchema
-from .schemas import WalletID, WalletListParams, WalletNotFound, WalletTopUpCreate
-from .service import MissingPaymentMethodError, PaymentIntentFailedError
+from .schemas import WalletID, WalletListParams, WalletNotFound
 from .service import wallet as wallet_service
 
 router = APIRouter(prefix="/wallets", tags=["wallets", APITag.private])
@@ -66,43 +60,5 @@ async def get(
 
     if wallet is None:
         raise ResourceNotFound()
-
-    return wallet
-
-
-@router.post(
-    "/{id}/top-up",
-    summary="Top-Up Wallet",
-    response_model=WalletSchema,
-    responses={
-        201: {"description": "Wallet topped up successfully."},
-        400: {
-            "description": "The payment request failed.",
-            "model": PaymentIntentFailedError.schema(),
-        },
-        404: WalletNotFound,
-        402: {
-            "description": "No payment method available.",
-            "model": MissingPaymentMethodError.schema(),
-        },
-    },
-)
-async def top_up(
-    id: WalletID,
-    top_up_create: WalletTopUpCreate,
-    auth_subject: auth.WalletsWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> Wallet:
-    """
-    Top-up a wallet by adding funds to its balance.
-
-    The customer should have a valid payment method on file.
-    """
-    wallet = await wallet_service.get(session, auth_subject, id)
-
-    if wallet is None:
-        raise ResourceNotFound()
-
-    await wallet_service.top_up(session, wallet, top_up_create.amount)
 
     return wallet

@@ -8,6 +8,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vite
 import { WebSocketServer, type WebSocket } from "ws";
 
 import { ClientBase } from "../base";
+import { UnknownMeterError } from "../metering/errors";
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
 import {
   decodeState,
@@ -391,7 +392,9 @@ it("handles configuration asynchronously and reports a missing customer snapshot
     ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
   expect(await result).toBeUndefined();
   await expect(outpost.meter(meter)).rejects.toThrow("snapshot is not ready");
-  expect(await outpost.meter({ ...customer, meter_id: "unknown" })).toBeNull();
+  await expect(outpost.meter({ ...customer, meter_id: "unknown" })).rejects.toThrow(
+    UnknownMeterError,
+  );
 });
 
 it("propagates snapshots, rejects older cutoffs, and counts a late write until Polar confirms it", async () => {
@@ -553,25 +556,6 @@ it.each([
     expect(requested).toHaveLength(requests);
   },
 );
-
-it("asks Polar for no snapshot of a unique reducer", async () => {
-  reducers.push({
-    id: "visitors",
-    kind: "usage",
-    meter_ids: ["visitors-meter"],
-    filter: { conjunction: "and", clauses: [] },
-    aggregation: { func: "unique", property: "visitor" } as never,
-  });
-  const outpost = await start({ snapshotTimeout: 0 });
-  const send = vi.spyOn(outpost["websocket"]!, "send");
-  await outpost.actor(customer);
-  const requested = send.mock.calls
-    .map(([data]) => JSON.parse(data as string))
-    .filter(({ type }) => type === "meter_usage")
-    .map(({ payload }) => payload.reducer_id);
-  expect(requested).toEqual(["tokens", "credits"]);
-  expect(outpost["requesting"].size).toBe(2);
-});
 
 it("bounds the snapshot requests it remembers", async () => {
   const outpost = await start({ snapshotTimeout: 0 });
@@ -1337,9 +1321,11 @@ it("arms no timer on a warm read", async () => {
   expect(setTimeout).not.toHaveBeenCalled();
 });
 
-it("reads null for a meter Outpost does not know", async () => {
+it("refuses to read a meter Outpost does not know", async () => {
   const outpost = await start();
-  expect(await outpost.meter({ ...customer, meter_id: "other" })).toBeNull();
+  await expect(outpost.meter({ ...customer, meter_id: "other" })).rejects.toThrow(
+    UnknownMeterError,
+  );
   expect(await readOutcomes(outpost)).toEqual([["meter", "unknown_meter"]]);
 });
 

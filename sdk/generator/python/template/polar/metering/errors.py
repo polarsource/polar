@@ -14,6 +14,10 @@ class InvalidActorError(MeteringError):
     """Raised when customer or member identifiers are inconsistent."""
 
 
+class UnknownMeterError(MeteringError):
+    """Raised when a strategy cannot read the meter."""
+
+
 DropReason = typing.Literal[
     "retry_exhausted", "shutdown_timeout", "permanent_error", "worker_error"
 ]

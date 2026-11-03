@@ -20,6 +20,7 @@ from polar.metering.errors import (
     MeteringDeliveryError,
     MeteringError,
     MeteringTimeoutError,
+    UnknownMeterError,
     validate_timeout,
 )
 from polar.metering.events import (
@@ -393,11 +394,14 @@ class Metering:
         _validate_actor(customer_id, None, external_customer_id, None)
         for strategy in self.strategies:
             if isinstance(strategy, MeterProtocol):
-                return await strategy.meter(
-                    meter_id=meter_id,
-                    customer_id=customer_id,
-                    external_customer_id=external_customer_id,
-                )
+                try:
+                    return await strategy.meter(
+                        meter_id=meter_id,
+                        customer_id=customer_id,
+                        external_customer_id=external_customer_id,
+                    )
+                except UnknownMeterError:
+                    pass
         request = self._client.build_request(
             method="GET",
             url="/v1/customer-meters/",
@@ -527,4 +531,5 @@ __all__ = [
     "MeteringOutpostOptions",
     "MeteringStrategyProtocol",
     "MeteringTimeoutError",
+    "UnknownMeterError",
 ]

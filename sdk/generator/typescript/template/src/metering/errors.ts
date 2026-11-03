@@ -4,6 +4,7 @@ import { PolarError } from "../base";
 
 export class MeteringError extends PolarError {}
 export class InvalidActorError extends MeteringError {}
+export class UnknownMeterError extends MeteringError {}
 
 export type DropReason =
   | "retry_exhausted"

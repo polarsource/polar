@@ -4,6 +4,7 @@ export {
   InvalidActorError,
   MeteringDeliveryError,
   MeteringTimeoutError,
+  UnknownMeterError,
 } from "./errors";
 export type { DeliveryOptions, DeliveryFailure } from "./errors";
 export type {

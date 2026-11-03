@@ -17,6 +17,7 @@ import {
   MeteringError,
   InvalidActorError,
   MeteringTimeoutError,
+  UnknownMeterError,
   deliveryTimeout,
   waitForDelivery,
   type DeliveryOptions,
@@ -26,6 +27,7 @@ export {
   InvalidActorError,
   MeteringDeliveryError,
   MeteringTimeoutError,
+  UnknownMeterError,
 } from "./errors";
 
 /** Exactly one customer identity, with an optional member of the same identifier kind. */
@@ -221,7 +223,12 @@ export class Metering {
     try {
       await starting;
       for (const strategy of this.strategies) {
-        if (strategy.meter) return await strategy.meter({ ...input, meter_id: meterId });
+        if (!strategy.meter) continue;
+        try {
+          return await strategy.meter({ ...input, meter_id: meterId });
+        } catch (error) {
+          if (!(error instanceof UnknownMeterError)) throw error;
+        }
       }
       const request = this.client.buildRequest(
         "GET",

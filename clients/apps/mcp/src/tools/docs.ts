@@ -22,6 +22,7 @@ export const registerDocsTools = Effect.fn('registerDocsTools')(function* (
         ...intentField,
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
+        title: 'Search the Polar docs',
         readOnlyHint: true,
         destructiveHint: false,
         openWorldHint: false,
@@ -42,6 +43,7 @@ export const registerDocsTools = Effect.fn('registerDocsTools')(function* (
         ...intentField,
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
+        title: 'Read a Polar docs page',
         readOnlyHint: true,
         destructiveHint: false,
         openWorldHint: false,

@@ -65,6 +65,7 @@ export const registerSearchTool = Effect.fn('registerSearchTool')(function* (
         ...intentField,
       }).pipe(Schema.toStandardSchemaV1, Schema.toStandardJSONSchemaV1),
       annotations: {
+        title: 'Search the Polar API',
         readOnlyHint: true,
         openWorldHint: false,
       },

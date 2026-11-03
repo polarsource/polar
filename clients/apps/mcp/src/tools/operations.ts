@@ -35,6 +35,7 @@ const operationTools = (generatedTools as unknown as OperationTool[]).map(
     definition: tool,
     inputSchema: fromJsonSchema<Arguments>(withIntent(tool.inputSchema)),
     annotations: {
+      title: tool.title,
       readOnlyHint: tool.annotations.includes('read_only'),
       destructiveHint: tool.annotations.includes('destructive'),
       idempotentHint: tool.annotations.includes('idempotent'),

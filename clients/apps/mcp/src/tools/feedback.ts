@@ -66,6 +66,7 @@ export const registerFeedbackTool = Effect.fn('registerFeedbackTool')(
           Schema.toStandardJSONSchemaV1,
         ),
         annotations: {
+          title: 'Send feedback to Polar',
           readOnlyHint: false,
           destructiveHint: false,
           idempotentHint: false,

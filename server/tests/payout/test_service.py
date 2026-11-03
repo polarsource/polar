@@ -22,7 +22,11 @@ from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.utils import utc_now
 from polar.locker import Locker
 from polar.models import Account, Organization, Payout, Transaction, User
-from polar.models.organization import OrganizationStatus, PayoutAccountNotReady
+from polar.models.organization import (
+    STATUS_CAPABILITIES,
+    OrganizationStatus,
+    PayoutAccountNotReady,
+)
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.transaction import Processor, TransactionType
@@ -37,6 +41,7 @@ from polar.payout.service import (
     PayoutHeld,
     PayoutIntervalLimitReached,
     PayoutNotCancelable,
+    PayoutNotHeld,
     PayoutNotManual,
     PayoutNotPending,
     PayoutNotSucceeded,
@@ -85,7 +90,7 @@ create_balance_transaction = partial(
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.parametrize(
         ("currency", "country", "balance"),
@@ -177,7 +182,7 @@ class TestCreate:
     ) -> None:
         # Bypass set_status's transition validation to seed any starting status.
         organization.status = status
-        organization.set_status(status)
+        organization.capabilities = {**STATUS_CAPABILITIES[status]}
         await save_fixture(organization)
 
         payout_account = await create_payout_account(save_fixture, organization, user)
@@ -220,7 +225,7 @@ class TestCreate:
         enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
 
         organization.status = status
-        organization.set_status(status)
+        organization.capabilities = {**STATUS_CAPABILITIES[status]}
         await save_fixture(organization)
 
         await create_payout_account(save_fixture, organization, user)
@@ -545,7 +550,7 @@ class TestCreate:
         assert payout.invoice_number == f"{settings.PAYOUT_INVOICES_PREFIX}0003"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEstimate:
     async def test_regular_currency(
         self,
@@ -572,7 +577,7 @@ class TestEstimate:
         assert estimate.net_amount == 12345
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerStripePayouts:
     async def test_valid(
         self,
@@ -651,7 +656,7 @@ class TestTriggerStripePayouts:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerStripePayout:
     async def test_canceled_raises(
         self,
@@ -709,7 +714,7 @@ class TestTriggerStripePayout:
         stripe_service_mock.create_payout.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkManualAsPaid:
     async def test_valid(
         self,
@@ -789,7 +794,7 @@ class TestMarkManualAsPaid:
             await payout_service.mark_manual_as_paid(session, payout)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTransfer:
     @pytest.mark.parametrize(
         "status",
@@ -1057,7 +1062,7 @@ class TestTransfer:
         assert updated_transaction.transfer_id == "STRIPE_TRANSFER_ID"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTransferStripe:
     @pytest.mark.parametrize(
         ("account_currency", "stripe_amount", "expected_amount"),
@@ -1181,7 +1186,7 @@ async def _get_csv_rows(session: AsyncSession, payout: Payout) -> list[dict[str,
     return list(csv.DictReader(io.StringIO(content)))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCSV:
     @pytest.mark.parametrize(
         ("account_currency", "stripe_amount", "expected_total"),
@@ -1279,7 +1284,7 @@ class TestGetCSV:
         assert float(rows[0]["Account Payout Total"]) == 9.0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancel:
     @pytest.mark.parametrize(
         "attempt_status",
@@ -1398,7 +1403,7 @@ class TestCancel:
         assert payout_reversal_transaction.transfer_reversal_id == "STRIPE_REVERSAL_ID"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerInvoiceGeneration:
     async def test_invoice_already_exists(
         self,
@@ -1585,7 +1590,7 @@ class TestTriggerInvoiceGeneration:
         enqueue_job_mock.assert_called_once_with("payout.invoice", payout_id=payout.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReleaseHeldPayouts:
     async def test_valid(
         self,
@@ -1667,7 +1672,82 @@ class TestReleaseHeldPayouts:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
+class TestReleaseHeldPayout:
+    async def test_releases_only_the_given_payout(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        await save_fixture(organization)
+        enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        held = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+        other_held = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+
+        released = await payout_service.release_held_payout(session, held)
+
+        assert released.status == PayoutStatus.pending
+        enqueue_job_mock.assert_called_once_with("payout.transfer", payout_id=held.id)
+
+        repository = PayoutRepository.from_session(session)
+        refreshed_other = await repository.get_by_id(other_held.id)
+        assert refreshed_other is not None
+        assert refreshed_other.status == PayoutStatus.held
+
+        await session.refresh(organization, attribute_names=["status"])
+        assert organization.status == OrganizationStatus.REVIEW
+
+    async def test_second_release_is_rejected(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        held = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
+        )
+
+        await payout_service.release_held_payout(session, held)
+
+        with pytest.raises(PayoutNotHeld):
+            await payout_service.release_held_payout(session, held)
+
+        enqueue_job_mock.assert_called_once_with("payout.transfer", payout_id=held.id)
+
+
+@pytest.mark.anyio
 class TestCancelAccountPayouts:
     async def test_cancels_held_and_pending(
         self,
@@ -1844,7 +1924,7 @@ class TestCancelAccountPayouts:
         assert refreshed_fresh.status == PayoutStatus.held
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelHeldPayout:
     async def test_held_is_cancelable_and_reverses_fees(
         self,
@@ -1949,7 +2029,7 @@ class TestCancelHeldPayout:
             await payout_service.cancel(session, payout)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCountByPayoutAccount:
     async def test_excludes_canceled(
         self,

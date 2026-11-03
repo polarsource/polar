@@ -31,7 +31,7 @@ async def _create_feedback(
     return feedback
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetTypeCounts:
     async def test_counts_grouped_by_type_for_status(
         self,

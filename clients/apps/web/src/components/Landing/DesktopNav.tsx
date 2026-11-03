@@ -5,10 +5,10 @@ import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { useModal } from '@/components/Modal/useModal'
 import { usePostHog } from '@/hooks/posthog'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { ArrowOutwardOutlined } from '@polar-sh/orbit/icons'
 import { Button, Grid, Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { motion } from 'motion/react'
+import { m } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
@@ -60,10 +60,8 @@ export const LandingPageDesktopNavigation = () => {
         justifyContent="between"
       >
         <Box alignItems="center" columnGap="2xl">
-          <Link href="/">
-            <PolarLogotype logoVariant="icon" size={36} />
-          </Link>
-          <Box as="ul" alignItems="center" columnGap="xl">
+          <PolarLogotype logoVariant="icon" size={28} href="/" />
+          <Box as="ul" alignItems="center" columnGap="l">
             {navMenus.map((menu) => (
               <Fragment key={menu.id}>
                 <Box as="li">
@@ -168,7 +166,7 @@ const NavMenuPanel = ({
     paddingBottom="3xl"
     paddingHorizontal="3xl"
   >
-    <motion.div
+    <m.div
       style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
@@ -180,11 +178,11 @@ const NavMenuPanel = ({
         templateColumns="repeat(2, 1fr)"
         gap="l"
       >
-        <Box flexDirection="column" alignItems="start" rowGap="xl">
+        <Box flexDirection="column" alignItems="start" rowGap="l">
           <Text variant="body" color="muted">
             {menu.featured.title}
           </Text>
-          <Box flexDirection="column" alignItems="start" rowGap="l">
+          <Box flexDirection="column" alignItems="start" rowGap="m">
             {menu.featured.items.map((item) => (
               <PanelLink
                 key={item.href + item.label}
@@ -201,12 +199,12 @@ const NavMenuPanel = ({
               key={section.title}
               flexDirection="column"
               alignItems="start"
-              rowGap="xl"
+              rowGap="l"
             >
               <Text variant="body" color="muted">
                 {section.title}
               </Text>
-              <Box as="ul" flexDirection="column" alignItems="start" rowGap="m">
+              <Box as="ul" flexDirection="column" alignItems="start" rowGap="s">
                 {section.items.map((item) => (
                   <Box as="li" key={item.href + item.label}>
                     <PanelLink item={item} onNavigate={onNavigate} />
@@ -217,7 +215,7 @@ const NavMenuPanel = ({
           ))}
         </Grid>
       </Grid>
-    </motion.div>
+    </m.div>
   </Box>
 )
 

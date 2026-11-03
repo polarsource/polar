@@ -7,6 +7,7 @@ from pydantic import Field, computed_field
 
 from polar.enums import PayoutAccountType
 from polar.kit.schemas import Schema
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 
 if TYPE_CHECKING:
     from pydantic_ai.usage import RunUsage as Usage
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
 class ActorType(StrEnum):
     AGENT = "agent"
     HUMAN = "human"
+    STRIPE = "stripe"
 
 
 class DecisionType(StrEnum):
@@ -314,6 +316,8 @@ class PaymentMetrics(Schema):
     refund_amount_cents: int = 0
     dispute_count: int = 0
     dispute_amount_cents: int = 0
+    chargeback_stop_count: int = 0
+    chargeback_stop_amount_cents: int = 0
 
 
 class PriorOrganization(Schema):
@@ -338,6 +342,10 @@ class UrlRedirectInfo(Schema):
     original_url: str
     final_url: str | None = None
     final_domain: str | None = None
+    hops: list[str] = Field(
+        default_factory=list,
+        description="URLs visited between the original and final URL.",
+    )
     redirected: bool = False
     error: str | None = None
 
@@ -396,6 +404,14 @@ class SetupData(Schema):
             "matches the declared host, is a known service, or no webhooks exist."
         ),
     )
+    checkout_url_hosts: list[WebsiteData] = Field(
+        default_factory=list,
+        description=(
+            "Summaries of the public sites on the hosts of checkout success and "
+            "return URLs, and of where they redirect to, when those hosts differ "
+            "from the declared website host and are not known services."
+        ),
+    )
 
 
 class WebsitePage(Schema):
@@ -432,7 +448,7 @@ class PriorFeedbackEntry(Schema):
     """A single prior review decision for the organization."""
 
     actor_type: str = Field(
-        description="Who made this decision: 'agent' (automated) or 'human' (backoffice reviewer)"
+        description="Who made this decision: 'agent' (automated), 'human' (backoffice reviewer) or 'stripe' (Stripe risk signal)"
     )
     decision: str = Field(
         description="Action taken by the actor: 'APPROVE', 'DENY', or 'ESCALATE'"
@@ -474,21 +490,17 @@ class PriorFeedbackData(Schema):
 
 
 class RiskSignalEntry(Schema):
-    """A single external risk signal recorded against the organization."""
+    """A single risk signal recorded against the organization."""
 
-    source: str = Field(description="Where the signal came from, e.g. 'stripe'")
-    type: str = Field(
-        description="Signal type, e.g. fraudulent_website or fraudulent_merchant"
-    )
-    risk_level: str = Field(
-        description="Severity reported by the source, e.g. 'elevated' or 'highest'"
-    )
+    source: OrganizationRiskSignal.Source
+    type: OrganizationRiskSignal.Type
+    risk_level: OrganizationRiskSignal.RiskLevel
     description: str | None = None
     created_at: datetime
 
 
 class RiskSignalData(Schema):
-    """External risk signals recorded against the organization."""
+    """Risk signals recorded against the organization."""
 
     entries: list[RiskSignalEntry] = Field(default_factory=list)
 
@@ -507,6 +519,10 @@ class DataSnapshot(Schema):
     website: WebsiteData | None = None
     prior_feedback: PriorFeedbackData = Field(default_factory=PriorFeedbackData)
     risk_signals: RiskSignalData = Field(default_factory=RiskSignalData)
+    verified_domains: list[str] = Field(
+        default_factory=list,
+        description="Domains the organization proved it controls via DNS TXT.",
+    )
     appeal_reason: str | None = None
     original_denial_reason: str | None = None
     collected_at: datetime

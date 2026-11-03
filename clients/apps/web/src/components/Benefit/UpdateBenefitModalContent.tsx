@@ -10,7 +10,7 @@ import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { UpdateBenefitForm } from '../Benefit/BenefitForm'
 import { isBenefitVisibilityConfigurable } from '../Benefit/utils'
 import { ConfirmModal } from '../Modal/ConfirmModal'
@@ -58,7 +58,7 @@ const UpdateBenefitModalContent = ({
     null,
   )
 
-  const { isDirty } = form.formState
+  const { isDirty } = useFormState({ control: form.control })
   useEffect(() => {
     onDirtyChange?.(isDirty || isUploading)
   }, [isDirty, isUploading, onDirtyChange])

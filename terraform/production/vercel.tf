@@ -26,7 +26,7 @@ module "vercel" {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
         type    = "A"
         content = "216.150.1.1"
-        ttl     = 600
+        proxied = true
       }
     },
     {
@@ -36,7 +36,7 @@ module "vercel" {
       dns = {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
         content = "582a8a8790ca4ebf.vercel-dns-016.com"
-        ttl     = 600
+        proxied = true
       }
     },
     {
@@ -44,7 +44,7 @@ module "vercel" {
       dns = {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
         content = "582a8a8790ca4ebf.vercel-dns-016.com"
-        ttl     = 600
+        proxied = true
       }
     },
     {
@@ -82,7 +82,6 @@ module "vercel" {
     mintlify_assistant_api_key  = var.mintlify_assistant_api_key
     gram_api_key                = var.gram_api_key
     sentry_auth_token           = var.sentry_auth_token
-    polar_preview_access_token  = var.polar_preview_access_token
   }
 
   # Environment-specific or target-varies-by-env.
@@ -92,13 +91,14 @@ module "vercel" {
     { key = "NEXT_PUBLIC_PRODUCT_LINK_BASE_URL", value = "https://buy.polar.sh/", target = ["production"] },
     { key = "NEXT_PUBLIC_POSTHOG_HOST", value = "https://polar.sh/ingest" },
     { key = "NEXT_PUBLIC_SENTRY_ENABLED", value = "true" },
-    { key = "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID", value = "G-MBYW1QZFHE" },
+    { key = "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID", value = "G-MBYW1QZFHE", target = ["production"] },
     { key = "NEXT_PUBLIC_GITHUB_INSTALLATION_URL", value = "https://github.com/apps/polar-sh/installations/new" },
     { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key },
     { key = "MCP_OAUTH2_CLIENT_ID", value = var.mcp_oauth2_client_id, target = ["production", "preview"] },
     { key = "MCP_OAUTH2_CLIENT_SECRET", value = var.mcp_oauth2_client_secret, target = ["production", "preview"] },
     { key = "ATTIO_API_KEY", value = var.attio_api_key, target = ["production", "preview"], sensitive = true },
     { key = "ATTIO_STARTUP_LIST_ID", value = var.attio_startup_list_id, target = ["production", "preview"], sensitive = true },
+    { key = "ATTIO_DESIGN_PARTNER_LIST_ID", value = var.attio_design_partner_list_id, target = ["production", "preview"], sensitive = true },
   ]
 }
 

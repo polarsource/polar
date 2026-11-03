@@ -9,8 +9,6 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.models.product_price import (
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -96,9 +94,9 @@ class OrderItem(RecordModel):
         units: int | None = None,
         label: str | None = None,
     ) -> Self:
-        if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
+        if isinstance(price, ProductPriceFixed):
             amount = price.price_amount
-        elif isinstance(price, ProductPriceCustom | LegacyRecurringProductPriceCustom):
+        elif isinstance(price, ProductPriceCustom):
             assert amount is not None, "amount must be provided for custom prices"
         elif isinstance(price, ProductPriceSeatUnit):
             assert seats is not None, "seats must be provided for seat-based prices"

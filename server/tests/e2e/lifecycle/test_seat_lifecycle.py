@@ -34,7 +34,7 @@ from tests.e2e.lifecycle.conftest import (
 from tests.e2e.purchase.conftest import complete_purchase
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSeatSubscriptionLifecycle:
     @E2E_AUTH
     async def test_upgrade_renew_downgrade_renew(

@@ -26,7 +26,7 @@ async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
     yield session
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIdentityVerificationSessionVerifiedTask:
     async def test_no_ops_and_marks_handled_for_deleted_user(
         self,

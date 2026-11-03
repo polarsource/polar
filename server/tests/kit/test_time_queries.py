@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_day_series_stays_on_local_midnight_across_dst_gap(
     session: AsyncSession,
 ) -> None:
@@ -30,7 +30,7 @@ async def test_day_series_stays_on_local_midnight_across_dst_gap(
     assert all(ts.hour == 0 for ts in timestamps if ts.date() != date(2026, 9, 6))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_hour_series_steps_through_dst_gap_without_duplicates(
     session: AsyncSession,
 ) -> None:

@@ -10,6 +10,7 @@ from polar.base import (
     parse_response_none,
 )
 from polar.v2027_01.errors import (
+    AmbiguousExternalWebhookEndpointID,
     HTTPValidationError,
     ResourceNotFound,
 )
@@ -154,6 +155,50 @@ class WebhooksSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, WebhookEndpoint, method_errors)
+
+    def get_external_webhook_endpoint(
+        self,
+        external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> WebhookEndpoint:
+        """
+        Get a webhook endpoint by external ID.
+
+        **Scopes**: `webhooks:read` `webhooks:write`
+
+        Args:
+            external_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            ResourceNotFound: Webhook endpoint not found.
+            AmbiguousExternalWebhookEndpointID: The external ID matches webhook endpoints in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/webhooks/endpoints/external/{external_id}",
+            path_params={
+                "external_id": external_id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            409: AmbiguousExternalWebhookEndpointID,
             422: HTTPValidationError,
         }
         return parse_response_json(response, WebhookEndpoint, method_errors)
@@ -629,6 +674,50 @@ class WebhooksAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, WebhookEndpoint, method_errors)
+
+    async def get_external_webhook_endpoint(
+        self,
+        external_id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> WebhookEndpoint:
+        """
+        Get a webhook endpoint by external ID.
+
+        **Scopes**: `webhooks:read` `webhooks:write`
+
+        Args:
+            external_id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            ResourceNotFound: Webhook endpoint not found.
+            AmbiguousExternalWebhookEndpointID: The external ID matches webhook endpoints in several accessible organizations.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/webhooks/endpoints/external/{external_id}",
+            path_params={
+                "external_id": external_id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            409: AmbiguousExternalWebhookEndpointID,
             422: HTTPValidationError,
         }
         return parse_response_json(response, WebhookEndpoint, method_errors)

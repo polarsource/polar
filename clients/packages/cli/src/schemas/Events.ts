@@ -19,9 +19,3 @@ export const ListenWebhookEvent = Schema.Struct({
   }),
   headers: Schema.Record(Schema.String, Schema.String),
 })
-
-export const ListenEvent = Schema.Union([
-  ListenAck,
-  ListenReconnect,
-  ListenWebhookEvent,
-])

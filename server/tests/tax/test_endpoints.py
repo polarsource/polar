@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
@@ -45,7 +44,7 @@ async def create_tax_transaction(
     return transaction
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def tax_transactions(
     save_fixture: SaveFixture,
     product: Product,
@@ -109,7 +108,7 @@ async def tax_transactions(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListTaxJurisdictions:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/taxes/jurisdictions")
@@ -165,7 +164,7 @@ class TestListTaxJurisdictions:
         assert [item["id"] for item in json["items"]] == ["GB", "US-CA", "US-NY"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetTaxSummary:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/taxes/summary")

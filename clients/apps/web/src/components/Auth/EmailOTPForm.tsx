@@ -23,6 +23,7 @@ interface EmailOTPFormProps {
   authenticationSession: schemas['AuthenticationSession'] | null
   returnTo?: string
   signup?: boolean
+  onCodeSent?: (email: string) => void
 }
 
 const TURNSTILE_ACTION = 'turnstile-spin-v2'
@@ -31,6 +32,7 @@ const EmailOTPForm = ({
   authenticationSession,
   returnTo,
   signup,
+  onCodeSent,
 }: EmailOTPFormProps) => {
   const form = useForm<{ email: string }>({
     defaultValues: {
@@ -92,6 +94,10 @@ const EmailOTPForm = ({
         return
       }
 
+      if (onCodeSent) {
+        onCodeSent(email)
+        return
+      }
       const urlSearchParams = new URLSearchParams({
         email,
         intent: signup ? 'signup' : 'login',

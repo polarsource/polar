@@ -4,7 +4,6 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.integrations.tinybird.client import TinybirdClient
@@ -17,7 +16,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def event_organization_second(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -25,9 +24,15 @@ async def event_organization_second(
     return await create_event(save_fixture, organization=organization_second)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListEvents:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/")
 
         assert response.status_code == 401
@@ -365,7 +370,7 @@ class TestListEvents:
         assert items[2]["id"] == str(child2.id)  # 1 hour ago
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIngest:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/events/ingest", json={"events": []})
@@ -393,46 +398,6 @@ class TestIngest:
         assert response.status_code == 200
         json = response.json()
         assert json == {"inserted": len(events), "duplicates": 0}
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_sequence_header(self, client: AsyncClient) -> None:
-        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
-
-        first = await client.post("/v1/events/ingest", json={"events": events})
-        second = await client.post("/v1/events/ingest", json={"events": events})
-
-        assert first.headers["Polar-Ingest-Sequence"] == "1"
-        assert second.headers["Polar-Ingest-Sequence"] == "2"
-
-    @pytest.mark.auth
-    async def test_no_sequence_header_across_organizations(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        organization_second: Organization,
-    ) -> None:
-        await save_fixture(
-            UserOrganization(
-                user=user_organization.user, organization=organization_second
-            )
-        )
-        events = [
-            {
-                "name": "event1",
-                "external_customer_id": "CUSTOMER_ID",
-                "organization_id": str(organization_id),
-            }
-            for organization_id in (
-                user_organization.organization_id,
-                organization_second.id,
-            )
-        ]
-
-        response = await client.post("/v1/events/ingest", json={"events": events})
-
-        assert response.status_code == 200
-        assert "Polar-Ingest-Sequence" not in response.headers
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -477,6 +442,18 @@ class TestIngest:
 
         assert response.status_code == 200
 
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_can_ingest_events_without_organization_id(
+        self, client: AsyncClient
+    ) -> None:
+        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
+        assert response.json() == {"inserted": 1, "duplicates": 0}
+
 
 SQLI_PAYLOADS = [
     pytest.param("' OR '1'='1", id="string-breakout"),
@@ -497,7 +474,7 @@ SQLI_PAYLOADS = [
 ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAggregateFieldsValidation:
     """Malicious aggregate_fields values must be rejected with 422 before
     reaching any SQL execution path."""
@@ -557,33 +534,57 @@ class TestAggregateFieldsValidation:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetStatisticsByProperty:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-property")
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-property")
 
-@pytest.mark.asyncio
+        assert response.status_code == 401
+
+
+@pytest.mark.anyio
 class TestGetStatisticsByCustomer:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-customer")
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-customer")
 
-@pytest.mark.asyncio
+        assert response.status_code == 401
+
+
+@pytest.mark.anyio
 class TestGetStatisticsByVariance:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-variance")
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-variance")
 
-@pytest.mark.asyncio
+        assert response.status_code == 401
+
+
+@pytest.mark.anyio
 class TestListStatisticsTimeseries:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/timeseries")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/timeseries")
 
         assert response.status_code == 401
@@ -610,7 +611,7 @@ class TestListStatisticsTimeseries:
         assert "too big" not in msg.lower()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListEventNames:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/names")
@@ -618,9 +619,15 @@ class TestListEventNames:
         assert response.status_code == 401
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetEvent:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/events/{uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/events/{uuid4()}")
 
         assert response.status_code == 401

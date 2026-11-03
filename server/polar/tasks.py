@@ -39,6 +39,7 @@ from polar.payout_account import tasks as payout_account
 from polar.personal_access_token import tasks as personal_access_token
 from polar.processor_transaction import tasks as processor_transaction
 from polar.receipt import tasks as receipt
+from polar.reducer import tasks as reducer
 from polar.refund import tasks as refund
 from polar.subscription import tasks as subscription
 from polar.support_case import tasks as support_case
@@ -84,6 +85,7 @@ __all__ = [
     "polar_self",
     "processor_transaction",
     "receipt",
+    "reducer",
     "refund",
     "resend",
     "slo_report",

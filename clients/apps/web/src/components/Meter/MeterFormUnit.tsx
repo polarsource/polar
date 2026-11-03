@@ -19,12 +19,12 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
-import { InfoIcon } from 'lucide-react'
-import { useFormContext } from 'react-hook-form'
+import { Info as InfoIcon } from '@polar-sh/orbit/icons'
+import { useFormContext, useWatch } from 'react-hook-form'
 
 const MeterFormUnit = () => {
-  const { control, watch } = useFormContext<schemas['MeterCreate']>()
-  const unit = watch('unit')
+  const { control } = useFormContext<schemas['MeterCreate']>()
+  const unit = useWatch({ control, name: 'unit' })
 
   return (
     <>

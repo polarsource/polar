@@ -135,7 +135,7 @@ async def create_sent_log(
     return email_log
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCardsExpiring:
     async def test_returns_card_expiring_in_window(
         self,
@@ -345,7 +345,7 @@ class TestGetCardsExpiring:
         assert [pm.id for pm in result] == [payment_method.id]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDedupRoundTrip:
     async def test_real_send_props_suppress_the_next_scan(
         self,

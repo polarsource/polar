@@ -34,15 +34,16 @@ const source = [
 
 let api: ReturnType<typeof fakeHttp>
 
-const run = (file: string) =>
+const run = (file: string, name?: string) =>
   Effect.runPromise(
     Effect.gen(function* () {
       const clients = {
         sandbox: yield* authenticatedClient('sandbox'),
         production: yield* authenticatedClient('production'),
+        local: yield* authenticatedClient('local'),
       }
       const config = yield* loader(yield* FileSystem.FileSystem)(file)
-      return yield* apply(clients)(config, acme)
+      return yield* apply(clients)(config, acme, { name })
     }).pipe(
       Effect.provide(Layer.mergeAll(BunServices.layer, api.layer)),
       Effect.provideService(Auth, fakeAuth({ environment: 'sandbox' }).auth),
@@ -78,9 +79,9 @@ const failure = (promise: Promise<unknown>) =>
 describe('apply', () => {
   test('posts the config for the organization and reports what happened', async () => {
     api.routes[`POST ${applyUrl}`] = Response.json({
-      meters: [
-        { external_id: 'tool-calls', action: 'created' },
-        { external_id: 'tokens', action: 'updated' },
+      changes: [
+        { resource: 'meter', external_id: 'tool-calls', action: 'created' },
+        { resource: 'product', external_id: 'pro', action: 'updated' },
       ],
     })
 
@@ -93,30 +94,29 @@ describe('apply', () => {
       status: 'applied',
       entries: [
         { section: 'meters', id: 'tool-calls', action: 'created', diff: [] },
-        { section: 'meters', id: 'tokens', action: 'updated', diff: [] },
+        { section: 'products', id: 'pro', action: 'updated', diff: [] },
       ],
     })
   })
 
-  test('names entries of singleton sections after the section', async () => {
-    api.routes[`POST ${applyUrl}`] = Response.json({
-      meters: [],
-      organization: { action: 'updated' },
-    })
+  test('sends the catalog name alongside the config', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
 
-    const result = await run(await write(source))
+    await run(await write(source), 'Spring launch')
 
-    expect(result).toEqual({
-      status: 'applied',
-      entries: [
-        {
-          section: 'organization',
-          id: 'organization',
-          action: 'updated',
-          diff: [],
-        },
-      ],
+    expect(await api.requests[0]?.json()).toEqual({
+      ...JSON.parse(source),
+      catalog_name: 'Spring launch',
     })
+  })
+
+  test('keeps a catalog name from the file when no name is given', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
+    const named = { ...JSON.parse(source), catalog_name: 'From file' }
+
+    await run(await write(JSON.stringify(named)))
+
+    expect(await api.requests[0]?.json()).toEqual(named)
   })
 
   test('maps 422 validation errors onto the file', async () => {
@@ -134,6 +134,10 @@ describe('apply', () => {
             type: 'missing',
             loc: ['body', 'meters', 0, 'name'],
             msg: 'Field required',
+            input: {
+              external_id: 'tool-calls',
+              filter: { conjunction: 'qwe', clauses: [] },
+            },
           },
         ],
       },
@@ -231,10 +235,29 @@ describe('apply', () => {
       { status: 403 },
     )
 
-    const error = await failure(run(await write(source)))
+    const error = await failure(
+      run(await write(JSON.stringify({ meters: [], products: [] }))),
+    )
 
     expect(error.message).toBe('You do not have access to Acme')
-    expect(error.hint).toContain('meters:write')
+    expect(error.hint).toBe(
+      'The token needs the meters:write, products:write scopes.',
+    )
+  })
+
+  test('asks for the webhooks scope when the config declares webhooks', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json(
+      { error: 'NotPermitted', detail: 'Not permitted' },
+      { status: 403 },
+    )
+
+    const error = await failure(
+      run(await write(JSON.stringify({ meters: [], webhooks: [] }))),
+    )
+
+    expect(error.hint).toBe(
+      'The token needs the meters:write, webhooks:write scopes.',
+    )
   })
 
   test('reports other API failures', async () => {

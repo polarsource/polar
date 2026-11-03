@@ -19,7 +19,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch, useFormState } from 'react-hook-form'
 
 interface EditEventTypeModalProps {
   eventTypeId: string
@@ -45,6 +45,7 @@ export const EditEventTypeModal = ({
       label_property_selector: currentLabelPropertySelector || '',
     },
   })
+  const { isSubmitting } = useFormState({ control: form.control })
 
   const onSubmit = useCallback(
     async (data: { label: string; label_property_selector: string }) => {
@@ -150,7 +151,7 @@ export const EditEventTypeModal = ({
                 <Button
                   className="self-start"
                   type="submit"
-                  loading={form.formState.isSubmitting}
+                  loading={isSubmitting}
                 >
                   Save
                 </Button>

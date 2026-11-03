@@ -1,8 +1,9 @@
-import { schemas } from '@polar-sh/client'
 import React from 'react'
 
+export type ProductPriceType = 'one_time' | 'recurring'
+
 interface ProductPriceTypeLabelProps {
-  productPriceType: schemas['ProductPriceType']
+  productPriceType: ProductPriceType
 }
 
 const ProductPriceTypeLabel: React.FC<ProductPriceTypeLabelProps> = ({

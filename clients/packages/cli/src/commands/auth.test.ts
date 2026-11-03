@@ -4,6 +4,7 @@ import { auth as authCommand } from '@/commands/auth'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
+import { TokenHandoff } from '@/services/token-handoff'
 import { keys, runCli, type RunCliOptions } from '@/utils/test-utils/cli'
 import {
   fakeAuth,
@@ -33,6 +34,10 @@ const run = (args: string[], options?: RunCliOptions) => {
     cli.effect.pipe(
       Effect.provideService(Auth, auth.auth),
       Effect.provideService(Organizations, organizations.organizations),
+      Effect.provideService(
+        TokenHandoff,
+        TokenHandoff.of({ receive: () => Effect.die('unused') }),
+      ),
     ),
   )
   return { promise, output: cli.output, terminal: cli.terminal }
@@ -107,7 +112,16 @@ describe('auth login', () => {
   test('rejects both environment flags', async () => {
     const { promise } = run(['login', '--sandbox', '--production'])
 
-    await expect(promise).rejects.toThrow('not both')
+    await expect(promise).rejects.toThrow('Pass only one environment flag')
+  })
+
+  test('signs in to a local stack with --local', async () => {
+    const { promise, output } = run(['login', '--local'])
+    await promise
+
+    expect(output()).toContain(
+      'Opening your browser to sign in to Polar local...',
+    )
   })
 
   test('shows the sign-in link while waiting for the browser', async () => {

@@ -17,7 +17,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_other_customer(
@@ -192,7 +192,7 @@ class TestList:
         assert orders[0].product.name == "Pro_Plan"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetById:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_other_customer(

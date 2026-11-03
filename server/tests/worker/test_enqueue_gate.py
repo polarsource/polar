@@ -60,7 +60,7 @@ def test_resolve_queue_url_falls_back_to_default(mocker: MockerFixture) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFlushGate:
     async def test_disabled_routes_everything_to_redis(
         self, redis: Redis, mocker: MockerFixture
@@ -130,7 +130,7 @@ class TestFlushGate:
         assert await redis.exists(expected_key) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFlushIngestedEventsChunking:
     async def get_low_priority_jobs(self, redis: Redis) -> list[dict[str, Any]]:
         message_ids = await redis.lrange("dramatiq:low_priority", 0, -1)
@@ -171,7 +171,7 @@ class TestFlushIngestedEventsChunking:
         assert await redis.llen("dramatiq:low_priority") == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDiscardOnError:
     async def test_drops_only_what_the_failed_block_enqueued(
         self, redis: Redis

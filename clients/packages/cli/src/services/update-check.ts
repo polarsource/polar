@@ -13,7 +13,7 @@ interface UpdateCheckState {
   latestVersion: string
 }
 
-export interface UpdateCheckOptions {
+interface UpdateCheckOptions {
   home?: string
 }
 

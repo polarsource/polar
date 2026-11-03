@@ -8,10 +8,10 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any, TypeVar
 
-import stripe as stripe_lib
 from pydantic import ValidationError
 
 from polar.enums import TaxBehavior
+from polar.integrations.stripe import stripe_lib
 from polar.kit.address import Address
 from polar.kit.schemas import Schema
 from polar.kit.utils import utc_now
@@ -486,13 +486,18 @@ class StripeAdapter:
             self._client.v1.subscriptions.list_async(params=params),
         )
         records = []
+        pending_owners: set[str] | None = None
         for subscription in subscriptions.data:
             if (
                 subscription.status in SKIPPED_SUBSCRIPTION_STATUSES
                 or not subscription["items"]["data"]
             ):
                 continue
-            records.append(await self._subscription_record(subscription))
+            if pending_owners is None:
+                pending_owners = await self._pending_invoice_item_owners()
+            records.append(
+                await self._subscription_record(subscription, pending_owners)
+            )
         return ExtractionPage(
             records,
             self._next_cursor(
@@ -530,18 +535,56 @@ class StripeAdapter:
             raise
         if not subscription["items"]["data"]:
             return None
-        return await self._subscription_record(subscription, with_latest_invoice=True)
+        pending_owners = await self._pending_invoice_item_owners(
+            self._id_of(subscription.customer)
+        )
+        return await self._subscription_record(
+            subscription, pending_owners, with_latest_invoice=True
+        )
 
     async def _subscription_record(
         self,
         subscription: stripe_lib.Subscription,
+        pending_invoice_item_owners: set[str],
         *,
         with_latest_invoice: bool = False,
     ) -> CanonicalSubscription:
         record = self._map_subscription(
             subscription, with_latest_invoice=with_latest_invoice
         )
+        if {record.source_id, record.customer_source_id} & pending_invoice_item_owners:
+            record = replace(record, has_pending_invoice_items=True)
         return await self._resolve_customer_discount(subscription, record)
+
+    async def _pending_invoice_item_owners(
+        self, customer_id: str | None = None
+    ) -> set[str]:
+        """Subscriptions and customers with charges or credits Stripe hasn't
+        invoiced yet, like a mid-cycle proration. An item not tied to a
+        subscription lands on the customer's next invoice, so it counts for
+        all of their subscriptions."""
+        params: stripe_lib.params.InvoiceItemListParams = {
+            "pending": True,
+            "limit": PAGE_SIZE,
+        }
+        if customer_id is not None:
+            params["customer"] = customer_id
+        owners: set[str] = set()
+        while True:
+            items = await self._request(
+                "Invoices", self._client.v1.invoice_items.list_async(params=params)
+            )
+            owners.update(self._invoice_item_owner(item) for item in items.data)
+            if not items.has_more:
+                return owners
+            params["starting_after"] = items.data[-1].id
+
+    def _invoice_item_owner(self, item: stripe_lib.InvoiceItem) -> str:
+        parent = item.get("parent")
+        details = parent.get("subscription_details") if parent else None
+        if details:
+            return details["subscription"]
+        return self._id_of(item.customer)
 
     async def _resolve_customer_discount(
         self,

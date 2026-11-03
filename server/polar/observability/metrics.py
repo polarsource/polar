@@ -10,6 +10,7 @@ os.environ["PROMETHEUS_MULTIPROC_DIR"] = str(prometheus_dir)
 
 from prometheus_client import (
     Counter,
+    Gauge,
     Histogram,
 )
 
@@ -45,4 +46,17 @@ TASK_DEBOUNCE_DELAY = Histogram(
     "Debounce delay in seconds (time between first enqueue and execution)",
     ["queue", "task_name"],
     buckets=(1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0, 600.0, 1800.0, 3600.0),
+)
+
+# Staged events mover metrics
+STAGED_EVENTS_BACKLOG = Gauge(
+    "polar_staged_events_backlog",
+    "Number of events in staged_events waiting to be moved to events",
+    multiprocess_mode="mostrecent",
+)
+
+STAGED_EVENTS_OLDEST_AGE = Gauge(
+    "polar_staged_events_oldest_age_seconds",
+    "Age of the oldest event in staged_events in seconds",
+    multiprocess_mode="mostrecent",
 )

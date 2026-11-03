@@ -23,7 +23,7 @@ import {
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch, useFormState } from 'react-hook-form'
 import slugify from 'slugify'
 import SupportedUseCases from './SupportedUseCases'
 
@@ -58,13 +58,8 @@ const CreateOrganizationForm = ({
     },
   })
 
-  const {
-    control,
-    handleSubmit,
-    setError,
-    setValue,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError, setValue } = form
+  const { errors } = useFormState({ control })
 
   const { name, slug, terms } = useWatch({ control })
 

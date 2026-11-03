@@ -25,7 +25,7 @@ async def _create_question(
     return feedback
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFeedbackReplyInPlain:
     async def test_marks_as_triaged_on_success(
         self,

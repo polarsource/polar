@@ -12,7 +12,7 @@ from polar.worker._enqueue import _job_queue_manager
 from scripts.reset_organizations_for_review import _load_organizations
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_load_organizations_locks_targets(session: AsyncSession) -> None:
     organization_ids = [uuid4(), uuid4()]
     get_by_id = AsyncMock(side_effect=[None, None])

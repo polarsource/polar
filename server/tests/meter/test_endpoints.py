@@ -1,9 +1,9 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
 from polar.models import Meter, Organization, User, UserOrganization
 from polar.postgres import AsyncSession
@@ -12,7 +12,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_meter
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter_organization_second(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -24,7 +24,7 @@ async def meter_organization_second(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListMeters:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/meters/")
@@ -44,8 +44,57 @@ class TestListMeters:
         json = response.json()
         assert json["pagination"]["total_count"] == 0
 
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        deleted_meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tokens",
+        )
+        deleted_meter.set_deleted_at()
+        await save_fixture(deleted_meter)
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tokens",
+        )
+        archived_meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="legacy",
+        )
+        archived_meter.archived_at = utc_now()
+        await save_fixture(archived_meter)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="requests",
+        )
 
-@pytest.mark.asyncio
+        response = await client.get(
+            "/v1/meters/", params={"external_id": ["tokens", "legacy", "missing"]}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert {item["id"] for item in json["items"]} == {
+            str(meter.id),
+            str(archived_meter.id),
+        }
+
+
+@pytest.mark.anyio
 class TestGetMeter:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/meters/{uuid.uuid4()}")
@@ -64,7 +113,7 @@ class TestGetMeter:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetExternalMeter:
     @pytest.mark.api_version(V2027_01)
     async def test_anonymous(self, client: AsyncClient) -> None:
@@ -151,7 +200,7 @@ class TestGetExternalMeter:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMeterQuantities:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/meters/{uuid.uuid4()}/quantities")
@@ -198,7 +247,7 @@ class TestGetMeterQuantities:
         assert "too big" not in msg.lower()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateMeter:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/meters/")
@@ -255,7 +304,7 @@ class TestCreateMeter:
         assert response.json()["external_id"] == "ext_1337"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateMeter:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/meters/{uuid.uuid4()}")

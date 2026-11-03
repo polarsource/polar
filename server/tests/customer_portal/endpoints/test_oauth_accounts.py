@@ -36,7 +36,7 @@ _BASE_PARAMS = {
 }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAuthorize:
     async def test_anonymous_with_customer_id_is_rejected(
         self,
@@ -134,7 +134,7 @@ async def _encode_state(customer_id: str, member_id: str | None = None) -> str:
     return await jwt.encode(data=payload, type="customer_oauth")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCallback:
     """Regression coverage for the replay vector where a crawler captured a
     customer's OAuth callback URL and obtained a session from the state JWT

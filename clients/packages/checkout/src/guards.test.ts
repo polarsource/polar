@@ -5,11 +5,7 @@ import {
   createFixedPrice,
   createSeatBasedPrice,
 } from './test-utils/makeCheckout'
-import {
-  getFixedPrice,
-  hasProductCheckout,
-  isLegacyRecurringProductPrice,
-} from './guards'
+import { getFixedPrice, hasProductCheckout } from './guards'
 
 describe('hasProductCheckout', () => {
   const baseCheckout = {
@@ -98,26 +94,5 @@ describe('getFixedPrice', () => {
     })
 
     expect(getFixedPrice(checkout)).toBe(eurPrice)
-  })
-})
-
-describe('isLegacyRecurringProductPrice', () => {
-  it('returns true for legacy recurring price', () => {
-    const price = {
-      type: 'recurring',
-      legacy: true,
-      recurring_interval: 'month',
-    } as schemas['LegacyRecurringProductPrice']
-
-    expect(isLegacyRecurringProductPrice(price)).toBe(true)
-  })
-
-  it('returns false for non-legacy price', () => {
-    const price = {
-      type: 'one_time',
-      amount_type: 'fixed',
-    } as unknown as schemas['ProductPrice']
-
-    expect(isLegacyRecurringProductPrice(price)).toBe(false)
   })
 })

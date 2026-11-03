@@ -3,8 +3,7 @@
 import { Spinner } from '@polar-sh/orbit'
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { getFormattedMetricValue } from '@/utils/metrics'
-import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { ArrowOutwardOutlined, MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -44,6 +43,7 @@ interface MetricChartBoxProps {
   previousData?: ParsedMetricsResponse
   interval: schemas['TimeInterval']
   className?: string
+  chartClassName?: string
   height?: number
   width?: number
   loading?: boolean
@@ -78,6 +78,7 @@ const MetricChartBox = ({
   previousData,
   interval,
   className,
+  chartClassName,
   height = 300,
   width,
   loading,
@@ -376,6 +377,7 @@ const MetricChartBox = ({
       <div
         className={twMerge(
           'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white',
+          chartClassName,
         )}
       >
         {loading ? (

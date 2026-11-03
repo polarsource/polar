@@ -39,9 +39,7 @@ class MetricsSync(SyncServiceBase):
         interval: TimeInterval,
         organization_id: str | list[str] | None = None,
         product_id: str | list[str] | None = None,
-        billing_type: ProductBillingType
-        | list[ProductBillingType]
-        | None = None,
+        billing_type: ProductBillingType | list[ProductBillingType] | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
@@ -107,9 +105,7 @@ class MetricsSync(SyncServiceBase):
         interval: TimeInterval,
         organization_id: str | list[str] | None = None,
         product_id: str | list[str] | None = None,
-        billing_type: ProductBillingType
-        | list[ProductBillingType]
-        | None = None,
+        billing_type: ProductBillingType | list[ProductBillingType] | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
@@ -234,9 +230,7 @@ class MetricsSync(SyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response_json(
-            response, list[MetricDashboardSchema], method_errors
-        )
+        return parse_response_json(response, list[MetricDashboardSchema], method_errors)
 
     def create_dashboard(
         self,
@@ -411,9 +405,7 @@ class MetricsAsync(AsyncServiceBase):
         interval: TimeInterval,
         organization_id: str | list[str] | None = None,
         product_id: str | list[str] | None = None,
-        billing_type: ProductBillingType
-        | list[ProductBillingType]
-        | None = None,
+        billing_type: ProductBillingType | list[ProductBillingType] | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
@@ -479,9 +471,7 @@ class MetricsAsync(AsyncServiceBase):
         interval: TimeInterval,
         organization_id: str | list[str] | None = None,
         product_id: str | list[str] | None = None,
-        billing_type: ProductBillingType
-        | list[ProductBillingType]
-        | None = None,
+        billing_type: ProductBillingType | list[ProductBillingType] | None = None,
         customer_id: str | list[str] | None = None,
         metrics: list[str] | None = None,
         request_timeout: RequestTimeout | None = None,
@@ -606,9 +596,7 @@ class MetricsAsync(AsyncServiceBase):
         method_errors = {
             422: HTTPValidationError,
         }
-        return parse_response_json(
-            response, list[MetricDashboardSchema], method_errors
-        )
+        return parse_response_json(response, list[MetricDashboardSchema], method_errors)
 
     async def create_dashboard(
         self,

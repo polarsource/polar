@@ -1,5 +1,6 @@
 'use client'
 
+import type { MetricsProductFilter } from '@/hooks/queries/metrics'
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { useMemo, useState } from 'react'
 import { CancellationReasonModal } from './cancellations/CancellationReasonModal'
@@ -16,7 +17,7 @@ interface CancellationsDistributionChartProps {
   organizationId: string
   startDate: Date
   endDate: Date
-  productId?: string[]
+  productFilter?: MetricsProductFilter
 }
 
 interface ReasonData {
@@ -33,7 +34,7 @@ export default function CancellationsDistributionChart({
   organizationId,
   startDate,
   endDate,
-  productId,
+  productFilter,
 }: CancellationsDistributionChartProps) {
   const { chartData, legendData } = useMemo(() => {
     const totals: Record<CancellationReason, number> = {} as Record<
@@ -163,7 +164,7 @@ export default function CancellationsDistributionChart({
           organizationId={organizationId}
           startDate={startDate}
           endDate={endDate}
-          productId={productId}
+          productFilter={productFilter}
           totalCount={
             legendData.find((item) => item.reason === selectedReason)?.total ??
             0

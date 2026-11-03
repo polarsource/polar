@@ -26,7 +26,7 @@ PURCHASE_DATE = "2024-01-15 12:00:00"
 RENEWAL_DATE = "2024-02-15 12:00:01"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRenewal:
     @E2E_AUTH
     async def test_multiple_cycles(

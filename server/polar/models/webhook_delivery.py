@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from polar.kit.db.models.base import RecordModel
 
 if TYPE_CHECKING:
+    from .organization import Organization
     from .webhook_endpoint import WebhookEndpoint
     from .webhook_event import WebhookEvent
 
@@ -20,6 +21,16 @@ class WebhookDelivery(RecordModel):
             "id",
             postgresql_where="response IS NOT NULL",
         ),
+        {
+            "postgresql_with": {
+                "autovacuum_vacuum_threshold": 100000,
+                "autovacuum_vacuum_scale_factor": 0,
+                "autovacuum_vacuum_insert_threshold": 200000,
+                "autovacuum_vacuum_insert_scale_factor": 0,
+                "autovacuum_analyze_threshold": 250000,
+                "autovacuum_analyze_scale_factor": 0,
+            }
+        },
     )
 
     webhook_endpoint_id: Mapped[UUID] = mapped_column(
@@ -32,6 +43,16 @@ class WebhookDelivery(RecordModel):
     @declared_attr
     def webhook_endpoint(cls) -> Mapped["WebhookEndpoint"]:
         return relationship("WebhookEndpoint", lazy="raise")
+
+    organization_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization | None"]:
+        return relationship("Organization", lazy="raise")
 
     webhook_event_id: Mapped[UUID] = mapped_column(
         Uuid,

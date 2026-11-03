@@ -35,7 +35,7 @@ async def _rows(session: AsyncSession, **kwargs: object) -> list[Row]:
     return list(result.all())  # type: ignore[arg-type]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCasesStatement:
     async def test_returns_both_case_types_for_organization(
         self,
@@ -220,7 +220,7 @@ class TestCasesStatement:
         assert rows[0][5] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCasesStatementEvidenceDueSort:
     async def test_orders_by_soonest_deadline_dropping_nothing(
         self,
@@ -303,7 +303,7 @@ class TestCasesStatementEvidenceDueSort:
         assert evidence_past_due is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOpenCaseOrganizationIds:
     async def test_includes_org_with_open_dispute_case(
         self,

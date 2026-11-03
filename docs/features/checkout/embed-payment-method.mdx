@@ -13,16 +13,24 @@ Let your customers securely add a payment method without leaving your site.
 Every embed is authenticated with a short-lived **customer session token**. Create it **on your server** to keep the Polar access token secret, then hand the token to the client.
 
 ```ts
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({ accessToken: process.env.POLAR_ACCESS_TOKEN });
+const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN! });
 
 const session = await polar.customerSessions.create({
-  customerId: "the-customer-id",
+  customer_id: "the-customer-id",
 });
 ```
 
 The token expires after one hour and is scoped to that single customer.
+
+## Embed hosts
+
+The payment method embed only opens on a host you've allowed. It uses the same list as [Embedded Checkout](/features/checkout/embed#embed-hosts): add your site under [**Settings → Embedding**](https://polar.sh/to/dashboard/settings/embedding) before embedding it. The list applies as soon as you save it.
+
+See [Writing a host](/features/checkout/embed#writing-a-host) for the accepted formats, including wildcards, ports and local development hosts.
+
+If the page isn't on the list, the browser refuses to frame the embed, so it stays blank and the browser console shows a message naming `frame-ancestors`. An invalid or expired session token has the same effect.
 
 ## Implementation
 

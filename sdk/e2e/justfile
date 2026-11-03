@@ -1,0 +1,23 @@
+install:
+    uv sync
+    pnpm install
+
+ci:
+    uv sync --frozen
+    pnpm install --frozen-lockfile
+
+build:
+    pnpm run build:sdk
+
+test *args: build
+    uv run pytest -n auto {{args}}
+
+lint:
+    uv run ruff format --check .
+    uv run ruff check .
+    pnpm run fmt:check
+    pnpm run lint
+
+typecheck:
+    uv run ty check .
+    pnpm run typecheck

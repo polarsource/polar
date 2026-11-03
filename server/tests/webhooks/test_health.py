@@ -13,7 +13,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebhooks:
     async def test_counts_only_unattempted_pending_events(
         self,

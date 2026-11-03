@@ -31,7 +31,7 @@ from polar.kit.schemas import (
     SlugValidator,
     TimestampedSchema,
 )
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
@@ -47,7 +47,7 @@ from polar.models.user_organization import (
     OrganizationRole,
 )
 from polar.organization.embed_hosts import InvalidEmbedHost, validate_host_pattern
-from polar.version import V2027_01
+from polar.version import V2026_10, V2027_01
 
 OrganizationID = Annotated[
     UUID4,
@@ -177,9 +177,11 @@ class OrganizationFeatureSettings(Schema):
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"
     )
-    member_model_enabled: bool = Field(
-        False, description="If this organization has the Member model enabled"
-    )
+    member_model_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(False, description="If this organization has the Member model enabled"),
+    ] = False
     checkout_localization_enabled: bool = Field(
         False,
         description="If this organization has checkout localization enabled",
@@ -199,13 +201,17 @@ class OrganizationFeatureSettings(Schema):
             "(off-session charges against a saved payment method)."
         ),
     )
-    meter_cycling_enabled: bool = Field(
-        False,
-        description=(
-            "If this organization can set a separate meter cycle on recurring "
-            "products (a meter interval independent of the billing interval)."
+    meter_cycling_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(
+            False,
+            description=(
+                "If this organization can set a separate meter cycle on recurring "
+                "products (a meter interval independent of the billing interval)."
+            ),
         ),
-    )
+    ] = False
     slack_benefit_enabled: bool = Field(
         False, description="Enables the slack shared channel benefit"
     )
@@ -228,13 +234,16 @@ class OrganizationFeatureSettings(Schema):
             "disputes on its behalf. Requires `disputes_enabled`."
         ),
     )
-    compass_enabled: bool = Field(
-        False,
-        description=(
-            "If this organization has the split product navigation "
-            "(Billing / Compass / Customers) enabled in the dashboard"
+    compass_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(
+            description=(
+                "If this organization has the split product navigation "
+                "(Billing / Compass / Customers) enabled in the dashboard"
+            ),
         ),
-    )
+    ] = False
     merchant_migration_enabled: bool = Field(
         False,
         description=(
@@ -242,6 +251,16 @@ class OrganizationFeatureSettings(Schema):
             "provider (e.g. Stripe) to Polar."
         ),
     )
+    staged_events_ingest_enabled: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "If this organization's ingested events are queued in "
+                "`staged_events` and moved to `events` out of band."
+            ),
+        ),
+    ] = False
     config_as_code_enabled: Annotated[
         bool,
         Version(starting_from=V2027_01),
@@ -261,9 +280,11 @@ class OrganizationFeatureSettingsUpdate(Schema):
     provided and keep their current value.
     """
 
-    member_model_enabled: bool = Field(
-        False, description="If this organization has the Member model enabled"
-    )
+    member_model_enabled: Annotated[
+        bool,
+        Version(up_to=V2026_10),
+        Field(False, description="If this organization has the Member model enabled"),
+    ] = False
     checkout_localization_enabled: bool = Field(
         False,
         description="If this organization has checkout localization enabled",
@@ -291,12 +312,7 @@ class OrganizationDisputeSettingsUpdate(Schema):
     )
 
 
-class OrganizationDetails(Schema):
-    about: str | None = Field(
-        None,
-        deprecated=True,
-        description="Brief information about you and your business.",
-    )
+class OrganizationDetailsInput(Schema):
     product_description: str | None = Field(
         None, description="Description of digital products being sold."
     )
@@ -306,27 +322,35 @@ class OrganizationDetails(Schema):
     pricing_models: list[str] = Field(
         default_factory=list, description="Pricing models used by the organization."
     )
-    intended_use: str | None = Field(
+    switching: bool = Field(False, description="Switching from another platform?")
+    switching_from: (
+        Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
+    ) = Field(None, description="Which platform the organization is migrating from.")
+
+
+class OrganizationDetails(OrganizationDetailsInput):
+    about: Annotated[str | None, Version(up_to=V2026_10)] = Field(
+        None,
+        deprecated=True,
+        description="Brief information about you and your business.",
+    )
+    intended_use: Annotated[str | None, Version(up_to=V2026_10)] = Field(
         None,
         deprecated=True,
         description="How the organization will integrate and use Polar.",
     )
-    customer_acquisition: list[str] = Field(
+    customer_acquisition: Annotated[list[str], Version(up_to=V2026_10)] = Field(
         default_factory=list,
         deprecated=True,
         description="Main customer acquisition channels.",
     )
-    future_annual_revenue: int | None = Field(
+    future_annual_revenue: Annotated[int | None, Version(up_to=V2026_10)] = Field(
         None,
         ge=0,
         deprecated=True,
         description="Estimated revenue in the next 12 months",
     )
-    switching: bool = Field(False, description="Switching from another platform?")
-    switching_from: (
-        Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
-    ) = Field(None, description="Which platform the organization is migrating from.")
-    previous_annual_revenue: int | None = Field(
+    previous_annual_revenue: Annotated[int | None, Version(up_to=V2026_10)] = Field(
         None,
         ge=0,
         deprecated=True,
@@ -428,29 +452,37 @@ class OrganizationBase(IDSchema, TimestampedSchema):
     )
 
     # Deprecated attributes
-    bio: SkipJsonSchema[str | None] = Field(..., deprecated="")
-    company: SkipJsonSchema[str | None] = Field(
+    bio: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = Field(
+        ..., deprecated=""
+    )
+    company: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = Field(
         ...,
         deprecated="Legacy attribute no longer in use.",
     )
-    blog: SkipJsonSchema[str | None] = Field(
+    blog: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = Field(
         ...,
         deprecated="Legacy attribute no longer in use. See `socials` instead.",
     )
-    location: SkipJsonSchema[str | None] = Field(
+    location: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = Field(
         ...,
         deprecated="Legacy attribute no longer in use.",
     )
-    twitter_username: SkipJsonSchema[str | None] = Field(
-        ...,
-        deprecated="Legacy attribute no longer in use. See `socials` instead.",
+    twitter_username: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)] = (
+        Field(
+            ...,
+            deprecated="Legacy attribute no longer in use. See `socials` instead.",
+        )
     )
 
-    pledge_minimum_amount: SkipJsonSchema[int] = Field(0, deprecated=True)
-    pledge_badge_show_amount: SkipJsonSchema[bool] = Field(False, deprecated=True)
-    default_upfront_split_to_contributors: SkipJsonSchema[int | None] = Field(
-        None, deprecated=True
+    pledge_minimum_amount: Annotated[SkipJsonSchema[int], Version(up_to=V2026_10)] = (
+        Field(0, deprecated=True)
     )
+    pledge_badge_show_amount: Annotated[
+        SkipJsonSchema[bool], Version(up_to=V2026_10)
+    ] = Field(False, deprecated=True)
+    default_upfront_split_to_contributors: Annotated[
+        SkipJsonSchema[int | None], Version(up_to=V2026_10)
+    ] = Field(None, deprecated=True)
 
 
 class LegacyOrganizationStatus(StrEnum):
@@ -486,18 +518,29 @@ class OrganizationPublicBase(OrganizationBase):
     # Attributes that we used to have publicly, but now want to hide from
     # the public schema.
     # Keep it for now for backward compatibility in the SDK
-    email: SkipJsonSchema[str | None]
-    website: SkipJsonSchema[str | None]
-    socials: SkipJsonSchema[list[OrganizationSocialLink]]
+    email: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)]
+    website: Annotated[SkipJsonSchema[str | None], Version(up_to=V2026_10)]
+    socials: Annotated[
+        SkipJsonSchema[list[OrganizationSocialLink]], Version(up_to=V2026_10)
+    ]
     status: Annotated[
         SkipJsonSchema[LegacyOrganizationStatus],
+        Version(up_to=V2026_10),
         BeforeValidator(LegacyOrganizationStatus.from_status),
     ]
-    details_submitted_at: SkipJsonSchema[datetime | None]
+    details_submitted_at: Annotated[
+        SkipJsonSchema[datetime | None], Version(up_to=V2026_10)
+    ]
 
-    feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
-    subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
-    customer_email_settings: SkipJsonSchema[CustomerEmailSettings]
+    feature_settings: Annotated[
+        SkipJsonSchema[OrganizationFeatureSettings | None], Version(up_to=V2026_10)
+    ]
+    subscription_settings: Annotated[
+        SkipJsonSchema[OrganizationSubscriptionSettings], Version(up_to=V2026_10)
+    ]
+    customer_email_settings: Annotated[
+        SkipJsonSchema[CustomerEmailSettings], Version(up_to=V2026_10)
+    ]
 
 
 class Organization(OrganizationBase):
@@ -560,7 +603,8 @@ class Organization(OrganizationBase):
     )
 
     @computed_field(  # type: ignore[prop-decorator]
-        deprecated="Notification preferences are now configured per member."
+        exclude_if=Version(up_to=V2026_10).exclude_if,
+        deprecated="Notification preferences are now configured per member.",
     )
     @property
     def notification_settings(self) -> SkipJsonSchema[OrganizationNotificationSettings]:
@@ -590,12 +634,8 @@ class OrganizationWithRole(Organization):
         cls, organization: Any, role: OrganizationRole
     ) -> "OrganizationWithRole":
         """Build from a SQLAlchemy `Organization` plus the user's role."""
-        return cls.model_validate(
-            {
-                **Organization.model_validate(organization).model_dump(),
-                "role": role,
-                "permissions": sorted(ROLE_PERMISSIONS[role]),
-            }
+        return cls.model_validate_overlay(
+            organization, role=role, permissions=sorted(ROLE_PERMISSIONS[role])
         )
 
 
@@ -655,7 +695,7 @@ class OrganizationCreate(Schema):
         None,
         description="Link to social profiles.",
     )
-    details: OrganizationDetails | None = Field(
+    details: OrganizationDetailsInput | None = Field(
         None,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
     )
@@ -687,7 +727,7 @@ class OrganizationUpdate(Schema):
     socials: list[OrganizationSocialLink] | None = Field(
         None, description="Links to social profiles."
     )
-    details: OrganizationDetails | None = Field(
+    details: OrganizationDetailsInput | None = Field(
         None,
         description="Additional, private, business details Polar needs about active organizations for compliance (KYC).",
     )
@@ -980,3 +1020,7 @@ class OrganizationPayoutAccountSet(Schema):
     payout_account_id: UUID4 = Field(
         description="ID of the payout account to set on the organization."
     )
+
+
+class OrganizationListParams(QuerySchema):
+    slug: str | None = Field(None, description="Filter by slug.")

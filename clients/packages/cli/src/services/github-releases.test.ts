@@ -59,16 +59,28 @@ describe('getLatestRelease', () => {
     expect(http.urls()).toEqual([page(1), page(2)])
   })
 
-  test('reports GitHub failures instead of treating them as no updates', async () => {
+  test('wraps an HTTP status failure as a GitHub release error', async () => {
     http.routes[page(1)] = new Response('Rate limit exceeded', { status: 403 })
 
     const error = await Effect.runPromise(
       getLatestRelease.pipe(Effect.provide(http.layer), Effect.flip),
     )
-    expect(error).toMatchObject({
-      _tag: 'HttpClientError',
-      reason: { _tag: 'StatusCodeError', response: { status: 403 } },
-    })
+    expect(error._tag).toBe('GitHubReleaseError')
+    expect(error.message).toContain(
+      'StatusCode: non 2xx status code (403 GET https://api.github.com/repos/polarsource/polar/releases',
+    )
+  })
+
+  test('wraps a malformed release body as a GitHub release error', async () => {
+    http.routes[page(1)] = new Response('not json', { status: 200 })
+
+    const error = await Effect.runPromise(
+      getLatestRelease.pipe(Effect.provide(http.layer), Effect.flip),
+    )
+    expect(error._tag).toBe('GitHubReleaseError')
+    expect(error.message).toContain(
+      'Decode error (200 GET https://api.github.com/repos/polarsource/polar/releases',
+    )
   })
 
   test('reports when no stable CLI release exists', async () => {

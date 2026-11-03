@@ -68,7 +68,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.1.0
+        uses: astral-sh/setup-uv@v10.2.0
 
       - name: Build Python SDK
         working-directory: sdk/python
@@ -95,7 +95,7 @@ jobs:
           package_json_file: sdk/typescript/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .nvmrc
           registry-url: "https://registry.npmjs.org"
@@ -110,13 +110,27 @@ jobs:
         working-directory: sdk/typescript
         run: pnpm run build
 
+      - name: Select npm dist-tag
+        id: npm_tag
+        working-directory: sdk/typescript
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            tag=next
+          else
+            tag=latest
+          fi
+
+          echo "Publishing @polar-sh/sdk@$version with dist-tag '$tag'"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
       - name: Publish to npm (Trusted Publishing)
         working-directory: sdk/typescript
-        run: npm publish --tag latest
+        run: npm publish --tag "${{ steps.npm_tag.outputs.tag }}"
 
   update-sdk-dependents:
     needs: [detect-release, publish-typescript]
-    if: needs.detect-release.outputs.version != ''
+    if: needs.detect-release.outputs.version != '' && !contains(needs.detect-release.outputs.version, '-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -135,7 +149,7 @@ jobs:
           package_json_file: clients/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: .nvmrc
           cache: "pnpm"
@@ -202,7 +216,7 @@ jobs:
 
   create-github-release:
     needs: [detect-release, publish-python, publish-typescript]
-    if: needs.detect-release.outputs.version != ''
+    if: needs.detect-release.outputs.version != '' && !contains(needs.detect-release.outputs.version, '-')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -212,7 +226,7 @@ jobs:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.1.0
+        uses: astral-sh/setup-uv@v10.2.0
 
       - name: Extract release notes
         working-directory: sdk/generator

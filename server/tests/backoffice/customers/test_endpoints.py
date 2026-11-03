@@ -5,7 +5,6 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
@@ -23,7 +22,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client(
     session: AsyncSession, user: User
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -43,7 +42,7 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_admin, None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     async def test_paginates_without_total_count(
         self,
@@ -98,7 +97,7 @@ class TestList:
         assert str(customer_organization_second.id) not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateBalanceTransaction:
     async def test_returns_404_for_unknown_customer(
         self, backoffice_client: httpx.AsyncClient
@@ -202,8 +201,8 @@ class TestCreateBalanceTransaction:
         create_balance_transaction_mock.assert_not_awaited()
 
 
-@pytest.mark.asyncio
-class TestCreditBalance:
+@pytest.mark.anyio
+class TestCustomerBalance:
     async def test_displays_all_billing_wallet_currencies(
         self,
         backoffice_client: httpx.AsyncClient,
@@ -217,6 +216,8 @@ class TestCreditBalance:
         response = await backoffice_client.get(f"/customers/{customer.id}")
 
         assert response.status_code == 200
+        assert "Customer Balance" in response.text
+        assert "Credit Balance" not in response.text
         assert "Add Transaction" in response.text
         assert "USD" in response.text
         assert "$12.34" in response.text
@@ -247,11 +248,11 @@ class TestCreditBalance:
         response = await backoffice_client.get(f"/customers/{customer.id}")
 
         assert response.status_code == 200
-        assert "Credit Balance" in response.text
+        assert "Customer Balance" in response.text
         assert "Add Transaction" not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWalletTransactions:
     async def test_displays_transactions_newest_first_with_references(
         self,

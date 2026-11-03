@@ -34,7 +34,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListCustomers:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customers/")
@@ -238,7 +238,7 @@ class TestListCustomers:
         } <= ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerGrowth:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -402,7 +402,7 @@ class TestCustomerGrowth:
         assert [period["total_customers"] for period in json] == [1, 1, 2]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTopCustomers:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -891,7 +891,7 @@ class TestTopCustomers:
         assert json[0]["order_count"] == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetExternal:
     async def test_anonymous(
         self, client: AsyncClient, customer_external_id: Customer
@@ -964,7 +964,7 @@ class TestGetExternal:
         assert json["default_payment_method_id"] == str(payment_method.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetState:
     async def test_anonymous(self, client: AsyncClient, customer: Customer) -> None:
         response = await client.get(f"/v1/customers/{customer.id}/state")
@@ -1035,7 +1035,7 @@ class TestGetState:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListPaymentMethods:
     async def test_anonymous(self, client: AsyncClient, customer: Customer) -> None:
         response = await client.get(f"/v1/customers/{customer.id}/payment-methods")
@@ -1138,7 +1138,7 @@ class TestListPaymentMethods:
         assert json["items"][0]["id"] == str(payment_method.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateCustomer:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1304,7 +1304,7 @@ class TestCreateCustomer:
         assert json["avatar_url"] == _avatar_url_for_email("owner@polar.sh")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCustomer:
     async def test_anonymous(self, client: AsyncClient, customer: Customer) -> None:
         response = await client.patch(
@@ -1462,7 +1462,7 @@ class TestUpdateCustomer:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteCustomerWithAnonymize:
     """Tests for DELETE /customers/{id}?anonymize=true"""
 
@@ -1619,7 +1619,7 @@ class TestDeleteCustomerWithAnonymize:
         assert deleted.deleted_at is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteCustomerExternalWithAnonymize:
     """Tests for DELETE /customers/external/{external_id}?anonymize=true"""
 

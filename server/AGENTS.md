@@ -15,7 +15,7 @@ uv run task lint_types   # Type checking with mypy
 # Database migrations
 uv run alembic revision --autogenerate -m "description"  # Create migration
 uv run alembic upgrade head                              # Apply migrations
-uv run task check_migrations                             # single Alembic head + later filename
+uv run task check_migrations                             # Check that the migration is fine to apply (single Alembic head, filename later, column drops are marked)
 ```
 
 When rebasing a PR that adds a migration, rename the file so its `YYYY-MM-DD-HHMM` prefix is after the latest migration on the target branch (`uv run task db_reparent` only updates `down_revision`).
@@ -55,9 +55,11 @@ class ResourceRepository(
 ):
     model = Resource
 
-    # Auth-aware query - ALWAYS filter by auth_subject
     def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+        self,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[UUID] | None = None,
     ) -> Select[tuple[Resource]]:
         statement = self.get_base_statement()
         if is_user(auth_subject):
@@ -68,9 +70,10 @@ class ResourceRepository(
             statement = statement.where(
                 Resource.organization_id == auth_subject.subject.id
             )
+        if organization_id is not None:
+            statement = statement.where(Resource.organization_id.in_(organization_id))
         return statement
 
-    # Custom query methods
     async def get_by_slug(self, slug: str) -> Resource | None:
         statement = self.get_base_statement().where(Resource.slug == slug)
         return await self.get_one_or_none(statement)
@@ -101,40 +104,42 @@ inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
 
 ## Service Pattern
 
-Services contain business logic and call repositories.
+Services contain business logic and call repositories. Methods that only read take an
+`AsyncReadSession`; methods that write take an `AsyncSession`.
 
 ```python
 # polar/{module}/service.py
 class ResourceService:
     async def list(
         self,
-        session: AsyncReadSession,  # READ session for queries
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         pagination: PaginationParams,
         sorting: list[Sorting[ResourceSortProperty]],
+        organization_id: Sequence[UUID] | None = None,
     ) -> tuple[Sequence[Resource], int]:
         repository = ResourceRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject)
+        statement = repository.get_readable_statement(
+            auth_subject, organization_id=organization_id
+        )
         statement = repository.apply_sorting(statement, sorting)
         return await repository.paginate(statement, pagination.limit, pagination.page)
 
     async def create(
         self,
-        session: AsyncSession,  # WRITE session for mutations
+        session: AsyncSession,
         auth_subject: AuthSubject[User],
         create_schema: ResourceCreate,
     ) -> Resource:
         repository = ResourceRepository.from_session(session)
         resource = await repository.create(Resource(**create_schema.model_dump()))
 
-        # Enqueue background job - NOT session.commit()!
         enqueue_job("resource.created", resource_id=resource.id)
 
         return resource
 
 
-# Singleton instance at module level
 resource = ResourceService()
 ```
 
@@ -145,8 +150,42 @@ resource = ResourceService()
 
 ## Endpoint Pattern
 
+Group list and reporting filters in a `QuerySchema` model, normally in the module's `schemas.py`,
+then accept it as `filters: Annotated[ResourceListParams, Query()]`. Use Pydantic
+`Field` for defaults, descriptions, and constraints, and reuse `MultipleQueryFilter`
+for repeated values. Share models or inherit them when routes use the same filters.
+Keep pagination, sorting, and `MetadataQuery` as separate dependencies. Pass typed
+attributes to services rather than unpacking `model_dump()`.
+Use a separate `query.py` or the existing export module if putting the model in
+`schemas.py` would create an import cycle.
+
+For a new optional filter, annotate its field with `Version(starting_from=...)` and
+default it to `None`; do not duplicate the endpoint just to add a query parameter.
+`QuerySchema` hides unavailable fields from OpenAPI and ignores their input before
+validation. Keep parameters with `Query(include_in_schema=False)` outside the model:
+FastAPI currently loses that flag when flattening model fields.
+See the handbook's [API versioning guide](../handbook/engineering/backend-development/api-versioning.mdx#adding-a-query-parameter).
+
 ```python
+# polar/{module}/schemas.py
+from pydantic import Field
+
+from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import QuerySchema
+from polar.organization.schemas import OrganizationID
+
+
+class ResourceListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, description="Filter by organization ID."
+    )
+
+
 # polar/{module}/endpoints.py
+from typing import Annotated
+
+from fastapi import Query
+
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 
 router = APIRouter(prefix="/resources", tags=["resources"])
@@ -154,13 +193,18 @@ router = APIRouter(prefix="/resources", tags=["resources"])
 
 @router.get("/", response_model=ListResource[ResourceSchema])
 async def list_resources(
-    auth_subject: auth.ResourcesRead,  # From module's auth.py
+    auth_subject: auth.ResourcesRead,
+    filters: Annotated[ResourceListParams, Query()],
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[ResourceSchema]:
     results, count = await resource_service.list(
-        session, auth_subject, pagination=pagination, sorting=sorting
+        session,
+        auth_subject,
+        organization_id=filters.organization_id,
+        pagination=pagination,
+        sorting=sorting,
     )
     return ListResource(
         items=results, pagination=Pagination(page=pagination.page, total_count=count)
@@ -187,6 +231,11 @@ Credentials resolve in order — customer session token, user session cookie, th
 authenticator then validates the resolved subject type and its scopes. **Scopes** gate
 operations: an `Authenticator` declares `required_scopes`, and access is granted if the
 subject holds at least one of them.
+
+An AI agent that signed up on its own and isn't claimed yet is an `Agent` subject (ADR-0014),
+with one organization and only `UNCLAIMED_AGENT_SCOPES`. To open an endpoint to it, list
+`Agent` in the authenticator's `allowed_subjects`, handle `is_agent` in the service's subject
+branches, and test it with `AuthSubjectFixture(subject="agent")`.
 
 Define per-module authenticators in the module's `auth.py`:
 
@@ -234,24 +283,21 @@ class ResourceBase(Schema):
 
 
 class Resource(IDSchema, TimestampedSchema, ResourceBase):
-    """Read schema - includes all fields."""
-
-    # `id` comes from IDSchema — don't redeclare `id: UUID4`.
-    # Type fields with their enum (e.g. `status: ResourceStatus`), not `str`.
+    pass
 
 
 class ResourceCreate(ResourceBase):
-    """Create schema - required fields only."""
-
     pass
 
 
 class ResourceUpdate(Schema):
-    """Update schema - ALL fields optional with None default."""
-
     name: str | None = None
     slug: str | None = None
 ```
+
+- The read schema gets `id` from `IDSchema`; don't redeclare `id: UUID4`.
+- Every field on an update schema is optional with a `None` default.
+- Type fields with their enum (`status: ResourceStatus`), not `str`.
 
 ## Background Tasks
 
@@ -274,7 +320,7 @@ async def resource_created(resource_id: Annotated[UUID, LoggableField]) -> None:
         if resource is None:
             raise ResourceDoesNotExist(resource_id)
 
-        # Do work... session commits automatically at end
+        await resource_service.process(session, resource)
 ```
 
 Task arguments are excluded from telemetry unless marked with
@@ -296,7 +342,7 @@ scenario, with descriptive names.
 
 ```python
 # tests/{module}/test_service.py
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_valid(
@@ -325,7 +371,7 @@ fixture param only when the body still needs it (e.g. `user.id`).
 
 ```python
 # tests/{module}/test_endpoints.py
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListResources:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/resources/")
@@ -390,6 +436,8 @@ Always set a proper `status_code` for errors that are normal business operations
 
 (Don't add a content-less `422: {"description": ...}` override — it clobbers FastAPI's default `HTTPValidationError` and breaks the generated client.)
 
+Only declare errors the endpoint itself raises. Don't add the global authentication and permission errors (`401 Unauthorized`, `403` from the authenticator's scope check) to `responses=`: they apply to every authenticated route, so documenting them belongs in one global OpenAPI change (tracked in ENG-14), not per endpoint. This holds even if an automated reviewer asks for them.
+
 ### Endpoints return ORM models
 Set `response_model` and return the ORM object; FastAPI serializes it via `from_attributes`. Don't hand-build the read schema — except when a field is *derived* and not on the model (then `Schema.model_validate({...})`).
 ```python
@@ -397,6 +445,17 @@ Set `response_model` and return the ORM object; FastAPI serializes it via `from_
 async def create(...) -> Resource:   # ORM model, not the schema
     return await resource_service.create(...)
 ```
+
+### Destructive MCP and CLI operations
+Write endpoints, or request fields, that delete, revoke, archive, disable, rotate credentials or move
+money must be marked with the helpers in `polar/openapi.py`: `openapi_extra=destructive()` on the
+route, or `json_schema_extra=destructive_when_equals(...)` / `destructive_when_one_of(...)` on the
+field that makes it destructive. `DELETE` routes already are. This sets `destructive` in
+`x-tool-annotations`, which drives both the CLI confirmation prompt and the MCP `destructiveHint`.
+`tests/test_openapi.py` fails until every MCP or CLI write operation is classified.
+Operations that reach outside the organization, such as calling a webhook URL or emailing a customer,
+are marked with `openapi_extra=open_world()`, which drives the MCP `openWorldHint`. Combine it with
+`destructive()` as `openapi_extra={**destructive(), **open_world()}`.
 
 ## Tax ID Validation
 

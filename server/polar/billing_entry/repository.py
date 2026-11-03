@@ -46,6 +46,17 @@ class BillingEntryRepository(
             )
             await self.session.execute(statement)
 
+    async def has_invoiced_for_event(self, event_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                BillingEntry.event_id == event_id,
+                BillingEntry.order_item_id.is_not(None),
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
+
     async def get_all_by_subscription(
         self, subscription_id: UUID
     ) -> Sequence[BillingEntry]:
@@ -174,7 +185,7 @@ class BillingEntryRepository(
             )
 
     async def _link_pending(
-        self, pending_ids: Select[tuple[UUID]], order_item_id: UUID
+        self, pending_ids: Select[UUID], order_item_id: UUID
     ) -> None:
         # Keyset pagination: a bare `LIMIT` restart would re-scan rows already
         # updated in this transaction, making the loop quadratic.
@@ -229,7 +240,7 @@ class BillingEntryRepository(
         *,
         cutoff: datetime | None = None,
         options: Options = (),
-    ) -> Select[tuple["BillingEntry"]]:
+    ) -> Select["BillingEntry"]:
         statement = (
             self.get_base_statement()
             .where(

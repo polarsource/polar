@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from polar.auth.models import AuthSubject
 from polar.custom_field.schemas import CustomFieldCreateText, CustomFieldUpdateText
@@ -13,7 +12,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_custom_field, create_order
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def text_field(
     save_fixture: SaveFixture, organization: Organization
 ) -> CustomFieldText:
@@ -25,7 +24,7 @@ async def text_field(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order_text_field_data(
     save_fixture: SaveFixture,
     product: Product,
@@ -42,7 +41,7 @@ async def order_text_field_data(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_existing_slug(
@@ -96,7 +95,7 @@ class TestCreate:
         assert custom_field.id != text_field.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth
     async def test_slug_update(

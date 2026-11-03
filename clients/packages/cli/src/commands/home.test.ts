@@ -37,6 +37,7 @@ describe('home', () => {
     const output = await render(fakeAuth({ sessions: [] }), fakeOrganizations())
 
     expect(output).toContain(`Polar CLI ${VERSION}`)
+    expect(output).toMatch(/^ {2}▄▄▄▄▄████ {2}██ {5}Polar CLI /m)
     expect(output).toContain('Not logged in')
     expect(output).toContain('polar auth login --sandbox')
     expect(output).not.toContain('Try next')
@@ -54,8 +55,8 @@ describe('home', () => {
 
     expect(output).toContain('Logged in     sandbox')
     expect(output).toContain('Organization  Acme sandbox')
-    expect(output).toContain('polar listen 3000')
-    expect(output).toContain('polar trigger order.paid')
+    expect(output).toContain('polar webhook listen 3000')
+    expect(output).toContain('polar webhook trigger order.paid')
     expect(output).toContain('polar auth org')
   })
 

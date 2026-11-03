@@ -2,7 +2,6 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
@@ -128,12 +127,12 @@ async def load_balance_transactions(
     return loaded_outgoing, loaded_incoming
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def account_processor_fees(save_fixture: SaveFixture, user: User) -> Account:
     return await create_account(save_fixture, user, processor_fees_applicable=True)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def account_custom_fees(save_fixture: SaveFixture, user: User) -> Account:
     return await create_account(
         save_fixture,
@@ -145,7 +144,7 @@ async def account_custom_fees(save_fixture: SaveFixture, user: User) -> Account:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateFeesReversalBalances:
     async def test_subscription(
         self,
@@ -430,7 +429,7 @@ class TestCreateFeesReversalBalances:
         assert reversal_incoming.incurred_by_transaction == outgoing
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateDisputeFeesBalances:
     async def test_valid(
         self,
@@ -486,7 +485,7 @@ class TestCreateDisputeFeesBalances:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreatePayoutFeesBalances:
     async def test_not_processor_fees_applicable(
         self,

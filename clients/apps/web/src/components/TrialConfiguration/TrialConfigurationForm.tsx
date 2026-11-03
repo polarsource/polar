@@ -20,16 +20,16 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 
 const trialIntervalValueDisplayNames: Record<
   schemas['TrialInterval'],
   [string, string]
 > = {
-  day: ['Day', 'Days'],
-  week: ['Week', 'Weeks'],
-  month: ['Month', 'Months'],
-  year: ['Year', 'Years'],
+  day: ['day', 'days'],
+  week: ['week', 'weeks'],
+  month: ['month', 'months'],
+  year: ['year', 'years'],
 }
 
 export const TrialConfigurationForm = ({
@@ -37,11 +37,11 @@ export const TrialConfigurationForm = ({
 }: {
   bottomText?: string
 }) => {
-  const { control, watch, setValue } = useFormContext<{
+  const { control, setValue } = useFormContext<{
     trial_interval_count?: number | null
     trial_interval?: schemas['TrialInterval'] | null
   }>()
-  const count = watch('trial_interval_count')
+  const count = useWatch({ control, name: 'trial_interval_count' })
 
   const [trialEnabled, setTrialEnabled] = useState<boolean>(!!count)
   const onTrialToggle = useCallback(

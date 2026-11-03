@@ -1,11 +1,13 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.customer_meter.repository import CustomerMeterRepository
-from polar.meter.aggregation import AggregationFunction, PropertyAggregation
+from polar.meter.aggregation import (
+    AggregationFunction,
+    PropertyAggregation,
+)
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Customer, CustomerMeter, Meter, Organization
 from polar.postgres import AsyncSession
@@ -13,7 +15,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_meter
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
         save_fixture,
@@ -31,7 +33,7 @@ async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrCreate:
     async def test_creates_when_missing(
         self, session: AsyncSession, customer: Customer, meter: Meter

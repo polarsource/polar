@@ -20,7 +20,7 @@ describe('withTerminalTitle', () => {
 
   const run = <A, E>(effect: Effect.Effect<A, E>, terminal: boolean) =>
     Effect.runPromise(
-      withTerminalTitle('polar listen · Acme', effect).pipe(
+      withTerminalTitle('polar webhook listen · Acme', effect).pipe(
         Effect.provide(
           Stdio.layerTest({ stdoutIsTerminal: Effect.succeed(terminal) }),
         ),
@@ -30,7 +30,10 @@ describe('withTerminalTitle', () => {
 
   test('sets the title while running and restores it afterwards', async () => {
     await run(Effect.void, true)
-    expect(writes).toEqual([ui.pushTitle('polar listen · Acme'), ui.popTitle])
+    expect(writes).toEqual([
+      ui.pushTitle('polar webhook listen · Acme'),
+      ui.popTitle,
+    ])
   })
 
   test('restores the title when listening fails', async () => {

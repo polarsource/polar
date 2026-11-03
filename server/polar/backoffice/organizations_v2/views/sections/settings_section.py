@@ -412,8 +412,6 @@ class SettingsSection:
                 with tag.div(classes="flex items-center justify-between mb-4"):
                     with tag.h2(classes="text-lg font-bold"):
                         text("Capabilities")
-                    with tag.div(classes="text-xs text-base-content/60"):
-                        text("Overrides reset on the next status change.")
 
                 current_caps = self.org.capabilities
                 status_defaults = STATUS_CAPABILITIES[self.org.status]

@@ -55,7 +55,7 @@ def stripe_service_mock(mocker: MockerFixture) -> StripeService:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_enqueues_website_sync(
@@ -206,7 +206,7 @@ class TestCreate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateManualAccount:
     async def test_cancels_held_payouts_when_replacing_an_account(
         self,
@@ -230,7 +230,7 @@ class TestCreateManualAccount:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     @pytest.mark.auth
     async def test_linked_to_organization_raises_error(
@@ -354,7 +354,7 @@ class TestDelete:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUnlinkAndMaybeDelete:
     @pytest.mark.auth
     async def test_shared_account_only_unlinks_requesting_organization(
@@ -469,7 +469,7 @@ class TestUnlinkAndMaybeDelete:
         assert persisted.deleted_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRejectStripeAccount:
     async def test_rejects_existing_stripe_account(
         self,
@@ -512,7 +512,7 @@ class TestRejectStripeAccount:
         stripe_service_mock.reject_account.assert_not_called()  # type: ignore[attr-defined]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSyncFromStripe:
     async def test_updates_account_from_stripe(
         self,

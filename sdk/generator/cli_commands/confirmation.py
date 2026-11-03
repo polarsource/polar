@@ -4,7 +4,7 @@ import typing
 
 from generator.ir import (
     APIVersion,
-    CLIConfirmationValue,
+    DestructiveValue,
     EnumRef,
     Field,
     LiteralType,
@@ -20,7 +20,7 @@ from generator.ir import (
 class ConfirmationField(typing.TypedDict):
     key: str
     schema: str
-    values: list[CLIConfirmationValue]
+    values: list[DestructiveValue]
 
 
 def confirmation_fields(
@@ -29,14 +29,14 @@ def confirmation_fields(
     conditions: list[ConfirmationField] = []
 
     for field in fields:
-        if field.cli_confirm is None:
+        if field.destructive_when is None:
             continue
 
-        values = field.cli_confirm.values
+        values = field.destructive_when.values
         schemas = [_condition_schema(field.type, value, api) for value in values]
         if not all(matches for _, matches in schemas):
             raise ValueError(
-                f"CLI confirmation value for {field.name!r} does not match its schema"
+                f"Destructive value for {field.name!r} does not match its schema"
             )
 
         conditions.append(
@@ -47,7 +47,7 @@ def confirmation_fields(
 
 
 def _condition_schema(
-    type_ref: TypeRef, expected: CLIConfirmationValue, api: APIVersion
+    type_ref: TypeRef, expected: DestructiveValue, api: APIVersion
 ) -> tuple[str, bool]:
     if isinstance(type_ref, PrimitiveType):
         match type_ref.type:
@@ -94,4 +94,4 @@ def _condition_schema(
         schemas = ", ".join(schema for schema, _ in variants)
         return f"Schema.Union([{schemas}])", any(matches for _, matches in variants)
 
-    raise ValueError("CLI confirmation annotations require scalar input fields")
+    raise ValueError("Destructive conditions require scalar input fields")

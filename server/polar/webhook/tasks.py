@@ -16,7 +16,7 @@ from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.config import Environment, settings
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
+from polar.kit.http import SSRFBlockedError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
@@ -152,7 +152,9 @@ async def _webhook_event_send(
     }
 
     delivery = WebhookDelivery(
-        webhook_event_id=webhook_event_id, webhook_endpoint_id=event.webhook_endpoint_id
+        webhook_event_id=webhook_event_id,
+        webhook_endpoint_id=event.webhook_endpoint_id,
+        organization_id=event.webhook_endpoint.organization_id,
     )
 
     client = HTTPXMiddleware.get()
@@ -163,10 +165,8 @@ async def _webhook_event_send(
             delivery.http_code = event.last_http_code = 200
             delivery.response = None
         else:
-            url = httpx.URL(event.webhook_endpoint.url)
-            await resolve_and_validate_ip(url.raw_host.decode("ascii"))
             response = await client.post(
-                url,
+                httpx.URL(event.webhook_endpoint.url),
                 content=event.payload,
                 headers=headers,
                 timeout=10.0,
@@ -291,15 +291,14 @@ async def webhook_event_archive() -> None:
 
 
 @actor(
-    actor_name="webhook_delivery.archive",
+    actor_name="webhook_delivery.prune",
     cron_trigger=CronTrigger(hour=0, minute=30),
     priority=TaskPriority.LOW,
 )
-async def webhook_delivery_archive() -> None:
+async def webhook_delivery_prune() -> None:
     async with AsyncSessionMaker() as session:
-        await webhook_service.archive_delivery_payloads(
-            session,
-            older_than=utc_now() - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        await webhook_service.delete_expired_deliveries(
+            session, older_than=utc_now() - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD
         )
 
 

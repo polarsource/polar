@@ -3,7 +3,6 @@ from typing import Literal
 from unittest.mock import MagicMock
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
@@ -37,19 +36,19 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order(save_fixture: SaveFixture, customer: Customer) -> Order:
     return await create_order(save_fixture, customer=customer)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def payment(
     save_fixture: SaveFixture, order: Order, organization: Organization
 ) -> Payment:
     return await create_payment(save_fixture, organization, order=order)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreatePaymentFees:
     async def test_not_stripe(
         self, session: AsyncSession, save_fixture: SaveFixture
@@ -133,7 +132,7 @@ class TestCreatePaymentFees:
         assert payment_fee_transaction.incurred_by_transaction == payment_transaction
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateRefundFees:
     async def test_not_stripe(
         self,
@@ -202,7 +201,7 @@ class TestCreateRefundFees:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateDisputeFees:
     async def test_stripe_no_processor_id(
         self,
@@ -275,7 +274,7 @@ class TestCreateDisputeFees:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSyncStripeFees:
     async def test_sync_stripe_fees(
         self,

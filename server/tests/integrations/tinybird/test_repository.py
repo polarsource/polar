@@ -10,7 +10,7 @@ from polar.integrations.tinybird.service import TinybirdEventTypeStats
 from polar.models.event import EventSource
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTinybirdEventRepository:
     async def test_get_event_type_stats_uses_materialized_view(
         self, mocker: MockerFixture

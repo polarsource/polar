@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
@@ -8,7 +7,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     oauth2_client = OAuth2Client(
         client_id="polar_ci_123",
@@ -28,7 +27,7 @@ async def oauth2_client(save_fixture: SaveFixture, user: User) -> OAuth2Client:
     return oauth2_client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListOAuth2Clients:
     async def test_unauthenticated(self, client: AsyncClient) -> None:
         response = await client.get("/v1/oauth2/")

@@ -8,11 +8,13 @@ import { ExperimentProvider } from '@/experiments/ExperimentProvider'
 import { getExperiments } from '@/experiments/server'
 import { UserContextProvider } from '@/providers/auth'
 import { CONFIG } from '@/utils/config'
+import { GOOGLE_ANALYTICS_CONSENT_DEFAULT_SCRIPT } from '@/utils/googleAnalyticsConsent'
 import { getAuthenticatedUser, getUserOrganizations } from '@/utils/user'
 import { schemas } from '@polar-sh/client'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Viewport } from 'next/types'
 import {
+  PolarMotionProvider,
   PolarNuqsProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
@@ -53,32 +55,18 @@ export default async function RootLayout({
       className="antialiased"
     >
       <head>
+        {CONFIG.GOOGLE_ANALYTICS_ID && (
+          <script
+            // oxlint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html: GOOGLE_ANALYTICS_CONSENT_DEFAULT_SCRIPT,
+            }}
+          />
+        )}
         {CONFIG.ENVIRONMENT === 'development' ? (
-          <>
-            <link
-              href="/favicon-dev.png"
-              rel="icon"
-              media="(prefers-color-scheme: dark)"
-            />
-            <link
-              href="/favicon-dev-dark.png"
-              rel="icon"
-              media="(prefers-color-scheme: light)"
-            />
-          </>
+          <link href="/favicon-dev.png" rel="icon" />
         ) : (
-          <>
-            <link
-              href="/favicon.png"
-              rel="icon"
-              media="(prefers-color-scheme: dark)"
-            />
-            <link
-              href="/favicon-dark.png"
-              rel="icon"
-              media="(prefers-color-scheme: light)"
-            />
-          </>
+          <link href="/favicon.png" rel="icon" />
         )}
       </head>
       <body style={{ textRendering: 'optimizeLegibility' }}>
@@ -90,9 +78,11 @@ export default async function RootLayout({
             <PolarPostHogProvider>
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
-                  {CONFIG.IS_SANDBOX && <SandboxBanner />}
-                  <SessionRefreshModal />
-                  {children}
+                  <PolarMotionProvider>
+                    {CONFIG.IS_SANDBOX && <SandboxBanner />}
+                    <SessionRefreshModal />
+                    {children}
+                  </PolarMotionProvider>
                 </PolarNuqsProvider>
               </PolarQueryClientProvider>
             </PolarPostHogProvider>

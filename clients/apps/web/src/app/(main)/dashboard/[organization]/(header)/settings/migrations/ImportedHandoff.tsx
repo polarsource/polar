@@ -76,12 +76,10 @@ export function ImportedHandoff({
     >
       {/* No success icon: the stepper above already marks Assessment done. */}
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="heading-xs" as="h3">
+        <Text variant="title" as="h3">
           Catalog imported
         </Text>
-        <Text variant="caption" color="muted">
-          {receipt(outcome, nothingLanded)}
-        </Text>
+        <Text color="muted">{receipt(outcome, nothingLanded)}</Text>
       </Box>
 
       <Box
@@ -91,10 +89,10 @@ export function ImportedHandoff({
       />
 
       <Box flexDirection="column" rowGap="xs">
-        <Text variant="heading-xs" as="h3">
+        <Text variant="title" as="h3">
           {earlier ? 'Next: check saved cards' : 'Next: move saved cards'}
         </Text>
-        <Text variant="caption" color="muted">
+        <Text color="muted">
           {nothingLanded
             ? NOTHING_TO_MOVE
             : earlier
@@ -131,7 +129,7 @@ export function ImportedHandoff({
       {/* Suppressed when nothing landed: "before you start" would point at a
           disabled CTA, while the copy above sends them back to import. */}
       {remaining && !nothingLanded && (
-        <Text variant="caption" color="muted">
+        <Text color="muted">
           {remaining} {outcome.selectableTotal === 1 ? 'was' : 'were'} not
           prepared. You can still prepare{' '}
           {outcome.selectableTotal === 1 ? 'it' : 'them'} before you start.

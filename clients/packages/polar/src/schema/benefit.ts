@@ -1,4 +1,8 @@
 import { Schema } from 'effect'
+import { Builder } from './builder'
+import { withDeprecation, type HasDeprecation } from './deprecation'
+import { Metadata, withMetadata, type HasMetadata } from './metadata'
+import { Visibility, withVisibility, type HasVisibility } from './visibility'
 
 const benefitFields = {
   external_id: Schema.String.check(Schema.isMinLength(1)),
@@ -6,19 +10,21 @@ const benefitFields = {
     Schema.isMinLength(3),
     Schema.isMaxLength(42),
   ),
+  metadata: Schema.optionalKey(Metadata),
+  visibility: Schema.optionalKey(Visibility),
+  deprecated: Schema.optionalKey(Schema.Literal(true)),
 }
 
 export const BenefitConfig = Schema.Union([
   Schema.Struct({
     ...benefitFields,
     type: Schema.Literal('feature_flag'),
-    properties: Schema.Struct({}),
   }),
   Schema.Struct({
     ...benefitFields,
     type: Schema.Literal('meter_credit'),
     properties: Schema.Struct({
-      meter_external_id: Schema.String.check(Schema.isMinLength(1)),
+      meter: Schema.String.check(Schema.isMinLength(1)),
       units: Schema.Int.check(
         Schema.isGreaterThan(0),
         Schema.isLessThanOrEqualTo(2147483647),
@@ -30,49 +36,55 @@ export const BenefitConfig = Schema.Union([
 
 export type BenefitConfig = typeof BenefitConfig.Type
 
-type BenefitOptions = { readonly displayName?: string }
-
 export type BenefitDefinition<Meter extends string = string> =
-  | {
+  | ({
       readonly name: string | undefined
       readonly type: 'feature_flag'
-      readonly properties: Record<string, never>
-    }
-  | {
+    } & HasMetadata &
+      HasVisibility &
+      HasDeprecation)
+  | ({
       readonly name: string | undefined
       readonly type: 'meter_credit'
       readonly properties: {
-        readonly meter_external_id: Meter
+        readonly meter: Meter
         readonly units: number
         readonly rollover: boolean
       }
-    }
+    } & HasMetadata &
+      HasVisibility &
+      HasDeprecation)
 
-export const flag = (
-  options: BenefitOptions = {},
-): BenefitDefinition<never> => ({
-  name: options.displayName,
-  type: 'feature_flag',
-  properties: {},
-})
+class FlagDefinition extends withDeprecation(
+  withMetadata(withVisibility(Builder)),
+) {
+  readonly type = 'feature_flag'
 
-class CreditsDefinition<Meter extends string> {
+  constructor(readonly name: string | undefined) {
+    super()
+  }
+}
+
+export const flag = (name?: string): FlagDefinition => new FlagDefinition(name)
+
+class CreditsDefinition<Meter extends string> extends withDeprecation(
+  withMetadata(withVisibility(Builder)),
+) {
   readonly type = 'meter_credit'
 
   constructor(
     readonly name: string | undefined,
     readonly properties: {
-      readonly meter_external_id: Meter
+      readonly meter: Meter
       readonly units: number
       readonly rollover: boolean
     },
-  ) {}
+  ) {
+    super()
+  }
 
-  rollover(): CreditsDefinition<Meter> {
-    return new CreditsDefinition(this.name, {
-      ...this.properties,
-      rollover: true,
-    })
+  rollover(): this {
+    return this.with({ properties: { ...this.properties, rollover: true } })
   }
 }
 
@@ -84,21 +96,23 @@ class CreditsBuilder<Meter extends string> {
 
   units(units: number): CreditsDefinition<Meter> {
     return new CreditsDefinition(this.name, {
-      meter_external_id: this.meterExternalId,
+      meter: this.meterExternalId,
       units,
       rollover: false,
     })
   }
 }
 
-export const credits = (options: BenefitOptions = {}) => ({
+export const credits = (name?: string) => ({
   meter: <const Meter extends string>(meter: Meter) =>
-    new CreditsBuilder(options.displayName, meter),
+    new CreditsBuilder(name, meter),
 })
 
 export type BenefitHelpers<Meter extends string> = {
   readonly flag: typeof flag
-  readonly credits: (options?: BenefitOptions) => {
-    readonly meter: (meter: Meter) => CreditsBuilder<Meter>
+  readonly credits: (name?: string) => {
+    readonly meter: <const Credited extends Meter>(
+      meter: Credited,
+    ) => CreditsBuilder<Credited>
   }
 }

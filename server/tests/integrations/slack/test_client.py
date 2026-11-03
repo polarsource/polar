@@ -6,7 +6,7 @@ import pytest
 from polar.integrations.slack.client import BASE_URL, SlackClient
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConversationsInviteShared:
     async def test_sends_single_email_array_payload(self) -> None:
         requests: list[httpx.Request] = []

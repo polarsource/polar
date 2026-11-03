@@ -77,6 +77,6 @@ const ADAPTERS: Snippet[] = [
 export const Adapters = () => (
   <SnippetPicker
     snippets={ADAPTERS}
-    backdrop="/assets/landing/company/polar.jpg"
+    backdrop="/assets/landing/company/Polar_Flow_03_No_Logo.jpg"
   />
 )

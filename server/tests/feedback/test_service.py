@@ -25,7 +25,7 @@ def _build_payload(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubmit:
     @pytest.mark.auth(AuthSubjectFixture(subject="user"))
     async def test_member_can_submit(

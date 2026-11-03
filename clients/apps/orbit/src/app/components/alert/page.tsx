@@ -92,13 +92,13 @@ const alertProps: PropRow[] = [
     type: "'info' | 'warning' | 'danger' | 'success'",
     default: "'info'",
     description:
-      'Picks the icon, surface tint and accent color in one go, mapping the alert to its meaning.',
+      'Picks the icon and its accent color in one go, mapping the alert to its meaning.',
   },
   {
     name: 'title',
     type: 'string',
     required: true,
-    description: "The headline, rendered in the variant's accent color.",
+    description: 'The headline, in the default text color.',
   },
   {
     name: 'description',

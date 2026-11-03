@@ -8,6 +8,8 @@ from sqlalchemy import ColumnExpressionArgument, Select, and_, or_, true
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+from polar.exceptions import PolarRequestValidationError
+
 MetadataColumn = Annotated[
     dict[str, Any], mapped_column(JSONB, nullable=False, default=dict)
 ]
@@ -33,6 +35,18 @@ _MetadataValueString = Annotated[
     ),
 ]
 MetadataValue = _MetadataValueString | int | float | bool
+
+# Meters sum numeric event metadata as double precision; this keeps sums from overflowing.
+MAXIMUM_EVENT_NUMERIC_VALUE = 2**53 - 1
+_EventMetadataValueInt = Annotated[
+    int, Field(ge=-MAXIMUM_EVENT_NUMERIC_VALUE, le=MAXIMUM_EVENT_NUMERIC_VALUE)
+]
+_EventMetadataValueFloat = Annotated[
+    float, Field(ge=-MAXIMUM_EVENT_NUMERIC_VALUE, le=MAXIMUM_EVENT_NUMERIC_VALUE)
+]
+EventMetadataValue = (
+    _MetadataValueString | _EventMetadataValueInt | _EventMetadataValueFloat | bool
+)
 
 METADATA_DESCRIPTION = inspect.cleandoc(
     f"""
@@ -124,6 +138,17 @@ def _get_metadata_query(request: Request) -> dict[str, list[str]] | None:
     for key, value in query_params.multi_items():
         if match := re.match(_metadata_pattern, key):
             metadata_key = match.group(1)
+            if "\x00" in metadata_key or "\x00" in value:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("query", "metadata"),
+                            "msg": "Metadata filters can't contain null characters.",
+                            "input": {metadata_key: value},
+                        }
+                    ]
+                )
             try:
                 metadata[metadata_key] = [*metadata[metadata_key], value]
             except KeyError:
@@ -152,8 +177,8 @@ def get_metadata_clause[M: MetadataMixin](
 
 
 def apply_metadata_clause[M: MetadataMixin](
-    model: type[M], statement: Select[tuple[M]], query: MetadataQuery
-) -> Select[tuple[M]]:
+    model: type[M], statement: Select[M], query: MetadataQuery
+) -> Select[M]:
     clause = get_metadata_clause(model, query)
     return statement.where(clause)
 

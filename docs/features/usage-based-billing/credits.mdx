@@ -34,9 +34,68 @@ The Credits benefit will credit a customer's Usage Meter balance at different po
 
 The customer will be credited the amount of units specified in the benefit at the beginning of every subscription cycle period — monthly or yearly.
 
+If the product has a [meter cycle](/features/usage-based-billing/billing#meter-cycle), credits are granted at the start of every meter period instead. For example, a yearly plan with a monthly meter cycle grants credits every month. No credits are granted while the subscription is `past_due`.
+
 ### One-Time Products
 
 The customer will be credited the amount of units specified in the benefit once at the time of purchase.
+
+## Granting Credits Manually
+
+You can also credit a customer's Usage Meter directly, for example as a goodwill gesture or to top up a balance outside of a purchase. Manual credits are added on top of any credits granted through a Meter Credits benefit.
+
+### From the dashboard
+
+Open a customer and choose **Add Credits** from the customer menu, use **Add credits** on a meter row in the customer's **Usage** tab, or open a customer meter and click **Add credits**. Pick the meter, enter the number of credits and choose whether unused credits roll over to the next billing cycle (on by default). The panel previews the new balance and, for billed meters, how much of the current overage the credits cover.
+
+### From the API
+
+<Note>
+  Manual credits are available from API version `2027-01`.
+</Note>
+
+Use the [Credit Customer Meter](/api-reference/2027-01/customer_meters/credit-customer-meter) endpoint, `POST /v1/customer-meters/credits`. It requires the `customers:write` scope. Identify the customer and meter either with Polar IDs (`customer_id` and `meter_id`) or with external IDs (`external_customer_id` and `external_meter_id`); the two styles can't be mixed in one request.
+
+```json
+{
+  "external_customer_id": "usr_1337",
+  "external_meter_id": "tool_call",
+  "units": 100,
+  "rollover": false,
+  "external_id": "goodwill-2026-10-20"
+}
+```
+
+- `units` is a whole number between 1 and 1,000,000,000.
+- `rollover` defaults to `false`: unused credits expire at the end of the meter period unless you set it to `true`.
+- `external_id` is optional. Retrying with the same `external_id` and the same request returns the original credit instead of granting it twice. Reusing it for a different credit returns a `409`.
+- The meter must belong to the customer's organization and can't be archived.
+
+The response is the `meter.credited` event that was recorded. The customer meter balance is updated before the response is returned; if the meter is being updated at the same moment, the balance catches up shortly after.
+
+### Reversing a manual credit
+
+A manual credit added by mistake can be reversed, either with **Reverse** on the credit in the customer meter's history, or with the [Reverse Customer Meter Credit](/api-reference/2027-01/customer_meters/reverse-customer-meter-credit) endpoint, `POST /v1/customer-meters/credits/{id}/reverse`, where `id` is the ID of the `meter.credited` event returned when the credit was granted.
+
+Reversal removes only the units the customer hasn't used yet; units already consumed stay consumed. Usage draws from non-rollover credits before rollover credits. A reversal is rejected when:
+
+- The credit is older than 7 days.
+- The credit was granted during a period that has already been invoiced.
+- The credit has already been reversed. Each credit can be reversed once.
+- All of the credited units have already been used.
+
+Only manual credits can be reversed. Credits granted through the Meter Credits benefit can be removed by revoking the benefit.
+
+## Credit history
+
+Every credit, reversal and revocation is recorded as a `meter.credited` system event on the customer. Its metadata contains:
+
+- `meter_id`: the meter that was credited.
+- `units`: the number of units. Revoked benefit credits and reversals have negative units.
+- `rollover`: whether unused units carry over to the next meter period.
+- `reason`: `benefit` for credits granted through the Meter Credits benefit, including rolled-over units, or `manual` for credits granted from the dashboard or API.
+
+A reversal has `parent_id` set to the ID of the credit it reverses.
 
 ## Tracking customer's balance
 

@@ -47,7 +47,10 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
   const previewTax = isMaximumRefund
     ? order.refundable_tax_amount
     : order.net_amount > 0
-      ? Math.round((amount * order.tax_amount) / order.net_amount)
+      ? Math.min(
+          Math.round((amount * order.tax_amount) / order.net_amount),
+          order.refundable_tax_amount,
+        )
       : 0
   const previewTotal = amount + previewTax
 
@@ -183,7 +186,7 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
                           <SelectValue placeholder="Select Reason" />
                         </SelectTrigger>
                         <SelectContent>
-                          {Object.values(enums.refundReasonValues).map(
+                          {Object.values(enums.refundCreateReasonValues).map(
                             (reason) => (
                               <SelectItem key={reason} value={reason}>
                                 {RefundReasonDisplay[reason]}

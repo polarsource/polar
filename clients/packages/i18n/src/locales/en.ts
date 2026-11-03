@@ -370,6 +370,8 @@ export default {
       confirmationTokenFailed:
         'Failed to create confirmation token, please try again later.',
       paymentNotCompleted: 'Payment was not completed. Please try again.',
+      paymentFormNotLoaded:
+        'The payment form failed to load. Please refresh the page and try again.',
     },
     cta: {
       startTrial: 'Start trial',

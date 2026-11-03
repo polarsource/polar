@@ -33,6 +33,8 @@ import {
 
 export const listSeatsCustomerSeats = (client: ClientBase) => {
   /**
+   * List seats for a subscription or order.
+   *
    * **Scopes**: `customer_seats:read`
    *
    * @param query - Query parameters
@@ -76,6 +78,8 @@ export const listSeatsCustomerSeats = (client: ClientBase) => {
 };
 export const assignSeatCustomerSeats = (client: ClientBase) => {
   /**
+   * Assign a seat for a subscription or order.
+   *
    * **Scopes**: `customer_seats:write`
    *
    * @param body - Request body
@@ -112,6 +116,8 @@ export const assignSeatCustomerSeats = (client: ClientBase) => {
 };
 export const revokeSeatCustomerSeats = (client: ClientBase) => {
   /**
+   * Revoke a customer seat.
+   *
    * **Scopes**: `customer_seats:write`
    *
    * @param seat_id
@@ -148,6 +154,8 @@ export const revokeSeatCustomerSeats = (client: ClientBase) => {
 };
 export const resendInvitationCustomerSeats = (client: ClientBase) => {
   /**
+   * Resend an invitation for a pending customer seat.
+   *
    * **Scopes**: `customer_seats:write`
    *
    * @param seat_id
@@ -186,6 +194,7 @@ export const resendInvitationCustomerSeats = (client: ClientBase) => {
 };
 export const getClaimInfoCustomerSeats = (client: ClientBase) => {
   /**
+   * Get claim information for a customer seat invitation.
    *
    * @param invitation_token
    * @param requestOptions - Request options
@@ -224,6 +233,7 @@ export const getClaimInfoCustomerSeats = (client: ClientBase) => {
 };
 export const claimSeatCustomerSeats = (client: ClientBase) => {
   /**
+   * Claim a customer seat with an invitation token.
    *
    * @param body - Request body
    * @param requestOptions - Request options

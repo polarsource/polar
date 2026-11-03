@@ -26,11 +26,13 @@ const Auth = ({
   lastLoginMethod,
   returnTo,
   signup,
+  onCodeSent,
 }: {
   authenticationSession: schemas['AuthenticationSession'] | null
   lastLoginMethod?: LoginMethod | null
   returnTo?: string
   signup?: boolean
+  onCodeSent?: (email: string) => void
 }) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -118,6 +120,7 @@ const Auth = ({
             authenticationSession={authenticationSession}
             returnTo={returnTo}
             signup={signup}
+            onCodeSent={onCodeSent}
           />
         </LastUsedWrapper>
       </div>

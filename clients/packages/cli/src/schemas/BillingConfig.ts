@@ -11,7 +11,7 @@ export const DEFAULT_CONFIG_FILES = [
   'polar.json',
 ] as const
 
-export const IssueSeverity = Schema.Literals(['error', 'warning'])
+const IssueSeverity = Schema.Literals(['error', 'warning'])
 
 const ServerPath = Schema.Array(Schema.Union([Schema.String, Schema.Finite]))
 
@@ -30,36 +30,90 @@ export const ValidationErrors = Schema.Struct({
   detail: Schema.Array(ServerError),
 })
 
-export const EntryAction = Schema.Literals(['created', 'updated', 'unchanged'])
+const EntryAction = Schema.Literals(['created', 'updated', 'unchanged'])
 
-export const FieldChange = Schema.Struct({
+const FieldChange = Schema.Struct({
   field: Schema.String,
   before: Schema.optional(Schema.Unknown),
   after: Schema.optional(Schema.Unknown),
 })
+type FieldChange = typeof FieldChange.Type
+
+export const ConfigResource = Schema.Literals([
+  'meter',
+  'benefit',
+  'product',
+  'webhook',
+])
 
 export const EntryResult = Schema.Struct({
-  external_id: Schema.optional(Schema.String),
+  resource: ConfigResource,
+  external_id: Schema.String,
   action: EntryAction,
   diff: Schema.optional(Schema.Array(FieldChange)),
 })
 
-export const ApplyResponse = Schema.Record(
-  Schema.String,
-  Schema.Union([EntryResult, Schema.Array(EntryResult)]),
-)
+export const SettingsResult = Schema.Struct({
+  action: EntryAction,
+  diff: Schema.optional(Schema.Array(FieldChange)),
+})
+
+const RemovalReason = Schema.Literals(['missing', 'deprecated'])
+export type RemovalReason = typeof RemovalReason.Type
+
+export const Removal = Schema.Struct({
+  resource: ConfigResource,
+  external_id: Schema.String,
+  reason: RemovalReason,
+})
+
+export const ApplyResponse = Schema.Struct({
+  changes: Schema.Array(EntryResult),
+  removed: Schema.optional(Schema.Array(Removal)),
+  settings: Schema.optional(Schema.NullOr(SettingsResult)),
+})
 
 export const AppliedEntry = Schema.Struct({
   section: Schema.String,
   id: Schema.String,
-  action: EntryAction,
+  action: Schema.Literals([...EntryAction.literals, 'removed']),
+  reason: Schema.optionalKey(RemovalReason),
   diff: Schema.Array(FieldChange),
 })
 export type AppliedEntry = typeof AppliedEntry.Type
 
+export const CatalogPlan = Schema.Struct({
+  before: Schema.NullOr(Schema.Struct({ name: Schema.NullOr(Schema.String) })),
+  name: Schema.String,
+})
+export type CatalogPlan = typeof CatalogPlan.Type
+
 export const PlanResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  removed: Schema.optional(Schema.Array(Removal)),
+  catalog: Schema.optional(Schema.NullOr(CatalogPlan)),
+  settings: Schema.optional(Schema.NullOr(SettingsResult)),
   issues: Schema.Array(ServerError),
+})
+
+export const PruneEntry = Schema.Struct({
+  resource: ConfigResource,
+  external_id: Schema.String,
+  customers_count: Schema.Number,
+  referenced_by: Schema.Array(
+    Schema.Struct({ resource: ConfigResource, external_id: Schema.String }),
+  ),
+})
+export type PruneEntry = typeof PruneEntry.Type
+
+export const PruneResponse = Schema.Struct({
+  entries: Schema.Array(PruneEntry),
+})
+
+export const PruneOutput = Schema.Struct({
+  file: Schema.String,
+  entries: Schema.Array(PruneEntry),
+  removed: Schema.Boolean,
 })
 
 export const SourceLocation = Schema.Struct({
@@ -81,6 +135,7 @@ export type ConfigIssue = typeof ConfigIssue.Type
 
 export const PlanResult = Schema.Struct({
   entries: Schema.Array(AppliedEntry),
+  catalog: Schema.optionalKey(CatalogPlan),
   issues: Schema.Array(ConfigIssue),
 })
 export type PlanResult = typeof PlanResult.Type
@@ -89,6 +144,7 @@ export const ApplyResult = Schema.Union([
   Schema.Struct({
     status: Schema.Literal('applied'),
     entries: Schema.Array(AppliedEntry),
+    issues: Schema.optionalKey(Schema.Array(ConfigIssue)),
   }),
   Schema.Struct({
     status: Schema.Literal('rejected'),

@@ -5,7 +5,7 @@ import { toast } from '@/components/Toast/use-toast'
 import { useBenefitFiles } from '@/hooks/queries/benefits'
 import { useDownloadFile } from '@/hooks/queries/files'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
+import { ArrowDownward } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
   Button,
@@ -16,6 +16,7 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useState } from 'react'
+import { FlaggedMaliciousStatus } from './FlaggedMaliciousStatus'
 
 const DownloadFileButton = ({
   file,
@@ -52,6 +53,7 @@ const DownloadFileButton = ({
       className="h-8 w-8"
       onClick={onDownload}
       loading={downloadFile.isPending}
+      disabled={file.flagged_malicious_at !== null}
       aria-label={`Download ${file.name}`}
     >
       <ArrowDownward fontSize="inherit" />
@@ -63,7 +65,12 @@ const columns: DataTableColumnDef<schemas['BenefitDownloadableFile']>[] = [
   {
     accessorKey: 'name',
     header: 'File',
-    cell: ({ row: { original } }) => <Text truncate>{original.name}</Text>,
+    cell: ({ row: { original } }) => (
+      <Box flexDirection="column" alignItems="start" rowGap="xs" minWidth={0}>
+        <Text truncate>{original.name}</Text>
+        {original.flagged_malicious_at !== null && <FlaggedMaliciousStatus />}
+      </Box>
+    ),
   },
   {
     accessorKey: 'downloaders',

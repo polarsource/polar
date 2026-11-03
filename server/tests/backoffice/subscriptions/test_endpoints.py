@@ -3,7 +3,6 @@ from collections.abc import AsyncGenerator
 
 import httpx
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
@@ -22,7 +21,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client(
     session: AsyncSession, user: User
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -42,7 +41,7 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_admin, None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     async def test_query_by_organization_id(
         self,
@@ -68,7 +67,7 @@ class TestList:
         assert str(other_subscription.id) not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateStatus:
     async def test_returns_404_for_unknown_subscription(
         self, backoffice_client: httpx.AsyncClient

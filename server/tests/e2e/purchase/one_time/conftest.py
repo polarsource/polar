@@ -1,13 +1,13 @@
-"""Fixtures for one-time purchase E2E tests."""
+import pytest
 
-import pytest_asyncio
+"""Fixtures for one-time purchase E2E tests."""
 
 from polar.models import Organization, Product
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def one_time_product(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:

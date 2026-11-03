@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source                = "hashicorp/aws"
-      version               = ">= 5.0"
+      version               = ">= 6.69.1, < 7.0.0"
       configuration_aliases = [aws.us_east_1]
     }
     cloudflare = {
@@ -79,22 +79,42 @@ resource "aws_cloudfront_cache_policy" "this" {
   }
 }
 
+locals {
+  response_headers_policy = length(var.cors_allowed_origins) > 0 || var.content_security_policy != null
+}
+
 resource "aws_cloudfront_response_headers_policy" "cors" {
-  count = length(var.cors_allowed_origins) > 0 ? 1 : 0
+  count = local.response_headers_policy ? 1 : 0
   name  = "${var.name}-cors"
 
-  cors_config {
-    access_control_allow_origins {
-      items = var.cors_allowed_origins
+  dynamic "cors_config" {
+    for_each = length(var.cors_allowed_origins) > 0 ? [1] : []
+    content {
+      access_control_allow_origins {
+        items = var.cors_allowed_origins
+      }
+      access_control_allow_methods {
+        items = ["GET", "HEAD", "OPTIONS"]
+      }
+      access_control_allow_headers {
+        items = ["*"]
+      }
+      access_control_allow_credentials = false
+      origin_override                  = true
     }
-    access_control_allow_methods {
-      items = ["GET", "HEAD", "OPTIONS"]
+  }
+
+  dynamic "security_headers_config" {
+    for_each = var.content_security_policy != null ? [var.content_security_policy] : []
+    content {
+      content_security_policy {
+        content_security_policy = security_headers_config.value
+        override                = true
+      }
+      content_type_options {
+        override = true
+      }
     }
-    access_control_allow_headers {
-      items = ["*"]
-    }
-    access_control_allow_credentials = false
-    origin_override                  = true
   }
 }
 
@@ -114,7 +134,7 @@ resource "aws_cloudfront_distribution" "this" {
     cached_methods             = ["GET", "HEAD"]
     target_origin_id           = var.s3_bucket_id
     cache_policy_id            = aws_cloudfront_cache_policy.this.id
-    response_headers_policy_id = length(var.cors_allowed_origins) > 0 ? aws_cloudfront_response_headers_policy.cors[0].id : null
+    response_headers_policy_id = local.response_headers_policy ? aws_cloudfront_response_headers_policy.cors[0].id : null
     viewer_protocol_policy     = "redirect-to-https"
     compress                   = true
 

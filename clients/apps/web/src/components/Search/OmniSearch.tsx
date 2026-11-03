@@ -4,6 +4,7 @@ import {
   useGeneralRoutes,
   useOrganizationRoutes,
 } from '@/components/Dashboard/navigation'
+import { useSettingsRoutes } from '@/components/Dashboard/navigationSettings'
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -15,9 +16,9 @@ import {
   CommandList,
 } from '@polar-sh/ui/components/ui/command'
 import * as Dialog from '@radix-ui/react-dialog'
-import { Loader2 } from 'lucide-react'
+import { LoaderCircle as Loader2 } from '@polar-sh/orbit/icons'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Result } from './components/Result'
 import { getQuickActions } from './quickActions'
@@ -42,9 +43,15 @@ export const OmniSearch = ({
 
   const generalRoutes = useGeneralRoutes(organization)
   const orgRoutes = useOrganizationRoutes(organization)
+  const settingsRoutes = useSettingsRoutes(organization)
   const allRoutes = useMemo(
-    () => [...generalRoutes, ...orgRoutes],
-    [generalRoutes, orgRoutes],
+    () => [
+      ...generalRoutes,
+      ...orgRoutes.map((route) =>
+        route.id === 'settings' ? { ...route, subs: settingsRoutes } : route,
+      ),
+    ],
+    [generalRoutes, orgRoutes, settingsRoutes],
   )
 
   const quickActions = useMemo(
@@ -94,7 +101,7 @@ export const OmniSearch = ({
     return pages.slice(0, 5)
   }, [query, allRoutes])
 
-  const performSearch = useCallback(
+  const performSearch = useEffectEvent(
     async (searchQuery: string, signal: AbortSignal) => {
       if (!searchQuery.trim()) {
         setResults([])
@@ -136,7 +143,6 @@ export const OmniSearch = ({
         setLoading(false)
       }
     },
-    [organization.id],
   )
 
   const combinedResults = useMemo(() => {
@@ -153,7 +159,7 @@ export const OmniSearch = ({
       clearTimeout(debounce)
       controller.abort()
     }
-  }, [query, performSearch])
+  }, [query, organization.id])
 
   const handleSelect = (result: SearchResult) => {
     let path = ''

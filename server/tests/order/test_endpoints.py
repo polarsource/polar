@@ -3,7 +3,6 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -12,19 +11,24 @@ from polar.auth.scope import Scope
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
+from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_order, create_product_unit_based
+from tests.fixtures.random_objects import (
+    create_order,
+    create_product,
+    create_product_unit_based,
+)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def orders(
     save_fixture: SaveFixture, product: Product, customer: Customer
 ) -> list[Order]:
     return [await create_order(save_fixture, product=product, customer=customer)]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order_organization_second(
     save_fixture: SaveFixture,
     product_organization_second: Product,
@@ -37,7 +41,7 @@ async def order_organization_second(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListOrders:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/orders/")
@@ -176,6 +180,45 @@ class TestListOrders:
             OrderStatus.refunded.value,
         }
 
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_external_product_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        old_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        old_pro.is_current = False
+        await save_fixture(old_pro)
+        new_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            external_id="pro",
+        )
+        for product in (old_pro, new_pro, product_second):
+            await create_order(save_fixture, product=product, customer=customer)
+
+        response = await client.get(
+            "/v1/orders/", params={"external_product_id": "pro"}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert {item["product_id"] for item in json["items"]} == {
+            str(old_pro.id),
+            str(new_pro.id),
+        }
+
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
     async def test_organization_scoped_session(
         self,
@@ -208,7 +251,7 @@ class TestListOrders:
         assert str(order_organization_second.id) not in returned_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrder:
     async def test_anonymous(self, client: AsyncClient, orders: list[Order]) -> None:
         response = await client.get(f"/v1/orders/{orders[0].id}")
@@ -309,7 +352,7 @@ class TestGetOrder:
         ] == next_attempt.isoformat().replace("+00:00", "Z")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExportOrders:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/orders/export")
@@ -422,6 +465,45 @@ class TestExportOrders:
         assert order2.invoice_number is not None
         assert order1.invoice_number in csv_lines[1]
         assert order2.invoice_number not in response.text
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_product_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        old_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pro v1",
+            external_id="pro",
+        )
+        old_pro.is_current = False
+        await save_fixture(old_pro)
+        new_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Pro v2",
+            external_id="pro",
+        )
+        for product in (old_pro, new_pro, product_second):
+            await create_order(save_fixture, product=product, customer=customer)
+
+        response = await client.get(
+            "/v1/orders/export",
+            params={"external_product_id": "pro", "columns": ["product"]},
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert sorted(csv_lines[1:]) == ["Pro v1", "Pro v2"]
 
     @pytest.mark.auth
     async def test_filter_by_status(
@@ -586,7 +668,7 @@ class TestExportOrders:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateOrder:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/orders/{uuid.uuid4()}")
@@ -608,7 +690,7 @@ class TestUpdateOrder:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGenerateOrderInvoice:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(f"/v1/orders/{uuid.uuid4()}/invoice")
@@ -629,7 +711,7 @@ class TestGenerateOrderInvoice:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrderInvoice:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/orders/{uuid.uuid4()}/invoice")
@@ -650,7 +732,7 @@ class TestGetOrderInvoice:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrderReceipt:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/orders/{uuid.uuid4()}/receipt")
@@ -728,7 +810,7 @@ class TestGetOrderReceipt:
         assert response.json() == {"url": "https://example.com/signed-url"}
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def off_session_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> Organization:
@@ -740,7 +822,7 @@ async def off_session_organization(
     return organization
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrder:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/orders/", json={})
@@ -885,7 +967,7 @@ class TestCreateOrder:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFinalizeOrderEndpoint:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(f"/v1/orders/{uuid.uuid4()}/finalize", json={})

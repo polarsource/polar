@@ -94,6 +94,17 @@ dev snap --interactive              # Show browser (headed mode)
 
 Captures before/after screenshots across branches and generates a visual diff report.
 
+### Polar CLI from source
+
+```bash
+dev polar auth login --local        # Any `polar` command, run from clients/packages/cli/src
+dev polar config plan               # Runs in your current directory, e.g. clients/apps/demo-app
+```
+
+Arguments pass straight through. Like the released binary, it ignores `.env` files in the
+current directory, so a `POLAR_ACCESS_TOKEN` in an app's `.env.local` doesn't override your
+saved session.
+
 ## Docker dev environment
 
 One shared infra stack (postgres, redis, minio, tinybird) plus one app stack (api, worker, web) per worktree, each on its own DB / Redis index / buckets. Service-aware commands auto-route by service name (`api`/`worker`/`web` → this instance, `db`/`redis`/`minio`/`tinybird` → shared). `dev docker --help` for the full list.

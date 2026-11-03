@@ -22,7 +22,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.webhook.tasks.enqueue_job")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebhookEventSend:
     async def test_disabled_endpoint_skips_send(
         self,
@@ -54,7 +54,7 @@ class TestWebhookEventSend:
         await _webhook_event_send(session, webhook_event_id=uuid.uuid4())
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOnEventFailed:
     async def test_disables_endpoint_after_threshold_failures(
         self,

@@ -42,7 +42,7 @@ def _payload(body: Any) -> dict[str, Any]:
     return json.loads(bytes(body))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestValidationExceptionHandler:
     async def test_utf8_bytes_input(self) -> None:
         exc = _request_validation_error(b"not-json-but-utf8")

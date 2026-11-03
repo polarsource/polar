@@ -144,7 +144,15 @@
             }
           }
         },
+        "x-tool-name": "organizations_list",
+        "x-tool-title": "List Organizations",
+        "x-tool-description": "List organizations.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -249,6 +257,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "User"
         ],
         "x-speakeasy-group": "organizations",
@@ -344,7 +353,15 @@
             }
           }
         },
+        "x-tool-name": "organizations_get",
+        "x-tool-title": "Get Organization",
+        "x-tool-description": "Get an organization by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -473,6 +490,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -911,6 +929,13 @@
             }
           }
         },
+        "x-tool-name": "subscriptions_list",
+        "x-tool-title": "List Subscriptions",
+        "x-tool-description": "List subscriptions.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -1362,6 +1387,13 @@
             }
           }
         },
+        "x-tool-name": "subscriptions_get",
+        "x-tool-title": "Get Subscription",
+        "x-tool-description": "Get a subscription by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -1539,12 +1571,18 @@
             }
           }
         },
+        "x-tool-name": "subscriptions_update",
+        "x-tool-title": "Update Subscription",
+        "x-tool-description": "Update a subscription.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
         ],
         "x-speakeasy-group": "subscriptions",
         "x-speakeasy-name-override": "update",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -1649,6 +1687,13 @@
             }
           }
         },
+        "x-tool-name": "subscriptions_revoke",
+        "x-tool-title": "Revoke Subscription",
+        "x-tool-description": "Revoke a subscription, i.e cancel immediately.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -2436,7 +2481,15 @@
             }
           }
         },
+        "x-tool-name": "benefits_list",
+        "x-tool-title": "List Benefits",
+        "x-tool-description": "List benefits.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2486,7 +2539,7 @@
           "cli"
         ],
         "summary": "Create Benefit",
-        "description": "Create a benefit.\n\n**Scopes**: `benefits:write`",
+        "description": "Create a benefit, for example license keys, file downloads or Discord access.\n\n**Scopes**: `benefits:write`",
         "operationId": "benefits:create",
         "security": [
           {
@@ -2538,7 +2591,11 @@
             }
           }
         },
+        "x-tool-name": "benefits_create",
+        "x-tool-title": "Create Benefit",
+        "x-tool-description": "Create a benefit, for example license keys, file downloads or Discord access.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2633,7 +2690,15 @@
             }
           }
         },
+        "x-tool-name": "benefits_get",
+        "x-tool-title": "Get Benefit",
+        "x-tool-description": "Get a benefit by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2775,7 +2840,14 @@
             }
           }
         },
+        "x-tool-name": "benefits_update",
+        "x-tool-title": "Update Benefit",
+        "x-tool-description": "Update a benefit.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2867,7 +2939,15 @@
             }
           }
         },
+        "x-tool-name": "benefits_delete",
+        "x-tool-title": "Delete Benefit",
+        "x-tool-description": "Delete a benefit.\n\n> [!WARNING]\n> Every grants associated with the benefit will be revoked.\n> Users will lose access to the benefit.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2987,7 +3067,15 @@
             }
           }
         },
+        "x-tool-name": "benefits_files",
+        "x-tool-title": "List Benefit Files",
+        "x-tool-description": "List the downloadable files for a benefit with their download statistics.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -3204,6 +3292,13 @@
             }
           }
         },
+        "x-tool-name": "benefits_grants",
+        "x-tool-title": "List Grants for a Benefit",
+        "x-tool-description": "List the individual grants for a benefit.\n\nIt's especially useful to check if a user has been granted a benefit.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -3458,6 +3553,13 @@
             }
           }
         },
+        "x-tool-name": "benefit_grants_list",
+        "x-tool-title": "List Benefit Grants",
+        "x-tool-description": "List benefit grants across all benefits accessible to the authenticated subject.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -3616,6 +3718,13 @@
             }
           }
         },
+        "x-tool-name": "webhooks_list_webhook_endpoints",
+        "x-tool-title": "List Webhook Endpoints",
+        "x-tool-description": "List webhook endpoints.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -3717,6 +3826,12 @@
             }
           }
         },
+        "x-tool-name": "webhooks_create_webhook_endpoint",
+        "x-tool-title": "Create Webhook Endpoint",
+        "x-tool-description": "Create a webhook endpoint.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -3812,6 +3927,13 @@
             }
           }
         },
+        "x-tool-name": "webhooks_get_webhook_endpoint",
+        "x-tool-title": "Get Webhook Endpoint",
+        "x-tool-description": "Get a webhook endpoint by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -3932,6 +4054,13 @@
             }
           }
         },
+        "x-tool-name": "webhooks_update_webhook_endpoint",
+        "x-tool-title": "Update Webhook Endpoint",
+        "x-tool-description": "Update a webhook endpoint.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -4015,6 +4144,13 @@
             }
           }
         },
+        "x-tool-name": "webhooks_delete_webhook_endpoint",
+        "x-tool-title": "Delete Webhook Endpoint",
+        "x-tool-description": "Delete a webhook endpoint.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -4107,6 +4243,12 @@
             }
           }
         },
+        "x-tool-name": "webhooks_reset_webhook_endpoint_secret",
+        "x-tool-title": "Reset Webhook Endpoint Secret",
+        "x-tool-description": "Regenerate a webhook endpoint secret.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -4354,6 +4496,13 @@
             }
           }
         },
+        "x-tool-name": "webhooks_list_webhook_deliveries",
+        "x-tool-title": "List Webhook Deliveries",
+        "x-tool-description": "List webhook deliveries.\n\nDeliveries are all the attempts to deliver a webhook event to an endpoint.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -4469,6 +4618,12 @@
             }
           }
         },
+        "x-tool-name": "webhooks_redeliver_webhook_event",
+        "x-tool-title": "Redeliver Webhook Event",
+        "x-tool-description": "Schedule the re-delivery of a webhook event.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -4767,7 +4922,15 @@
             }
           }
         },
+        "x-tool-name": "products_list",
+        "x-tool-title": "List Products",
+        "x-tool-description": "List products.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -4868,7 +5031,14 @@
             }
           }
         },
+        "x-tool-name": "products_create",
+        "x-tool-title": "Create Product",
+        "x-tool-description": "Create a product.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -4962,7 +5132,15 @@
             }
           }
         },
+        "x-tool-name": "products_get",
+        "x-tool-title": "Get Product",
+        "x-tool-description": "Get a product by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5087,7 +5265,15 @@
             }
           }
         },
+        "x-tool-name": "products_update",
+        "x-tool-title": "Update Product",
+        "x-tool-description": "Update a product.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5189,7 +5375,15 @@
             }
           }
         },
+        "x-tool-name": "products_delete",
+        "x-tool-title": "Delete Product",
+        "x-tool-description": "Delete a product.\n\nOnly products without orders, subscriptions, trials or discounts can be deleted.\nProducts that are in use can only be archived.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5300,7 +5494,15 @@
             }
           }
         },
+        "x-tool-name": "products_update_benefits",
+        "x-tool-title": "Update Product Benefits",
+        "x-tool-description": "Update benefits granted by a product.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5712,6 +5914,13 @@
             }
           }
         },
+        "x-tool-name": "orders_list",
+        "x-tool-title": "List Orders",
+        "x-tool-description": "List orders.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -6131,6 +6340,13 @@
             }
           }
         },
+        "x-tool-name": "orders_get",
+        "x-tool-title": "Get Order",
+        "x-tool-description": "Get an order by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -6231,6 +6447,9 @@
             }
           }
         },
+        "x-tool-name": "orders_update",
+        "x-tool-title": "Update Order",
+        "x-tool-description": "Update an order.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -6477,6 +6696,9 @@
             }
           }
         },
+        "x-tool-name": "orders_generate_invoice",
+        "x-tool-title": "Generate Order Invoice",
+        "x-tool-description": "Trigger generation of an order's invoice.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -6570,6 +6792,13 @@
             }
           }
         },
+        "x-tool-name": "orders_invoice",
+        "x-tool-title": "Get Order Invoice",
+        "x-tool-description": "Get an order's invoice data.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -6668,6 +6897,13 @@
             }
           }
         },
+        "x-tool-name": "orders_receipt",
+        "x-tool-title": "Get Order Receipt",
+        "x-tool-description": "Get a presigned URL to download an order's receipt PDF.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -6981,6 +7217,13 @@
             }
           }
         },
+        "x-tool-name": "refunds_list",
+        "x-tool-title": "List Refunds",
+        "x-tool-description": "List refunds.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -7092,12 +7335,18 @@
             }
           }
         },
+        "x-tool-name": "refunds_create",
+        "x-tool-title": "Create Refund",
+        "x-tool-description": "Create a refund.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
         ],
         "x-speakeasy-group": "refunds",
         "x-speakeasy-name-override": "create",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -7798,7 +8047,15 @@
             }
           }
         },
+        "x-tool-name": "checkouts_list",
+        "x-tool-title": "List Checkout Sessions",
+        "x-tool-description": "List checkout sessions.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -7898,6 +8155,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -7992,7 +8250,15 @@
             }
           }
         },
+        "x-tool-name": "checkouts_get",
+        "x-tool-title": "Get Checkout Session",
+        "x-tool-description": "Get a checkout session by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8101,6 +8367,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8583,7 +8850,15 @@
             }
           }
         },
+        "x-tool-name": "files_list",
+        "x-tool-title": "List Files",
+        "x-tool-description": "List files.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8683,6 +8958,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8793,6 +9069,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8903,6 +9180,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8993,7 +9271,15 @@
             }
           }
         },
+        "x-tool-name": "files_delete",
+        "x-tool-title": "Delete File",
+        "x-tool-description": "Delete a file.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9845,6 +10131,13 @@
             }
           }
         },
+        "x-tool-name": "metrics_get",
+        "x-tool-title": "Get Metrics",
+        "x-tool-description": "Get metrics about your orders and subscriptions.\n\nCurrency values are output in cents.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -10753,6 +11046,13 @@
             ]
           }
         ],
+        "x-tool-name": "metrics_limits",
+        "x-tool-title": "Get Metrics Limits",
+        "x-tool-description": "Get the interval limits for the metrics endpoint.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -11377,6 +11677,13 @@
             }
           }
         },
+        "x-tool-name": "license_keys_list",
+        "x-tool-title": "List License Keys",
+        "x-tool-description": "Get license keys connected to the given organization & filters.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -11505,6 +11812,13 @@
             }
           }
         },
+        "x-tool-name": "license_keys_get",
+        "x-tool-title": "Get License Key",
+        "x-tool-description": "Get a license key.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -11629,12 +11943,18 @@
             }
           }
         },
+        "x-tool-name": "license_keys_update",
+        "x-tool-title": "Update License Key",
+        "x-tool-description": "Update a license key.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
         ],
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "update",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -11739,11 +12059,16 @@
             }
           }
         },
+        "x-tool-name": "license_keys_rotate",
+        "x-tool-title": "Rotate License Key",
+        "x-tool-description": "Rotate a license key.\n\nGenerates a new key string for the same license key record. The previous\nkey string immediately stops validating. Status, usage, limits, expiry,\nand activations are preserved.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
         ],
-        "x-polar-cli-confirm": true,
         "x-speakeasy-group": "license_keys",
         "x-speakeasy-name-override": "rotate",
         "x-codeSamples": [
@@ -11853,6 +12178,13 @@
             }
           }
         },
+        "x-tool-name": "license_keys_get_activation",
+        "x-tool-title": "Get Activation",
+        "x-tool-description": "Get a license key activation.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -12148,8 +12480,6 @@
           "checkout-links",
           "public",
           "mcp",
-          "cli",
-          "mcp",
           "cli"
         ],
         "summary": "List Checkout Links",
@@ -12311,7 +12641,15 @@
             }
           }
         },
+        "x-tool-name": "checkout_links_list",
+        "x-tool-title": "List Checkout Links",
+        "x-tool-description": "List checkout links.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12357,8 +12695,6 @@
         "tags": [
           "checkout-links",
           "public",
-          "mcp",
-          "cli",
           "mcp",
           "cli"
         ],
@@ -12414,7 +12750,11 @@
             }
           }
         },
+        "x-tool-name": "checkout_links_create",
+        "x-tool-title": "Create Checkout Link",
+        "x-tool-description": "Create a checkout link.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12440,8 +12780,6 @@
         "tags": [
           "checkout-links",
           "public",
-          "mcp",
-          "cli",
           "mcp",
           "cli"
         ],
@@ -12514,7 +12852,15 @@
             }
           }
         },
+        "x-tool-name": "checkout_links_get",
+        "x-tool-title": "Get Checkout Link",
+        "x-tool-description": "Get a checkout link by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12551,8 +12897,6 @@
         "tags": [
           "checkout-links",
           "public",
-          "mcp",
-          "cli",
           "mcp",
           "cli"
         ],
@@ -12632,7 +12976,11 @@
             }
           }
         },
+        "x-tool-name": "checkout_links_update",
+        "x-tool-title": "Update Checkout Link",
+        "x-tool-description": "Update a checkout link.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12653,8 +13001,6 @@
         "tags": [
           "checkout-links",
           "public",
-          "mcp",
-          "cli",
           "mcp",
           "cli"
         ],
@@ -12717,7 +13063,15 @@
             }
           }
         },
+        "x-tool-name": "checkout_links_delete",
+        "x-tool-title": "Delete Checkout Link",
+        "x-tool-description": "Delete a checkout link.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12916,6 +13270,13 @@
             }
           }
         },
+        "x-tool-name": "custom_fields_list",
+        "x-tool-title": "List Custom Fields",
+        "x-tool-description": "List custom fields.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -13018,6 +13379,9 @@
             }
           }
         },
+        "x-tool-name": "custom_fields_create",
+        "x-tool-title": "Create Custom Field",
+        "x-tool-description": "Create a custom field.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -13114,6 +13478,13 @@
             }
           }
         },
+        "x-tool-name": "custom_fields_get",
+        "x-tool-title": "Get Custom Field",
+        "x-tool-description": "Get a custom field by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -13235,6 +13606,9 @@
             }
           }
         },
+        "x-tool-name": "custom_fields_update",
+        "x-tool-title": "Update Custom Field",
+        "x-tool-description": "Update a custom field.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -13318,6 +13692,13 @@
             }
           }
         },
+        "x-tool-name": "custom_fields_delete",
+        "x-tool-title": "Delete Custom Field",
+        "x-tool-description": "Delete a custom field.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -13493,7 +13874,15 @@
             }
           }
         },
+        "x-tool-name": "discounts_list",
+        "x-tool-title": "List Discounts",
+        "x-tool-description": "List discounts.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13595,7 +13984,11 @@
             }
           }
         },
+        "x-tool-name": "discounts_create",
+        "x-tool-title": "Create Discount",
+        "x-tool-description": "Create a discount.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13691,7 +14084,15 @@
             }
           }
         },
+        "x-tool-name": "discounts_get",
+        "x-tool-title": "Get Discount",
+        "x-tool-description": "Get a discount by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13816,7 +14217,11 @@
             }
           }
         },
+        "x-tool-name": "discounts_update",
+        "x-tool-title": "Update Discount",
+        "x-tool-description": "Update a discount.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13899,7 +14304,15 @@
             }
           }
         },
+        "x-tool-name": "discounts_delete",
+        "x-tool-title": "Delete Discount",
+        "x-tool-description": "Delete a discount.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14120,6 +14533,13 @@
             }
           }
         },
+        "x-tool-name": "customers_list",
+        "x-tool-title": "List Customers",
+        "x-tool-description": "List customers.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14170,7 +14590,7 @@
           "cli"
         ],
         "summary": "Create Customer",
-        "description": "Create a customer.\n\n**Scopes**: `customers:write`",
+        "description": "Create a customer.\n\nSet `external_id` to the customer's ID in your system to look it up by that ID.\n\n**Scopes**: `customers:write`",
         "operationId": "customers:create",
         "security": [
           {
@@ -14221,6 +14641,9 @@
             }
           }
         },
+        "x-tool-name": "customers_create",
+        "x-tool-title": "Create Customer",
+        "x-tool-description": "Create a customer.\n\nSet `external_id` to the customer's ID in your system to look it up by that ID.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14421,6 +14844,13 @@
             }
           }
         },
+        "x-tool-name": "customers_get",
+        "x-tool-title": "Get Customer",
+        "x-tool-description": "Get a customer by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14541,6 +14971,12 @@
             }
           }
         },
+        "x-tool-name": "customers_update",
+        "x-tool-title": "Update Customer",
+        "x-tool-description": "Update a customer.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14636,6 +15072,13 @@
             }
           }
         },
+        "x-tool-name": "customers_delete",
+        "x-tool-title": "Delete Customer",
+        "x-tool-description": "Delete a customer.\n\nThis action cannot be undone and will immediately:\n- Cancel any active subscriptions for the customer\n- Revoke all their benefits\n- Clear any `external_id`\n\nUse it only in the context of deleting a user within your\nown service. Otherwise, use more granular API endpoints to cancel\na specific subscription or revoke certain benefits.\n\nNote: The customers information will nonetheless be retained for historic\norders and subscriptions.\n\nSet `anonymize=true` to also anonymize PII for GDPR compliance.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14730,6 +15173,13 @@
             }
           }
         },
+        "x-tool-name": "customers_get_external",
+        "x-tool-title": "Get Customer by External ID",
+        "x-tool-description": "Get a customer by external ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14849,6 +15299,12 @@
             }
           }
         },
+        "x-tool-name": "customers_update_external",
+        "x-tool-title": "Update Customer by External ID",
+        "x-tool-description": "Update a customer by external ID.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -14943,6 +15399,13 @@
             }
           }
         },
+        "x-tool-name": "customers_delete_external",
+        "x-tool-title": "Delete Customer by External ID",
+        "x-tool-description": "Delete a customer by external ID.\n\nImmediately cancels any active subscriptions and revokes any active benefits.\n\nSet `anonymize=true` to also anonymize PII for GDPR compliance.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15038,6 +15501,13 @@
             }
           }
         },
+        "x-tool-name": "customers_get_state",
+        "x-tool-title": "Get Customer State",
+        "x-tool-description": "Get a customer state by ID.\n\nThe customer state includes information about\nthe customer's active subscriptions and benefits.\n\nIt's the ideal endpoint to use when you need to get a full overview\nof a customer's status.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15132,6 +15602,13 @@
             }
           }
         },
+        "x-tool-name": "customers_get_state_external",
+        "x-tool-title": "Get Customer State by External ID",
+        "x-tool-description": "Get a customer state by external ID.\n\nThe customer state includes information about\nthe customer's active subscriptions and benefits.\n\nIt's the ideal endpoint to use when you need to get a full overview\nof a customer's status.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15253,6 +15730,13 @@
             }
           }
         },
+        "x-tool-name": "customers_list_payment_methods",
+        "x-tool-title": "List Customer Payment Methods",
+        "x-tool-description": "Get saved payment methods of a customer.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15398,6 +15882,13 @@
             }
           }
         },
+        "x-tool-name": "customers_list_payment_methods_external",
+        "x-tool-title": "List Customer Payment Methods by External ID",
+        "x-tool-description": "Get saved payment methods of a customer by external ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15589,6 +16080,13 @@
             }
           }
         },
+        "x-tool-name": "customers_members_list",
+        "x-tool-title": "List Members",
+        "x-tool-description": "List the members of a customer.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15725,6 +16223,9 @@
             }
           }
         },
+        "x-tool-name": "customers_members_create",
+        "x-tool-title": "Create Member",
+        "x-tool-description": "Create a new member for a customer.\n\nOnly B2B customers with the member management feature enabled can add members.\nThe authenticated user or organization must have access to the customer's organization.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15898,6 +16399,13 @@
             }
           }
         },
+        "x-tool-name": "customers_members_list_external",
+        "x-tool-title": "List Members by Customer External ID",
+        "x-tool-description": "List the members of a customer identified by its external ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16043,6 +16551,9 @@
             }
           }
         },
+        "x-tool-name": "customers_members_create_external",
+        "x-tool-title": "Create Member by Customer External ID",
+        "x-tool-description": "Create a new member for a customer identified by its external ID.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16149,6 +16660,13 @@
             }
           }
         },
+        "x-tool-name": "customers_members_get",
+        "x-tool-title": "Get Member",
+        "x-tool-description": "Get a member of a customer by its ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16284,6 +16802,12 @@
             }
           }
         },
+        "x-tool-name": "customers_members_update",
+        "x-tool-title": "Update Member",
+        "x-tool-description": "Update a member of a customer.\n\nOnly name, email and role can be updated.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16378,6 +16902,13 @@
             }
           }
         },
+        "x-tool-name": "customers_members_delete",
+        "x-tool-title": "Delete Member",
+        "x-tool-description": "Delete a member of a customer.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16494,6 +17025,13 @@
             }
           }
         },
+        "x-tool-name": "customers_members_get_external",
+        "x-tool-title": "Get Member by External ID",
+        "x-tool-description": "Get a member by external ID for a customer identified by its external ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16639,6 +17177,12 @@
             }
           }
         },
+        "x-tool-name": "customers_members_update_external",
+        "x-tool-title": "Update Member by External ID",
+        "x-tool-description": "Update a member by external ID for a customer identified by its external ID.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -16743,6 +17287,13 @@
             }
           }
         },
+        "x-tool-name": "customers_members_delete_external",
+        "x-tool-title": "Delete Member by External ID",
+        "x-tool-description": "Delete a member by external ID for a customer identified by its external ID.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -21514,7 +22065,7 @@
           "cli"
         ],
         "summary": "Assign Seat",
-        "description": "**Scopes**: `customer_seats:write`",
+        "description": "Assign a seat for a subscription or order.\n\n**Scopes**: `customer_seats:write`",
         "operationId": "customer-seats:assign_seat",
         "security": [
           {
@@ -21577,6 +22128,12 @@
             }
           }
         },
+        "x-tool-name": "customer_seats_assign_seat",
+        "x-tool-title": "Assign Seat",
+        "x-tool-description": "Assign a seat for a subscription or order.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -21602,7 +22159,7 @@
           "cli"
         ],
         "summary": "List Seats",
-        "description": "**Scopes**: `customer_seats:read`",
+        "description": "List seats for a subscription or order.\n\n**Scopes**: `customer_seats:read`",
         "operationId": "customer-seats:list_seats",
         "security": [
           {
@@ -21688,6 +22245,13 @@
             }
           }
         },
+        "x-tool-name": "customer_seats_list_seats",
+        "x-tool-title": "List Seats",
+        "x-tool-description": "List seats for a subscription or order.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -21715,7 +22279,7 @@
           "cli"
         ],
         "summary": "Revoke Seat",
-        "description": "**Scopes**: `customer_seats:write`",
+        "description": "Revoke a customer seat.\n\n**Scopes**: `customer_seats:write`",
         "operationId": "customer-seats:revoke_seat",
         "security": [
           {
@@ -21777,6 +22341,13 @@
             }
           }
         },
+        "x-tool-name": "customer_seats_revoke_seat",
+        "x-tool-title": "Revoke Seat",
+        "x-tool-description": "Revoke a customer seat.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -21804,7 +22375,7 @@
           "cli"
         ],
         "summary": "Resend Invitation",
-        "description": "**Scopes**: `customer_seats:write`",
+        "description": "Resend an invitation for a pending customer seat.\n\n**Scopes**: `customer_seats:write`",
         "operationId": "customer-seats:resend_invitation",
         "security": [
           {
@@ -21869,6 +22440,12 @@
             }
           }
         },
+        "x-tool-name": "customer_seats_resend_invitation",
+        "x-tool-title": "Resend Invitation",
+        "x-tool-description": "Resend an invitation for a pending customer seat.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -21892,10 +22469,10 @@
         "tags": [
           "customer-seats",
           "public",
-          "mcp",
           "cli"
         ],
         "summary": "Get Claim Info",
+        "description": "Get claim information for a customer seat invitation.",
         "operationId": "customer-seats:get_claim_info",
         "parameters": [
           {
@@ -21939,6 +22516,13 @@
             }
           }
         },
+        "x-tool-name": "customer_seats_get_claim_info",
+        "x-tool-title": "Get Claim Info",
+        "x-tool-description": "Get claim information for a customer seat invitation.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-speakeasy-group": "customer-seats",
         "x-speakeasy-name-override": "get_claim_info",
         "x-codeSamples": [
@@ -21958,10 +22542,10 @@
         "tags": [
           "customer-seats",
           "public",
-          "mcp",
           "cli"
         ],
         "summary": "Claim Seat",
+        "description": "Claim a customer seat with an invitation token.",
         "operationId": "customer-seats:claim_seat",
         "requestBody": {
           "content": {
@@ -22001,6 +22585,9 @@
             }
           }
         },
+        "x-tool-name": "customer_seats_claim_seat",
+        "x-tool-title": "Claim Seat",
+        "x-tool-description": "Claim a customer seat with an invitation token.",
         "x-speakeasy-group": "customer-seats",
         "x-speakeasy-name-override": "claim_seat",
         "x-codeSamples": [
@@ -22749,7 +23336,15 @@
             }
           }
         },
+        "x-tool-name": "events_list_names",
+        "x-tool-title": "List Event Names",
+        "x-tool-description": "List event names.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -22869,6 +23464,13 @@
             }
           }
         },
+        "x-tool-name": "events_get",
+        "x-tool-title": "Get Event",
+        "x-tool-description": "Get an event by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -22909,14 +23511,6 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "headers": {
-              "Polar-Ingest-Sequence": {
-                "description": "Sequence number covering every event of the request, including duplicates stored by an earlier request.",
-                "schema": {
-                  "type": "integer"
-                }
-              }
-            },
             "content": {
               "application/json": {
                 "schema": {
@@ -22954,6 +23548,7 @@
           }
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -23229,6 +23824,13 @@
             }
           }
         },
+        "x-tool-name": "event_types_list",
+        "x-tool-title": "List Event Types",
+        "x-tool-description": "List event types with aggregated statistics.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -23349,6 +23951,9 @@
             }
           }
         },
+        "x-tool-name": "event_types_update",
+        "x-tool-title": "Update Event Type",
+        "x-tool-description": "Update an event type's label.",
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -23552,7 +24157,15 @@
             }
           }
         },
+        "x-tool-name": "meters_list",
+        "x-tool-title": "List Meters",
+        "x-tool-description": "List meters.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -23653,7 +24266,11 @@
             }
           }
         },
+        "x-tool-name": "meters_create",
+        "x-tool-title": "Create Meter",
+        "x-tool-description": "Create a meter.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -23748,7 +24365,15 @@
             }
           }
         },
+        "x-tool-name": "meters_get",
+        "x-tool-title": "Get Meter",
+        "x-tool-description": "Get a meter by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -23864,12 +24489,19 @@
             }
           }
         },
+        "x-tool-name": "meters_update",
+        "x-tool-title": "Update Meter",
+        "x-tool-description": "Update a meter.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
         "x-speakeasy-group": "meters",
         "x-speakeasy-name-override": "update",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -24686,7 +25318,15 @@
             }
           }
         },
+        "x-tool-name": "meters_quantities",
+        "x-tool-title": "Get Meter Quantities",
+        "x-tool-description": "Get quantities of a meter over a time period.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24920,6 +25560,13 @@
             }
           }
         },
+        "x-tool-name": "customer_meters_list",
+        "x-tool-title": "List Customer Meters",
+        "x-tool-description": "List customer meters.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -25037,6 +25684,13 @@
             }
           }
         },
+        "x-tool-name": "customer_meters_get",
+        "x-tool-title": "Get Customer Meter",
+        "x-tool-description": "Get a customer meter by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -25343,6 +25997,13 @@
             }
           }
         },
+        "x-tool-name": "payments_list",
+        "x-tool-title": "List Payments",
+        "x-tool-description": "List payments.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -25460,6 +26121,13 @@
             }
           }
         },
+        "x-tool-name": "payments_get",
+        "x-tool-title": "Get Payment",
+        "x-tool-description": "Get a payment by ID.",
+        "x-tool-annotations": [
+          "read_only",
+          "idempotent"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -38215,20 +38883,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -38409,6 +39063,20 @@
             ],
             "title": "Confirmation Token Id",
             "description": "ID of the Stripe confirmation token. Required for fixed prices and custom prices."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -43079,20 +43747,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -43428,6 +44082,20 @@
             ],
             "title": "Embed Origin",
             "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -43476,20 +44144,6 @@
             ],
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
-          },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
           },
           "amount": {
             "anyOf": [
@@ -43659,6 +44313,20 @@
             ],
             "title": "Allow Trial",
             "description": "Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."
+          },
+          "product_price_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Price Id",
+            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
+            "deprecated": true
           }
         },
         "type": "object",
@@ -43673,8 +44341,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Amount",
@@ -43698,7 +44365,6 @@
         "properties": {
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)",
             "title": "Amount",
             "description": "The amount in cents."
           },
@@ -54595,6 +55261,28 @@
             "title": "Duration In Months",
             "description": "Number of months the discount should be applied.\n\nRequired when `duration` is `repeating`. Must be omitted otherwise.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
           },
+          "amounts": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer",
+                  "maximum": 999999999999.0,
+                  "minimum": 0.0,
+                  "description": "Fixed amount to discount from the invoice total."
+                },
+                "propertyNames": {
+                  "$ref": "#/components/schemas/PresentmentCurrency"
+                },
+                "type": "object",
+                "minProperties": 1,
+                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amounts"
+          },
           "amount": {
             "anyOf": [
               {
@@ -54622,28 +55310,6 @@
             ],
             "default": "usd",
             "deprecated": true
-          },
-          "amounts": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "integer",
-                  "maximum": 999999999999.0,
-                  "minimum": 0.0,
-                  "description": "Fixed amount to discount from the invoice total."
-                },
-                "propertyNames": {
-                  "$ref": "#/components/schemas/PresentmentCurrency"
-                },
-                "type": "object",
-                "minProperties": 1,
-                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amounts"
           }
         },
         "type": "object",
@@ -54651,8 +55317,7 @@
           "name",
           "duration"
         ],
-        "title": "DiscountFixedCreate",
-        "description": "Schema to create a fixed amount discount."
+        "title": "DiscountFixedCreate"
       },
       "DiscountFixedOnceForeverDuration": {
         "properties": {
@@ -56612,33 +57277,6 @@
               }
             ]
           },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999999999999.0,
-                "minimum": 0.0,
-                "description": "Fixed amount to discount from the invoice total."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount",
-            "deprecated": true
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "description": "The currency of the fixed amount discount."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "deprecated": true
-          },
           "amounts": {
             "anyOf": [
               {
@@ -56690,11 +57328,37 @@
               }
             ],
             "title": "Products"
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 999999999999.0,
+                "minimum": 0.0,
+                "description": "Fixed amount to discount from the invoice total."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount",
+            "deprecated": true
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentmentCurrency",
+                "description": "The currency of the fixed amount discount."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true
           }
         },
         "type": "object",
-        "title": "DiscountUpdate",
-        "description": "Schema to update a discount."
+        "title": "DiscountUpdate"
       },
       "Dispute": {
         "properties": {
@@ -57660,10 +58324,14 @@
               "minLength": 1
             },
             {
-              "type": "integer"
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": -9007199254740991.0
             },
             {
-              "type": "number"
+              "type": "number",
+              "maximum": 9007199254740991.0,
+              "minimum": -9007199254740991.0
             },
             {
               "type": "boolean"
@@ -59296,21 +59964,29 @@
           },
           "input_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Input Tokens",
             "description": "The number of LLM input tokens used for the event."
           },
           "cached_input_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Cached Input Tokens",
             "description": "The number of LLM cached tokens that were used for the event."
           },
           "output_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Output Tokens",
             "description": "The number of LLM output tokens used for the event."
           },
           "total_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Total Tokens",
             "description": "The total number of LLM tokens used for the event."
           }
@@ -60404,7 +61080,7 @@
                 "type": "null"
               }
             ],
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "one_of": [
                 "revoked",
                 "disabled"
@@ -62592,7 +63268,7 @@
             ],
             "title": "Is Archived",
             "description": "Whether the meter is archived. Archived meters are no longer used for billing.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -69775,19 +70451,6 @@
       },
       "OrganizationDetails": {
         "properties": {
-          "about": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "About",
-            "description": "Brief information about you and your business.",
-            "deprecated": true
-          },
           "product_description": {
             "anyOf": [
               {
@@ -69815,6 +70478,44 @@
             "type": "array",
             "title": "Pricing Models",
             "description": "Pricing models used by the organization."
+          },
+          "switching": {
+            "type": "boolean",
+            "title": "Switching",
+            "description": "Switching from another platform?",
+            "default": false
+          },
+          "switching_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "paddle",
+                  "lemon_squeezy",
+                  "gumroad",
+                  "stripe",
+                  "other"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Switching From",
+            "description": "Which platform the organization is migrating from."
+          },
+          "about": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "About",
+            "description": "Brief information about you and your business.",
+            "deprecated": true
           },
           "intended_use": {
             "anyOf": [
@@ -69851,31 +70552,6 @@
             "title": "Future Annual Revenue",
             "description": "Estimated revenue in the next 12 months",
             "deprecated": true
-          },
-          "switching": {
-            "type": "boolean",
-            "title": "Switching",
-            "description": "Switching from another platform?",
-            "default": false
-          },
-          "switching_from": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "paddle",
-                  "lemon_squeezy",
-                  "gumroad",
-                  "stripe",
-                  "other"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Switching From",
-            "description": "Which platform the organization is migrating from."
           },
           "previous_annual_revenue": {
             "anyOf": [
@@ -70035,12 +70711,6 @@
             "type": "boolean",
             "title": "Merchant Migration Enabled",
             "description": "If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.",
-            "default": false
-          },
-          "frame_ancestors_enforced": {
-            "type": "boolean",
-            "title": "Frame Ancestors Enforced",
-            "description": "If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.",
             "default": false
           }
         },
@@ -73295,7 +73965,6 @@
           },
           "unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount",
             "description": "The price per unit in cents."
           }
@@ -73355,8 +74024,7 @@
                 "exclusiveMinimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Unit Amount",
@@ -73986,7 +74654,7 @@
             ],
             "title": "Is Archived",
             "description": "Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           },
@@ -74319,7 +74987,7 @@
             "title": "Revoke Benefits",
             "description": "Should this refund trigger the associated customer benefits to be revoked?\n\n**Note:**\nOnly allowed in case the `order` is a one-time purchase.\nSubscriptions automatically revoke customer benefits once the\nsubscription itself is revoked, i.e fully canceled.",
             "default": false,
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -74500,6 +75168,8 @@
           "service_disruption",
           "satisfaction_guarantee",
           "dispute_prevention",
+          "tax_refund",
+          "vat_reverse_charge_correction",
           "other"
         ],
         "title": "RefundReason"
@@ -76035,7 +76705,7 @@
             "type": "boolean",
             "title": "Cancel At Period End",
             "description": "Cancel an active subscription once the current period ends.\n\nOr uncancel a subscription currently set to be revoked at period end.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -77489,7 +78159,7 @@
             "type": "boolean",
             "title": "Pause At Period End",
             "description": "Pause an active subscription at the end of the current period.\n\nOr cancel a scheduled pause on a subscription set to be paused at\nperiod end.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           },
@@ -78236,7 +78906,10 @@
             "type": "boolean",
             "const": true,
             "title": "Resume",
-            "description": "Resume a paused subscription immediately, starting a new billing period and charging the customer."
+            "description": "Resume a paused subscription immediately, starting a new billing period and charging the customer.",
+            "x-tool-destructive-when": {
+              "equals": true
+            }
           }
         },
         "additionalProperties": false,
@@ -78452,7 +79125,7 @@
             "const": true,
             "title": "Revoke",
             "description": "Cancel and revoke an active subscription immediately",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": true
             }
           }
@@ -80308,7 +80981,6 @@
           },
           "unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount"
           }
         },
@@ -80341,8 +81013,7 @@
                 "minimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,19}|(?=[\\d.]{1,32}0*$)\\d{0,19}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Unit Amount"
@@ -82097,7 +82768,7 @@
             ],
             "title": "Enabled",
             "description": "Whether the webhook endpoint is enabled.",
-            "x-polar-cli-confirm": {
+            "x-tool-destructive-when": {
               "equals": false
             }
           }

@@ -8,7 +8,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { GripVertical, X } from 'lucide-react'
+import { GripVertical, X } from '@polar-sh/orbit/icons'
 import { twMerge } from 'tailwind-merge'
 
 interface SortableBenefitRowProps {

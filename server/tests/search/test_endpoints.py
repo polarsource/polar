@@ -20,7 +20,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSearch:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -387,7 +387,7 @@ class TestSearch:
         assert "userAone@example.com" not in emails
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSearchOrderAmount:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
     @pytest.mark.parametrize(

@@ -4,7 +4,6 @@ from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
@@ -219,14 +218,14 @@ def _discounted_renewals(subscription: Subscription, renewals: int) -> list[bool
     return discounted
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def migration(
     save_fixture: SaveFixture, organization: Organization
 ) -> MerchantMigration:
     return await build_connected_migration(save_fixture, organization)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def imported_customer(
     save_fixture: SaveFixture, organization: Organization
 ) -> Customer:
@@ -238,7 +237,7 @@ async def imported_customer(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def pending_record(
     save_fixture: SaveFixture,
     migration: MerchantMigration,
@@ -311,7 +310,7 @@ def cutover(
     return run
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRun:
     @pytest.mark.parametrize(
         ("canonical_kwargs", "tax"),
@@ -624,6 +623,9 @@ class TestRun:
         assert "when this coupon was applied" in (outcome.message or "")
         _assert_left_alone(adapter, pending_record)
 
+    # Freeze a 30-day month. The default period is 30 days, so a 31-day month
+    # puts its start and end on different days and one fewer renewal is discounted.
+    @freeze_time("2026-06-15")
     async def test_applies_kept_coupon_start_not_the_first_coupon(
         self,
         mocker: MockerFixture,
@@ -697,6 +699,9 @@ class TestRun:
             ),
         ],
     )
+    # Freeze a 30-day month. The default period is 30 days, so a 31-day month
+    # puts its start and end on different days and one fewer renewal is discounted.
+    @freeze_time("2026-06-15")
     async def test_discounts_the_renewals_the_source_still_would(
         self,
         mocker: MockerFixture,
@@ -1222,6 +1227,45 @@ class TestRun:
         subscription = await _created(session, pending_record)
         assert subscription.payment_method_id is None
 
+    async def test_sepa_subscription_with_a_card_available_falls_back_to_card(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        cutover: RunCutover,
+        imported_customer: Customer,
+        pending_record: MerchantMigrationRecord,
+    ) -> None:
+        migration.pan_transfer_steps = pan_steps_until(
+            migration.pan_transfer_method, "verify_cards"
+        )
+        card = await create_payment_method(
+            save_fixture, imported_customer, processor_id="pm_card_polar"
+        )
+        staged = deserialize(pending_record.type, pending_record.canonical)
+        assert isinstance(staged, CanonicalSubscription)
+        staged.payment_method = CanonicalPaymentMethod(
+            source_id="pm_sepa_original",
+            type=CanonicalPaymentMethodType.sepa_debit,
+        )
+        pending_record.canonical = serialize(staged)
+        await save_fixture(pending_record)
+        await save_fixture(migration)
+        assert imported_customer.default_payment_method_id is None
+
+        outcome = await cutover(
+            _source(
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_sepa_original",
+                    type=CanonicalPaymentMethodType.sepa_debit,
+                )
+            )
+        )
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        subscription = await _created(session, pending_record)
+        assert subscription.payment_method_id == card.id
+
     async def test_uses_the_exact_mapped_method_already_in_polar(
         self,
         mocker: MockerFixture,
@@ -1573,11 +1617,11 @@ class TestRun:
         _assert_left_alone(adapter, pending_record)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAlreadyLiveOnPolar:
     """Reconciling: whatever activated it, the source must not still be billing."""
 
-    @pytest_asyncio.fixture
+    @pytest.fixture
     async def live_record(
         self,
         save_fixture: SaveFixture,
@@ -1651,7 +1695,7 @@ class TestAlreadyLiveOnPolar:
         assert adapter.stopped == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelAtPeriodEnd:
     """A selected ending subscription moves, and still ends on that date."""
 
@@ -2015,7 +2059,7 @@ class TestCancelAtPeriodEnd:
         assert subscription.ended_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSkips:
     """Every skip leaves the source billing."""
 
@@ -2072,6 +2116,11 @@ class TestSkips:
                 {"customer_balance": -500},
                 "credit balance on Stripe",
                 id="customer-credit-since-the-import",
+            ),
+            pytest.param(
+                {"has_pending_invoice_items": True},
+                "pending charges or credits on Stripe",
+                id="pending-invoice-items-since-the-import",
             ),
             pytest.param(
                 {"managed_payments": True},
@@ -2183,7 +2232,7 @@ class TestSkips:
         _assert_left_alone(adapter, record)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFailures:
     async def test_stripe_error_is_retryable(
         self, cutover: RunCutover, pending_record: MerchantMigrationRecord
@@ -2410,9 +2459,9 @@ class TestFailures:
         assert adapter.stopped == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddOn:
-    @pytest_asyncio.fixture(autouse=True)
+    @pytest.fixture(autouse=True)
     async def add_on_record(
         self,
         save_fixture: SaveFixture,

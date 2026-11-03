@@ -1,8 +1,9 @@
+import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
-import pytest_asyncio
+from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 from sqlalchemy import Select
 
@@ -53,7 +54,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
         save_fixture,
@@ -65,7 +66,7 @@ async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_metered_unit(
     save_fixture: SaveFixture, meter: Meter, organization: Organization
 ) -> Product:
@@ -111,7 +112,7 @@ async def create_graduated_metered_product(
     return product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_metered_tiers(
     save_fixture: SaveFixture, meter: Meter, organization: Organization
 ) -> Product:
@@ -120,7 +121,7 @@ async def product_metered_tiers(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def metered_tiers_subscription(
     save_fixture: SaveFixture, customer: Customer, product_metered_tiers: Product
 ) -> Subscription:
@@ -129,7 +130,7 @@ async def metered_tiers_subscription(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def metered_subscription(
     save_fixture: SaveFixture, customer: Customer, product_metered_unit: Product
 ) -> Subscription:
@@ -138,7 +139,7 @@ async def metered_subscription(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order(
     save_fixture: SaveFixture,
     customer: Customer,
@@ -384,7 +385,7 @@ async def create_seat_change_billing_entry(
     return billing_entry
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrderItemsFromPending:
     async def test_one_metered_price(
         self,
@@ -1346,7 +1347,7 @@ class TestCreateOrderItemsFromPending:
         await session.refresh(deleted_entry)
         assert deleted_entry.order_item_id is None
 
-    async def test_inactive_price_skipped_after_product_switch(
+    async def test_inactive_price_kept_after_product_switch(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1354,13 +1355,6 @@ class TestCreateOrderItemsFromPending:
         meter: Meter,
         organization: Organization,
     ) -> None:
-        """
-        Test that billing entries from an inactive price (after product/price switch)
-        are skipped and not re-billed.
-
-        This tests the fix for a bug where billing entries from discontinued prices
-        would be re-billed every cycle after a customer switched products.
-        """
         # Create initial product with metered price
         product_old = await create_product(
             save_fixture,
@@ -1422,32 +1416,238 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
-        # When computing order items, old price entries should be SKIPPED
-        # because old_price is no longer in subscription_product_prices
+        # When computing order items, old price entries should be KEPT and billed
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription
         ) as order_items:
-            # Should create only ONE line item for the new price
-            assert len(order_items) == 1
+            # Should create two line items: one for the old price, one for the new price
+            assert len(order_items) == 2
 
-            order_item = order_items[0]
-            assert order_item.product_price == new_price
-            # Only 50 tokens at new rate ($0.50/token) = $25
-            assert order_item.amount == 25_00
+            # Sort by price creation date to ensure consistent order for assertions
+            order_items = sorted(
+                order_items,
+                key=lambda item: (
+                    0 if not item.product_price else item.product_price.created_at
+                ),
+            )
 
-            order = await create_order(
+            old_price_order_item = order_items[0]
+            assert old_price_order_item.product_price == old_price
+            # 100 + 200 tokens at $1.00 each
+            assert old_price_order_item.amount == 300_00
+
+            new_price_order_item = order_items[1]
+            assert new_price_order_item.product_price == new_price
+            # 50 tokens at $0.50 each
+            assert new_price_order_item.amount == 25_00
+
+            await create_order(
                 save_fixture,
                 customer=customer,
                 order_items=list(order_items),
             )
 
+        # Old entries should be linked to the old price order item
+        for entry in old_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == old_price_order_item.id
+
         # New entries should be linked to the order item
         for entry in new_entries:
             await session.refresh(entry)
-            assert entry.order_item_id == order_item.id
+            assert entry.order_item_id == new_price_order_item.id
 
-        # Old entries should remain PENDING (not linked to any order item)
-        # This is the key assertion: they were skipped, not re-billed
+        # Trying to create order items again should not include already linked entries
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            # No new order items should be created since all entries are linked
+            assert len(order_items) == 0
+
+    async def test_price_snapshot_bills_switched_away_price(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        old_price = product_old.prices[0]
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+        old_entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=old_price,
+                subscription=subscription,
+                tokens=tokens,
+            )
+            for tokens in (100, 200)
+        ]
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],
+        )
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(product_new.prices[0])
+        ]
+        await save_fixture(subscription)
+
+        async with billing_entry_service.create_metered_order_items_from_pending(
+            session, subscription, price_ids=[old_price.id]
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            assert order_item.product_price == old_price
+            assert order_item.amount == 300_00
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
         for entry in old_entries:
             await session.refresh(entry)
-            assert entry.order_item_id is None
+            assert entry.order_item_id == order_item.id
+
+    @pytest.mark.parametrize(
+        ("include_metered", "billed"), [(True, True), (False, False)]
+    )
+    async def test_bills_reducer_buckets_with_metered_usage(
+        self,
+        include_metered: bool,
+        billed: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        bill = mocker.patch(
+            "polar.billing_entry.service.billing_interval_service.bill_usage",
+            return_value={meter.id: (Decimal(10), Decimal(0))},
+        )
+        await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=product_metered_unit.prices[0],
+            subscription=metered_subscription,
+            tokens=10,
+        )
+        cutoff = utc_now()
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session,
+            metered_subscription,
+            include_metered=include_metered,
+            cutoff=cutoff,
+        ) as order_items:
+            order = await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        if billed:
+            bill.assert_called_once_with(
+                session,
+                metered_subscription,
+                {meter.id},
+                order_id=order.id,
+                cutoff=cutoff,
+            )
+        else:
+            bill.assert_not_called()
+
+    @pytest.mark.parametrize(
+        ("reducer_credits", "match"), [(Decimal(13), True), (Decimal(16), False)]
+    )
+    async def test_compares_net_usage_with_the_reducer(
+        self,
+        reducer_credits: Decimal,
+        match: bool,
+        capfire: CaptureLogfire,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.billing_entry.service.billing_interval_service.bill_usage",
+            return_value={meter.id: (Decimal(15), reducer_credits)},
+        )
+        product_old = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product_old
+        )
+        product_new = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(50), None, "usd")],
+        )
+        # Legacy nets each price on its own: max(0, 10 - 8) + max(0, 5 - 8) = 2.
+        for price, tokens in ((product_old.prices[0], 10), (product_new.prices[0], 5)):
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=subscription,
+                tokens=tokens,
+            )
+            await create_credit_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=subscription,
+                meter=meter,
+                units=8,
+            )
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(product_new.prices[0])
+        ]
+        await save_fixture(subscription)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 2
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        [span] = [
+            span
+            for span in capfire.exporter.exported_spans
+            if span.name == "Bill and compare reducer usage"
+            and span.attributes is not None
+            and span.attributes.get("logfire.span_type") == "span"
+        ]
+        assert span.attributes is not None
+        assert json.loads(str(span.attributes["quantities"])) == {
+            str(meter.id): {
+                "legacy": {"usage": "15.0", "credits": "16", "net": "2.0"},
+                "reducer": {
+                    "usage": "15",
+                    "credits": str(reducer_credits),
+                    "net": str(max(Decimal(15) - reducer_credits, Decimal(0))),
+                },
+            }
+        }
+        assert span.attributes["match"] is match

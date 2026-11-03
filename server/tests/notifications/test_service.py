@@ -84,7 +84,7 @@ def _unmapped_notif() -> PartialNotification:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSendToOrgMembers:
     async def test_per_user_setting_is_honored(
         self,

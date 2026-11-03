@@ -53,12 +53,23 @@ type StringShape<S extends string> =
           : never
       >
 
+// CLDR categories a locale may add on top of the en.ts variants. Unlike the
+// exact `=N` keys, a category covers every count the locale's rules put in it
+// (e.g. `one` is 0 and 1 in French, 1, 21, 31… in Russian).
+export type PluralCategoryKey = 'zero' | 'one' | 'two' | 'few' | 'many'
+
 type PluralShape<T> = {
   [K in keyof T]: K extends '_mode'
     ? T[K]
     : T[K] extends string
       ? StringShape<T[K]>
       : T[K]
+} & {
+  [K in Exclude<PluralCategoryKey, keyof T>]?: 'other' extends keyof T
+    ? T['other'] extends string
+      ? StringShape<T['other']>
+      : string
+    : string
 }
 
 type AnnotatedEntryShape<T extends { value: string }> =

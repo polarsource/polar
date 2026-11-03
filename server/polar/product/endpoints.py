@@ -1,34 +1,34 @@
-import builtins
 from typing import Annotated
 
 from fastapi import Depends, Query
 
-from polar.benefit.schemas import BenefitID
+from polar.authz.dependencies import AuthorizeWebUserRead
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.kit.versioning import version
 from polar.models import Product
-from polar.models.product import ProductVisibility
-from polar.openapi import APITag, cli_preview
-from polar.organization.schemas import OrganizationID
+from polar.openapi import APITag, cli_preview, destructive, open_world
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
     get_db_read_session,
     get_db_session,
 )
+from polar.product.schemas import ProductListParams
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
 from . import auth, legacy_schemas
+from .name_check import check_product_name
 from .schemas import Product as ProductSchema
 from .schemas import (
     ProductBenefitsUpdate,
     ProductCreate,
     ProductID,
+    ProductNameCheck,
+    ProductNameCheckRequest,
     ProductUpdate,
 )
 from .service import ProductNotDeletable
@@ -63,53 +63,27 @@ async def list(
     sorting: ListSorting,
     auth_subject: auth.CreatorProductsRead,
     metadata: MetadataQuery,
-    id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    query: str | None = Query(None, description="Filter by product name."),
-    is_archived: bool | None = Query(None, description="Filter on archived products."),
-    is_recurring: bool | None = Query(
-        None,
-        description=(
-            "Filter on recurring products. "
-            "If `true`, only subscriptions tiers are returned. "
-            "If `false`, only one-time purchase products are returned. "
-        ),
-    ),
-    benefit_id: MultipleQueryFilter[BenefitID] | None = Query(
-        None,
-        title="BenefitID Filter",
-        description="Filter products granting specific benefit.",
-    ),
-    visibility: builtins.list[ProductVisibility] | None = Query(
-        default=None,
-        description="Filter by visibility.",
-    ),
+    filters: Annotated[ProductListParams, Query()],
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[ProductSchema]:
     """List products."""
     results, count = await product_service.list(
         session,
         auth_subject,
-        id=id,
-        organization_id=organization_id,
-        query=query,
-        is_archived=is_archived,
-        is_recurring=is_recurring,
-        visibility=visibility,
-        benefit_id=benefit_id,
+        id=filters.id,
+        external_id=filters.external_id,
+        organization_id=filters.organization_id,
+        query=filters.query,
+        is_archived=filters.is_archived,
+        is_recurring=filters.is_recurring,
+        visibility=filters.visibility,
+        benefit_id=filters.benefit_id,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,
     )
-
     return ListResource.from_paginated_results(
-        [ProductSchema.model_validate(result) for result in results],
-        count,
-        pagination,
+        [ProductSchema.model_validate(result) for result in results], count, pagination
     )
 
 
@@ -137,10 +111,25 @@ async def get(
 
 
 @router.post(
+    "/name-check",
+    summary="Check Product Name",
+    response_model=ProductNameCheck,
+    tags=[APITag.private],
+)
+async def name_check(
+    auth_subject: AuthorizeWebUserRead,
+    name_check_request: ProductNameCheckRequest,
+) -> ProductNameCheck:
+    """Warn when a product name suggests a use case the Acceptable Use Policy forbids."""
+    return await check_product_name(name_check_request.name)
+
+
+@router.post(
     "/",
     response_model=ProductSchema,
     status_code=201,
     summary="Create Product",
+    openapi_extra=open_world(),
     responses={201: {"description": "Product created."}},
 )
 async def create(
@@ -158,6 +147,7 @@ async def create(
     response_model=ProductSchema,
     status_code=201,
     summary="Create Product",
+    openapi_extra=open_world(),
     responses={201: {"description": "Product created."}},
 )
 @version(starting_from=V2027_01)
@@ -174,6 +164,7 @@ async def create_v2027_01(
     "/{id}",
     response_model=ProductSchema,
     summary="Update Product",
+    openapi_extra=open_world(),
     responses={
         200: {"description": "Product updated."},
         403: {
@@ -203,6 +194,7 @@ async def update(
     name="update",
     response_model=ProductSchema,
     summary="Update Product",
+    openapi_extra=open_world(),
     responses={
         200: {"description": "Product updated."},
         403: {
@@ -232,6 +224,7 @@ async def update_v2027_01(
     "/{id}/benefits",
     response_model=ProductSchema,
     summary="Update Product Benefits",
+    openapi_extra={**destructive(), **open_world()},
     responses={
         200: {"description": "Product benefits updated."},
         403: {

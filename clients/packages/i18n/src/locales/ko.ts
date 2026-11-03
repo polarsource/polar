@@ -242,6 +242,8 @@ export default {
       confirmationTokenFailed:
         '확인 토큰 생성에 실패했습니다. 나중에 다시 시도해 주세요.',
       paymentNotCompleted: '결제가 완료되지 않았습니다. 다시 시도해 주세요.',
+      paymentFormNotLoaded:
+        '결제 양식을 불러오지 못했습니다. 페이지를 새로고침한 후 다시 시도해 주세요.',
     },
     cta: {
       startTrial: '체험 시작하기',

@@ -1,7 +1,7 @@
 import { StaticImage } from '@/components/Image/StaticImage'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight } from '@polar-sh/orbit/icons'
 import type { ReactNode } from 'react'
 import { Chapter } from '../Chapter'
 import {
@@ -63,15 +63,7 @@ export const Platform = () => (
     >
       {PILLARS.map((pillar) => (
         <Box key={pillar.title} flexDirection="column" rowGap="xl">
-          <Box
-            position="relative"
-            overflow="hidden"
-            backgroundColor="background-secondary"
-            alignItems="center"
-            justifyContent="center"
-            paddingHorizontal="2xl"
-            minHeight={{ base: '14rem', xl: '20rem' }}
-          >
+          <div className="dark:border-polar-800 relative flex min-h-[14rem] items-center justify-center overflow-hidden rounded-md border border-gray-200 px-8 py-10 xl:min-h-[20rem]">
             <StaticImage
               src={pillar.image}
               alt=""
@@ -80,12 +72,7 @@ export const Platform = () => (
               className="object-cover"
               style={{ objectPosition: pillar.focus }}
             />
-            <Box
-              position="absolute"
-              inset={0}
-              backgroundColor="background-secondary"
-              opacity={0.6}
-            />
+            <div className="pointer-events-none absolute inset-0 bg-black/40" />
             <Box
               position="relative"
               width="100%"
@@ -94,7 +81,7 @@ export const Platform = () => (
             >
               {pillar.vignette}
             </Box>
-          </Box>
+          </div>
           <Box flexDirection="column" rowGap="xs">
             <Text variant="heading-xxs" as="h3">
               {pillar.title}

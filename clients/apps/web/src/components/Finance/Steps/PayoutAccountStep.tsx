@@ -5,7 +5,11 @@ import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight, ExternalLink } from 'lucide-react'
+import {
+  ArrowRight,
+  Check as CheckIcon,
+  ExternalLink,
+} from '@polar-sh/orbit/icons'
 import { useCallback, useState } from 'react'
 import { StatusBlock } from '../Account/sections/StatusBlock'
 import { CheckPayoutStatusButton } from '../CheckPayoutStatusButton'
@@ -34,10 +38,13 @@ export default function PayoutAccountStep({
   organization,
 }: PayoutAccountStepProps) {
   const returnPath = payoutOnboardingReturnPath(organization.slug)
-  const { payoutAccount, openCreate, modals } = usePayoutAccountSetup(
-    organization,
-    returnPath,
-  )
+  const {
+    payoutAccount,
+    managedByAnotherMember,
+    openCreate,
+    openManage,
+    modals,
+  } = usePayoutAccountSetup(organization, returnPath)
 
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false)
 
@@ -71,7 +78,7 @@ export default function PayoutAccountStep({
           params: { path: { id: payoutAccount.id } },
         }),
       )
-      window.open(link.url, '_blank')
+      window.open(link.url, '_blank', 'noopener,noreferrer')
     } finally {
       setIsLoadingDashboard(false)
     }
@@ -86,7 +93,7 @@ export default function PayoutAccountStep({
   }
 
   const { state, tone, icon, title, description } =
-    getPayoutAccountPresentation(payoutAccount)
+    getPayoutAccountPresentation(payoutAccount, managedByAnotherMember)
 
   const startSetupAction = (
     <Button onClick={handleStartAccountSetup}>
@@ -96,6 +103,14 @@ export default function PayoutAccountStep({
   )
 
   const action = () => {
+    if (managedByAnotherMember) {
+      return (
+        <Button onClick={openManage}>
+          Switch payout account
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      )
+    }
     if (!payoutAccount) {
       return startSetupAction
     }
@@ -130,6 +145,24 @@ export default function PayoutAccountStep({
       default:
         return startSetupAction
     }
+  }
+
+  if (state === 'ready') {
+    return (
+      <>
+        <div className="dark:bg-polar-800 rounded-2xl border bg-white p-8 text-center">
+          <span className="dark:bg-polar-700 mb-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+            <CheckIcon className="dark:text-polar-400 h-4 w-4 text-gray-500" />
+          </span>
+          <h4 className="mb-2 font-medium">{title}</h4>
+          <p className="dark:text-polar-400 mx-auto max-w-sm text-sm text-balance text-gray-600">
+            {description}
+          </p>
+          <div className="mt-6">{action()}</div>
+        </div>
+        {modals}
+      </>
+    )
   }
 
   return (

@@ -1,11 +1,13 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import Select, delete, or_, select
 from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
+from polar.kit.repository.base import Options
 from polar.models import Meter, MeterReducer, Reducer
+from polar.models.reducer import ReducerKind
 
 
 class ReducerRepository(RepositoryBase[Reducer]):
@@ -21,22 +23,31 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return (await self.session.execute(statement)).scalar_one()
 
-    async def get_by_meter_id(self, meter_id: UUID) -> Reducer | None:
+    async def get_by_meter_and_kind(
+        self, meter_id: UUID, kind: ReducerKind
+    ) -> Reducer | None:
         statement = (
             self.get_base_statement()
             .join(MeterReducer)
-            .where(MeterReducer.meter_id == meter_id)
+            .where(MeterReducer.meter_id == meter_id, Reducer.kind == kind)
         )
         return await self.get_one_or_none(statement)
 
     async def get_meters_without_reducers(self, *, limit: int) -> Sequence[Meter]:
+        """Meters missing a reducer of some kind."""
         statement = (
             select(Meter)
             .where(
                 Meter.deleted_at.is_(None),
-                ~select(MeterReducer.meter_id)
-                .where(MeterReducer.meter_id == Meter.id)
-                .exists(),
+                or_(
+                    *(
+                        ~select(MeterReducer.meter_id)
+                        .join(Reducer)
+                        .where(MeterReducer.meter_id == Meter.id, Reducer.kind == kind)
+                        .exists()
+                        for kind in ReducerKind
+                    )
+                ),
             )
             .order_by(Meter.id)
             .limit(limit)
@@ -63,17 +74,36 @@ class ReducerRepository(RepositoryBase[Reducer]):
         )
         return len((await self.session.scalars(statement)).all())
 
-    async def get_all_active_by_organization(
-        self, organization_id: UUID
-    ) -> Sequence[Reducer]:
-        """Reducers of the organization used by at least one active meter."""
+    def get_active_statement(self, kinds: Collection[ReducerKind]) -> Select[Reducer]:
+        """Reducers of the kinds used by at least one active meter."""
         active_reducer_ids = (
             select(MeterReducer.reducer_id)
             .join(MeterReducer.meter)
             .where(Meter.archived_at.is_(None), Meter.deleted_at.is_(None))
         )
-        statement = self.get_base_statement().where(
-            Reducer.organization_id == organization_id,
-            Reducer.id.in_(active_reducer_ids),
+        return self.get_base_statement().where(
+            Reducer.kind.in_(kinds), Reducer.id.in_(active_reducer_ids)
+        )
+
+    async def get_active_by_id_and_kinds(
+        self, id: UUID, kinds: Collection[ReducerKind], *, options: Options = ()
+    ) -> Reducer | None:
+        return await self.get_one_or_none(
+            self.get_active_statement(kinds).where(Reducer.id == id).options(*options)
+        )
+
+    async def get_all_active_by_organization_and_kinds(
+        self,
+        organization_id: UUID,
+        kinds: Collection[ReducerKind],
+        *,
+        options: Options = (),
+    ) -> Sequence[Reducer]:
+        """Reducers of the kinds and organization used by at least one active
+        meter."""
+        statement = (
+            self.get_active_statement(kinds)
+            .where(Reducer.organization_id == organization_id)
+            .options(*options)
         )
         return await self.get_all(statement)

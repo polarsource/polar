@@ -19,6 +19,7 @@ from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import Engine, Session, create_sync_engine
 from polar.models import (
+    Agent,
     Model,
     OAuth2AuthorizationCode,
     OAuth2AuthorizationCodeOrganization,
@@ -90,8 +91,10 @@ def save_fixture(sync_session: Session) -> SaveFixture:
 
 @pytest.fixture(autouse=True)
 def override_get_authorization_server(sync_session: Session) -> Iterator[None]:
-    authorization_server = AuthorizationServer.build(sync_session)
-    app.dependency_overrides[get_authorization_server] = lambda: authorization_server
+    # Built per request, as in production: the registered grants depend on settings.
+    app.dependency_overrides[get_authorization_server] = lambda: (
+        AuthorizationServer.build(sync_session)
+    )
     yield
     app.dependency_overrides.pop(get_authorization_server)
 
@@ -101,10 +104,11 @@ async def create_oauth2_token(
     *,
     client: OAuth2Client,
     access_token: str,
-    refresh_token: str,
+    refresh_token: str | None,
     scopes: list[str],
     user: User | None = None,
     organization: Organization | None = None,
+    agent: Agent | None = None,
     organizations: list[Organization] | None = None,
     access_token_revoked_at: int | None = None,
     refresh_token_revoked_at: int | None = None,
@@ -121,7 +125,9 @@ async def create_oauth2_token(
         client_id=client.client_id,
         token_type="bearer",
         access_token=get_token_hash(access_token),
-        refresh_token=get_token_hash(refresh_token),
+        refresh_token=(
+            get_token_hash(refresh_token) if refresh_token is not None else None
+        ),
         scope=" ".join(scopes),
         access_token_revoked_at=access_token_revoked_at,
         refresh_token_revoked_at=refresh_token_revoked_at,
@@ -133,6 +139,9 @@ async def create_oauth2_token(
     if organization is not None:
         token.organization_id = organization.id
         token.sub_type = SubType.organization
+    if agent is not None:
+        token.agent_id = agent.id
+        token.sub_type = SubType.agent
     if organizations is not None:
         token.organization_scopes = [
             OAuth2TokenOrganization(organization_id=organization.id)

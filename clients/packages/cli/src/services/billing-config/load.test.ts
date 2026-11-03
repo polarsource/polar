@@ -57,7 +57,7 @@ describe('load', () => {
     expect(config.generated).toBe(false)
   })
 
-  test('generates JSON from the default export of a TypeScript file', async () => {
+  test('evaluates the default export of a TypeScript file and keeps its source', async () => {
     const file = await write(
       [
         "const meter = { external_id: 'tool-calls' as const }",
@@ -68,7 +68,7 @@ describe('load', () => {
     const config = await load(file)
     expect(config.generated).toBe(true)
     expect(config.input).toEqual({ meters: [{ external_id: 'tool-calls' }] })
-    expect(config.source).toBe(JSON.stringify(config.input, null, 2))
+    expect(config.source).toContain("external_id: 'tool-calls' as const")
   })
 
   test('calls a default exported function, sync or async', async () => {

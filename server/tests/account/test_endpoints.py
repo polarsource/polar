@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.scope import READ_ONLY_SCOPES, Scope
@@ -14,12 +13,12 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def account_other_user(save_fixture: SaveFixture, user_second: User) -> Account:
     return await create_account(save_fixture, user_second)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccount:
     @pytest.mark.auth(
         AuthSubjectFixture(scopes=READ_ONLY_SCOPES),
@@ -56,7 +55,7 @@ class TestGetAccount:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccountCredits:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/accounts/{uuid.uuid4()}/credits")
@@ -74,7 +73,7 @@ class TestGetAccountCredits:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPatchAccount:
     @pytest.mark.auth(
         AuthSubjectFixture(scopes=READ_ONLY_SCOPES),

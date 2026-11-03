@@ -18,6 +18,16 @@ src/
 The `polar-cli/*` rules in `lint/rules/` enforce these boundaries. Run
 `pnpm lint` after adding a file; the message tells you where it belongs.
 
+## Running it locally
+
+Run the local CLI from source as `dev polar <command>` (the `dev` CLI runs
+`src/` in your current directory, so `dev polar config plan` from
+`clients/apps/demo-app` picks up its `polar.config.ts`). Never test against a
+compiled `polar` binary with saved sessions: macOS treats the fresh binary as
+untrusted and prompts for the keychain password on every read. When a compiled
+artifact must be tested, limit it to `--version` and `--help`, or set
+`POLAR_ACCESS_TOKEN` to bypass the keyring.
+
 ## Adding a command
 
 Build it with `command()` from `@/utils/command`. `run` computes a result,
@@ -55,8 +65,10 @@ Rules of thumb:
 
 - `run` never prints. In-flight status goes through `withProgress`/`note` from
   `@/utils/progress`, which stay silent under `--json`.
-- Commands that never return (`listen`) use `stream()` instead and emit
+- Commands that never return (`listen`) use `streaming()` instead and emit
   through its `Emit`: human text, or one JSON object per line under `--json`.
+- Commands where JSON makes no sense (e.g. one that opens a browser) use
+  `textOnly()` instead; it refuses `--json` and explains why.
 - `--json` is an output format. A flag that changes behaviour gets its own
   name (`--dry-run`, `--list`).
 - Test with `runCli(command, ['…', '--json'])` from `@/utils/test-utils/cli`

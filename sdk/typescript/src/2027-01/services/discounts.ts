@@ -26,6 +26,7 @@ export const listDiscounts = (client: ClientBase) => {
   return async (
     query?: {
       organization_id?: string | string[] | null;
+      external_id?: string | string[] | null;
       query?: string | null;
       page?: number;
       limit?: number;
@@ -36,6 +37,7 @@ export const listDiscounts = (client: ClientBase) => {
     const pathParams = {};
     const queryParams = {
       organization_id: query?.organization_id,
+      external_id: query?.external_id,
       query: query?.query,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
@@ -71,6 +73,7 @@ export const iterListDiscounts = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
+      external_id?: string | string[] | null;
       query?: string | null;
       page?: number;
       limit?: number;

@@ -13,7 +13,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPolicyGuardGetAccount:
     """Test PolicyGuard behavior on GET /organizations/{id}/account."""
 
@@ -102,7 +102,7 @@ class TestPolicyGuardGetAccount:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPolicyGuardUpdateOrganization:
     """Test PolicyGuard behavior on PATCH /organizations/{id}."""
 
@@ -131,7 +131,7 @@ class TestPolicyGuardUpdateOrganization:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPolicyGuardDeleteOrganization:
     """Test PolicyGuard behavior on DELETE /organizations/{id}."""
 
@@ -167,7 +167,7 @@ class TestPolicyGuardDeleteOrganization:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPolicyGuardInviteMember:
     """Test PolicyGuard behavior on POST /organizations/{id}/members/invite."""
 
@@ -211,7 +211,7 @@ class TestPolicyGuardInviteMember:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPolicyGuardListBenefitGrants:
     """Test AuthorizeOrgManageUserRead on GET /organizations/{id}/benefit-grants."""
 
@@ -267,7 +267,7 @@ class TestPolicyGuardListBenefitGrants:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPolicyGuardRemoveMember:
     """Test PolicyGuard behavior on DELETE /organizations/{id}/members/{user_id}."""
 

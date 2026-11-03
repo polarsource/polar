@@ -284,10 +284,8 @@ class BenefitFeatureFlagCreateProperties(typing.TypedDict):
     """Properties for creating a benefit of type `feature_flag`."""
 
 
-
 class BenefitFeatureFlagProperties(typing.TypedDict):
     """Properties for a benefit of type `feature_flag`."""
-
 
 
 class BenefitFeatureFlagUpdate(typing.TypedDict):
@@ -592,9 +590,6 @@ class CheckoutConfirmStripe(typing.TypedDict):
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
 
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
-
     amount: typing.NotRequired[int | None]
 
     seats: typing.NotRequired[int | None]
@@ -628,6 +623,9 @@ class CheckoutConfirmStripe(typing.TypedDict):
 
     confirmation_token_id: typing.NotRequired[str | None]
     """ID of the Stripe confirmation token. Required for fixed prices and custom prices."""
+
+    product_price_id: typing.NotRequired[str | None]
+    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
 
 class CheckoutCreate(typing.TypedDict):
@@ -980,9 +978,6 @@ class CheckoutUpdate(typing.TypedDict):
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
 
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
-
     amount: typing.NotRequired[int | None]
 
     seats: typing.NotRequired[int | None]
@@ -1062,6 +1057,9 @@ You can store up to **50 key-value pairs**."""
     embed_origin: typing.NotRequired[str | None]
     """If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."""
 
+    product_price_id: typing.NotRequired[str | None]
+    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
+
 
 class CheckoutUpdatePublic(typing.TypedDict):
     """Update an existing checkout session using the client secret."""
@@ -1071,9 +1069,6 @@ class CheckoutUpdatePublic(typing.TypedDict):
 
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
-
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
     amount: typing.NotRequired[int | None]
 
@@ -1105,6 +1100,9 @@ class CheckoutUpdatePublic(typing.TypedDict):
 
     allow_trial: typing.NotRequired[typing.Literal[False] | None]
     """Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."""
+
+    product_price_id: typing.NotRequired[str | None]
+    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
 
 class CostMetadataInput(typing.TypedDict):
@@ -1857,8 +1855,6 @@ You can store up to **50 key-value pairs**."""
 
 
 class DiscountFixedCreate(typing.TypedDict):
-    """Schema to create a fixed amount discount."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -1908,11 +1904,11 @@ Required when `duration` is `repeating`. Must be omitted otherwise.
 For this to work on yearly pricing, you should multiply this by 12.
 For example, to apply the discount for 2 years, set this to 24."""
 
+    amounts: typing.NotRequired[dict[str, int] | None]
+
     amount: typing.NotRequired[int | None]
 
     currency: typing.NotRequired[PresentmentCurrency | None]
-
-    amounts: typing.NotRequired[dict[str, int] | None]
 
 
 class DiscountPercentageCreate(typing.TypedDict):
@@ -1975,8 +1971,6 @@ For example, to create a 25.5% discount, set this to 2550."""
 
 
 class DiscountUpdate(typing.TypedDict):
-    """Schema to update a discount."""
-
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2013,15 +2007,15 @@ You can store up to **50 key-value pairs**."""
 
     type: typing.NotRequired[DiscountType | None]
 
-    amount: typing.NotRequired[int | None]
-
-    currency: typing.NotRequired[PresentmentCurrency | None]
-
     amounts: typing.NotRequired[dict[str, int] | None]
 
     basis_points: typing.NotRequired[int | None]
 
     products: typing.NotRequired[list[str] | None]
+
+    amount: typing.NotRequired[int | None]
+
+    currency: typing.NotRequired[PresentmentCurrency | None]
 
 
 class DownloadableFileCreate(typing.TypedDict):
@@ -2423,9 +2417,7 @@ class OAuth2ClientConfiguration(typing.TypedDict):
     token_endpoint_auth_method: typing.NotRequired[TokenEndpointAuthMethod]
 
     grant_types: typing.NotRequired[
-        list[
-            typing.Literal["authorization_code", "refresh_token"]
-        ]
+        list[typing.Literal["authorization_code", "refresh_token"]]
     ]
 
     response_types: typing.NotRequired[list[typing.Literal["code"]]]
@@ -2451,9 +2443,7 @@ class OAuth2ClientConfigurationUpdate(typing.TypedDict):
     token_endpoint_auth_method: typing.NotRequired[TokenEndpointAuthMethod]
 
     grant_types: typing.NotRequired[
-        list[
-            typing.Literal["authorization_code", "refresh_token"]
-        ]
+        list[typing.Literal["authorization_code", "refresh_token"]]
     ]
 
     response_types: typing.NotRequired[list[typing.Literal["code"]]]
@@ -2647,9 +2637,6 @@ class OrganizationCustomerPortalSettings(typing.TypedDict):
 
 
 class OrganizationDetails(typing.TypedDict):
-    about: typing.NotRequired[str | None]
-    """Brief information about you and your business."""
-
     product_description: typing.NotRequired[str | None]
     """Description of digital products being sold."""
 
@@ -2659,6 +2646,17 @@ class OrganizationDetails(typing.TypedDict):
     pricing_models: typing.NotRequired[list[str]]
     """Pricing models used by the organization."""
 
+    switching: typing.NotRequired[bool]
+    """Switching from another platform?"""
+
+    switching_from: typing.NotRequired[
+        typing.Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
+    ]
+    """Which platform the organization is migrating from."""
+
+    about: typing.NotRequired[str | None]
+    """Brief information about you and your business."""
+
     intended_use: typing.NotRequired[str | None]
     """How the organization will integrate and use Polar."""
 
@@ -2667,14 +2665,6 @@ class OrganizationDetails(typing.TypedDict):
 
     future_annual_revenue: typing.NotRequired[int | None]
     """Estimated revenue in the next 12 months"""
-
-    switching: typing.NotRequired[bool]
-    """Switching from another platform?"""
-
-    switching_from: typing.NotRequired[
-        typing.Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
-    ]
-    """Which platform the organization is migrating from."""
 
     previous_annual_revenue: typing.NotRequired[int | None]
     """Revenue from last year if applicable."""
@@ -3506,9 +3496,7 @@ You can store up to **50 key-value pairs**."""
     medias: typing.NotRequired[list[str] | None]
     """List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."""
 
-    attached_custom_fields: typing.NotRequired[
-        list[AttachedCustomFieldCreate] | None
-    ]
+    attached_custom_fields: typing.NotRequired[list[AttachedCustomFieldCreate] | None]
 
 
 class PropertyAggregation(typing.TypedDict):
@@ -3877,9 +3865,7 @@ class WebhookEndpointUpdate(typing.TypedDict):
     name: typing.NotRequired[str | None]
     """An optional name for the webhook endpoint to help organize and identify it."""
 
-    api_version: typing.NotRequired[
-        typing.Literal["2026-04", "2026-10"] | None
-    ]
+    api_version: typing.NotRequired[typing.Literal["2026-04", "2026-10"] | None]
     """The API version that'll be used in event payloads."""
 
     format: typing.NotRequired[WebhookFormat | None]
@@ -3956,10 +3942,7 @@ FileCreate: typing.TypeAlias = (
 )
 
 MetadataQuery: typing.TypeAlias = (
-    dict[
-        str, str | int | bool | list[str] | list[int] | list[bool]
-    ]
-    | None
+    dict[str, str | int | bool | list[str] | list[int] | list[bool]] | None
 )
 
 ProductCreate: typing.TypeAlias = ProductCreateRecurring | ProductCreateOneTime

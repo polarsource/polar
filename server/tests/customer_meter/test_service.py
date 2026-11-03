@@ -3,7 +3,6 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-import pytest_asyncio
 
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
@@ -24,6 +23,7 @@ from polar.models import (
 )
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
@@ -37,7 +37,7 @@ def lstr(s: str) -> str:
     return f"{s}_{uuid.uuid4().hex[:8]}"
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_with_external_id(
     save_fixture: SaveFixture, organization: Organization
 ) -> Customer:
@@ -51,7 +51,7 @@ async def customer_with_external_id(
     return customer
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
         save_fixture,
@@ -69,7 +69,7 @@ async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def events(
     save_fixture: SaveFixture, customer: Customer, meter: Meter
 ) -> list[Event]:
@@ -149,7 +149,7 @@ async def events(
     ]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def events_for_external_customer(
     save_fixture: SaveFixture, customer_with_external_id: Customer, meter: Meter
 ) -> list[Event]:
@@ -182,7 +182,7 @@ async def events_for_external_customer(
     ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCustomerMeter:
     async def test_no_matching_event_not_existing_customer_meter(
         self, session: AsyncSession, customer: Customer, meter: Meter
@@ -368,6 +368,58 @@ class TestUpdateCustomerMeter:
                 save_fixture,
                 timestamp=timestamp + timedelta(seconds=2),
                 ingested_at=timestamp + timedelta(seconds=2),
+                organization=customer.organization,
+                customer=customer,
+                source=EventSource.system,
+                name=SystemEvent.meter_reset,
+                metadata={"meter_id": str(meter.id)},
+            ),
+        ]
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            last_balanced_event=events[0],
+            consumed_units=Decimal(20),
+            credited_units=10,
+            balance=Decimal(-10),
+            activated_at=utc_now(),
+        )
+        await save_fixture(customer_meter)
+
+        (
+            updated_customer_meter,
+            updated,
+        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+
+        assert updated_customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(0)
+        assert customer_meter.credited_units == Decimal(0)
+        assert customer_meter.balance == Decimal(0)
+        assert updated_customer_meter.last_balanced_event == events[-1]
+
+        assert updated is True
+
+    async def test_event_reset_last_ingested_before_timestamp(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        timestamp = utc_now()
+        events = [
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=1),
+                ingested_at=timestamp + timedelta(seconds=1),
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                timestamp=timestamp + timedelta(seconds=2),
+                ingested_at=timestamp + timedelta(seconds=2, microseconds=-1),
                 organization=customer.organization,
                 customer=customer,
                 source=EventSource.system,
@@ -858,8 +910,56 @@ class TestUpdateCustomerMeter:
         assert customer_meter.consumed_units == Decimal(80)
         assert updated is True
 
+    async def test_nested_property_aggregation_with_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer_with_external_id: Customer,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            name="Max Tokens",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="type", operator=FilterOperator.eq, value="llm"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="_llm.total_tokens"
+            ),
+            organization=organization,
+        )
 
-@pytest.mark.asyncio
+        timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=1),
+            organization=organization,
+            customer=customer_with_external_id,
+            metadata={"type": "llm", "_llm": {"total_tokens": 200}},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=timestamp + timedelta(seconds=2),
+            organization=organization,
+            external_customer_id=customer_with_external_id.external_id,
+            metadata={"type": "llm", "_llm": {"total_tokens": 100}},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, customer_with_external_id, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(200)
+        assert updated is True
+
+
+@pytest.mark.anyio
 class TestGetRolloverUnits:
     async def test_excludes_usage_at_or_after_cutoff(
         self,
@@ -1208,12 +1308,13 @@ class TestGetRolloverUnits:
         assert rollover_units == 100
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateCustomer:
     async def test_archived_meter_excluded(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -1224,7 +1325,7 @@ class TestUpdateCustomer:
         await save_fixture(meter)
 
         # Run update_customer - should not create customer_meter for archived meter
-        await customer_meter_service.update_customer(session, customer)
+        await customer_meter_service.update_customer(session, redis, customer)
 
         # Check that no customer meter was created
         from polar.customer_meter.repository import CustomerMeterRepository
@@ -1239,6 +1340,7 @@ class TestUpdateCustomer:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -1248,7 +1350,7 @@ class TestUpdateCustomer:
         assert meter.archived_at is None
 
         # Run update_customer - should create customer_meter
-        await customer_meter_service.update_customer(session, customer)
+        await customer_meter_service.update_customer(session, redis, customer)
 
         # Check that customer meter was created
         from polar.customer_meter.repository import CustomerMeterRepository
@@ -1261,7 +1363,7 @@ class TestUpdateCustomer:
         assert customer_meter.consumed_units > 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBulkEventProcessing:
     async def test_process_50k_events(
         self,

@@ -52,6 +52,11 @@ class CalculationExpiredError(TaxRecordError):
         super().__init__(message)
 
 
+class UnsupportedCountryError(TaxRecordError):
+    def __init__(self, country: str) -> None:
+        super().__init__(f"Tax recording is not supported for country {country}.")
+
+
 class TaxRevertError(TaxError):
     def __init__(
         self, message: str = "An error occurred while reverting the tax record."
@@ -117,9 +122,10 @@ class TaxabilityReason(StrEnum):
 
     @classmethod
     def from_numeral(cls, note: str, customer_exempt: bool) -> "TaxabilityReason":
-        if customer_exempt:
+        note = note.lower().replace(" ", "_")
+        if customer_exempt or note == "no_collection_exempt_customer":
             return TaxabilityReason.customer_exempt
-        elif "reverse charge" in note:
+        elif "reverse_charge" in note:
             return TaxabilityReason.reverse_charge
         elif "no_collection" in note:
             return TaxabilityReason.not_collecting
@@ -134,7 +140,7 @@ class TaxBreakdownItem(TypedDict):
     country: str | None
     state: str | None
     subdivision: str | None
-    amount: int
+    amount: float
     taxability_reason: TaxabilityReason
 
 

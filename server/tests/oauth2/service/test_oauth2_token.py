@@ -6,7 +6,14 @@ from pytest_mock import MockerFixture
 
 from polar.email.schemas import OAuth2LeakedTokenEmail
 from polar.enums import TokenType
-from polar.models import OAuth2Client, OAuth2Token, Organization, User, UserOrganization
+from polar.models import (
+    Agent,
+    OAuth2Client,
+    OAuth2Token,
+    Organization,
+    User,
+    UserOrganization,
+)
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -21,7 +28,7 @@ def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeLeaked:
     @pytest.mark.parametrize(
         ("token", "token_type"),
@@ -121,6 +128,35 @@ class TestRevokeLeaked:
         enqueue_email_mock.assert_called_once()
         assert isinstance(enqueue_email_mock.call_args[0][0], OAuth2LeakedTokenEmail)
 
+    async def test_true_positive_agent(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        agent: Agent,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        oauth2_token = await create_oauth2_token(
+            save_fixture,
+            client=agent.oauth2_client,
+            access_token="polar_at_a_123",
+            refresh_token=None,
+            scopes=["products:write"],
+            agent=agent,
+        )
+
+        result = await oauth2_token_service.revoke_leaked(
+            session,
+            "polar_at_a_123",
+            TokenType.access_token,
+            notifier="github",
+            url="https://github.com",
+        )
+        assert result is True
+
+        assert oauth2_token.access_token_revoked_at is not None
+
+        enqueue_email_mock.assert_not_called()
+
     async def test_already_revoked(
         self,
         save_fixture: SaveFixture,
@@ -148,7 +184,7 @@ class TestRevokeLeaked:
         enqueue_email_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetByAccessToken:
     async def test_unknown_token(self, session: AsyncSession) -> None:
         result = await oauth2_token_service.get_by_access_token(
@@ -255,7 +291,7 @@ class TestGetByAccessToken:
         assert result is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteExpired:
     async def test_deletes_expired_without_refresh_token(
         self,
@@ -356,7 +392,7 @@ class TestDeleteExpired:
         assert preserved is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeForSSOEnforcement:
     async def test_revokes_token_scoped_to_org(
         self,

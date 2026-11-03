@@ -14,6 +14,7 @@ from redis import RedisError
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.applications import Starlette
+from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -74,7 +75,9 @@ async def health(request: Request) -> JSONResponse:
                 status_code=503, detail="Database is not available"
             ) from e
 
-    if _heartbeat_checker is not None and not _heartbeat_checker():
+    if _heartbeat_checker is not None and not await run_in_threadpool(
+        _heartbeat_checker
+    ):
         raise HTTPException(status_code=503, detail="Scheduler heartbeat is stale")
 
     return JSONResponse({"status": "ok"})

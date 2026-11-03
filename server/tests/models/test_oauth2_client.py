@@ -67,7 +67,7 @@ class TestCheckClientSecret:
         assert client.check_client_secret("cs-test")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEncryptClassmethods:
     async def test_encrypt_client_secret(self, user: User) -> None:
         client = _build(user)
@@ -122,7 +122,7 @@ class TestEncryptClassmethods:
         assert OAuth2Client.encrypt_registration_access_token_sync(row_id, None) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetters:
     async def test_set_client_secret_writes_all_copies(self, user: User) -> None:
         client = _build(user)
@@ -152,7 +152,7 @@ class TestSetters:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReveal:
     async def test_get_client_secret_sync(self, user: User) -> None:
         client = _build(user)
@@ -173,7 +173,7 @@ class TestReveal:
         assert client.get_registration_access_token_sync() is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPersistence:
     async def test_round_trip_through_database(
         self,

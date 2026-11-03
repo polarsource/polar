@@ -46,7 +46,7 @@ def create_order_mock(mocker: MockerFixture) -> AsyncMock:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateUnits:
     async def test_prorated_increase(
         self,
@@ -414,7 +414,7 @@ class TestUpdateUnits:
                 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUnitProductChange:
     async def test_switch_away_from_unit_product_rejected(
         self,

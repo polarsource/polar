@@ -9,21 +9,19 @@ Tests are organized by lifecycle phase:
 """
 
 from collections.abc import Iterator
+from datetime import timedelta
 from typing import Any
 from unittest.mock import MagicMock
 
 import dramatiq
 import fakeredis
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, User, UserOrganization
 from polar.redis import Redis
-from polar.worker import JobQueueManager
-from polar.worker._enqueue import _job_queue_manager
 from polar.worker._httpx import HTTPXMiddleware
 from polar.worker._redis import RedisMiddleware
 from polar.worker._sqlalchemy import SQLAlchemyMiddleware
@@ -59,11 +57,6 @@ E2E_AUTH = pytest.mark.auth(
 @pytest.fixture(scope="session")
 def actor_registry() -> dict[str, Any]:
     return build_actor_registry()
-
-
-@pytest.fixture(autouse=True)
-def _set_job_queue_manager() -> None:
-    _job_queue_manager.set(JobQueueManager())
 
 
 @pytest.fixture(autouse=True)
@@ -104,7 +97,13 @@ def _patch_worker_middlewares(
     mocker.patch.object(HTTPXMiddleware, "get", return_value=MagicMock())
 
 
-@pytest_asyncio.fixture(autouse=True)
+@pytest.fixture(autouse=True)
+def _disable_subscription_order_grace_period(mocker: MockerFixture) -> None:
+    # The task drain never runs delayed messages, so a deferred order would be lost.
+    mocker.patch("polar.order.tasks.SUBSCRIPTION_ORDER_GRACE_PERIOD", timedelta(0))
+
+
+@pytest.fixture(autouse=True)
 async def _link_user_to_org(
     save_fixture: SaveFixture, user: User, organization: Organization
 ) -> None:
@@ -135,7 +134,7 @@ def scheduler_sim(session: AsyncSession) -> SchedulerSimulator:
     return SchedulerSimulator(session)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def drain(
     session: AsyncSession, redis: Redis, actor_registry: dict[str, Any]
 ) -> DrainFn:

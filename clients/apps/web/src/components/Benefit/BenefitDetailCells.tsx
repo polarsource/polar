@@ -3,7 +3,7 @@
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { useDiscordGuild, useSlackIntegration } from '@/hooks/queries'
 import { useMeter } from '@/hooks/queries/meters'
-import OpenInNew from '@mui/icons-material/OpenInNew'
+import { OpenInNew } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

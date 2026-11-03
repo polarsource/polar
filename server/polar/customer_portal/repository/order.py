@@ -34,7 +34,7 @@ class CustomerOrderRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[Order]]:
+    ) -> Select[Order]:
         return self.get_base_statement().where(
             Order.customer_id == get_customer_id(auth_subject)
         )

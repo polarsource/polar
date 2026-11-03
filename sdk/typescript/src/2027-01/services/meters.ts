@@ -31,6 +31,7 @@ export const listMeters = (client: ClientBase) => {
   return async (
     query?: {
       organization_id?: string | string[] | null;
+      external_id?: string | string[] | null;
       query?: string | null;
       is_archived?: boolean | null;
       page?: number;
@@ -43,6 +44,7 @@ export const listMeters = (client: ClientBase) => {
     const pathParams = {};
     const queryParams = {
       organization_id: query?.organization_id,
+      external_id: query?.external_id,
       query: query?.query,
       is_archived: query?.is_archived,
       page: query?.page ?? 1,
@@ -74,6 +76,7 @@ export const iterListMeters = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
+      external_id?: string | string[] | null;
       query?: string | null;
       is_archived?: boolean | null;
       page?: number;

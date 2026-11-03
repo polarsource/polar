@@ -1,15 +1,13 @@
-from fastapi import Depends, Query
-from pydantic import UUID4
+from typing import Annotated
 
-from polar.customer.schemas.customer import CustomerID
+from fastapi import Depends, Query
+
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
-from polar.openapi import APITag, cli_preview
-from polar.organization.schemas import OrganizationID
+from polar.openapi import APITag, cli_preview, destructive
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -25,7 +23,9 @@ from .schemas import Benefit as BenefitSchema
 from .schemas import (
     BenefitCreate,
     BenefitGrant,
+    BenefitGrantsParams,
     BenefitID,
+    BenefitListParams,
     BenefitUpdate,
     benefit_schema_map,
 )
@@ -56,37 +56,23 @@ async def list(
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
     metadata: MetadataQuery,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    type: MultipleQueryFilter[BenefitType] | None = Query(
-        None, title="BenefitType Filter", description="Filter by benefit type."
-    ),
-    id: MultipleQueryFilter[BenefitID] | None = Query(
-        None, title="Filter IDs", description="Filter by benefit IDs."
-    ),
-    exclude_id: MultipleQueryFilter[BenefitID] | None = Query(
-        None, title="Exclude IDs", description="Exclude benefits with these IDs."
-    ),
+    filters: Annotated[BenefitListParams, Query()],
     session: AsyncSession = Depends(get_db_session),
-    query: str | None = Query(
-        None, title="Query", description="Filter by description."
-    ),
 ) -> ListResource[BenefitSchema]:
     """List benefits."""
     results, count = await benefit_service.list(
         session,
         auth_subject,
-        type=type,
-        organization_id=organization_id,
-        id_in=id,
-        id_not_in=exclude_id,
+        type=filters.type,
+        organization_id=filters.organization_id,
+        id_in=filters.id,
+        id_not_in=filters.exclude_id,
+        external_id=filters.external_id,
         metadata=metadata,
-        query=query,
+        query=filters.query,
         pagination=pagination,
         sorting=sorting,
     )
-
     return ListResource.from_paginated_results(
         [benefit_schema_map[result.type].model_validate(result) for result in results],
         count,
@@ -144,27 +130,15 @@ async def files(
 @router.get(
     "/{id}/grants",
     summary="List Benefit Grants",
+    openapi_extra={"x-tool-title": "List Grants for a Benefit"},
     response_model=ListResource[BenefitGrant],
     responses={404: BenefitNotFound},
 )
 async def grants(
+    filters: Annotated[BenefitGrantsParams, Query()],
     id: BenefitID,
-    auth_subject: auth.BenefitsRead,
+    auth_subject: auth.BenefitGrantsRead,
     pagination: PaginationParamsQuery,
-    is_granted: bool | None = Query(
-        None,
-        description=(
-            "Filter by granted status. "
-            "If `true`, only granted benefits will be returned. "
-            "If `false`, only revoked benefits will be returned. "
-        ),
-    ),
-    customer_id: MultipleQueryFilter[CustomerID] | None = Query(
-        None, title="CustomerID Filter", description="Filter by customer."
-    ),
-    member_id: MultipleQueryFilter[UUID4] | None = Query(
-        None, title="MemberID Filter", description="Filter by member."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[BenefitGrant]:
     """
@@ -180,9 +154,9 @@ async def grants(
     results, count = await benefit_grant_service.list(
         session,
         benefit,
-        is_granted=is_granted,
-        customer_id=customer_id,
-        member_id=member_id,
+        is_granted=filters.is_granted,
+        customer_id=filters.customer_id,
+        member_id=filters.member_id,
         pagination=pagination,
     )
 
@@ -207,7 +181,7 @@ async def create(
     redis: Redis = Depends(get_redis),
 ) -> Benefit:
     """
-    Create a benefit.
+    Create a benefit, for example license keys, file downloads or Discord access.
     """
     benefit = await benefit_service.user_create(
         session, redis, benefit_create, auth_subject
@@ -219,6 +193,7 @@ async def create(
 @router.patch(
     "/{id}",
     summary="Update Benefit",
+    openapi_extra=destructive(),
     response_model=BenefitSchema,
     responses={
         200: {"description": "Benefit updated."},

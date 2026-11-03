@@ -1,4 +1,4 @@
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.types import PolicyResult
 from polar.models import Organization as OrganizationModel
@@ -9,7 +9,7 @@ from . import _require_permission
 
 async def can_read(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     organization: OrganizationModel,
 ) -> PolicyResult:
     """Can the subject view the org's financial data (account, transactions, payouts)?"""
@@ -23,7 +23,7 @@ async def can_read(
 
 async def can_manage(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     organization: OrganizationModel,
 ) -> PolicyResult:
     """Can the subject update the org's financial data (account, payouts)?"""

@@ -12,6 +12,7 @@ import {
   createSeatBasedPrice,
 } from '@polar-sh/checkout/test-utils'
 import type { schemas } from '@polar-sh/client'
+import type { AcceptedLocale } from '@polar-sh/i18n'
 import { fireEvent, screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import {
@@ -84,7 +85,7 @@ const withDiscount = (
     ? 0
     : 'basis_points' in discount
       ? Math.round((checkout.amount * discount.basis_points) / 10000)
-      : Math.min(discount.amount, checkout.amount)
+      : Math.min(discount.amounts[checkout.currency] ?? 0, checkout.amount)
   const netAmount = checkout.amount - discountAmount
   return {
     ...checkout,
@@ -359,6 +360,7 @@ export interface RenderCheckoutOptions
   authenticatedUser?: schemas['UserRead']
   embed?: boolean
   theme?: 'light' | 'dark'
+  locale?: AcceptedLocale
   distinctId?: string | null
 }
 
@@ -367,6 +369,7 @@ export const renderCheckout = ({
   authenticatedUser,
   embed = false,
   theme = 'light',
+  locale = 'en',
   distinctId = DISTINCT_ID,
   paymentStatus,
   discounts,
@@ -395,8 +398,8 @@ export const renderCheckout = ({
         initialCheckout={checkout}
         serverURL={API_URL}
       >
-        <CheckoutFormProvider locale="en">
-          <CheckoutPage embed={embed} theme={theme} locale="en" />
+        <CheckoutFormProvider locale={locale}>
+          <CheckoutPage embed={embed} theme={theme} locale={locale} />
         </CheckoutFormProvider>
       </CheckoutProvider>
     </UserContextProvider>,

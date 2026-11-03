@@ -2,7 +2,11 @@
 
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
-import { CircleAlertIcon, CheckCircleIcon, Loader2Icon } from 'lucide-react'
+import {
+  CircleAlert as CircleAlertIcon,
+  CircleCheckBig as CheckCircleIcon,
+  LoaderCircle as Loader2Icon,
+} from '@polar-sh/orbit/icons'
 import React, { useEffect, useState } from 'react'
 import AppealForm from './AppealForm'
 

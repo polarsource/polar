@@ -9,9 +9,10 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { PathCardBanner } from './PathCardBanner'
 import { SectionLayout } from './SectionLayout'
+import { WebsiteDomainVerification } from './WebsiteDomainVerification'
 
 interface Props {
   organization: schemas['Organization']
@@ -43,7 +44,8 @@ export const ProductUrlSection = ({
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
   })
-  const { control, handleSubmit, setError, formState, reset } = form
+  const { control, handleSubmit, setError, reset } = form
+  const formState = useFormState({ control })
 
   const onSubmit = async ({ website }: FormValues) => {
     posthog.capture('dashboard:organizations:account_review_section:submit', {
@@ -121,6 +123,7 @@ export const ProductUrlSection = ({
           ))}
         </SectionLayout>
       </form>
+      <WebsiteDomainVerification organization={organization} />
     </Form>
   )
 }

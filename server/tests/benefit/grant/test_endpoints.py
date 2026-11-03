@@ -18,9 +18,14 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListBenefitGrants:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/benefit-grants/")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_cannot_list_benefit_grants(self, client: AsyncClient) -> None:
         response = await client.get("/v1/benefit-grants/")
         assert response.status_code == 401
 

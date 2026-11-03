@@ -1,10 +1,11 @@
 'use client'
 
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ArrowUpRightIcon } from 'lucide-react'
+import { ArrowUpRight as ArrowUpRightIcon } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { OrderStatus } from './OrderStatus'
 import { DetailCell, DetailGrid } from './OrderSection'
@@ -43,6 +44,10 @@ export const OrderDetails = ({
                 <Text as="span" variant="body" truncate>
                   {product.name}
                 </Text>
+                <ProductVersionLabel
+                  organization={organization}
+                  product={product}
+                />
                 <Box as="span" display="inline-flex" flexShrink={0}>
                   <ArrowUpRightIcon size={16} />
                 </Box>

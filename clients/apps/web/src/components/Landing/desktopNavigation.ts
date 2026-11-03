@@ -21,7 +21,8 @@ export const navMenus: NavMenu[] = [
   {
     id: 'features',
     title: 'Features',
-    isActive: (pathname) => pathname.startsWith('/features'),
+    isActive: (pathname) =>
+      pathname === '/' || pathname.startsWith('/features'),
     featured: {
       title: 'Explore Features',
       items: [

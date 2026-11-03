@@ -38,7 +38,7 @@ The percentage discount to apply to the product or subscription.
 
 #### Restrictions
 
-- **Products** The discount can only be applied to specific products. By default the discount can be applied to all products, also ones created after the discount was created.
+- **Products** The discount can only be applied to specific products. By default the discount can be applied to all products, also ones created after the discount was created. The restriction applies when the discount is redeemed, at checkout or when applying it to a subscription. Once applied to a subscription, the discount stays on through plan changes, including to products outside the restriction, so customers are never charged more unexpectedly after a change. **Once** covers the first billing cycle after it's applied, so its value follows the length of that cycle (for example, after a switch from monthly to yearly, it covers a yearly charge).
 - **Starts at** The discount can only be applied after this date
 - **Ends at** The discount can only be applied before this date
 - **Maximum redemptions** The maximum number of times the discount can be applied, counting across all customers.
@@ -54,7 +54,7 @@ Polar identifies a customer by three signals, and a match on any one is enough:
 - The email address (ignoring plus-aliases: `ada+polar@example.com` matches `ada@example.com`)
 - The payment card, so a new email address on the same card still counts. Free products and 100% forever subscriptions never ask for a card, so those match on ID and email alone.
 
-Refunding an order frees the customer's slot, and they can use the code again (note: a partial refund doesn't). [Polar-issued refunds as part of chargeback prevention](/docs/features/refunds) also don't free the customer's slot.
+Refunding an order frees the customer's slot, and they can use the code again (note: a partial refund doesn't). [Polar-issued refunds as part of chargeback prevention](/features/refunds) also don't free the customer's slot.
 
 ## Apply a discount
 

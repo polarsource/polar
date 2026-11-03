@@ -6,7 +6,7 @@ from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPreviewChannelName:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(

@@ -3,6 +3,8 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
   entry: [
     "src/index.ts",
+    "src/metering/index.ts",
+    "src/outpost/index.ts",
     "src/2026-04/index.ts",
     "src/2026-04/services/**/*.ts",
     "src/2026-10/index.ts",

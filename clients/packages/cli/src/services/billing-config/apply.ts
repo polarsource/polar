@@ -8,10 +8,12 @@ import {
   ValidationErrors,
 } from '@/schemas/BillingConfig'
 import {
+  type CatalogOptions,
   type Clients,
   entries,
   errorName,
   post,
+  requiredScopes,
   transportErrors,
   unexpected,
 } from '@/services/billing-config/api'
@@ -19,22 +21,25 @@ import { issues } from '@/services/billing-config/issues'
 
 export const apply =
   (clients: Clients) =>
-  (config: LoadedConfig, organization: ActiveOrganization) =>
+  (
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+    options: CatalogOptions = {},
+  ) =>
     Effect.gen(function* () {
       const response = yield* post(
         clients,
         '/config/apply',
         config,
         organization,
+        options,
       )
       if (response.status === 200) {
-        const sections =
+        const body =
           yield* HttpClientResponse.schemaBodyJson(ApplyResponse)(response)
         return {
           status: 'applied',
-          entries: Object.entries(sections).flatMap(([section, result]) =>
-            entries(section, Array.isArray(result) ? result : [result]),
-          ),
+          entries: entries(body.changes, body.settings, body.removed),
         } satisfies ApplyResult
       }
       const invalid =
@@ -49,5 +54,9 @@ export const apply =
           issues: issues(config, detail),
         } satisfies ApplyResult
       }
-      return yield* unexpected(response, organization, 'meters:write')
+      return yield* unexpected(
+        response,
+        organization,
+        requiredScopes(config, 'write'),
+      )
     }).pipe(Effect.scoped, Effect.catchTags(transportErrors))

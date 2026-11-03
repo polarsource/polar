@@ -11,7 +11,7 @@ from polar.models import OAuthAccount
 from polar.models.user import OAuthPlatform
 from polar.postgres import AsyncSession, get_db_session
 
-from ..exceptions import GetEmailError
+from ..exceptions import GetEmailError, UnverifiedEmailError
 from .factor import OAuth2FactorMixin
 from .state import OAuth2StateService, get_oauth2_state_service
 
@@ -88,6 +88,8 @@ class AppleFactor(OAuth2FactorMixin, AppleOAuth2FactorBase):
 
         claims = await self.get_id_token_claims(callback_result.id_token)
         try:
+            if not claims["email_verified"]:
+                raise UnverifiedEmailError()
             return claims["email"]
         except KeyError as e:
             raise GetEmailError() from e

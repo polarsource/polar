@@ -33,15 +33,15 @@ You can create an organization access token from your organization settings.
 
 ## Configuring a Polar API Client
 
-To interact with the Polar API, you need to create a new instance of the `Polar` class. This class uses the provided access token to authenticate with the Polar API.
+To interact with the Polar API, create a client with `createPolar`. It uses the provided access token to authenticate with the Polar API.
 
 ```typescript
 // src/polar.ts
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-export const api = new Polar({
+export const api = createPolar({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  server: "sandbox", // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
+  environment: "sandbox", // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
 });
 ```
 
@@ -68,7 +68,7 @@ export const GET = Checkout({
 
 Polar can send you events about various things happening in your organization. This is very useful for keeping your database in sync with Polar checkouts, orders, subscriptions, etc.
 
-Configuring a webhook is simple. Head over to your organization's settings page and click on the "Add Endpoint" button to create a new webhook.
+Configuring a webhook is simple. Head over to [**Settings → Webhooks**](https://polar.sh/to/dashboard/settings/webhooks) and click on the "Add Endpoint" button to create a new webhook.
 
 ### Tunneling webhook events to your local development environment
 

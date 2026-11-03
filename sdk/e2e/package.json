@@ -1,0 +1,29 @@
+{
+  "name": "@polar-sh/sdk-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:sdk": "pnpm --dir ../typescript run build",
+    "fmt": "oxfmt *.ts package.json tsconfig.json",
+    "fmt:check": "oxfmt --check *.ts package.json tsconfig.json",
+    "lint": "oxlint *.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@polar-sh/sdk": "link:../typescript",
+    "ioredis": "^5.11.0",
+    "ws": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "@types/ws": "^8.18.1",
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.8.0"
+}

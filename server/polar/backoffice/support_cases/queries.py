@@ -167,7 +167,7 @@ def open_case_organization_ids(
     *,
     organization_ids: Sequence[UUID] | None = None,
     awaiting_reply: bool = False,
-) -> Select[tuple[UUID]]:
+) -> Select[UUID]:
     """Distinct ids of organizations with at least one open support case of any
     type. With ``awaiting_reply``, only those whose open case is waiting on a
     platform reply. ``organization_ids`` narrows the scan to a known page.

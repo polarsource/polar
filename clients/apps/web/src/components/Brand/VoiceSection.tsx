@@ -1,7 +1,7 @@
-import React from 'react'
-import { BrandSection } from './BrandSection'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { Chapter } from '../Landing/Chapter'
 import { brandSections } from './brand'
-import { Lead, Trait } from './primitives'
 
 const traits = [
   {
@@ -28,22 +28,43 @@ const traits = [
 
 export function VoiceSection() {
   return (
-    <BrandSection
-      meta={brandSections[4]}
+    <Chapter
+      id={brandSections[4].id}
+      index={brandSections[4].index}
+      name={brandSections[4].label}
       title="How Polar speaks"
-      lead="The voice is the brand in words. Four principles keep every sentence recognizably Polar."
+      subtitle="Four principles behind every sentence"
     >
-      <div className="flex flex-col">
-        {traits.map((item) => (
-          <div
+      <Box as="ul" flexDirection="column">
+        {traits.map((item, index) => (
+          <Box
             key={item.trait}
-            className="border-brand-line grid grid-cols-1 gap-6 border-t py-12 first:border-t-0 first:pt-0 md:grid-cols-2 md:gap-8 md:py-16"
+            as="li"
+            display="flex"
+            flexDirection={{ base: 'column', md: 'row' }}
+            rowGap="l"
+            columnGap="xl"
+            paddingVertical="xl"
+            borderTopWidth={index > 0 ? 1 : 0}
+            borderStyle="solid"
+            borderColor="border-primary"
           >
-            <Trait>{item.trait}</Trait>
-            <Lead>{item.description}</Lead>
-          </div>
+            <Box flex={1} alignItems="baseline" columnGap="l">
+              <Text as="span" variant="heading-xs" color="muted" tabularNums>
+                {String(index + 1).padStart(2, '0')}
+              </Text>
+              <Text variant="heading-xs" as="h3">
+                {item.trait}
+              </Text>
+            </Box>
+            <Box flex={1}>
+              <Text variant="heading-xs" as="p" color="muted">
+                {item.description}
+              </Text>
+            </Box>
+          </Box>
         ))}
-      </div>
-    </BrandSection>
+      </Box>
+    </Chapter>
   )
 }

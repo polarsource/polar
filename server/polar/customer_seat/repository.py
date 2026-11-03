@@ -14,7 +14,7 @@ from polar.models import (
     Subscription,
 )
 from polar.models.customer_seat import SeatStatus
-from polar.order.repository import OrderRepository
+from polar.order.repository import OrderRepository, order_benefits_revoked_clause
 from polar.subscription.repository import SubscriptionRepository
 
 SeatContainer = Subscription | Order
@@ -288,6 +288,12 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
         )
         return await self.get_one_or_none(statement)
 
+    async def are_order_benefits_revoked(self, order_id: UUID) -> bool:
+        result = await self.session.execute(
+            select(order_benefits_revoked_clause(order_id))
+        )
+        return result.scalar_one()
+
     async def get_revoked_seat_by_order(
         self,
         order_id: UUID,
@@ -343,7 +349,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[CustomerSeat]]:
+    ) -> Select[CustomerSeat]:
         """
         Get a statement filtered by organization IDs.
 
@@ -440,7 +446,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     def get_claimed_by_product_via_subscriptions(
         self, product_id: UUID
-    ) -> Select[tuple[CustomerSeat]]:
+    ) -> Select[CustomerSeat]:
         """Get statement for claimed seats linked to a product via active subscriptions."""
         return (
             select(CustomerSeat)
@@ -456,7 +462,7 @@ class CustomerSeatRepository(RepositoryBase[CustomerSeat]):
 
     def get_claimed_by_product_via_orders(
         self, product_id: UUID
-    ) -> Select[tuple[CustomerSeat]]:
+    ) -> Select[CustomerSeat]:
         """Get statement for claimed seats linked to a product via orders."""
         return (
             select(CustomerSeat)

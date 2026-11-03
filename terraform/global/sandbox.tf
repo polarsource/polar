@@ -400,17 +400,6 @@ resource "tfe_variable" "polar_organization_id_sandbox" {
   }
 }
 
-resource "tfe_variable" "polar_free_product_id_sandbox" {
-  key             = "polar_free_product_id"
-  category        = "terraform"
-  description     = "Polar free-tier product ID"
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "polar_scale_product_id_sandbox" {
   key             = "polar_scale_product_id"
   category        = "terraform"
@@ -615,18 +604,6 @@ resource "tfe_variable" "vercel_sentry_auth_token_sandbox" {
   }
 }
 
-resource "tfe_variable" "vercel_polar_preview_access_token_sandbox" {
-  key             = "polar_preview_access_token"
-  category        = "terraform"
-  description     = "Polar preview access token for the Vercel sandbox frontend"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "vercel_next_public_sentry_dsn_sandbox" {
   key             = "next_public_sentry_dsn"
   category        = "terraform"
@@ -762,6 +739,17 @@ resource "tfe_variable" "private_backoffice_tailscale_ip_sandbox" {
   }
 }
 
+resource "tfe_variable" "ec2_tailscale_oauth_client_id_sandbox" {
+  key             = "ec2_tailscale_oauth_client_id"
+  category        = "terraform"
+  description     = "ID of the Tailscale OAuth client used by the EC2 router in sandbox"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "ec2_tailscale_oauth_client_secret_sandbox" {
   key             = "ec2_tailscale_oauth_client_secret"
   category        = "terraform"
@@ -810,29 +798,6 @@ resource "tfe_variable" "linear_payout_amount_mismatch_template_id_sandbox" {
   }
 }
 
-resource "tfe_variable" "postgres_user_sandbox" {
-  key             = "postgres_user"
-  category        = "terraform"
-  description     = "Sandbox Postgres user"
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "postgres_password_sandbox" {
-  key             = "postgres_password"
-  category        = "terraform"
-  description     = "Sandbox Postgres password"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 # Render assigns the host once the private link is wired, so the value is
 # entered on the workspace and Terraform only registers the variable.
 resource "tfe_variable" "redis_private_link_host_sandbox" {
@@ -841,6 +806,26 @@ resource "tfe_variable" "redis_private_link_host_sandbox" {
   description  = "DNS name of the Render private link to the sandbox Redis"
   sensitive    = false
   workspace_id = data.tfe_workspace_ids.aws.ids["sandbox"]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "planetscale_app_password_sandbox" {
+  key             = "planetscale_app_password"
+  category        = "terraform"
+  description     = "PlanetScale application role password for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "slo_report_slack_bot_token_sandbox" {
+  key             = "slo_report_slack_bot_token"
+  category        = "terraform"
+  description     = "Slack Bot Token for sandbox, shared with production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
 
   lifecycle {
     ignore_changes = [value]

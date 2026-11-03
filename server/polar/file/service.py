@@ -4,10 +4,14 @@ from datetime import datetime
 from typing import Any
 
 import structlog
+from py_svg_hush import filter_svg
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.exceptions import BadRequest
+from polar.integrations.aws.s3 import S3Service
+from polar.integrations.aws.s3.schemas import S3File
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import Organization, ProductMedia, User
@@ -32,12 +36,19 @@ from .schemas import (
 
 log = structlog.get_logger()
 
+SVG_MIME_TYPE = "image/svg+xml"
+SVG_DATA_URL_MIME_TYPES = {"image": ["jpeg", "png", "gif"]}
+SVG_SANITIZED_SERVICES = {
+    FileServiceTypes.product_media,
+    FileServiceTypes.organization_avatar,
+}
+
 
 class FileService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         ids: Sequence[uuid.UUID] | None = None,
@@ -66,7 +77,7 @@ class FileService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> File | None:
         repository = FileRepository.from_session(session)
@@ -122,11 +133,11 @@ class FileService:
         await session.flush()
         assert instance.id is not None
 
-        return FileUpload(
+        return FileUpload.model_validate_overlay(
+            upload,
             is_uploaded=instance.is_uploaded,
             version=instance.version,
             service=create_schema.service,
-            **upload.model_dump(),
         )
 
     async def complete_upload(
@@ -138,6 +149,12 @@ class FileService:
     ) -> File:
         s3_service = S3_SERVICES[file.service]
         s3file = s3_service.complete_multipart_upload(completed_schema)
+
+        if file.mime_type == SVG_MIME_TYPE and file.service in SVG_SANITIZED_SERVICES:
+            s3file = self._sanitize_svg(s3_service, s3file)
+            file.size = s3file.size
+            file.checksum_sha256_base64 = s3file.checksum_sha256_base64
+            file.checksum_sha256_hex = s3file.checksum_sha256_hex
 
         file.is_uploaded = True
 
@@ -156,6 +173,18 @@ class FileService:
         assert file.last_modified_at is not None
 
         return file
+
+    def _sanitize_svg(self, s3_service: S3Service, s3file: S3File) -> S3File:
+        s3_object = s3_service.get_object_or_raise(s3file.path)
+        if s3_object["ContentLength"] > s3file.size:
+            s3_service.delete_file(s3file.path)
+            raise BadRequest("Uploaded file is larger than its declared size")
+        try:
+            sanitized = filter_svg(s3_object["Body"].read(), SVG_DATA_URL_MIME_TYPES)
+        except ValueError as e:
+            s3_service.delete_file(s3file.path)
+            raise BadRequest(f"Invalid SVG file: {e}") from e
+        return s3_service.replace_object(s3file, sanitized)
 
     def generate_download_url(self, file: File) -> tuple[str, datetime]:
         """Generate a presigned download URL for a file."""
@@ -237,6 +266,11 @@ class FileService:
                     file_name=file.name,
                     organization_name=organization.name,
                     organization_slug=organization.slug,
+                    threat_names=[
+                        threat["name"]
+                        for threat in scan_result_details.get("threats", [])
+                        if threat.get("name")
+                    ],
                 ),
             ),
         )

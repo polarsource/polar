@@ -3,7 +3,7 @@ import { FetchHttpClient } from 'effect/http'
 
 type Handler = (request: Request) => Response | Promise<Response>
 
-export type Routes = Record<string, Response | Handler>
+type Routes = Record<string, Response | Handler>
 
 export const fakeHttp = (routes: Routes = {}) => {
   const requests: Request[] = []

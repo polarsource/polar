@@ -34,7 +34,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCalculateChangePreview:
     async def test_product_upgrade_prices_the_proration(
         self,

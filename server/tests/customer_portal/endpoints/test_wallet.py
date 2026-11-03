@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.models import Customer, Wallet
@@ -11,12 +10,12 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_wallet
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def wallets(save_fixture: SaveFixture, customer: Customer) -> list[Wallet]:
     return [await create_wallet(save_fixture, type=WalletType.usage, customer=customer)]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListWallets:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/customer-portal/wallets/")
@@ -60,7 +59,7 @@ class TestListWallets:
         assert json["pagination"]["total_count"] == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetWallet:
     async def test_anonymous(self, client: AsyncClient, wallets: list[Wallet]) -> None:
         response = await client.get(f"/v1/customer-portal/wallets/{wallets[0].id}")

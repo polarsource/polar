@@ -1,7 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.integrations.stripe.service import StripeService
@@ -76,19 +75,19 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order(save_fixture: SaveFixture, customer: Customer) -> Order:
     return await create_order(save_fixture, customer=customer)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def payment(
     save_fixture: SaveFixture, order: Order, organization: Organization
 ) -> Payment:
     return await create_payment(save_fixture, organization, order=order)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateDispute:
     async def test_not_resolved(
         self,

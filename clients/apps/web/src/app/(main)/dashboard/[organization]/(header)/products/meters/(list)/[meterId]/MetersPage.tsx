@@ -4,11 +4,11 @@ import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayou
 import { MeterPage } from '@/components/Meter/MeterPage'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
-import { useHasPermission } from '@/hooks/permissions'
+import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
 import { useUpdateMeter } from '@/hooks/queries/meters'
 import { apiErrorToast } from '@/utils/api/errors'
 import { permissionDeniedMessage } from '@/utils/permissions'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
@@ -41,6 +41,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
   const { toast } = useToast()
   const updateMeter = useUpdateMeter(meter.id)
   const canManageProducts = useHasPermission(organization.id, 'products:manage')
+  const managedAsCode = useIsManagedAsCode(organization.id)
 
   const handleArchiveMeter = useCallback(async () => {
     if (!canManageProducts) {
@@ -120,7 +121,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
           </div>
 
           <div className="flex flex-row items-center gap-4">
-            <Button onClick={showEditMeterModal}>Edit Meter</Button>
+            {!managedAsCode && (
+              <Button onClick={showEditMeterModal}>Edit Meter</Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none" asChild>
                 <Button className="h-10 w-10" variant="secondary">
@@ -144,13 +147,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
                 >
                   Copy Meter ID
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  destructive={!meter.archived_at}
-                  onClick={handleArchiveMeter}
-                >
-                  {meter.archived_at ? 'Unarchive' : 'Archive'} Meter
-                </DropdownMenuItem>
+                {!managedAsCode && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      destructive={!meter.archived_at}
+                      onClick={handleArchiveMeter}
+                    >
+                      {meter.archived_at ? 'Unarchive' : 'Archive'} Meter
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

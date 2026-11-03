@@ -111,14 +111,13 @@ const cases: [string, PolarConfig][] = [
           external_id: 'custom_servers',
           type: 'feature_flag',
           description: 'Custom servers',
-          properties: {},
         },
         {
           external_id: 'included_tokens',
           type: 'meter_credit',
           description: 'Included tokens',
           properties: {
-            meter_external_id: 'tokens',
+            meter: 'tokens',
             units: 1000,
             rollover: false,
           },
@@ -128,7 +127,7 @@ const cases: [string, PolarConfig][] = [
           type: 'meter_credit',
           description: 'Rollover tokens',
           properties: {
-            meter_external_id: 'tokens',
+            meter: 'tokens',
             units: 50,
             rollover: true,
           },
@@ -145,9 +144,165 @@ const cases: [string, PolarConfig][] = [
         external_id: 'flag',
         type: 'feature_flag' as const,
         description,
-        properties: {},
       })),
     },
+  ],
+  [
+    'products with every price type',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({
+          tokens: meter('Tokens').count(),
+          calls: meter('Calls').count(),
+        }),
+        benefits: ({ flag }) => ({ custom_servers: flag('Custom servers') }),
+        products: ({ product, free, fixed, seats, units, tier, meter }) => {
+          return {
+            hobby: product('Hobby')
+              .prices(
+                free(),
+                meter('calls')
+                  .flat()
+                  .amount(api.perThousand(api.lira(1.5)), api.eur(0.02)),
+                meter('tokens').graduated(
+                  tier()
+                    .max(1_000_000)
+                    .amount(
+                      api.per(1_000_000_000, api.lira(0.75)),
+                      api.per(10, api.eur(0.01)),
+                    ),
+                  tier().amount(
+                    api.per(1_000_000_000_000, api.lira(0.01)),
+                    api.perMillion(api.eur(0.03)),
+                  ),
+                ),
+              )
+              .recurring('monthly'),
+            free_eur: product('Free EUR')
+              .prices(fixed().amount(api.eur(0)))
+              .once(),
+            lifetime: product('Lifetime')
+              .prices(fixed().amount(api.usd(99), api.eur(95)))
+              .once(),
+            team: product('Team')
+              .prices(
+                seats()
+                  .graduated(
+                    tier().max(5).amount(api.usd(20), api.eur(18)),
+                    tier().amount(api.usd(15), api.eur(14)),
+                  )
+                  .min(3)
+                  .max(50),
+                meter('tokens')
+                  .volume(
+                    tier()
+                      .max(1_000_000)
+                      .amount(api.perMillion(api.usd(0.03)), api.eur(0.01)),
+                    tier().amount(api.usd(0), api.eur(0)),
+                  )
+                  .cap(api.usd(500)),
+              )
+              .recurring(3, 'months')
+              .trial(1, 'month')
+              .grants(['custom_servers']),
+            starter: product('Starter')
+              .prices(
+                units()
+                  .graduated(
+                    tier().included(10),
+                    tier().max(20).free(),
+                    tier().max(50).amount(api.usd(0.05)),
+                    tier().free(),
+                  )
+                  .label('seat', 'seats'),
+                meter('tokens').volume(
+                  tier().max(5).amount(api.usd(0)),
+                  tier().amount(api.usd(0)),
+                ),
+              )
+              .recurring('monthly'),
+            devices: product('Devices')
+              .prices(
+                units()
+                  .flat()
+                  .min(2)
+                  .amount(api.currency('nok')(50))
+                  .max(10)
+                  .label('device', 'devices'),
+              )
+              .recurring('yearly')
+              .trial(14, 'days')
+              .description('Billed per device, "yearly".\nCancel anytime.')
+              .private(),
+          }
+        },
+      })
+      .toJSON(),
+  ],
+  [
+    'metadata on every resource',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({
+          calls: meter('Calls')
+            .where(api.eq('name', 'tool_call'))
+            .unit('token')
+            .metadata({ team: 'search', '"\\\n` ${notCode}': -0 })
+            .count(),
+        }),
+        benefits: ({ flag, credits }) => ({
+          custom_servers: flag('Custom servers').metadata({ limit: 5 }),
+          tool_calls: credits('Tool calls')
+            .meter('calls')
+            .units(100)
+            .rollover()
+            .metadata({ visible: true, ratio: 0.5 }),
+        }),
+        products: ({ product, free }) => ({
+          pro: product('Pro')
+            .prices(free())
+            .recurring('monthly')
+            .grants(['custom_servers'])
+            .metadata({ ['__proto__']: 'pro', constructor: 'x' }),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
+    'private resources',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({ calls: meter('Calls').count() }),
+        benefits: ({ flag, credits }) => ({
+          beta: flag('Beta').private(),
+          calls: credits('Calls').meter('calls').units(10).private(),
+        }),
+        products: ({ product, free }) => ({
+          pro: product('Pro').prices(free()).recurring('monthly').private(),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
+    'deprecated meters, benefits and products',
+    api
+      .defineConfig({
+        meters: ({ meter }) => ({
+          apples: meter('Apples').unit('token').deprecated().count(),
+        }),
+        benefits: ({ flag, credits }) => ({
+          beta: flag('Beta').deprecated(),
+          apples: credits('Apples').meter('apples').units(10).deprecated(),
+        }),
+        products: ({ product, meter }) => ({
+          legacy: product('Legacy')
+            .prices(meter('apples').flat().amount(api.usd(0.01)))
+            .recurring('monthly')
+            .grants(['beta', 'apples'])
+            .deprecated(),
+        }),
+      })
+      .toJSON(),
   ],
   [
     'special IDs and strings',
@@ -236,6 +391,165 @@ test('generated modules typecheck against the public API', async () => {
       ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'),
     )
   expect(diagnostics).toEqual([])
+}, 30_000)
+
+test('renders free tiers with free() and included()', async () => {
+  const source = await Effect.runPromise(
+    generateConfig(
+      api
+        .defineConfig({
+          meters: () => ({}),
+          products: ({ product, seats, tier }) => ({
+            team: product('Team')
+              .prices(
+                seats().graduated(
+                  tier().included(3),
+                  tier().max(10).amount(api.usd(1)),
+                  tier().max(20).free(),
+                  tier().amount(api.usd(0.5)),
+                ),
+              )
+              .recurring('monthly'),
+          }),
+        })
+        .toJSON(),
+    ),
+  )
+  expect(source).toContain('tier().included(3),')
+  expect(source).toContain('tier().max(20).free(),')
+})
+
+test('renders the tax behavior of a price', async () => {
+  const source = await Effect.runPromise(
+    generateConfig(
+      api
+        .defineConfig({
+          meters: () => ({}),
+          products: ({ product, fixed, units, tier }) => ({
+            pro: product('Pro')
+              .prices(
+                fixed().amount(api.usd(10), api.eur(9)).tax('inclusive'),
+                units()
+                  .graduated(tier().amount(api.usd(1), api.eur(1)))
+                  .tax('exclusive'),
+              )
+              .recurring('monthly'),
+          }),
+        })
+        .toJSON(),
+    ),
+  )
+  expect(source).toContain(
+    'fixed().amount(usd(10), eur(9))\n          .tax("inclusive"),',
+  )
+  expect(source).toContain('.tax("exclusive"),')
+})
+
+test('keeps prices with different tax behaviors in separate builder calls', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      products: [
+        {
+          external_id: 'pro',
+          name: 'Pro',
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          prices: [
+            {
+              amount_type: 'fixed',
+              price_currency: 'usd',
+              price_amount: 1000,
+              tax_behavior: 'inclusive',
+            },
+            { amount_type: 'fixed', price_currency: 'eur', price_amount: 900 },
+          ],
+          benefits: [],
+        },
+      ],
+    }),
+  )
+  expect(source).toContain(
+    'fixed().amount(usd(10))\n          .tax("inclusive"),',
+  )
+  expect(source).toContain('fixed().amount(eur(9)),')
+})
+
+test('renders free volume tiers without included()', async () => {
+  const source = await Effect.runPromise(
+    generateConfig(
+      api
+        .defineConfig({
+          meters: () => ({}),
+          products: ({ product, seats, tier }) => ({
+            team: product('Team')
+              .prices(
+                seats().volume(
+                  tier().max(3).free(),
+                  tier().amount(api.usd(100)),
+                ),
+              )
+              .recurring('monthly'),
+          }),
+        })
+        .toJSON(),
+    ),
+  )
+  expect(source).toContain('tier().max(3).free(),')
+  expect(source).not.toContain('included(')
+})
+
+test('generates rates padded with trailing zeros', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [meter],
+      products: [
+        {
+          external_id: 'pro',
+          name: 'Pro',
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          prices: [
+            {
+              amount_type: 'metered_unit',
+              price_currency: 'usd',
+              meter: 'tokens',
+              unit_amount: '10000.000000000000',
+            },
+          ],
+          benefits: [],
+        },
+      ],
+    }),
+  )
+  expect(source).toContain('.amount(usd(100))')
+})
+
+test('rejects rates with more digits than whole amounts can hold', async () => {
+  await expect(
+    Effect.runPromise(
+      generateConfig({
+        meters: [meter],
+        products: [
+          {
+            external_id: 'pro',
+            name: 'Pro',
+            recurring_interval: 'month',
+            recurring_interval_count: 1,
+            prices: [
+              {
+                amount_type: 'metered_unit',
+                price_currency: 'usd',
+                meter: 'tokens',
+                unit_amount: '123456.000000000001',
+              },
+            ],
+            benefits: [],
+          },
+        ],
+      }),
+    ),
+  ).rejects.toThrow('too many digits')
 })
 
 test('rejects invalid input before generating code', async () => {
@@ -246,4 +560,44 @@ test('rejects invalid input before generating code', async () => {
       }),
     ),
   ).rejects.toThrow()
+})
+
+test('groups interleaved currencies into one builder call per price', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      products: [
+        {
+          external_id: 'pro',
+          name: 'Pro',
+          recurring_interval: 'month',
+          recurring_interval_count: 1,
+          prices: [
+            { amount_type: 'fixed', price_currency: 'usd', price_amount: 100 },
+            {
+              amount_type: 'seat_based',
+              price_currency: 'usd',
+              tiers: { type: 'volume', tiers: [{ unit_amount: '10' }] },
+            },
+            { amount_type: 'fixed', price_currency: 'eur', price_amount: 90 },
+            {
+              amount_type: 'seat_based',
+              price_currency: 'eur',
+              tiers: { type: 'volume', tiers: [{ unit_amount: '9' }] },
+            },
+          ],
+          benefits: [],
+        },
+      ],
+    }),
+  )
+  expect(source).toContain('fixed().amount(usd(1), eur(0.9))')
+  expect(source).toContain('.amount(usd(0.1), eur(0.09))')
+})
+
+test('leaves empty metadata out of the generated code', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({ meters: [{ ...meter, metadata: {} }] }),
+  )
+  expect(source).not.toContain('.metadata(')
 })

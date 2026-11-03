@@ -22,9 +22,11 @@ const formatMoney = formatCurrency('accounting', 'en-US')
 export function ImportTaxPicker({
   migrationId,
   row,
+  readOnly = false,
 }: {
   migrationId: string
   row: schemas['MerchantMigrationRecordItem']
+  readOnly?: boolean
 }) {
   const updateRecord = useUpdateMigrationRecord(migrationId)
   const { value, update } = useOptimisticSave<TaxBehavior>(
@@ -48,7 +50,7 @@ export function ImportTaxPicker({
     row.amount != null && row.currency
       ? formatMoney(row.amount, row.currency)
       : null
-  const locked = row.cutover_status === 'moved' || !row.record_id
+  const locked = readOnly || row.cutover_status === 'moved' || !row.record_id
 
   return (
     <DetailCell

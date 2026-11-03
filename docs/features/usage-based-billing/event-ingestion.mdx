@@ -14,17 +14,17 @@ To ingest events, you can use the Polar SDKs.
 ### TypeScript Example
 
 ```typescript
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
 });
 
 await polar.events.ingest({
   events: [
     {
       name: "<value>",
-      externalCustomerId: "<id>",
+      external_customer_id: "<id>",
       metadata: {
         key: "value",
       },

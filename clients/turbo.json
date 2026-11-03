@@ -1,5 +1,6 @@
 {
   "$schema": "https://v2-9-4.turborepo.dev/schema.json",
+  "agentGuidance": false,
   "globalDependencies": ["**/.env.*local"],
   "globalEnv": [
     "NEXT_IMAGE_UNOPTIMIZED",
@@ -13,13 +14,8 @@
     "NEXT_PUBLIC_BACKOFFICE_URL",
     "NEXT_PUBLIC_STRIPE_KEY",
     "NEXT_PUBLIC_FRONTEND_BASE_URL",
-    "POLAR_PREVIEW_ACCESS_TOKEN",
-    "POLAR_PREVIEW_BUILD",
     "POLAR_SKIP_DTS",
-    "POLAR_PREVIEW_BACKEND_HOST",
     "VERCEL_ENV",
-    "VERCEL_GIT_PULL_REQUEST_ID",
-    "VERCEL_URL",
     "NEXT_PUBLIC_VERCEL_ENV",
     "NEXT_PUBLIC_LOGIN_PATH",
     "NEXT_PUBLIC_GITHUB_APP_NAMESPACE",
@@ -28,8 +24,6 @@
     "NEXT_PUBLIC_POSTHOG_TOKEN",
     "NEXT_PUBLIC_STRIPE_COUNTRIES_WHITELIST",
     "NEXT_PUBLIC_APPLE_DOMAIN_ASSOCIATION",
-    "SENTRY_AUTH_TOKEN",
-    "VERCEL_GIT_COMMIT_SHA",
     "NEXT_PUBLIC_SENTRY_DSN",
     "SENTRY_PROJECT",
     "SENTRY_ORG",
@@ -50,6 +44,7 @@
     "MINTLIFY_ASSISTANT_API_KEY",
     "ATTIO_API_KEY",
     "ATTIO_STARTUP_LIST_ID",
+    "ATTIO_DESIGN_PARTNER_LIST_ID",
     "CI",
     "TZ"
   ],
@@ -59,6 +54,11 @@
     },
     "build": {
       "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "web#build": {
+      "dependsOn": ["^build"],
+      "env": ["VERCEL_GIT_COMMIT_SHA", "VERCEL_URL", "SENTRY_AUTH_TOKEN"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "//#lint": {},

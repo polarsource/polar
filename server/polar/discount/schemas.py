@@ -14,6 +14,7 @@ from pydantic import (
 )
 
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import (
     MetadataInputMixin,
     MetadataOutputMixin,
@@ -24,13 +25,29 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
 )
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductBase
+from polar.version import V2026_10, V2027_01
+
+
+class DiscountListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalID Filter", description="Filter by discount external ID."
+    )
+    query: str | None = Field(None, description="Filter by name.")
+
 
 DiscountID = Annotated[
     UUID4,
@@ -166,7 +183,7 @@ ProductsList = Annotated[
 ]
 
 
-class DiscountCreateBase(MetadataInputMixin, Schema):
+class DiscountCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
     name: Name
     code: Code = None
 
@@ -238,23 +255,7 @@ class DiscountFixedCreate(DiscountCreateBase):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
     duration: Duration
     duration_in_months: DurationInMonthsOptional = None
-    amount: Amount | None = Field(
-        default=None,
-        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
-    )
-    currency: Currency | None = Field(
-        default=PresentmentCurrency.usd,
-        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
-    )
-    amounts: Amounts | None = None
-
-    @model_validator(mode="after")
-    def validate_either_amount_or_amounts(self) -> Self:
-        if self.amount is not None and self.amounts is not None:
-            raise ValueError("Cannot specify both `amount` and `amounts`.")
-        if self.amount is None and self.amounts is None:
-            raise ValueError("Must specify either `amount` or `amounts`.")
-        return self
+    amounts: Amounts
 
     @model_validator(mode="after")
     def validate_duration_in_months(self) -> Self:
@@ -276,7 +277,7 @@ class DiscountPercentageCreate(DiscountCreateBase):
         return self
 
 
-class DiscountUpdate(MetadataInputMixin, Schema):
+class DiscountUpdate(MetadataInputMixin, ExternalIDInputMixin, Schema):
     """
     Schema to update a discount.
     """
@@ -293,14 +294,6 @@ class DiscountUpdate(MetadataInputMixin, Schema):
     duration_in_months: DurationInMonths | None = None
 
     type: DiscountType | None = None
-    amount: Amount | None = Field(
-        default=None,
-        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
-    )
-    currency: Currency | None = Field(
-        default=None,
-        deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
-    )
     amounts: Amounts | None = None
     basis_points: BasisPoints | None = None
 
@@ -311,18 +304,14 @@ class DiscountUpdate(MetadataInputMixin, Schema):
         _starts_at_ends_at_validator(self.starts_at, self.ends_at)
         return self
 
-    @model_validator(mode="after")
-    def validate_either_amount_or_amounts(self) -> Self:
-        if self.amount is not None and self.amounts is not None:
-            raise ValueError("Cannot specify both `amount` and `amounts`.")
-        return self
-
 
 class DiscountProduct(ProductBase, MetadataOutputMixin):
     """A product that a discount can be applied to."""
 
 
-class DiscountBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
+class DiscountBase(
+    MetadataOutputMixin, ExternalIDOutputMixin, IDSchema, TimestampedSchema
+):
     name: str = Field(
         description=(
             "Name of the discount. "
@@ -378,11 +367,11 @@ class DiscountRepeatDurationBase(Schema):
 
 class DiscountFixedBase(Schema):
     type: Literal[DiscountType.fixed] = DiscountType.fixed
-    amount: int = Field(
+    amount: Annotated[int, Version(up_to=V2026_10)] = Field(
         examples=[1000],
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )
-    currency: str = Field(
+    currency: Annotated[str, Version(up_to=V2026_10)] = Field(
         examples=["usd"],
         deprecated="Use `amounts` instead to specify fixed discount amounts for different currencies.",
     )

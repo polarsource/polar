@@ -1,4 +1,5 @@
 import { findNodeAtLocation, parseTree } from 'jsonc-parser'
+import { locateInScript } from '@/services/billing-config/script-locations'
 import type {
   ConfigIssue,
   LoadedConfig,
@@ -96,7 +97,12 @@ const issue = (
   const tag = unionTag(error)
   const path = tag ? [...loc, tag.key] : loc
   const raw = tag ? tag.value : error.input
-  const got = supplied(config, path, raw) ? raw : undefined
+  const got =
+    error.type === 'missing'
+      ? undefined
+      : supplied(config, path, raw)
+        ? raw
+        : undefined
   return {
     severity: error.severity ?? 'error',
     code: error.type,
@@ -104,7 +110,7 @@ const issue = (
     message: tag ? `Input should be ${tag.expected}` : error.msg,
     got: got === undefined ? undefined : JSON.stringify(got),
     location: config.generated
-      ? undefined
+      ? locateInScript(config.source, config.input, path, got)
       : locate(
           config.source,
           path,

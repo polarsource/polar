@@ -36,7 +36,6 @@ from polar.v2026_04.inputs import (
 from polar.v2026_04.literals import SubscriptionProrationBehavior
 from polar.v2026_04.outputs import (
     CustomerBenefitGrantSlackSharedChannel,
-    LegacyRecurringProductPriceFixed,
     ProductPriceFixed,
 )
 from polar.v2026_04.webhooks import (
@@ -228,35 +227,6 @@ class PolarSelfService:
             "polar_self.track_organization_review_usage",
             external_customer_id=external_customer_id,
             review_context=review_context,
-            vendor=vendor,
-            model=model,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            cost_usd=str(cost_decimal),
-            usage_id=usage_id,
-        )
-
-    def enqueue_track_compass_assistant_usage(
-        self,
-        *,
-        external_customer_id: str,
-        vendor: str,
-        model: str,
-        input_tokens: int,
-        output_tokens: int,
-        cost_usd: Decimal | float | None,
-        usage_id: str,
-    ) -> None:
-        if not self.is_configured:
-            return
-        if cost_usd is None:
-            return
-        cost_decimal = Decimal(str(cost_usd))
-        if cost_decimal <= 0:
-            return
-        enqueue_job(
-            "polar_self.track_compass_assistant_usage",
-            external_customer_id=external_customer_id,
             vendor=vendor,
             model=model,
             input_tokens=input_tokens,
@@ -987,7 +957,7 @@ class PolarSelfService:
 
     def _product_fixed_price_amount(self, product: "Product") -> int:
         for price in product.prices:
-            if isinstance(price, ProductPriceFixed | LegacyRecurringProductPriceFixed):
+            if isinstance(price, ProductPriceFixed):
                 return price.price_amount
         return 0
 

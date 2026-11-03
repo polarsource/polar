@@ -34,11 +34,7 @@ export function PanTransferPanel({
   }
 
   if (!checklist.started) {
-    return (
-      <Text variant="caption" color="muted">
-        The card transfer hasn&apos;t started yet.
-      </Text>
-    )
+    return <Text color="muted">The card transfer hasn&apos;t started yet.</Text>
   }
 
   const steps = cardMovementSteps(checklist.steps)
@@ -50,9 +46,7 @@ export function PanTransferPanel({
   return (
     <Box flexDirection="column" rowGap="l">
       {finished ? (
-        <Text variant="caption" color="muted">
-          Every step is complete.
-        </Text>
+        <Text color="muted">Every step is complete.</Text>
       ) : (
         <Text variant="caption" color="muted">
           {done} of {steps.length} complete

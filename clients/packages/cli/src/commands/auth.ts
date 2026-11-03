@@ -11,8 +11,9 @@ import {
 } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
+import { token } from '@/commands/token'
 import { output } from '@/utils/command'
-import { production, sandbox } from '@/utils/flags'
+import { local, production, sandbox } from '@/utils/flags'
 import { note } from '@/utils/progress'
 import * as ui from '@/utils/ui'
 
@@ -43,7 +44,15 @@ const notLoggedIn = [
   ui.blank,
 ]
 
-const environmentFlags = { sandbox, production }
+const environmentFlags = { sandbox, production, local }
+
+type EnvironmentFlags = Record<PolarEnvironment, boolean>
+
+const environmentTitles: Record<PolarEnvironment, string> = {
+  sandbox: 'Sandbox',
+  production: 'Production',
+  local: 'Local',
+}
 
 const announceAuthorization =
   (environment: PolarEnvironment) => (authorization: URL) =>
@@ -64,18 +73,15 @@ const interactive = Effect.gen(function* () {
   return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
 })
 
-const chooseEnvironment = (
-  flags: { sandbox: boolean; production: boolean },
-  action: string,
-) =>
+const chooseEnvironment = (flags: EnvironmentFlags, action: string) =>
   Effect.gen(function* () {
-    if (flags.sandbox && flags.production) {
+    const chosen = environments.filter((environment) => flags[environment])
+    if (chosen.length > 1) {
       return yield* new AuthError({
-        message: 'Pass either --sandbox or --production, not both.',
+        message: 'Pass only one environment flag.',
       })
     }
-    if (flags.production) return 'production' as const
-    if (flags.sandbox) return 'sandbox' as const
+    if (chosen[0]) return chosen[0]
     if (!(yield* interactive)) {
       return yield* new AuthError({
         message: `Pass --sandbox or --production to ${action} outside an interactive terminal.`,
@@ -383,16 +389,11 @@ const org = Command.make('org', {}).pipe(
   }),
 )
 
-const logoutTargets = (flags: {
-  sandbox: boolean
-  production: boolean
-  all: boolean
-}) =>
+const logoutTargets = (flags: EnvironmentFlags & { all: boolean }) =>
   Effect.gen(function* () {
     if (flags.all) return [...environments]
-    if (flags.sandbox || flags.production) {
-      return environments.filter((environment) => flags[environment])
-    }
+    const chosen = environments.filter((environment) => flags[environment])
+    if (chosen.length > 0) return chosen
     const auth = yield* Auth
     const sessions = yield* auth.environments
     if (sessions.length <= 1) return sessions
@@ -403,7 +404,7 @@ const logoutTargets = (flags: {
       })
     }
     const choices = sessions.map((environment) => ({
-      title: environment === 'production' ? 'Production' : 'Sandbox',
+      title: environmentTitles[environment],
       value: [environment] as PolarEnvironment[],
     }))
     if (sessions.length > 1) {
@@ -466,5 +467,5 @@ const logout = Command.make('logout', {
 
 export const auth = Command.make('auth').pipe(
   Command.withDescription('Manage your Polar sessions and active organization'),
-  Command.withSubcommands([login, whoami, list, org, logout]),
+  Command.withSubcommands([login, whoami, list, org, token, logout]),
 )

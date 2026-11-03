@@ -6,7 +6,6 @@ handle_free_success directly (no payment intent, no webhook).
 """
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.models import Organization, Product
@@ -17,7 +16,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def free_product(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -30,7 +29,7 @@ async def free_product(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFreeProduct:
     @E2E_AUTH
     async def test_no_payment_required(

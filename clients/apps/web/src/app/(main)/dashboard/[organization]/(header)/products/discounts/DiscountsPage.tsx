@@ -19,9 +19,11 @@ import { useDebouncedCallback } from '@/hooks/utils'
 import { getAPIParams } from '@/utils/datatable'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import Search from '@mui/icons-material/Search'
+import {
+  AddOutlined,
+  MoreVertOutlined,
+  SearchFilled as Search,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {

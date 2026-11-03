@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createUnitBasedPrice } from '../test-utils/makeCheckout'
-import { getMinimumUnitAmount, getUnitLabels, getUnitTierRows } from './units'
+import {
+  getBasePricePerUnit,
+  getMinimumUnitAmount,
+  getUnitLabels,
+  getUnitTierRows,
+} from './units'
 
 describe('getUnitLabels', () => {
   it('defaults to unit / units', () => {
@@ -106,4 +111,33 @@ describe('getMinimumUnitAmount', () => {
 
     expect(amount).toBe(41500)
   })
+})
+
+describe('getBasePricePerUnit', () => {
+  const tiers = {
+    type: 'graduated' as const,
+    tiers: [
+      { bound: 5, unit_amount: '0' },
+      { bound: null, unit_amount: '1000' },
+    ],
+  }
+
+  it('uses the first tier when the minimum falls within it', () => {
+    const amount = getBasePricePerUnit(
+      createUnitBasedPrice({ minimum_units: 1, tiers }),
+    )
+
+    expect(amount).toBe(0)
+  })
+
+  it.each(['graduated', 'volume'] as const)(
+    'uses the tier covering the minimum for %s pricing',
+    (type) => {
+      const amount = getBasePricePerUnit(
+        createUnitBasedPrice({ minimum_units: 6, tiers: { ...tiers, type } }),
+      )
+
+      expect(amount).toBe(1000)
+    },
+  )
 })

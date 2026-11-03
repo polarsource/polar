@@ -23,7 +23,7 @@ def create_sync_client() -> SyncFailoverRedis:
     return client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFailoverRedis:
     async def test_readonly_drops_idle_connections(self) -> None:
         client = create_async_client()

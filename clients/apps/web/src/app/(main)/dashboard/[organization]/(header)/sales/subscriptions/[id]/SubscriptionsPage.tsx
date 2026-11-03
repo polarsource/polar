@@ -7,6 +7,7 @@ import { SubscriptionSeatsSection } from '@/components/Seats/SubscriptionSeatsSe
 import SubscriptionActionsMenu from '@/components/Subscriptions/SubscriptionActionsMenu'
 import { SubscriptionDetailsGrid } from '@/components/Subscriptions/SubscriptionDetailsGrid'
 import SubscriptionInvoicePreview from '@/components/Subscriptions/SubscriptionInvoicePreview'
+import SubscriptionUsageChargePreview from '@/components/Subscriptions/SubscriptionUsageChargePreview'
 import SubscriptionOrdersSection from '@/components/Subscriptions/SubscriptionOrdersSection'
 import { SubscriptionSecondaryDetails } from '@/components/Subscriptions/SubscriptionSecondaryDetails'
 import UpdateSubscriptionModal from '@/components/Subscriptions/UpdateSubscriptionModal'
@@ -74,6 +75,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         organization={organization}
       />
 
+      <SubscriptionUsageChargePreview subscription={subscription} />
       <SubscriptionInvoicePreview subscription={subscription} />
 
       <SubscriptionSecondaryDetails

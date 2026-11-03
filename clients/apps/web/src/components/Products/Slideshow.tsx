@@ -1,9 +1,8 @@
 'use client'
 
-import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded'
-import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded'
+import { ChevronLeftRounded, ChevronRightRounded } from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, domMax, LazyMotion, m } from 'motion/react'
 import { useCallback, useState } from 'react'
 
 const variants = {
@@ -50,36 +49,38 @@ export const Slideshow = ({ images }: SlideshowProps) => {
 
   return (
     <div className="dark:bg-polar-900 dark:border-polar-700 relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-gray-100 bg-cover bg-center lg:rounded-3xl dark:border">
-      <AnimatePresence initial={false} custom={direction}>
-        <motion.div
-          className="absolute inset-0 h-full w-full bg-cover bg-center"
-          style={{ backgroundImage: `url(${images[imageIndex]})` }}
-          key={page}
-          custom={direction}
-          variants={variants}
-          {...(hasMultipleImages && {
-            initial: 'enter',
-            animate: 'center',
-            exit: 'exit',
-            transition: {
-              x: { type: 'spring', stiffness: 300, damping: 30 },
-              opacity: { duration: 0.2 },
-            },
-            drag: 'x',
-            dragConstraints: { left: 0, right: 0 },
-            dragElastic: 1,
-            onDragEnd: (_, { offset, velocity }) => {
-              const swipe = swipePower(offset.x, velocity.x)
+      <LazyMotion features={domMax}>
+        <AnimatePresence initial={false} custom={direction}>
+          <m.div
+            className="absolute inset-0 h-full w-full bg-cover bg-center"
+            style={{ backgroundImage: `url(${images[imageIndex]})` }}
+            key={page}
+            custom={direction}
+            variants={variants}
+            {...(hasMultipleImages && {
+              initial: 'enter',
+              animate: 'center',
+              exit: 'exit',
+              transition: {
+                x: { type: 'spring', stiffness: 300, damping: 30 },
+                opacity: { duration: 0.2 },
+              },
+              drag: 'x',
+              dragConstraints: { left: 0, right: 0 },
+              dragElastic: 1,
+              onDragEnd: (_, { offset, velocity }) => {
+                const swipe = swipePower(offset.x, velocity.x)
 
-              if (swipe < -swipeConfidenceThreshold) {
-                paginate(1)
-              } else if (swipe > swipeConfidenceThreshold) {
-                paginate(-1)
-              }
-            },
-          })}
-        />
-      </AnimatePresence>
+                if (swipe < -swipeConfidenceThreshold) {
+                  paginate(1)
+                } else if (swipe > swipeConfidenceThreshold) {
+                  paginate(-1)
+                }
+              },
+            })}
+          />
+        </AnimatePresence>
+      </LazyMotion>
 
       {hasMultipleImages && (
         <div className="absolute bottom-6 left-6 z-10 flex flex-row items-center justify-between gap-x-2">

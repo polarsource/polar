@@ -182,7 +182,7 @@ async def _stage_ready_subscription(
     return migration, pending
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsert:
     async def test_creates_pending_record_with_canonical(
         self,
@@ -607,7 +607,7 @@ class TestUpsert:
         assert merged.canonical["extra_codes"] == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOpsStatement:
     async def test_returns_migrations_across_organizations(
         self,
@@ -630,7 +630,7 @@ class TestGetOpsStatement:
         assert all(migration.organization is not None for migration in migrations)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOpsById:
     async def test_loads_the_organization(
         self,
@@ -667,7 +667,7 @@ class TestGetOpsById:
         assert await repository.get_ops_by_id(MerchantMigration.generate_id()) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSwitchableSubscriptions:
     async def test_pending_subscription_with_imported_dependencies_is_switchable(
         self,

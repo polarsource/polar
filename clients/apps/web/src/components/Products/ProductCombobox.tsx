@@ -1,7 +1,6 @@
 'use client'
 
 import { useProduct, useProducts } from '@/hooks/queries'
-import { hasLegacyRecurringPrices } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit'
@@ -19,7 +18,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
+import {
+  Check,
+  ChevronsUpDown,
+  LoaderCircle as Loader2,
+} from '@polar-sh/orbit/icons'
 import { useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import ProductPriceLabel from './ProductPriceLabel'
@@ -79,7 +82,8 @@ const hasNewPricing = (
 ) => {
   const productPriceIds = product.prices.map(({ id }) => id)
   if (productPriceIds.length !== currentPriceIds.length) return true
-  return !productPriceIds.every((id) => currentPriceIds.includes(id))
+  const currentPriceIdSet = new Set(currentPriceIds)
+  return !productPriceIds.every((id) => currentPriceIdSet.has(id))
 }
 
 export const ProductCombobox = ({
@@ -112,10 +116,6 @@ export const ProductCombobox = ({
 
   const products = useMemo(() => {
     let items = (queriedProducts?.items ?? []).filter(
-      (product) => !hasLegacyRecurringPrices(product),
-    )
-
-    items = items.filter(
       (product) =>
         product.id !== currentProductId ||
         hasNewPricing(product, currentPriceIds),
@@ -124,7 +124,6 @@ export const ProductCombobox = ({
     if (
       !normalizedQuery &&
       currentProduct &&
-      !hasLegacyRecurringPrices(currentProduct) &&
       hasNewPricing(currentProduct, currentPriceIds) &&
       !items.some((product) => product.id === currentProduct.id)
     ) {

@@ -265,6 +265,44 @@ class TestEventLoopWatchdog:
 
             mock_exit.assert_called_with(1)
 
+    def test_exits_when_the_dump_hangs(
+        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+    ) -> None:
+        """A thread stuck holding the logging lock hangs the dump's log call.
+
+        The first miss must then exit on its own, since the miss count can
+        never reach max_misses.
+        """
+        loop, thread = event_loop_thread
+        _block(loop, 3)
+        release = threading.Event()
+
+        watchdog = _EventLoopWatchdog(
+            loop,
+            thread.ident,
+            heartbeat_interval=0.05,
+            heartbeat_timeout=0.3,
+            max_misses=3,
+        )
+
+        with (
+            patch.object(
+                _EventLoopWatchdog,
+                "_dump_stacks",
+                side_effect=lambda: release.wait(timeout=5),
+            ),
+            patch("polar.worker._asyncio.DUMP_TIMEOUT_SECONDS", 0.2),
+            patch("polar.worker._asyncio.os._exit") as mock_exit,
+        ):
+            watchdog.start()
+            time.sleep(1.0)
+            mock_exit.assert_called_with(1)
+            assert watchdog._consecutive_misses == 1
+
+            release.set()
+            watchdog.stop()
+            watchdog.join(timeout=5)
+
     def test_does_not_exit_when_disabled(
         self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:

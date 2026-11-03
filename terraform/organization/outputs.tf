@@ -1,3 +1,8 @@
+output "grafana_cloudwatch_role_arn" {
+  description = "IAM role ARN for the Grafana Cloud AWS/Billing integration in the management account."
+  value       = module.grafana_cloudwatch_role.role_arn
+}
+
 output "management_account" {
   value = {
     id   = aws_organizations_organization.current.master_account_id

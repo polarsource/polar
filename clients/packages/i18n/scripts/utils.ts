@@ -85,6 +85,91 @@ export function findPluralPaths(
 }
 
 /**
+ * CLDR plural categories a target locale may add to a plural object on top of
+ * the source variants. Resolution order is exact `=N`, then category, then
+ * `other`.
+ */
+export const PLURAL_CATEGORY_KEYS = [
+  'zero',
+  'one',
+  'two',
+  'few',
+  'many',
+] as const
+
+const EXACT_COUNT_FOR_CATEGORY: Record<string, number> = {
+  zero: 0,
+  one: 1,
+  two: 2,
+}
+
+const PLURAL_SAMPLE_COUNTS = [
+  ...Array.from({ length: 201 }, (_, i) => i),
+  1000,
+  10_000,
+  100_000,
+  1_000_000,
+]
+
+/**
+ * The plural category keys a locale may use, with sample counts for each,
+ * based on its CLDR plural rules. `zero`, `one` and `two` are only included
+ * when they cover more than their exact count, since the source's `=0`, `=1`
+ * and `=2` keys already handle that count.
+ * e.g. { few: [2, 3, 4, 22, 23], many: [0, 5, 6, 7, 8] } for Polish,
+ * { one: [0, 1], many: [1000000] } for French, {} for German.
+ */
+export function getPluralCategorySamples(
+  locale: string,
+): Record<string, number[]> {
+  const rules = new Intl.PluralRules(locale)
+  const samples: Record<string, number[]> = {}
+
+  for (const category of PLURAL_CATEGORY_KEYS) {
+    const counts = PLURAL_SAMPLE_COUNTS.filter(
+      (n) => rules.select(n) === category,
+    )
+    const exact = EXACT_COUNT_FOR_CATEGORY[category]
+    if (counts.some((n) => n !== exact)) {
+      samples[category] = counts.slice(0, 5)
+    }
+  }
+
+  return samples
+}
+
+/**
+ * The plural category keys a locale may use. See getPluralCategorySamples.
+ */
+export function getPluralCategoryKeys(locale: string): string[] {
+  return Object.keys(getPluralCategorySamples(locale))
+}
+
+/**
+ * Resolve the source key a translated flat key corresponds to.
+ * Regular keys map to themselves; plural category keys (`path.few`,
+ * `path.many`) map to their plural's `path.other`.
+ * Returns undefined if the key has no counterpart in the source.
+ */
+export function resolveSourceKey(
+  key: string,
+  sourceKeys: Map<string, unknown>,
+  pluralPaths: Set<string>,
+  pluralCategoryKeys: string[],
+): string | undefined {
+  if (sourceKeys.has(key)) return key
+
+  const separator = key.lastIndexOf('.')
+  const path = key.slice(0, separator)
+  const variant = key.slice(separator + 1)
+  if (pluralPaths.has(path) && pluralCategoryKeys.includes(variant)) {
+    return `${path}.other`
+  }
+
+  return undefined
+}
+
+/**
  * Flatten a nested object into a Map of dot-notation keys to values.
  * Plural objects are expanded: { _mode: 'plural', '=1': '...', other: '...' }
  * becomes separate keys like 'path.=1' and 'path.other' (skipping _mode).
@@ -223,12 +308,14 @@ export function findChangedKeys(
 export function findOrphanedKeys(
   sourceKeys: Map<string, EntryValue>,
   existingTranslation: NestedObject,
+  pluralPaths: Set<string> = new Set(),
+  pluralCategoryKeys: string[] = [],
 ): string[] {
   const existingKeys = flattenKeys(existingTranslation)
   const orphaned: string[] = []
 
   for (const key of existingKeys.keys()) {
-    if (!sourceKeys.has(key)) {
+    if (!resolveSourceKey(key, sourceKeys, pluralPaths, pluralCategoryKeys)) {
       orphaned.push(key)
     }
   }
@@ -239,11 +326,18 @@ export function findOrphanedKeys(
 /**
  * Prepare source strings for LLM translation (include context where available)
  */
+export type LLMSourceEntry = {
+  value: string
+  _llmContext?: string
+  _pluralOther?: true
+}
+
 export function prepareForLLM(
   sourceKeys: Map<string, EntryValue>,
   keys: string[],
-): Record<string, { value: string; _llmContext?: string }> {
-  const result: Record<string, { value: string; _llmContext?: string }> = {}
+  pluralPaths: Set<string> = new Set(),
+): Record<string, LLMSourceEntry> {
+  const result: Record<string, LLMSourceEntry> = {}
 
   for (const key of keys) {
     const entry = sourceKeys.get(key)
@@ -253,6 +347,10 @@ export function prepareForLLM(
       result[key] = { value: entry.value, _llmContext: entry._llmContext }
     } else {
       result[key] = { value: getStringValue(entry) }
+    }
+
+    if (key.endsWith('.other') && pluralPaths.has(key.slice(0, -6))) {
+      result[key]._pluralOther = true
     }
   }
 

@@ -11,7 +11,7 @@ export default function ClientPage() {
   const productIdsParam = searchParams.get('productId')
   const productIds = productIdsParam ? productIdsParam.split(',') : []
 
-  const { data: products, isLoading } = useSelectedProducts(productIds)
+  const { data: products, isLoading } = useSelectedProducts({ id: productIds })
 
   if (isLoading || !products || products.length === 0) {
     return null

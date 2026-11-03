@@ -8,7 +8,7 @@ from polar.user_organization.repository import UserOrganizationRepository
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrganizationsWithRole:
     async def test_returns_active_org(
         self,

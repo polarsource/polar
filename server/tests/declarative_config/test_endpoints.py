@@ -1,11 +1,20 @@
+import uuid
+from typing import Any
+
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.kit.utils import utc_now
+from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import METER_TEST_EVENT, create_event, create_meter
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_event,
+    create_meter,
+)
 
 METER = {
     "external_id": "sdk-tool-calls",
@@ -20,7 +29,7 @@ METER = {
 }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApply:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/config/apply", json={"meters": [METER]})
@@ -66,10 +75,22 @@ class TestApply:
 
         assert response.status_code == 200
         assert response.json() == {
-            "meters": [{"external_id": "sdk-tool-calls", "action": "created"}],
+            "changes": [
+                {
+                    "resource": "meter",
+                    "external_id": "sdk-tool-calls",
+                    "action": "created",
+                }
+            ],
+            "removed": [],
+            "catalog": None,
+            "settings": None,
         }
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_organization_token(
         self, mocker: MockerFixture, client: AsyncClient
@@ -99,6 +120,104 @@ class TestApply:
         assert response.status_code == 422
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "meters", 0, "agregation"]
+
+    @pytest.mark.parametrize(
+        "price",
+        [
+            pytest.param(
+                {
+                    "amount_type": "metered_unit",
+                    "meter": "sdk-tool-calls",
+                    "unit_amount": "0.5",
+                },
+                id="metered_unit",
+            ),
+            pytest.param(
+                {
+                    "amount_type": "metered_tiers",
+                    "meter": "sdk-tool-calls",
+                    "tiers": {
+                        "type": "graduated",
+                        "tiers": [{"bound": None, "unit_amount": "0.5"}],
+                    },
+                },
+                id="metered_tiers",
+            ),
+        ],
+    )
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_one_time_product_metered_price(
+        self,
+        price: dict[str, Any],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [METER],
+                "products": [
+                    {
+                        "external_id": "pack",
+                        "name": "Pack",
+                        "prices": [price],
+                    }
+                ],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "products", 0]
+
+    @pytest.mark.parametrize(
+        "product",
+        [
+            pytest.param(
+                {
+                    "external_id": "pack",
+                    "name": "Pack",
+                    "trial_interval": "day",
+                    "trial_interval_count": 14,
+                    "prices": [{"amount_type": "fixed", "price_amount": 0}],
+                },
+                id="one_time",
+            ),
+            pytest.param(
+                {
+                    "external_id": "pro",
+                    "name": "Pro",
+                    "recurring_interval": "month",
+                    "trial_interval": "day",
+                    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+                },
+                id="missing_count",
+            ),
+        ],
+    )
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_invalid_trial(
+        self,
+        product: dict[str, Any],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "products": [product],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "products", 0]
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -162,8 +281,29 @@ class TestApply:
         ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPlan:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_empty_config(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/plan", json={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "changes": [],
+            "removed": [],
+            "catalog": None,
+            "settings": None,
+            "issues": [],
+        }
+
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_locked_meter_reports_issues(
@@ -237,3 +377,277 @@ class TestPlan:
             "before": None,
             "after": "SDK - Tool Calls",
         } in created["diff"]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unknown_catalog(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/plan",
+            params={"catalog_id": str(uuid.uuid4())},
+            json={"meters": [METER], "organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 404
+        assert response.json()["error"] == "CatalogNotFound"
+
+
+@pytest.mark.anyio
+class TestExport:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/config/")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_enabled(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "ConfigAsCodeNotEnabled"
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_round_trips_through_plan(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="my-meter",
+        )
+        meter.user_metadata = {"team": "billing", "weight": 1.5}
+        meter.unit = MeterUnit.custom
+        meter.custom_label = "call"
+        meter.custom_multiplier = 1000
+        await save_fixture(meter)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Other Meter",
+            external_id="other-meter",
+        )
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["skipped"] == []
+        first, second = json["config"]["meters"]
+        assert first == {
+            "external_id": "my-meter",
+            "name": "My Meter",
+            "unit": "custom",
+            "custom_label": "call",
+            "custom_multiplier": 1000,
+            "filter": {
+                "conjunction": "and",
+                "clauses": [
+                    {"property": "name", "operator": "eq", "value": METER_TEST_EVENT}
+                ],
+            },
+            "aggregation": {"func": "count"},
+            "metadata": {"team": "billing", "weight": 1.5},
+        }
+        assert second["external_id"] == "other-meter"
+
+        plan_response = await client.post(
+            "/v1/config/plan",
+            json={**json["config"], "organization_id": str(organization.id)},
+        )
+
+        assert plan_response.status_code == 200
+        plan = plan_response.json()
+        assert [change["action"] for change in plan["changes"]] == [
+            "unchanged",
+            "unchanged",
+        ]
+        assert all(issue["severity"] != "error" for issue in plan["issues"])
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skipped_meters(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        without_external_id = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        archived = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="archived-meter",
+        )
+        archived.archived_at = utc_now()
+        await save_fixture(archived)
+        invalid = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="invalid-meter",
+        )
+        invalid.unit = MeterUnit.custom
+        await save_fixture(invalid)
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["config"]["meters"] == []
+        assert json["skipped"] == [
+            {
+                "resource": "meter",
+                "id": str(without_external_id.id),
+                "name": "My Meter",
+                "reason": "missing_external_id",
+            },
+            {
+                "resource": "meter",
+                "id": str(archived.id),
+                "name": "My Meter",
+                "reason": "archived",
+            },
+            {
+                "resource": "meter",
+                "id": str(invalid.id),
+                "name": "My Meter",
+                "reason": "invalid",
+            },
+        ]
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_meters_over_limit(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch("polar.declarative_config.export.MAXIMUM_METERS", 1)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="first-meter",
+        )
+        second = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="second-meter",
+        )
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [meter["external_id"] for meter in json["config"]["meters"]] == [
+            "first-meter"
+        ]
+        assert json["skipped"] == [
+            {
+                "resource": "meter",
+                "id": str(second.id),
+                "name": "My Meter",
+                "reason": "over_limit",
+            }
+        ]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_organization_token(
+        self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="my-meter"
+        )
+
+        response = await client.get("/v1/config/")
+
+        assert response.status_code == 200
+        [meter] = response.json()["config"]["meters"]
+        assert meter["external_id"] == "my-meter"
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        ("catalog_id", "status_code"),
+        [("00000000-0000-4000-8000-000000000000", 404), ("live", 422)],
+    )
+    async def test_catalog_selector(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        catalog_id: str,
+        status_code: int,
+    ) -> None:
+        response = await client.get(
+            "/v1/config/",
+            params={"organization_id": str(organization.id), "catalog_id": catalog_id},
+        )
+
+        assert response.status_code == status_code
+
+
+@pytest.mark.anyio
+class TestPrune:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unused_meter(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/prune",
+            json={
+                "meters": [{**METER, "deprecated": True}],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "entries": [
+                {
+                    "resource": "meter",
+                    "external_id": "sdk-tool-calls",
+                    "customers_count": 0,
+                    "referenced_by": [],
+                }
+            ]
+        }

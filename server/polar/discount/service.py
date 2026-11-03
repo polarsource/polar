@@ -6,8 +6,9 @@ from typing import Any, Literal
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
 from sqlalchemy.exc import DBAPIError, IntegrityError
+from sqlalchemy.sql.elements import OrderByList
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import Agent, AuthSubject, is_agent, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import (
@@ -34,7 +35,7 @@ from polar.models import (
     User,
 )
 from polar.models.checkout import Checkout
-from polar.models.discount import DiscountFixed
+from polar.models.discount import DiscountFixed, DiscountType
 from polar.models.discount_redemption import DiscountRedemption
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
@@ -42,10 +43,19 @@ from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.webhook.service import webhook as webhook_service
 
-from .schemas import DiscountCreate, DiscountFixedCreate, DiscountUpdate
+from . import legacy_schemas
+from .schemas import DiscountCreate, DiscountUpdate
 from .sorting import DiscountSortProperty
 
 log = structlog.get_logger()
+
+DISCOUNT_LOCKED_FIELDS: dict[DiscountType, tuple[str, ...]] = {
+    DiscountType.fixed: ("amount", "currency", "amounts", "duration_in_months"),
+    DiscountType.percentage: ("basis_points", "duration_in_months"),
+}
+DISCOUNT_LOCKED_FIELD_MESSAGE = (
+    "This field cannot be changed because the discount has already been redeemed."
+)
 
 
 class DiscountError(PolarError): ...
@@ -60,9 +70,10 @@ class DiscountService(ResourceServiceReader[Discount]):
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
+        external_id: Sequence[str] | None = None,
         query: str | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[DiscountSortProperty]] = (
@@ -74,6 +85,9 @@ class DiscountService(ResourceServiceReader[Discount]):
         if organization_id is not None:
             statement = statement.where(Discount.organization_id.in_(organization_id))
 
+        if external_id is not None:
+            statement = statement.where(Discount.external_id.in_(external_id))
+
         if query is not None:
             statement = statement.where(
                 or_(
@@ -82,7 +96,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                 )
             )
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == DiscountSortProperty.created_at:
@@ -102,7 +116,7 @@ class DiscountService(ResourceServiceReader[Discount]):
     async def get_by_id(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Discount | None:
         statement = self._get_readable_discount_statement(auth_subject).where(
@@ -115,7 +129,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         self,
         session: AsyncSession,
         discount_create: DiscountCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         notify: bool = True,
     ) -> Discount:
@@ -136,6 +150,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         if discount_create.code is not None:
             await self._assert_code_available(
                 repository, discount_create.code, organization.id
+            )
+
+        if discount_create.external_id is not None:
+            await self._assert_external_id_available(
+                repository, discount_create.external_id, organization.id
             )
 
         discount_products: list[DiscountProduct] = []
@@ -161,7 +180,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount_model = discount_create.type.get_model()
         discount_id = uuid.uuid4()
 
-        if isinstance(discount_create, DiscountFixedCreate) and (
+        if isinstance(discount_create, legacy_schemas.DiscountFixedCreate) and (
             discount_create.amount is not None and discount_create.currency is not None
         ):
             discount_create.amounts = {discount_create.currency: discount_create.amount}
@@ -184,6 +203,10 @@ class DiscountService(ResourceServiceReader[Discount]):
             if discount_create.code is not None:
                 await self._assert_code_available(
                     repository, discount_create.code, organization.id
+                )
+            if discount_create.external_id is not None:
+                await self._assert_external_id_available(
+                    repository, discount_create.external_id, organization.id
                 )
             raise
 
@@ -212,12 +235,32 @@ class DiscountService(ResourceServiceReader[Discount]):
                 ]
             )
 
+    async def _assert_external_id_available(
+        self,
+        repository: DiscountRepository,
+        external_id: str,
+        organization_id: uuid.UUID,
+    ) -> None:
+        if await repository.get_by_external_id_and_organization(
+            external_id, organization_id
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "external_id"),
+                        "msg": "A discount with this external ID already exists.",
+                        "input": external_id,
+                    }
+                ]
+            )
+
     async def update(
         self,
         session: AsyncSession,
         discount: Discount,
         discount_update: DiscountUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Discount:
         await assert_resource_permission(
             session, auth_subject, discount, OrganizationPermission.products_manage
@@ -266,13 +309,30 @@ class DiscountService(ResourceServiceReader[Discount]):
                     ]
                 )
 
+        if (
+            "external_id" in discount_update.model_fields_set
+            and discount_update.external_id != discount.external_id
+        ):
+            if discount.external_id is not None:
+                raise PolarRequestValidationError(
+                    [
+                        {
+                            "type": "value_error",
+                            "loc": ("body", "external_id"),
+                            "msg": "Discount external ID cannot be updated.",
+                            "input": discount_update.external_id,
+                        }
+                    ]
+                )
+            if discount_update.external_id is not None:
+                await self._assert_external_id_available(
+                    DiscountRepository.from_session(session),
+                    discount_update.external_id,
+                    discount.organization_id,
+                )
+
         if discount.redemptions_count > 0:
-            forbidden_fields = (
-                {"amount", "currency", "amounts", "duration_in_months"}
-                if isinstance(discount, DiscountFixed)
-                else {"basis_points", "duration_in_months"}
-            )
-            for field in forbidden_fields:
+            for field in DISCOUNT_LOCKED_FIELDS[discount.type]:
                 if field in discount_update.model_fields_set:
                     discount_update_value = getattr(discount_update, field)
                     if discount_update_value != getattr(discount, field, None):
@@ -281,10 +341,7 @@ class DiscountService(ResourceServiceReader[Discount]):
                                 {
                                     "type": "value_error",
                                     "loc": ("body", field),
-                                    "msg": (
-                                        "This field cannot be changed because "
-                                        "the discount has already been redeemed."
-                                    ),
+                                    "msg": DISCOUNT_LOCKED_FIELD_MESSAGE,
                                     "input": getattr(discount, field),
                                 }
                             ]
@@ -316,7 +373,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         exclude = {"products"}
         if isinstance(discount, DiscountFixed):
             exclude.add("basis_points")
-            if discount_update.amount and discount_update.currency:
+            if (
+                isinstance(discount_update, legacy_schemas.DiscountUpdate)
+                and discount_update.amount
+                and discount_update.currency
+            ):
                 discount.amounts = {discount_update.currency: discount_update.amount}
                 exclude.add("amount")
                 exclude.add("currency")
@@ -342,7 +403,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         self,
         session: AsyncSession,
         discount: Discount,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Discount:
         await assert_resource_permission(
             session, auth_subject, discount, OrganizationPermission.products_manage
@@ -382,10 +443,10 @@ class DiscountService(ResourceServiceReader[Discount]):
         ):
             return None
 
-        if products is not None and len(discount.products) > 0:
-            for product in products:
-                if product not in discount.products:
-                    return None
+        if products is not None and not all(
+            discount.applies_to_product(product) for product in products
+        ):
+            return None
 
         if redeemable and not await self.is_redeemable_discount(session, discount):
             return None
@@ -440,7 +501,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         ):
             return None
 
-        if len(discount.products) > 0 and product not in discount.products:
+        if not discount.applies_to_product(product):
             return None
 
         return discount
@@ -558,11 +619,11 @@ class DiscountService(ResourceServiceReader[Discount]):
         await webhook_service.send(session, discount.organization, event_type, discount)
 
     def _get_readable_discount_statement(
-        self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[Discount]]:
+        self, auth_subject: AuthSubject[User | Organization | Agent]
+    ) -> Select[Discount]:
         statement = select(Discount).where(~Discount.is_deleted)
 
-        if is_user(auth_subject):
+        if is_user(auth_subject) or is_agent(auth_subject):
             statement = statement.where(
                 Discount.organization_id.in_(
                     select_accessible_org_ids(

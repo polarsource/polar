@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { operations, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useInfiniteEvents = (
@@ -119,6 +119,45 @@ export const useEventHierarchyStats = (
       ),
     retry: defaultRetry,
     enabled,
+  })
+}
+
+type TimeseriesParameters = Omit<
+  NonNullable<
+    operations['events:list_statistics_timeseries']['parameters']['query']
+  >,
+  'organization_id' | 'timezone' | 'start_date' | 'end_date'
+>
+
+export const useEventTimeseriesChunks = (
+  organizationId: string,
+  chunks: { start_date: string; end_date: string }[],
+  parameters: TimeseriesParameters,
+) => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as operations['events:list_statistics_timeseries']['parameters']['query']['timezone']
+  return useQueries({
+    queries: chunks.map((chunk) => ({
+      queryKey: [
+        'eventHierarchyStats',
+        organizationId,
+        { timezone, ...chunk, ...parameters },
+      ],
+      queryFn: () =>
+        unwrap(
+          api.GET('/v1/events/statistics/timeseries', {
+            params: {
+              query: {
+                organization_id: organizationId,
+                timezone,
+                ...chunk,
+                ...parameters,
+              },
+            },
+          }),
+        ),
+      retry: defaultRetry,
+    })),
   })
 }
 

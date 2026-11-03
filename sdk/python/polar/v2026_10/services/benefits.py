@@ -255,7 +255,7 @@ class BenefitsSync(SyncServiceBase):
         **kwargs: typing.Any,
     ) -> Benefit:
         """
-        Create a benefit.
+        Create a benefit, for example license keys, file downloads or Discord access.
 
         **Scopes**: `benefits:write`
 
@@ -922,7 +922,7 @@ class BenefitsAsync(AsyncServiceBase):
         **kwargs: typing.Any,
     ) -> Benefit:
         """
-        Create a benefit.
+        Create a benefit, for example license keys, file downloads or Discord access.
 
         **Scopes**: `benefits:write`
 

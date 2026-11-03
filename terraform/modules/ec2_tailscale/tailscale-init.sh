@@ -7,15 +7,25 @@ hostname="$3"
 tailscale_ssh="$4"
 advertise_routes="$5"
 advertise_tags="$6"
+tailscale_version="$7"
 
 if [[ -n "$advertise_routes" ]]; then
   sysctl -p /etc/sysctl.d/99-tailscale.conf
 fi
 
+# Temporary eMudhra mitigation; recheck with the other workarounds in AGENTS.md.
+trust extract --overwrite --format=pem-bundle \
+  --filter='pkcs11:object=Comodo%20AAA%20Services%20root;type=cert' \
+  /etc/pki/ca-trust/source/blocklist/Comodo_AAA_Services_root.pem
+trust extract --overwrite --format=pem-bundle \
+  --filter='pkcs11:object=emSign%20ECC%20Root%20CA%20-%20G3;type=cert' \
+  /etc/pki/ca-trust/source/blocklist/emSign_ECC_Root_CA_-_G3.pem
+update-ca-trust
+
 curl --fail --silent --show-error --location --retry 5 \
   https://pkgs.tailscale.com/stable/amazon-linux/2023/tailscale.repo \
   --output /etc/yum.repos.d/tailscale.repo
-dnf install -y tailscale
+dnf install -y "tailscale-${tailscale_version}"
 systemctl enable --now tailscaled
 
 umask 077

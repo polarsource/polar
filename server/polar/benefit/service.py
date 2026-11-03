@@ -4,12 +4,16 @@ from collections.abc import Sequence
 from pydantic import BaseModel
 from sqlalchemy import case, delete
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
     get_accessible_org_ids,
+)
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
 )
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
@@ -36,12 +40,13 @@ class BenefitService:
     async def list(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         type: Sequence[BenefitType] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
+        external_id: Sequence[str] | None = None,
         visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -64,9 +69,14 @@ class BenefitService:
 
         if id_in is not None:
             statement = statement.where(Benefit.id.in_(id_in))
+        else:
+            statement = statement.where(Benefit.is_current)
 
         if id_not_in is not None:
             statement = statement.where(Benefit.id.notin_(id_not_in))
+
+        if external_id is not None:
+            statement = statement.where(Benefit.external_id.in_(external_id))
 
         if query is not None:
             statement = statement.where(Benefit.description.ilike(f"%{query}%"))
@@ -105,7 +115,7 @@ class BenefitService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Benefit | None:
         repository = BenefitRepository.from_session(session)
@@ -124,7 +134,9 @@ class BenefitService:
         session: AsyncSession,
         redis: Redis,
         create_schema: BenefitCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Benefit:
         organization = await get_payload_organization(
             session, auth_subject, create_schema
@@ -135,6 +147,8 @@ class BenefitService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        if not declarative_config and organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
 
         if (
             create_schema.type == BenefitType.slack_shared_channel
@@ -231,11 +245,15 @@ class BenefitService:
         redis: Redis,
         benefit: Benefit,
         benefit_update: BenefitUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Benefit:
         await assert_resource_permission(
             session, auth_subject, benefit, OrganizationPermission.products_manage
         )
+        if not declarative_config:
+            await assert_catalog_editable(session, benefit.organization_id)
 
         if benefit_update.type != benefit.type:
             raise PolarRequestValidationError(
@@ -339,11 +357,12 @@ class BenefitService:
         self,
         session: AsyncSession,
         benefit: Benefit,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Benefit:
         await assert_resource_permission(
             session, auth_subject, benefit, OrganizationPermission.products_manage
         )
+        await assert_catalog_editable(session, benefit.organization_id)
 
         if not benefit.deletable:
             raise NotPermitted()

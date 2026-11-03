@@ -1,17 +1,23 @@
+from datetime import UTC, datetime
+
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 from redis.exceptions import RedisError
 
 from polar.auth.scope import Scope
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.time_queries import TimeInterval
 from polar.metrics.service import metrics as metrics_service
-from polar.models import UserOrganization
+from polar.models import Customer, Organization, Product, UserOrganization
 from polar.redis import Redis
+from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_active_subscription, create_product
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMetrics:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/metrics/")
@@ -126,7 +132,60 @@ class TestGetMetrics:
         assert len(json["periods"]) == 12
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
+class TestExternalProductIDFilter:
+    @pytest.mark.parametrize(
+        ("external_product_id", "expected"), [("pro", 2), ("unknown", 0)]
+    )
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.metrics_read}))
+    @pytest.mark.api_version(V2027_01)
+    async def test_counts_every_version(
+        self,
+        external_product_id: str,
+        expected: int,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        old_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+        old_pro.is_current = False
+        await save_fixture(old_pro)
+        new_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+        started_at = datetime(2024, 1, 1, tzinfo=UTC)
+        for product in (old_pro, new_pro, product_second):
+            await create_active_subscription(
+                save_fixture, product=product, customer=customer, started_at=started_at
+            )
+
+        response = await client.get(
+            "/v1/metrics/",
+            params={
+                "start_date": "2024-06-01",
+                "end_date": "2024-06-01",
+                "interval": "day",
+                "metrics": ["active_subscriptions"],
+                "external_product_id": external_product_id,
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["periods"][0]["active_subscriptions"] == expected
+
+
+@pytest.mark.anyio
 class TestMetricsFiltering:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
@@ -245,7 +304,7 @@ class TestMetricsFiltering:
         assert json["metrics"]["gross_margin"] is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMetricsCache:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.metrics_read})
@@ -327,7 +386,7 @@ class TestGetMetricsCache:
         assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetMetricsLimits:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/metrics/limits")

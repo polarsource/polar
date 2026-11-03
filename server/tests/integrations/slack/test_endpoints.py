@@ -81,7 +81,7 @@ def _slack_signature(
     return str(ts), f"v0={digest}"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetIntegration:
     async def test_anonymous(
         self,
@@ -146,7 +146,7 @@ class TestGetIntegration:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListIntegrations:
     async def test_anonymous(
         self,
@@ -236,7 +236,7 @@ class TestListIntegrations:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListWorkspaceUsers:
     async def test_anonymous(
         self,
@@ -314,7 +314,7 @@ class TestListWorkspaceUsers:
         assert body["users"][0]["is_admin"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteIntegration:
     async def test_anonymous(
         self,
@@ -378,7 +378,7 @@ class TestDeleteIntegration:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPostCredentials:
     async def test_anonymous(
         self,
@@ -484,7 +484,7 @@ class TestPostCredentials:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPostManifest:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -505,7 +505,7 @@ class TestPostManifest:
         assert "Acme Support" in response.json()["manifest"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCallback:
     async def test_invalid_state(
         self,
@@ -590,7 +590,7 @@ class TestCallback:
         complete_install.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEvents:
     async def test_missing_signature_returns_401(self, client: AsyncClient) -> None:
         response = await client.post(

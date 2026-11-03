@@ -42,25 +42,61 @@ class Placeholder:
     quoted: bool
 
 
+type OperationKey = tuple[str, str]
+
+_PATH_PARAMETER = re.compile(r"\{[^}]+\}")
+
+
+def _operation_key(method: Method) -> OperationKey:
+    return method.http_method, _PATH_PARAMETER.sub("{}", method.path)
+
+
+def _operation_keys(services: list[Service]) -> set[OperationKey]:
+    return {
+        key
+        for service in services
+        for key in (
+            *(_operation_key(method) for method in service.methods),
+            *_operation_keys(service.services),
+        )
+    }
+
+
 class CLICommandsEmitter(EmitterBase):
     def __init__(self, ir: APIIR, version: str) -> None:
         super().__init__(ir, version, pathlib.Path(__file__).parent / "template")
+        self._operation_apis: dict[OperationKey, APIVersion] = {}
 
     def emit(self, root_directory: pathlib.Path | str) -> None:
-        if len(self.ir.versions) != 1:
+        if len(self.ir.versions) not in (1, 2):
             raise ValueError(
-                "CLI commands are generated from exactly one OpenAPI spec."
+                "CLI commands are generated from the Current OpenAPI spec, "
+                "optionally followed by the Next one."
             )
 
-        api = self.ir.versions[0]
-        services = sorted(api.services, key=lambda service: service.name)
+        api, *upcoming = self.ir.versions
+        self._operation_apis = {key: api for key in _operation_keys(api.services)}
+        merged = api.services
+        for next_api in upcoming:
+            next_services = self._next_only_services(
+                next_api.services, set(self._operation_apis)
+            )
+            self._operation_apis.update(
+                {key: next_api for key in _operation_keys(next_services)}
+            )
+            merged = self._merge_services(merged, next_services)
+
+        services = sorted(merged, key=lambda service: service.name)
         if not services:
             raise ValueError(
                 "No public CLI-tagged operations found. Regenerate OpenAPI from the "
                 "backend with APITag.cli annotations before generating commands."
             )
 
-        previews = self._preview_operations(services, api)
+        previews = {
+            version.version: self._preview_operations(version.services, version)
+            for version in self.ir.versions
+        }
 
         root = self.ensure_directory(root_directory)
         src = self.ensure_directory(root / "src")
@@ -77,10 +113,14 @@ class CLICommandsEmitter(EmitterBase):
         ):
             self.copy_file(self.templates_dir / name, root / name)
 
-        self.render_file("src/runtime.ts", src / "runtime.ts", {"api": api})
+        self.render_file(
+            "src/runtime.ts",
+            src / "runtime.ts",
+            {"api": api, "apis": self.ir.versions},
+        )
 
         for service in services:
-            self._emit_service(service, api, src, [], previews)
+            self._emit_service(service, src, [], previews)
 
         self.render_file("src/index.ts", src / "index.ts", {"services": services})
 
@@ -91,6 +131,9 @@ class CLICommandsEmitter(EmitterBase):
         return self.version
 
     def setup_environment(self) -> None:
+        self.env.filters["sdk_namespace"] = lambda version: (
+            "V" + version.replace("-", "_")
+        )
         self.env.filters["quote"] = json.dumps
         self.env.filters["sdk_name"] = exported_operation_name
         self.env.filters["service_name"] = service_name
@@ -105,13 +148,58 @@ class CLICommandsEmitter(EmitterBase):
             cwd=clients,
         )
 
+    def _next_only_services(
+        self, services: list[Service], known: set[OperationKey]
+    ) -> list[Service]:
+        result: list[Service] = []
+        for service in services:
+            methods = [
+                method
+                for method in service.methods
+                if _operation_key(method) not in known
+            ]
+            children = self._next_only_services(service.services, known)
+            if methods or children:
+                result.append(
+                    service.model_copy(
+                        update={"methods": methods, "services": children}
+                    )
+                )
+        return result
+
+    def _merge_services(
+        self, services: list[Service], additions: list[Service]
+    ) -> list[Service]:
+        merged = {service.name: service for service in services}
+        for addition in additions:
+            existing = merged.get(addition.name)
+            if existing is None:
+                merged[addition.name] = addition
+                continue
+            clashes = {m.name for m in existing.methods} & {
+                m.name for m in addition.methods
+            }
+            if clashes:
+                raise ValueError(
+                    f"Next adds {', '.join(sorted(clashes))} to {addition.name}, "
+                    "which Current already has at a different path."
+                )
+            merged[addition.name] = existing.model_copy(
+                update={
+                    "methods": [*existing.methods, *addition.methods],
+                    "services": self._merge_services(
+                        existing.services, addition.services
+                    ),
+                }
+            )
+        return list(merged.values())
+
     def _emit_service(
         self,
         service: Service,
-        api: APIVersion,
         parent: pathlib.Path,
         ancestors: list[str],
-        previews: dict[str, PreviewOperation],
+        previews: dict[str, dict[str, PreviewOperation]],
         command_ancestors: tuple[str, ...] = (),
     ) -> None:
         directory = self.ensure_directory(parent / to_snake_case(service.name))
@@ -121,6 +209,7 @@ class CLICommandsEmitter(EmitterBase):
         children = sorted(service.services, key=lambda child: child.name)
 
         for method in methods:
+            api = self._operation_apis[_operation_key(method)]
             context = self._command_context(method, api, path, command_path)
 
             self.render_file(
@@ -128,7 +217,7 @@ class CLICommandsEmitter(EmitterBase):
                 directory / f"{method.name}.ts",
                 {
                     **context,
-                    "preview": previews.get(method.path)
+                    "preview": previews[api.version].get(method.path)
                     if context["needs_confirmation"]
                     and method.http_method in ("DELETE", "PATCH", "PUT")
                     else None,
@@ -136,7 +225,7 @@ class CLICommandsEmitter(EmitterBase):
             )
 
         for child in children:
-            self._emit_service(child, api, directory, path, previews, command_path)
+            self._emit_service(child, directory, path, previews, command_path)
 
         self.render_file(
             "src/service.ts",
@@ -158,7 +247,7 @@ class CLICommandsEmitter(EmitterBase):
                     and method.response_type == "json"
                     and method.body is None
                     and not any(
-                        p.required or p.cli_confirm for p in method.query_params
+                        p.required or p.destructive_when for p in method.query_params
                     )
                 ):
                     arguments = ", ".join(
@@ -222,9 +311,13 @@ class CLICommandsEmitter(EmitterBase):
                 }
             )
 
-        always_confirm = method.http_method == "DELETE" or method.cli_confirm is True
-        conditions = [] if always_confirm else confirmation_fields(fields, api)
-        needs_confirmation = always_confirm or bool(conditions)
+        conditions = confirmation_fields(fields, api)
+        if conditions and not method.destructive:
+            raise ValueError(
+                f"{method.operation_id} has destructive fields but isn't destructive."
+            )
+        needs_confirmation = bool(method.destructive)
+        always_confirm = needs_confirmation and not conditions
 
         if always_confirm:
             confirmation_expression = "true"
@@ -242,6 +335,15 @@ class CLICommandsEmitter(EmitterBase):
         if needs_confirmation:
             helpers.append("confirm")
 
+        selectable = method.response_type == "json" and not method.pending_response
+        if selectable:
+            if any(field.name == "fields" for field in fields):
+                raise ValueError(
+                    f"{method.operation_id} has an input named 'fields', "
+                    "which collides with the CLI's own --fields flag."
+                )
+            helpers.append("fields")
+
         if input_type:
             helpers.extend(["data", "mergeInput"])
 
@@ -256,6 +358,11 @@ class CLICommandsEmitter(EmitterBase):
         ):
             helpers.append("nullableStringFlag")
 
+        description = (method.description or method.name).split("\n")[0]
+        is_next = api is not self.ir.versions[0]
+        if is_next:
+            description = f"{description} (preview, API {api.version})"
+
         has_organization = any(field.name == "organization_id" for field in fields)
         arguments = [f"config.path.{p.name}" for p in method.path_params]
         if input_type:
@@ -263,6 +370,7 @@ class CLICommandsEmitter(EmitterBase):
 
         return {
             "api": api,
+            "is_next": is_next,
             "method": method,
             "sdk_method": operation_name(method.name),
             "sdk_service": ".".join(service_path),
@@ -279,7 +387,8 @@ class CLICommandsEmitter(EmitterBase):
             "needs_confirmation": needs_confirmation,
             "confirmation_expression": confirmation_expression,
             "arguments": arguments,
-            "description": (method.description or method.name).split("\n")[0],
+            "selectable": selectable,
+            "description": description,
         }
 
     def _example_flag(self, field: Field | Parameter, api: APIVersion) -> str:
@@ -480,18 +589,18 @@ class CLICommandsEmitter(EmitterBase):
                     field = field.model_copy(
                         update={"description": previous.description}
                     )
-                if previous and previous.cli_confirm:
+                if previous and previous.destructive_when:
                     if (
-                        field.cli_confirm
-                        and previous.cli_confirm.model_dump_json()
-                        != field.cli_confirm.model_dump_json()
+                        field.destructive_when
+                        and previous.destructive_when.model_dump_json()
+                        != field.destructive_when.model_dump_json()
                     ):
                         raise ValueError(
-                            f"Conflicting CLI confirmation rules for {field.name!r}"
+                            f"Conflicting destructive conditions for {field.name!r}"
                         )
 
                     field = field.model_copy(
-                        update={"cli_confirm": previous.cli_confirm}
+                        update={"destructive_when": previous.destructive_when}
                     )
 
                 if previous and previous.type != field.type:

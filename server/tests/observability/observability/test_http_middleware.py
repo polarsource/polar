@@ -4,7 +4,6 @@ These tests are isolated from the main Polar infrastructure to avoid
 database and service connections during unit testing.
 """
 
-import asyncio
 import os
 import tempfile
 from collections.abc import Generator
@@ -23,6 +22,7 @@ def prometheus_tmpdir() -> Generator[str]:
         yield tmpdir
 
 
+@pytest.mark.anyio
 class TestMiddlewareASGIBehavior:
     """Test ASGI middleware behavior including async calls."""
 
@@ -33,7 +33,7 @@ class TestMiddlewareASGIBehavior:
             os.environ["PROMETHEUS_MULTIPROC_DIR"] = tmpdir
             yield tmpdir
 
-    def test_non_http_scope_passthrough(self, prometheus_tmpdir: str) -> None:
+    async def test_non_http_scope_passthrough(self, prometheus_tmpdir: str) -> None:
         """Test that non-HTTP scopes are passed through without metrics."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
@@ -48,13 +48,11 @@ class TestMiddlewareASGIBehavior:
         # Websocket scope
         scope = cast(Scope, {"type": "websocket", "path": "/ws"})
 
-        asyncio.get_event_loop().run_until_complete(
-            middleware(scope, cast(Receive, None), cast(Send, None))
-        )
+        await middleware(scope, cast(Receive, None), cast(Send, None))
 
         assert app_called is True
 
-    def test_lifespan_scope_passthrough(self, prometheus_tmpdir: str) -> None:
+    async def test_lifespan_scope_passthrough(self, prometheus_tmpdir: str) -> None:
         """Test that lifespan scopes are passed through without metrics."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
@@ -69,13 +67,11 @@ class TestMiddlewareASGIBehavior:
         # Lifespan scope
         scope = cast(Scope, {"type": "lifespan"})
 
-        asyncio.get_event_loop().run_until_complete(
-            middleware(scope, cast(Receive, None), cast(Send, None))
-        )
+        await middleware(scope, cast(Receive, None), cast(Send, None))
 
         assert app_called is True
 
-    def test_status_code_capture(self, prometheus_tmpdir: str) -> None:
+    async def test_status_code_capture(self, prometheus_tmpdir: str) -> None:
         """Test that status codes are correctly captured."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
@@ -99,14 +95,14 @@ class TestMiddlewareASGIBehavior:
         async def mock_send(message: dict[str, Any]) -> None:
             messages_sent.append(message)
 
-        asyncio.get_event_loop().run_until_complete(
-            middleware(scope, cast(Receive, None), cast(Send, mock_send))
-        )
+        await middleware(scope, cast(Receive, None), cast(Send, mock_send))
 
         # Verify the status was captured (201)
         assert any(m.get("status") == 201 for m in messages_sent)
 
-    def test_exception_still_records_metrics(self, prometheus_tmpdir: str) -> None:
+    async def test_exception_still_records_metrics(
+        self, prometheus_tmpdir: str
+    ) -> None:
         """Test that metrics are recorded even when app raises exception."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
@@ -130,11 +126,11 @@ class TestMiddlewareASGIBehavior:
         # The middleware should record metrics in finally block
         # and then re-raise the exception
         with pytest.raises(ValueError, match="Test exception"):
-            asyncio.get_event_loop().run_until_complete(
-                middleware(scope, cast(Receive, None), cast(Send, noop_send))
-            )
+            await middleware(scope, cast(Receive, None), cast(Send, noop_send))
 
-    def test_default_status_code_on_exception(self, prometheus_tmpdir: str) -> None:
+    async def test_default_status_code_on_exception(
+        self, prometheus_tmpdir: str
+    ) -> None:
         """Test that status code defaults to 500 when no response sent."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
@@ -160,14 +156,12 @@ class TestMiddlewareASGIBehavior:
             pass
 
         with pytest.raises(RuntimeError):
-            asyncio.get_event_loop().run_until_complete(
-                middleware(scope, cast(Receive, None), cast(Send, noop_send))
-            )
+            await middleware(scope, cast(Receive, None), cast(Send, noop_send))
 
         # Can't directly assert the status_code was "500" without mocking metrics
         # but this test ensures the code path works without crashing
 
-    def test_missing_method_uses_unknown(self, prometheus_tmpdir: str) -> None:
+    async def test_missing_method_uses_unknown(self, prometheus_tmpdir: str) -> None:
         """Test that missing method in scope results in UNKNOWN."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
@@ -191,11 +185,9 @@ class TestMiddlewareASGIBehavior:
             pass
 
         # Should not crash - method defaults to "UNKNOWN"
-        asyncio.get_event_loop().run_until_complete(
-            middleware(scope, cast(Receive, None), cast(Send, mock_send))
-        )
+        await middleware(scope, cast(Receive, None), cast(Send, mock_send))
 
-    def test_various_http_methods(self, prometheus_tmpdir: str) -> None:
+    async def test_various_http_methods(self, prometheus_tmpdir: str) -> None:
         """Test that various HTTP methods are handled correctly."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
@@ -221,11 +213,9 @@ class TestMiddlewareASGIBehavior:
             )
 
             # Should not crash for any method
-            asyncio.get_event_loop().run_until_complete(
-                middleware(scope, cast(Receive, None), cast(Send, noop_send))
-            )
+            await middleware(scope, cast(Receive, None), cast(Send, noop_send))
 
-    def test_various_status_codes(self, prometheus_tmpdir: str) -> None:
+    async def test_various_status_codes(self, prometheus_tmpdir: str) -> None:
         """Test that various status codes are captured correctly."""
         from polar.observability.http_middleware import HttpMetricsMiddleware
 
@@ -254,8 +244,6 @@ class TestMiddlewareASGIBehavior:
 
             mock_send = AsyncMock(side_effect=captured.append)
 
-            asyncio.get_event_loop().run_until_complete(
-                middleware(scope, cast(Receive, None), cast(Send, mock_send))
-            )
+            await middleware(scope, cast(Receive, None), cast(Send, mock_send))
 
             assert any(m.get("status") == status for m in captured)

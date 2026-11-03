@@ -1,12 +1,13 @@
 'use client'
 
 import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text, TextArea } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ArrowUpRightIcon } from 'lucide-react'
+import { ArrowUpRight as ArrowUpRightIcon } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { ScheduledUpdateSection } from './ScheduledUpdateSection'
 import { SubscriptionStatus } from './SubscriptionStatus'
@@ -100,6 +101,10 @@ export const SubscriptionDetailsGrid = ({
                 <Text as="span" variant="body" truncate>
                   {productName}
                 </Text>
+                <ProductVersionLabel
+                  organization={organization}
+                  product={product ?? subscription.product}
+                />
                 <Box as="span" display="inline-flex">
                   <ArrowUpRightIcon size={16} />
                 </Box>

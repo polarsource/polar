@@ -8,7 +8,7 @@ from polar.auth.turnstile import verify_turnstile
 from polar.exceptions import NotPermitted
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVerifyTurnstile:
     async def test_success(self, respx_mock: respx.MockRouter) -> None:
         route = respx_mock.post(

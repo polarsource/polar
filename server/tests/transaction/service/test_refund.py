@@ -110,7 +110,7 @@ async def create_order_and_refund(
     return refund, order, payment
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.parametrize("status", [RefundStatus.pending, RefundStatus.failed])
     async def test_not_succeeded_refund(
@@ -258,6 +258,76 @@ class TestCreate:
         assert second_call[1]["amount"] == refund.amount * 0.25
 
         create_refund_fees_mock.assert_awaited_once()
+
+    async def test_valid_tax_only_refund(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        account: Account,
+        stripe_service_mock: MagicMock,
+        balance_transaction_service_mock: MagicMock,
+    ) -> None:
+        refund, order, payment = await create_order_and_refund(
+            save_fixture,
+            customer,
+            subtotal_amount=1000,
+            tax_amount=200,
+            refund_subtotal_amount=0,
+            refund_tax_amount=200,
+        )
+        stripe_service_mock.get_balance_transaction.return_value = (
+            build_stripe_balance_transaction(amount=-200)
+        )
+        payment_transaction = await create_transaction(
+            save_fixture,
+            type=TransactionType.payment,
+            amount=1000,
+            tax_amount=200,
+            account_currency="usd",
+            presentment_tax_amount=200,
+            charge_id=payment.processor_id,
+            order=order,
+            payment_customer=customer,
+        )
+        outgoing_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            currency="usd",
+            amount=-1000,
+            account_currency="usd",
+            account_amount=-1000,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            balance_correlation_key="BALANCE",
+        )
+        incoming_balance = Transaction(
+            type=TransactionType.balance,
+            processor=Processor.stripe,
+            account=account,
+            currency="usd",
+            amount=1000,
+            account_currency="usd",
+            account_amount=1000,
+            tax_amount=0,
+            order=order,
+            payment_transaction=payment_transaction,
+            balance_correlation_key="BALANCE",
+        )
+        await save_fixture(outgoing_balance)
+        await save_fixture(incoming_balance)
+
+        refund_transaction = await refund_transaction_service.create(session, refund)
+
+        assert refund_transaction.type == TransactionType.refund
+        assert refund_transaction.amount == 0
+        assert refund_transaction.tax_amount == -200
+        balance_transaction_service_mock.create_reversal_balance.assert_not_called()
+
+        events = await get_all_by_name(session, SystemEvent.balance_refund)
+        assert len(events) == 1
+        assert events[0].user_metadata["transaction_id"] == str(refund_transaction.id)
 
     async def test_valid_uses_refund_order_when_payment_transaction_is_not_linked(
         self,
@@ -437,7 +507,7 @@ class TestCreate:
         create_refund_fees_mock.assert_awaited_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevert:
     @pytest.mark.parametrize("status", [RefundStatus.pending, RefundStatus.succeeded])
     async def test_not_canceled_refund(

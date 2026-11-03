@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
@@ -50,7 +49,7 @@ async def create_sso_connection(
     return connection
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def sso_enabled_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> Organization:
@@ -59,17 +58,22 @@ async def sso_enabled_organization(
         "sso_enabled": True,
     }
     await save_fixture(organization)
+    await save_fixture(
+        OrganizationDomain(
+            organization=organization, domain="example.com", verified_at=utc_now()
+        )
+    )
     return organization
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def sso_connection(
     save_fixture: SaveFixture, organization: Organization
 ) -> OrganizationSSOConnection:
     return await create_sso_connection(save_fixture, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSSOConnections:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -109,49 +113,7 @@ class TestListSSOConnections:
         assert "client_secret" not in item["configuration"]
 
 
-@pytest.mark.asyncio
-class TestListSSODomains:
-    async def test_anonymous(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
-        response = await client.get(f"/v1/organizations/{organization.id}/sso-domains/")
-        assert response.status_code == 401
-
-    @pytest.mark.auth
-    async def test_not_member(
-        self, client: AsyncClient, organization: Organization
-    ) -> None:
-        response = await client.get(f"/v1/organizations/{organization.id}/sso-domains/")
-        assert response.status_code == 404
-
-    @pytest.mark.auth
-    async def test_valid(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        verified = OrganizationDomain(
-            organization=organization, domain="acme.com", verified_at=utc_now()
-        )
-        await save_fixture(verified)
-        await save_fixture(
-            OrganizationDomain(
-                organization=organization, domain="unverified.com", verified_at=None
-            )
-        )
-
-        response = await client.get(f"/v1/organizations/{organization.id}/sso-domains/")
-        assert response.status_code == 200
-
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        assert json["items"][0]["domain"] == "acme.com"
-
-
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSSOConnection:
     async def test_anonymous(
         self,
@@ -221,7 +183,7 @@ class TestGetSSOConnection:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSSOConnection:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -255,6 +217,38 @@ class TestCreateSSOConnection:
             },
         )
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_no_verified_domain(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "sso_enabled": True,
+        }
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(organization=organization, domain="example.com")
+        )
+
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/sso-connections/",
+            json={
+                "configuration": {
+                    "issuer": "https://idp.example.com",
+                    "client_id": "client-id",
+                    "auth_method": "client_secret",
+                    "client_secret": "secret",
+                }
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "SSORequiresVerifiedDomain"
 
     @pytest.mark.auth
     async def test_valid(
@@ -428,7 +422,7 @@ class TestCreateSSOConnection:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateSSOConnection:
     async def test_anonymous(
         self,
@@ -706,7 +700,7 @@ class TestUpdateSSOConnection:
         assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteSSOConnection:
     async def test_anonymous(
         self,
@@ -801,7 +795,7 @@ class TestDeleteSSOConnection:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFeatureGate:
     """A member of an organization without the `sso_enabled` feature is denied."""
 

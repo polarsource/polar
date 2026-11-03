@@ -1,3 +1,4 @@
+import { useFormState } from 'react-hook-form'
 import { InlineModal } from '@polar-sh/orbit'
 import { enums, type schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -40,11 +41,8 @@ export const InvoiceModal = ({
     onClose: closeInvoiceModal,
   })
 
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit } = form
+  const { errors } = useFormState({ control })
 
   if (!selectedPayout) return null
 

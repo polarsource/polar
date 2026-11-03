@@ -1,22 +1,32 @@
 'use client'
 
+import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModal'
+import { useModal } from '@/components/Modal/useModal'
 import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
 import { isMeteredPrice, MeteredPrice } from '@/utils/product'
+import { useHasPermission } from '@/hooks/permissions'
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useMultipleMeterQuantities } from '@/hooks/queries/meters'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
 import { schemas } from '@polar-sh/client'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
-import { DataTable, DataTableColumnHeader } from '@polar-sh/orbit'
+import {
+  Button,
+  DataTable,
+  DataTableColumnHeader,
+  InlineModal,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useMemo } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import FormattedUnits from '../../Meter/FormattedUnits'
-import StackedMeterChart from '../../Meter/StackedMeterChart'
 import { EmptyState } from '../../Shared/EmptyState'
-import { GaugeCircleIcon } from 'lucide-react'
+import { CircleGauge as GaugeCircleIcon } from '@polar-sh/orbit/icons'
 import { useCustomerMetricsParams } from './useCustomerMetricsParams'
+
+const StackedMeterChart = dynamic(() => import('../../Meter/StackedMeterChart'))
 
 const METER_COLORS = [
   '#2563eb',
@@ -62,6 +72,9 @@ export const CustomerUsageView = ({
   organization: schemas['Organization']
 }) => {
   const router = useRouter()
+  const addCreditsModal = useModal()
+  const canAddCredits = useHasPermission(organization.id, 'customers:manage')
+  const [creditMeterId, setCreditMeterId] = useState<string>()
   const { dateRange, interval } = useCustomerMetricsParams(customer)
   const { data: customerMetersData, isLoading } = useCustomerMeters(
     customer.organization_id,
@@ -70,7 +83,7 @@ export const CustomerUsageView = ({
 
   const { data: subscriptionsData } = useSubscriptions(
     customer.organization_id,
-    { customer_id: customer.id, active: true },
+    { customer_id: customer.id, active: true, limit: 100 },
   )
 
   const customerMeters = useMemo((): CustomerMeterWithSubscription[] => {
@@ -153,12 +166,14 @@ export const CustomerUsageView = ({
     <Box flexDirection="column" rowGap="2xl">
       <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-4 p-2">
         <div className="dark:bg-polar-900 rounded-3xl bg-white p-4">
-          <StackedMeterChart
-            data={chartData}
-            series={series}
-            interval={interval}
-            height={250}
-          />
+          <Suspense fallback={<div style={{ height: 250 }} />}>
+            <StackedMeterChart
+              data={chartData}
+              series={series}
+              interval={interval}
+              height={250}
+            />
+          </Suspense>
         </div>
       </ShadowBox>
       <DataTable
@@ -175,6 +190,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Meter" />
             ),
             accessorKey: 'meter.name',
+            size: 200,
             cell: ({ row }) => (
               <div className="flex items-center gap-x-2">
                 <span
@@ -195,6 +211,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Consumed" />
             ),
             accessorKey: 'consumed_units',
+            size: 110,
             cell: ({ row }) => (
               <FormattedUnits value={row.original.consumed_units} />
             ),
@@ -204,6 +221,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Credited" />
             ),
             accessorKey: 'credited_units',
+            size: 110,
             cell: ({ row }) => (
               <FormattedUnits value={row.original.credited_units} />
             ),
@@ -213,6 +231,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Balance" />
             ),
             accessorKey: 'balance',
+            size: 110,
             cell: ({ row }) => {
               const { balance } = row.original
               return (
@@ -227,6 +246,7 @@ export const CustomerUsageView = ({
               <DataTableColumnHeader column={column} title="Overages" />
             ),
             accessorKey: 'overages',
+            size: 110,
             cell: ({ row }) => {
               const { overages } = row.original
               return overages ? (
@@ -238,7 +258,43 @@ export const CustomerUsageView = ({
               )
             },
           },
+          ...(canAddCredits
+            ? [
+                {
+                  id: 'add_credits',
+                  header: '',
+                  size: 130,
+                  cell: ({ row }: { row: { original: MeterRow } }) => (
+                    <Box justifyContent="end">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          setCreditMeterId(row.original.meter_id)
+                          addCreditsModal.show()
+                        }}
+                      >
+                        Add credits
+                      </Button>
+                    </Box>
+                  ),
+                },
+              ]
+            : []),
         ]}
+      />
+      <InlineModal
+        isShown={addCreditsModal.isShown}
+        hide={addCreditsModal.hide}
+        modalContent={
+          <AddCreditsModal
+            organization={organization}
+            customer={customer}
+            meterId={creditMeterId}
+            onClose={addCreditsModal.hide}
+          />
+        }
       />
     </Box>
   )

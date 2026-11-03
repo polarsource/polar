@@ -2,6 +2,8 @@
 'use client'
 import { EU_COUNTRY_CODES } from '@/components/Privacy/countries'
 import { usePostHog } from '@/hooks/posthog'
+import { CONFIG } from '@/utils/config'
+import { updateGoogleAnalyticsConsent } from '@/utils/googleAnalyticsConsent'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { InlineModal } from '@polar-sh/orbit'
@@ -38,7 +40,7 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
     const returnTo = searchParams.get('return_to')
     if (returnTo) {
       try {
-        const returnToUrl = new URL(returnTo, window.location.origin)
+        const returnToUrl = new URL(returnTo, CONFIG.FRONTEND_BASE_URL)
         doNotTrackParameter = returnToUrl.searchParams.get('do_not_track')
       } catch {
         // No parameter found, nothing to do
@@ -65,6 +67,9 @@ export function CookieConsent({ countryCode }: { countryCode: string | null }) {
   useEffect(() => {
     if (consentGiven !== '') {
       setPersistence(consentGiven === 'yes' ? 'localStorage' : 'memory')
+    }
+    if (consentGiven === 'yes' || consentGiven === 'no') {
+      updateGoogleAnalyticsConsent(consentGiven === 'yes')
     }
   }, [consentGiven, setPersistence])
 

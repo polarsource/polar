@@ -13,10 +13,14 @@ from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.models import OrganizationRiskSignal
 from polar.organization_review.analyzer import ReviewAnalyzer, _render_scraped_site
 from polar.organization_review.schemas import (
+    CheckoutReturnUrlData,
+    CheckoutSuccessUrlData,
     DataSnapshot,
     HistoryData,
+    IntegrationData,
     OrganizationData,
     PaymentMetrics,
     PayoutAccountData,
@@ -24,6 +28,9 @@ from polar.organization_review.schemas import (
     ReviewContext,
     RiskSignalData,
     RiskSignalEntry,
+    SetupData,
+    UrlRedirectInfo,
+    WebhookEndpointData,
     WebsiteData,
     WebsitePage,
 )
@@ -135,6 +142,45 @@ def review_analyzer(mocker: MockerFixture) -> ReviewAnalyzer:
     return ReviewAnalyzer()
 
 
+class TestInit:
+    def test_defaults_to_organization_review_model(self, mocker: MockerFixture) -> None:
+        get_model = mocker.patch.object(
+            settings,
+            "get_pydantic_gateway_model",
+            return_value=(TestModel(), "openai", "gpt-6.1-sol"),
+        )
+
+        ReviewAnalyzer()
+
+        get_model.assert_called_once_with(
+            settings.PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL
+        )
+
+    @pytest.mark.parametrize(
+        ("model_name", "expected_settings"),
+        [
+            ("gpt-6.1-sol", {}),
+            ("gpt-5.5", {}),
+            ("gpt-4o", {"temperature": 0}),
+        ],
+    )
+    def test_temperature_for_model(
+        self,
+        mocker: MockerFixture,
+        model_name: str,
+        expected_settings: dict[str, int],
+    ) -> None:
+        mocker.patch.object(
+            settings,
+            "get_pydantic_gateway_model",
+            return_value=(TestModel(), "openai", model_name),
+        )
+
+        analyzer = ReviewAnalyzer()
+
+        assert analyzer.agent.model_settings == expected_settings
+
+
 def _stub_analyzer_io(
     mocker: MockerFixture,
     review_analyzer: ReviewAnalyzer,
@@ -159,7 +205,7 @@ def _stub_analyzer_io(
 class TestBuildPromptRiskSignals:
     def test_no_section_without_signals(self, review_analyzer: ReviewAnalyzer) -> None:
         prompt = review_analyzer._build_prompt(_minimal_snapshot())
-        assert "## External Risk Signals" not in prompt
+        assert "## Risk Signals" not in prompt
 
     def test_renders_signals(self, review_analyzer: ReviewAnalyzer) -> None:
         snapshot = _minimal_snapshot().model_copy(
@@ -167,16 +213,16 @@ class TestBuildPromptRiskSignals:
                 "risk_signals": RiskSignalData(
                     entries=[
                         RiskSignalEntry(
-                            source="stripe",
-                            type="fraudulent_website",
-                            risk_level="elevated",
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                            risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
                             description="Indicators: suspicious_content",
                             created_at=datetime(2026, 7, 1, tzinfo=UTC),
                         ),
                         RiskSignalEntry(
-                            source="stripe",
-                            type="fraudulent_merchant",
-                            risk_level="highest",
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                            risk_level=OrganizationRiskSignal.RiskLevel.HIGHEST,
                             created_at=datetime(2026, 6, 15, tzinfo=UTC),
                         ),
                     ]
@@ -186,7 +232,7 @@ class TestBuildPromptRiskSignals:
 
         prompt = review_analyzer._build_prompt(snapshot)
 
-        assert "## External Risk Signals" in prompt
+        assert "## Risk Signals" in prompt
         assert (
             "- [2026-07-01] stripe: fraudulent_website (risk level: elevated)" in prompt
         )
@@ -200,23 +246,51 @@ class TestBuildPromptRiskSignals:
         )
         assert "omitted" not in prompt
 
+    def test_sorts_by_severity(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "risk_signals": RiskSignalData(
+                    entries=[
+                        RiskSignalEntry(
+                            source=OrganizationRiskSignal.Source.POLAR,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                            risk_level=OrganizationRiskSignal.RiskLevel.NORMAL,
+                            created_at=datetime(2026, 7, 2, tzinfo=UTC),
+                        ),
+                        RiskSignalEntry(
+                            source=OrganizationRiskSignal.Source.STRIPE,
+                            type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                            risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
+                            created_at=datetime(2026, 7, 1, tzinfo=UTC),
+                        ),
+                    ]
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert prompt.index("stripe: fraudulent_merchant") < prompt.index(
+            "polar: fraudulent_website"
+        )
+
     def test_caps_signals_and_notes_omission(
         self, review_analyzer: ReviewAnalyzer
     ) -> None:
         entries = [
             RiskSignalEntry(
-                source="stripe",
-                type="fraudulent_website",
-                risk_level="elevated",
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+                risk_level=OrganizationRiskSignal.RiskLevel.ELEVATED,
                 created_at=datetime(2026, 7, 1, tzinfo=UTC),
             )
             for _ in range(24)
         ]
         entries.append(
             RiskSignalEntry(
-                source="stripe",
-                type="fraudulent_merchant",
-                risk_level="highest",
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                risk_level=OrganizationRiskSignal.RiskLevel.HIGHEST,
                 created_at=datetime(2026, 1, 1, tzinfo=UTC),
             )
         )
@@ -231,7 +305,155 @@ class TestBuildPromptRiskSignals:
         assert "(5 more signal(s) omitted)" in prompt
 
 
-@pytest.mark.asyncio
+class TestBuildPromptVerifiedDomains:
+    def _snapshot(self, verified_domains: list[str]) -> DataSnapshot:
+        return _minimal_snapshot().model_copy(
+            update={
+                "organization": OrganizationData(
+                    name="Test Org", slug="test-org", website="https://www.acme.com"
+                ),
+                "setup": SetupData(
+                    integration=IntegrationData(
+                        webhook_endpoints=[
+                            WebhookEndpointData(url="https://api.acme.com/hook"),
+                            WebhookEndpointData(url="https://panel.example.net/hook"),
+                        ],
+                        webhook_domains=["api.acme.com", "panel.example.net"],
+                    )
+                ),
+                "verified_domains": verified_domains,
+            }
+        )
+
+    def test_not_verified(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot([]))
+
+        assert "verified via DNS" not in prompt
+
+    def test_verified(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot(["acme.com"]))
+
+        assert (
+            "Website: https://www.acme.com "
+            "(domain verified via DNS by this organization)"
+        ) in prompt
+        assert (
+            "Webhook Domains: api.acme.com "
+            "(domain verified via DNS by this organization), panel.example.net\n"
+        ) in prompt
+
+    def test_verified_subdomain_does_not_cover_parent(
+        self, review_analyzer: ReviewAnalyzer
+    ) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot(["api.acme.com"]))
+
+        assert "Website: https://www.acme.com\n" in prompt
+        assert (
+            "Webhook Domains: api.acme.com "
+            "(domain verified via DNS by this organization), panel.example.net\n"
+        ) in prompt
+
+    def test_verified_host_with_port(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = self._snapshot(["acme.com"])
+        snapshot.setup.integration.webhook_domains = ["api.acme.com:8443"]
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert (
+            "Webhook Domains: api.acme.com:8443 "
+            "(domain verified via DNS by this organization)\n"
+        ) in prompt
+
+
+class TestBuildPromptRedirects:
+    def test_renders_intermediate_hops(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "setup": SetupData(
+                    checkout_success_urls=CheckoutSuccessUrlData(
+                        unique_urls=["https://api.shop.com/success"],
+                        domains=["api.shop.com"],
+                        redirect_results=[
+                            UrlRedirectInfo(
+                                original_url="https://api.shop.com/success",
+                                final_url="https://shop.com/",
+                                final_domain="shop.com",
+                                hops=["https://bad-site.com/"],
+                                redirected=True,
+                            )
+                        ],
+                    )
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert "SUCCESS URL REDIRECT DETECTED" in prompt
+        assert (
+            "  - https://api.shop.com/success → https://bad-site.com/ → "
+            "REDIRECTS TO: https://shop.com/ (domain: shop.com)"
+        ) in prompt
+
+
+class TestBuildPromptCheckoutUrlDomains:
+    def test_annotates_known_service_domains(
+        self, review_analyzer: ReviewAnalyzer
+    ) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "setup": SetupData(
+                    checkout_success_urls=CheckoutSuccessUrlData(
+                        unique_urls=[
+                            "https://gptuncensored.ai/",
+                            "https://script.google.com/success",
+                        ],
+                        domains=["gptuncensored.ai", "script.google.com"],
+                    ),
+                    checkout_return_urls=CheckoutReturnUrlData(
+                        unique_urls=["https://discord.com/return"],
+                        domains=["discord.com"],
+                    ),
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert (
+            "Success URL Domains: gptuncensored.ai, script.google.com (known service)"
+        ) in prompt
+        assert "Return URL Domains: discord.com (known service)" in prompt
+
+
+class TestBuildPromptCheckoutUrlHosts:
+    def test_no_section_without_hosts(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(_minimal_snapshot())
+        assert "## Checkout URL Host Content" not in prompt
+
+    def test_renders_each_host(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "setup": SetupData(
+                    checkout_url_hosts=[
+                        _make_website_data(summary="sells streaming subscriptions"),
+                        WebsiteData(
+                            base_url="https://other.com/", scrape_error="timeout"
+                        ),
+                    ]
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert "## Checkout URL Host Content" in prompt
+        assert "sells streaming subscriptions" in prompt
+        assert "Source: https://other.com/ (0 page(s) scraped)" in prompt
+        assert "Scrape error: timeout" in prompt
+
+
+@pytest.mark.anyio
 class TestAnalyzeReraisesOnError:
     """ReviewAnalyzer re-raises every non-timeout failure so the Dramatiq
     actor retries it and Sentry captures the final failure. Persisting a

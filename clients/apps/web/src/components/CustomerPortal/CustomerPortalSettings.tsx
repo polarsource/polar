@@ -6,14 +6,13 @@ import {
   useCustomerPaymentMethods,
   useCustomerPortalCustomer,
 } from '@/hooks/queries/customerPortal'
+import { usePaymentMethodEmbed } from '@/hooks/usePaymentMethodEmbed'
 import { createClientSideAPI } from '@/utils/client'
-import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Separator } from '@polar-sh/ui/components/ui/separator'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
@@ -33,7 +32,7 @@ export const CustomerPortalSettings = ({
 }: CustomerPortalSettingsProps) => {
   const api = createClientSideAPI(customerSessionToken)
   const router = useRouter()
-  const theme = useTheme()
+  const openPaymentMethodEmbed = usePaymentMethodEmbed()
   const queryClient = useQueryClient()
 
   const { data: customer } = useCustomerPortalCustomer()
@@ -62,11 +61,7 @@ export const CustomerPortalSettings = ({
 
   const onAddPaymentMethod = async () => {
     if (!customerSessionToken) return
-    const embed = await PolarEmbedPaymentMethod.create({
-      sessionToken: customerSessionToken,
-      theme: theme.resolvedTheme === 'dark' ? 'dark' : 'light',
-    })
-    embed.addEventListener('success', onPaymentMethodAdded)
+    await openPaymentMethodEmbed(customerSessionToken, onPaymentMethodAdded)
   }
 
   const handleExportData = useCallback(async () => {
@@ -166,27 +161,26 @@ export const CustomerPortalSettings = ({
           </Well>
         )}
 
-      {customer.type === 'team' &&
-        organization.organization_features?.member_model_enabled && (
-          <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-            <WellHeader className="flex-row items-start justify-between">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-xl">Billing Managers</h3>
-                <p className="dark:text-polar-500 text-gray-500">
-                  Billing Managers can manage billing details, payment methods,
-                  and subscriptions.
-                </p>
-              </div>
-            </WellHeader>
-            <Separator className="dark:bg-polar-700" />
-            <WellContent>
-              <CustomerPortalTeamSection
-                api={api}
-                organizationSlug={organization.slug}
-              />
-            </WellContent>
-          </Well>
-        )}
+      {customer.type === 'team' && (
+        <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
+          <WellHeader className="flex-row items-start justify-between">
+            <div className="flex flex-col gap-y-2">
+              <h3 className="text-xl">Billing Managers</h3>
+              <p className="dark:text-polar-500 text-gray-500">
+                Billing Managers can manage billing details, payment methods,
+                and subscriptions.
+              </p>
+            </div>
+          </WellHeader>
+          <Separator className="dark:bg-polar-700" />
+          <WellContent>
+            <CustomerPortalTeamSection
+              api={api}
+              organizationSlug={organization.slug}
+            />
+          </WellContent>
+        </Well>
+      )}
 
       <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
         <WellHeader className="flex-row items-start justify-between">

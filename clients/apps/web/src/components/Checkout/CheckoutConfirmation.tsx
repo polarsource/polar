@@ -31,6 +31,22 @@ const isIntegrationError = (
 ): err is { name: 'IntegrationError'; message: string } =>
   err.name === 'IntegrationError'
 
+const confirmNextAction = async (
+  stripe: Stripe,
+  clientSecret: string,
+): Promise<boolean> => {
+  try {
+    const { paymentIntent, setupIntent } = await stripe.handleNextAction({
+      clientSecret,
+    })
+    const currentIntentStatus = paymentIntent?.status || setupIntent?.status
+    return currentIntentStatus === 'succeeded'
+  } catch (err) {
+    // Case where the intent is already confirmed, but we didn't receive the webhook update yet
+    return isIntegrationError(err) && err.message.includes('requires_action')
+  }
+}
+
 const StripeRequiresAction = ({
   stripe,
   checkout,
@@ -41,48 +57,34 @@ const StripeRequiresAction = ({
   locale?: AcceptedLocale
 }) => {
   const t = useTranslations(locale)
-  const [pendingHandling, setPendingHandling] = useState(false)
-  const [success, setSuccess] = useState(false)
   const { intent_status, intent_client_secret } =
     checkout.payment_processor_metadata
-  const handleNextAction = useCallback(
-    async (stripe: Stripe): Promise<void> => {
-      if (success || pendingHandling) {
-        return
-      }
-      setPendingHandling(true)
-      if (intent_status === 'requires_action') {
-        try {
-          const { paymentIntent, setupIntent } = await stripe.handleNextAction({
-            clientSecret: intent_client_secret,
-          })
-          const currentIntentStatus =
-            paymentIntent?.status || setupIntent?.status
-          if (currentIntentStatus === 'succeeded') {
-            setSuccess(true)
-          }
-        } catch (err) {
-          // Case where the intent is already confirmed, but we didn't receive the webhook update yet
-          if (
-            isIntegrationError(err) &&
-            err.message.includes('requires_action')
-          ) {
-            setSuccess(true)
-          }
-        } finally {
-          setPendingHandling(false)
-        }
-      }
-    },
-    [success, pendingHandling, intent_client_secret, intent_status],
+  const [pendingHandling, setPendingHandling] = useState(
+    intent_status === 'requires_action',
   )
+  const [success, setSuccess] = useState(false)
 
-  useEffect(() => {
-    if (!stripe) {
+  const onNextActionResult = useCallback((succeeded: boolean) => {
+    if (succeeded) {
+      setSuccess(true)
+    }
+    setPendingHandling(false)
+  }, [])
+
+  const handleNextAction = (stripe: Stripe) => {
+    if (success || pendingHandling) {
       return
     }
-    handleNextAction(stripe)
-  }, [stripe, handleNextAction, pendingHandling])
+    setPendingHandling(true)
+    confirmNextAction(stripe, intent_client_secret).then(onNextActionResult)
+  }
+
+  useEffect(() => {
+    if (!stripe || intent_status !== 'requires_action') {
+      return
+    }
+    confirmNextAction(stripe, intent_client_secret).then(onNextActionResult)
+  }, [stripe, intent_status, intent_client_secret, onNextActionResult])
 
   if (!stripe) {
     return null

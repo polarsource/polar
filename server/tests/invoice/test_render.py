@@ -56,7 +56,7 @@ def invoice() -> Invoice:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRenderInvoicePDF:
     async def test_concurrent_document_types(self, invoice: Invoice) -> None:
         pdfs = await asyncio.gather(

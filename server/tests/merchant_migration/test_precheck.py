@@ -198,7 +198,7 @@ async def run(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPrecheckEngine:
     async def test_clean_catalog_can_start(self) -> None:
         report = await run([build_product(), build_customer(), build_subscription()])
@@ -1287,6 +1287,11 @@ class TestClassifyRecords:
                 {"managed_payments": True},
                 "subscription_managed_payments",
                 id="sold-through-managed-payments",
+            ),
+            pytest.param(
+                {"has_pending_invoice_items": True},
+                "subscription_pending_invoice_items",
+                id="pending-invoice-items",
             ),
         ],
     )

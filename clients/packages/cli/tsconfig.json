@@ -22,12 +22,7 @@
     "noUnusedLocals": true,
     "noImplicitOverride": true,
     "sourceMap": true,
-    "skipLibCheck": true,
-    "plugins": [
-      {
-        "name": "@effect/language-service"
-      }
-    ]
+    "skipLibCheck": true
   },
   "include": ["src", "scripts"]
 }

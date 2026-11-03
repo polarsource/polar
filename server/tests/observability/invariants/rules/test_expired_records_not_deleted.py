@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
+from typing import Any
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.config import settings
 from polar.kit.utils import utc_now
@@ -9,12 +11,16 @@ from polar.models import (
     Customer,
     CustomerEmailVerification,
     CustomerSession,
-    CustomerSessionCode,
+    CustomerSessionAuthenticationSession,
+    CustomerSessionEmailOTP,
     EmailOTP,
     EmailVerification,
     ExternalEvent,
     Member,
     MemberSession,
+    MerchantMigration,
+    MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
     OAuth2State,
     OAuth2Token,
     Organization,
@@ -73,7 +79,6 @@ async def create_webhook_delivery(
     save_fixture: SaveFixture,
     organization: Organization,
     *,
-    response: str | None,
     created_at: datetime,
 ) -> None:
     webhook_endpoint = await create_webhook_endpoint(
@@ -91,7 +96,7 @@ async def create_webhook_delivery(
             webhook_event=webhook_event,
             succeeded=True,
             http_code=200,
-            response=response,
+            response=None,
             created_at=created_at,
         )
     )
@@ -143,12 +148,24 @@ async def create_deletable_records(
             context=None,
         )
     )
+    customer_session_authentication_session = CustomerSessionAuthenticationSession(
+        token_hash="a" * 64,
+        expires_at=epoch_deletable_at,
+        step=0,
+        authentication_method_references=[],
+        used_factors=[],
+        context=None,
+        identity_id=None,
+    )
+    await save_fixture(customer_session_authentication_session)
+
     await save_fixture(
-        CustomerSessionCode(
-            code="d" * 64,
-            email=customer.email,
-            customer_id=customer.id,
-            expires_at=deletable_at,
+        CustomerSessionEmailOTP(
+            code_hash="b" * 64,
+            expires_at=epoch_deletable_at,
+            email=member.email,
+            identity_id=member.id,
+            authentication_session_id=customer_session_authentication_session.id,
         )
     )
     await save_fixture(
@@ -227,8 +244,7 @@ async def create_deletable_records(
     await create_webhook_delivery(
         save_fixture,
         organization,
-        response="response body",
-        created_at=deletable_at - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        created_at=deletable_at - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD,
     )
     checkout = await create_checkout(
         save_fixture,
@@ -238,9 +254,18 @@ async def create_deletable_records(
     )
     checkout.customer_email = "john@example.com"
     await save_fixture(checkout)
+    await save_fixture(
+        MerchantMigration(
+            organization=organization,
+            source_platform=MerchantMigrationSourcePlatform.stripe,
+            step=MerchantMigrationStep.activate_subscriptions,
+            modified_at=deletable_at
+            - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
+        )
+    )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheck:
     @pytest.mark.parametrize(
         "deletable_for", [-timedelta(hours=1), timedelta(minutes=5)]
@@ -297,6 +322,40 @@ class TestCheck:
             cleanup_task.actor_name for cleanup_task in CLEANUP_TASKS
         ]
 
+    async def test_reports_overdue_when_webhook_event_query_fails(
+        self, session: AsyncSession, save_fixture: SaveFixture, mocker: MockerFixture
+    ) -> None:
+        await save_fixture(
+            AuthenticationSession(
+                token_hash="a" * 64,
+                expires_at=int((utc_now() - OVERDUE).timestamp()),
+                step=0,
+                authentication_method_references=[],
+                used_factors=[],
+                context=None,
+                identity_id=None,
+            )
+        )
+
+        execute = session.execute
+        timeout = TimeoutError()
+
+        async def execute_or_time_out(statement: Any, *args: Any, **kwargs: Any) -> Any:
+            if WebhookEvent.__table__ in statement.get_final_froms():
+                raise timeout
+            return await execute(statement, *args, **kwargs)
+
+        mocker.patch.object(session, "execute", side_effect=execute_or_time_out)
+
+        invariant = ExpiredRecordsNotDeletedInvariant(session)
+        with pytest.raises(ExpiredRecordsNotDeletedInvariantError) as exc_info:
+            await invariant.check()
+
+        assert exc_info.value.context["cleanup_tasks"] == [
+            "authentication_session.delete_expired"
+        ]
+        assert exc_info.value.__cause__ is timeout
+
     async def test_ignores_records_their_task_keeps(
         self,
         session: AsyncSession,
@@ -335,12 +394,14 @@ class TestCheck:
             + timedelta(days=1),
             status=EmailLogStatus.failed,
         )
-        await create_webhook_delivery(
-            save_fixture,
-            organization,
-            response=None,
-            created_at=deletable_at
-            - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        await save_fixture(
+            MerchantMigration(
+                organization=organization,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+                step=MerchantMigrationStep.completed,
+                modified_at=deletable_at
+                - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
+            )
         )
 
         invariant = ExpiredRecordsNotDeletedInvariant(session)

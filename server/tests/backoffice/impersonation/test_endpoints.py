@@ -24,7 +24,7 @@ def _request() -> Request:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStartImpersonation:
     async def test_scopes_session_to_organization(
         self,

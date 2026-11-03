@@ -287,6 +287,13 @@ class MaintainerFileFlaggedMaliciousNotificationPayload(NotificationPayloadBase)
     file_name: str
     organization_name: str
     organization_slug: str | None = None
+    threat_names: list[str] = []
+
+    @computed_field
+    def benefits_url(self) -> str | None:
+        if not self.organization_slug:
+            return None
+        return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.organization_slug}/products/benefits"
 
     def subject(self) -> str:
         return f"Security alert: {self.file_name} was flagged as malicious"

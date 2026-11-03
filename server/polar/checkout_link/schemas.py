@@ -16,19 +16,22 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
-    SetSchemaReference,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
+from polar.kit.versioning import QuerySchema, Version
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import (
     BenefitPublicList,
     ProductBase,
+    ProductID,
     ProductMediaList,
     ProductPrice,
     ProductPriceList,
 )
+from polar.version import V2026_10
 
 SuccessURL = Annotated[
     SuccessUrl | None,
@@ -138,14 +141,6 @@ class CheckoutLinkCreateProducts(CheckoutLinkCreateBase):
     )
 
 
-CheckoutLinkCreate = Annotated[
-    CheckoutLinkCreateProductPrice
-    | CheckoutLinkCreateProduct
-    | CheckoutLinkCreateProducts,
-    SetSchemaReference("CheckoutLinkCreate"),
-]
-
-
 class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     """Schema to update an existing checkout link."""
 
@@ -228,19 +223,32 @@ class CheckoutLink(CheckoutLinkBase):
     discount: CheckoutLinkDiscount | None
 
     # Deprecated fields for backward compatibility
-    product_id: SkipJsonSchema[UUID4] = Field(
+    product_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasPath("products", 0, "id"),
         deprecated="Use `products` instead.",
     )
-    product_price_id: SkipJsonSchema[UUID4] = Field(
+    product_price_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasPath("products", 0, "prices", 0, "id"),
         deprecated="Use `products` instead.",
     )
-    product: SkipJsonSchema[CheckoutLinkProduct] = Field(
-        validation_alias=AliasPath("products", 0),
-        deprecated="Use `products` instead.",
+    product: Annotated[SkipJsonSchema[CheckoutLinkProduct], Version(up_to=V2026_10)] = (
+        Field(
+            validation_alias=AliasPath("products", 0),
+            deprecated="Use `products` instead.",
+        )
     )
-    product_price: SkipJsonSchema[ProductPrice] = Field(
-        validation_alias=AliasPath("products", 0, "prices", 0),
-        deprecated="Use `products` instead.",
+    product_price: Annotated[SkipJsonSchema[ProductPrice], Version(up_to=V2026_10)] = (
+        Field(
+            validation_alias=AliasPath("products", 0, "prices", 0),
+            deprecated="Use `products` instead.",
+        )
+    )
+
+
+class CheckoutLinkListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
     )

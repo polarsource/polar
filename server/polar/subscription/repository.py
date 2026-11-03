@@ -39,6 +39,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    Benefit,
     BenefitGrant,
     Customer,
     CustomerSeat,
@@ -46,10 +47,12 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
+    SubscriptionBulkUpdate,
     SubscriptionMeter,
     SubscriptionProductPrice,
     SubscriptionUpdate,
 )
+from polar.models.benefit import BenefitType
 from polar.models.customer_seat import SeatStatus
 from polar.models.email_log import EmailLog
 from polar.models.subscription import SubscriptionStatus
@@ -83,6 +86,36 @@ class SubscriptionRepository(
     RepositoryBase[Subscription],
 ):
     model = Subscription
+
+    def get_bulk_update_statement(
+        self,
+        organization_id: UUID,
+        product_external_id: str,
+        *,
+        exclude_product_id: UUID,
+        after_id: UUID | None = None,
+    ) -> Select[Subscription]:
+        """Active subscriptions of any version of a product that a bulk update can
+        move: not canceling, and without a pending change."""
+        statement = (
+            self.get_base_statement()
+            .join(Product, Product.id == Subscription.product_id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id == product_external_id,
+                Subscription.product_id != exclude_product_id,
+                Subscription.active,
+                ~Subscription.cancel_at_period_end,
+                ~sa.exists().where(
+                    SubscriptionUpdate.subscription_id == Subscription.id,
+                    SubscriptionUpdate.applied_at.is_(None),
+                    SubscriptionUpdate.deleted_at.is_(None),
+                ),
+            )
+        )
+        if after_id is not None:
+            statement = statement.where(Subscription.id > after_id)
+        return statement
 
     async def release_scheduler_lock(self, subscription: Subscription) -> Subscription:
         statement = (
@@ -165,7 +198,7 @@ class SubscriptionRepository(
 
     def get_billable_by_organization_statement(
         self, organization_id: UUID, *, options: Options = ()
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         return (
             self.get_base_statement()
             .where(
@@ -301,6 +334,52 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalars().all()
 
+    async def count_customers_by_meters(
+        self, organization_id: UUID, meter_ids: Sequence[UUID]
+    ) -> dict[UUID, int]:
+        if not meter_ids:
+            return {}
+        subscribed = (
+            select(
+                SubscriptionMeter.meter_id.label("meter_id"),
+                Subscription.customer_id.label("customer_id"),
+            )
+            .join(
+                SubscriptionMeter, SubscriptionMeter.subscription_id == Subscription.id
+            )
+            .where(
+                Subscription.organization_id == organization_id,
+                SubscriptionMeter.meter_id.in_(meter_ids),
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                ~Subscription.is_deleted,
+            )
+        )
+        granted = (
+            select(
+                sa.cast(Benefit.properties["meter_id"].as_string(), sa.Uuid).label(
+                    "meter_id"
+                ),
+                BenefitGrant.customer_id.label("customer_id"),
+            )
+            .join(Benefit, BenefitGrant.benefit_id == Benefit.id)
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.type == BenefitType.meter_credit,
+                Benefit.properties["meter_id"]
+                .as_string()
+                .in_([str(meter_id) for meter_id in meter_ids]),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+            )
+        )
+        # The union keeps each (meter, customer) pair once, so a customer with both counts once
+        customers = sa.union(subscribed, granted).subquery()
+        statement = select(customers.c.meter_id, func.count()).group_by(
+            customers.c.meter_id
+        )
+        result = await self.session.execute(statement)
+        return {meter_id: count for meter_id, count in result.tuples()}
+
     async def get_by_id_and_organization(
         self,
         id: UUID,
@@ -376,7 +455,7 @@ class SubscriptionRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization | Customer | Member]
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         statement = self.get_base_statement()
 
         if is_user(auth_subject):
@@ -408,7 +487,7 @@ class SubscriptionRepository(
 
     def get_claimed_subscriptions_statement(
         self, auth_subject: AuthSubject[AuthCustomer | Member]
-    ) -> Select[tuple[Subscription]]:
+    ) -> Select[Subscription]:
         """Get subscriptions where the customer has a claimed seat."""
         statement = self.get_base_statement().join(
             CustomerSeat, CustomerSeat.subscription_id == Subscription.id
@@ -655,6 +734,16 @@ class SubscriptionRepository(
             case SubscriptionSortProperty.discount:
                 return Discount.name
 
+    async def get_started_at_by_ids(
+        self, subscription_ids: Sequence[UUID]
+    ) -> dict[UUID, datetime | None]:
+        """`started_at` of the subscriptions, including soft-deleted ones."""
+        statement = select(Subscription.id, Subscription.started_at).where(
+            Subscription.id.in_(subscription_ids)
+        )
+        result = await self.session.execute(statement)
+        return {subscription_id: started_at for subscription_id, started_at in result}
+
 
 class SubscriptionProductPriceRepository(
     RepositorySoftDeletionIDMixin[SubscriptionProductPrice, UUID],
@@ -886,3 +975,29 @@ class SubscriptionUpdateRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+
+class SubscriptionBulkUpdateRepository(
+    RepositorySoftDeletionIDMixin[SubscriptionBulkUpdate, UUID],
+    RepositorySoftDeletionMixin[SubscriptionBulkUpdate],
+    RepositoryBase[SubscriptionBulkUpdate],
+):
+    model = SubscriptionBulkUpdate
+
+    def get_readable_statement(
+        self, auth_subject: AuthSubject[User | Organization]
+    ) -> Select[SubscriptionBulkUpdate]:
+        statement = self.get_base_statement()
+        if is_user(auth_subject):
+            statement = statement.where(
+                SubscriptionBulkUpdate.organization_id.in_(
+                    select_accessible_org_ids(
+                        auth_subject, permission=OrganizationPermission.sales_read
+                    )
+                )
+            )
+        elif is_organization(auth_subject):
+            statement = statement.where(
+                SubscriptionBulkUpdate.organization_id == auth_subject.subject.id
+            )
+        return statement

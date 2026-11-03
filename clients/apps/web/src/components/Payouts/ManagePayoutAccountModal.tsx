@@ -13,6 +13,7 @@ import { permissionDeniedMessage } from '@/utils/permissions'
 import { schemas, unwrap } from '@polar-sh/client'
 import {
   Button,
+  Text,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -26,8 +27,12 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
-import { ExternalLink, Plus, Trash2 } from 'lucide-react'
+import {
+  ExternalLink,
+  MoreVertOutlined,
+  Plus,
+  Trash2,
+} from '@polar-sh/orbit/icons'
 import React, { useCallback, useState } from 'react'
 import { useOrganization } from '@/hooks/queries'
 
@@ -83,7 +88,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                 },
               }),
         )
-        window.open(link.url, '_blank')
+        window.open(link.url, '_blank', 'noopener,noreferrer')
       } catch {
         toast({
           title: payoutAccount.is_payout_ready
@@ -166,6 +171,9 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
   return (
     <div className="flex flex-col gap-y-6 p-6 sm:p-8">
       <h3 className="text-xl font-medium">Manage Payout Accounts</h3>
+      <Text color="muted">
+        Make Active sets the payout account for {_organization.name}.
+      </Text>
       {isLoading ? (
         <div className="flex flex-col gap-y-3">
           {[...Array(2)].map((_, i) => (

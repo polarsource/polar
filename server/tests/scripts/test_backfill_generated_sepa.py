@@ -20,7 +20,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackfillMethod:
     @pytest.mark.parametrize("source_type", ["charge", "setup_attempt"])
     @pytest.mark.parametrize("execute", [False, True])
@@ -159,7 +159,7 @@ class TestBackfillMethod:
         assert original.deleted_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRecoverOrder:
     @pytest.mark.parametrize(
         ("status", "execute", "locked", "already_attempted"),

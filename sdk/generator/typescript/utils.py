@@ -20,7 +20,7 @@ def format_default_value_ts(default: typing.Any) -> str:
         if len(default) == 0:
             return "{}"
         items = ", ".join(
-            f"{repr(k)}: {format_default_value_ts(v)}" for k, v in default.items()
+            f"{k!r}: {format_default_value_ts(v)}" for k, v in default.items()
         )
         return f"{{{items}}}"
     return repr(default)

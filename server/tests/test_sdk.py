@@ -1,7 +1,6 @@
 from collections.abc import AsyncGenerator
 
 import pytest
-import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from polar.v2026_04 import PolarAsync
@@ -19,7 +18,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def polar(app: FastAPI) -> AsyncGenerator[PolarAsync]:
     sdk = PolarAsync("", base_url="http://test")
     async with AsyncClient(
@@ -32,7 +31,7 @@ async def polar(app: FastAPI) -> AsyncGenerator[PolarAsync]:
         yield sdk
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 class TestSDK:
     """

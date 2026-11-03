@@ -12,7 +12,7 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_persists_context(
         self, session: AsyncSession, save_fixture: SaveFixture
@@ -38,7 +38,7 @@ class TestUpdate:
         assert authentication_session.context == {"foo": "bar"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOptionalAuthenticationSession:
     async def test_non_ascii_cookie_returns_none(
         self, session: AsyncSession, mocker: MockerFixture

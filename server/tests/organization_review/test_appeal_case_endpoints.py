@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.models import OrganizationReview
@@ -18,7 +17,7 @@ from tests.fixtures.random_objects import (
 REASON = "Please reconsider my account — here is the additional context for the review."
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def denied_review(
     save_fixture: SaveFixture, organization: Organization
 ) -> OrganizationReview:
@@ -29,7 +28,7 @@ async def denied_review(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestHumanReview:
     async def test_unauthorized(
         self,

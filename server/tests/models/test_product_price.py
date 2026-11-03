@@ -29,7 +29,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("unit_amount", "cap_amount", "units", "expected_amount", "expected_label"),
     [
@@ -98,6 +98,44 @@ async def test_get_amount_and_label(
     amount, label = price.get_amount_and_label(units)
     assert amount == expected_amount
     assert label == expected_label
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("credited_units", "expected_amount", "expected_label"),
+    [
+        (30, 3_00, "(42 consumed units - 30 credited units) × $0.25"),
+        (100, 0, "(42 consumed units - 100 credited units) × $0.25"),
+    ],
+)
+async def test_get_amount_and_label_with_credits(
+    credited_units: int,
+    expected_amount: int,
+    expected_label: str,
+    save_fixture: SaveFixture,
+    product: Product,
+    meter: Meter,
+) -> None:
+    price = await create_product_price_metered_unit(
+        save_fixture, product=product, meter=meter, unit_amount=Decimal(25)
+    )
+
+    amount, label = price.get_amount_and_label(42, credited_units)
+    assert amount == expected_amount
+    assert label == expected_label
+
+
+@pytest.mark.anyio
+async def test_get_amount_and_label_subtracts_credits_exactly(
+    save_fixture: SaveFixture, product: Product, meter: Meter
+) -> None:
+    price = await create_product_price_metered_unit(
+        save_fixture, product=product, meter=meter, unit_amount=Decimal(5)
+    )
+
+    # 100.1 - 100 is 0.0999... in binary floating point, which would round to 0
+    amount, _ = price.get_amount_and_label(100.1, 100)
+    assert amount == 1
 
 
 class TestFixedPriceIsFree:
@@ -351,7 +389,7 @@ class TestSeatTiersApiView:
             {"min_seats": 5, "max_seats": 20, "price_per_seat": 250}
         ]
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_database_round_trip_returns_tiers_model(
         self,
         save_fixture: SaveFixture,
@@ -495,7 +533,7 @@ class TestUnitBasedPrice:
         assert price.get_unit_noun(2, "de") == "sièges"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProductPriceMeteredTiers:
     def _price(
         self, tiers: Tiers, cap_amount: int | None = None
@@ -521,6 +559,24 @@ class TestProductPriceMeteredTiers:
 
         assert amount == 4_000
         assert label == "(500 consumed units, volume pricing)"
+
+    def test_bills_consumed_units_net_of_credits(self) -> None:
+        price = self._price(
+            Tiers.model_validate(
+                {
+                    "type": TierType.volume,
+                    "tiers": [
+                        {"bound": 100, "unit_amount": "10"},
+                        {"bound": None, "unit_amount": "8"},
+                    ],
+                }
+            )
+        )
+
+        amount, label = price.get_amount_and_label(500, 100)
+
+        assert amount == 3_200
+        assert label == ("(500 consumed units - 100 credited units, volume pricing)")
 
     def test_rounds_the_total_once_not_per_tier(self) -> None:
         price = self._price(

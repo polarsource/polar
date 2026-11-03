@@ -14,7 +14,7 @@ import {
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { endOfToday, format, startOfDay } from 'date-fns'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown } from '@polar-sh/orbit/icons'
 import React, { useMemo, useState } from 'react'
 import { ExportColumnGroup, ExportColumns } from './ExportColumns'
 import { ExportSelection, createExportColumnConfig } from './utils'
@@ -25,8 +25,12 @@ const formatExportRange = (range: DateRange): string => {
   return from === to ? from : `${from} – ${to}`
 }
 
+const gmtOffsetFormatter = new Intl.DateTimeFormat('en', {
+  timeZoneName: 'shortOffset',
+})
+
 const formatGMTOffset = (date: Date = new Date()): string =>
-  new Intl.DateTimeFormat('en', { timeZoneName: 'shortOffset' })
+  gmtOffsetFormatter
     .formatToParts(date)
     .find((part) => part.type === 'timeZoneName')?.value ?? 'Local'
 

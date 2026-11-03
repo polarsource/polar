@@ -61,7 +61,7 @@ def typer_async(f):  # type: ignore
     return wrapper
 
 
-def get_query() -> Select[tuple[Order]]:
+def get_query() -> Select[Order]:
     """
     Build the base query for eligible orders that can be voided.
 

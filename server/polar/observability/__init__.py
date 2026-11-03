@@ -9,6 +9,8 @@ from polar.observability.http_metrics import (
     METRICS_DENY_LIST,
 )
 from polar.observability.metrics import (
+    STAGED_EVENTS_BACKLOG,
+    STAGED_EVENTS_OLDEST_AGE,
     TASK_DEBOUNCE_DELAY,
     TASK_DEBOUNCED,
     TASK_DURATION,
@@ -29,6 +31,9 @@ __all__ = [
     "METRICS_DENY_LIST",
     # Operational error metrics
     "OPERATIONAL_ERROR_TOTAL",
+    # Staged events mover metrics
+    "STAGED_EVENTS_BACKLOG",
+    "STAGED_EVENTS_OLDEST_AGE",
     # Task metrics (worker)
     "TASK_DEBOUNCED",
     "TASK_DEBOUNCE_DELAY",

@@ -13,7 +13,7 @@ def publish_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.webhook.eventstream.publish")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPublishWebhookEvent:
     async def test_skips_when_no_listener(
         self, publish_mock: MagicMock, redis: Redis

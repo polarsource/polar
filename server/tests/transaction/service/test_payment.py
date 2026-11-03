@@ -26,7 +26,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.transaction.service.payment.enqueue_job")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreatePayment:
     async def test_existing_transaction(
         self,

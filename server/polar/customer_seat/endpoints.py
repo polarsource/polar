@@ -10,7 +10,7 @@ from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.models import CustomerSeat, Order, Subscription
 from polar.models.customer_seat import SeatStatus
-from polar.openapi import APITag
+from polar.openapi import APITag, open_world
 from polar.order.repository import OrderRepository
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
@@ -23,6 +23,7 @@ from .repository import CustomerSeatRepository
 from .schemas import CustomerSeat as CustomerSeatSchema
 from .schemas import (
     CustomerSeatClaimResponse,
+    CustomerSeatListParams,
     SeatAssign,
     SeatClaim,
     SeatClaimInfo,
@@ -32,13 +33,15 @@ from .service import seat_service
 
 router = APIRouter(
     prefix="/customer-seats",
-    tags=["customer-seats", APITag.public, APITag.mcp, APITag.cli],
+    tags=["customer-seats", APITag.public],
 )
 
 
 @router.post(
     "",
     summary="Assign Seat",
+    openapi_extra=open_world(),
+    tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatSchema,
     responses={
         400: {"description": "No available seats or customer already has a seat"},
@@ -52,6 +55,7 @@ async def assign_seat(
     auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatSchema:
+    """Assign a seat for a subscription or order."""
     subscription: Subscription | None = None
     order: Order | None = None
 
@@ -105,6 +109,7 @@ async def assign_seat(
 @router.get(
     "",
     summary="List Seats",
+    tags=[APITag.mcp, APITag.cli],
     response_model=SeatsList,
     responses={
         401: {"description": "Authentication required"},
@@ -113,22 +118,22 @@ async def assign_seat(
     },
 )
 async def list_seats(
+    filters: Annotated[CustomerSeatListParams, Query()],
     auth_subject: SeatRead,
     session: AsyncSession = Depends(get_db_session),
-    subscription_id: Annotated[UUID4 | None, Query()] = None,
-    order_id: Annotated[UUID4 | None, Query()] = None,
 ) -> SeatsList:
+    """List seats for a subscription or order."""
     subscription: Subscription | None = None
     order: Order | None = None
     total_seats = 0
 
-    if subscription_id:
+    if filters.subscription_id:
         subscription_repository = SubscriptionRepository.from_session(session)
 
         statement = (
             subscription_repository.get_readable_statement(auth_subject)
             .options(*subscription_repository.get_eager_options())
-            .where(Subscription.id == subscription_id)
+            .where(Subscription.id == filters.subscription_id)
         )
         subscription = await subscription_repository.get_one_or_none(statement)
 
@@ -137,13 +142,13 @@ async def list_seats(
 
         total_seats = subscription.seats or 0
 
-    elif order_id:
+    elif filters.order_id:
         order_repository = OrderRepository.from_session(session)
 
         order_statement = (
             order_repository.get_readable_statement(auth_subject)
             .options(*order_repository.get_eager_options())
-            .where(Order.id == order_id)
+            .where(Order.id == filters.order_id)
         )
         order = await order_repository.get_one_or_none(order_statement)
 
@@ -171,6 +176,7 @@ async def list_seats(
 @router.delete(
     "/{seat_id}",
     summary="Revoke Seat",
+    tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatSchema,
     responses={
         401: {"description": "Authentication required"},
@@ -183,6 +189,7 @@ async def revoke_seat(
     auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
+    """Revoke a customer seat."""
     seat_repository = CustomerSeatRepository.from_session(session)
     org_ids = await get_accessible_org_ids(session, auth_subject)
 
@@ -201,6 +208,8 @@ async def revoke_seat(
 @router.post(
     "/{seat_id}/resend",
     summary="Resend Invitation",
+    openapi_extra=open_world(),
+    tags=[APITag.mcp, APITag.cli],
     response_model=CustomerSeatSchema,
     responses={
         400: {"description": "Seat is not pending or already claimed"},
@@ -214,6 +223,7 @@ async def resend_invitation(
     auth_subject: SeatWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeat:
+    """Resend an invitation for a pending customer seat."""
     seat_repository = CustomerSeatRepository.from_session(session)
     org_ids = await get_accessible_org_ids(session, auth_subject)
 
@@ -232,6 +242,7 @@ async def resend_invitation(
 @router.get(
     "/claim/{invitation_token}",
     summary="Get Claim Info",
+    tags=[APITag.cli],
     response_model=SeatClaimInfo,
     responses={
         400: {"description": "Invalid or expired invitation token"},
@@ -243,6 +254,7 @@ async def get_claim_info(
     invitation_token: str,
     session: AsyncSession = Depends(get_db_session),
 ) -> SeatClaimInfo:
+    """Get claim information for a customer seat invitation."""
     seat = await seat_service.get_seat_by_token(session, invitation_token)
 
     if not seat:
@@ -301,6 +313,7 @@ async def claim_stream(
 @router.post(
     "/claim",
     summary="Claim Seat",
+    tags=[APITag.cli],
     response_model=CustomerSeatClaimResponse,
     responses={
         400: {"description": "Invalid, expired, or already claimed token"},
@@ -311,6 +324,7 @@ async def claim_seat(
     seat_claim: SeatClaim,
     session: AsyncSession = Depends(get_db_session),
 ) -> CustomerSeatClaimResponse:
+    """Claim a customer seat with an invitation token."""
     seat, customer_session_token = await seat_service.claim_seat(
         session,
         seat_claim.invitation_token,

@@ -191,6 +191,8 @@ class CustomersSync(SyncServiceBase):
         """
         Create a customer.
 
+        Set `external_id` to the customer's ID in your system to look it up by that ID.
+
         **Scopes**: `customers:write`
 
         Args:
@@ -984,6 +986,8 @@ class CustomersAsync(AsyncServiceBase):
     ) -> Customer:
         """
         Create a customer.
+
+        Set `external_id` to the customer's ID in your system to look it up by that ID.
 
         **Scopes**: `customers:write`
 

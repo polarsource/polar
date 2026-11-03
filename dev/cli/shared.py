@@ -2,10 +2,14 @@
 
 import json
 import os
+import pty
+import re
 import shutil
 import socket
 import subprocess
 import tempfile
+import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -147,6 +151,47 @@ def step_spinner(message: str):
     )
 
 
+def run_with_live_status(cmd: list[str], message: str) -> subprocess.CompletedProcess | None:
+    """Run a long, quiet command behind a spinner showing its latest output and elapsed time.
+
+    The command writes to a pseudo-terminal, so tools that only report progress
+    to a terminal, like softwareupdate's download, still do.
+    """
+    master, slave = pty.openpty()
+    try:
+        process = subprocess.Popen(cmd, stdin=subprocess.DEVNULL, stdout=slave, stderr=slave)
+    except FileNotFoundError:
+        os.close(master)
+        os.close(slave)
+        return None
+    os.close(slave)
+    chunks: list[str] = []
+
+    def read_output() -> None:
+        while True:
+            try:
+                chunk = os.read(master, 1024)
+            except OSError:
+                return
+            if not chunk:
+                return
+            chunks.append(chunk.decode(errors="replace"))
+
+    reader = threading.Thread(target=read_output, daemon=True)
+    reader.start()
+    started = time.monotonic()
+    spinner = Spinner("dots", text=Text(f" {message}", style="bold"))
+    with Live(Padding(spinner, (0, 0, 0, 2)), console=console, refresh_per_second=8, transient=True):
+        while process.poll() is None:
+            lines = [line.strip() for line in re.split(r"[\r\n]", "".join(chunks)) if line.strip()]
+            minutes, seconds = divmod(int(time.monotonic() - started), 60)
+            spinner.update(text=Text(f" {lines[-1] if lines else message}  {minutes}m {seconds:02d}s", style="bold"))
+            time.sleep(0.25)
+    reader.join(timeout=2)
+    os.close(master)
+    return subprocess.CompletedProcess(cmd, process.returncode, stdout="".join(chunks), stderr="")
+
+
 def step_status(success: bool, message: str, detail: str = "") -> None:
     """Print a step status line."""
     icon = "[green]✓[/green]" if success else "[red]✗[/red]"
@@ -204,7 +249,10 @@ def looks_like_broken_clt(output: str) -> bool:
     return any(marker in lowered for marker in _BROKEN_CLT_MARKERS)
 
 
-def check_clt_can_link() -> bool:
+CLT_DEVELOPER_DIR = "/Library/Developer/CommandLineTools"
+
+
+def check_clt_can_link(env: dict | None = None) -> bool:
     """Compile and link a trivial program against a system framework.
 
     An outdated or half-updated Command Line Tools install passes `xcode-select -p`
@@ -216,9 +264,27 @@ def check_clt_can_link() -> bool:
         result = run_command(
             ["cc", "-framework", "CoreFoundation", "-o", str(Path(tmp) / "clt_check"), str(source)],
             capture=True,
+            env=env,
             timeout=60,
         )
     return result is not None and result.returncode == 0
+
+
+def use_native_toolchain() -> str | None:
+    """Make native builds work for this run, or None when no toolchain can link.
+
+    An Xcode older than macOS (Xcode 26 on macOS 27) has no SDK for it, so xcrun
+    pairs Xcode's old linker with the Command Line Tools' newer SDK, which that
+    linker can't read. The Command Line Tools' own compiler can, so every command
+    dev runs afterwards uses it instead.
+    """
+    if check_clt_can_link():
+        return "installed"
+    clt_env = {"DEVELOPER_DIR": CLT_DEVELOPER_DIR}
+    if check_clt_can_link(clt_env):
+        os.environ.update(clt_env)
+        return "using the Command Line Tools, your Xcode is older than this macOS"
+    return None
 
 
 def print_clt_repair_hint() -> None:

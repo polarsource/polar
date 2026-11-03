@@ -2,7 +2,6 @@ from collections.abc import AsyncGenerator
 
 import httpx
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -15,7 +14,7 @@ from polar.postgres import AsyncSession, get_db_session
 from tests.fixtures.database import SaveFixture
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client(
     session: AsyncSession, user: User
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -33,7 +32,7 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_admin, None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteUser:
     async def test_delete_user_redacts_identity_verification(
         self,

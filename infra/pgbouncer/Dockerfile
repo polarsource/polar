@@ -7,6 +7,9 @@ RUN apt-get -qq update \
     ca-certificates \
     postgresql-common \
   > /dev/null \
+  && sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+    -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates \
   && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
   && apt-get -qq install -y --no-install-recommends pgbouncer="${PGBOUNCER_APT_VERSION}" > /dev/null \
   && apt-get -qq clean \

@@ -53,7 +53,7 @@ def _sessionmaker_for(session: Any) -> MagicMock:
     return MagicMock(side_effect=maker)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHealth:
     async def test_healthy_without_heartbeat_checker(
         self, mock_request: MagicMock, mock_redis: AsyncMock
@@ -218,7 +218,7 @@ def _create_test_app() -> Starlette:
     return app
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSchedulerHealthIntegration:
     async def test_healthy_with_passing_checker(self) -> None:
         original = health_module._heartbeat_checker
@@ -317,7 +317,7 @@ class TestCreateApp:
         assert "strict-transport-security" not in self._get_headers(mocker)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestLifespan:
     async def test_no_database_does_not_create_engine(
         self, mocker: MockerFixture

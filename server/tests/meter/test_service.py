@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
 
 import pytest
-import pytest_asyncio
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from sqlalchemy import select
@@ -49,6 +48,7 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryDirection
 from polar.models.customer_seat import SeatStatus
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionProductPriceRepository
 from tests.fixtures.auth import AuthSubjectFixture
@@ -71,11 +71,12 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.meter.service.enqueue_job")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_last_billed_event_set(
         self,
+        enqueue_job_mock: AsyncMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
@@ -123,12 +124,16 @@ class TestCreate:
             await session.scalars(
                 select(Reducer)
                 .join(MeterReducer)
-                .where(MeterReducer.meter_id == meter.id)
+                .where(
+                    MeterReducer.meter_id == meter.id,
+                    Reducer.kind == ReducerKind.usage,
+                )
             )
         ).one()
         assert reducer.organization_id == meter.organization_id
         assert reducer.filter == meter.filter
         assert reducer.aggregation == meter.aggregation
+        enqueue_job_mock.assert_any_call("reducer.invalidate_cache", organization.id)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_default_unit_is_scalar(
@@ -238,7 +243,7 @@ class TestCreate:
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.parametrize(
         "meter_update",
@@ -310,6 +315,7 @@ class TestUpdate:
     @pytest.mark.parametrize("has_reducer", [False, True])
     async def test_sensitive_update_allowed(
         self,
+        enqueue_job_mock: AsyncMock,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
         meter_update: MeterUpdate,
@@ -325,6 +331,7 @@ class TestUpdate:
         if has_reducer:
             original_reducer = Reducer(
                 organization=organization,
+                kind=ReducerKind.usage,
                 filter=meter.filter,
                 aggregation=meter.aggregation,
             )
@@ -342,13 +349,17 @@ class TestUpdate:
             await session.scalars(
                 select(Reducer)
                 .join(MeterReducer)
-                .where(MeterReducer.meter_id == meter.id)
+                .where(
+                    MeterReducer.meter_id == meter.id,
+                    Reducer.kind == ReducerKind.usage,
+                )
             )
         ).one()
         await session.refresh(reducer)
         assert reducer.organization_id == meter.organization_id
         assert reducer.filter == updated_meter.filter
         assert reducer.aggregation == updated_meter.aggregation
+        enqueue_job_mock.assert_any_call("reducer.invalidate_cache", organization.id)
         if original_reducer is not None:
             assert reducer.id == original_reducer.id
 
@@ -453,7 +464,7 @@ class TestUpdate:
         assert updated_meter.external_id == "ext_1337"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetQuantities:
     @pytest.mark.parametrize(
         "aggregation",
@@ -1410,7 +1421,7 @@ class TestGetQuantities:
         assert result.total == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetQuantity:
     async def test_excludes_non_numeric_values(
         self,
@@ -1461,7 +1472,7 @@ class TestGetQuantity:
         assert quantity == 30.0
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(
         save_fixture,
@@ -1479,7 +1490,7 @@ async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def events(
     save_fixture: SaveFixture, session: AsyncSession, customer: Customer, meter: Meter
 ) -> list[Event]:
@@ -1544,7 +1555,7 @@ async def events(
     return events
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_metered_unit(
     save_fixture: SaveFixture, meter: Meter, organization: Organization
 ) -> Product:
@@ -1556,7 +1567,7 @@ async def product_metered_unit(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def metered_subscription(
     save_fixture: SaveFixture, customer: Customer, product_metered_unit: Product
 ) -> Subscription:
@@ -1565,7 +1576,35 @@ async def metered_subscription(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
+class TestEnqueueBilling:
+    async def test_only_meters_with_unbilled_events(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        events: list[Event],
+        meter: Meter,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4(), name="Empty"
+        )
+
+        await meter_service.enqueue_billing(session)
+        assert [call.args[:2] for call in enqueue_job_mock.call_args_list] == [
+            ("meter.billing_entries", meter.id)
+        ]
+
+        await meter_service.create_billing_entries(session, meter)
+        await session.flush()
+        enqueue_job_mock.reset_mock()
+
+        await meter_service.enqueue_billing(session)
+        enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.anyio
 class TestCreateBillingEntries:
     async def test_no_subscription(
         self,
@@ -1922,7 +1961,7 @@ class TestCreateBillingEntries:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateBillingEntriesWithSeats:
     async def test_seat_holder_overage_charges_billing_manager(
         self,

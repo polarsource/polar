@@ -1126,6 +1126,8 @@ export type RefundReason =
   | "service_disruption"
   | "satisfaction_guarantee"
   | "dispute_prevention"
+  | "tax_refund"
+  | "vat_reverse_charge_correction"
   | "other";
 /**
  * RefundSortProperty
@@ -2114,6 +2116,20 @@ export interface AmbiguousExternalMeterID {
 }
 
 /**
+ * AmbiguousExternalWebhookEndpointID
+ */
+export interface AmbiguousExternalWebhookEndpointID {
+  /**
+   * error
+   */
+  error: "AmbiguousExternalWebhookEndpointID";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * Schema of a custom field attached to a resource.
  */
 export interface AttachedCustomField {
@@ -2930,6 +2946,10 @@ export interface BenefitCustom {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -2951,6 +2971,10 @@ export interface BenefitCustom {
  * Schema to create a benefit of type `custom`.
  */
 export interface BenefitCustomCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3114,6 +3138,10 @@ export interface BenefitCustomSubscriberProperties {
  */
 export interface BenefitCustomUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3250,6 +3278,10 @@ export interface BenefitDiscord {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3271,6 +3303,10 @@ export interface BenefitDiscord {
  * BenefitDiscordCreate
  */
 export interface BenefitDiscordCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3450,6 +3486,10 @@ export interface BenefitDiscordSubscriberProperties {
  */
 export interface BenefitDiscordUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3600,6 +3640,10 @@ export interface BenefitDownloadables {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3621,6 +3665,10 @@ export interface BenefitDownloadables {
  * BenefitDownloadablesCreate
  */
 export interface BenefitDownloadablesCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -3792,6 +3840,10 @@ export interface BenefitDownloadablesSubscriberProperties {
  */
 export interface BenefitDownloadablesUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -3863,6 +3915,10 @@ export interface BenefitFeatureFlag {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -3884,6 +3940,10 @@ export interface BenefitFeatureFlag {
  * Schema to create a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -4032,6 +4092,10 @@ export interface BenefitFeatureFlagSubscriberProperties extends Record<string, n
  */
 export interface BenefitFeatureFlagUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -4106,6 +4170,10 @@ export interface BenefitGitHubRepository {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -4127,6 +4195,10 @@ export interface BenefitGitHubRepository {
  * BenefitGitHubRepositoryCreate
  */
 export interface BenefitGitHubRepositoryCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -4309,6 +4381,10 @@ export interface BenefitGitHubRepositorySubscriberProperties {
  * BenefitGitHubRepositoryUpdate
  */
 export interface BenefitGitHubRepositoryUpdate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5361,6 +5437,10 @@ export interface BenefitLicenseKeys {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -5382,6 +5462,10 @@ export interface BenefitLicenseKeys {
  * BenefitLicenseKeysCreate
  */
 export interface BenefitLicenseKeysCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5581,6 +5665,10 @@ export interface BenefitLicenseKeysSubscriberProperties {
  */
 export interface BenefitLicenseKeysUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -5655,6 +5743,10 @@ export interface BenefitMeterCredit {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -5676,6 +5768,10 @@ export interface BenefitMeterCredit {
  * Schema to create a benefit of type `meter_unit`.
  */
 export interface BenefitMeterCreditCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -5883,6 +5979,10 @@ export interface BenefitMeterCreditSubscriberProperties {
  */
 export interface BenefitMeterCreditUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -6017,6 +6117,10 @@ export interface BenefitSlackSharedChannel {
    */
   organization_id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -6038,6 +6142,10 @@ export interface BenefitSlackSharedChannel {
  * BenefitSlackSharedChannelCreate
  */
 export interface BenefitSlackSharedChannelCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -6235,6 +6343,10 @@ export interface BenefitSlackSharedChannelSubscriberProperties extends Record<st
  * BenefitSlackSharedChannelUpdate
  */
 export interface BenefitSlackSharedChannelUpdate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -6598,10 +6710,6 @@ export interface Checkout {
    */
   product_id: string | null;
   /**
-   * ID of the product price to checkout.
-   */
-  product_price_id: string | null;
-  /**
    * ID of the discount applied to the checkout.
    */
   discount_id: string | null;
@@ -6708,11 +6816,11 @@ export interface Checkout {
   /**
    * Price of the selected product.
    */
-  product_price: (LegacyRecurringProductPrice | ProductPrice) | null;
+  product_price: ProductPrice | null;
   /**
    * Mapping of product IDs to their list of prices.
    */
-  prices: Record<string, (LegacyRecurringProductPrice | ProductPrice)[]> | null;
+  prices: Record<string, ProductPrice[]> | null;
   /**
    * discount
    */
@@ -6769,6 +6877,78 @@ export interface CheckoutBillingAddressFields {
 }
 
 /**
+ * Confirm a checkout session using a Stripe shared payment token granted by an agent.
+
+Only supported for one-time payments.
+ */
+export interface CheckoutConfirmSharedPaymentToken {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * ID of the product to checkout. Must be present in the checkout's product list.
+   */
+  product_id?: string | null;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Number of seats for seat-based pricing.
+   */
+  seats?: number | null;
+  /**
+   * Number of units for unit-based pricing.
+   */
+  units?: number | null;
+  /**
+   * is_business_customer
+   */
+  is_business_customer?: boolean | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+   */
+  payment_method_type?: string | null;
+  /**
+   * Discount code to apply to the checkout.
+   */
+  discount_code?: string | null;
+  /**
+   * Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+   */
+  allow_trial?: false | null;
+  /**
+   * ID of the Stripe shared payment token (`spt_...`).
+   */
+  shared_payment_token_id: string;
+}
+
+/**
  * Confirm a checkout session using a Stripe confirmation token.
  */
 export interface CheckoutConfirmStripe {
@@ -6780,10 +6960,6 @@ export interface CheckoutConfirmStripe {
    * ID of the product to checkout. Must be present in the checkout's product list.
    */
   product_id?: string | null;
-  /**
-   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-   */
-  product_price_id?: string | null;
   /**
    * amount
    */
@@ -6840,178 +7016,6 @@ export interface CheckoutConfirmStripe {
    * ID of the Stripe confirmation token. Required for fixed prices and custom prices.
    */
   confirmation_token_id?: string | null;
-}
-
-/**
- * Create a new checkout session from a list of products.
-Customers will be able to switch between those products.
-
-Metadata set on the checkout will be copied
-to the resulting order and/or subscription.
- */
-export interface CheckoutCreate {
-  /**
-   * The interval unit for the trial period.
-   */
-  trial_interval?: TrialInterval | null;
-  /**
-   * The number of interval units for the trial period.
-   */
-  trial_interval_count?: number | null;
-  /**
-   * Key-value object allowing you to store additional information.
-
-The key must be a string with a maximum length of **40 characters**.
-The value must be either:
-
-* A string with a maximum length of **500 characters**
-* An integer
-* A floating-point number
-* A boolean
-
-You can store up to **50 key-value pairs**.
-   */
-  metadata?: Record<string, string | number | boolean>;
-  /**
-   * Key-value object storing custom field values.
-   */
-  custom_field_data?: Record<string, string | number | boolean | null>;
-  /**
-   * ID of the discount to apply to the checkout.
-   */
-  discount_id?: string | null;
-  /**
-   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-   */
-  allow_discount_codes?: boolean;
-  /**
-   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
-   */
-  require_billing_address?: boolean;
-  /**
-   * amount
-   */
-  amount?: number | null;
-  /**
-   * Predefined number of seats (works with seat-based pricing only)
-   */
-  seats?: number | null;
-  /**
-   * Minimum number of seats (works with seat-based pricing only)
-   */
-  min_seats?: number | null;
-  /**
-   * Maximum number of seats (works with seat-based pricing only)
-   */
-  max_seats?: number | null;
-  /**
-   * Predefined number of units (works with unit-based pricing only)
-   */
-  units?: number | null;
-  /**
-   * Minimum number of units (works with unit-based pricing only)
-   */
-  min_units?: number | null;
-  /**
-   * Maximum number of units (works with unit-based pricing only)
-   */
-  max_units?: number | null;
-  /**
-   * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
-   */
-  allow_trial?: boolean;
-  /**
-   * ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
-   */
-  customer_id?: string | null;
-  /**
-   * Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
-   */
-  is_business_customer?: boolean;
-  /**
-   * ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
-   */
-  external_customer_id?: string | null;
-  /**
-   * customer_name
-   */
-  customer_name?: string | null;
-  /**
-   * customer_email
-   */
-  customer_email?: string | null;
-  /**
-   * customer_ip_address
-   */
-  customer_ip_address?: string | null;
-  /**
-   * customer_billing_name
-   */
-  customer_billing_name?: string | null;
-  /**
-   * customer_billing_address
-   */
-  customer_billing_address?: AddressInput | null;
-  /**
-   * customer_tax_id
-   */
-  customer_tax_id?: string | null;
-  /**
-   * Key-value object allowing you to store additional information that'll be copied to the created customer.
-
-The key must be a string with a maximum length of **40 characters**.
-The value must be either:
-
-* A string with a maximum length of **500 characters**
-* An integer
-* A floating-point number
-* A boolean
-
-You can store up to **50 key-value pairs**.
-   */
-  customer_metadata?: Record<string, string | number | boolean>;
-  /**
-   * ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
-   */
-  subscription_id?: string | null;
-  /**
-   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-   */
-  success_url?: string | null;
-  /**
-   * When set, a back button will be shown in the checkout to return to this URL.
-   */
-  return_url?: string | null;
-  /**
-   * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
-   */
-  embed_origin?: string | null;
-  /**
-   * locale
-   */
-  locale?: string | null;
-  /**
-   * currency
-   */
-  currency?: PresentmentCurrency | null;
-  /**
-   * List of product IDs available to select at that checkout. The first one will be selected by default.
-   */
-  products: string[];
-  /**
-   * Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
-   */
-  prices?: Record<
-    string,
-    (
-      | ProductPriceFixedCreate
-      | ProductPriceCustomCreate
-      | ProductPriceSeatBasedCreate
-      | ProductPriceUnitBasedCreate
-      | ProductPriceMeteredUnitCreate
-      | ProductPriceMeteredTiersCreate
-    )[]
-  > | null;
 }
 
 /**
@@ -7107,14 +7111,6 @@ export interface CheckoutDiscountFixedOnceForeverDuration {
    */
   type: DiscountType;
   /**
-   * amount
-   */
-  amount: number;
-  /**
-   * currency
-   */
-  currency: string;
-  /**
    * Map of currency to fixed amount to discount from the total.
    */
   amounts: Record<string, number>;
@@ -7149,14 +7145,6 @@ export interface CheckoutDiscountFixedRepeatDuration {
    * type
    */
   type: DiscountType;
-  /**
-   * amount
-   */
-  amount: number;
-  /**
-   * currency
-   */
-  currency: string;
   /**
    * Map of currency to fixed amount to discount from the total.
    */
@@ -7334,146 +7322,6 @@ export interface CheckoutLink {
 }
 
 /**
- * Schema to create a new checkout link from a a single product.
-
-**Deprecated**: Use `CheckoutLinkCreateProducts` instead.
- */
-export interface CheckoutLinkCreateProduct {
-  /**
-   * Key-value object allowing you to store additional information.
-
-The key must be a string with a maximum length of **40 characters**.
-The value must be either:
-
-* A string with a maximum length of **500 characters**
-* An integer
-* A floating-point number
-* A boolean
-
-You can store up to **50 key-value pairs**.
-   */
-  metadata?: Record<string, string | number | boolean>;
-  /**
-   * The interval unit for the trial period.
-   */
-  trial_interval?: TrialInterval | null;
-  /**
-   * The number of interval units for the trial period.
-   */
-  trial_interval_count?: number | null;
-  /**
-   * Payment processor to use. Currently only Stripe is supported.
-   */
-  payment_processor: "stripe";
-  /**
-   * Optional label to distinguish links internally
-   */
-  label?: string | null;
-  /**
-   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-   */
-  allow_discount_codes?: boolean;
-  /**
-   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
-   */
-  require_billing_address?: boolean;
-  /**
-   * ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-   */
-  discount_id?: string | null;
-  /**
-   * Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-   */
-  seats?: number | null;
-  /**
-   * Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-   */
-  units?: number | null;
-  /**
-   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-   */
-  success_url?: string | null;
-  /**
-   * When set, a back button will be shown in the checkout to return to this URL.
-   */
-  return_url?: string | null;
-  /**
-   * product_id
-   */
-  product_id: string;
-}
-
-/**
- * Schema to create a new checkout link from a a single product price.
-
-**Deprecated**: Use `CheckoutLinkCreateProducts` instead.
- */
-export interface CheckoutLinkCreateProductPrice {
-  /**
-   * Key-value object allowing you to store additional information.
-
-The key must be a string with a maximum length of **40 characters**.
-The value must be either:
-
-* A string with a maximum length of **500 characters**
-* An integer
-* A floating-point number
-* A boolean
-
-You can store up to **50 key-value pairs**.
-   */
-  metadata?: Record<string, string | number | boolean>;
-  /**
-   * The interval unit for the trial period.
-   */
-  trial_interval?: TrialInterval | null;
-  /**
-   * The number of interval units for the trial period.
-   */
-  trial_interval_count?: number | null;
-  /**
-   * Payment processor to use. Currently only Stripe is supported.
-   */
-  payment_processor: "stripe";
-  /**
-   * Optional label to distinguish links internally
-   */
-  label?: string | null;
-  /**
-   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-   */
-  allow_discount_codes?: boolean;
-  /**
-   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
-   */
-  require_billing_address?: boolean;
-  /**
-   * ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-   */
-  discount_id?: string | null;
-  /**
-   * Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-   */
-  seats?: number | null;
-  /**
-   * Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-   */
-  units?: number | null;
-  /**
-   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-   */
-  success_url?: string | null;
-  /**
-   * When set, a back button will be shown in the checkout to return to this URL.
-   */
-  return_url?: string | null;
-  /**
-   * product_price_id
-   */
-  product_price_id: string;
-}
-
-/**
  * Schema to create a new checkout link.
  */
 export interface CheckoutLinkCreateProducts {
@@ -7612,7 +7460,7 @@ export interface CheckoutLinkProduct {
   /**
    * List of prices for this product.
    */
-  prices: (LegacyRecurringProductPrice | ProductPrice)[];
+  prices: ProductPrice[];
   /**
    * List of benefits granted by the product.
    */
@@ -7804,9 +7652,13 @@ export interface CheckoutProduct {
    */
   organization_id: string;
   /**
+   * ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
    * List of prices for this product.
    */
-  prices: (LegacyRecurringProductPrice | ProductPrice)[];
+  prices: ProductPrice[];
   /**
    * List of benefits granted by the product.
    */
@@ -7815,6 +7667,351 @@ export interface CheckoutProduct {
    * List of medias associated to the product.
    */
   medias: ProductMediaFileRead[];
+}
+
+/**
+ * Create a new checkout session from a list of products.
+Customers will be able to switch between those products.
+
+Metadata set on the checkout will be copied
+to the resulting order and/or subscription.
+ */
+export interface CheckoutProductsCreate {
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | boolean>;
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * ID of the discount to apply to the checkout.
+   */
+  discount_id?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+   */
+  require_billing_address?: boolean;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Predefined number of seats (works with seat-based pricing only)
+   */
+  seats?: number | null;
+  /**
+   * Minimum number of seats (works with seat-based pricing only)
+   */
+  min_seats?: number | null;
+  /**
+   * Maximum number of seats (works with seat-based pricing only)
+   */
+  max_seats?: number | null;
+  /**
+   * Predefined number of units (works with unit-based pricing only)
+   */
+  units?: number | null;
+  /**
+   * Minimum number of units (works with unit-based pricing only)
+   */
+  min_units?: number | null;
+  /**
+   * Maximum number of units (works with unit-based pricing only)
+   */
+  max_units?: number | null;
+  /**
+   * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+   */
+  allow_trial?: boolean;
+  /**
+   * ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
+   */
+  customer_id?: string | null;
+  /**
+   * Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+   */
+  is_business_customer?: boolean;
+  /**
+   * ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+   */
+  external_customer_id?: string | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_ip_address
+   */
+  customer_ip_address?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * Key-value object allowing you to store additional information that'll be copied to the created customer.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  customer_metadata?: Record<string, string | number | boolean>;
+  /**
+   * ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
+   */
+  subscription_id?: string | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+   */
+  embed_origin?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
+  /**
+   * List of product IDs available to select at that checkout. The first one will be selected by default.
+   */
+  products: string[];
+  /**
+   * Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+   */
+  prices?: Record<
+    string,
+    (
+      | ProductPriceFixedCreate
+      | ProductPriceCustomCreate
+      | ProductPriceSeatBasedCreate
+      | ProductPriceUnitBasedCreate
+      | ProductPriceMeteredUnitCreate
+      | ProductPriceMeteredTiersCreate
+    )[]
+  > | null;
+}
+
+/**
+ * Create a new checkout session from a list of products,
+referenced by their external ID.
+Customers will be able to switch between those products.
+
+Metadata set on the checkout will be copied
+to the resulting order and/or subscription.
+ */
+export interface CheckoutProductsExternalCreate {
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | boolean>;
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | null>;
+  /**
+   * ID of the discount to apply to the checkout.
+   */
+  discount_id?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+   */
+  require_billing_address?: boolean;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Predefined number of seats (works with seat-based pricing only)
+   */
+  seats?: number | null;
+  /**
+   * Minimum number of seats (works with seat-based pricing only)
+   */
+  min_seats?: number | null;
+  /**
+   * Maximum number of seats (works with seat-based pricing only)
+   */
+  max_seats?: number | null;
+  /**
+   * Predefined number of units (works with unit-based pricing only)
+   */
+  units?: number | null;
+  /**
+   * Minimum number of units (works with unit-based pricing only)
+   */
+  min_units?: number | null;
+  /**
+   * Maximum number of units (works with unit-based pricing only)
+   */
+  max_units?: number | null;
+  /**
+   * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+   */
+  allow_trial?: boolean;
+  /**
+   * ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
+   */
+  customer_id?: string | null;
+  /**
+   * Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+   */
+  is_business_customer?: boolean;
+  /**
+   * ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+   */
+  external_customer_id?: string | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_ip_address
+   */
+  customer_ip_address?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * Key-value object allowing you to store additional information that'll be copied to the created customer.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  customer_metadata?: Record<string, string | number | boolean>;
+  /**
+   * ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
+   */
+  subscription_id?: string | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+   */
+  embed_origin?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
+  /**
+   * List of product external IDs available to select at that checkout. The first one will be selected by default.
+   */
+  external_products: string[];
+  /**
+   * Optional mapping of product external IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+   */
+  prices?: Record<
+    string,
+    (
+      | ProductPriceFixedCreate
+      | ProductPriceCustomCreate
+      | ProductPriceSeatBasedCreate
+      | ProductPriceUnitBasedCreate
+      | ProductPriceMeteredUnitCreate
+      | ProductPriceMeteredTiersCreate
+    )[]
+  > | null;
 }
 
 /**
@@ -7954,10 +8151,6 @@ export interface CheckoutPublic {
    */
   product_id: string | null;
   /**
-   * ID of the product price to checkout.
-   */
-  product_price_id: string | null;
-  /**
    * ID of the discount applied to the checkout.
    */
   discount_id: string | null;
@@ -8048,11 +8241,11 @@ export interface CheckoutPublic {
   /**
    * Price of the selected product.
    */
-  product_price: (LegacyRecurringProductPrice | ProductPrice) | null;
+  product_price: ProductPrice | null;
   /**
    * Mapping of product IDs to their list of prices.
    */
-  prices: Record<string, (LegacyRecurringProductPrice | ProductPrice)[]> | null;
+  prices: Record<string, ProductPrice[]> | null;
   /**
    * discount
    */
@@ -8206,10 +8399,6 @@ export interface CheckoutPublicConfirmed {
    */
   product_id: string | null;
   /**
-   * ID of the product price to checkout.
-   */
-  product_price_id: string | null;
-  /**
    * ID of the discount applied to the checkout.
    */
   discount_id: string | null;
@@ -8300,11 +8489,11 @@ export interface CheckoutPublicConfirmed {
   /**
    * Price of the selected product.
    */
-  product_price: (LegacyRecurringProductPrice | ProductPrice) | null;
+  product_price: ProductPrice | null;
   /**
    * Mapping of product IDs to their list of prices.
    */
-  prices: Record<string, (LegacyRecurringProductPrice | ProductPrice)[]> | null;
+  prices: Record<string, ProductPrice[]> | null;
   /**
    * discount
    */
@@ -8342,10 +8531,6 @@ export interface CheckoutUpdate {
    * ID of the product to checkout. Must be present in the checkout's product list.
    */
   product_id?: string | null;
-  /**
-   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-   */
-  product_price_id?: string | null;
   /**
    * amount
    */
@@ -8472,10 +8657,6 @@ export interface CheckoutUpdatePublic {
    * ID of the product to checkout. Must be present in the checkout's product list.
    */
   product_id?: string | null;
-  /**
-   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-   */
-  product_price_id?: string | null;
   /**
    * amount
    */
@@ -10470,6 +10651,86 @@ export interface CustomerMeter {
 }
 
 /**
+ * CustomerMeterCreditExternalIDConflict
+ */
+export interface CustomerMeterCreditExternalIDConflict {
+  /**
+   * error
+   */
+  error: "CustomerMeterCreditExternalIDConflict";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
+ * CustomerMeterCreditNotReversible
+ */
+export interface CustomerMeterCreditNotReversible {
+  /**
+   * error
+   */
+  error: "CustomerMeterCreditNotReversible";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
+ * Schema to manually grant credits on a customer meter using external IDs.
+ */
+export interface CustomerMeterCreditsExternalIDCreate {
+  /**
+   * The number of units to credit.
+   */
+  units: number;
+  /**
+   * Whether unused credits carry over to the next meter period.
+   */
+  rollover?: boolean;
+  /**
+   * Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+   */
+  external_id?: string | null;
+  /**
+   * The external ID of the customer.
+   */
+  external_customer_id: string;
+  /**
+   * The external ID of the meter, as set by config as code.
+   */
+  external_meter_id: string;
+}
+
+/**
+ * Schema to manually grant credits on a customer meter using Polar IDs.
+ */
+export interface CustomerMeterCreditsIDCreate {
+  /**
+   * The number of units to credit.
+   */
+  units: number;
+  /**
+   * Whether unused credits carry over to the next meter period.
+   */
+  rollover?: boolean;
+  /**
+   * Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice.
+   */
+  external_id?: string | null;
+  /**
+   * The ID of the customer.
+   */
+  customer_id: string;
+  /**
+   * The ID of the meter.
+   */
+  meter_id: string;
+}
+
+/**
  * CustomerNotReady
  */
 export interface CustomerNotReady {
@@ -10756,7 +11017,7 @@ export interface CustomerOrderProduct {
   /**
    * List of prices for this product.
    */
-  prices: (LegacyRecurringProductPrice | ProductPrice)[];
+  prices: ProductPrice[];
   /**
    * List of benefits granted by the product.
    */
@@ -10989,10 +11250,6 @@ export interface CustomerOrganizationData {
  * Feature flags exposed to the customer portal.
  */
 export interface CustomerOrganizationFeatureSettings {
-  /**
-   * Whether the member model is enabled for this organization.
-   */
-  member_model_enabled?: boolean;
   /**
    * Whether localization is enabled for this organization.
    */
@@ -11434,7 +11691,7 @@ export interface CustomerProduct {
   /**
    * List of available prices for this product.
    */
-  prices: (LegacyRecurringProductPrice | ProductPrice)[];
+  prices: ProductPrice[];
   /**
    * List of benefits granted by the product.
    */
@@ -11857,7 +12114,7 @@ export interface CustomerStateSubscription {
   /**
    * status
    */
-  status: Status;
+  status: "active" | "trialing";
   /**
    * The amount of the subscription.
    */
@@ -12187,7 +12444,7 @@ export interface CustomerSubscription {
   /**
    * List of enabled prices for the subscription.
    */
-  prices: (LegacyRecurringProductPrice | ProductPrice)[];
+  prices: ProductPrice[];
   /**
    * List of meters associated with the subscription.
    */
@@ -12371,7 +12628,7 @@ export interface CustomerSubscriptionProduct {
   /**
    * List of prices for this product.
    */
-  prices: (LegacyRecurringProductPrice | ProductPrice)[];
+  prices: ProductPrice[];
   /**
    * List of benefits granted by the product.
    */
@@ -12813,6 +13070,10 @@ export interface CustomerWallet {
  */
 export interface DiscountFixedCreate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -12876,17 +13137,9 @@ For example, to apply the discount for 2 years, set this to 24.
    */
   duration_in_months?: number | null;
   /**
-   * amount
+   * Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
    */
-  amount?: number | null;
-  /**
-   * currency
-   */
-  currency?: PresentmentCurrency | null;
-  /**
-   * amounts
-   */
-  amounts?: Record<string, number> | null;
+  amounts: Record<string, number>;
 }
 
 /**
@@ -12901,14 +13154,6 @@ export interface DiscountFixedOnceForeverDuration {
    * type
    */
   type: DiscountType;
-  /**
-   * amount
-   */
-  amount: number;
-  /**
-   * currency
-   */
-  currency: string;
   /**
    * Map of currency to fixed amount to discount from the total.
    */
@@ -12925,6 +13170,10 @@ export interface DiscountFixedOnceForeverDuration {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -12980,14 +13229,6 @@ export interface DiscountFixedOnceForeverDurationBase {
    */
   type: DiscountType;
   /**
-   * amount
-   */
-  amount: number;
-  /**
-   * currency
-   */
-  currency: string;
-  /**
    * Map of currency to fixed amount to discount from the total.
    */
   amounts: Record<string, number>;
@@ -13003,6 +13244,10 @@ export interface DiscountFixedOnceForeverDurationBase {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13059,14 +13304,6 @@ export interface DiscountFixedRepeatDuration {
    */
   type: DiscountType;
   /**
-   * amount
-   */
-  amount: number;
-  /**
-   * currency
-   */
-  currency: string;
-  /**
    * Map of currency to fixed amount to discount from the total.
    */
   amounts: Record<string, number>;
@@ -13082,6 +13319,10 @@ export interface DiscountFixedRepeatDuration {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13141,14 +13382,6 @@ export interface DiscountFixedRepeatDurationBase {
    */
   type: DiscountType;
   /**
-   * amount
-   */
-  amount: number;
-  /**
-   * currency
-   */
-  currency: string;
-  /**
    * Map of currency to fixed amount to discount from the total.
    */
   amounts: Record<string, number>;
@@ -13164,6 +13397,10 @@ export interface DiscountFixedRepeatDurationBase {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13206,6 +13443,10 @@ export interface DiscountFixedRepeatDurationBase {
  * Schema to create a percentage discount.
  */
 export interface DiscountPercentageCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -13307,6 +13548,10 @@ export interface DiscountPercentageOnceForeverDuration {
    */
   id: string;
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -13376,6 +13621,10 @@ export interface DiscountPercentageOnceForeverDurationBase {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13447,6 +13696,10 @@ export interface DiscountPercentageRepeatDuration {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13521,6 +13774,10 @@ export interface DiscountPercentageRepeatDurationBase {
    * The ID of the object.
    */
   id: string;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
   /**
    * metadata
    */
@@ -13648,6 +13905,10 @@ export interface DiscountRedemptionLimitReached {
  */
 export interface DiscountUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -13697,14 +13958,6 @@ You can store up to **50 key-value pairs**.
    * type
    */
   type?: DiscountType | null;
-  /**
-   * amount
-   */
-  amount?: number | null;
-  /**
-   * currency
-   */
-  currency?: PresentmentCurrency | null;
   /**
    * amounts
    */
@@ -14892,134 +15145,6 @@ export interface LLMMetadata {
 }
 
 /**
- * A pay-what-you-want recurring price for a product, i.e. a subscription.
-
-**Deprecated**: The recurring interval should be set on the product itself.
- */
-export interface LegacyRecurringProductPriceCustom {
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * Last modification timestamp of the object.
-   */
-  modified_at: string | null;
-  /**
-   * The ID of the price.
-   */
-  id: string;
-  /**
-   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
-   */
-  source: ProductPriceSource;
-  /**
-   * amount_type
-   */
-  amount_type: "custom";
-  /**
-   * The currency in which the customer will be charged.
-   */
-  price_currency: string;
-  /**
-   * The tax behavior of the price. If null, it defaults to the organization's default tax behavior.
-   */
-  tax_behavior: TaxBehaviorOption | null;
-  /**
-   * Whether the price is archived and no longer available.
-   */
-  is_archived: boolean;
-  /**
-   * The ID of the product owning the price.
-   */
-  product_id: string;
-  /**
-   * The type of the price.
-   */
-  type: "recurring";
-  /**
-   * The recurring interval of the price.
-   */
-  recurring_interval: RecurringInterval;
-  /**
-   * The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'.
-   */
-  minimum_amount: number;
-  /**
-   * The maximum amount the customer can pay.
-   */
-  maximum_amount: number | null;
-  /**
-   * The initial amount shown to the customer.
-   */
-  preset_amount: number | null;
-  /**
-   * legacy
-   */
-  legacy: true;
-}
-
-/**
- * A recurring price for a product, i.e. a subscription.
-
-**Deprecated**: The recurring interval should be set on the product itself.
- */
-export interface LegacyRecurringProductPriceFixed {
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * Last modification timestamp of the object.
-   */
-  modified_at: string | null;
-  /**
-   * The ID of the price.
-   */
-  id: string;
-  /**
-   * The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session.
-   */
-  source: ProductPriceSource;
-  /**
-   * amount_type
-   */
-  amount_type: "fixed";
-  /**
-   * The currency in which the customer will be charged.
-   */
-  price_currency: string;
-  /**
-   * The tax behavior of the price. If null, it defaults to the organization's default tax behavior.
-   */
-  tax_behavior: TaxBehaviorOption | null;
-  /**
-   * Whether the price is archived and no longer available.
-   */
-  is_archived: boolean;
-  /**
-   * The ID of the product owning the price.
-   */
-  product_id: string;
-  /**
-   * The type of the price.
-   */
-  type: "recurring";
-  /**
-   * The recurring interval of the price.
-   */
-  recurring_interval: RecurringInterval;
-  /**
-   * The price in cents.
-   */
-  price_amount: number;
-  /**
-   * legacy
-   */
-  legacy: true;
-}
-
-/**
  * LicenseKeyActivate
  */
 export interface LicenseKeyActivate {
@@ -16171,6 +16296,10 @@ export type MetadataOutputType = Record<string, string | number | boolean>;
  */
 export interface Meter {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -16224,6 +16353,10 @@ export interface Meter {
  * MeterCreate
  */
 export interface MeterCreate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -16346,6 +16479,10 @@ export interface MeterCreditedMetadata {
    * rollover
    */
   rollover: boolean;
+  /**
+   * reason
+   */
+  reason?: "benefit" | "manual";
 }
 
 /**
@@ -16452,6 +16589,10 @@ export interface MeterResetMetadata {
  * MeterUpdate
  */
 export interface MeterUpdate {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -18135,6 +18276,10 @@ export interface OrderProduct {
    * The ID of the organization owning the product.
    */
   organization_id: string;
+  /**
+   * ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+   */
+  catalog_id: string | null;
 }
 
 /**
@@ -18842,7 +18987,7 @@ export interface OrganizationCreate {
   /**
    * Additional, private, business details Polar needs about active organizations for compliance (KYC).
    */
-  details?: OrganizationDetails | null;
+  details?: OrganizationDetailsInput | null;
   /**
    * Two-letter country code (ISO 3166-1 alpha-2).
    */
@@ -18954,13 +19099,9 @@ export interface OrganizationCustomerPortalSettings {
 }
 
 /**
- * OrganizationDetails
+ * OrganizationDetailsInput
  */
-export interface OrganizationDetails {
-  /**
-   * Brief information about you and your business.
-   */
-  about?: string | null;
+export interface OrganizationDetailsInput {
   /**
    * Description of digital products being sold.
    */
@@ -18974,18 +19115,6 @@ export interface OrganizationDetails {
    */
   pricing_models?: string[];
   /**
-   * How the organization will integrate and use Polar.
-   */
-  intended_use?: string | null;
-  /**
-   * Main customer acquisition channels.
-   */
-  customer_acquisition?: string[];
-  /**
-   * Estimated revenue in the next 12 months
-   */
-  future_annual_revenue?: number | null;
-  /**
    * Switching from another platform?
    */
   switching?: boolean;
@@ -18993,10 +19122,6 @@ export interface OrganizationDetails {
    * Which platform the organization is migrating from.
    */
   switching_from?: ("paddle" | "lemon_squeezy" | "gumroad" | "stripe" | "other") | null;
-  /**
-   * Revenue from last year if applicable.
-   */
-  previous_annual_revenue?: number | null;
 }
 
 /**
@@ -19032,10 +19157,6 @@ export interface OrganizationFeatureSettings {
    */
   wallets_enabled?: boolean;
   /**
-   * If this organization has the Member model enabled
-   */
-  member_model_enabled?: boolean;
-  /**
    * If this organization has checkout localization enabled
    */
   checkout_localization_enabled?: boolean;
@@ -19051,10 +19172,6 @@ export interface OrganizationFeatureSettings {
    * If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method).
    */
   off_session_charges_enabled?: boolean;
-  /**
-   * If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).
-   */
-  meter_cycling_enabled?: boolean;
   /**
    * Enables the slack shared channel benefit
    */
@@ -19076,17 +19193,17 @@ export interface OrganizationFeatureSettings {
    */
   dispute_auto_accept_enabled?: boolean;
   /**
-   * If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
-   */
-  compass_enabled?: boolean;
-  /**
    * If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
    */
   merchant_migration_enabled?: boolean;
   /**
-   * If this organization's checkout tells the browser to refuse framing from any host outside its embed hosts.
+   * If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
    */
-  frame_ancestors_enforced?: boolean;
+  staged_events_ingest_enabled?: boolean;
+  /**
+   * If this organization can manage its configuration from a declarative config document.
+   */
+  config_as_code_enabled?: boolean;
 }
 
 /**
@@ -19096,10 +19213,6 @@ Other feature settings are managed by Polar staff: they're ignored if
 provided and keep their current value.
  */
 export interface OrganizationFeatureSettingsUpdate {
-  /**
-   * If this organization has the Member model enabled
-   */
-  member_model_enabled?: boolean;
   /**
    * If this organization has checkout localization enabled
    */
@@ -19201,7 +19314,7 @@ export interface OrganizationUpdate {
   /**
    * Additional, private, business details Polar needs about active organizations for compliance (KYC).
    */
-  details?: OrganizationDetails | null;
+  details?: OrganizationDetailsInput | null;
   /**
    * Two-letter country code (ISO 3166-1 alpha-2).
    */
@@ -19554,6 +19667,14 @@ export interface PendingSubscriptionUpdate {
    * Number of units to apply to the subscription. If `null`, the number of units won't be changed.
    */
   units: number | null;
+  /**
+   * ID of the new discount to apply to the subscription. If `null`, the subscription keeps its current discount.
+   */
+  discount_id: string | null;
+  /**
+   * Whether the subscription's current discount will be removed.
+   */
+  discount_unset: boolean;
 }
 
 /**
@@ -19651,6 +19772,14 @@ export interface Product {
    */
   organization_id: string;
   /**
+   * ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * metadata
    */
   metadata: MetadataOutputType;
@@ -19661,7 +19790,7 @@ export interface Product {
   /**
    * List of prices for this product.
    */
-  prices: (LegacyRecurringProductPrice | ProductPrice)[];
+  prices: ProductPrice[];
   /**
    * List of benefits granted by the product.
    */
@@ -19690,6 +19819,10 @@ export interface ProductBenefitsUpdate {
  * ProductCreateOneTime
  */
 export interface ProductCreateOneTime {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -19753,6 +19886,10 @@ You can store up to **50 key-value pairs**.
  * ProductCreateRecurring
  */
 export interface ProductCreateRecurring {
+  /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -20881,6 +21018,10 @@ export interface ProductPriceUnitBasedCreate {
  */
 export interface ProductUpdate {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id?: string | null;
+  /**
    * Key-value object allowing you to store additional information.
 
 The key must be a string with a maximum length of **40 characters**.
@@ -21400,6 +21541,20 @@ export interface SSOEnforcementRequiresConnection {
 }
 
 /**
+ * SSORequiresVerifiedDomain
+ */
+export interface SSORequiresVerifiedDomain {
+  /**
+   * error
+   */
+  error: "SSORequiresVerifiedDomain";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * SeatAssign
  */
 export interface SeatAssign {
@@ -21498,6 +21653,20 @@ export interface SeatsList {
    * Total number of seats for the subscription
    */
   total_seats: number;
+}
+
+/**
+ * SharedPaymentTokenError
+ */
+export interface SharedPaymentTokenError {
+  /**
+   * error
+   */
+  error: "SharedPaymentTokenError";
+  /**
+   * detail
+   */
+  detail: string;
 }
 
 /**
@@ -21658,7 +21827,7 @@ export interface Subscription {
   /**
    * List of enabled prices for the subscription.
    */
-  prices: (LegacyRecurringProductPrice | ProductPrice)[];
+  prices: ProductPrice[];
   /**
    * List of meters associated with the subscription.
    */
@@ -21928,6 +22097,10 @@ You can store up to **50 key-value pairs**.
    */
   product_id: string;
   /**
+   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
+   */
+  currency?: PresentmentCurrency | null;
+  /**
    * The ID of the customer to create the subscription for.
    */
   customer_id: string;
@@ -21955,6 +22128,10 @@ You can store up to **50 key-value pairs**.
    * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
    */
   product_id: string;
+  /**
+   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
+   */
+  currency?: PresentmentCurrency | null;
   /**
    * The ID of the customer in your system to create the subscription for. It must already exist in Polar.
    */
@@ -24164,6 +24341,10 @@ export interface WebhookDelivery {
  */
 export interface WebhookEndpoint {
   /**
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   */
+  external_id: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -24374,6 +24555,14 @@ export type BenefitPublic =
   | BenefitSlackSharedChannelPublic
   | BenefitMeterCreditPublic;
 /**
+ * CheckoutConfirm
+ */
+export type CheckoutConfirm = CheckoutConfirmStripe | CheckoutConfirmSharedPaymentToken;
+/**
+ * CheckoutCreate
+ */
+export type CheckoutCreate = CheckoutProductsCreate | CheckoutProductsExternalCreate;
+/**
  * CheckoutForbiddenError
  */
 export type CheckoutForbiddenError =
@@ -24384,12 +24573,9 @@ export type CheckoutForbiddenError =
   | TrialAlreadyRedeemed
   | DiscountRedemptionLimitReached;
 /**
- * CheckoutLinkCreate
+ * CheckoutPaymentError
  */
-export type CheckoutLinkCreate =
-  | CheckoutLinkCreateProductPrice
-  | CheckoutLinkCreateProduct
-  | CheckoutLinkCreateProducts;
+export type CheckoutPaymentError = PaymentError | SharedPaymentTokenError;
 /**
  * CustomField
  */
@@ -24506,12 +24692,6 @@ export type FileRead =
   | ProductMediaFileRead
   | OrganizationAvatarFileRead
   | SupportCaseAttachmentFileRead;
-/**
- * LegacyRecurringProductPrice
- */
-export type LegacyRecurringProductPrice =
-  | LegacyRecurringProductPriceFixed
-  | LegacyRecurringProductPriceCustom;
 /**
  * MetadataQuery
  */

@@ -1,5 +1,4 @@
-import KeyboardReturnOutlined from '@mui/icons-material/KeyboardReturnOutlined'
-
+import { KeyboardReturnOutlined } from '@polar-sh/orbit/icons'
 interface Props {
   icon?: React.ReactNode
   title: string

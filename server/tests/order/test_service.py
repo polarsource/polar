@@ -6,7 +6,6 @@ from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pydantic import BaseModel
@@ -15,11 +14,13 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.checkout.eventstream import CheckoutEvent
+from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.email.schemas import (
     OrderConfirmationEmail,
     SubscriptionConfirmationEmail,
     SubscriptionCycledEmail,
+    SubscriptionUsageInvoiceEmail,
 )
 from polar.enums import (
     InvoiceNumbering,
@@ -112,6 +113,7 @@ from polar.tax.calculation import (
     TaxCalculationService,
     get_tax_behavior_from_option,
 )
+from polar.tax.calculation.base import UnsupportedCountryError
 from polar.tax.tax_id import TaxID
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.payment import (
@@ -261,7 +263,7 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
     return tax_service_mock.calculate
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_user_not_organization_member(
@@ -484,7 +486,7 @@ class TestList:
         assert order2 in orders
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.parametrize(
         ("set_address", "address_update"),
@@ -549,8 +551,54 @@ class TestUpdate:
         assert updated_order.billing_address.line1 == "Rue de la Paix"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateFromCheckoutOneTime:
+    async def test_tax_reference_survives_order_creation_rollback(
+        self,
+        tax_service_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time],
+            status=CheckoutStatus.confirmed,
+            customer=customer,
+            tax_amount=100,
+            tax_behavior=TaxBehavior.exclusive,
+        )
+        checkout.tax_processor = TaxProcessor.numeral
+        checkout.tax_processor_id = "calc_123"
+        await save_fixture(checkout)
+        checkout_id = checkout.id
+
+        transaction = await session.begin_nested()
+        first_order = await order_service.create_from_checkout_one_time(
+            session, checkout
+        )
+        first_order_id = first_order.id
+        await transaction.rollback()
+
+        repository = CheckoutRepository.from_session(session)
+        retried_checkout = await repository.get_by_id(
+            checkout_id, options=repository.get_eager_options()
+        )
+        assert retried_checkout is not None
+        retried_order = await order_service.create_from_checkout_one_time(
+            session, retried_checkout
+        )
+
+        assert retried_order.id != first_order_id
+        assert tax_service_mock.record.call_count == 2
+        assert [
+            record_call.kwargs["reference"]
+            for record_call in tax_service_mock.record.call_args_list
+        ] == [f"checkout:{checkout_id}"] * 2
+
     async def test_recurring_product(
         self, save_fixture: SaveFixture, session: AsyncSession, product: Product
     ) -> None:
@@ -905,7 +953,7 @@ class TestCreateFromCheckoutOneTime:
             assert c.args[0] != "benefit.enqueue_benefits_grants"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateFromCheckoutSubscription:
     async def test_not_recurring_product(
         self,
@@ -1089,7 +1137,7 @@ class ProrationFixture(BaseModel):
     expected_tax: int
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSubscriptionOrder:
     async def test_no_pending_billing_items(
         self, session: AsyncSession, subscription: Subscription
@@ -2613,7 +2661,7 @@ class TestCreateSubscriptionOrder:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSettleMeterCycleOrder:
     async def _metered_subscription(
         self,
@@ -2692,6 +2740,45 @@ class TestSettleMeterCycleOrder:
             order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
         )
         assert order.subtotal_amount == 60
+
+    async def test_records_given_product(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        payment_method: PaymentMethod,
+        product: Product,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await self._metered_subscription(
+            save_fixture,
+            organization,
+            customer,
+            unit_amount=Decimal(30),
+            payment_method=payment_method,
+        )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
+        )
+        product.is_tax_applicable = False
+        await save_fixture(product)
+
+        order = await order_service.settle_meter_cycle_order(
+            session, subscription, product=product
+        )
+
+        assert order is not None
+        assert order.product == product
+        assert subscription.product != product
+        assert subscription.product.is_tax_applicable
+        assert order.tax_amount == 0
+        calculate_tax_mock.assert_not_called()
 
     async def test_sub_minimum_still_creates_order(
         self,
@@ -2830,7 +2917,7 @@ class TestSettleMeterCycleOrder:
         assert order.discount_amount == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateTrialOrder:
     async def test_not_trial(
         self,
@@ -2874,7 +2961,7 @@ class TestCreateTrialOrder:
         assert order.items[0].end_timestamp == subscription.trial_end
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateWalletOrder:
     async def test_basic(
         self,
@@ -2944,7 +3031,7 @@ class TestCreateWalletOrder:
         tax_service_mock.record.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrderBalance:
     async def test_no_payment_transaction(
         self,
@@ -3054,7 +3141,7 @@ class TestCreateOrderBalance:
         assert updated_payment_transaction.payment_customer == order.customer
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSendConfirmationEmail:
     async def test_billing_not_set(
         self,
@@ -3213,6 +3300,124 @@ class TestSendConfirmationEmail:
         assert isinstance(email, SubscriptionCycledEmail)
         assert email.props.previous_billing_provider == "Stripe"
 
+    async def test_meter_cycle_sends_usage_invoice(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        assert isinstance(
+            enqueue_email_mock.call_args[0][0], SubscriptionUsageInvoiceEmail
+        )
+        assert enqueue_email_mock.call_args[1]["subject"].endswith("usage invoice")
+
+    async def test_meter_cycle_respects_subscription_cycled_setting(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "subscription_cycled": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_meter_cycle_skips_zero_amount(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            subtotal_amount=0,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_meter_cycle_fully_discounted_still_sends(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            subtotal_amount=1000,
+            discount_amount=1000,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        enqueue_email_mock.assert_called_once()
+        assert isinstance(
+            enqueue_email_mock.call_args[0][0], SubscriptionUsageInvoiceEmail
+        )
+
     async def test_subscription_create_with_temporary_discount(
         self,
         mocker: MockerFixture,
@@ -3289,7 +3494,7 @@ class TestSendConfirmationEmail:
         assert email.props.regular_amount is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerInvoiceGeneration:
     async def test_not_paid_triggers_generation(
         self,
@@ -3489,7 +3694,7 @@ class TestTriggerInvoiceGeneration:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGenerateInvoice:
     async def test_persists_checksum(
         self,
@@ -3575,8 +3780,85 @@ class TestGenerateInvoice:
         assert updated.invoice_path == "invoices/regenerated.pdf"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandlePayment:
+    @pytest.mark.parametrize("charged_tax_amount", [0, 100])
+    async def test_tax_recalculated_for_unsupported_country(
+        self,
+        tax_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        charged_tax_amount: int,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("CR"))
+        await save_fixture(customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+            tax_amount=charged_tax_amount,
+            billing_address=customer.billing_address,
+            tax_behavior=TaxBehavior.exclusive,
+            tax_processor=TaxProcessor.stripe,
+            next_payment_attempt_at=utc_now(),
+            payment_lock_acquired_at=utc_now(),
+        )
+        order.tax_calculation_processor_id = "stripe_calculation"
+        await save_fixture(order)
+        tax_service_mock.record.side_effect = UnsupportedCountryError("CR")
+        tax_service_mock.record_amounts.side_effect = UnsupportedCountryError("CR")
+        tax_breakdown = [
+            {
+                "rate_type": "percentage",
+                "rate": 0,
+                "display_name": "",
+                "country": "CR",
+                "state": None,
+                "subdivision": None,
+                "amount": 0,
+                "taxability_reason": TaxabilityReason.not_supported,
+            }
+        ]
+        tax_service_mock.calculate.return_value = (
+            {
+                "processor_id": None,
+                "amount": 0,
+                "currency": "usd",
+                "tax_behavior": TaxBehavior.exclusive,
+                "tax_breakdown": tax_breakdown,
+            },
+            TaxProcessor.numeral,
+        )
+
+        updated_order = await order_service.handle_payment(session, order, None)
+
+        assert updated_order.status == OrderStatus.paid
+        assert updated_order.tax_amount == charged_tax_amount
+        assert updated_order.tax_transaction_processor_id is None
+        assert updated_order.next_payment_attempt_at is None
+        assert updated_order.payment_lock_acquired_at is None
+
+        if charged_tax_amount:
+            assert updated_order.tax_calculation_processor_id == "stripe_calculation"
+            assert updated_order.tax_processor == TaxProcessor.stripe
+            assert updated_order.tax_breakdown is None
+            tax_service_mock.record_amounts.assert_awaited_once()
+            assert (
+                tax_service_mock.record_amounts.call_args.kwargs["tax_amount"]
+                == charged_tax_amount
+            )
+        else:
+            assert updated_order.tax_calculation_processor_id is None
+            assert updated_order.tax_processor == TaxProcessor.numeral
+            assert updated_order.tax_breakdown == tax_breakdown
+            tax_service_mock.record_amounts.assert_not_called()
+        tax_service_mock.record.assert_awaited_once()
+        tax_service_mock.calculate.assert_awaited_once()
+
     async def test_already_paid_is_idempotent(
         self,
         session: AsyncSession,
@@ -3891,7 +4173,7 @@ class TestHandlePayment:
         assert subscription.status == SubscriptionStatus.past_due
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandlePaymentFailure:
     """Test order service handle payment failure functionality"""
 
@@ -4035,6 +4317,168 @@ class TestHandlePaymentFailure:
         events = await get_all_by_name(session, SystemEvent.order_voided)
         assert len(events) == 1
         assert events[0].user_metadata["order_id"] == str(order.id)
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_meter_cycle_non_recoverable_decline_skips_retries(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """A non-recoverable decline on a meter-cycle charge skips the
+        intermediate retries and schedules the next attempt at the dunning
+        deadline, like subscription dunning does."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            decline_reason="stolen_card",
+            trigger=PaymentTrigger.purchase,
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        mock_mark_past_due.assert_not_called()
+        assert result_order.status == OrderStatus.pending
+        assert result_order.next_payment_attempt_at == (
+            utc_now()
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=1)
+        )
+
+    async def test_meter_cycle_order_voids_after_dunning_deadline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """The attempt scheduled at the dunning deadline voids the order when it
+        fails, even though fewer than all retry intervals were used."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        dunning_deadline = (
+            created_at
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=1)
+        )
+        with freeze_time(created_at):
+            order = await create_order(
+                save_fixture,
+                product=product,
+                customer=customer,
+                subscription=subscription,
+                status=OrderStatus.pending,
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            )
+            order.next_payment_attempt_at = dunning_deadline
+            await save_fixture(order)
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                decline_reason="stolen_card",
+                trigger=PaymentTrigger.purchase,
+                order=order,
+            )
+        with freeze_time(dunning_deadline + timedelta(minutes=1)):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                decline_reason="stolen_card",
+                trigger=PaymentTrigger.retry_dunning,
+                order=order,
+            )
+
+            mock_mark_past_due = mocker.patch(
+                "polar.subscription.service.subscription.mark_past_due"
+            )
+
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        mock_mark_past_due.assert_not_called()
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
+
+    async def test_meter_cycle_order_without_payment_method_voids_after_deadline(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """Failures without a payment method leave no Payment row, but the
+        order is still voided once the dunning window has passed."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        created_at = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
+        with freeze_time(created_at):
+            order = await create_order(
+                save_fixture,
+                product=product,
+                customer=customer,
+                subscription=subscription,
+                status=OrderStatus.pending,
+                billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+            )
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert (
+            result_order.next_payment_attempt_at
+            == created_at + settings.DUNNING_RETRY_INTERVALS[0]
+        )
+
+        retry_at = created_at + settings.DUNNING_RETRY_INTERVALS[0]
+        with freeze_time(retry_at):
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert (
+            result_order.next_payment_attempt_at
+            == retry_at + settings.DUNNING_RETRY_INTERVALS[1]
+        )
+
+        with freeze_time(
+            created_at
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=2)
+        ):
+            result_order = await order_service.handle_payment_failure(session, order)
+
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
 
     @freeze_time("2024-01-01 12:00:00")
     async def test_first_dunning_enqueues_benefit_revocation(
@@ -4788,7 +5232,7 @@ class TestHandlePaymentFailure:
         mock_revoke.assert_called_once_with(session, ANY, subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessDunningOrder:
     """Test order service process dunning order functionality"""
 
@@ -4988,7 +5432,7 @@ class TestProcessDunningOrder:
         assert result_order.next_payment_attempt_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestScheduleRetryForPastDueOrders:
     """Test scheduling dunning retries when a customer saves a new payment method."""
 
@@ -5214,7 +5658,7 @@ class TestScheduleRetryForPastDueOrders:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerPayment:
     """Test payment lock mechanism in trigger_payment service method."""
 
@@ -5686,7 +6130,7 @@ class TestTriggerPayment:
         assert descriptor.startswith(organization.slug[:4])
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAcquirePaymentLock:
     async def test_acquire_payment_lock_success(
         self,
@@ -5760,7 +6204,7 @@ class TestAcquirePaymentLock:
         assert order.payment_lock_acquired_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessRetryPayment:
     @pytest.mark.parametrize("method_type", ["card", "sepa_debit"])
     async def test_saved_payment_method_types(
@@ -6149,7 +6593,7 @@ class TestProcessRetryPayment:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerBasedInvoiceNumbering:
     async def test_different_customers_different_invoice_numbers(
         self,
@@ -6224,8 +6668,8 @@ class TestCustomerBasedInvoiceNumbering:
         )
 
 
-@pytest.mark.asyncio
-@pytest.mark.asyncio
+@pytest.mark.anyio
+@pytest.mark.anyio
 class TestUpdateProductBenefitsGrants:
     async def test_enqueues_jobs_for_one_time_orders(
         self,
@@ -6362,7 +6806,7 @@ class TestUpdateProductBenefitsGrants:
 
 
 class TestVoidOrder:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_pending_order(
         self,
         session: AsyncSession,
@@ -6390,7 +6834,7 @@ class TestVoidOrder:
         assert len(events) == 1
         assert events[0].user_metadata["order_id"] == str(order.id)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_order_payment_in_progress(
         self,
         session: AsyncSession,
@@ -6414,7 +6858,7 @@ class TestVoidOrder:
 
         assert exc_info.value.order == order
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_non_pending_order(
         self,
         session: AsyncSession,
@@ -6437,7 +6881,7 @@ class TestVoidOrder:
 
         assert exc_info.value.order.id == order.id
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_clears_next_payment_attempt(
         self,
         session: AsyncSession,
@@ -6463,7 +6907,7 @@ class TestVoidOrder:
         assert result_order.status == OrderStatus.void
         assert result_order.next_payment_attempt_at is None
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_reduces_customer_balance(
         self,
         session: AsyncSession,
@@ -6499,7 +6943,7 @@ class TestVoidOrder:
         )
         assert new_balance == 200
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_restores_balance_consumed_by_order(
         self,
         session: AsyncSession,
@@ -6536,7 +6980,7 @@ class TestVoidOrder:
         )
         assert new_balance == 1000
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_restores_consumed_balance_and_reduces_credit(
         self,
         session: AsyncSession,
@@ -6576,7 +7020,7 @@ class TestVoidOrder:
         )
         assert new_balance == 1000
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_leaves_negative_balance_untouched(
         self,
         session: AsyncSession,
@@ -6611,7 +7055,7 @@ class TestVoidOrder:
 
 
 class TestUnvoidOrder:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_unvoid_order(
         self,
         mocker: MockerFixture,
@@ -6645,7 +7089,7 @@ class TestUnvoidOrder:
             session, order, WebhookEventType.order_updated
         )
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_unvoid_non_void_order(
         self,
         session: AsyncSession,
@@ -6663,7 +7107,7 @@ class TestUnvoidOrder:
         with pytest.raises(OrderNotVoid):
             await order_service.unvoid(session, order)
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_unvoid_reconsumes_restored_balance(
         self,
         session: AsyncSession,
@@ -6699,7 +7143,7 @@ class TestUnvoidOrder:
         )
         assert new_balance == 0
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_unvoid_round_trip_leaves_balance_unchanged(
         self,
         session: AsyncSession,
@@ -6735,9 +7179,9 @@ class TestUnvoidOrder:
         assert new_balance == 1000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVoidPendingOrdersForSubscription:
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_void_pending_orders_for_subscription(
         self,
         session: AsyncSession,
@@ -6787,7 +7231,7 @@ class TestVoidPendingOrdersForSubscription:
             assert order.subscription_id == subscription.id
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def off_session_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> Organization:
@@ -6799,7 +7243,7 @@ async def off_session_organization(
     return organization
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateDraftOrder:
     async def test_feature_flag_disabled(
         self,
@@ -7365,7 +7809,7 @@ class TestCreateDraftOrder:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFinalizeOrder:
     async def test_order_not_draft(
         self,
@@ -7955,7 +8399,7 @@ class TestFinalizeOrder:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionRenewalNotification:
     @pytest.mark.parametrize(
         "billing_reason",

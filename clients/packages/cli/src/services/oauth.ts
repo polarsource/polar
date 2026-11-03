@@ -1,22 +1,34 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { createServer } from 'node:http'
 import { Context, DateTime, Effect, Layer, Redacted, Schema } from 'effect'
 import { HttpClient, HttpClientRequest, HttpClientResponse } from 'effect/http'
-import open from 'open'
-import { apiUrl } from '@/services/api'
+import { apiUrl, dashboardOrigin } from '@/services/api'
 import {
   AuthError,
   loginCommand,
   type PolarEnvironment,
   type Session,
 } from '@/schemas/Auth'
-import { callbackPage, type CallbackOutcome } from '@/utils/callback-page'
+import { loginCopy } from '@/utils/callback-page'
+import {
+  awaitCallback,
+  type CallbackResult,
+  LOOPBACK_ORIGIN,
+  validateResult,
+} from '@/utils/loopback'
 
-const SANDBOX_CLIENT_ID = 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9'
-const PRODUCTION_CLIENT_ID = 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA'
+const CLIENT_IDS = {
+  production: 'polar_ci_gBnJ_Yv_uSGm5mtoPa2cCA',
+  sandbox: 'polar_ci_AHVAKf9SDOaffma2auRGMXR3H8jg9QBgOfW7s1hYgW9',
+  local: 'polar_ci_local_cli',
+} as const
 
-const SANDBOX_AUTHORIZATION_URL = 'https://sandbox.polar.sh/oauth2/authorize'
-const PRODUCTION_AUTHORIZATION_URL = 'https://polar.sh/oauth2/authorize'
+export const authorizationUrl = (environment: PolarEnvironment) =>
+  Effect.map(
+    dashboardOrigin(environment),
+    (origin) => new URL('/oauth2/authorize', origin),
+  )
+
+const CALLBACK_PATH = '/oauth/callback'
 
 const config = {
   scopes: [
@@ -83,7 +95,7 @@ const config = {
     'webhooks:read',
     'webhooks:write',
   ],
-  redirectUrl: 'http://127.0.0.1:3333/oauth/callback',
+  redirectUrl: `${LOOPBACK_ORIGIN}${CALLBACK_PATH}`,
 }
 
 export type AnnounceAuthorization = (authorization: URL) => Effect.Effect<void>
@@ -114,10 +126,7 @@ export const exchange = (
   previous?: Session,
 ) =>
   Effect.gen(function* () {
-    params.set(
-      'client_id',
-      environment === 'production' ? PRODUCTION_CLIENT_ID : SANDBOX_CLIENT_ID,
-    )
+    params.set('client_id', CLIENT_IDS[environment])
     const client = HttpClient.withScope(yield* HttpClient.HttpClient)
     const request = HttpClientRequest.post(
       yield* apiUrl(environment, '/oauth2/token'),
@@ -158,14 +167,10 @@ export const exchange = (
     }
   }).pipe(Effect.scoped)
 
-export type CallbackResult =
-  | { outcome: 'success'; code: string }
-  | { outcome: Exclude<CallbackOutcome, 'success'>; message: string }
-
-export const parseCallback = (
+const parseCallback = (
   url: URL,
   expectedState: string,
-): CallbackResult => {
+): CallbackResult<string> => {
   if (url.searchParams.get('state') !== expectedState) {
     return { outcome: 'invalid', message: 'Invalid OAuth callback state.' }
   }
@@ -177,19 +182,15 @@ export const parseCallback = (
   }
   const code = url.searchParams.get('code')
   return code
-    ? { outcome: 'success', code }
+    ? { outcome: 'success', value: code }
     : {
         outcome: 'invalid',
         message: 'OAuth callback is missing its authorization code.',
       }
 }
 
-export const validateCallback = (url: URL, expectedState: string) => {
-  const result = parseCallback(url, expectedState)
-  return result.outcome === 'success'
-    ? Effect.succeed(result.code)
-    : Effect.fail(new AuthError({ message: result.message }))
-}
+export const validateCallback = (url: URL, expectedState: string) =>
+  validateResult(parseCallback(url, expectedState))
 
 const login = (
   environment: PolarEnvironment,
@@ -198,14 +199,9 @@ const login = (
   Effect.gen(function* () {
     const state = randomBytes(32).toString('hex')
     const verifier = randomBytes(48).toString('base64url')
-    const authorization = new URL(
-      environment === 'production'
-        ? PRODUCTION_AUTHORIZATION_URL
-        : SANDBOX_AUTHORIZATION_URL,
-    )
+    const authorization = yield* authorizationUrl(environment)
     authorization.search = new URLSearchParams({
-      client_id:
-        environment === 'production' ? PRODUCTION_CLIENT_ID : SANDBOX_CLIENT_ID,
+      client_id: CLIENT_IDS[environment],
       redirect_uri: config.redirectUrl,
       response_type: 'code',
       scope: config.scopes.join(' '),
@@ -215,86 +211,15 @@ const login = (
       sub_type: 'user',
     }).toString()
     yield* announce(authorization)
-    const server = createServer()
-    const code = yield* Effect.callback<string, AuthError>((resume) => {
-      let completed = false
-      const finish = (result: Effect.Effect<string, AuthError>) => {
-        if (!completed) {
-          completed = true
-          resume(result)
-        }
-      }
-      server.on('request', (request, response) => {
-        const url = new URL(request.url ?? '/', config.redirectUrl)
-        if (url.pathname !== '/oauth/callback' || request.method !== 'GET') {
-          response.writeHead(404).end()
-          return
-        }
-        const result = parseCallback(url, state)
-        response
-          .writeHead(result.outcome === 'invalid' ? 400 : 200, {
-            'Content-Type': 'text/html; charset=utf-8',
-          })
-          .end(callbackPage(result.outcome))
-        finish(validateCallback(url, state))
-      })
-      server.on('error', () =>
-        finish(
-          Effect.fail(
-            new AuthError({
-              message:
-                'Cannot start OAuth callback server on 127.0.0.1:3333. Check whether the port is occupied.',
-            }),
-          ),
-        ),
-      )
-      server.listen(3333, '127.0.0.1', () => {
-        void open(authorization.toString())
-          .then((child) => {
-            child.on('error', () =>
-              finish(
-                Effect.fail(
-                  new AuthError({
-                    message: 'Could not open the browser for login.',
-                  }),
-                ),
-              ),
-            )
-            child.on('exit', (code) => {
-              if (code)
-                finish(
-                  Effect.fail(
-                    new AuthError({
-                      message: 'Could not open the browser for login.',
-                    }),
-                  ),
-                )
-            })
-          })
-          .catch(() =>
-            finish(
-              Effect.fail(
-                new AuthError({
-                  message: 'Could not open the browser for login.',
-                }),
-              ),
-            ),
-          )
-      })
-    }).pipe(
-      Effect.ensuring(
-        Effect.sync(() => {
-          server.close()
-          server.closeAllConnections()
-        }),
-      ),
-      Effect.timeout('5 minutes'),
-      Effect.mapError((error) =>
-        error instanceof AuthError
-          ? error
-          : new AuthError({ message: 'OAuth login timed out. Try again.' }),
-      ),
-    )
+    const code = yield* awaitCallback({
+      path: CALLBACK_PATH,
+      state,
+      target: authorization,
+      parse: (url) => parseCallback(url, state),
+      copy: loginCopy,
+      browserError: 'Could not open the browser for login.',
+      timeoutError: 'OAuth login timed out. Try again.',
+    })
     return yield* exchange(
       environment,
       new URLSearchParams({

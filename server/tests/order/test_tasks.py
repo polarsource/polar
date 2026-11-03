@@ -30,7 +30,9 @@ from polar.notifications.notification import NotificationType
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
+    SUBSCRIPTION_ORDER_GRACE_PERIOD,
     OrderDoesNotExist,
+    create_meter_cycle_order,
     create_subscription_order,
     enqueue_stale_payment_locks,
     order_subscription_renewal_notification,
@@ -51,7 +53,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSubscriptionOrder:
     async def test_uses_cutoff_from_job_payload(
         self,
@@ -85,8 +87,143 @@ class TestCreateSubscriptionOrder:
             cutoff=cutoff,
         )
 
+    async def test_cancel_settles_without_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+        )
+        cutoff = utc_now() - SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        create_order_mock = mocker.patch.object(
+            order_service, "create_subscription_order", new=AsyncMock()
+        )
 
-@pytest.mark.asyncio
+        await create_subscription_order(
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cancel,
+            cutoff.isoformat(),
+        )
+
+        create_order_mock.assert_awaited_once_with(
+            ANY,
+            ANY,
+            OrderBillingReasonInternal.subscription_cancel,
+            cutoff=None,
+        )
+
+    @pytest.mark.parametrize(
+        "order_reason",
+        [
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
+        ],
+    )
+    async def test_defers_until_grace_period_elapsed(
+        self,
+        order_reason: OrderBillingReasonInternal,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        cutoff = utc_now() - timedelta(minutes=5)
+        create_order_mock = mocker.patch.object(
+            order_service, "create_subscription_order", new=AsyncMock()
+        )
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        await create_subscription_order(
+            subscription.id, order_reason, cutoff.isoformat()
+        )
+
+        create_order_mock.assert_not_awaited()
+        enqueue_job_mock.assert_called_once_with(
+            "order.create_subscription_order",
+            subscription.id,
+            order_reason,
+            cutoff=cutoff.isoformat(),
+            delay=ANY,
+        )
+        delay = enqueue_job_mock.call_args.kwargs["delay"]
+        expected = SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=5)
+        assert 0 < delay <= expected.total_seconds() * 1000
+
+
+@pytest.mark.anyio
+class TestCreateMeterCycleOrder:
+    async def test_defers_until_grace_period_elapsed(
+        self, mocker: MockerFixture
+    ) -> None:
+        subscription_id = uuid.uuid4()
+        price_ids = [uuid.uuid4()]
+        product_id = uuid.uuid4()
+        cutoff = utc_now() - timedelta(minutes=5)
+        settle_mock = mocker.patch.object(
+            order_service, "settle_meter_cycle_order", new=AsyncMock()
+        )
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        await create_meter_cycle_order(
+            subscription_id, cutoff.isoformat(), price_ids, product_id
+        )
+
+        settle_mock.assert_not_awaited()
+        enqueue_job_mock.assert_called_once_with(
+            "order.create_meter_cycle_order",
+            subscription_id,
+            cutoff.isoformat(),
+            price_ids,
+            product_id,
+            delay=ANY,
+        )
+
+    async def test_settles_with_cutoff_and_snapshot(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        price_ids = [uuid.uuid4()]
+        cutoff = utc_now() - SUBSCRIPTION_ORDER_GRACE_PERIOD - timedelta(minutes=1)
+        settle_mock = mocker.patch.object(
+            order_service, "settle_meter_cycle_order", new=AsyncMock()
+        )
+
+        await create_meter_cycle_order(
+            subscription.id, cutoff.isoformat(), price_ids, product.id
+        )
+
+        settle_mock.assert_awaited_once_with(
+            ANY, ANY, cutoff=cutoff, price_ids=price_ids, product=ANY
+        )
+        assert settle_mock.call_args.kwargs["product"].id == product.id
+
+
+@pytest.mark.anyio
 class TestProcessDunning:
     async def test_enqueues_tasks_for_due_orders(
         self,
@@ -185,7 +322,7 @@ class TestProcessDunning:
         enqueue_job_mock.assert_any_call("order.process_dunning_order", order2.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessDunningOrder:
     async def test_order_without_subscription_skipped(
         self,
@@ -487,7 +624,7 @@ class TestProcessDunningOrder:
         assert updated_subscription.status == SubscriptionStatus.canceled
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueStalePaymentLocks:
     async def test_enqueues_stale_payment_lock(
         self,
@@ -519,8 +656,52 @@ class TestEnqueueStalePaymentLocks:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestProcessStalePaymentLock:
+    async def test_keeps_lock_with_successful_payment(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer)
+        lock_acquired_at = (
+            utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD - timedelta(minutes=1)
+        )
+        next_payment_attempt_at = utc_now() - timedelta(minutes=1)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=lock_acquired_at,
+            next_payment_attempt_at=next_payment_attempt_at,
+        )
+        await create_payment(save_fixture, organization, order=order)
+        await create_payment(
+            save_fixture, organization, order=order, status=PaymentStatus.failed
+        )
+        create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent"
+        )
+
+        await process_stale_payment_lock(order.id)
+
+        updated_order = await OrderRepository.from_session(session).get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == OrderStatus.pending
+        assert updated_order.payment_lock_acquired_at == lock_acquired_at
+        assert updated_order.next_payment_attempt_at == next_payment_attempt_at
+
+        await trigger_payment(
+            order.id, payment_method.id, payment_trigger=PaymentTrigger.retry_dunning
+        )
+
+        create_payment_intent.assert_not_called()
+
     async def test_releases_payment_lock(
         self,
         session: AsyncSession,
@@ -547,7 +728,7 @@ class TestProcessStalePaymentLock:
         assert updated_order.payment_lock_acquired_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerPayment:
     async def test_trigger_payment_success(
         self,
@@ -806,7 +987,7 @@ async def _add_member(
     await save_fixture(user_organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrderSubscriptionRenewalNotification:
     async def test_missing_order_raises(self) -> None:
         with pytest.raises(OrderDoesNotExist):

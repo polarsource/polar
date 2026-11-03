@@ -6,11 +6,21 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.agent.repository import AgentRepository
 from polar.auth.models import AuthSubject
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
-from polar.models import OAuth2Token, OrganizationSSOConnection, Product, User
+from polar.kit.utils import utc_now
+from polar.kit.versioning import APIVersion
+from polar.models import (
+    Agent,
+    OAuth2Token,
+    OrganizationDomain,
+    OrganizationSSOConnection,
+    Product,
+    User,
+)
 from polar.models.account import Account
 from polar.models.organization import (
     Organization,
@@ -23,6 +33,7 @@ from polar.models.organization_sso_connection import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole, UserOrganization
+from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import DISPUTE_AUTO_ACCEPT_MAX_AMOUNT
 from polar.organization_review.schemas import ReviewContext
 from polar.payout_account.service import PayoutAccountServiceError
@@ -30,6 +41,7 @@ from polar.postgres import AsyncSession
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -47,7 +59,7 @@ from tests.fixtures.random_objects import (
 # 4 August 2026 onwards. Tests that assert the unenforced behaviour pin it.
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListOrganizations:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/organizations/")
@@ -66,6 +78,7 @@ class TestListOrganizations:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     async def test_valid(
         self,
@@ -82,7 +95,7 @@ class TestListOrganizations:
         assert json["items"][0]["id"] == str(organization.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListRoles:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -124,7 +137,7 @@ class TestListRoles:
             assert len(entry["permissions"]) > 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrganization:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -153,6 +166,7 @@ class TestGetOrganization:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
     )
     async def test_valid(
         self,
@@ -168,7 +182,47 @@ class TestGetOrganization:
         assert json["id"] == str(organization.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
+class TestCreateOrganization:
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_without_organization_creates_one_and_is_linked_to_it(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: AsyncClient,
+        auth_subject: AuthSubject[Agent],
+    ) -> None:
+        auth_subject.subject.organization = None
+        await save_fixture(auth_subject.subject)
+
+        response = await client.post(
+            "/v1/organizations/",
+            json={"name": "Agent Organization", "slug": "agent-organization"},
+        )
+
+        assert response.status_code == 201
+        agent = await AgentRepository.from_session(session).get_by_id(
+            auth_subject.subject.id
+        )
+        assert agent is not None
+        assert str(agent.organization_id) == response.json()["id"]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_that_already_has_an_organization_cannot_create_another(
+        self, session: AsyncSession, client: AsyncClient
+    ) -> None:
+        response = await client.post(
+            "/v1/organizations/",
+            json={"name": "Second Organization", "slug": "second-organization"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "CannotCreateOrganizationError"
+        repository = OrganizationRepository.from_session(session)
+        assert await repository.slug_exists("second-organization") is False
+
+
+@pytest.mark.anyio
 class TestEnablePreviewAccess:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -238,8 +292,56 @@ class TestEnablePreviewAccess:
         assert feature_settings["issue_funding_enabled"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateOrganization:
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth
+    async def test_retired_details_are_removed_in_january(
+        self,
+        api_version: APIVersion,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.details = {
+            "about": "Historical description",
+            "previous_annual_revenue": 1000,
+        }
+        await save_fixture(organization)
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "details": {
+                    "product_description": "Updated product",
+                    "about": "Retired input",
+                    "previous_annual_revenue": 2000,
+                },
+            },
+        )
+        assert response.status_code == 200
+
+        repository = OrganizationRepository.from_session(session)
+        updated_organization = await repository.get_by_id(organization.id)
+        assert updated_organization is not None
+        assert updated_organization.details is not None
+        assert (
+            updated_organization.details.get("product_description") == "Updated product"
+        )
+        if api_version == V2026_10:
+            assert updated_organization.details.get("about") == "Retired input"
+            assert updated_organization.details.get("previous_annual_revenue") == 2000
+        else:
+            assert "about" not in updated_organization.details
+            assert "previous_annual_revenue" not in updated_organization.details
+
+        response = await client.get(f"/v1/organizations/{updated_organization.id}/kyc")
+        assert response.status_code == 200
+        details = response.json()["details"]
+        assert ("about" in details) is (api_version == V2026_10)
+        assert ("previous_annual_revenue" in details) is (api_version == V2026_10)
+
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
         response = await client.patch(f"/v1/organizations/{uuid.uuid4()}", json={})
@@ -269,6 +371,27 @@ class TestUpdateOrganization:
 
         json = response.json()
         assert json["name"] == "Updated"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_can_update_its_own_organization(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}", json={"name": "Updated"}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Updated"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_cannot_update_another_agents_organization(
+        self, client: AsyncClient, organization_second: Organization
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization_second.id}", json={"name": "Updated"}
+        )
+
+        assert response.status_code == 404
 
     @pytest.mark.auth
     async def test_negative_revenue_validation(
@@ -619,7 +742,7 @@ class TestUpdateOrganization:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateDisputeSettings:
     async def _enable(
         self,
@@ -770,7 +893,7 @@ class TestUpdateDisputeSettings:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestInviteOrganization:
     @pytest.mark.auth
     async def test_not_existing(self, client: AsyncClient) -> None:
@@ -867,7 +990,7 @@ class TestInviteOrganization:
         assert len(members_after) == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetMemberRole:
     @pytest.mark.auth
     @pytest.mark.keep_session_state
@@ -999,7 +1122,7 @@ class TestSetMemberRole:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_list_members(
     session: AsyncSession,
@@ -1016,7 +1139,7 @@ async def test_list_members(
     assert len(json["items"]) == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.auth
 async def test_list_members_not_member(
     session: AsyncSession,
@@ -1030,7 +1153,7 @@ async def test_list_members_not_member(
     assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetEmbedStatus:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1057,7 +1180,7 @@ class TestGetEmbedStatus:
         assert json["embed_hosts"] == ["example.com"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPaymentStatus:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1141,7 +1264,7 @@ class TestGetPaymentStatus:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetPayoutAccount:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1256,7 +1379,7 @@ class TestSetPayoutAccount:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteOrganization:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1456,7 +1579,7 @@ class TestDeleteOrganization:
         assert json["detail"] == "You don't have permission to manage the organization"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetReview:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1523,7 +1646,7 @@ class TestGetReview:
             assert all("not_started" in node["reasons"] for node in targets)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckSlugAvailability:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -1532,7 +1655,9 @@ class TestCheckSlugAvailability:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"), AuthSubjectFixture(subject="agent")
+    )
     async def test_taken(self, client: AsyncClient, organization: Organization) -> None:
         response = await client.post(
             "/v1/organizations/check-slug", json={"slug": organization.slug}
@@ -1564,7 +1689,7 @@ class TestCheckSlugAvailability:
         assert response.json() == {"available": available}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetReviewStatus:
     @pytest.mark.auth
     async def test_appeal_case_id_present_when_case_exists(
@@ -1602,7 +1727,7 @@ class TestGetReviewStatus:
         assert response.json()["appeal_case_id"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateSSOEnforced:
     async def _create_connection(
         self, save_fixture: SaveFixture, organization: Organization
@@ -1702,6 +1827,37 @@ class TestUpdateSSOEnforced:
         assert response.status_code == 409
 
     @pytest.mark.auth
+    async def test_enable_without_verified_domain_forbidden(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._create_connection(save_fixture, organization)
+        await save_fixture(
+            OrganizationDomain(organization=organization, domain="example.com")
+        )
+        auth_subject.organization_ids = frozenset({organization.id})
+        _, auth_subject.session = await auth_service._create_user_session(
+            session,
+            auth_subject.subject,
+            user_agent="test",
+            scopes=[],
+            organization_ids=frozenset({organization.id}),
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"sso_enforced": True},
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "SSORequiresVerifiedDomain"
+
+    @pytest.mark.auth
     async def test_enable_from_scoped_session(
         self,
         client: AsyncClient,
@@ -1712,6 +1868,11 @@ class TestUpdateSSOEnforced:
         user_organization: UserOrganization,
     ) -> None:
         await self._create_connection(save_fixture, organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="example.com", verified_at=utc_now()
+            )
+        )
         auth_subject.organization_ids = frozenset({organization.id})
         _, auth_subject.session = await auth_service._create_user_session(
             session,
@@ -1749,3 +1910,26 @@ class TestUpdateSSOEnforced:
 
         assert response.status_code == 200
         assert response.json()["sso_enforced"] is False
+
+
+@pytest.mark.anyio
+class TestAgentClosedRoutes:
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.parametrize(
+        ("method", "path"),
+        [
+            ("PATCH", "/payout-account"),
+            ("POST", "/submit-review"),
+            ("POST", "/members/invite"),
+        ],
+    )
+    async def test_agent_cannot_use_organization_routes_not_opened_to_agents(
+        self, client: AsyncClient, organization: Organization, method: str, path: str
+    ) -> None:
+        response = await client.request(
+            method,
+            f"/v1/organizations/{organization.id}{path}",
+            json={},
+        )
+
+        assert response.status_code == 401

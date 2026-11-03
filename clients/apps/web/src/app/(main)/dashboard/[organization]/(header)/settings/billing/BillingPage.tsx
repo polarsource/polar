@@ -17,6 +17,7 @@ import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useBillingPlanCompleteListener } from '@/hooks/useBillingPlanTelemetry'
+import { usePaymentMethodEmbed } from '@/hooks/usePaymentMethodEmbed'
 import {
   useOrganizationCustomerSession,
   useOrganizationOrders,
@@ -24,13 +25,11 @@ import {
   useOrganizationSubscription,
 } from '@/hooks/queries/billing'
 
-import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
 
@@ -41,7 +40,7 @@ export default function BillingPage({
 }) {
   const router = useRouter()
   const queryClient = useQueryClient()
-  const theme = useTheme()
+  const openPaymentMethodEmbed = usePaymentMethodEmbed()
   const posthog = usePostHog()
 
   const subscriptionQuery = useOrganizationSubscription(organization.id)
@@ -89,11 +88,7 @@ export default function BillingPage({
       })
       return
     }
-    const embed = await PolarEmbedPaymentMethod.create({
-      sessionToken: session.token,
-      theme: theme.resolvedTheme === 'dark' ? 'dark' : 'light',
-    })
-    embed.addEventListener('success', () => {
+    await openPaymentMethodEmbed(session.token, () => {
       queryClient.invalidateQueries({
         queryKey: ['organization-billing', organization.id, 'payment-methods'],
       })

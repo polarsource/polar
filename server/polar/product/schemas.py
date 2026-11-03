@@ -6,6 +6,7 @@ from typing import Annotated, Any, Literal, Self
 from pydantic import (
     UUID4,
     AfterValidator,
+    BaseModel,
     BeforeValidator,
     Discriminator,
     Field,
@@ -49,13 +50,14 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
@@ -83,7 +85,7 @@ from polar.models.product_price import (
 from polar.models.product_price import (
     ProductPriceUnit as ProductPriceUnitModel,
 )
-from polar.openapi import cli_confirm_equals
+from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.tiers import (
@@ -692,6 +694,12 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
                 "The meter interval must evenly divide the billing interval, "
                 "so the meter cycle re-aligns with the billing cycle at every renewal."
             )
+        if (
+            self.meter_interval == self.recurring_interval
+            and self.meter_interval_count == self.recurring_interval_count
+        ):
+            self.meter_interval = None
+            self.meter_interval_count = None
         return self
 
 
@@ -773,7 +781,7 @@ class ProductUpdate(
     )
     is_archived: bool | None = Field(
         default=None,
-        json_schema_extra=cli_confirm_equals(True),
+        json_schema_extra=destructive_when_equals(True),
         description=(
             "Whether the product is archived. "
             "If `true`, the product won't be available for purchase anymore. "
@@ -838,22 +846,30 @@ class ProductPriceBase(TimestampedSchema):
     )
     product_id: UUID4 = Field(description="The ID of the product owning the price.")
 
-    type: SkipJsonSchema[ProductPriceType] = Field(
-        validation_alias=AliasChoices("legacy_type", "type"),
-        deprecated=(
-            "This field is actually set from Product. "
-            "It's only kept for backward compatibility."
+    type: Annotated[
+        SkipJsonSchema[ProductPriceType],
+        Version(up_to=V2026_10),
+        Field(
+            validation_alias=AliasChoices("legacy_type", "type"),
+            deprecated=(
+                "This field is actually set from Product. "
+                "It's only kept for backward compatibility."
+            ),
         ),
-    )
-    recurring_interval: SkipJsonSchema[SubscriptionRecurringInterval | None] = Field(
-        validation_alias=AliasChoices(
-            "legacy_recurring_interval", "recurring_interval"
+    ]
+    recurring_interval: Annotated[
+        SkipJsonSchema[SubscriptionRecurringInterval | None],
+        Version(up_to=V2026_10),
+        Field(
+            validation_alias=AliasChoices(
+                "legacy_recurring_interval", "recurring_interval"
+            ),
+            deprecated=(
+                "This field is actually set from Product. "
+                "It's only kept for backward compatibility."
+            ),
         ),
-        deprecated=(
-            "This field is actually set from Product. "
-            "It's only kept for backward compatibility."
-        ),
-    )
+    ]
 
 
 class ProductPriceFixedBase(ProductPriceBase):
@@ -1080,12 +1096,15 @@ NewProductPrice = Annotated[
 def _get_discriminator_value(v: Any) -> Literal["legacy", "new"]:
     if isinstance(v, dict):
         return "legacy" if "legacy" in v else "new"
+    # Schema instances always carry the compatibility `type` field
+    if isinstance(v, ProductPriceBase):
+        return "legacy" if isinstance(v, LegacyRecurringProductPriceMixin) else "new"
     type = getattr(v, "type", None)
     return "legacy" if type is not None else "new"
 
 
 ProductPrice = Annotated[
-    Annotated[LegacyRecurringProductPrice, Tag("legacy")]
+    Annotated[LegacyRecurringProductPrice, Tag("legacy"), Version(up_to=V2026_10)]
     | Annotated[NewProductPrice, Tag("new")],
     Discriminator(_get_discriminator_value),
 ]
@@ -1147,7 +1166,22 @@ ProductMediaList = Annotated[
 ]
 
 
-class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
+class ProductVersionOutputMixin(BaseModel):
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the product. "
+                "None for products not managed by declarative config."
+            )
+        ),
+    ]
+
+
+class Product(
+    MetadataOutputMixin, ExternalIDOutputMixin, ProductVersionOutputMixin, ProductBase
+):
     """
     A product.
     """
@@ -1187,3 +1221,44 @@ BenefitPublicList = Annotated[
     BeforeValidator(_filter_benefit_public_list),
     Field(description="List of benefits granted by the product."),
 ]
+
+
+class ProductNameCheckRequest(Schema):
+    name: str = Field(min_length=1, max_length=64)
+
+
+class ProductNameCheck(Schema):
+    category: str | None = Field(
+        description="Acceptable Use Policy category the name suggests, if any."
+    )
+    phrase: str | None = Field(
+        description="The exact phrase that matched, when a word-list rule flagged it."
+    )
+
+
+class ProductListParams(QuerySchema):
+    id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalID Filter", description="Filter by product external ID."
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    query: str | None = Field(None, description="Filter by product name.")
+    is_archived: bool | None = Field(None, description="Filter on archived products.")
+    is_recurring: bool | None = Field(
+        None,
+        description="Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. ",
+    )
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Field(
+        None,
+        title="BenefitID Filter",
+        description="Filter products granting specific benefit.",
+    )
+    visibility: builtins.list[ProductVisibility] | None = Field(
+        default=None, description="Filter by visibility."
+    )

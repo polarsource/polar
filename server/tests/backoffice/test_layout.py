@@ -2,7 +2,6 @@ from collections.abc import AsyncGenerator
 
 import httpx
 import pytest
-import pytest_asyncio
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
@@ -11,7 +10,7 @@ from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_session
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client(
     session: AsyncSession, user: User
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -29,7 +28,7 @@ async def backoffice_client(
         backoffice_app.dependency_overrides.pop(get_admin, None)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestLayoutContentSwap:
     async def test_full_page_without_htmx_headers(
         self, backoffice_client: httpx.AsyncClient

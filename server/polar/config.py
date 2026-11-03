@@ -2,7 +2,7 @@ import functools
 import json
 import os
 import tempfile
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -17,6 +17,7 @@ from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
+from polar.kit.utils import utc_now
 
 # A token hash reads `<secret_id>$<digest>`. The digest is 64 characters
 HASH_SEPARATOR = "$"
@@ -109,6 +110,7 @@ class Settings(BaseSettings):
     SLACK_BOT_TOKEN: str | None = None
     SLACK_CHANNEL: str | None = None
     MERCHANT_MIGRATION_SLACK_CHANNEL: str = "C0B76J9KR8F"
+    MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD: timedelta = timedelta(days=90)
 
     # SLO Report
     SLO_REPORT_ENABLED: bool = True
@@ -117,7 +119,7 @@ class Settings(BaseSettings):
     WEBHOOK_FIFO_GUARD_DELAY_MS: int = 300  # p95 is 236ms
     WEBHOOK_FIFO_GUARD_MAX_AGE: timedelta = timedelta(minutes=1)
     WEBHOOK_EVENT_RETENTION_PERIOD: timedelta = timedelta(days=90)
-    WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD: timedelta = timedelta(days=90)
+    WEBHOOK_DELIVERY_RETENTION_PERIOD: timedelta = timedelta(days=90)
     WEBHOOK_FAILURE_THRESHOLD: int = 10
 
     WORKER_DEFAULT_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
@@ -188,6 +190,9 @@ class Settings(BaseSettings):
     CUSTOMER_SESSION_TTL: timedelta = timedelta(hours=1)
     CUSTOMER_SESSION_CODE_TTL: timedelta = timedelta(minutes=30)
     CUSTOMER_SESSION_CODE_LENGTH: int = 6
+    CUSTOMER_SESSION_AUTHENTICATION_SESSION_COOKIE_KEY: str = (
+        "polar_customer_auth_session"
+    )
 
     # Impersonation session
     IMPERSONATION_COOKIE_KEY: str = "polar_original_session"
@@ -219,6 +224,8 @@ class Settings(BaseSettings):
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
     DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
     DATABASE_CONNECT_TIMEOUT_SECONDS: float = 10.0
+    DATABASE_STATEMENT_CACHE_SIZE: int = 100
+    DATABASE_PREPARED_STATEMENT_CACHE_SIZE: int = 0
     DATABASE_STREAM_YIELD_PER: int = 100
 
     POSTGRES_READ_USER: str | None = None
@@ -305,6 +312,7 @@ class Settings(BaseSettings):
     # Pydantic AI Gateway
     PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
     PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.5"
+    PYDANTIC_AI_GATEWAY_ORGANIZATION_REVIEW_MODEL: str = "openai:gpt-6.1-sol"
 
     # Organization review website scraping. Firecrawl Cloud backs the JS-render
     # path of the collector: it renders JavaScript, follows redirects, and
@@ -467,7 +475,6 @@ class Settings(BaseSettings):
     POLAR_ACCESS_TOKEN: str = ""
     POLAR_WEBHOOK_SECRET: str = ""
     POLAR_ORGANIZATION_ID: str = ""
-    POLAR_FREE_PRODUCT_ID: str = ""
     # Scale plan product, used by the Startup Program to grant a 100% discount
     POLAR_SCALE_PRODUCT_ID: str = ""
     POLAR_API_URL: str = "https://api.polar.sh"
@@ -478,7 +485,6 @@ class Settings(BaseSettings):
             [
                 self.POLAR_ACCESS_TOKEN,
                 self.POLAR_ORGANIZATION_ID,
-                self.POLAR_FREE_PRODUCT_ID,
             ]
         )
 
@@ -649,6 +655,19 @@ class Settings(BaseSettings):
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
     TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
+
+    # shortcut: remove after November 1, 2026, once production Terraform uses Numeral.
+    @property
+    def tax_processors(self) -> list[TaxProcessor]:
+        if self.is_production() and utc_now() >= datetime(2026, 11, 1, tzinfo=UTC):
+            return [TaxProcessor.numeral, TaxProcessor.stripe]
+        return self.TAX_PROCESSORS
+
+    @property
+    def tax_record_processor(self) -> TaxProcessor:
+        if self.is_production() and utc_now() >= datetime(2026, 11, 1, tzinfo=UTC):
+            return TaxProcessor.numeral
+        return self.TAX_RECORD_PROCESSOR
 
     model_config = SettingsConfigDict(
         env_prefix="polar_",

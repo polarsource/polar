@@ -4,7 +4,11 @@ from typing import Any, get_args, get_type_hints
 import pytest
 from pydantic import ValidationError
 
-from polar.event.schemas import EventCreateCustomer, EventCreateExternalCustomer
+from polar.event.schemas import (
+    EventCreateCustomer,
+    EventCreateExternalCustomer,
+    MeterCreditEvent,
+)
 from polar.event.schemas import SystemEvent as SystemEventUnion
 from polar.event.system import SYSTEM_EVENT_LABELS
 from polar.event.system import SystemEvent as SystemEventEnum
@@ -23,6 +27,11 @@ from polar.event.system import SystemEvent as SystemEventEnum
             "external_customer_id": "CUSTOMER",
             "name": "EVENT",
             "metadata": {"_cost": {"amount": 100, "currency": "usd"}},
+        },
+        {
+            "external_customer_id": "CUSTOMER",
+            "name": "EVENT",
+            "metadata": {"max": 2**53 - 1, "min": -(2**53 - 1), "float": 1.5},
         },
         {
             "external_customer_id": "CUSTOMER",
@@ -54,6 +63,42 @@ def test_invalid_metadata_value_too_long() -> None:
                 "metadata": {"key": "a" * 600},
             }
         )
+
+
+@pytest.mark.parametrize("value", [2**53, -(2**53), 1e308, -1e308])
+def test_invalid_metadata_value_out_of_range(value: int | float) -> None:
+    with pytest.raises(ValidationError):
+        EventCreateExternalCustomer.model_validate(
+            {
+                "external_customer_id": "CUSTOMER",
+                "name": "EVENT",
+                "metadata": {"total_tokens": value},
+            }
+        )
+
+
+@pytest.mark.parametrize("total_tokens", [2**53, -(2**53)])
+def test_invalid_llm_tokens_out_of_range(total_tokens: int) -> None:
+    with pytest.raises(ValidationError) as e:
+        EventCreateExternalCustomer.model_validate(
+            {
+                "external_customer_id": "CUSTOMER",
+                "name": "EVENT",
+                "metadata": {
+                    "_llm": {
+                        "vendor": "mistral",
+                        "model": "mistral-medium-2508",
+                        "input_tokens": 10,
+                        "output_tokens": 20,
+                        "total_tokens": total_tokens,
+                    }
+                },
+            }
+        )
+
+    errors = e.value.errors()
+    assert len(errors) == 1
+    assert errors[0]["loc"] == ("metadata", "_llm", "total_tokens")
 
 
 def test_invalid_cost_metadata() -> None:
@@ -168,3 +213,40 @@ class TestSystemEventCoverage:
         assert not missing, (
             f"SystemEvent enum values missing from SYSTEM_EVENT_LABELS: {missing}"
         )
+
+
+class TestMeterCreditEvent:
+    @pytest.mark.parametrize(
+        ("metadata", "expected"),
+        [
+            ({}, "benefit"),
+            ({"reason": "benefit"}, "benefit"),
+            ({"reason": "manual"}, "manual"),
+        ],
+    )
+    def test_reason(self, metadata: dict[str, Any], expected: str) -> None:
+        event = MeterCreditEvent.model_validate(
+            {
+                "id": uuid.uuid4(),
+                "timestamp": "2026-01-01T00:00:00Z",
+                "organization_id": uuid.uuid4(),
+                "customer_id": None,
+                "customer": None,
+                "external_customer_id": None,
+                "member_id": None,
+                "external_member_id": None,
+                "child_count": 0,
+                "parent_id": None,
+                "label": "Meter Credited",
+                "source": "system",
+                "name": "meter.credited",
+                "metadata": {
+                    "meter_id": str(uuid.uuid4()),
+                    "units": 10,
+                    "rollover": False,
+                    **metadata,
+                },
+            }
+        )
+
+        assert event.metadata["reason"] == expected

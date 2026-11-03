@@ -6,16 +6,15 @@ import type {
   BackgroundColorToken,
   TextColorToken,
 } from '@polar-sh/orbit/theme'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, m } from 'motion/react'
 import {
-  CheckIcon,
-  CircleDashedIcon,
-  ClockIcon,
-  MinusIcon,
-  XIcon,
+  Check as CheckIcon,
+  CircleDashed as CircleDashedIcon,
+  Clock as ClockIcon,
   type LucideIcon,
-} from 'lucide-react'
-
+  Minus as MinusIcon,
+  X as XIcon,
+} from '@polar-sh/orbit/icons'
 const WAITING_REASONS: ReadonlySet<schemas['OrganizationReviewCheckReason']> =
   new Set(['external_pending', 'not_authorized'])
 
@@ -47,13 +46,19 @@ const STATUS_APPEARANCE: Record<
 interface Props {
   status: schemas['OrganizationReviewCheckStatus']
   reasons?: schemas['OrganizationReviewCheckReason'][] | null
+  icon?: 'waiting' | 'dashed'
 }
 
-export const StatusIcon = ({ status, reasons }: Props) => {
+export const StatusIcon = ({ status, reasons, icon }: Props) => {
   const isWaiting =
-    status === 'pending' &&
-    (reasons ?? []).some((reason) => WAITING_REASONS.has(reason))
-  const Icon = isWaiting ? ClockIcon : STATUS_ICONS[status]
+    icon === 'waiting' ||
+    (status === 'pending' &&
+      (reasons ?? []).some((reason) => WAITING_REASONS.has(reason)))
+  const Icon = isWaiting
+    ? ClockIcon
+    : icon === 'dashed'
+      ? CircleDashedIcon
+      : STATUS_ICONS[status]
   const appearance = STATUS_APPEARANCE[status]
 
   return (
@@ -68,8 +73,8 @@ export const StatusIcon = ({ status, reasons }: Props) => {
       color={appearance.color}
     >
       <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
-          key={`${status}-${isWaiting}`}
+        <m.span
+          key={`${status}-${isWaiting}-${icon}`}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}
@@ -77,7 +82,7 @@ export const StatusIcon = ({ status, reasons }: Props) => {
           className="flex items-center justify-center"
         >
           <Icon className="h-3.5 w-3.5" />
-        </motion.span>
+        </m.span>
       </AnimatePresence>
     </Box>
   )

@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
@@ -20,7 +19,7 @@ from tests.fixtures.random_objects import (
 from tests.transaction.conftest import create_transaction
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def payout_organization_second(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -43,7 +42,7 @@ async def payout_organization_second(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/payouts/")
@@ -64,7 +63,7 @@ class TestList:
         assert json["pagination"]["total_count"] == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetEstimate:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -87,7 +86,7 @@ class TestGetEstimate:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCSV:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/payouts/{uuid.uuid4()}/csv")
@@ -117,7 +116,7 @@ class TestGetCSV:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGenerateInvoice:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(f"/v1/payouts/{uuid.uuid4()}/invoice", json={})
@@ -139,7 +138,7 @@ class TestGenerateInvoice:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetInvoice:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/payouts/{uuid.uuid4()}/invoice")
@@ -160,7 +159,7 @@ class TestGetInvoice:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/payouts/", json={})

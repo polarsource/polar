@@ -74,7 +74,7 @@ app.include_router(support_cases_router, prefix="/support-cases")
 async def index(request: Request) -> None:
     with layout(request, [], "index"):
         with tag.h1():
-            text("Dashboard")
+            text("Backoffice Dashboard")
 
 
 __all__ = ["app"]

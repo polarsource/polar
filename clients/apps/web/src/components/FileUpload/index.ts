@@ -1,7 +1,7 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Accept, FileRejection, useDropzone } from 'react-dropzone'
 import { FileRead, Upload } from './Upload'
 
@@ -55,17 +55,18 @@ export const useFileUpload = <T extends FileRead | schemas['FileUpload']>({
   disabled = false,
 }: FileUploadProps<T>) => {
   const [files, setFilesState] = useState<FileObject<T>[]>(
-    buildFileObjects(initialFiles) as unknown as FileObject<T>[],
+    () => buildFileObjects(initialFiles) as unknown as FileObject<T>[],
   )
 
+  const filesRef = useRef(files)
+
   const setFiles = (callback: (prev: FileObject<T>[]) => FileObject<T>[]) => {
-    setFilesState((prev) => {
-      const updated = callback(prev)
-      if (onFilesUpdated) {
-        onFilesUpdated(updated)
-      }
-      return updated
-    })
+    const updated = callback(filesRef.current)
+    filesRef.current = updated
+    setFilesState(updated)
+    if (onFilesUpdated) {
+      onFilesUpdated(updated)
+    }
   }
 
   const updateFile = (

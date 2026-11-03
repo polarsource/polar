@@ -1,3 +1,4 @@
+import copy
 import pathlib
 import re
 import typing
@@ -7,7 +8,7 @@ import pytest
 
 from cli_commands.emitter import CLICommandsEmitter
 from cli_commands.ir import is_private_cli_operation
-from generator.ir import CLIConfirmation, generate_ir
+from generator.ir import DestructiveCondition, generate_ir
 
 
 @pytest.fixture
@@ -29,6 +30,7 @@ def cli_spec() -> dict:
                 "get": {
                     "operationId": "widgets:get",
                     "tags": ["cli"],
+                    "x-tool-annotations": ["read_only", "idempotent"],
                     "x-polar-cli-preview": {
                         "fields": [
                             {"key": "id", "label": "ID"},
@@ -49,6 +51,7 @@ def cli_spec() -> dict:
                 "patch": {
                     "operationId": "widgets:update",
                     "tags": ["cli"],
+                    "x-tool-annotations": ["destructive"],
                     "requestBody": {
                         "required": True,
                         "content": {
@@ -62,6 +65,7 @@ def cli_spec() -> dict:
                 "delete": {
                     "operationId": "widgets:delete",
                     "tags": ["cli"],
+                    "x-tool-annotations": ["destructive", "idempotent"],
                     "responses": {"204": {"description": "Deleted"}},
                 },
             },
@@ -82,7 +86,7 @@ def cli_spec() -> dict:
                     "properties": {
                         "is_archived": {
                             "anyOf": [{"type": "boolean"}, {"type": "null"}],
-                            "x-polar-cli-confirm": {"equals": True},
+                            "x-tool-destructive-when": {"equals": True},
                         },
                     },
                 },
@@ -187,12 +191,62 @@ def test_confirmation_uses_merged_input(cli_spec: dict, tmp_path: pathlib.Path) 
     assert "confirm: false" in (tmp_path / "src/widgets/get.ts").read_text()
 
 
+@pytest.mark.parametrize(
+    ("annotations", "properties", "expected"),
+    [
+        (["destructive"], {}, "requiresConfirmation: true"),
+        (
+            ["destructive"],
+            {"is_archived": {"type": "boolean"}},
+            "requiresConfirmation: true",
+        ),
+        (None, {"is_archived": {"type": "boolean"}}, "confirm: false"),
+        ([], {"is_archived": {"type": "boolean"}}, "confirm: false"),
+    ],
+)
+def test_confirmation_follows_destructive_annotation(
+    cli_spec: dict,
+    tmp_path: pathlib.Path,
+    annotations: list[str] | None,
+    properties: dict,
+    expected: str,
+) -> None:
+    operation = cli_spec["paths"]["/widgets/{id}"]["patch"]
+    if annotations is None:
+        del operation["x-tool-annotations"]
+    else:
+        operation["x-tool-annotations"] = annotations
+    cli_spec["components"]["schemas"]["WidgetUpdate"]["properties"] = properties
+    CLICommandsEmitter(
+        generate_ir(
+            op.OpenAPI.model_validate(cli_spec),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
+    assert expected in (tmp_path / "src/widgets/update.ts").read_text()
+
+
+def test_destructive_fields_require_destructive_operation(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    del cli_spec["paths"]["/widgets/{id}"]["patch"]["x-tool-annotations"]
+    with pytest.raises(ValueError, match="isn't destructive"):
+        CLICommandsEmitter(
+            generate_ir(
+                op.OpenAPI.model_validate(cli_spec),
+                is_private_operation=is_private_cli_operation,
+            ),
+            "0.0.0",
+        ).emit(tmp_path)
+
+
 @pytest.mark.parametrize("value", ["true", 1])
 def test_confirmation_value_must_match_field_schema(
     cli_spec: dict, tmp_path: pathlib.Path, value: str | int
 ) -> None:
     cli_spec["components"]["schemas"]["WidgetUpdate"]["properties"]["is_archived"][
-        "x-polar-cli-confirm"
+        "x-tool-destructive-when"
     ] = {"equals": value}
     with pytest.raises(ValueError, match="does not match its schema"):
         CLICommandsEmitter(
@@ -218,7 +272,7 @@ def test_malformed_confirmation_annotations_fail(
     cli_spec: dict, annotation: dict
 ) -> None:
     cli_spec["components"]["schemas"]["WidgetUpdate"]["properties"]["is_archived"][
-        "x-polar-cli-confirm"
+        "x-tool-destructive-when"
     ] = annotation
     with pytest.raises(ValueError, match="equals"):
         generate_ir(
@@ -229,11 +283,11 @@ def test_malformed_confirmation_annotations_fail(
 
 def test_confirmation_rules_round_trip() -> None:
     for rule in [
-        CLIConfirmation(equals=None),
-        CLIConfirmation(equals=False),
-        CLIConfirmation(one_of=["revoked", "disabled"]),
+        DestructiveCondition(equals=None),
+        DestructiveCondition(equals=False),
+        DestructiveCondition(one_of=["revoked", "disabled"]),
     ]:
-        restored = CLIConfirmation.model_validate_json(rule.model_dump_json())
+        restored = DestructiveCondition.model_validate_json(rule.model_dump_json())
         assert restored.values == rule.values
 
 
@@ -358,7 +412,7 @@ def test_confirmation_one_of_checks_enum_values(
         "status": {
             "type": "string",
             "enum": ["on", "off"],
-            "x-polar-cli-confirm": {"one_of": values},
+            "x-tool-destructive-when": {"one_of": values},
         },
     }
     emitter = CLICommandsEmitter(
@@ -670,3 +724,121 @@ def test_only_absent_required_fields_count_as_missing(
 ) -> None:
     _emit(create_spec, tmp_path)
     assert "[key] === undefined" in (tmp_path / "src/inputs.ts").read_text()
+
+
+def test_json_commands_take_fields(cli_spec: dict, tmp_path: pathlib.Path) -> None:
+    _emit(cli_spec, tmp_path)
+    assert "fields: config.fields," in (tmp_path / "src/widgets/get.ts").read_text()
+    assert "config.fields" not in (tmp_path / "src/widgets/delete.ts").read_text()
+
+
+def test_commands_that_can_answer_pending_do_not_take_fields(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    cli_spec["paths"]["/widgets/{id}"]["get"]["responses"]["202"] = {
+        "description": "Widget is being prepared."
+    }
+    _emit(cli_spec, tmp_path)
+    get = (tmp_path / "src/widgets/get.ts").read_text()
+    assert "pendingResponse:" in get
+    assert "config.fields" not in get
+
+
+def test_inputs_cannot_shadow_the_fields_flag(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    cli_spec["paths"]["/widgets/{id}"]["get"]["parameters"] = [
+        {"name": "fields", "in": "query", "schema": {"type": "string"}}
+    ]
+    with pytest.raises(ValueError, match="collides with the CLI's own --fields"):
+        _emit(cli_spec, tmp_path)
+
+
+def test_inputs_named_fields_are_fine_without_the_fields_flag(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    cli_spec["components"]["schemas"]["WidgetUpdate"]["properties"]["fields"] = {
+        "type": "string"
+    }
+    _emit(cli_spec, tmp_path)
+    update = (tmp_path / "src/widgets/update.ts").read_text()
+    assert "fields: config.input.fields," in update
+    assert "fields: config.fields," not in update
+
+
+def _next_spec(cli_spec: dict) -> dict:
+    spec = copy.deepcopy(cli_spec)
+    spec["info"]["version"] = "2027-01"
+    get = copy.deepcopy(spec["paths"]["/widgets/{id}"]["get"])
+    get["operationId"] = "widgets:get_external"
+    get["parameters"] = [{**get["parameters"][0], "name": "external_id"}]
+    spec["paths"]["/widgets/external/{external_id}"] = {"get": get}
+    return spec
+
+
+def _emit_versions(specs: list[dict], tmp_path: pathlib.Path) -> None:
+    CLICommandsEmitter(
+        generate_ir(
+            *(op.OpenAPI.model_validate(spec) for spec in specs),
+            is_private_operation=is_private_cli_operation,
+        ),
+        "0.0.0",
+    ).emit(tmp_path)
+
+
+def test_next_only_operations_join_the_current_commands(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    _emit_versions([_next_spec(cli_spec), cli_spec], tmp_path)
+
+    current = (tmp_path / "src/widgets/get.ts").read_text()
+    assert "apiVersion" not in current
+    assert "preview, API" not in current
+
+    upcoming = (tmp_path / "src/widgets/get_external.ts").read_text()
+    assert 'apiVersion: "2027-01",' in upcoming
+    assert "(preview, API 2027-01)" in upcoming
+
+    service = (tmp_path / "src/widgets/index.ts").read_text()
+    assert "./get_external'" in service
+
+    runtime = (tmp_path / "src/runtime.ts").read_text()
+    assert "from '@polar-sh/sdk/2027-01'" in runtime
+    assert 'export const CURRENT_API_VERSION = "2026-10"' in runtime
+
+
+def test_operations_in_both_versions_stay_on_current(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    upcoming = _next_spec(cli_spec)
+    upcoming["paths"]["/widgets/{id}"]["get"]["description"] = "Changed in Next."
+    _emit_versions([cli_spec, upcoming], tmp_path)
+
+    current = (tmp_path / "src/widgets/get.ts").read_text()
+    assert "apiVersion" not in current
+    assert "Changed in Next." not in current
+
+
+def test_renamed_path_parameter_in_next_stays_on_current(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    upcoming = _next_spec(cli_spec)
+    get = upcoming["paths"].pop("/widgets/{id}")["get"]
+    get["parameters"] = [{**get["parameters"][0], "name": "widget_id"}]
+    upcoming["paths"]["/widgets/{widget_id}"] = {"get": get}
+    _emit_versions([cli_spec, upcoming], tmp_path)
+
+    current = (tmp_path / "src/widgets/get.ts").read_text()
+    assert "apiVersion" not in current
+
+
+def test_next_only_operation_cannot_reuse_a_current_command_name(
+    cli_spec: dict, tmp_path: pathlib.Path
+) -> None:
+    upcoming = _next_spec(cli_spec)
+    upcoming["paths"]["/widgets/{id}"]["get"]["operationId"] = "widgets:fetch"
+    upcoming["paths"]["/widgets/external/{external_id}"]["get"]["operationId"] = (
+        "widgets:get"
+    )
+    with pytest.raises(ValueError, match="Next adds get to Widgets"):
+        _emit_versions([cli_spec, upcoming], tmp_path)

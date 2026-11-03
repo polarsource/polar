@@ -9,7 +9,7 @@ from polar.oauth2.service.oauth2_grant import oauth2_grant as oauth2_grant_servi
 from polar.oauth2.sub_type import SubType
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrUpdateGrant:
     async def test_second_consent_updates_the_existing_grant(
         self, sync_session: Session

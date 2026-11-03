@@ -17,7 +17,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_subscription
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_cycle_scheduler_only_selects_due_billable_subscriptions(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -69,7 +69,7 @@ async def test_cycle_scheduler_only_selects_due_billable_subscriptions(
     assert set(result.scalars()) == {active_due.id, past_due.id}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     "store_class", [SubscriptionJobStore, SubscriptionResumeJobStore]
 )
@@ -90,7 +90,7 @@ async def test_get_due_jobs_does_not_raise(
     assert jobs == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_due_jobs_reports_failures_to_sentry(
     mocker: MockerFixture,
 ) -> None:

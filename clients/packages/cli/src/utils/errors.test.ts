@@ -3,12 +3,23 @@ import { describe, expect, test } from 'vitest'
 import { ListenError } from '@/services/listen'
 import { TriggerError } from '@/schemas/Trigger'
 import { UpdateError } from '@/services/update'
-import { describeError } from '@/utils/errors'
+import { describeError, reportedError } from '@/utils/errors'
 import { AuthError } from '@/schemas/Auth'
 import { GitHubReleaseError } from '@/services/github-releases'
 
 const releasesHint =
   'Releases are published at https://github.com/polarsource/polar/releases'
+
+describe('reportedError', () => {
+  test('writes the JSON error envelope for --json=true', () => {
+    expect(
+      JSON.parse(reportedError(['--json=true'], new Error('boom'))),
+    ).toEqual({
+      error: 'UnexpectedError',
+      message: 'boom',
+    })
+  })
+})
 
 describe('describeError', () => {
   test('uses the message of plain errors', () => {

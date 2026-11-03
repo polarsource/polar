@@ -75,65 +75,9 @@ export default async function MainLayout({
     <PolarThemeProvider>
       <link
         rel="preload"
-        href="/fonts/Inter-Light.woff2"
+        href="/fonts/PPNeueMontreal-VariableUpright.woff2"
         as="font"
         type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/Inter-Regular.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/Inter-Medium.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/Inter-SemiBold.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/InterDisplay-Light.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/InterDisplay-Regular.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/InterDisplay-Medium.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/InterDisplay-SemiBold.woff2"
-        as="font"
-        type="font/woff2"
-        crossOrigin=""
-      />
-      <link
-        rel="preload"
-        href="/fonts/Louize-Italic-205TF.otf"
-        as="font"
-        type="font/otf"
         crossOrigin=""
       />
       <link

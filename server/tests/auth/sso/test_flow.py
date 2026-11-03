@@ -6,7 +6,6 @@ from urllib.parse import parse_qs, urlsplit
 import httpx
 import jwt
 import pytest
-import pytest_asyncio
 import respx
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -17,6 +16,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     OAuth2State,
     Organization,
+    OrganizationDomain,
     OrganizationSSOConnection,
     User,
     UserOrganization,
@@ -32,11 +32,13 @@ from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from tests.fixtures.base import IsolatedSessionTestClient
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_user
 
 ISSUER = "https://idp.example.test"
 CLIENT_ID = "client-id"
 KID = "idp-key-1"
 ACCESS_TOKEN = "idp-access-token"
+DOMAIN = "example.com"
 
 
 @pytest.fixture
@@ -44,7 +46,7 @@ def idp_key() -> rsa.RSAPrivateKey:
     return rsa.generate_private_key(public_exponent=65537, key_size=2048)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def sso_client(
     app: FastAPI, session: AsyncSession
 ) -> AsyncIterator[httpx.AsyncClient]:
@@ -127,6 +129,11 @@ async def create_sso_connection(
         "sso_enabled": True,
     }
     await save_fixture(organization)
+    await save_fixture(
+        OrganizationDomain(
+            organization=organization, domain=DOMAIN, verified_at=utc_now()
+        )
+    )
     connection = OrganizationSSOConnection(
         organization=organization,
         type=OrganizationSSOConnectionType.oidc,
@@ -219,7 +226,7 @@ async def _get_membership(
     return result.scalars().unique().one_or_none()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSSOAuthorize:
     async def test_authorization_parameters_are_appended(
         self,
@@ -248,7 +255,7 @@ class TestSSOAuthorize:
         assert query["client_id"] == [CLIENT_ID]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSSOLoginFlow:
     async def test_login_mints_session_scoped_to_organization(
         self,
@@ -426,10 +433,10 @@ class TestSSOLoginFlow:
         assert "error=" in complete.headers["location"]
 
 
-NEWCOMER_EMAIL = "newcomer@example.test"
+NEWCOMER_EMAIL = f"newcomer@{DOMAIN}"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSSOJITProvisioning:
     async def test_provisions_unknown_email(
         self,
@@ -570,3 +577,55 @@ class TestSSOJITProvisioning:
 
         assert "error=" in callback.headers["location"]
         assert await _get_user_by_email(session, NEWCOMER_EMAIL) is None
+
+    async def test_rejects_email_outside_verified_domains(
+        self,
+        sso_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        idp_key: rsa.RSAPrivateKey,
+    ) -> None:
+        victim = await create_user(save_fixture, email="victim@elsewhere.test")
+        connection = await create_sso_connection(save_fixture, organization)
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            callback = await drive_to_callback(
+                sso_client,
+                session,
+                mock,
+                idp_key,
+                slug=organization.slug,
+                connection_id=connection.id,
+                email=victim.email,
+            )
+
+        assert "error=" in callback.headers["location"]
+        assert await _get_membership(session, victim, organization) is None
+
+    async def test_rejects_unverified_domain(
+        self,
+        sso_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        idp_key: rsa.RSAPrivateKey,
+    ) -> None:
+        connection = await create_sso_connection(save_fixture, organization)
+        await save_fixture(
+            OrganizationDomain(organization=organization, domain="pending.test")
+        )
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            callback = await drive_to_callback(
+                sso_client,
+                session,
+                mock,
+                idp_key,
+                slug=organization.slug,
+                connection_id=connection.id,
+                email="newcomer@pending.test",
+            )
+
+        assert "error=" in callback.headers["location"]
+        assert await _get_user_by_email(session, "newcomer@pending.test") is None

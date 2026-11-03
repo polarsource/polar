@@ -28,7 +28,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_member
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_not_accessible_organization(
@@ -207,7 +207,7 @@ class TestList:
         assert total == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_not_accessible_organization(
@@ -537,7 +537,7 @@ class TestCreate:
         assert customer.tax_id[1] == TaxIDFormat.eu_vat
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateForOrganization:
     @pytest.mark.parametrize("send_webhooks", [True, False])
     async def test_member_created_webhook_follows_send_webhooks(
@@ -568,7 +568,7 @@ class TestCreateForOrganization:
         assert len(member_created_calls) == (1 if send_webhooks else 0)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_existing_external_id(
         self, session: AsyncSession, customer: Customer, customer_external_id: Customer
@@ -1305,7 +1305,7 @@ class TestUpdate:
         assert member.email == "foo.baz@example.com"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     async def test_valid(
         self,
@@ -1601,7 +1601,7 @@ class TestDelete:
         assert len(active_members) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnonymize:
     async def test_individual_customer(
         self,
@@ -1810,7 +1810,7 @@ class TestAnonymize:
         assert anonymized.deleted_at is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebhook:
     @pytest.mark.parametrize(
         "event_type",
@@ -1850,7 +1850,7 @@ class TestWebhook:
         assert send_mock.call_count == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetEmailRecipients:
     async def test_individual_customer(
         self,

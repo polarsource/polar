@@ -25,7 +25,7 @@ from tests.e2e.lifecycle.conftest import get_benefit_grants, get_billing_entries
 from tests.e2e.purchase.conftest import BUYER_EMAIL, complete_purchase
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionFullLifecycle:
     @E2E_AUTH
     async def test_subscribe_renew_cancel_revoke(

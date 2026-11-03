@@ -1,16 +1,17 @@
 from fastapi import APIRouter
 
 from polar.account.endpoints import router as accounts_router
+from polar.agent.endpoints import router as agent_router
 from polar.auth.endpoints import router as auth_router
 from polar.benefit.endpoints import router as benefits_router
 from polar.benefit.grant.endpoints import router as benefit_grants_router
 from polar.benefit.strategies.slack_shared_channel.endpoints import (
     router as slack_shared_channel_benefit_router,
 )
+from polar.catalog.endpoints import router as catalog_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.cli.endpoints import router as cli_router
-from polar.compass.endpoints import router as compass_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
@@ -52,6 +53,8 @@ from polar.organization.endpoints import router as organization_router
 from polar.organization_access_token.endpoints import (
     router as organization_access_token_router,
 )
+from polar.organization_domain.endpoints import router as organization_domain_router
+from polar.outpost.endpoints import router as outpost_router
 from polar.payment.endpoints import router as payment_router
 from polar.payout.endpoints import router as payout_router
 from polar.payout_account.endpoints import router as payout_account_router
@@ -59,7 +62,6 @@ from polar.personal_access_token.endpoints import router as pat_router
 from polar.product.endpoints import router as product_router
 from polar.refund.endpoints import router as refund_router
 from polar.search.endpoints import router as search_router
-from polar.sso.endpoints import domain_router as sso_domain_router
 from polar.sso.endpoints import router as sso_router
 from polar.subscription.endpoints import router as subscription_router
 from polar.support_case.endpoints import router as support_case_router
@@ -95,8 +97,8 @@ router.include_router(stream_router)
 router.include_router(organization_router)
 # /organizations/{id}/sso-connections
 router.include_router(sso_router)
-# /organizations/{id}/sso-domains
-router.include_router(sso_domain_router)
+# /organizations/{id}/domains
+router.include_router(organization_domain_router)
 # /subscriptions
 router.include_router(subscription_router)
 # /transactions
@@ -133,12 +135,12 @@ router.include_router(cli_router)
 router.include_router(files_router)
 # /metrics
 router.include_router(metrics_router)
-# /compass
-router.include_router(compass_router)
 # /license-keys
 router.include_router(license_key_router)
 # /checkout-links
 router.include_router(checkout_link_router)
+# /catalogs
+router.include_router(catalog_router)
 # /custom-fields
 router.include_router(custom_field_router)
 # /discounts
@@ -191,3 +193,7 @@ router.include_router(polar_self_router)
 router.include_router(payout_account_router)
 # /feedbacks
 router.include_router(feedback_router)
+# /outpost
+router.include_router(outpost_router)
+# /agent
+router.include_router(agent_router)

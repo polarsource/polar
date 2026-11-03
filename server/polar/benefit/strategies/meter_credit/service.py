@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Unpack, cast
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
@@ -98,6 +98,7 @@ class BenefitMeterCreditService(
                             "meter_id": str(meter_id),
                             "units": rollover_units,
                             "rollover": True,
+                            "reason": "benefit",
                         },
                     ),
                 )
@@ -126,6 +127,20 @@ class BenefitMeterCreditService(
         if meter_id is None:
             return grant_properties
 
+        # Credits are forward-looking: once the meter was reset after the last
+        # credit, that period is closed and its credits aren't clawed back.
+        last_credited_at = grant_properties.get("last_credited_at")
+        event_repository = EventRepository.from_session(self.session)
+        if (
+            last_credited_at is not None
+            and await event_repository.has_meter_reset_ingested_after(
+                customer,
+                uuid.UUID(meter_id),
+                datetime.fromisoformat(last_credited_at),
+            )
+        ):
+            return grant_properties
+
         units = -grant_properties.get("last_credited_units", properties["units"])
         return await self._create_event(
             customer,
@@ -142,7 +157,7 @@ class BenefitMeterCreditService(
 
     async def validate_properties(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitMeterCreditProperties:
@@ -183,6 +198,7 @@ class BenefitMeterCreditService(
                     "meter_id": str(meter_id),
                     "units": units,
                     "rollover": rollover,
+                    "reason": "benefit",
                 },
             ),
         )

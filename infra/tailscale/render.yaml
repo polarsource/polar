@@ -6,8 +6,6 @@ services:
     envVars:
       - key: TAILSCALE_AUTHKEY
         sync: false
-      - key: TAILSCALE_VERSION
-        value: 1.94.2
       - key: ADVERTISE_ROUTES
         value: 10.208.0.0/16
     disk:

@@ -1,5 +1,6 @@
 import collections.abc
 import enum
+import operator
 import re
 import typing
 
@@ -34,7 +35,7 @@ class ArrayType(BaseModel):
     """An ordered sequence of items all sharing the same type."""
 
     kind: typing.Literal["array"]
-    items: "TypeRef"
+    items: TypeRef
     min_items: int | None = None
     max_items: int | None = None
 
@@ -82,7 +83,7 @@ class UnionType(BaseModel):
     """
 
     kind: typing.Literal["union"]
-    variants: list["TypeRef"]
+    variants: list[TypeRef]
     discriminator: UnionDiscriminator | None = None
     composition_kind: typing.Literal["allOf", "oneOf", "anyOf"] | None = None
 
@@ -96,7 +97,7 @@ class NullableType(BaseModel):
     """
 
     kind: typing.Literal["nullable"]
-    inner: "TypeRef"
+    inner: TypeRef
 
 
 class LiteralType(BaseModel):
@@ -120,8 +121,8 @@ class MapType(BaseModel):
     """
 
     kind: typing.Literal["map"]
-    value_type: "TypeRef"
-    key_type: "TypeRef | None" = None
+    value_type: TypeRef
+    key_type: TypeRef | None = None
 
 
 type TypeRef = typing.Annotated[
@@ -138,14 +139,17 @@ type TypeRef = typing.Annotated[
 ]
 
 
-type CLIConfirmationValue = str | bool | int | float | None
+TOOL_ANNOTATIONS = "x-tool-annotations"
+TOOL_DESTRUCTIVE_WHEN = "x-tool-destructive-when"
+
+type DestructiveValue = str | bool | int | float | None
 
 
-class CLIConfirmation(BaseModel):
+class DestructiveCondition(BaseModel):
     model_config = {"strict": True, "allow_inf_nan": False, "extra": "forbid"}
 
-    equals: CLIConfirmationValue = None
-    one_of: list[CLIConfirmationValue] | None = None
+    equals: DestructiveValue = None
+    one_of: list[DestructiveValue] | None = None
 
     @model_validator(mode="after")
     def validate_condition(self) -> typing.Self:
@@ -158,13 +162,13 @@ class CLIConfirmation(BaseModel):
     @model_serializer
     def serialize_condition(
         self,
-    ) -> dict[str, CLIConfirmationValue | list[CLIConfirmationValue]]:
+    ) -> dict[str, DestructiveValue | list[DestructiveValue]]:
         if self.one_of is not None:
             return {"one_of": self.one_of}
         return {"equals": self.equals}
 
     @property
-    def values(self) -> list[CLIConfirmationValue]:
+    def values(self) -> list[DestructiveValue]:
         return self.one_of if self.one_of is not None else [self.equals]
 
 
@@ -177,7 +181,7 @@ class Field(BaseModel):
     description: str | None = None
     read_only: bool | None = None
     write_only: bool | None = None
-    cli_confirm: CLIConfirmation | None = None
+    destructive_when: DestructiveCondition | None = None
     deprecated: bool | None = None
     default: typing.Any | None = None
     has_default: bool = False
@@ -249,7 +253,7 @@ class Parameter(BaseModel):
 
     name: str
     parameter_name: str
-    cli_confirm: CLIConfirmation | None = None
+    destructive_when: DestructiveCondition | None = None
     type: TypeRef
     required: bool
     description: str | None = None
@@ -316,7 +320,7 @@ class Method(BaseModel):
     deprecated: bool | None = None
     pagination: Pagination | None = None
     cli_preview: CLIPreview | None = None
-    cli_confirm: bool | None = None
+    destructive: bool | None = None
     security: list[dict[str, list[str]]] | None = None
     pending_response: str | None = None
 
@@ -334,8 +338,8 @@ class Service(BaseModel):
     """
 
     name: str
-    services: list["Service"]
-    methods: list["Method"]
+    services: list[Service]
+    methods: list[Method]
 
 
 class Server(BaseModel):
@@ -455,7 +459,7 @@ def _default_service_name_normalizer(input: str) -> str:
 
 def _get_operations(
     path_item: op.PathItem,
-) -> collections.abc.Generator[tuple[HTTPMethod, op.Operation], None, None]:
+) -> collections.abc.Generator[tuple[HTTPMethod, op.Operation]]:
     for method in HTTPMethod:
         if operation := getattr(path_item, method.lower(), None):
             yield method, operation
@@ -606,10 +610,12 @@ def _convert_typeref(
         return UnionType(kind="union", variants=variants, composition_kind="allOf")
 
     if schema.enum is not None:
-        if schema.title:
-            name = normalize_model_name(schema.title)
-            if name not in inline_schemas:
-                inline_schemas[name] = schema
+        name = normalize_model_name(schema.title) if schema.title else None
+        # A title already taken by other values would alias the wrong enum.
+        if (
+            name is not None
+            and inline_schemas.setdefault(name, schema).enum == schema.enum
+        ):
             referenced_names.add(name)
             for cs in context_sets:
                 cs.add(name)
@@ -626,7 +632,7 @@ def _convert_typeref(
     if schema_type in ("string", "integer", "number", "boolean"):
         return PrimitiveType(
             kind="primitive",
-            type=schema_type,  # type: ignore[arg-type]
+            type=schema_type.value,
             format=schema.schema_format or None,
             minimum=schema.minimum,
             exclusive_minimum=schema.exclusiveMinimum,
@@ -707,17 +713,17 @@ def _schema_to_enum(name: str, schema: op.Schema) -> Enum:
     )
 
 
-def _cli_confirmation(
+def _destructive_condition(
     schema: op.Schema | op.Reference | None,
-) -> CLIConfirmation | None:
+) -> DestructiveCondition | None:
     if schema is None:
         return None
 
     extras = schema.__pydantic_extra__ or {}
-    if "x-polar-cli-confirm" not in extras:
+    if TOOL_DESTRUCTIVE_WHEN not in extras:
         return None
 
-    return CLIConfirmation.model_validate(extras["x-polar-cli-confirm"])
+    return DestructiveCondition.model_validate(extras[TOOL_DESTRUCTIVE_WHEN])
 
 
 def _schema_to_model(
@@ -743,7 +749,7 @@ def _schema_to_model(
         read_only = None
         write_only = None
         deprecated = None
-        cli_confirm = _cli_confirmation(prop)
+        destructive_when = _destructive_condition(prop)
         default = None
         has_default = False
         has_example, example = _extract_example(prop)
@@ -763,7 +769,7 @@ def _schema_to_model(
                 description=description,
                 read_only=read_only,
                 write_only=write_only,
-                cli_confirm=cli_confirm,
+                destructive_when=destructive_when,
                 deprecated=deprecated,
                 default=default,
                 has_default=has_default,
@@ -993,12 +999,12 @@ def _convert_parameter_ir(
 
     default = None
     has_default = False
-    if parameter.param_schema is not None and isinstance(
-        parameter.param_schema, op.Schema
+    if (
+        isinstance(parameter.param_schema, op.Schema)
+        and "default" in parameter.param_schema.model_fields_set
     ):
-        if "default" in parameter.param_schema.model_fields_set:
-            default = parameter.param_schema.default
-            has_default = True
+        default = parameter.param_schema.default
+        has_default = True
 
     has_example, example = _extract_example(parameter, parameter.param_schema)
 
@@ -1022,7 +1028,7 @@ def _convert_parameter_ir(
         type=type_,
         required=parameter.required or False,
         description=parameter.description or None,
-        cli_confirm=_cli_confirmation(parameter.param_schema),
+        destructive_when=_destructive_condition(parameter.param_schema),
         deprecated=True if parameter.deprecated else None,
         default=default,
         has_default=has_default,
@@ -1050,11 +1056,8 @@ def _topological_sort_unions(
 
     for union_name, union in filtered_unions.items():
         for variant in union.variants:
-            if isinstance(variant, UnionRef):
-                # This union depends on the referenced union
-                # But only if the referenced union is also in our filtered set
-                if variant.name in filtered_unions:
-                    dependencies[union_name].add(variant.name)
+            if isinstance(variant, UnionRef) and variant.name in filtered_unions:
+                dependencies[union_name].add(variant.name)
 
     # Perform topological sort using Kahn's algorithm
     result: list[NamedUnion] = []
@@ -1331,9 +1334,13 @@ def _generate_ir_version(
                     deprecated=True if operation.deprecated else None,
                     pagination=pagination,
                     cli_preview=cli_preview,
-                    cli_confirm=(operation.__pydantic_extra__ or {}).get(
-                        "x-polar-cli-confirm"
-                    ),
+                    destructive=(
+                        "destructive"
+                        in (operation.__pydantic_extra__ or {}).get(
+                            TOOL_ANNOTATIONS, []
+                        )
+                    )
+                    or None,
                     security=security,
                     pending_response=(
                         accepted_response.description
@@ -1451,7 +1458,7 @@ def _generate_ir_version(
         services=services,
         input_models=sorted(
             [m for name, m in models_dict.items() if name in input_names],
-            key=lambda m: m.name,
+            key=operator.attrgetter("name"),
         ),
         output_models=sorted(
             [
@@ -1459,13 +1466,13 @@ def _generate_ir_version(
                 for name, m in models_dict.items()
                 if name in output_names and name not in webhook_names
             ],
-            key=lambda m: m.name,
+            key=operator.attrgetter("name"),
         ),
         webhooks=sorted(
             [m for name, m in models_dict.items() if name in webhook_names],
-            key=lambda m: m.name,
+            key=operator.attrgetter("name"),
         ),
-        enums=sorted(enums_dict.values(), key=lambda e: e.name),
+        enums=sorted(enums_dict.values(), key=operator.attrgetter("name")),
         input_unions=_topological_sort_unions(unions_dict, input_names),
         output_unions=_topological_sort_unions(unions_dict, output_names),
     )

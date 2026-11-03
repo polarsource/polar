@@ -1,7 +1,6 @@
 import uuid
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -18,7 +17,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def payout_account_organization_second(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -27,7 +26,7 @@ async def payout_account_organization_second(
     return await create_payout_account(save_fixture, organization_second, user_second)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListPayoutAccounts:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/payout-accounts/")
@@ -71,7 +70,7 @@ class TestListPayoutAccounts:
         assert accounts[str(free_account.id)]["organizations"] == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreatePayoutAccount:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/payout-accounts/", json={})
@@ -114,7 +113,7 @@ class TestCreatePayoutAccount:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImpersonationCanList:
     @pytest.mark.auth(AuthSubjectFixture(scopes=READ_ONLY_SCOPES))
     async def test_impersonation_can_list(self, client: AsyncClient) -> None:
@@ -123,7 +122,7 @@ class TestImpersonationCanList:
         assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPayoutAccount:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/payout-accounts/{uuid.uuid4()}")
@@ -213,7 +212,7 @@ class TestGetPayoutAccount:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeletePayoutAccount:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.delete(f"/v1/payout-accounts/{uuid.uuid4()}")
@@ -234,7 +233,7 @@ class TestDeletePayoutAccount:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOnboardingLink:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -259,7 +258,7 @@ class TestOnboardingLink:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDashboardLink:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -282,7 +281,7 @@ class TestDashboardLink:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSync:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(f"/v1/payout-accounts/{uuid.uuid4()}/sync")
@@ -310,7 +309,7 @@ def stripe_service_mock(mocker: MockerFixture) -> StripeService:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImpersonationCannotWrite:
     """A ``payouts:read``-only subject must not reach the four per-account
     write endpoints. Write endpoints require ``payouts:write``; a
@@ -398,7 +397,7 @@ class TestImpersonationCannotWrite:
         stripe_service_mock.create_login_link.assert_not_called()  # type: ignore[attr-defined]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImpersonationCanRead:
     """A ``payouts:read``-only subject can still read individual payout
     accounts — the read guard accepts either ``payouts:read`` or

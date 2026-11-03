@@ -4,7 +4,6 @@ from datetime import timedelta
 
 import httpx
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.backoffice import app as backoffice_app
@@ -41,7 +40,7 @@ from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import pan_step_required_inputs
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def backoffice_client(
     session: AsyncSession, user: User, redis: Redis
 ) -> AsyncGenerator[httpx.AsyncClient]:
@@ -126,7 +125,7 @@ async def _reload(session: AsyncSession, migration: MerchantMigration) -> None:
     await session.refresh(migration)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     async def test_lists_a_migration_with_its_organization(
         self,
@@ -197,14 +196,14 @@ class TestList:
         assert response.status_code == 200
         assert "No migrations in this view." in response.text
 
-    async def test_completed_view_includes_cleanup(
+    async def test_completed_view_lists_finished_migrations(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -213,19 +212,19 @@ class TestList:
 
         assert response.status_code == 200
         assert organization.name in response.text
-        assert "Step 7 of 7" in response.text
+        assert "Step 6 of 6" in response.text
         assert "Done" in response.text
         assert "No migrations in this view." not in response.text
         assert "close the migration out" not in response.text
 
-    async def test_active_view_excludes_cleanup(
+    async def test_active_view_excludes_finished(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -235,14 +234,14 @@ class TestList:
         assert response.status_code == 200
         assert "No migrations in this view." in response.text
 
-    async def test_needs_ops_view_excludes_cleanup(
+    async def test_needs_ops_view_excludes_finished(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(
@@ -311,7 +310,7 @@ async def _stage_monthly_subscription(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMrr:
     async def test_list_shows_the_monthly_total(
         self,
@@ -377,7 +376,7 @@ class TestMrr:
         assert "No recurring revenue staged" in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDetail:
     async def test_shows_the_checklist_and_the_ops_action(
         self,
@@ -472,14 +471,14 @@ class TestDetail:
 
         assert response.status_code == 404
 
-    async def test_cleanup_detail_reads_as_completed(
+    async def test_completed_detail_reads_as_done(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         migration = await _create_migration(
-            save_fixture, organization, step=MerchantMigrationStep.cleanup
+            save_fixture, organization, step=MerchantMigrationStep.completed
         )
 
         response = await backoffice_client.get(f"/merchant-migrations/{migration.id}")
@@ -492,7 +491,7 @@ class TestDetail:
         assert "close the migration out" not in response.text
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCompleteStep:
     async def test_completes_an_ops_owned_step(
         self,
@@ -660,7 +659,7 @@ class TestCompleteStep:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnnotateStep:
     async def test_saves_the_note_and_the_expected_date(
         self,

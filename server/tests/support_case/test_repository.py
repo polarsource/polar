@@ -19,7 +19,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetById:
     async def test_loads_dispute_subclass_column(
         self,

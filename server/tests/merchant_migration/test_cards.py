@@ -2,7 +2,6 @@ from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy import select
@@ -140,7 +139,7 @@ async def _payment_methods(
     return list(result.scalars().all())
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def imported_customer(
     save_fixture: SaveFixture, organization: Organization
 ) -> Customer:
@@ -152,7 +151,7 @@ async def imported_customer(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestLinkPaymentMethod:
     async def test_no_source_customer_id(
         self,
@@ -400,7 +399,7 @@ class TestLinkPaymentMethod:
         assert len(await _payment_methods(session, imported_customer)) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestKeepsTheCardTheSourceCharged:
     """The customer has two cards stored but the subscription only ever charged
     one of them. The copy re-mints both ids, so the details are what tells them

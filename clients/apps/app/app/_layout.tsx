@@ -1,14 +1,14 @@
 import { Box } from '@/components/Shared/Box'
+import { fontAssets } from '@/design-system/fonts'
 import theme from '@/design-system/theme'
 import { SessionProvider } from '@/providers/SessionProvider'
 import { ExtensionStorage } from '@bacons/apple-targets'
-import { InstrumentSerif_400Regular } from '@expo-google-fonts/instrument-serif/400Regular'
-import { useFonts } from '@expo-google-fonts/instrument-serif/useFonts'
 import NetInfo from '@react-native-community/netinfo'
 import * as Sentry from '@sentry/react-native'
 
 import { ThemeProvider } from '@shopify/restyle'
 import { onlineManager } from '@tanstack/react-query'
+import { useFonts } from 'expo-font'
 import { Slot } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import React, { useCallback, useEffect } from 'react'
@@ -65,9 +65,7 @@ onlineManager.setEventListener((setOnline) => {
 })
 
 export default Sentry.wrap(function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    InstrumentSerif_400Regular,
-  })
+  const [fontsLoaded] = useFonts(fontAssets)
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -80,15 +78,13 @@ export default Sentry.wrap(function RootLayout() {
   }, [])
 
   const onLayoutRootView = useCallback(() => {
-    if (fontsLoaded) {
-      // This tells the splash screen to hide immediately! If we call this after
-      // `setAppIsReady`, then we may see a blank screen while the app is
-      // loading its initial state and rendering its first pixels. So instead,
-      // we hide the splash screen once we know the root view has already
-      // performed layout.
-      SplashScreen.hide()
-    }
-  }, [fontsLoaded])
+    // This tells the splash screen to hide immediately! If we call this after
+    // `setAppIsReady`, then we may see a blank screen while the app is
+    // loading its initial state and rendering its first pixels. So instead,
+    // we hide the splash screen once we know the root view has already
+    // performed layout.
+    SplashScreen.hide()
+  }, [])
 
   if (!fontsLoaded) {
     return null

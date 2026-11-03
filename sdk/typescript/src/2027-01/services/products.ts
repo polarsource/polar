@@ -34,6 +34,7 @@ export const listProducts = (client: ClientBase) => {
   return async (
     query?: {
       id?: string | string[] | null;
+      external_id?: string | string[] | null;
       organization_id?: string | string[] | null;
       query?: string | null;
       is_archived?: boolean | null;
@@ -50,6 +51,7 @@ export const listProducts = (client: ClientBase) => {
     const pathParams = {};
     const queryParams = {
       id: query?.id,
+      external_id: query?.external_id,
       organization_id: query?.organization_id,
       query: query?.query,
       is_archived: query?.is_archived,
@@ -85,6 +87,7 @@ export const iterListProducts = (client: ClientBase) => {
   return async function* (
     query?: {
       id?: string | string[] | null;
+      external_id?: string | string[] | null;
       organization_id?: string | string[] | null;
       query?: string | null;
       is_archived?: boolean | null;

@@ -98,10 +98,6 @@ locals {
     SENTRY_AUTH_TOKEN = {
       value = var.sentry_auth_token
     }
-    POLAR_PREVIEW_ACCESS_TOKEN = {
-      value  = var.polar_preview_access_token
-      target = ["preview"]
-    }
     MCP_OAUTH2_CLIENT_ID = {
       value = var.mcp_oauth2_client_id
     }
@@ -347,10 +343,6 @@ locals {
     }
     POLAR_POLAR_ORGANIZATION_ID = {
       value     = var.polar_organization_id
-      sensitive = false
-    }
-    POLAR_POLAR_FREE_PRODUCT_ID = {
-      value     = var.polar_free_product_id
       sensitive = false
     }
     POLAR_POLAR_SCALE_PRODUCT_ID = {

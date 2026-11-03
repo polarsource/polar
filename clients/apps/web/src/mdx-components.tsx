@@ -1,4 +1,5 @@
 import { BlogHero } from '@/components/Blog/BlogHero'
+import { DesignPartnerSignup } from '@/components/Blog/DesignPartnerSignup'
 import { StaticImage } from '@/components/Image/StaticImage'
 import ProseWrapper from '@/components/MDX/ProseWrapper'
 import { Table } from '@polar-sh/orbit/ui/table'
@@ -46,6 +47,13 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
           )}
         >
           {props.children}
+        </div>
+      )
+    },
+    DesignPartnerSignup() {
+      return (
+        <div className="not-prose mt-16">
+          <DesignPartnerSignup />
         </div>
       )
     },

@@ -19,7 +19,7 @@
     "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",
     "push:test": "node tooling/push-notifications/send-push.js",
-    "postinstall": "pnpm --filter @polar-sh/client build && patch-package",
+    "postinstall": "pnpm --filter @polar-sh/client build",
     "prewidget": "EXPO_NO_GIT_STATUS=1 EXPO_WIDGET_BUILD=1 pnpm exec expo prebuild --template ./node_modules/@bacons/apple-targets/prebuild-blank.tgz --clean",
     "eas-build-pre-install": "test -f ../../pnpm-workspace.yaml || printf 'packages:\\n  - apps/*\\n  - packages/*\\n  - examples/*\\n' > ../../pnpm-workspace.yaml"
   },
@@ -28,9 +28,7 @@
   },
   "dependencies": {
     "@bacons/apple-targets": "^3.0.7",
-    "@dev-plugins/react-navigation": "^0.4.0",
     "@dev-plugins/react-query": "^0.4.0",
-    "@expo-google-fonts/instrument-serif": "^0.4.1",
     "@expo/metro-runtime": "~57.0.16",
     "@expo/ui": "57.0.20",
     "@expo/vector-icons": "^15.0.3",
@@ -40,7 +38,6 @@
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/cli": "latest",
     "@react-native-community/netinfo": "^12.0.1",
-    "@react-navigation/bottom-tabs": "^7.19.2",
     "@react-navigation/native": "^7.4.1",
     "@sentry/react-native": "~7.11.0",
     "@shopify/flash-list": "2.0.2",
@@ -51,7 +48,6 @@
     "expo": "~57.0.25",
     "expo-asset": "~57.0.18",
     "expo-auth-session": "~57.0.13",
-    "expo-blur": "~57.0.3",
     "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.19",
     "expo-crypto": "~57.0.3",
@@ -66,14 +62,11 @@
     "expo-router": "~57.0.23",
     "expo-secure-store": "~57.0.4",
     "expo-splash-screen": "~57.0.9",
-    "expo-status-bar": "~57.0.1",
     "expo-store-review": "^57.0.3",
     "expo-symbols": "~57.0.3",
     "expo-system-ui": "~57.0.4",
     "expo-updates": "~57.0.23",
     "expo-web-browser": "~57.0.3",
-    "nativewind": "^4.2.7",
-    "patch-package": "^8.0.1",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-error-boundary": "^6.1.6",
@@ -88,7 +81,6 @@
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.1",
     "slugify": "^1.6.9",
-    "tailwindcss": "^3.4.19",
     "victory-native": "^41.26.0"
   },
   "devDependencies": {
@@ -96,7 +88,6 @@
     "@sentry/cli": "^2.58.6",
     "@types/jest": "^29.5.14",
     "@types/react": "19.2.3",
-    "@types/react-test-renderer": "^19.3.0",
     "@typescript/native": "catalog:",
     "jest": "^29.7.0",
     "jest-expo": "~57.0.5",
@@ -112,10 +103,7 @@
     },
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "listUnknownPackages": false,
-        "exclude": [
-          "@dev-plugins/react-navigation"
-        ]
+        "listUnknownPackages": false
       }
     }
   }

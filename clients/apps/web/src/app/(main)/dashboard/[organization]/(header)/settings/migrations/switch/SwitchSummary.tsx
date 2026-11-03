@@ -23,9 +23,7 @@ export function SwitchSummary({
 
   return (
     <Box flexDirection="column" rowGap="xs">
-      <Text variant="caption" color="muted">
-        {SWITCH_INTRO}
-      </Text>
+      <Text color="muted">{SWITCH_INTRO}</Text>
       <Text variant="caption" tabularNums>
         {parts.join('  ·  ')}
       </Text>

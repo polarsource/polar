@@ -8,6 +8,7 @@ from sqlalchemy import (
     TIMESTAMP,
     Case,
     ColumnElement,
+    NotNullable,
     Select,
     String,
     Uuid,
@@ -475,7 +476,7 @@ class CustomerRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Customer]]:
+    ) -> Select[Customer]:
         statement = self.get_base_statement()
         statement = statement.where(Customer.organization_id.in_(org_ids))
         return statement
@@ -517,7 +518,7 @@ class CustomerRepository(
     ) -> dict[str, UUID]:
         statement = (
             self.get_base_statement()
-            .with_only_columns(Customer.external_id, Customer.id)
+            .with_only_columns(NotNullable(Customer.external_id), Customer.id)
             .where(
                 Customer.organization_id == organization_id,
                 Customer.external_id.in_(external_ids),
@@ -606,4 +607,14 @@ class CustomerRepository(
         )
         result = await self.session.execute(stmt)
         next_number = result.scalar_one()
+        return next_number - 1
+
+    async def increment_credit_note_next_number(self, customer_id: UUID) -> int:
+        statement = (
+            update(Customer)
+            .where(Customer.id == customer_id)
+            .values(credit_note_next_number=Customer.credit_note_next_number + 1)
+            .returning(Customer.credit_note_next_number)
+        )
+        next_number = (await self.session.execute(statement)).scalar_one()
         return next_number - 1

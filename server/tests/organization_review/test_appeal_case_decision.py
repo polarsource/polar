@@ -9,7 +9,6 @@ behavior the backoffice introduces — independent of the HTTP layer.
 from datetime import UTC, datetime
 
 import pytest
-import pytest_asyncio
 
 from polar.models import OrganizationReview
 from polar.models.organization import Organization, OrganizationStatus
@@ -34,7 +33,7 @@ from tests.fixtures.random_objects import create_organization_review
 REASON = "Please reconsider — here is the additional context for the review."
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def denied_review_with_case(
     save_fixture: SaveFixture,
     session: AsyncSession,
@@ -68,7 +67,7 @@ async def denied_review_with_case(
     return organization, review, case
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApproveDecision:
     async def test_reactivates_org_and_closes_case(
         self,
@@ -181,7 +180,7 @@ class TestApproveDecision:
             await organization_service.approve_appeal(session, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDenyDecision:
     async def test_closes_case_and_org_stays_denied(
         self,

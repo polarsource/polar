@@ -19,12 +19,12 @@ from polar.enums import (
 from polar.exceptions import PolarRequestValidationError
 from polar.integrations.stripe.account_risk import (
     MerchantRiskSignal,
-    StripeAccountRiskLevel,
     UnknownAccountRiskEvaluation,
     WebsiteRiskSignal,
 )
 from polar.kit.http import UrlReachability
 from polar.models import (
+    Agent,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -35,6 +35,7 @@ from polar.models import (
 )
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
+from polar.models.discount import Discount, DiscountDuration, DiscountType
 from polar.models.member import MemberRole
 from polar.models.order import OrderStatus
 from polar.models.organization import (
@@ -43,12 +44,14 @@ from polar.models.organization import (
     OrganizationStatus,
     OrganizationSubscriptionSettings,
     SnoozeType,
+    transition_capabilities,
 )
 from polar.models.organization import (
     OrganizationDetails as OrganizationDetailsDict,
 )
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
+from polar.models.subscription import SubscriptionStatus
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
@@ -76,8 +79,11 @@ from polar.organization.service import (
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
-from polar.organization_review.repository import OrganizationRiskSignalRepository
-from polar.organization_review.schemas import ReviewContext, ReviewVerdict
+from polar.organization_review.repository import (
+    OrganizationReviewRepository,
+    OrganizationRiskSignalRepository,
+)
+from polar.organization_review.schemas import ActorType, ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
@@ -90,18 +96,20 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
     create_checkout_link,
+    create_discount,
     create_dispute,
     create_order,
     create_organization,
     create_payment,
     create_payout_account,
     create_product,
+    create_subscription,
     create_webhook_endpoint,
     set_product_benefits,
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     @pytest.mark.parametrize(
@@ -201,9 +209,7 @@ class TestCreate:
 
         assert organization.name == "My New Organization"
         assert organization.slug == slug
-        assert organization.feature_settings == {
-            "member_model_enabled": True,
-        }
+        assert organization.feature_settings == {"meter_cycling_enabled": True}
 
         user_organization = await user_organization_service.get_by_user_and_org(
             session, auth_subject.subject.id, organization.id
@@ -269,7 +275,7 @@ class TestCreate:
 
         assert organization.feature_settings == {
             "checkout_localization_enabled": True,
-            "member_model_enabled": True,
+            "meter_cycling_enabled": True,
         }
 
     @pytest.mark.auth
@@ -333,8 +339,78 @@ class TestCreate:
             organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.CREATED]
         )
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_organization_skips_the_human_owner_steps_until_the_claim(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Agent],
+        session: AsyncSession,
+    ) -> None:
+        agent = auth_subject.subject
+        agent.organization = None
+        await save_fixture(agent)
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        create_customer_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_create_customer"
+        )
+        posthog_mock = mocker.patch(
+            "polar.organization.service.posthog.auth_subject_event"
+        )
 
-@pytest.mark.asyncio
+        organization = await organization_service.create(
+            session,
+            OrganizationCreate(name="Agent Organization", slug="agent-organization"),
+            auth_subject,
+        )
+
+        assert agent.organization_id == organization.id
+        assert organization.account is not None
+        await session.refresh(organization)
+        assert organization.is_config_as_code_enabled
+        assert (
+            await user_organization_service.get_member_count(session, organization.id)
+            == 0
+        )
+        create_customer_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "organization.created", organization_id=organization.id
+        )
+        posthog_mock.assert_not_called()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_create_fails_when_a_concurrent_create_linked_an_organization_first(
+        self,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[Agent],
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """
+        A concurrent create links its organization after this request loaded
+        the agent, so the early check passes but the conditional update doesn't.
+        """
+        agent = auth_subject.subject
+        agent.organization = None
+        await save_fixture(agent)
+        await session.execute(
+            update(Agent)
+            .where(Agent.id == agent.id)
+            .values(organization_id=organization.id)
+            .execution_options(synchronize_session=False)
+        )
+
+        with pytest.raises(CannotCreateOrganizationError):
+            await organization_service.create(
+                session,
+                OrganizationCreate(
+                    name="Agent Organization", slug="agent-organization"
+                ),
+                auth_subject,
+            )
+
+
+@pytest.mark.anyio
 class TestUpdateReviewSubmission:
     @pytest.mark.auth
     async def test_update_details_does_not_submit_for_review(
@@ -536,7 +612,7 @@ class TestUpdateReviewSubmission:
         assert result.details["switching"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_next_invoice_number_organization(
     session: AsyncSession,
     organization: Organization,
@@ -559,7 +635,7 @@ async def test_get_next_invoice_number_organization(
     assert customer.invoice_next_number == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_next_invoice_number_customer(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -605,7 +681,7 @@ async def test_get_next_invoice_number_customer(
     assert customer.invoice_next_number == 3
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_get_next_invoice_number_multiple_customers(
     session: AsyncSession,
     save_fixture: SaveFixture,
@@ -670,7 +746,7 @@ async def test_get_next_invoice_number_multiple_customers(
     assert customer2.invoice_next_number == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateWebsite:
     @pytest.mark.auth
     async def test_change_enqueues_payout_account_website_sync(
@@ -718,7 +794,7 @@ class TestUpdateWebsite:
         assert sync_calls == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckReviewThreshold:
     async def test_already_under_review_still_updates_total_balance(
         self,
@@ -1011,7 +1087,7 @@ class TestCheckReviewThreshold:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestConfirmOrganizationReviewed:
     async def test_initial_review(
         self,
@@ -1052,6 +1128,33 @@ class TestConfirmOrganizationReviewed:
         assert result.status == OrganizationStatus.ACTIVE
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
+
+    @pytest.mark.parametrize(
+        "status", [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED]
+    )
+    async def test_preserves_capability_overrides(
+        self,
+        status: OrganizationStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[status],
+            "checkout_payments": False,
+        }
+        await save_fixture(organization)
+
+        result = await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        assert result is not None
+        assert result.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.ACTIVE],
+            "checkout_payments": False,
+        }
 
     async def test_rejects_non_review_status(
         self,
@@ -1160,7 +1263,7 @@ class TestConfirmOrganizationReviewed:
         assert result.next_review_threshold == 200_000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleOngoingReviewVerdict:
     async def test_auto_approve_on_approve_verdict(
         self,
@@ -1286,7 +1389,7 @@ class TestHandleOngoingReviewVerdict:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDenyOrganization:
     async def test_deny_organization(
         self,
@@ -1356,7 +1459,7 @@ class TestDenyOrganization:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBlockOrganization:
     async def test_block_organization(
         self,
@@ -1406,7 +1509,7 @@ class TestBlockOrganization:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResetOnboardingForReview:
     @pytest.mark.parametrize(
         "status",
@@ -1494,7 +1597,7 @@ class TestResetOnboardingForReview:
         assert organization.status == status
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMaybeActivate:
     @pytest.mark.parametrize(
         "status",
@@ -1702,7 +1805,7 @@ class TestMaybeActivate:
         assert organization.status == OrganizationStatus.CREATED
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetActivationReadiness:
     async def test_reports_missing_gates(
         self,
@@ -1765,7 +1868,7 @@ class TestGetActivationReadiness:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackofficeSubmitAndMaybeActivate:
     async def test_rejects_non_created(
         self,
@@ -1857,7 +1960,7 @@ class TestBackofficeSubmitAndMaybeActivate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackofficeApprove:
     async def test_rejects_non_denied_or_blocked(
         self,
@@ -1921,13 +2024,14 @@ class TestBackofficeApprove:
         assert organization.next_review_threshold == 15000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetOrganizationUnderReview:
     async def test_set_organization_under_review(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
+        user: User,
     ) -> None:
         # Given organization active
         organization.status = OrganizationStatus.ACTIVE
@@ -1936,7 +2040,7 @@ class TestSetOrganizationUnderReview:
 
         # When
         result = await organization_service.set_organization_under_review(
-            session, organization
+            session, organization, actor_type=ActorType.HUMAN, reviewer_id=user.id
         )
 
         # Then
@@ -1944,6 +2048,13 @@ class TestSetOrganizationUnderReview:
         enqueue_job_mock.assert_called_once_with(
             "organization.under_review", organization_id=organization.id
         )
+        await session.flush()
+        decision = await OrganizationReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert decision is not None
+        assert decision.actor_type == ActorType.HUMAN
+        assert decision.reviewer_id == user.id
 
     async def test_set_organization_under_review_from_offboarding(
         self,
@@ -1958,19 +2069,19 @@ class TestSetOrganizationUnderReview:
 
         # When reverting it to review
         result = await organization_service.set_organization_under_review(
-            session, organization
+            session, organization, actor_type=ActorType.HUMAN
         )
 
         # Then it transitions back into the review flow
         assert result.status == OrganizationStatus.REVIEW
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleAccountRiskSignal:
     def _merchant(
         self,
         account_id: str,
-        level: StripeAccountRiskLevel,
+        level: OrganizationRiskSignal.RiskLevel,
         *,
         description: str | None = "Indicators: disputes",
     ) -> MerchantRiskSignal:
@@ -1984,7 +2095,7 @@ class TestHandleAccountRiskSignal:
     def _website(
         self,
         evaluation_id: str,
-        level: StripeAccountRiskLevel,
+        level: OrganizationRiskSignal.RiskLevel,
         *,
         description: str | None = "Deceptive website",
     ) -> WebsiteRiskSignal:
@@ -2011,7 +2122,7 @@ class TestHandleAccountRiskSignal:
             organization=organization,
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
-            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+            risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
             account_evaluation_id=evaluation_id,
         )
         await save_fixture(signal)
@@ -2034,13 +2145,20 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._merchant("acct_risk", StripeAccountRiskLevel.ELEVATED),
+            self._merchant("acct_risk", OrganizationRiskSignal.RiskLevel.ELEVATED),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
         signals = await self._signals(session, organization)
         assert len(signals) == 1
         assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
+        await session.flush()
+        decision = await OrganizationReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert decision is not None
+        assert decision.actor_type == ActorType.STRIPE
+        assert decision.reviewer_id is None
 
     async def test_actionable_website_matches_org_by_evaluation_id(
         self,
@@ -2062,7 +2180,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._website("acctevl_456", StripeAccountRiskLevel.HIGHEST),
+            self._website("acctevl_456", OrganizationRiskSignal.RiskLevel.HIGHEST),
         )
 
         assert organization.status == OrganizationStatus.REVIEW
@@ -2093,7 +2211,9 @@ class TestHandleAccountRiskSignal:
         with pytest.raises(UnknownAccountRiskEvaluation):
             await organization_service.handle_account_risk_signal(
                 session,
-                self._website("acctevl_unknown", StripeAccountRiskLevel.HIGHEST),
+                self._website(
+                    "acctevl_unknown", OrganizationRiskSignal.RiskLevel.HIGHEST
+                ),
             )
 
         assert organization.status == OrganizationStatus.ACTIVE
@@ -2115,7 +2235,7 @@ class TestHandleAccountRiskSignal:
 
         await organization_service.handle_account_risk_signal(
             session,
-            self._website("acctevl_456", StripeAccountRiskLevel.LOW),
+            self._website("acctevl_456", OrganizationRiskSignal.RiskLevel.LOW),
         )
 
         assert organization.status == OrganizationStatus.ACTIVE
@@ -2172,7 +2292,7 @@ class TestGetPaymentStatus:
         assert payment_status.onboarding_resubmission_requested_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAIReview:
     """Test AI review retrieval in OrganizationService."""
 
@@ -2276,7 +2396,7 @@ def _sub(
     raise AssertionError(f"sub_check {key} missing from {step}")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetReviewState:
     """Test the merchant self-review checklist."""
 
@@ -3331,7 +3451,7 @@ class TestGetReviewState:
         assert state.appeal.reviewed_at == appeal_reviewed
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubmitAppeal:
     async def test_submit_appeal_success(
         self,
@@ -3451,7 +3571,7 @@ class TestSubmitAppeal:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApproveAppeal:
     async def test_approve_appeal_activates_when_all_gates_pass(
         self,
@@ -3580,7 +3700,7 @@ class TestApproveAppeal:
             await organization_service.approve_appeal(session, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDenyAppeal:
     async def test_deny_appeal_success(
         self,
@@ -3659,7 +3779,7 @@ class TestDenyAppeal:
             await organization_service.deny_appeal(session, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckCanDelete:
     async def test_can_delete_no_activity(
         self,
@@ -3884,6 +4004,9 @@ class TestCheckCanDelete:
         assert result.can_delete_immediately is False
         assert "has_orders" in [r.value for r in result.blocked_reasons]
 
+    @pytest.mark.parametrize(
+        "discount_type", [None, DiscountType.fixed, DiscountType.percentage]
+    )
     async def test_blocked_with_paid_active_subscriptions(
         self,
         session: AsyncSession,
@@ -3891,16 +4014,32 @@ class TestCheckCanDelete:
         organization: Organization,
         product: Product,
         customer: Customer,
+        discount_type: DiscountType | None,
     ) -> None:
         """Organization with paid active subscriptions cannot be immediately deleted."""
-        from polar.models.subscription import SubscriptionStatus
-        from tests.fixtures.random_objects import create_subscription
-
+        discount: Discount | None = None
+        if discount_type == DiscountType.fixed:
+            discount = await create_discount(
+                save_fixture,
+                organization=organization,
+                type=DiscountType.fixed,
+                amounts={"usd": 100},
+                duration=DiscountDuration.forever,
+            )
+        elif discount_type == DiscountType.percentage:
+            discount = await create_discount(
+                save_fixture,
+                organization=organization,
+                type=DiscountType.percentage,
+                basis_points=5000,
+                duration=DiscountDuration.forever,
+            )
         await create_subscription(
             save_fixture,
             product=product,
             customer=customer,
             status=SubscriptionStatus.active,
+            discount=discount,
         )
 
         result = await organization_service.check_can_delete(session, organization)
@@ -4028,7 +4167,7 @@ class TestCheckCanDelete:
         assert result.blocked_reasons == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestDeletion:
     @pytest.mark.auth
     async def test_immediate_deletion_no_activity(
@@ -4139,7 +4278,7 @@ class TestRequestDeletion:
         enqueue_job_mock.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSoftDeleteOrganization:
     async def test_enqueues_polar_self_customer_deletion(
         self,
@@ -4335,7 +4474,7 @@ class TestSoftDeleteOrganization:
         assert result.slug_history == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateFeatureSettings:
     async def test_non_updatable_flag_ignored(
         self,
@@ -4387,7 +4526,7 @@ class TestUpdateFeatureSettings:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        organization.feature_settings = {"member_model_enabled": True}
+        organization.feature_settings = {"checkout_localization_enabled": True}
         await save_fixture(organization)
 
         result = await organization_service.update(
@@ -4399,10 +4538,10 @@ class TestUpdateFeatureSettings:
         )
 
         assert result.feature_settings["overview_metrics"] == ["revenue", "orders"]
-        assert result.feature_settings["member_model_enabled"] is True
+        assert result.feature_settings["checkout_localization_enabled"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResetProrationBehavior:
     async def test_cant_set_without_feature_flag(
         self,
@@ -4463,7 +4602,7 @@ class TestResetProrationBehavior:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetOrganizationOffboarding:
     async def test_from_review(
         self,
@@ -4547,7 +4686,7 @@ class TestSetOrganizationOffboarding:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetOrganizationOffboarded:
     async def test_from_offboarding(
         self,
@@ -4595,7 +4734,7 @@ class TestSetOrganizationOffboarded:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSnoozeOrganization:
     async def test_from_review(
         self,
@@ -4711,7 +4850,7 @@ class TestSnoozeOrganization:
         assert "snoozed (#1)" in result.internal_notes
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUnsnoozeOrganization:
     async def test_from_snoozed(
         self,
@@ -4745,7 +4884,7 @@ class TestUnsnoozeOrganization:
             await organization_service.unsnooze_organization(session, organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUnsnoozeExpiredOrganizations:
     async def test_expired_time_based_transitions(
         self,
@@ -4828,7 +4967,7 @@ class TestUnsnoozeExpiredOrganizations:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOffboardExpiredOrganizations:
     async def _make_offboarding(
         self,
@@ -4913,7 +5052,7 @@ class TestOffboardExpiredOrganizations:
         assert organization.status == OrganizationStatus.OFFBOARDING
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCompleteExpiredOffboarding:
     async def _make_offboarding(
         self,
@@ -5117,7 +5256,7 @@ class TestCompleteExpiredOffboarding:
         assert organization.status != OrganizationStatus.OFFBOARDED
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetPayoutAccount:
     @pytest.mark.auth
     async def test_set_payout_account_on_organization(
@@ -5313,7 +5452,7 @@ class TestLegacyOrganizationStatus:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStatusTransitions:
     """Tests for the organization status transition rules enforced in
     Organization.set_status()."""
@@ -5572,7 +5711,7 @@ class TestStatusTransitions:
         assert organization.status == OrganizationStatus.CREATED
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCapabilityOverrides:
     """Capability overrides flip enforcement gates without changing status."""
 
@@ -5618,38 +5757,58 @@ class TestCapabilityOverrides:
         assert organization.can_access_dashboard is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetStatusCapabilities:
+    @pytest.mark.parametrize("previous_status", list(OrganizationStatus))
     @pytest.mark.parametrize("status", list(OrganizationStatus))
-    async def test_set_status_writes_capabilities(
+    async def test_defaults_move_to_new_status_defaults(
         self,
+        previous_status: OrganizationStatus,
         status: OrganizationStatus,
-        organization: Organization,
     ) -> None:
-        # Bypass set_status's transition validation: this test verifies the
-        # capability mapping for each status, not the transition rules.
-        organization.status = status
-        organization.set_status(status)
-
-        assert organization.status == status
-        assert organization.capabilities == STATUS_CAPABILITIES[status]
-
-    async def test_set_status_overwrites_prior_overrides(
-        self,
-        organization: Organization,
-    ) -> None:
-        organization.set_status(OrganizationStatus.ACTIVE)
-        assert organization.capabilities is not None
-        organization.capabilities = {**organization.capabilities, "payouts": False}
-
-        organization.set_status(OrganizationStatus.BLOCKED)
-
         assert (
-            organization.capabilities == STATUS_CAPABILITIES[OrganizationStatus.BLOCKED]
+            transition_capabilities(
+                {**STATUS_CAPABILITIES[previous_status]}, previous_status, status
+            )
+            == STATUS_CAPABILITIES[status]
         )
 
+    async def test_set_status_preserves_overrides(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.SNOOZED
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[OrganizationStatus.SNOOZED],
+            "checkout_payments": False,
+        }
 
-@pytest.mark.asyncio
+        organization.set_status(OrganizationStatus.REVIEW)
+
+        assert organization.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.REVIEW],
+            "checkout_payments": False,
+        }
+
+    async def test_set_status_moves_non_overridden_capabilities(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        organization.capabilities = {
+            **STATUS_CAPABILITIES[OrganizationStatus.DENIED],
+            "dashboard_access": False,
+        }
+
+        organization.set_status(OrganizationStatus.ACTIVE)
+
+        assert organization.capabilities == {
+            **STATUS_CAPABILITIES[OrganizationStatus.ACTIVE],
+            "dashboard_access": False,
+        }
+
+
+@pytest.mark.anyio
 class TestSetCapability:
     async def test_flips_value(
         self,
@@ -5738,7 +5897,7 @@ class TestSetCapability:
         assert organization.capabilities["checkout_payments"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestChangeOwnerRoleSwap:
     """
     `change_owner` swaps `UserOrganization.role`: the previous `owner` is
@@ -5833,7 +5992,7 @@ class TestChangeOwnerRoleSwap:
         assert new.role == OrganizationRole.owner
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddUser:
     @pytest.mark.parametrize(
         ("organization_role", "expected_member_role"),
@@ -5870,7 +6029,7 @@ class TestAddUser:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelExpiredOrganizationsSubscriptions:
     async def test_enqueues_for_expired_org(
         self,
@@ -5924,7 +6083,7 @@ class TestCancelExpiredOrganizationsSubscriptions:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateSSOEnforcement:
     @pytest.mark.auth
     async def test_enabling_revokes_tokens(
@@ -5965,3 +6124,20 @@ class TestUpdateSSOEnforcement:
         )
 
         revoke_mock.assert_not_awaited()
+
+
+@pytest.mark.anyio
+class TestSetStatus:
+    async def test_notifies_resend(
+        self, mocker: MockerFixture, organization: Organization
+    ) -> None:
+        on_status_changed = mocker.patch(
+            "polar.organization.service.resend_service.on_organization_status_changed"
+        )
+
+        organization_service.set_status(organization, OrganizationStatus.DENIED)
+
+        assert organization.status == OrganizationStatus.DENIED
+        on_status_changed.assert_called_once_with(
+            organization.id, OrganizationStatus.ACTIVE, OrganizationStatus.DENIED
+        )

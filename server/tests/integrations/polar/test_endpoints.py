@@ -132,6 +132,7 @@ _SUBSCRIPTION: dict[str, Any] = {
         "meter_interval": None,
         "meter_interval_count": None,
         "is_recurring": True,
+        "is_deletable": False,
         "is_archived": False,
         "organization_id": "00000000-0000-0000-0000-000000000099",
         "metadata": {},
@@ -241,7 +242,7 @@ def enqueue_mock(mocker: MockerFixture) -> AsyncMock:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebhook:
     async def test_invalid_signature_returns_401(
         self, client: AsyncClient, enqueue_mock: AsyncMock

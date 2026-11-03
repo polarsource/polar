@@ -5,7 +5,7 @@ import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 import DiscountForm, { DiscountFormValues } from './DiscountForm'
 
@@ -16,31 +16,16 @@ interface UpdateDiscountModalContentProps {
   hideModal: () => void
 }
 
-type DiscountFixed =
-  | schemas['DiscountFixedOnceForeverDuration']
-  | schemas['DiscountFixedRepeatDuration']
-
 const getInitialAmountsByCurrency = (
   discount: schemas['Discount'],
-  defaultCurrency: string,
 ): { currency: string; amount: number }[] => {
   if (!isDiscountFixed(discount)) {
     return []
   }
-
-  const fixed = discount as unknown as DiscountFixed
-
-  // Prefer the new amounts map if present and non-empty
-  if (fixed.amounts && Object.keys(fixed.amounts).length > 0) {
-    return Object.entries(fixed.amounts as Record<string, number>).map(
-      ([currency, amount]) => ({ currency, amount }),
-    )
-  }
-
-  // Fall back to legacy single currency/amount fields
-  const currency = fixed.currency ?? defaultCurrency
-  const amount = fixed.amount ?? 0
-  return [{ currency, amount }]
+  return Object.entries(discount.amounts).map(([currency, amount]) => ({
+    currency,
+    amount,
+  }))
 }
 
 const UpdateDiscountModalContent = ({
@@ -55,18 +40,12 @@ const UpdateDiscountModalContent = ({
     defaultValues: {
       ...(discount as unknown as DiscountFormValues),
       products: discount.products.map((product) => product.id),
-      amountsByCurrency: getInitialAmountsByCurrency(
-        discount,
-        organization.default_presentment_currency,
-      ),
+      amountsByCurrency: getInitialAmountsByCurrency(discount),
     },
   })
 
-  const {
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError } = form
+  const { errors } = useFormState({ control })
 
   const onSubmit = useCallback(
     async ({ amountsByCurrency, ...discountUpdate }: DiscountFormValues) => {

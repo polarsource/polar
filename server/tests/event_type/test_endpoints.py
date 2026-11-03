@@ -14,7 +14,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_event, create_event_type
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListEventTypes:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/event-types/")
@@ -462,7 +462,7 @@ class TestListEventTypes:
         assert item["label_property_selector"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateEventType:
     async def test_anonymous(self, client: AsyncClient, event_type: EventType) -> None:
         response = await client.patch(

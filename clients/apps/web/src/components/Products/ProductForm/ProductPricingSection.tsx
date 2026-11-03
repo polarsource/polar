@@ -1,7 +1,7 @@
 'use client'
 
 import { TrialConfigurationForm } from '@/components/TrialConfiguration/TrialConfigurationForm'
-import { isLegacyRecurringPrice, isMeteredPrice } from '@/utils/product'
+import { isMeteredPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
@@ -25,7 +25,7 @@ import {
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useFieldArray, useFormContext } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { Section } from '../../Layout/Section'
 import { CurrencyTabs } from './Pricing/CurrencyTabs'
@@ -57,8 +57,7 @@ export const ProductPricingSection = ({
   compact,
   hasMeterCreditBenefit,
 }: ProductPricingSectionProps) => {
-  const { control, setValue, watch, getValues } =
-    useFormContext<ProductFormType>()
+  const { control, setValue, getValues } = useFormContext<ProductFormType>()
 
   const pricesFieldArray = useFieldArray({
     control,
@@ -86,13 +85,11 @@ export const ProductPricingSection = ({
 
   useAutoSwitchToErroredPriceTab(setSelectedCurrency)
 
-  const isLegacyRecurringProduct = useMemo(
-    () => (prices as ProductPrice[]).some(isLegacyRecurringPrice),
-    [prices],
-  )
-
-  const recurringInterval = watch('recurring_interval')
-  const recurringIntervalCount = watch('recurring_interval_count')
+  const recurringInterval = useWatch({ control, name: 'recurring_interval' })
+  const recurringIntervalCount = useWatch({
+    control,
+    name: 'recurring_interval_count',
+  })
 
   useEffect(() => {
     if (recurringInterval !== null) {
@@ -154,12 +151,10 @@ export const ProductPricingSection = ({
     [pricesByCurrency, validatedSelectedCurrency],
   )
 
-  const watchedPrices = watch('prices')
-  const meterInterval = watch('meter_interval')
+  const watchedPrices = useWatch({ control, name: 'prices' })
+  const meterInterval = useWatch({ control, name: 'meter_interval' })
 
   const showMeterCycle = shouldShowMeterCycle({
-    isEnabledForOrganization:
-      organization.feature_settings?.meter_cycling_enabled ?? false,
     isRecurring: productType === 'recurring',
     hasMeteredPrice: (watchedPrices ?? []).some((price) =>
       isMeteredPrice(price as ProductPrice),
@@ -496,34 +491,6 @@ export const ProductPricingSection = ({
     onlyStaticAmountType === 'seat_based' ||
     onlyStaticAmountType === 'unit_based' ||
     (staticPricesForSelectedCurrency.length === 0 && hasMeteredPrice)
-
-  if (isLegacyRecurringProduct) {
-    return (
-      <Section
-        title="Pricing"
-        description="Set your billing cycle and pricing model"
-        className={className}
-        compact={compact}
-      >
-        <div className="prose dark:bg-polar-700 dark:text-polar-500 rounded-2xl bg-gray-100 p-6 text-sm text-gray-500">
-          <p>
-            This product uses a deprecated pricing model with both a monthly and
-            yearly pricing.
-          </p>
-          <p>
-            To better support future pricing model, the billing cycle is now set
-            at the product level, meaning you need to create a separate product
-            for each billing cycle.
-          </p>
-          <p>
-            If you want to make any changes to the pricing model, you need to
-            create a new product. Feel free to reach out to our support team if
-            you need assistance.
-          </p>
-        </div>
-      </Section>
-    )
-  }
 
   return (
     <Section

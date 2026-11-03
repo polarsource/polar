@@ -8,7 +8,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit/Button'
 import { Input } from '@polar-sh/orbit/Input'
 import { Text } from '@polar-sh/orbit/Text'
-import { X } from 'lucide-react'
+import { X } from '@polar-sh/orbit/icons'
 import React, { useCallback, useState } from 'react'
 import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
@@ -31,6 +31,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
   const updateOrganization = useUpdateOrganization()
   const { data: embedStatus } = useOrganizationEmbedStatus(organization.id)
   const shared = embedStatus?.shared_hosts ?? NO_SHARED
+  const sharedHosts = new Set(shared)
 
   const save = useCallback(
     async (embed_hosts: string[]) => {
@@ -115,7 +116,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
                 >
                   <Box flexDirection="column">
                     <Text variant="body">{host}</Text>
-                    {shared.includes(host) ? (
+                    {sharedHosts.has(host) ? (
                       <Text variant="caption" color="warning">
                         {`${host.replace('*.', '')} hosts other people's sites. Any of them can embed your checkout.`}
                       </Text>

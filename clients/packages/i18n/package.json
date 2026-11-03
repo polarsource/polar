@@ -38,11 +38,10 @@
     "dist"
   ],
   "devDependencies": {
-    "@ai-sdk/openai": "catalog:",
+    "@anthropic-ai/sdk": "catalog:",
     "@polar-sh/typescript-config": "workspace:*",
     "@types/react": "^19.3.0",
     "@typescript/native": "catalog:",
-    "ai": "catalog:",
     "dotenv": "^16.6.1",
     "react": "^19.3.0",
     "tsdown": "catalog:",

@@ -1,11 +1,9 @@
-import asyncio
 import os
 import pathlib
 import time
-from collections.abc import AsyncIterator, Callable, Coroutine
+from collections.abc import AsyncIterator, Callable, Coroutine, Iterator
 
 import pytest
-import pytest_asyncio
 from alembic import command
 from alembic.config import Config
 from pydantic_core import Url
@@ -55,25 +53,25 @@ def clone_template_database(sync_database_url: str) -> None:
     raise RuntimeError(f"Template database {TEMPLATE_DATABASE} never became free")
 
 
-@pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
-async def initialize_test_database(worker_id: str) -> AsyncIterator[None]:
+@pytest.fixture(scope="session", autouse=True)
+def initialize_test_database(worker_id: str) -> Iterator[None]:
     sync_database_url = get_database_url(worker_id, "psycopg2")
 
     if database_exists(sync_database_url):
         drop_database(sync_database_url)
 
     if TEMPLATE_DATABASE:
-        await asyncio.to_thread(clone_template_database, sync_database_url)
+        clone_template_database(sync_database_url)
     else:
         create_database(sync_database_url)
-        await asyncio.to_thread(apply_migrations, get_database_url(worker_id))
+        apply_migrations(get_database_url(worker_id))
 
     yield
 
     drop_database(sync_database_url)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def session(worker_id: str, mocker: MockerFixture) -> AsyncIterator[AsyncSession]:
     engine = create_async_engine(
         dsn=get_database_url(worker_id),

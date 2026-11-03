@@ -77,14 +77,14 @@ class PropertyAggregation(BaseModel):
     ]
     property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
 
-    def get_sql_column(self, model: type[Any]) -> Any:
+    def get_sql_value(self, model: type[Any]) -> Any:
         if self.property in model._filterable_fields:
             _, attr = model._filterable_fields[self.property]
-            attr = func.cast(attr, Float)
-        else:
-            attr = get_nested_metadata_attr(model, self.property).as_float()
+            return func.cast(attr, Float)
+        return get_nested_metadata_attr(model, self.property).as_float()
 
-        return self.func.get_sql_function(attr)
+    def get_sql_column(self, model: type[Any]) -> Any:
+        return self.func.get_sql_function(self.get_sql_value(model))
 
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         if self.property in model._filterable_fields:

@@ -49,7 +49,7 @@ class AccountRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Account]]:
+    ) -> Select[Account]:
         return self.get_base_statement().where(
             Account.id.in_(
                 select(Organization.account_id).where(Organization.id.in_(org_ids))

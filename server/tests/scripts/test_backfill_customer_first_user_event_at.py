@@ -51,7 +51,7 @@ def _mock_views(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBackfillOrganization:
     async def test_by_customer_id(
         self,
@@ -138,7 +138,7 @@ class TestBackfillOrganization:
         assert await _get_first_user_event_at(session, customer) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPagesByKey:
     async def test_pages_the_customer_id_view(self, mocker: MockerFixture) -> None:
         mocker.patch("scripts.backfill_customer_first_user_event_at.PAGE_SIZE", 2)

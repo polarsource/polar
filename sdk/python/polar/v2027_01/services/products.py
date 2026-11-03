@@ -38,6 +38,7 @@ class ProductsSync(SyncServiceBase):
         self,
         *,
         id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         organization_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -58,6 +59,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id: Filter by product ID.
+            external_id: Filter by product external ID.
             organization_id: Filter by organization ID.
             query: Filter by product name.
             is_archived: Filter on archived products.
@@ -84,6 +86,7 @@ class ProductsSync(SyncServiceBase):
             path_params={},
             query_params={
                 "id": id,
+                "external_id": external_id,
                 "organization_id": organization_id,
                 "query": query,
                 "is_archived": is_archived,
@@ -108,6 +111,7 @@ class ProductsSync(SyncServiceBase):
         self,
         *,
         id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         organization_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -128,6 +132,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id: Filter by product ID.
+            external_id: Filter by product external ID.
             organization_id: Filter by organization ID.
             query: Filter by product name.
             is_archived: Filter on archived products.
@@ -154,6 +159,7 @@ class ProductsSync(SyncServiceBase):
         while True:
             response = self.list(
                 id=id,
+                external_id=external_id,
                 organization_id=organization_id,
                 query=query,
                 is_archived=is_archived,
@@ -420,6 +426,7 @@ class ProductsAsync(AsyncServiceBase):
         self,
         *,
         id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         organization_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -440,6 +447,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id: Filter by product ID.
+            external_id: Filter by product external ID.
             organization_id: Filter by organization ID.
             query: Filter by product name.
             is_archived: Filter on archived products.
@@ -466,6 +474,7 @@ class ProductsAsync(AsyncServiceBase):
             path_params={},
             query_params={
                 "id": id,
+                "external_id": external_id,
                 "organization_id": organization_id,
                 "query": query,
                 "is_archived": is_archived,
@@ -490,6 +499,7 @@ class ProductsAsync(AsyncServiceBase):
         self,
         *,
         id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         organization_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -510,6 +520,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id: Filter by product ID.
+            external_id: Filter by product external ID.
             organization_id: Filter by organization ID.
             query: Filter by product name.
             is_archived: Filter on archived products.
@@ -536,6 +547,7 @@ class ProductsAsync(AsyncServiceBase):
         while True:
             response = await self.list(
                 id=id,
+                external_id=external_id,
                 organization_id=organization_id,
                 query=query,
                 is_archived=is_archived,

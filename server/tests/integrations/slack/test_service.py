@@ -113,7 +113,7 @@ def _service_with_mock(
     return service, client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetCredentials:
     async def test_creates_when_missing(
         self,
@@ -261,7 +261,7 @@ class TestSetCredentials:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDecodeState:
     async def test_rejects_unexpected_token_type(self) -> None:
         state = await jwt.encode(data={}, type="discord_oauth")
@@ -288,7 +288,7 @@ class TestDecodeState:
         assert decoded["return_to"] == "https://polar.sh/dashboard"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCompleteInstall:
     async def test_persists_bot_token_and_scopes(
         self,
@@ -371,7 +371,7 @@ class TestCompleteInstall:
         assert integration.scopes is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleEvent:
     async def test_tokens_revoked_clears_bot_token(
         self,
@@ -690,7 +690,7 @@ class TestHandleEvent:
         assert (refreshed_other.properties or {}).get("channel_id") == "G123"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     async def test_delete_removes_row(
         self,

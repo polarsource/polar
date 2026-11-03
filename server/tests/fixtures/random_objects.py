@@ -8,8 +8,10 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any, Literal, TypeIs, Unpack
 
-import pytest_asyncio
+import pytest
+from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
 
+from polar.auth.scope import CLAIMED_AGENT_SCOPES, UNCLAIMED_AGENT_SCOPES
 from polar.enums import (
     EmailSender,
     PaymentProcessor,
@@ -19,7 +21,6 @@ from polar.enums import (
     TaxProcessor,
 )
 from polar.kit.address import Address
-from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -27,6 +28,7 @@ from polar.meter.aggregation import Aggregation, CountAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Account,
+    Agent,
     Benefit,
     BillingEntry,
     Checkout,
@@ -45,11 +47,11 @@ from polar.models import (
     EventType,
     File,
     IssueReward,
-    LegacyRecurringProductPriceCustom,
-    LegacyRecurringProductPriceFixed,
     Member,
     Meter,
+    MeterEvent,
     MeterReducer,
+    OAuth2Client,
     Order,
     OrderItem,
     Organization,
@@ -81,6 +83,7 @@ from polar.models import (
     WalletTransaction,
     WebhookEndpoint,
 )
+from polar.models.agent import AgentStatus
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import (
     BenefitGrant,
@@ -125,8 +128,8 @@ from polar.models.payout_attempt import PayoutAttemptStatus
 from polar.models.pledge import Pledge, PledgeState, PledgeType
 from polar.models.product_price import (
     ProductPriceAmountType,
-    ProductPriceType,
 )
+from polar.models.reducer import ReducerKind
 from polar.models.subscription import SubscriptionStatus
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -142,6 +145,7 @@ from polar.models.user_organization import OrganizationRole
 from polar.models.wallet import WalletType
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.notification_recipient.schemas import NotificationRecipientPlatform
+from polar.oauth2.constants import CLAIM_GRANT_TYPE
 from polar.product.price_set import PriceSet
 from polar.product.tiers import SeatTierType, Tiers, TierType
 from polar.tax.calculation import TaxBreakdownItem
@@ -182,12 +186,12 @@ async def create_account(
     return account
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def account(save_fixture: SaveFixture, user: User) -> Account:
     return await create_account(save_fixture, user)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def account_second(save_fixture: SaveFixture, user: User) -> Account:
     return await create_account(save_fixture, user)
 
@@ -223,16 +227,67 @@ async def create_organization(
     return organization
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def organization(save_fixture: SaveFixture, account: Account) -> Organization:
     return await create_organization(save_fixture, account)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def organization_second(
     save_fixture: SaveFixture, account_second: Account
 ) -> Organization:
     return await create_organization(save_fixture, account_second)
+
+
+async def create_agent(
+    save_fixture: SaveFixture,
+    *,
+    organization: Organization | None = None,
+    status: AgentStatus = AgentStatus.unclaimed,
+    **kwargs: Any,
+) -> Agent:
+    oauth2_client = OAuth2Client(client_id=rstr("polar_ci_"))
+    oauth2_client.set_client_metadata(
+        {
+            "client_name": "Test Agent",
+            "token_endpoint_auth_method": "none",
+            "redirect_uris": [],
+            "grant_types": [JWT_BEARER_GRANT_TYPE, CLAIM_GRANT_TYPE],
+            "response_types": [],
+            "scope": " ".join(
+                sorted(
+                    CLAIMED_AGENT_SCOPES
+                    if status == AgentStatus.claimed
+                    else UNCLAIMED_AGENT_SCOPES
+                )
+            ),
+        }
+    )
+    agent = Agent(
+        name="Test Agent",
+        status=status,
+        oauth2_client=oauth2_client,
+        organization=organization,
+        **kwargs,
+    )
+    await save_fixture(agent)
+    return agent
+
+
+@pytest.fixture
+async def agent(save_fixture: SaveFixture, organization: Organization) -> Agent:
+    return await create_agent(save_fixture, organization=organization)
+
+
+@pytest.fixture
+async def config_as_code_enabled(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "config_as_code_enabled": True,
+    }
+    await save_fixture(organization)
 
 
 async def create_oauth_account(
@@ -268,7 +323,7 @@ async def create_user_github_oauth(
     return oauth_account
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def user_github_oauth(
     save_fixture: SaveFixture,
     user: User,
@@ -279,10 +334,11 @@ async def user_github_oauth(
 async def create_user(
     save_fixture: SaveFixture,
     email_verified: bool = True,
+    email: str | None = None,
 ) -> User:
     user = User(
         id=uuid.uuid4(),
-        email=rstr("test") + "@example.com",
+        email=email or rstr("test") + "@example.com",
         email_verified=email_verified,
         avatar_url="https://avatars.githubusercontent.com/u/47952?v=4",
         oauth_accounts=[],
@@ -291,12 +347,12 @@ async def create_user(
     return user
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def user(save_fixture: SaveFixture) -> User:
     return await create_user(save_fixture)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def user_second(save_fixture: SaveFixture) -> User:
     return await create_user(save_fixture)
 
@@ -331,7 +387,7 @@ async def create_pledge(
     return pledge
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def user_organization(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -348,7 +404,7 @@ async def user_organization(
     return user_organization
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def user_organization_second(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -812,70 +868,6 @@ async def create_product_fixed_and_seat(
 
 
 @typing.overload
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: Literal[ProductPriceAmountType.fixed],
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    amount: int = 1000,
-) -> LegacyRecurringProductPriceFixed: ...
-
-
-@typing.overload
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: Literal[ProductPriceAmountType.custom],
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    minimum_amount: int | None = None,
-    maximum_amount: int | None = None,
-    preset_amount: int | None = None,
-) -> LegacyRecurringProductPriceCustom: ...
-
-
-async def create_legacy_recurring_product_price(
-    save_fixture: SaveFixture,
-    *,
-    amount_type: ProductPriceAmountType,
-    product: Product,
-    recurring_interval: SubscriptionRecurringInterval,
-    amount: int | None = 1000,
-    minimum_amount: int | None = None,
-    maximum_amount: int | None = None,
-    preset_amount: int | None = None,
-) -> LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom:
-    product_price: LegacyRecurringProductPriceFixed | LegacyRecurringProductPriceCustom
-    if amount_type == ProductPriceAmountType.fixed:
-        product_price = LegacyRecurringProductPriceFixed(
-            price_amount=amount,
-            price_currency=PresentmentCurrency.usd,
-            tax_behavior=None,
-            product=product,
-            is_archived=False,
-        )
-    elif amount_type == ProductPriceAmountType.custom:
-        product_price = LegacyRecurringProductPriceCustom(
-            price_currency=PresentmentCurrency.usd,
-            tax_behavior=None,
-            minimum_amount=minimum_amount,
-            maximum_amount=maximum_amount,
-            preset_amount=preset_amount,
-            product=product,
-            is_archived=False,
-        )
-    else:
-        raise ValueError("Invalid amount_type")
-
-    product_price.type = ProductPriceType.recurring
-    product_price.recurring_interval = recurring_interval
-
-    await save_fixture(product_price)
-    return product_price
-
-
-@typing.overload
 async def create_discount(
     save_fixture: SaveFixture,
     *,
@@ -891,6 +883,7 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
+    external_id: str | None = None,
 ) -> DiscountFixed: ...
 @typing.overload
 async def create_discount(
@@ -908,6 +901,7 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
+    external_id: str | None = None,
 ) -> DiscountPercentage: ...
 async def create_discount(
     save_fixture: SaveFixture,
@@ -925,6 +919,7 @@ async def create_discount(
     max_redemptions: int | None = None,
     max_redemptions_per_customer: int | None = None,
     products: list[Product] | None = None,
+    external_id: str | None = None,
 ) -> Discount:
     model = type.get_model()
     custom_field = model(
@@ -940,6 +935,7 @@ async def create_discount(
         max_redemptions=max_redemptions,
         max_redemptions_per_customer=max_redemptions_per_customer,
         redemptions_count=0,
+        external_id=external_id,
     )
     if isinstance(custom_field, DiscountFixed):
         assert amounts is not None
@@ -972,7 +968,7 @@ async def create_discount_redemption(
     return discount_redemption
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def discount_fixed_once(
     save_fixture: SaveFixture, organization: Organization
 ) -> DiscountFixed:
@@ -986,7 +982,7 @@ async def discount_fixed_once(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def discount_percentage_50(
     save_fixture: SaveFixture, organization: Organization
 ) -> DiscountPercentage:
@@ -1000,7 +996,7 @@ async def discount_percentage_50(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def discount_percentage_100(
     save_fixture: SaveFixture, organization: Organization
 ) -> DiscountPercentage:
@@ -1014,7 +1010,7 @@ async def discount_percentage_100(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def discount_percentage_100_forever(
     save_fixture: SaveFixture, organization: Organization
 ) -> DiscountPercentage:
@@ -1033,7 +1029,7 @@ async def create_customer(
     *,
     organization: Organization,
     external_id: str | None = None,
-    email: str = "customer@example.com",
+    email: str | None = "customer@example.com",
     email_verified: bool = False,
     name: str = "Customer",
     billing_name: str | None = None,
@@ -1210,6 +1206,7 @@ async def create_benefit(
     deletable: bool = True,
     properties: dict[str, Any] | None = None,
     external_id: str | None = None,
+    is_current: bool = True,
 ) -> Benefit:
     if properties is None:
         properties = {"note": None}
@@ -1222,6 +1219,7 @@ async def create_benefit(
         deletable=deletable,
         properties=properties,
         external_id=external_id,
+        is_current=is_current,
     )
     await save_fixture(benefit)
     return benefit
@@ -1275,9 +1273,6 @@ async def create_subscription(
 
     recurring_interval = product.recurring_interval
     recurring_interval_count = product.recurring_interval_count
-    if product.is_legacy_recurring_price:
-        recurring_interval = product.prices[0].recurring_interval
-        recurring_interval_count = 1
     if not recurring_interval:
         recurring_interval = SubscriptionRecurringInterval.month
     if not recurring_interval_count:
@@ -1320,7 +1315,7 @@ async def create_subscription(
         trial_end=trial_end,
         cancel_at_period_end=cancel_at_period_end,
         canceled_at=canceled_at,
-        started_at=started_at,
+        started_at=started_at or created_at or now,
         ended_at=ended_at,
         ends_at=ends_at,
         organization=product.organization,
@@ -1449,7 +1444,7 @@ async def create_canceled_subscription(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product(save_fixture: SaveFixture, organization: Organization) -> Product:
     return await create_product(
         save_fixture,
@@ -1458,7 +1453,7 @@ async def product(save_fixture: SaveFixture, organization: Organization) -> Prod
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_one_time(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1469,7 +1464,7 @@ async def product_one_time(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_one_time_custom_price(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1481,7 +1476,7 @@ async def product_one_time_custom_price(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_one_time_free_price(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1493,7 +1488,7 @@ async def product_one_time_free_price(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_one_time_multiple_currencies(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1505,7 +1500,7 @@ async def product_one_time_multiple_currencies(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_custom_price(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1517,40 +1512,7 @@ async def product_recurring_custom_price(
     )
 
 
-@pytest_asyncio.fixture
-async def product_recurring_monthly_and_yearly(
-    save_fixture: SaveFixture, organization: Organization
-) -> Product:
-    product = await create_product(
-        save_fixture,
-        organization=organization,
-        recurring_interval=None,
-        prices=[],
-    )
-
-    monthly_price = await create_legacy_recurring_product_price(
-        save_fixture,
-        amount_type=ProductPriceAmountType.fixed,
-        product=product,
-        recurring_interval=SubscriptionRecurringInterval.month,
-    )
-    product.prices.append(monthly_price)
-    product.all_prices.append(monthly_price)
-
-    yearly_price = await create_legacy_recurring_product_price(
-        save_fixture,
-        amount_type=ProductPriceAmountType.fixed,
-        product=product,
-        recurring_interval=SubscriptionRecurringInterval.year,
-    )
-    product.prices.append(yearly_price)
-    product.all_prices.append(yearly_price)
-
-    await save_fixture(product)
-    return product
-
-
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_free_price(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1562,7 +1524,7 @@ async def product_recurring_free_price(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_free_seat_based(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1574,7 +1536,7 @@ async def product_recurring_free_seat_based(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_seat_based(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1586,7 +1548,7 @@ async def product_recurring_seat_based(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_metered(
     save_fixture: SaveFixture, organization: Organization, meter: Meter
 ) -> Product:
@@ -1598,7 +1560,7 @@ async def product_recurring_metered(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_fixed_and_metered(
     save_fixture: SaveFixture, organization: Organization, meter: Meter
 ) -> Product:
@@ -1610,7 +1572,7 @@ async def product_recurring_fixed_and_metered(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_trial(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1623,7 +1585,7 @@ async def product_recurring_trial(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_every_second_month(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1635,7 +1597,7 @@ async def product_recurring_every_second_month(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_recurring_multiple_currencies(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1647,7 +1609,7 @@ async def product_recurring_multiple_currencies(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -1659,7 +1621,7 @@ async def product_second(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def product_organization_second(
     save_fixture: SaveFixture, organization_second: Organization
 ) -> Product:
@@ -1670,7 +1632,7 @@ async def product_organization_second(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def products(
     product: Product,
     product_second: Product,
@@ -1854,28 +1816,28 @@ async def create_checkout_link(
     return checkout_link
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def benefit_organization(
     save_fixture: SaveFixture, organization: Organization
 ) -> Benefit:
     return await create_benefit(save_fixture, organization=organization)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def benefit_organization_second(
     save_fixture: SaveFixture, organization: Organization
 ) -> Benefit:
     return await create_benefit(save_fixture, organization=organization)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def benefit_organization_third(
     save_fixture: SaveFixture, organization: Organization
 ) -> Benefit:
     return await create_benefit(save_fixture, organization=organization)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def benefits(
     benefit_organization: Benefit,
     benefit_organization_second: Benefit,
@@ -1888,7 +1850,7 @@ async def benefits(
     ]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def organization_second_members(
     save_fixture: SaveFixture, organization_second: Organization
 ) -> list[User]:
@@ -1903,7 +1865,7 @@ async def organization_second_members(
     return users
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -1916,7 +1878,7 @@ async def customer(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def member_second(
     save_fixture: SaveFixture,
     customer: Customer,
@@ -1931,7 +1893,7 @@ async def member_second(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_second(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -1944,7 +1906,7 @@ async def customer_second(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_external_id(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -1958,7 +1920,7 @@ async def customer_external_id(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_organization_second(
     save_fixture: SaveFixture,
     organization_second: Organization,
@@ -1996,7 +1958,7 @@ async def create_member(
     return member
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def member_owner(
     save_fixture: SaveFixture,
     customer: Customer,
@@ -2012,7 +1974,7 @@ async def member_owner(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def member_billing_manager(
     save_fixture: SaveFixture,
     customer: Customer,
@@ -2028,7 +1990,7 @@ async def member_billing_manager(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def member(
     save_fixture: SaveFixture,
     customer: Customer,
@@ -2044,7 +2006,7 @@ async def member(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def subscription(
     save_fixture: SaveFixture,
     product: Product,
@@ -2261,6 +2223,7 @@ async def create_event(
     root_id: uuid.UUID | None = None,
     metadata: dict[str, str | int | bool | float | Any] | None = None,
     event_type: EventType | None = None,
+    meter: Meter | None = None,
 ) -> Event:
     event_id = uuid.uuid4()
     if root_id is None:
@@ -2281,6 +2244,18 @@ async def create_event(
         event_type_id=event_type.id if event_type else None,
     )
     await save_fixture(event)
+    if meter is not None:
+        await save_fixture(
+            MeterEvent(
+                meter_id=meter.id,
+                event_id=event.id,
+                customer_id=event.customer_id,
+                external_customer_id=event.external_customer_id,
+                organization_id=event.organization_id,
+                ingested_at=event.ingested_at,
+                timestamp=event.timestamp,
+            )
+        )
     return event
 
 
@@ -2317,7 +2292,7 @@ async def create_meter(
     return meter
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def meter(save_fixture: SaveFixture, organization: Organization) -> Meter:
     return await create_meter(save_fixture, organization=organization)
 
@@ -2327,6 +2302,7 @@ async def create_reducer(
     *,
     organization: Organization,
     meters: Sequence[Meter],
+    kind: ReducerKind = ReducerKind.usage,
 ) -> Reducer:
     """Create a reducer with the filter and aggregation of the first meter,
     used by all the given meters."""
@@ -2335,6 +2311,7 @@ async def create_reducer(
         organization=organization,
         filter=meter.filter,
         aggregation=meter.aggregation,
+        kind=kind,
     )
     await save_fixture(reducer)
     for m in meters:
@@ -2442,7 +2419,7 @@ async def create_payout_account(
     return payout_account
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def stripe_payout_account(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -2504,7 +2481,7 @@ async def create_payment(
     return payment
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def payment(save_fixture: SaveFixture, organization: Organization) -> Payment:
     return await create_payment(save_fixture, organization)
 
@@ -2531,7 +2508,7 @@ async def create_payment_method(
     return payment_method
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def payment_method(
     save_fixture: SaveFixture, customer: Customer
 ) -> PaymentMethod:
@@ -2767,7 +2744,7 @@ async def create_event_type(
     return event_type
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def event_type(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -2780,6 +2757,7 @@ async def create_webhook_endpoint(
     *,
     organization: Organization,
     events: list[WebhookEventType] | None = None,
+    external_id: str | None = None,
 ) -> WebhookEndpoint:
     webhook_endpoint = WebhookEndpoint(
         url="https://example.com/webhook",
@@ -2787,6 +2765,7 @@ async def create_webhook_endpoint(
         secret="SECRET",
         events=events or list(WebhookEventType),
         organization=organization,
+        external_id=external_id,
     )
     await save_fixture(webhook_endpoint)
     return webhook_endpoint

@@ -50,7 +50,7 @@ async def _get_aggregation_result(
     return result.scalar_one()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPropertyAggregation:
     async def test_nested_property_path(
         self,

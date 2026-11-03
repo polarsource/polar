@@ -2,7 +2,7 @@ import itertools
 import uuid
 from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any, Literal
 from urllib.parse import urlencode
@@ -124,6 +124,7 @@ from polar.tax.calculation import (
     TaxCode,
 )
 from polar.tax.calculation import tax_calculation as tax_calculation_service
+from polar.tax.calculation.base import UnsupportedCountryError
 from polar.transaction.service.balance import PaymentTransactionForChargeDoesNotExist
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -380,6 +381,7 @@ class OrderService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
+        external_product_id: Sequence[str] | None = None,
         product_billing_type: Sequence[ProductBillingType] | None = None,
         discount_id: Sequence[uuid.UUID] | None = None,
         customer_id: Sequence[uuid.UUID] | None = None,
@@ -419,6 +421,9 @@ class OrderService:
 
         if product_id is not None:
             statement = statement.where(Order.product_id.in_(product_id))
+
+        if external_product_id is not None:
+            statement = statement.where(Product.external_id.in_(external_product_id))
 
         if product_billing_type is not None:
             product_repository = ProductRepository.from_session(session)
@@ -937,7 +942,7 @@ class OrderService:
                 currency=checkout.currency,
                 address=order.billing_address,
                 tax_code=order.product.tax_code,
-                reference=str(order.id),
+                reference=f"checkout:{checkout.id}",
                 transaction_date=order.created_at,
             )
             await repository.update(
@@ -1461,18 +1466,32 @@ class OrderService:
         lock_balance: bool,
         discount: Discount | None,
         reference: str | None = None,
+        product: Product | None = None,
     ) -> Order:
         """Build the subscription order for ``items`` without persisting: no invoice
         number, no side effects. ``lock_balance`` locks the wallet balance (the
-        persist path must; a preview must not); ``reference`` keys the tax calc."""
+        persist path must; a preview must not); ``reference`` keys the tax calc;
+        ``product`` overrides the subscription's current product."""
         order_id = uuid.uuid4()
         customer = subscription.customer
+        product = product or subscription.product
+
+        # Fixed discounts are per-order, so applying one per meter-cycle settlement
+        # multiplies the giveaway by cadence; percentage discounts are
+        # cadence-invariant and still apply. See #154.
+        if (
+            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and discount is not None
+            and discount.type != DiscountType.percentage
+        ):
+            discount = None
 
         amounts = await compute_order_amounts(
             subscription,
             items,
             reference=reference or str(order_id),
             discount=discount,
+            product=product,
         )
         total_amount = amounts.total_amount
 
@@ -1500,7 +1519,7 @@ class OrderService:
             tax_calculation_processor_id=amounts.tax_calculation_processor_id,
             organization=subscription.organization,
             customer=customer,
-            product=subscription.product,
+            product=product,
             discount=discount,
             subscription=subscription,
             checkout=None,
@@ -1517,21 +1536,11 @@ class OrderService:
         billing_reason: OrderBillingReasonInternal,
         *,
         payment_mode: PaymentMode = PaymentMode.background,
+        product: Product | None = None,
     ) -> Order:
         """Build, persist and dispatch a subscription order from ``items``: invoice
         number, balance impact, optional meter reset, then payment."""
         customer = subscription.customer
-
-        # Fixed discounts are per-order, so applying one per meter-cycle settlement
-        # multiplies the giveaway by cadence; percentage discounts are
-        # cadence-invariant and still apply. See #154.
-        discount = subscription.discount
-        if (
-            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
-            and discount is not None
-            and discount.type != DiscountType.percentage
-        ):
-            discount = None
 
         order = await self.build_subscription_order(
             session,
@@ -1539,7 +1548,8 @@ class OrderService:
             items,
             billing_reason,
             lock_balance=True,
-            discount=discount,
+            discount=subscription.discount,
+            product=product,
         )
         balance_change = (
             order.applied_balance_amount
@@ -1626,9 +1636,13 @@ class OrderService:
         self,
         session: AsyncSession,
         subscription: Subscription,
+        *,
+        cutoff: datetime | None = None,
+        price_ids: Sequence[uuid.UUID] | None = None,
+        product: Product | None = None,
     ) -> Order | None:
         async with billing_entry_service.create_metered_order_items_from_pending(
-            session, subscription
+            session, subscription, cutoff=cutoff, price_ids=price_ids
         ) as items:
             if len(items) == 0:
                 return None
@@ -1637,6 +1651,7 @@ class OrderService:
                 subscription,
                 list(items),
                 OrderBillingReasonInternal.subscription_meter_cycle,
+                product=product,
             )
 
     async def create_trial_order(
@@ -2311,18 +2326,16 @@ class OrderService:
                 reference=str(order.id),
                 transaction_date=order.created_at,
             )
-        except CalculationExpiredError:
-            # Happens if the order was created a long time ago and the tax
-            # calculation expired before the payment was completed.
-            return await self._record_expired_tax_calculation(order)
+        except CalculationExpiredError, UnsupportedCountryError:
+            return await self._recalculate_tax_transaction(order)
 
         return {
             "tax_processor": tax_processor,
             "tax_transaction_processor_id": transaction_id,
         }
 
-    async def _record_expired_tax_calculation(self, order: Order) -> dict[str, Any]:
-        """Book the tax of an order whose calculation expired before payment.
+    async def _recalculate_tax_transaction(self, order: Order) -> dict[str, Any]:
+        """Recalculate and record tax while preserving the charged amounts.
 
         Returns the order fields to update.
         """
@@ -2354,30 +2367,39 @@ class OrderService:
         if tax_amount != order.tax_amount:
             log.warning(
                 "Tax recalculation differs from the charged tax, "
-                "recording the charged amount",
+                "attempting to record the charged amount",
                 order_id=order.id,
                 charged_tax_amount=order.tax_amount,
                 recalculated_tax_amount=tax_amount,
                 recalculated_calculation_id=tax_calculation_processor_id,
             )
-            (
-                transaction_id,
-                tax_processor,
-            ) = await tax_calculation_service.record_amounts(
-                amount=order.net_amount,
-                tax_amount=order.tax_amount,
-                currency=order.currency,
-                address=order.billing_address,
-                tax_code=order.product.tax_code,
-                reference=str(order.id),
-                transaction_date=order.created_at,
-            )
+            try:
+                (
+                    transaction_id,
+                    tax_processor,
+                ) = await tax_calculation_service.record_amounts(
+                    amount=order.net_amount,
+                    tax_amount=order.tax_amount,
+                    currency=order.currency,
+                    address=order.billing_address,
+                    tax_code=order.product.tax_code,
+                    reference=str(order.id),
+                    transaction_date=order.created_at,
+                )
+            except UnsupportedCountryError:
+                log.warning(
+                    "Skipping tax recording for unsupported country",
+                    order_id=order.id,
+                    country=order.billing_address.country,
+                )
+                return {}
             return {
                 "tax_processor": tax_processor,
                 "tax_transaction_processor_id": transaction_id,
             }
 
         update_dict: dict[str, Any] = {
+            "tax_processor": tax_processor,
             "tax_calculation_processor_id": tax_calculation_processor_id,
             "tax_behavior": tax_behavior,
             "tax_breakdown": tax_breakdown or None,
@@ -2511,6 +2533,7 @@ class OrderService:
             "subscription_cycled_after_trial",
             "subscription_final_invoice",
             "subscription_updated",
+            "subscription_usage_invoice",
         ]
         subject_template: str
         url_path_template: str
@@ -2571,7 +2594,7 @@ class OrderService:
                     "email": "{email}",
                 }
             case OrderBillingReasonInternal.subscription_meter_cycle:
-                template_name = "subscription_cycled"
+                template_name = "subscription_usage_invoice"
                 subject_template = "Your {description} usage invoice"
                 url_path_template = "/{organization}/portal"
                 url_params = {
@@ -2580,12 +2603,19 @@ class OrderService:
                     "email": "{email}",
                 }
 
-        # Final invoice uses the same email setting as subscription_cycled
-        email_setting_name = (
-            "subscription_cycled"
-            if template_name == "subscription_final_invoice"
-            else template_name
-        )
+        # Final and usage invoices use the same email setting as subscription_cycled
+        email_setting_name: Literal[
+            "order_confirmation",
+            "subscription_confirmation",
+            "subscription_cycled",
+            "subscription_cycled_after_trial",
+            "subscription_updated",
+        ]
+        match template_name:
+            case "subscription_final_invoice" | "subscription_usage_invoice":
+                email_setting_name = "subscription_cycled"
+            case _:
+                email_setting_name = template_name
         if not organization.customer_email_settings[email_setting_name]:
             return
 
@@ -2603,6 +2633,14 @@ class OrderService:
                 )
                 if is_free_product_price:
                     return
+
+        # Skip usage invoices fully covered by meter credits. The subtotal is
+        # net of credits but not of discounts, which still warrant an invoice.
+        if (
+            order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and order.subtotal_amount == 0
+        ):
+            return
 
         product = order.product
         customer = order.customer
@@ -3159,7 +3197,7 @@ class OrderService:
             failed_attempts = max(
                 failed_attempts,
                 self._scheduled_dunning_attempts(
-                    subscription, order.next_payment_attempt_at
+                    subscription.past_due_at, order.next_payment_attempt_at
                 )
                 - 1,
             )
@@ -3301,7 +3339,8 @@ class OrderService:
         # Payment row, so the schedule is the floor for the attempt count.
         if subscription is not None:
             failed_attempts = max(
-                failed_attempts, self._scheduled_dunning_attempts(subscription, now)
+                failed_attempts,
+                self._scheduled_dunning_attempts(subscription.past_due_at, now),
             )
 
         # failed_attempts includes the current failure (upserted by the Stripe
@@ -3345,12 +3384,12 @@ class OrderService:
         return order
 
     def _scheduled_dunning_attempts(
-        self, subscription: Subscription, now: datetime
+        self, dunning_started_at: datetime | None, now: datetime
     ) -> int:
         """Counts the initial failure, like `count_failed_payments_for_order`."""
-        if subscription.past_due_at is None:
+        if dunning_started_at is None:
             return 1
-        elapsed = now - subscription.past_due_at
+        elapsed = now - dunning_started_at
         return 1 + sum(
             1
             for retry_offset in itertools.accumulate(settings.DUNNING_RETRY_INTERVALS)
@@ -3370,20 +3409,49 @@ class OrderService:
             )
 
         payment_repository = PaymentRepository.from_session(session)
-        failed_attempts = await payment_repository.count_failed_payments_for_order(
-            order.id
+        now = utc_now()
+        # A failure without a payment method leaves no Payment row, so the
+        # schedule is the floor for the attempt count, as for subscriptions.
+        failed_attempts = max(
+            await payment_repository.count_failed_payments_for_order(order.id),
+            self._scheduled_dunning_attempts(order.created_at, now),
+        )
+        # Mirrors subscription.past_due_deadline, anchored on the order since a
+        # meter-cycle failure doesn't mark the subscription past_due.
+        dunning_deadline = (
+            order.created_at
+            + sum(settings.DUNNING_RETRY_INTERVALS, timedelta())
+            + timedelta(minutes=1)
         )
 
         # failed_attempts includes this failure, so > len(intervals) means retries
         # are exhausted. Void via the canonical path to notify the merchant
         # (order_voided event + order.updated webhook).
-        if failed_attempts > len(settings.DUNNING_RETRY_INTERVALS):
+        if (
+            failed_attempts > len(settings.DUNNING_RETRY_INTERVALS)
+            or dunning_deadline < now
+        ):
             return await self.void(session, order)
+
+        if order.next_payment_attempt_at is None:
+            latest_payment = await payment_repository.get_latest_for_order(order.id)
+            if latest_payment is not None and latest_payment.is_non_recoverable:
+                log.info(
+                    "Non-recoverable decline code detected, "
+                    "scheduling meter-cycle retry at dunning deadline",
+                    order_id=order.id,
+                    decline_reason=latest_payment.decline_reason,
+                )
+                # Same as _handle_first_dunning_attempt: skip the intermediate
+                # retries and let the attempt at the deadline void the order.
+                return await repository.update(
+                    order, update_dict={"next_payment_attempt_at": dunning_deadline}
+                )
 
         next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
         return await repository.update(
             order,
-            update_dict={"next_payment_attempt_at": utc_now() + next_interval},
+            update_dict={"next_payment_attempt_at": now + next_interval},
         )
 
     async def schedule_retry_for_past_due_orders(

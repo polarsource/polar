@@ -56,7 +56,7 @@ async def create_email_otp(
     return email_otp
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEmailOTPRepositoryDeleteExpired:
     async def test_deletes_only_expired(
         self, session: AsyncSession, save_fixture: SaveFixture
@@ -90,7 +90,7 @@ class TestEmailOTPRepositoryDeleteExpired:
         assert updated_valid is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAuthenticationSessionRepositoryDeleteExpired:
     async def test_deletes_only_expired(
         self, session: AsyncSession, save_fixture: SaveFixture
@@ -116,7 +116,7 @@ class TestAuthenticationSessionRepositoryDeleteExpired:
         assert updated_valid is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUserSessionRepositoryGetByToken:
     async def test_rewrites_a_session_hashed_under_a_retired_secret(
         self,

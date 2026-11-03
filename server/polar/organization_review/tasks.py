@@ -229,13 +229,13 @@ async def run_review_agent(
         # For THRESHOLD context with auto-approve eligibility:
         # delegate decision to the service layer
         if review_context == ReviewContext.THRESHOLD and auto_approve_eligible:
-            # If a human manually set this org under review, skip auto-action
+            # If a human or Stripe set this org under review, skip auto-action
             current_decision = await review_repository.get_current_decision(
                 organization_id
             )
             if (
                 current_decision is not None
-                and current_decision.actor_type == ActorType.HUMAN
+                and current_decision.actor_type in (ActorType.HUMAN, ActorType.STRIPE)
                 and current_decision.review_context == ReviewContext.MANUAL
             ):
                 auto_approve_eligible = False
@@ -308,7 +308,7 @@ async def run_review_agent(
 
             # Auto-deny on DENY — human will review the denial
             if report.verdict == ReviewVerdict.DENY:
-                organization.set_status(OrganizationStatus.DENIED)
+                organization_service.set_status(organization, OrganizationStatus.DENIED)
                 session.add(organization)
 
                 await review_repository.record_agent_decision(
@@ -336,7 +336,7 @@ async def run_review_agent(
             review_context == ReviewContext.PRODUCT_CHANGED
             and report.verdict != ReviewVerdict.APPROVE
         ):
-            organization.set_status(OrganizationStatus.REVIEW)
+            organization_service.set_status(organization, OrganizationStatus.REVIEW)
             session.add(organization)
 
             await review_repository.record_agent_decision(

@@ -3,11 +3,12 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Literal
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, String, Uuid
+from sqlalchemy import TIMESTAMP, Boolean, ForeignKey, Index, String, Uuid, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
+from polar.kit.external_id import ExternalIDMixin
 from polar.kit.versioning import APIVersion, APIVersionType
 from polar.version import CURRENT_API_VERSION
 
@@ -74,8 +75,17 @@ class WebhookFormat(StrEnum):
     slack = "slack"
 
 
-class WebhookEndpoint(RecordModel):
+class WebhookEndpoint(ExternalIDMixin, RecordModel):
     __tablename__ = "webhook_endpoints"
+    __table_args__ = (
+        Index(
+            "ix_webhook_endpoints_organization_id_external_id",
+            "organization_id",
+            "external_id",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
+        ),
+    )
 
     url: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)

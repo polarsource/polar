@@ -12,6 +12,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.customer.repository import CustomerRepository
+from polar.customer_seat.service import seat_service as customer_seat_service
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
@@ -489,6 +490,10 @@ class DisputeService:
                     session, subscription, subscription_service
                 ) as ctx:
                     await subscription_service.revoke(session, ctx, subscription)
+        elif dispute.order.seats is not None:
+            await customer_seat_service.revoke_all_seats_for_order(
+                session, dispute.order
+            )
         # Revoke the order benefits
         elif dispute.order.product_id is not None:
             product_repository = ProductRepository.from_session(session)
@@ -498,7 +503,11 @@ class DisputeService:
             )
             assert product is not None
             customer_repository = CustomerRepository.from_session(session)
-            customer = await customer_repository.get_by_id(dispute.order.customer_id)
+            # The customer may have been deleted since the purchase,
+            # but we still need to revoke their benefits.
+            customer = await customer_repository.get_by_id(
+                dispute.order.customer_id, include_deleted=True
+            )
             assert customer is not None
             await benefit_grant_service.enqueue_benefits_grants(
                 session,

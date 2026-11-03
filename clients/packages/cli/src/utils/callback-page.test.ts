@@ -58,6 +58,14 @@ describe('callbackPage', () => {
     )
   })
 
+  test('follows the system color scheme', () => {
+    const html = callbackPage('success')
+    expect(html).toContain('<meta name="color-scheme" content="light dark">')
+    expect(html).toMatch(
+      /@media \(prefers-color-scheme: dark\) \{\s*:root \{[^}]*--background: #000; --foreground: #fff;/,
+    )
+  })
+
   test('embeds the closing script in the success page', () => {
     expect(callbackPage('success')).toContain(
       `<script>\n${autoCloseScript}\n</script>`,

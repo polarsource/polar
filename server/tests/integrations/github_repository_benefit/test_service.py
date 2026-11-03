@@ -12,7 +12,7 @@ from polar.models import OAuthAccount
 from polar.models.user import OAuthPlatform
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetBillingPlan:
     async def test_github_exception_logged_with_context(
         self, mocker: MockerFixture

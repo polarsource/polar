@@ -1,5 +1,28 @@
 # @polar-sh/checkout
 
+## 0.6.0
+
+### Minor Changes
+
+- 44c022b: The checkout form can expose WebMCP tools to AI agents through the opt-in `webMCP` prop.
+
+### Patch Changes
+
+- 873039e: The checkout form reads the billing country, discount code and tax ID through `useWatch` and its errors through `useFormState`, so it stays reactive when bundled with the React Compiler.
+
+## 0.5.0
+
+### Minor Changes
+
+- 609943e: Remove legacy recurring price support. `isLegacyRecurringProductPrice` is gone from `@polar-sh/checkout/guards`: every product now carries its own `recurring_interval`, and the product switcher shows one option per product.
+- 1ed6d86: Remove `product_price_id` from `ProductCheckoutPublic`, following its removal from API version 2027-01.
+
+## 0.4.4
+
+### Patch Changes
+
+- b7efd0b: Fix browser builds that import `@polar-sh/checkout/components`, hooks, providers, or guards. 0.4.3 shipped a `node:module` helper in those entries, which esbuild and webpack cannot resolve and which throws in the browser under Vite.
+
 ## 0.4.3
 
 ### Patch Changes

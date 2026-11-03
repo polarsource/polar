@@ -33,6 +33,7 @@ class DiscountsSync(SyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -47,6 +48,7 @@ class DiscountsSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            external_id: Filter by discount external ID.
             query: Filter by name.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -67,6 +69,7 @@ class DiscountsSync(SyncServiceBase):
             path_params={},
             query_params={
                 "organization_id": organization_id,
+                "external_id": external_id,
                 "query": query,
                 "page": page,
                 "limit": limit,
@@ -85,6 +88,7 @@ class DiscountsSync(SyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -99,6 +103,7 @@ class DiscountsSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            external_id: Filter by discount external ID.
             query: Filter by name.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -119,6 +124,7 @@ class DiscountsSync(SyncServiceBase):
         while True:
             response = self.list(
                 organization_id=organization_id,
+                external_id=external_id,
                 query=query,
                 page=page,
                 limit=limit,
@@ -323,6 +329,7 @@ class DiscountsAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -337,6 +344,7 @@ class DiscountsAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            external_id: Filter by discount external ID.
             query: Filter by name.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -357,6 +365,7 @@ class DiscountsAsync(AsyncServiceBase):
             path_params={},
             query_params={
                 "organization_id": organization_id,
+                "external_id": external_id,
                 "query": query,
                 "page": page,
                 "limit": limit,
@@ -375,6 +384,7 @@ class DiscountsAsync(AsyncServiceBase):
         self,
         *,
         organization_id: str | builtins.list[str] | None = None,
+        external_id: str | builtins.list[str] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -389,6 +399,7 @@ class DiscountsAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
+            external_id: Filter by discount external ID.
             query: Filter by name.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -409,6 +420,7 @@ class DiscountsAsync(AsyncServiceBase):
         while True:
             response = await self.list(
                 organization_id=organization_id,
+                external_id=external_id,
                 query=query,
                 page=page,
                 limit=limit,

@@ -3,7 +3,7 @@
 import uuid
 from collections.abc import Sequence
 
-import pytest_asyncio
+import pytest
 from sqlalchemy import select
 
 from polar.enums import SubscriptionRecurringInterval
@@ -76,7 +76,7 @@ async def get_benefit_grants(
     return result.scalars().all()
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def monthly_product_with_benefit(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:
@@ -97,7 +97,7 @@ async def monthly_product_with_benefit(
     return await set_product_benefits(save_fixture, product=product, benefits=[benefit])
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
     """Organization with seat-based pricing enabled, linked to the test user."""
     account = await create_account(save_fixture, user)
@@ -109,7 +109,7 @@ async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
     return org
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def seat_product(save_fixture: SaveFixture, seat_org: Organization) -> Product:
     product = await create_product(
         save_fixture,

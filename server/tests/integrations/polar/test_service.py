@@ -219,7 +219,6 @@ def configured(mocker: MockerFixture) -> None:
     settings = mocker.patch("polar.integrations.polar.service.settings")
     settings.POLAR_SELF_ENABLED = True
     settings.POLAR_ORGANIZATION_ID = str(SELF_ORG_ID)
-    settings.POLAR_FREE_PRODUCT_ID = "prod_free"
 
 
 @pytest.fixture
@@ -439,90 +438,7 @@ class TestEnqueueTrackOrganizationReviewUsage:
         assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
 
 
-class TestEnqueueTrackCompassAssistantUsage:
-    def _call(
-        self,
-        *,
-        external_customer_id: str = str(ORG_A),
-        cost_usd: Decimal | float | None = Decimal("0.0042"),
-    ) -> None:
-        polar_self.enqueue_track_compass_assistant_usage(
-            external_customer_id=external_customer_id,
-            vendor="openai",
-            model="gpt-5.5",
-            input_tokens=1200,
-            output_tokens=300,
-            cost_usd=cost_usd,
-            usage_id="run-1",
-        )
-
-    def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
-        settings = mocker.patch("polar.integrations.polar.service.settings")
-        settings.POLAR_SELF_ENABLED = False
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call()
-
-        enqueue.assert_not_called()
-
-    def test_tracks_self_organization_usage(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        # Polar's own organization is deliberately not gated out: its Compass
-        # usage is cost-tracked like any merchant's, so Polar's own dashboard
-        # shows its AI costs.
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(external_customer_id=str(SELF_ORG_ID))
-
-        enqueue.assert_called_once()
-
-    def test_noop_when_cost_is_none(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=None)
-
-        enqueue.assert_not_called()
-
-    def test_enqueues_job_with_serialized_cost(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=Decimal("0.0042"))
-
-        enqueue.assert_called_once_with(
-            "polar_self.track_compass_assistant_usage",
-            external_customer_id=str(ORG_A),
-            vendor="openai",
-            model="gpt-5.5",
-            input_tokens=1200,
-            output_tokens=300,
-            cost_usd="0.0042",
-            usage_id="run-1",
-        )
-
-    def test_noop_when_cost_is_zero(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=Decimal(0))
-
-        enqueue.assert_not_called()
-
-    def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=0.5)
-
-        assert enqueue.call_count == 1
-        assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
-
-
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResolveFreePlan:
     async def test_subscribed_org_gets_standard_free(
         self,
@@ -752,7 +668,7 @@ class TestExtractSupport:
             polar_self._extract_support(metadata, _BENEFIT_ID)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApplyTransactionFee:
     async def test_active_grant_applies_fees(
         self,
@@ -803,7 +719,7 @@ class TestApplyTransactionFee:
         set_platform_fee_mock.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApplySupport:
     async def test_active_grant(
         self,
@@ -927,7 +843,7 @@ class TestSupportTier:
         assert SupportTier.from_level(level) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleBenefitGrantEvent:
     async def test_created_with_transaction_fee_applies_current_state(
         self,
@@ -1194,7 +1110,7 @@ class TestHandleBenefitGrantEvent:
         assert organization.sso_enforced is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApplyPreviewAccess:
     async def test_active_grant_enables_and_preserves_other_flags(
         self,
@@ -1240,7 +1156,7 @@ class TestApplyPreviewAccess:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApplySSO:
     async def test_active_grant_enables_and_preserves_other_flags(
         self,
@@ -1336,6 +1252,7 @@ def _make_product(
             "meter_interval": None,
             "meter_interval_count": None,
             "is_recurring": True,
+            "is_deletable": False,
             "is_archived": False,
             "organization_id": str(SELF_ORG_ID),
             "metadata": metadata or {},
@@ -1423,7 +1340,7 @@ def client_mock(mocker: MockerFixture) -> MagicMock:
     return client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelSubscription:
     async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
         settings = mocker.patch("polar.integrations.polar.service.settings")
@@ -1477,7 +1394,7 @@ class TestCancelSubscription:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListPlans:
     async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
         settings = mocker.patch("polar.integrations.polar.service.settings")
@@ -1524,7 +1441,7 @@ class TestListPlans:
         assert [p.id for p in plans] == ["ordered", "no_order"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscription:
     async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
         settings = mocker.patch("polar.integrations.polar.service.settings")
@@ -1556,7 +1473,7 @@ class TestGetSubscription:
         assert result is sub
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStartCheckout:
     async def test_not_configured_raises(
         self, mocker: MockerFixture, read_session_mock: AsyncReadSession
@@ -1755,7 +1672,7 @@ class TestStartCheckout:
         client_mock.update_subscription_discount.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestChangePlan:
     async def test_not_configured_raises(
         self, mocker: MockerFixture, read_session_mock: AsyncReadSession
@@ -2057,7 +1974,7 @@ class TestChangePlan:
         client_mock.update_subscription_discount.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClaimStartupProgram:
     """``claim_startup_program`` switches an existing paid subscription to
     Scale and attaches the Startup Program discount via PATCH (no checkout).
@@ -2327,7 +2244,7 @@ def orders_client_mock(mocker: MockerFixture) -> MagicMock:
     return client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListOrders:
     async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
         settings = mocker.patch("polar.integrations.polar.service.settings")
@@ -2364,7 +2281,7 @@ class TestListOrders:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetOrderInvoiceUrl:
     async def test_not_configured_raises(self, mocker: MockerFixture) -> None:
         settings = mocker.patch("polar.integrations.polar.service.settings")
@@ -2462,7 +2379,7 @@ def enqueue_email_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.integrations.polar.service.enqueue_email_template")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleOrderCreatedEvent:
     async def test_ignores_non_subscription_billing_reasons(
         self,
@@ -2762,7 +2679,7 @@ def subscription_webhook_client_mock(mocker: MockerFixture) -> MagicMock:
     return client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleSubscriptionCanceledEvent:
     async def test_skips_free_subscription(
         self,
@@ -2843,7 +2760,7 @@ class TestHandleSubscriptionCanceledEvent:
         enqueue_email_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleSubscriptionPastDueEvent:
     async def test_skips_free_subscription(
         self,
@@ -2908,7 +2825,7 @@ class TestHandleSubscriptionPastDueEvent:
         enqueue_email_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestHandleSubscriptionRevokedEvent:
     async def test_skips_free_subscription(
         self,

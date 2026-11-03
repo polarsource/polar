@@ -10,6 +10,7 @@ from authlib.oauth2.rfc6749.errors import (
     UnsupportedResponseTypeError,
 )
 from authlib.oauth2.rfc6749.hooks import hooked
+from authlib.oauth2.rfc6749.util import extract_basic_authorization
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
 from authlib.oauth2.rfc7591 import (
@@ -46,7 +47,11 @@ from .constants import (
 )
 from .grants import AuthorizationCodeGrant, CodeChallenge, register_grants
 from .metadata import get_server_metadata
-from .requests import StarletteJsonRequest, StarletteOAuth2Request
+from .requests import (
+    ClientConfigurationCredential,
+    StarletteJsonRequest,
+    StarletteOAuth2Request,
+)
 from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
 
 logger: Logger = structlog.get_logger(__name__)
@@ -184,9 +189,11 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
 
         return status, body, headers
 
-    def authenticate_token(self, request: StarletteJsonRequest) -> User | str | None:
+    def authenticate_token(
+        self, request: StarletteJsonRequest
+    ) -> ClientConfigurationCredential | None:
         if request.user is not None:
-            return request.user
+            return ClientConfigurationCredential(request.user)
 
         authorization = request.headers.get("Authorization")
         if authorization is None:
@@ -194,7 +201,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
 
         scheme, _, token = authorization.partition(" ")
         if scheme.lower() == "bearer" and token != "":
-            return token
+            return ClientConfigurationCredential(token)
 
         return None
 
@@ -213,14 +220,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             return None
 
         credential = request.credential
-        if (
-            credential is None
-            or (
-                isinstance(credential, str)
-                and not client.check_registration_access_token(credential)
-            )
-            or (isinstance(credential, User) and client.user_id != credential.id)
-        ):
+        if credential is None or not credential.check_client(client):
             return None
 
         return client
@@ -296,6 +296,40 @@ class _QueryTokenMixin:
 
 class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
     CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+
+    def authenticate_endpoint_client(
+        self, request: StarletteOAuth2Request
+    ) -> OAuth2Client:
+        client = self._authenticate_agent_client(request)
+        if client is None:
+            return super().authenticate_endpoint_client(request)
+        request.client = client
+        return client
+
+    def _authenticate_agent_client(
+        self, request: StarletteOAuth2Request
+    ) -> OAuth2Client | None:
+        """Agent clients have no secret, and agents don't know their client ID:
+        holding one of their tokens is enough to revoke it."""
+        basic_client_id, _ = extract_basic_authorization(request.headers)
+        if basic_client_id is not None or request.form.get("client_secret"):
+            return None
+
+        token_string = request.form.get("token")
+        if not token_string:
+            return None
+        token = self.query_token(token_string, None)
+        if token is None:
+            return None
+
+        client_id = request.payload.client_id
+        if client_id is not None and client_id != token.client_id:
+            return None
+
+        client = self.server.query_client(token.client_id)
+        if client is None or client.agent_id is None:
+            return None
+        return client
 
     def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
         now = int(time.time())

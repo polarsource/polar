@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime, timedelta
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -18,7 +17,7 @@ from tests.fixtures.random_objects import (
 from tests.fixtures.stripe import build_stripe_dispute
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def dispute_organization_second(
     save_fixture: SaveFixture,
     product_organization_second: Product,
@@ -37,7 +36,7 @@ async def dispute_organization_second(
     return await create_dispute(save_fixture, order, payment)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def dispute(
     save_fixture: SaveFixture,
     product: Product,
@@ -48,7 +47,7 @@ async def dispute(
     return await create_dispute(save_fixture, order, payment)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListDisputes:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/disputes/")
@@ -87,7 +86,7 @@ class TestListDisputes:
         assert item["customer"]["email"] == customer.email
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetDispute:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/disputes/{uuid.uuid4()}")
@@ -196,7 +195,7 @@ class TestGetDispute:
         assert json["past_due"] is expected_past_due
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAcceptDispute:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(f"/v1/disputes/{uuid.uuid4()}/accept")

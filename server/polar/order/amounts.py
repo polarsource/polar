@@ -129,6 +129,7 @@ async def compute_order_amounts(
     *,
     reference: str,
     discount: Discount | None,
+    product: Product,
 ) -> OrderAmounts:
     customer = subscription.customer
 
@@ -161,7 +162,7 @@ async def compute_order_amounts(
         tax_behavior_option=tax_behavior_option,
         currency=subscription.currency,
         customer=customer,
-        product=subscription.product,
+        product=product,
         tax_exempted=subscription.tax_exempted,
     )
 

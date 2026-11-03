@@ -6,6 +6,7 @@ import structlog
 from fastapi import FastAPI
 
 from polar import worker  # noqa
+from polar.agent.endpoints import auth_md_router
 from polar.api import router
 from polar.auth.exception_handlers import (
     PolarAuthRedirectionError,
@@ -19,7 +20,6 @@ from polar.backoffice import app as backoffice_app
 from polar.checkout import ip_geolocation
 from polar.checkout_link.app import app as checkout_link_redirect_app
 from polar.config import settings
-from polar.event.endpoints import INGEST_SEQUENCE_HEADER
 from polar.exception_handlers import add_exception_handlers
 from polar.health.endpoints import router as health_router
 from polar.kit.cors import CORSConfig, CORSMatcherMiddleware, Scope
@@ -95,6 +95,7 @@ def configure_cors(app: FastAPI) -> None:
             allow_credentials=True,  # Cookies are allowed, but only there!
             allow_methods=["*"],
             allow_headers=["*"],
+            expose_headers=["Content-Disposition"],
         )
         configs.append(polar_frontend_config)
 
@@ -105,7 +106,7 @@ def configure_cors(app: FastAPI) -> None:
         allow_credentials=False,  # No cookies allowed
         allow_methods=["*"],
         allow_headers=["Authorization", VERSION_HEADER, ORGANIZATION_HEADER],
-        expose_headers=[VERSION_HEADER, INGEST_SEQUENCE_HEADER],
+        expose_headers=[VERSION_HEADER],
     )
     configs.append(api_config)
 
@@ -217,9 +218,13 @@ def create_app() -> FastAPI:
     if not settings.is_testing():
         rate_limit_redis = create_redis("rate-limit")
         app.state.rate_limit_redis = rate_limit_redis
-        app.add_middleware(AuthSubjectMiddleware, redis=rate_limit_redis)
-        app.add_middleware(TransactionalMiddleware)
         app.add_middleware(rate_limit.get_middleware, redis=rate_limit_redis)
+        app.add_middleware(AuthSubjectMiddleware)
+        app.add_middleware(TransactionalMiddleware)
+        app.add_middleware(
+            rate_limit.get_authentication_middleware, redis=rate_limit_redis
+        )
+        app.add_middleware(rate_limit.get_ip_middleware, redis=rate_limit_redis)
     app.add_middleware(PathRewriteMiddleware, pattern=r"^/api/v1", replacement="/v1")
     if settings.is_vercel():
         # The app origin mounts the API at /api (api.* hosts serve it
@@ -241,6 +246,9 @@ def create_app() -> FastAPI:
 
     # /.well-known
     app.include_router(well_known_router)
+
+    # /auth.md
+    app.include_router(auth_md_router)
 
     # /healthz
     app.include_router(health_router)

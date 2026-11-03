@@ -23,6 +23,12 @@ class EmailLog(RecordModel):
             "deduplication_key",
             postgresql_where="deduplication_key IS NOT NULL",
         ),
+        Index(
+            "ix_email_logs_to_email_addr_trgm",
+            "to_email_addr",
+            postgresql_using="gin",
+            postgresql_ops={"to_email_addr": "gin_trgm_ops"},
+        ),
     )
 
     organization_id: Mapped[UUID | None] = mapped_column(

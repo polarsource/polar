@@ -2886,3 +2886,69 @@ def test_field_keeps_a_description_declared_beside_a_reference() -> None:
     api = generate_ir(spec).versions[0]
 
     assert api.input_models[0].fields[0].description == "The visibility of the widget."
+
+
+def test_inline_enums_sharing_a_title_keep_their_own_values() -> None:
+    def model(values: list[str]) -> dict[str, typing.Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "reason": {"type": "string", "enum": values, "title": "Reason"}
+            },
+        }
+
+    spec = op.OpenAPI.model_validate(
+        {
+            "openapi": "3.1.0",
+            "info": {"title": "Test API", "version": "2026-10"},
+            "paths": {
+                "/widgets": {
+                    "post": {
+                        "operationId": "widgets:create",
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/WidgetCreate"
+                                    }
+                                }
+                            },
+                        },
+                        "responses": {"204": {"description": "Success"}},
+                    }
+                }
+            },
+            "components": {
+                "schemas": {
+                    "Refund": model(["duplicate", "other"]),
+                    "Credit": model(["benefit", "manual"]),
+                    "WidgetCreate": {
+                        "type": "object",
+                        "properties": {
+                            "refund": {"$ref": "#/components/schemas/Refund"},
+                            "credit": {"$ref": "#/components/schemas/Credit"},
+                        },
+                    },
+                }
+            },
+        }
+    )
+
+    api = generate_ir(spec).versions[0]
+
+    enums = {enum.name: [value.value for value in enum.values] for enum in api.enums}
+    reasons = {
+        model.name: model.fields[0].type
+        for model in api.input_models
+        if model.name in ("Refund", "Credit")
+    }
+    for name, values in (
+        ("Refund", ["duplicate", "other"]),
+        ("Credit", ["benefit", "manual"]),
+    ):
+        reason = reasons[name].model_dump()
+        if reason["kind"] == "enum":
+            assert enums[reason["name"]] == values
+        else:
+            assert [variant["value"] for variant in reason["variants"]] == values

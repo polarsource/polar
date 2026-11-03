@@ -37,6 +37,9 @@ export default function robots(): MetadataRoute.Robots {
         disallow,
       },
     ],
-    sitemap: 'https://polar.sh/sitemap.xml',
+    sitemap: [
+      'https://polar.sh/sitemap.xml',
+      'https://polar.sh/perspectives/sitemap.xml',
+    ],
   }
 }

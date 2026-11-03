@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useState } from 'react'
-import { useForm, useFormContext } from 'react-hook-form'
+import { useForm, useFormContext, useFormState } from 'react-hook-form'
 
 type PayoutCountry = schemas['PayoutAccountCreate']['country']
 
@@ -48,11 +48,8 @@ const AccountCreateModal = ({
     },
   })
 
-  const {
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError } = form
+  const { errors } = useFormState({ control })
 
   const [loading, setLoading] = useState(false)
 

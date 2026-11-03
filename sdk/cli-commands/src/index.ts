@@ -70,10 +70,12 @@ export const commands = [
   subscriptions,
   webhooks,
 ]
-export { ApiRuntime, ApiCommandError } from './runtime'
+export { ApiRuntime, ApiCommandError, CURRENT_API_VERSION } from './runtime'
 export type {
+  ApiClients,
   ApiOperation,
   ApiPreview,
+  ApiVersion,
   PreviewField,
   Environment,
 } from './runtime'

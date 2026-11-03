@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from polar.enums import PayoutAccountType
 from polar.models import Account, Organization, PayoutAccount, User
@@ -14,7 +13,7 @@ from tests.fixtures.random_objects import create_payout, create_payout_account
 from tests.transaction.conftest import create_transaction
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def payout_account_fixture(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -31,12 +30,12 @@ async def payout_account_fixture(
     return account, payout_account
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def invariant(session: AsyncSession) -> PayoutTransactionsAmountInvariant:
     return PayoutTransactionsAmountInvariant(session)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success_no_payouts(
     invariant: PayoutTransactionsAmountInvariant,
 ) -> None:
@@ -44,7 +43,7 @@ async def test_success_no_payouts(
     await invariant.check()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success_matching_amounts(
     invariant: PayoutTransactionsAmountInvariant,
     save_fixture: SaveFixture,
@@ -102,7 +101,7 @@ async def test_success_matching_amounts(
     await invariant.check()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_success_zero_amount(
     invariant: PayoutTransactionsAmountInvariant,
     save_fixture: SaveFixture,
@@ -137,7 +136,7 @@ async def test_success_zero_amount(
     await invariant.check()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_amount_mismatch(
     invariant: PayoutTransactionsAmountInvariant,
     save_fixture: SaveFixture,
@@ -192,7 +191,7 @@ async def test_failure_amount_mismatch(
     assert exc_info.value.context["payout_transactions"]["has_more"] is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_missing_transactions(
     invariant: PayoutTransactionsAmountInvariant,
     save_fixture: SaveFixture,
@@ -235,7 +234,7 @@ async def test_failure_missing_transactions(
     assert exc_info.value.context["payout_transactions"]["differences"] == [1000]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_sum_exceeds_payout(
     invariant: PayoutTransactionsAmountInvariant,
     save_fixture: SaveFixture,
@@ -290,7 +289,7 @@ async def test_failure_sum_exceeds_payout(
     assert exc_info.value.context["payout_transactions"]["differences"] == [-500]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_failure_over_limit(
     invariant: PayoutTransactionsAmountInvariant,
     save_fixture: SaveFixture,
@@ -330,7 +329,7 @@ async def test_failure_over_limit(
     assert exc_info.value.context["payout_transactions"]["has_more"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_excludes_reversed_payouts(
     invariant: PayoutTransactionsAmountInvariant,
     save_fixture: SaveFixture,

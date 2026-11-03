@@ -143,7 +143,6 @@ variable "secrets" {
     mintlify_assistant_api_key  = string
     gram_api_key                = string
     sentry_auth_token           = string
-    polar_preview_access_token  = string
   })
   sensitive = true
 }

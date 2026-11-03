@@ -1,6 +1,5 @@
 import { CustomerMembers } from '@/components/Customer/CustomerPage/CustomerMembers'
 import { CustomerPageShell } from '@/components/Customer/CustomerPage/CustomerPageShell'
-import { isCustomerMembersEnabled } from '@/components/Customer/CustomerPage/isCustomerMembersEnabled'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import {
@@ -22,7 +21,7 @@ export default async function Page(props: {
   const { organization, customer } =
     await getOrganizationAndCustomerOrNotFound(params)
 
-  if (!isCustomerMembersEnabled(organization, customer)) {
+  if (customer.type !== 'team') {
     notFound()
   }
 

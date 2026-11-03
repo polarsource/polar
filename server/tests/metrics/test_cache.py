@@ -223,7 +223,7 @@ class TestBuildCacheKey:
         assert key_a == key_b
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSetCache:
     async def test_roundtrip(self, redis: Redis) -> None:
         response = _empty_metrics_response()

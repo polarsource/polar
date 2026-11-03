@@ -3,7 +3,17 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, CheckConstraint, ForeignKey, String, Uuid
+from sqlalchemy import (
+    TIMESTAMP,
+    CheckConstraint,
+    Column,
+    ForeignKey,
+    Index,
+    String,
+    Uuid,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
@@ -49,6 +59,20 @@ class CustomerSeat(RecordModel):
             "(subscription_id IS NOT NULL AND order_id IS NULL) OR "
             "(subscription_id IS NULL AND order_id IS NOT NULL)",
             name="seat_source_check",
+        ),
+        Index(
+            "customer_seats_subscription_id_lower_email_active_key",
+            "subscription_id",
+            func.lower(Column("email")),
+            unique=True,
+            postgresql_where=text("status != 'revoked'"),
+        ),
+        Index(
+            "customer_seats_order_id_lower_email_active_key",
+            "order_id",
+            func.lower(Column("email")),
+            unique=True,
+            postgresql_where=text("status != 'revoked'"),
         ),
     )
 

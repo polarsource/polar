@@ -9,24 +9,34 @@ import {
   ApiError,
   type AppliedEntry,
   BillingConfigError,
+  type ConfigResource,
   type EntryResult,
   type LoadedConfig,
+  type Removal,
+  type SettingsResult,
 } from '@/schemas/BillingConfig'
 import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
 import type { ApiClient } from '@/services/client'
 
 export type Clients = Record<PolarEnvironment, ApiClient>
 
-// Sections the config API doesn't accept yet
-const UNSUPPORTED_SECTIONS = new Set(['benefits'])
+export interface CatalogOptions {
+  readonly name?: string | undefined
+}
 
-const stripUnsupported = (input: unknown): unknown =>
+// Sections the config API doesn't accept yet
+const UNSUPPORTED_SECTIONS = new Set([''])
+
+const requestBody = (input: unknown, { name }: CatalogOptions) =>
   typeof input === 'object' && input !== null && !Array.isArray(input)
-    ? Object.fromEntries(
-        Object.entries(input).filter(
-          ([section]) => !UNSUPPORTED_SECTIONS.has(section),
+    ? {
+        ...Object.fromEntries(
+          Object.entries(input).filter(
+            ([section]) => !UNSUPPORTED_SECTIONS.has(section),
+          ),
         ),
-      )
+        ...(name !== undefined && { catalog_name: name }),
+      }
     : input
 
 export const post = (
@@ -34,13 +44,14 @@ export const post = (
   path: string,
   config: LoadedConfig,
   organization: ActiveOrganization,
+  options: CatalogOptions = {},
 ) =>
   Effect.gen(function* () {
     const request = yield* HttpClientRequest.post(
       yield* apiUrl(organization.environment, path),
     ).pipe(
       withOrganization(organization.id),
-      HttpClientRequest.bodyJson(stripUnsupported(config.input)),
+      HttpClientRequest.bodyJson(requestBody(config.input, options)),
     )
     return yield* clients[organization.environment].execute(request)
   })
@@ -51,23 +62,100 @@ export const errorName = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.orElseSucceed(() => undefined),
   )
 
+export const SECTIONS = {
+  meter: 'meters',
+  benefit: 'benefits',
+  product: 'products',
+  webhook: 'webhooks',
+} as const satisfies Record<typeof ConfigResource.Type, string>
+
+// The server reports settings changes by dotted path, like `payments.currency`
+const settingsEntries = (
+  settings: typeof SettingsResult.Type | null | undefined,
+): AppliedEntry[] => {
+  if (!settings) return []
+  const groups = new Map<string, AppliedEntry['diff'][number][]>()
+  for (const change of settings.diff ?? []) {
+    const [group = '', ...field] = change.field.split('.')
+    groups.set(group, [
+      ...(groups.get(group) ?? []),
+      { ...change, field: field.join('.') },
+    ])
+  }
+  if (groups.size === 0) {
+    return [
+      {
+        section: 'settings',
+        id: 'settings',
+        action: settings.action,
+        diff: [],
+      },
+    ]
+  }
+  return [...groups].map(([id, diff]) => ({
+    section: 'settings',
+    id,
+    action: 'updated',
+    diff,
+  }))
+}
+
+// A deprecated resource is still listed in `changes`, its removal replaces that entry
 export const entries = (
-  section: string,
   results: ReadonlyArray<typeof EntryResult.Type>,
-) =>
-  results.map(
-    (entry): AppliedEntry => ({
-      section,
-      id: entry.external_id ?? section,
-      action: entry.action,
-      diff: entry.diff ?? [],
+  settings?: typeof SettingsResult.Type | null,
+  removed: ReadonlyArray<typeof Removal.Type> = [],
+) => [
+  ...settingsEntries(settings),
+  ...results
+    .filter(
+      (entry) =>
+        !removed.some(
+          (removal) =>
+            removal.resource === entry.resource &&
+            removal.external_id === entry.external_id,
+        ),
+    )
+    .map(
+      (entry): AppliedEntry => ({
+        section: SECTIONS[entry.resource],
+        id: entry.external_id,
+        action: entry.action,
+        diff: entry.diff ?? [],
+      }),
+    ),
+  ...removed.map(
+    (removal): AppliedEntry => ({
+      section: SECTIONS[removal.resource],
+      id: removal.external_id,
+      action: 'removed',
+      reason: removal.reason,
+      diff: [],
     }),
-  )
+  ),
+]
+
+// Settings, benefits, products and webhooks sections need their own scope on top of the meters one
+export const requiredScopes = (
+  config: LoadedConfig,
+  access: 'read' | 'write',
+) => {
+  const input =
+    typeof config.input === 'object' && config.input !== null
+      ? config.input
+      : {}
+  return ['meters', 'benefits', 'products', 'settings', 'webhooks']
+    .filter((section) => section === 'meters' || section in input)
+    .map(
+      (section) =>
+        `${section === 'settings' ? 'organizations' : section}:${access}`,
+    )
+}
 
 export const unexpected = (
   response: HttpClientResponse.HttpClientResponse,
   organization: ActiveOrganization,
-  scope: string,
+  scopes: ReadonlyArray<string>,
 ) =>
   Effect.gen(function* () {
     const error = yield* errorName(response)
@@ -86,7 +174,7 @@ export const unexpected = (
     if (response.status === 403) {
       return yield* new BillingConfigError({
         message: `You do not have access to ${organization.name}`,
-        hint: `The token needs the ${scope} scope.`,
+        hint: `The token needs the ${scopes.join(', ')} ${scopes.length > 1 ? 'scopes' : 'scope'}.`,
       })
     }
     if (response.status === 404) {

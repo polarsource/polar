@@ -25,6 +25,13 @@ export const confirm = Flag.Boolean('confirm').pipe(
   Flag.withDescription('Skip the confirmation prompt for destructive requests'),
 )
 
+export const fields = Flag.String('fields').pipe(
+  Flag.optional,
+  Flag.withDescription(
+    'Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount',
+  ),
+)
+
 export const missingFlags = (
   input: object,
   required: ReadonlyArray<string>,

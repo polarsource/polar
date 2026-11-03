@@ -82,3 +82,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           context: ./infra/${{ matrix.image }}
           platforms: linux/amd64
+          build-args: ${{ matrix.image == 'tailscale' && format('TAILSCALE_VERSION={0}', vars.TAILSCALE_VERSION) || '' }}

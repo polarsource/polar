@@ -59,7 +59,7 @@ def mock_request() -> AsyncMock:
     return AsyncMock()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListenEndpoint:
     async def test_mark_active_on_connect(
         self,

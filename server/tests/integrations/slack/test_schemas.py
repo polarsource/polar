@@ -47,7 +47,7 @@ class TestSlackIntegrationCredentialsUpdate:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSlackIntegration:
     async def test_computes_secret_suffixes_without_serializing_raw_secrets(
         self,

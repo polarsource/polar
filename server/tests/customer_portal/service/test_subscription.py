@@ -52,7 +52,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_valid(
@@ -234,7 +234,7 @@ class TestList:
         assert results[0].product.name == "Pro_Plan"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_not_existing_product(
         self, session: AsyncSession, subscription: Subscription
@@ -356,7 +356,7 @@ class TestUpdate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateUnits:
     async def test_update_not_allowed(
         self,
@@ -433,7 +433,7 @@ class TestUpdateUnits:
         assert updated.amount == 5 * 2900
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancel:
     @pytest.mark.auth
     async def test_already_canceled(
@@ -508,7 +508,7 @@ class TestCancel:
         ] == [NotificationType.maintainer_subscription_cancellation]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClearPendingUpdate:
     @pytest.mark.auth(AuthSubjectFixture(subject="customer"))
     async def test_clear_pending_product_update(
@@ -573,7 +573,7 @@ class TestClearPendingUpdate:
         assert "no pending update" in errors[0]["msg"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdatePause:
     async def test_pause_not_allowed(
         self,

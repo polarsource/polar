@@ -4,16 +4,19 @@ from enum import StrEnum
 from typing import Annotated
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import AfterValidator
+from pydantic import AfterValidator, AwareDatetime, Field
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
-from polar.models import Order
+from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.versioning import QuerySchema, Version
+from polar.models import Order, Product
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
+from polar.version import V2027_01
 
 from .repository import OrderRepository
 
@@ -123,6 +126,7 @@ async def generate_csv(
     *,
     organization_id: Sequence[OrganizationID] | None,
     product_id: Sequence[ProductID] | None,
+    external_product_id: Sequence[str] | None = None,
     status: Sequence[OrderStatus] | None,
     created_after: datetime | None,
     created_before: datetime | None,
@@ -146,6 +150,10 @@ async def generate_csv(
         statement = statement.where(Order.organization_id.in_(organization_id))
     if product_id is not None:
         statement = statement.where(Order.product_id.in_(product_id))
+    if external_product_id is not None:
+        statement = statement.where(
+            Order.product.has(Product.external_id.in_(external_product_id))
+        )
     if status is not None:
         statement = statement.where(Order.status.in_(status))
     if created_after is not None:
@@ -157,3 +165,45 @@ async def generate_csv(
     async for order in repository.stream(statement):
         row = _row(order, timezone)
         yield csv_writer.getrow(tuple(row[column] for column in export_columns))
+
+
+class OrderExportParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    )
+    status: MultipleQueryFilter[OrderStatus] | None = Field(
+        None, title="Status Filter", description="Filter by order status."
+    )
+    created_after: AwareDatetime | None = Field(
+        None,
+        description=(
+            "Only include orders created after this date. Must include a UTC offset."
+        ),
+    )
+    created_before: AwareDatetime | None = Field(
+        None,
+        description=(
+            "Only include orders created before this date. Must include a UTC offset."
+        ),
+    )
+    timezone: OrderExportTimezone = Field(
+        "UTC", description="Time zone used to render dates in the CSV."
+    )
+    columns: MultipleQueryFilter[OrderExportColumn] | None = Field(
+        None,
+        description=(
+            "Columns to include in the CSV, in order. "
+            "Defaults to email, created_at, product, net_amount, "
+            "currency, status and invoice_number."
+        ),
+    )

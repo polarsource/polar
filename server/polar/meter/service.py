@@ -17,11 +17,13 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    tuple_,
 )
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.sql.elements import OrderByList
 
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
     assert_organization_permission,
@@ -31,6 +33,10 @@ from polar.authz.service import (
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
+)
 from polar.event.repository import EventRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
@@ -45,6 +51,7 @@ from polar.models import (
     Customer,
     Event,
     Meter,
+    MeterEvent,
     Product,
     ProductPrice,
     SubscriptionProductPrice,
@@ -89,9 +96,10 @@ class MeterService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
+        external_id: Sequence[str] | None = None,
         metadata: MetadataQuery | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -109,6 +117,11 @@ class MeterService:
         if organization_id is not None:
             statement = statement.where(Meter.organization_id.in_(organization_id))
 
+        if external_id is not None:
+            statement = statement.where(
+                Meter.external_id.in_(external_id), Meter.deleted_at.is_(None)
+            )
+
         if query is not None:
             statement = statement.where(Meter.name.ilike(f"%{query}%"))
 
@@ -121,7 +134,7 @@ class MeterService:
         if metadata is not None:
             statement = apply_metadata_clause(Meter, statement, metadata)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == MeterSortProperty.created_at:
@@ -137,7 +150,7 @@ class MeterService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
@@ -154,7 +167,7 @@ class MeterService:
     async def get_external(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         external_id: str,
     ) -> Meter | None:
         repository = MeterRepository.from_session(session)
@@ -175,7 +188,7 @@ class MeterService:
         self,
         session: AsyncSession,
         meter_create: MeterCreate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Meter:
         organization = await get_payload_organization(
             session, auth_subject, meter_create
@@ -186,6 +199,8 @@ class MeterService:
             organization.id,
             OrganizationPermission.products_manage,
         )
+        if organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
 
         repository = MeterRepository.from_session(session)
         if (
@@ -241,6 +256,7 @@ class MeterService:
 
         await reducer_service.sync_meter(session, meter)
 
+        enqueue_job("reducer.invalidate_cache", meter.organization_id)
         enqueue_job("meter.backfill_events", meter.id)
 
         return meter
@@ -250,11 +266,12 @@ class MeterService:
         session: AsyncSession,
         meter: Meter,
         meter_update: MeterUpdate,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
     ) -> Meter:
         await assert_resource_permission(
             session, auth_subject, meter, OrganizationPermission.products_manage
         )
+        await assert_catalog_editable(session, meter.organization_id)
         repository = MeterRepository.from_session(session)
 
         errors: list[ValidationError] = []
@@ -308,6 +325,7 @@ class MeterService:
 
         meter = await repository.update(meter, update_dict=update_dict)
         await reducer_service.sync_meter(session, meter)
+        enqueue_job("reducer.invalidate_cache", meter.organization_id)
         return meter
 
     async def archive(self, session: AsyncSession, meter: Meter) -> Meter:
@@ -337,6 +355,19 @@ class MeterService:
                 ]
             )
 
+        repository = MeterRepository.from_session(session)
+        if await repository.has_billable_subscriptions(meter.id):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "is_archived"),
+                        "msg": "Cannot archive meter that is still used by active subscriptions",
+                        "input": True,
+                    }
+                ]
+            )
+
         # Check if meter is referenced by any active Benefits with meter_credit type
         active_benefits = await session.scalar(
             select(func.count(Benefit.id)).where(
@@ -358,7 +389,6 @@ class MeterService:
                 ]
             )
 
-        repository = MeterRepository.from_session(session)
         return await repository.update(
             meter, update_dict={"archived_at": datetime.now(UTC)}
         )
@@ -588,8 +618,29 @@ class MeterService:
     async def enqueue_billing(self, session: AsyncSession) -> None:
         repository = MeterRepository.from_session(session)
 
-        base_statement = repository.get_base_statement().where(
-            Meter.archived_at.is_(None)
+        last_billed_event = aliased(Event)
+        has_events = (
+            select(MeterEvent.event_id).where(MeterEvent.meter_id == Meter.id).exists()
+        )
+        has_events_after_last_billed = (
+            select(MeterEvent.event_id)
+            .where(
+                MeterEvent.meter_id == Meter.id,
+                tuple_(MeterEvent.ingested_at, MeterEvent.event_id)
+                > tuple_(last_billed_event.ingested_at, last_billed_event.id),
+            )
+            .exists()
+        )
+        has_unbilled_events = or_(
+            and_(last_billed_event.id.is_(None), has_events),
+            has_events_after_last_billed,
+        )
+        base_statement = (
+            repository.get_base_statement()
+            .outerjoin(
+                last_billed_event, last_billed_event.id == Meter.last_billed_event_id
+            )
+            .where(Meter.archived_at.is_(None), has_unbilled_events)
         )
         count_result = await session.execute(
             base_statement.with_only_columns(func.count())
@@ -700,7 +751,7 @@ class MeterService:
         self,
         session: AsyncSession,
         meter: Meter,
-        events_statement: Select[tuple[Event]],
+        events_statement: Select[Event],
     ) -> float:
         statement = (
             events_statement.where(meter.aggregation.get_sql_clause(Event))

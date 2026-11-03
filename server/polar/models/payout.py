@@ -37,8 +37,8 @@ class PayoutStatus(StrEnum):
 
     Set when a payout is requested by an organization under review (`REVIEW` or
     `SNOOZED`). The balance is reserved exactly as for a `pending` payout, but the
-    Stripe transfer is held back until the organization is approved, at which point
-    the payout moves back to `pending`.
+    transfer is held back until the organization is approved or an admin releases
+    this payout from the backoffice. Either way it moves back to `pending`.
     """
 
     def is_cancelable(self) -> bool:

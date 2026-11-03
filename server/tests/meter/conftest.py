@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
-import pytest_asyncio
+import pytest
 
 from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.schemas import TinybirdEvent
@@ -17,12 +17,12 @@ class TinybirdEventBuffer:
     events: list[TinybirdEvent] = field(default_factory=list)
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def tinybird_event_buffer() -> TinybirdEventBuffer:
     return TinybirdEventBuffer()
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def buffered_save_fixture(
     session: AsyncSession,
     tinybird_event_buffer: TinybirdEventBuffer,
@@ -42,7 +42,7 @@ async def buffered_save_fixture(
     return _save_and_buffer
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def flush_tinybird_events(
     tinybird_client: TinybirdClient,
     tinybird_event_buffer: TinybirdEventBuffer,

@@ -14,7 +14,7 @@ from tests.fixtures.database import SaveFixture
 from tests.transaction.conftest import create_transaction
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSearch:
     @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
     async def test_no_access(
@@ -115,7 +115,7 @@ class TestSearch:
             assert result.id in account_transactions_id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSummary:
     async def test_no_transaction(
         self, session: AsyncSession, account: Account

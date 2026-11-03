@@ -7,7 +7,7 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@polar-sh/ui/components/ui/radio-group'
-import { ExternalLinkIcon } from 'lucide-react'
+import { ExternalLink as ExternalLinkIcon } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { Fragment, useState } from 'react'
 import { StatusIcon } from '../StatusIcon'

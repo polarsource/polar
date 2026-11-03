@@ -5,13 +5,34 @@ import type { PropsWithChildren, ReactNode } from 'react'
 interface ChapterMarkerProps {
   index?: string
   name: string
+  note?: string
 }
 
-const ChapterMarker = ({ name }: ChapterMarkerProps) => (
-  <Box alignItems="start" display={{ md: 'flex', base: 'none' }}>
-    <Text variant="heading-s">{name}</Text>
-  </Box>
-)
+/** The chapter's name, with an optional muted line under it. A leading number, as in "03 Charge", is set muted ahead of it. */
+const ChapterMarker = ({ name, note }: ChapterMarkerProps) => {
+  const [, number, label] = name.match(/^(\d+)\s+(.*)$/) ?? [null, null, name]
+  return (
+    <Box
+      flexDirection="column"
+      alignItems="start"
+      display={{ md: 'flex', base: 'none' }}
+    >
+      <Text variant="heading-s">
+        {number ? (
+          <Text as="span" variant="heading-s" color="muted">
+            <span className="mr-4">{number}</span>
+          </Text>
+        ) : null}
+        {label}
+      </Text>
+      {note ? (
+        <Text variant="heading-s" color="muted">
+          {note}
+        </Text>
+      ) : null}
+    </Box>
+  )
+}
 
 interface ChapterHeadlineProps {
   title: string
@@ -33,6 +54,8 @@ export type ChapterProps = PropsWithChildren<{
   id?: string
   index?: string
   name?: string
+  /** A muted line under the name. */
+  nameNote?: string
   title: string
   subtitle: string
   description?: ReactNode
@@ -50,6 +73,7 @@ export const Chapter = ({
   id,
   index,
   name,
+  nameNote,
   title,
   subtitle,
   description,
@@ -73,7 +97,7 @@ export const Chapter = ({
       gap={{ base: '2xl', lg: 'l' }}
     >
       {name ? (
-        <ChapterMarker index={index} name={name} />
+        <ChapterMarker index={index} name={name} note={nameNote} />
       ) : (
         <Box display={{ base: 'none', lg: 'flex' }} />
       )}

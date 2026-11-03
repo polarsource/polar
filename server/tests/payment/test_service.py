@@ -11,7 +11,7 @@ from tests.fixtures.random_objects import create_checkout, create_order, create_
 from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromStripeCharge:
     async def test_new_payment_with_checkout(
         self,
@@ -297,7 +297,7 @@ class TestUpsertFromStripeCharge:
         assert payment.trigger is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromStripePaymentIntent:
     async def test_new_payment_with_checkout(
         self,

@@ -127,24 +127,39 @@ export const useCustomerPortalSessionRequest = (
     mutationFn: async ({
       email,
       customer_id,
+      turnstileToken,
     }: {
       email: string
       customer_id?: string
-    }) =>
-      api.POST('/v1/customer-portal/customer-session/request', {
-        body: {
-          email,
-          organization_id: organizationId,
-          ...(customer_id && { customer_id }),
+      turnstileToken: string
+    }) => {
+      const start = await api.POST(
+        '/v1/customer-portal/customer-session/start',
+        {
+          body: { organization_id: organizationId },
         },
-      }),
+      )
+      if (start.error) {
+        return start
+      }
+      return api.POST(
+        '/v1/customer-portal/customer-session/email-otp/request',
+        {
+          body: {
+            email,
+            ...(customer_id && { customer_id }),
+            'cf-turnstile-response': turnstileToken,
+          },
+        },
+      )
+    },
   })
 
 export const useCustomerPortalSessionAuthenticate = (api: Client) =>
   useMutation({
     mutationFn: ({ code }: { code: string }) =>
       api
-        .POST('/v1/customer-portal/customer-session/authenticate', {
+        .POST('/v1/customer-portal/customer-session/email-otp/verify', {
           body: { code },
         })
         .then((res) => {
@@ -153,6 +168,21 @@ export const useCustomerPortalSessionAuthenticate = (api: Client) =>
               data: undefined,
               error: {
                 detail: 'Too many attempts. Please try again in 15 minutes.',
+              },
+              response: res.response,
+            }
+          }
+
+          if (
+            res.error &&
+            'error' in res.error &&
+            res.error.error === 'InvalidAuthenticationSession'
+          ) {
+            return {
+              data: undefined,
+              error: {
+                detail:
+                  'This code has expired or was requested from another browser. Please request a new one.',
               },
               response: res.response,
             }
@@ -354,6 +384,42 @@ export const useCustomerSubscriptionChargePreview = (
     enabled,
   })
 
+export const useCustomerSubscriptionMeterChargePreview = (
+  api: Client,
+  id: string,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: ['customer_subscription_meter_charge_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/meter-charge-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+
+export const useCustomerSubscriptionChangePreview = (
+  api: Client,
+  id: string,
+  productId: string | undefined,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: ['customer_subscription_change_preview', { id, productId }],
+    queryFn: () =>
+      unwrap(
+        api.POST('/v1/customer-portal/subscriptions/{id}/change-preview', {
+          params: { path: { id } },
+          body: { product_id: productId as string },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: enabled && !!productId,
+  })
+
 export const useCustomerSubscriptionCancelPreview = (
   api: Client,
   id: string,
@@ -393,6 +459,12 @@ export const useCustomerUpdateSubscription = (api: Client) =>
         queryKey: ['customer_subscription_charge_preview'],
       })
       queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
+      })
+      queryClient.invalidateQueries({
         queryKey: ['customer_seats'],
       })
     },
@@ -419,6 +491,12 @@ export const useCustomerCancelSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
+      })
     },
   })
 
@@ -443,6 +521,12 @@ export const useCustomerRevokeSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
+      })
     },
   })
 
@@ -464,6 +548,12 @@ export const useCustomerUncancelSubscription = (api: Client) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
       })
     },
   })
@@ -496,6 +586,12 @@ export const useCustomerPauseSubscription = (api: Client) =>
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
+      })
     },
   })
 
@@ -525,6 +621,12 @@ export const useCustomerResumeSubscription = (api: Client) =>
       })
       queryClient.invalidateQueries({
         queryKey: ['customer_subscription_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_meter_charge_preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_change_preview'],
       })
     },
   })

@@ -113,7 +113,7 @@ def _patch_client(
     service._get_github_app_client = lambda benefit: _DummyCtx()  # type: ignore[assignment,method-assign,return-value]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGitHubRepositoryRevoke:
     async def test_revoke_uses_soft_deleted_member_oauth_account(
         self,
@@ -226,7 +226,7 @@ class TestGitHubRepositoryRevoke:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGitHubRepositoryGrantUpdate:
     async def test_account_reset_revokes_member_oauth_account(
         self,
@@ -291,7 +291,7 @@ def _make_invitation(invitee_id: int, *, expired: bool) -> MagicMock:
     return invitation
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGitHubRepositoryGrantExpiredInvitation:
     @pytest.mark.parametrize(
         ("expired", "update", "should_delete"),

@@ -23,7 +23,7 @@ async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
     yield session
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEmailSend:
     async def test_successful_send(
         self,
@@ -275,7 +275,7 @@ class TestEmailSend:
         log_exception.assert_called_once_with("Failed to write email log")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEmailLogPrune:
     async def test_deletes_logs_past_retention_period(
         self,

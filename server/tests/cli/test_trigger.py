@@ -187,7 +187,7 @@ class TestApplyOverrides:
             apply_overrides(payload, {path: "x"})
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerEvent:
     async def test_requires_an_active_listener(
         self, redis: Redis, organization: Organization

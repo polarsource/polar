@@ -7,6 +7,7 @@ from fastapi import Request, Response
 from reauth.factors import FactorBase
 
 from polar.config import settings
+from polar.kit.email import validate_email_syntax
 from polar.kit.http import is_localhost
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -47,7 +48,7 @@ async def get_sso_redirect_url(
     context = context or {}
     if context.get("sso_discovery") is False:
         return None
-    _, domain = email.rsplit("@", 1)
+    domain = validate_email_syntax(email).domain
     organization_repository = OrganizationRepository.from_session(session)
     organization = await organization_repository.get_sso_enforced_by_domain(domain)
     if organization is None:

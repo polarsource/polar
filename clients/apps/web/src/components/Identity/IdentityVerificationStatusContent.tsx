@@ -5,12 +5,11 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
   ArrowRight,
-  CheckIcon,
-  ClockIcon,
-  ShieldIcon,
-  XIcon,
-} from 'lucide-react'
-
+  Check as CheckIcon,
+  Clock as ClockIcon,
+  Shield as ShieldIcon,
+  X as XIcon,
+} from '@polar-sh/orbit/icons'
 interface Props {
   status: schemas['IdentityVerificationStatus'] | undefined
   onStart: () => void

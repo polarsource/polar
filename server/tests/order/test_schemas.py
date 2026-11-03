@@ -32,7 +32,7 @@ assert set(BILLING_REASON_SERIALIZATION_MAP.keys()) == set(
 ), "BILLING_REASON_SERIALIZATION_MAP must cover all OrderBillingReasonInternal values"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOrderBillingReasonSerializer:
     """Test OrderBase billing_reason field serializer."""
 

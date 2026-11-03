@@ -27,6 +27,7 @@ const IS_SANDBOX =
 // App routes allowed on sandbox — everything else (marketing, docs) is blocked
 // Strings match by prefix, RegExps are tested directly
 const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
+  '/agent',
   '/login',
   '/auth',
   '/dashboard',
@@ -42,7 +43,7 @@ const SANDBOX_ALLOWED_PATHS: (string | RegExp)[] = [
   '/feedback',
   '/to',
   '/too-many-requests',
-  /^\/favicon[\w-]*\.\w+$/, // /favicon.png, /favicon-dark.png, etc.
+  /^\/favicon[\w-]*\.\w+$/, // /favicon.png, /favicon-dev.png, etc.
   /^\/[^/]+\/portal(\/|$)/, // /:organization/portal
 ]
 
@@ -81,6 +82,13 @@ const isForwardedRoute = (request: NextRequest): boolean => {
   }
 
   if (request.nextUrl.pathname.startsWith('/ingest/')) {
+    return true
+  }
+
+  if (
+    request.nextUrl.pathname === '/perspectives' ||
+    request.nextUrl.pathname.startsWith('/perspectives/')
+  ) {
     return true
   }
 
@@ -325,6 +333,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 
+  // Events: /dashboard/{org}/analytics/events/{id} -> /dashboard/{org}/analytics/events?event={id}
+  const eventDetailMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/analytics\/events\/([^/]+)$/,
+  )
+  if (eventDetailMatch) {
+    const redirectURL = request.nextUrl.clone()
+    redirectURL.pathname = `/dashboard/${eventDetailMatch[1]}/analytics/events`
+    redirectURL.searchParams.set('event', eventDetailMatch[2])
+    return NextResponse.redirect(redirectURL, { status: 308 })
+  }
+
   // Benefits: /dashboard/{org}/benefits/* -> /dashboard/{org}/products/benefits/*
   const benefitsPathMatch = request.nextUrl.pathname.match(
     /^\/dashboard\/([^/]+)\/benefits(\/.*)?$/,
@@ -431,10 +450,11 @@ export const config = {
      * - ingest (Posthog)
      * - monitoring (Sentry)
      * - docs, _mintlify, mintlify-assets (Mintlify)
+     * - perspectives (Prompting Company / GEO)
      * - assets (static asset files)
      * - _next (Next.js internals: static files, image optimization, data)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    '/((?!api|fonts|ingest|monitoring|docs|_mintlify|mintlify-assets|assets|_next|favicon.ico|sitemap.xml|robots.txt).*)',
+    '/((?!api|fonts|ingest|monitoring|docs|perspectives|_mintlify|mintlify-assets|assets|_next|favicon.ico|sitemap.xml|robots.txt).*)',
   ],
 }

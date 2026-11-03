@@ -173,14 +173,18 @@ module "production" {
   }
 
   postgres_config = {
-    host          = local.db_internal_host
-    port          = local.db_port
-    user          = local.db_user
-    password      = local.db_password
-    read_host     = local.read_replica.id
-    read_port     = local.db_port
-    read_user     = local.db_user
-    read_password = local.db_password
+    host               = module.pgbouncer.host
+    port               = module.pgbouncer.port
+    user               = local.db_user
+    password           = local.db_password
+    host_fallback      = local.db_internal_host
+    port_fallback      = local.db_port
+    read_host          = module.pgbouncer_read["polar-read"].host
+    read_port          = module.pgbouncer_read["polar-read"].port
+    read_user          = local.db_user
+    read_password      = local.db_password
+    read_host_fallback = local.read_replica.id
+    read_port_fallback = local.db_port
   }
 
   redis_config = {
@@ -227,14 +231,6 @@ module "production" {
       custom_domains     = [{ name = "worker-tinybird.polar.sh" }]
       dramatiq_prom_port = "10002"
     }
-    worker-drain = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8"
-      custom_domains     = [{ name = "worker-drain.polar.sh" }]
-      dramatiq_prom_port = "10004"
-      redis_host         = render_redis.redis.id
-      redis_port         = "6379"
-      redis_db           = "0"
-    }
     worker-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
@@ -273,8 +269,8 @@ module "pgbouncer" {
 
   pool_config = {
     max_client_conn   = "5000"
-    default_pool_size = "50"
-    reserve_pool_size = "10"
+    default_pool_size = "200"
+    reserve_pool_size = "50"
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
@@ -284,13 +280,13 @@ locals {
   pgbouncer_read_pool_configs = {
     "polar-read" = {
       max_client_conn   = "5000"
-      default_pool_size = "50"
-      reserve_pool_size = "10"
+      default_pool_size = "200"
+      reserve_pool_size = "50"
     }
     "polar-replica" = {
       max_client_conn   = "1000"
-      default_pool_size = "20"
-      reserve_pool_size = "0"
+      default_pool_size = "200"
+      reserve_pool_size = "50"
     }
   }
 }

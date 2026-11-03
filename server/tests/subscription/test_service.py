@@ -7,11 +7,10 @@ from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import freezegun
 import pytest
-import pytest_asyncio
 import stripe as stripe_lib
+from babel.dates import format_date
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
-from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
 from polar.billing_entry.repository import BillingEntryRepository
@@ -22,6 +21,7 @@ from polar.email.schemas import (
     SubscriptionRevokedEmail,
 )
 from polar.enums import (
+    PaymentMode,
     PaymentProcessor,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
@@ -56,6 +56,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
@@ -116,13 +117,14 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_benefit,
+    create_benefit_grant,
     create_canceled_subscription,
     create_checkout,
     create_customer,
     create_customer_seat,
     create_discount,
     create_event,
-    create_legacy_recurring_product_price,
     create_meter,
     create_order,
     create_payment_method,
@@ -271,7 +273,7 @@ def frozen_time() -> Generator[datetime]:
         yield frozen_time
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
     async def test_product_does_not_exist(
@@ -951,7 +953,7 @@ class TestCreate:
         enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateOrUpdateFromCheckout:
     async def test_not_recurring_product(
         self,
@@ -1524,7 +1526,7 @@ class TestCreateOrUpdateFromCheckout:
         assert subscription.currency == "eur"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestApplyUpdate:
     async def test_snapshots_meter_interval_on_product_change(
         self,
@@ -1564,6 +1566,44 @@ class TestApplyUpdate:
         assert updated.current_meter_period_end is not None
         assert updated.current_meter_period_end > updated.current_meter_period_start
 
+    @freeze_time("2026-06-15")
+    async def test_meter_clock_contains_now_when_period_started_in_past(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+        )
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.prorate,
+            product=new_product,
+        )
+        updated = subscription_update.apply_update()
+
+        assert updated.current_period_start == datetime(2026, 1, 1, tzinfo=UTC)
+        assert updated.current_meter_period_start == datetime(2026, 6, 1, tzinfo=UTC)
+        assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
+        subscription_service.check_meter_cycle_lag(updated)
+
     async def test_clears_meter_clock_changing_to_non_metered_product(
         self,
         save_fixture: SaveFixture,
@@ -1602,7 +1642,7 @@ class TestApplyUpdate:
         assert updated.current_meter_period_end is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCycle:
     async def test_renewals_disabled_releases_scheduler_lock(
         self,
@@ -1661,7 +1701,10 @@ class TestCycle:
             )
 
         reset_meters_mock.assert_awaited_once_with(
-            session, updated_subscription, reset_at=utc_now()
+            session,
+            updated_subscription,
+            reset_at=utc_now(),
+            include_meter_credits=not cancel_at_period_end,
         )
 
     @freeze_time("2024-01-15 12:00:00")
@@ -1691,7 +1734,7 @@ class TestCycle:
             )
 
         reset_meters_mock.assert_awaited_once_with(
-            session, updated_subscription, reset_at=cycle_at
+            session, updated_subscription, reset_at=cycle_at, include_meter_credits=True
         )
 
     async def test_not_billable(
@@ -2920,7 +2963,9 @@ class TestCycle:
         subscription.current_meter_period_end = subscription.current_period_end
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
 
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
@@ -2936,15 +2981,17 @@ class TestCycle:
         assert len(order_calls) == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCycleMeters:
     async def test_advances_clock_resets_and_regrants_without_overage(
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         subscription = await create_active_subscription(
             save_fixture,
@@ -2972,6 +3019,14 @@ class TestCycleMeters:
         assert updated.current_period_end == previous_billing_end
         assert updated.scheduler_locked_at is None
 
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
+        enqueue_job_mock.assert_any_call("customer.state_changed", customer.id)
+
         # Meter credits re-granted; no overage means no meter-cycle order enqueued.
         enqueue_job_mock.assert_any_call(
             "benefit.enqueue_benefit_grant_cycles", subscription_id=subscription.id
@@ -2982,6 +3037,36 @@ class TestCycleMeters:
             if call.args and call.args[0] == "order.create_subscription_order"
         ]
         assert order_calls == []
+
+    async def test_resets_meters_at_the_boundary(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        mocker: MockerFixture,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        meter_period_end = utc_now() - timedelta(seconds=1)
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = meter_period_end - timedelta(days=31)
+        subscription.current_meter_period_end = meter_period_end
+        await save_fixture(subscription)
+        reset_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        await subscription_service.cycle_meters(session, subscription)
+
+        reset_mock.assert_awaited_once_with(
+            session, subscription, reset_at=meter_period_end
+        )
 
     async def test_clears_expired_discount_before_settling(
         self,
@@ -3186,7 +3271,9 @@ class TestCycleMeters:
         subscription.current_meter_period_end = now - timedelta(days=62)
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
         reset_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         with pytest.raises(SubscriptionMeterCycleLag):
@@ -3232,9 +3319,11 @@ class TestCycleMeters:
         self,
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
         mocker: MockerFixture,
     ) -> None:
         subscription = await create_active_subscription(
@@ -3251,7 +3340,9 @@ class TestCycleMeters:
         subscription.status = SubscriptionStatus.past_due
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
         reset_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         updated = await subscription_service.cycle_meters(session, subscription)
@@ -3260,6 +3351,12 @@ class TestCycleMeters:
         assert updated.current_meter_period_end is not None
         assert updated.current_meter_period_end > now
         assert updated.scheduler_locked_at is None
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
         # ...but while frozen nothing is settled, reset, or re-granted.
         settle_mock.assert_not_called()
         reset_mock.assert_not_called()
@@ -3271,7 +3368,7 @@ class TestCycleMeters:
         assert grant_calls == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckMeterCycleLag:
     async def test_raises_on_multi_period_lag(
         self,
@@ -3349,7 +3446,7 @@ class TestCheckMeterCycleLag:
         subscription_service.check_meter_cycle_lag(subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevoke:
     async def test_already_canceled(
         self,
@@ -3437,7 +3534,7 @@ class TestRevoke:
         subscription_hooks.revoked.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancel:
     async def test_repeat_cancel_raises(
         self,
@@ -3592,7 +3689,7 @@ class TestCancel:
         assert len(void_calls) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUncancel:
     async def test_not_canceled(
         self,
@@ -3719,7 +3816,7 @@ class TestUncancel:
         assert updated_subscription.canceled_at is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReinstate:
     @freeze_time("2024-03-15 12:00:00")
     async def test_valid(
@@ -3886,7 +3983,7 @@ class TestReinstate:
                 await subscription_service.reinstate(session, ctx, subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPause:
     async def test_not_active(
         self,
@@ -4096,7 +4193,7 @@ class TestPause:
         assert updated.product == product
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelScheduledPause:
     async def test_not_scheduled(
         self,
@@ -4146,7 +4243,7 @@ class TestCancelScheduledPause:
         assert_hooks_called_once(subscription_hooks, {"updated"})
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResume:
     async def test_not_paused(
         self,
@@ -4343,7 +4440,7 @@ class TestResume:
         assert cycle_entries[0].start_timestamp == frozen_time
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestActivateImported:
     async def test_takes_over_the_cycle_without_charging(
         self,
@@ -4390,6 +4487,47 @@ class TestActivateImported:
         # No order: they already paid for this period.
         enqueued = [call.args[0] for call in enqueue_job_mock.call_args_list]
         assert "order.create_subscription_order" not in enqueued
+
+    @freeze_time("2026-06-15")
+    async def test_meter_clock_contains_now_when_period_started_in_past(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        organization: Organization,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        await save_fixture(subscription)
+
+        updated = await subscription_service.activate_imported(
+            session,
+            subscription,
+            current_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+            anchor_day=1,
+            trial_end=None,
+            payment_method=payment_method,
+            provider="stripe",
+            provider_subscription_id="sub_1",
+        )
+
+        assert updated.current_meter_period_start == datetime(2026, 6, 1, tzinfo=UTC)
+        assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
+        subscription_service.check_meter_cycle_lag(updated)
 
     async def test_does_not_tell_the_customer_anything_resumed(
         self,
@@ -4596,10 +4734,10 @@ async def create_event_billing_entry(
     return billing_entry
 
 
-UpdateMetersFixture: TypeAlias = tuple[Meter, Product, MeteredPrice, Subscription]
+type UpdateMetersFixture = tuple[Meter, Product, MeteredPrice, Subscription]
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def update_meters_fixtures(
     mocker: MockerFixture,
     session: AsyncSession,
@@ -4630,8 +4768,8 @@ async def update_meters_fixtures(
     return meter, product, price, subscription
 
 
-@pytest.mark.asyncio
-class TestResetMeter:
+@pytest.mark.anyio
+class TestResetMeters:
     async def test_without_rollover(
         self,
         mocker: MockerFixture,
@@ -4649,9 +4787,7 @@ class TestResetMeter:
             return_value=0,
         )
 
-        await subscription_service.reset_meter(
-            session, subscription, subscription_meter
-        )
+        await subscription_service.reset_meters(session, subscription)
 
         get_rollover_units_mock.assert_awaited_once_with(
             session, customer, subscription_meter.meter, cutoff=None
@@ -4682,8 +4818,8 @@ class TestResetMeter:
             return_value=25,
         )
 
-        await subscription_service.reset_meter(
-            session, subscription, subscription_meter, reset_at=reset_at
+        await subscription_service.reset_meters(
+            session, subscription, reset_at=reset_at
         )
 
         get_rollover_units_mock.assert_awaited_once_with(
@@ -4699,10 +4835,85 @@ class TestResetMeter:
             "meter_id": str(subscription_meter.meter_id),
             "units": 25,
             "rollover": True,
+            "reason": "benefit",
         }
 
+    async def test_resets_granted_meter_credits(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        meter = await create_meter(save_fixture, organization=organization)
+        revoked_meter = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        for benefit_meter, granted in ((meter, True), (revoked_meter, False)):
+            benefit = await create_benefit(
+                save_fixture,
+                organization=organization,
+                type=BenefitType.meter_credit,
+                properties={
+                    "meter_id": str(benefit_meter.id),
+                    "units": 100,
+                    "rollover": False,
+                },
+            )
+            await create_benefit_grant(
+                save_fixture,
+                customer,
+                benefit,
+                granted=granted,
+                subscription=subscription,
+            )
+        reset_at = utc_now()
 
-@pytest.mark.asyncio
+        await subscription_service.reset_meters(
+            session, subscription, reset_at=reset_at
+        )
+
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
+        assert reset_events[0].timestamp == reset_at
+        assert reset_events[0].user_metadata == {"meter_id": str(meter.id)}
+
+    async def test_resets_shared_meter_once(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(subscription.meters[0].meter_id),
+                "units": 100,
+                "rollover": False,
+            },
+        )
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, subscription=subscription
+        )
+
+        await subscription_service.reset_meters(session, subscription)
+
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
+
+
+@pytest.mark.anyio
 class TestUpdateMeters:
     async def test_no_entries(
         self,
@@ -4782,7 +4993,7 @@ class TestUpdateMeters:
         assert updated_subscription_meter.amount == 6000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueBenefitsGrants:
     @pytest.mark.parametrize(
         "status", [SubscriptionStatus.incomplete, SubscriptionStatus.incomplete_expired]
@@ -4964,7 +5175,7 @@ class TestEnqueueBenefitsGrants:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateProductBenefitsGrants:
     async def test_valid(
         self,
@@ -5003,7 +5214,7 @@ class TestUpdateProductBenefitsGrants:
         assert actual_ids == expected_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth
     async def test_user_not_organization_member(
@@ -5134,7 +5345,7 @@ class TestList:
         assert subscription_2 in results
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_product_update_prorate(
         self,
@@ -5642,6 +5853,89 @@ class TestUpdate:
             updated,
         )
 
+    async def test_combined_update_no_trial_product_trial_end_keeps_trialing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        current_period_start = subscription.current_period_start
+        trial_end = subscription.trial_end
+        assert trial_end is not None
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=new_product.id, trial_end=trial_end
+                ),
+            )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == trial_end
+        assert updated.current_period_start == current_period_start
+        assert updated.current_period_end == trial_end
+        assert not any(
+            call.args and call.args[0] == "order.create_subscription_order"
+            for call in enqueue_job_mock.call_args_list
+        )
+
+    async def test_combined_update_trial_product_trial_end_overrides_product_trial(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        trial_end = subscription.trial_end + timedelta(days=10)
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            trial_interval=TrialInterval.day,
+            trial_interval_count=14,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=new_product.id, trial_end=trial_end
+                ),
+            )
+
+        assert updated.product == new_product
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.trial_end == trial_end
+        assert updated.current_period_end == trial_end
+
     async def test_product_and_discount_update_with_discount_for_new_product(
         self,
         session: AsyncSession,
@@ -5698,8 +5992,128 @@ class TestUpdate:
             updated,
         )
 
+    @pytest.mark.parametrize(
+        "trial_extension",
+        [timedelta(0), timedelta(days=30)],
+        ids=["unchanged_trial_end", "extended_trial"],
+    )
+    async def test_next_period_interval_change_with_trial_end_bills_one_full_period(
+        self,
+        trial_extension: timedelta,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: MagicMock,
+    ) -> None:
+        mocker.patch.object(order_service, "trigger_payment", new_callable=AsyncMock)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.payment_method = payment_method
+        await save_fixture(subscription)
 
-@pytest.mark.asyncio
+        assert subscription.trial_end is not None
+        trial_end = subscription.trial_end + trial_extension
+        yearly_price = 10_000
+        yearly_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(yearly_price, "usd")],
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(
+                    product_id=yearly_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.next_period,
+                    trial_end=trial_end,
+                ),
+            )
+
+        assert updated.status == SubscriptionStatus.trialing
+        assert updated.product == product
+        assert updated.trial_end == trial_end
+        assert updated.current_period_end == trial_end
+
+        subscription_update_repository = SubscriptionUpdateRepository.from_session(
+            session
+        )
+        pending_update = (
+            await subscription_update_repository.get_unapplied_by_subscription_id(
+                updated.id
+            )
+        )
+        expected_period_end = SubscriptionRecurringInterval.year.get_next_period(
+            trial_end, trial_end.day, 1
+        )
+        assert pending_update is not None
+        assert pending_update.applies_at == trial_end
+        assert pending_update.new_cycle_start == trial_end
+        assert pending_update.new_cycle_end == expected_period_end
+
+        with freeze_time(trial_end):
+            async with SubscriptionUpdateContext(
+                session, updated, subscription_service
+            ) as ctx:
+                cycled = await subscription_service.cycle(
+                    session, ctx, updated, payment_mode=PaymentMode.sync
+                )
+            # A zero-length period is already due, so the scheduler fires again.
+            if cycled.current_period_end <= utc_now():
+                async with SubscriptionUpdateContext(
+                    session, cycled, subscription_service
+                ) as ctx:
+                    cycled = await subscription_service.cycle(
+                        session, ctx, cycled, payment_mode=PaymentMode.sync
+                    )
+
+        assert cycled.status == SubscriptionStatus.active
+        assert cycled.product == yearly_product
+        assert cycled.pending_update is None
+        assert cycled.current_period_start == trial_end
+        assert cycled.current_period_end == expected_period_end
+
+        order_repository = OrderRepository.from_session(session)
+        orders = await order_repository.get_all_by_subscription(cycled.id)
+        assert len(orders) == 1
+        order = orders[0]
+        assert (
+            order.billing_reason
+            == OrderBillingReasonInternal.subscription_cycle_after_trial
+        )
+        assert order.subtotal_amount == yearly_price
+        assert len(order.items) == 1
+        item = order.items[0]
+        assert item.start_timestamp == trial_end
+        assert item.end_timestamp == expected_period_end
+        assert (
+            f"From {format_date(trial_end.date(), locale='en_US')} "
+            f"to {format_date(expected_period_end.date(), locale='en_US')}"
+        ) in item.label
+        assert not any(
+            call.args and call.args[0] == "order.create_subscription_order"
+            for call in enqueue_job_mock.call_args_list
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_cycled,
+            organization,
+            cycled,
+        )
+
+
+@pytest.mark.anyio
 class TestUpdateProduct:
     @pytest.mark.parametrize(
         ("proration_behavior", "expects_previous_product"),
@@ -5748,6 +6162,134 @@ class TestUpdateProduct:
             assert updated_call.kwargs == {"previous_product_name": product.name}
         else:
             assert updated_call.kwargs == {}
+
+    async def test_not_current_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        old_version = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        old_version.is_current = False
+        await save_fixture(old_version)
+
+        with pytest.raises(PolarRequestValidationError) as error:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=old_version.id
+                )
+
+        assert error.value.errors()[0]["msg"] == (
+            "Product is no longer sold. Use the current version."
+        )
+
+    @freeze_time("2026-06-15")
+    async def test_meter_clock_contains_now_when_period_started_in_past(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_start=datetime(2026, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2027, 1, 1, tzinfo=UTC),
+        )
+        subscription.initialize_meter_period(
+            subscription.current_period_start, containing=utc_now()
+        )
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        assert updated.current_period_start == datetime(2026, 1, 1, tzinfo=UTC)
+        assert updated.current_meter_period_start == datetime(2026, 6, 1, tzinfo=UTC)
+        assert updated.current_meter_period_end == datetime(2026, 7, 1, tzinfo=UTC)
+        subscription_service.check_meter_cycle_lag(updated)
+
+    async def test_settles_old_product_at_applies_at(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.initialize_meter_period(
+            subscription.current_period_start, containing=utc_now()
+        )
+        await save_fixture(subscription)
+
+        applies_at = utc_now() - timedelta(seconds=1)
+        mocker.patch("polar.subscription.update.utc_now", return_value=applies_at)
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        settle_mock.assert_called_once_with(subscription, applies_at)
 
     async def test_trial_to_equal_trial_succeeds(
         self,
@@ -6663,7 +7205,7 @@ class TestUpdateProduct:
                     product_id=fixed_product.id,
                 )
 
-    async def test_upgrade_from_legacy_recurring_product_to_new_recurring_product(
+    async def test_yearly_subscription_on_monthly_product_resets_cycle(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -6675,23 +7217,12 @@ class TestUpdateProduct:
             subscription_service, "_create_subscription_update_order", new=AsyncMock()
         )
 
-        legacy_product = await create_product(
+        product = await create_product(
             save_fixture,
             organization=organization,
-            recurring_interval=None,
-            prices=[],
-        )
-        legacy_price = await create_legacy_recurring_product_price(
-            save_fixture,
-            amount_type=ProductPriceAmountType.fixed,
-            product=legacy_product,
             recurring_interval=SubscriptionRecurringInterval.month,
-            amount=1000,
+            prices=[(1000, "usd")],
         )
-        legacy_product.prices.append(legacy_price)
-        legacy_product.all_prices.append(legacy_price)
-        await save_fixture(legacy_product)
-
         new_product = await create_product(
             save_fixture,
             organization=organization,
@@ -6699,11 +7230,16 @@ class TestUpdateProduct:
             prices=[(2000, "usd")],
         )
 
+        current_period_start = utc_now()
         subscription = await create_active_subscription(
             save_fixture,
-            product=legacy_product,
+            product=product,
             customer=customer,
+            current_period_start=current_period_start,
+            current_period_end=current_period_start + timedelta(days=365),
         )
+        subscription.recurring_interval = SubscriptionRecurringInterval.year
+        await save_fixture(subscription)
 
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
@@ -6716,7 +7252,13 @@ class TestUpdateProduct:
                 proration_behavior=SubscriptionProrationBehavior.prorate,
             )
 
-        assert updated_subscription.product == new_product
+        assert updated_subscription.recurring_interval == (
+            SubscriptionRecurringInterval.month
+        )
+        assert updated_subscription.current_period_end is not None
+        assert updated_subscription.current_period_end < (
+            current_period_start + timedelta(days=32)
+        )
 
     async def test_next_period_behavior_new_update(
         self,
@@ -7230,7 +7772,7 @@ class TestUpdateProduct:
         assert subscription.product_id == product.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateDiscount:
     async def test_not_existing_discount(
         self,
@@ -7403,7 +7945,7 @@ class TestUpdateDiscount:
                 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateTrial:
     async def test_trialing_subscription_ending_now_with_renewals_disabled(
         self,
@@ -7773,6 +8315,10 @@ class TestUpdateTrial:
                 session, ctx, subscription, trial_end=new_trial_end
             )
 
+        assert subscription_update.applies_at == new_trial_end
+        assert subscription_update.new_cycle_start is None
+        assert subscription_update.new_cycle_end is None
+
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
         ) as ctx:
@@ -7782,8 +8328,57 @@ class TestUpdateTrial:
 
         assert updated_subscription.current_period_start == new_trial_end
 
+    async def test_later_trial_extension_reschedules_pending_interval_change(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.trial_end is not None
+        yearly_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(10_000, "usd")],
+        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=yearly_product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
 
-@pytest.mark.asyncio
+        new_trial_end = subscription.trial_end + timedelta(days=30)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_trial(
+                session, ctx, subscription, trial_end=new_trial_end
+            )
+
+        reloaded = await SubscriptionUpdateRepository.from_session(
+            session
+        ).get_unapplied_by_subscription_id(subscription.id)
+        expected_period_end = SubscriptionRecurringInterval.year.get_next_period(
+            new_trial_end, new_trial_end.day, 1
+        )
+        assert reloaded is not None
+        assert reloaded.applies_at == new_trial_end
+        assert reloaded.new_cycle_start == new_trial_end
+        assert reloaded.new_cycle_end == expected_period_end
+        assert subscription.current_period_end == new_trial_end
+
+
+@pytest.mark.anyio
 async def test_send_past_due_email(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -7802,7 +8397,7 @@ async def test_send_past_due_email(
     await subscription_service.send_past_due_email(session, subscription)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_send_renewal_reminder_email_formats_long_date(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -7831,7 +8426,7 @@ async def test_send_renewal_reminder_email_formats_long_date(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_send_renewal_reminder_email_mentions_stripe_migration(
     enqueue_email_mock: MagicMock,
     save_fixture: SaveFixture,
@@ -7860,7 +8455,7 @@ async def test_send_renewal_reminder_email_mentions_stripe_migration(
     assert email.props.previous_billing_provider == "Stripe"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_send_trial_conversion_reminder_email_formats_long_date(
     mocker: MockerFixture,
     save_fixture: SaveFixture,
@@ -7891,7 +8486,7 @@ async def test_send_trial_conversion_reminder_email_formats_long_date(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkPastDue:
     """Test subscription service dunning functionality"""
 
@@ -7972,7 +8567,7 @@ class TestMarkPastDue:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkActive:
     async def test_recovers_meter_cycle_from_past_due(
         self,
@@ -7992,14 +8587,79 @@ class TestMarkActive:
         subscription.past_due_at = utc_now()
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
         reset_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         updated = await subscription_service.mark_active(session, subscription)
 
         assert updated.status == SubscriptionStatus.active
         settle_mock.assert_called_once()
-        reset_mock.assert_called_once()
+        _, settled_at = settle_mock.call_args.args
+        reset_mock.assert_awaited_once_with(session, updated, reset_at=settled_at)
+
+    async def test_recovery_cycles_grants_kept_through_grace_period(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        benefit = await create_benefit(save_fixture, organization=organization)
+        grant = await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, subscription=subscription
+        )
+
+        await subscription_service.mark_active(session, subscription)
+
+        enqueue_job_mock.assert_any_call("benefit.cycle", benefit_grant_id=grant.id)
+
+    async def test_recovery_does_not_cycle_revoked_grants(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        benefit = await create_benefit(save_fixture, organization=organization)
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=False, subscription=subscription
+        )
+
+        await subscription_service.mark_active(session, subscription)
+
+        assert "benefit.cycle" not in [
+            call.args[0] for call in enqueue_job_mock.call_args_list
+        ]
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
 
     async def test_recovery_skips_meter_settlement_for_non_meter_product(
         self,
@@ -8017,7 +8677,9 @@ class TestMarkActive:
         subscription.past_due_at = utc_now()
         await save_fixture(subscription)
 
-        settle_mock = mocker.patch.object(subscription_service, "_settle_meter_cycle")
+        settle_mock = mocker.patch.object(
+            subscription_service, "_enqueue_meter_cycle_order"
+        )
         reset_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         updated = await subscription_service.mark_active(session, subscription)
@@ -8055,7 +8717,7 @@ class TestMarkActive:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdatePaymentMethodFromRetry:
     async def test_existing_method(
         self,
@@ -8131,7 +8793,7 @@ class TestUpdatePaymentMethodFromRetry:
         assert updated_subscription.payment_method == new_payment_method
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdatePaymentMethodFromNewDefault:
     async def test_single_payable_subscription(
         self,
@@ -8190,7 +8852,7 @@ class TestUpdatePaymentMethodFromNewDefault:
         assert second_subscription.payment_method_id == second_payment_method.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateSeats:
     async def test_seat_increase_same_tier(
         self,
@@ -9047,6 +9709,62 @@ class TestUpdateSeats:
             assert billing_entry.end_timestamp == new_period_end
             assert billing_entry.direction == BillingEntryDirection.debit
             assert billing_entry.amount == 1000 * new
+
+    async def test_proration_reset_reanchors_meter_period(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        frozen_time: datetime,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch.object(
+            subscription_service, "_create_subscription_update_order", new=AsyncMock()
+        )
+
+        # Given: Yearly subscription with a monthly meter clock
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+            current_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = datetime(2025, 6, 1, tzinfo=UTC)
+        subscription.current_meter_period_end = datetime(2025, 7, 1, tzinfo=UTC)
+        await save_fixture(subscription)
+
+        # When: Seats change with reset behavior mid-month
+        update_time = datetime(2025, 6, 15, tzinfo=UTC)
+        with freezegun.freeze_time(update_time):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                updated_subscription = await subscription_service.update_seats(
+                    session,
+                    ctx,
+                    subscription,
+                    seats=10,
+                    proration_behavior=SubscriptionProrationBehavior.reset,
+                )
+
+        # Then: The meter clock follows the reset billing cycle
+        assert updated_subscription.current_period_start == update_time
+        assert updated_subscription.current_meter_period_start == update_time
+        assert updated_subscription.current_meter_period_end == datetime(
+            2025, 7, 15, tzinfo=UTC
+        )
 
     async def test_proration_prorate_behavior(
         self,
@@ -10175,7 +10893,7 @@ class TestUpdateSeats:
         assert len(proration_entries) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueBenefitsGrantsGracePeriod:
     async def test_grace_period_not_expired(
         self,
@@ -10304,7 +11022,7 @@ class TestEnqueueBenefitsGrantsGracePeriod:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateBillingPeriod:
     async def test_basic(
         self,
@@ -10405,8 +11123,125 @@ class TestUpdateBillingPeriod:
                     new_period_end=new_period_end,
                 )
 
+    async def test_pending_update_follows_new_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        old_period_end = subscription.current_period_end
 
-@pytest.mark.asyncio
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.applies_at == old_period_end
+        assert subscription_update.new_cycle_end == old_period_end
+
+        new_period_end = old_period_end + timedelta(days=7)
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=new_period_end,
+            )
+
+        assert subscription_update.applies_at == new_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.product == product_second
+        assert updated_subscription.current_period_start == new_period_end
+        assert (
+            updated_subscription.current_period_end
+            == SubscriptionRecurringInterval.month.get_next_period(
+                new_period_end, new_period_end.day
+            )
+        )
+
+    async def test_pending_interval_change_follows_new_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        yearly_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        old_period_end = subscription.current_period_end
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=yearly_product,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert subscription_update.new_cycle_start == old_period_end
+
+        new_period_end = old_period_end + timedelta(days=7)
+        expected_new_cycle_end = SubscriptionRecurringInterval.year.get_next_period(
+            new_period_end, new_period_end.day
+        )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_currrent_billing_period_end(
+                session,
+                ctx,
+                subscription,
+                new_period_end=new_period_end,
+            )
+
+        assert subscription_update.new_cycle_start == new_period_end
+        assert subscription_update.new_cycle_end == expected_new_cycle_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.product == yearly_product
+        assert updated_subscription.current_period_start == new_period_end
+        assert updated_subscription.current_period_end == expected_new_cycle_end
+
+
+@pytest.mark.anyio
 class TestCancelCustomer:
     async def test_basic(
         self,
@@ -10496,7 +11331,7 @@ class TestCancelCustomer:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancelForOrganization:
     async def test_cancels_billable_without_email(
         self,
@@ -10737,7 +11572,7 @@ class TestCancelForOrganization:
         assert has_more is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestClearPendingUpdate:
     async def test_clear_pending_product_update(
         self,
@@ -10851,7 +11686,7 @@ class TestClearPendingUpdate:
         assert updated_subscription.pending_update is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFixedSeatComposition:
     """A product composing a fixed price with a seat-based price bills F + S(n)."""
 
@@ -10937,7 +11772,7 @@ class TestFixedSeatComposition:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestNewSubscriptionNotification:
     async def test_trialing_sends_new_trial(
         self,
@@ -11008,7 +11843,7 @@ def _cancellation_payloads(
     return payloads
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCancellationNotification:
     async def test_cancel_at_period_end(
         self,

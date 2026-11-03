@@ -37,7 +37,25 @@ def repository(session: AsyncSession) -> CustomerRepository:
     return CustomerRepository.from_session(session)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
+class TestIncrementCreditNoteNextNumber:
+    async def test_increment_credit_note_next_number(
+        self,
+        repository: CustomerRepository,
+        customer: Customer,
+        customer_organization_second: Customer,
+    ) -> None:
+        assert await repository.increment_credit_note_next_number(customer.id) == 1
+        assert await repository.increment_credit_note_next_number(customer.id) == 2
+        assert (
+            await repository.increment_credit_note_next_number(
+                customer_organization_second.id
+            )
+            == 1
+        )
+
+
+@pytest.mark.anyio
 async def test_get_by_id(
     save_fixture: SaveFixture, customer: Customer, repository: CustomerRepository
 ) -> None:
@@ -51,7 +69,7 @@ async def test_get_by_id(
     assert result == customer
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_resolve_customer_identifiers(
     save_fixture: SaveFixture,
     repository: CustomerRepository,
@@ -94,7 +112,7 @@ async def test_resolve_customer_identifiers(
     }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_create_context(
     mocker: MockerFixture,
     session: AsyncSession,
@@ -125,7 +143,7 @@ async def test_create_context(
     enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_create_context_with_external_id_resolves_first_user_event_at(
     mocker: MockerFixture,
     session: AsyncSession,
@@ -148,7 +166,7 @@ async def test_create_context_with_external_id_resolves_first_user_event_at(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_setting_external_id_resolves_first_user_event_at(
     mocker: MockerFixture,
     customer: Customer,
@@ -164,7 +182,7 @@ async def test_update_setting_external_id_resolves_first_user_event_at(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_without_external_id_change_does_not_resolve(
     mocker: MockerFixture,
     customer: Customer,
@@ -181,7 +199,7 @@ async def test_update_without_external_id_change_does_not_resolve(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestLowerFirstUserEventAt:
     async def test_fills_a_null(
         self,
@@ -230,7 +248,7 @@ class TestLowerFirstUserEventAt:
         assert customer.modified_at == modified_at
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_tracks_billing_name(
     mocker: MockerFixture,
     customer: Customer,
@@ -251,7 +269,7 @@ async def test_update_tracks_billing_name(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_tracks_billing_name_with_flush_true(
     mocker: MockerFixture,
     customer: Customer,
@@ -272,7 +290,7 @@ async def test_update_tracks_billing_name_with_flush_true(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_with_update_dict_tracks_changed_fields(
     mocker: MockerFixture,
     customer: Customer,
@@ -290,7 +308,7 @@ async def test_update_with_update_dict_tracks_changed_fields(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_with_identical_value_does_not_modify_customer(
     session: AsyncSession, customer: Customer, repository: CustomerRepository
 ) -> None:
@@ -305,7 +323,7 @@ async def test_update_with_identical_value_does_not_modify_customer(
     assert customer.modified_at == modified_at
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_deleted_customer_is_silent(
     mocker: MockerFixture,
     customer: Customer,
@@ -321,7 +339,7 @@ async def test_update_deleted_customer_is_silent(
     enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_restoring_customer_emits_updated(
     mocker: MockerFixture,
     customer: Customer,
@@ -337,7 +355,7 @@ async def test_update_restoring_customer_emits_updated(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_update_without_changes(
     mocker: MockerFixture,
     customer: Customer,
@@ -350,7 +368,7 @@ async def test_update_without_changes(
     enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestOwnerRelationship:
     """The `owner` relationship is eager-loaded (`lazy="selectin"`) on every
     customer query, so accessing it never raises and always reflects the single
@@ -430,7 +448,7 @@ class TestOwnerRelationship:
         assert result.owner is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAvatarUrl:
     """`avatar_url` uses the customer's own email, falls back to the owner
     member's email when the customer has none, and is `None` otherwise."""
@@ -478,7 +496,7 @@ class TestAvatarUrl:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSearchByQuery:
     @pytest.mark.parametrize(
         ("match_email", "match_name", "non_match_email", "non_match_name", "query"),
@@ -557,7 +575,7 @@ class TestSearchByQuery:
         assert external_ids == ["org_123_user"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetBoundStripeIdentitiesByOrganization:
     async def test_only_keeps_stripe_ids_in_use(
         self,
@@ -591,7 +609,7 @@ class TestGetBoundStripeIdentitiesByOrganization:
         }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetBoundStripeIdentity:
     async def test_unused(
         self, repository: CustomerRepository, customer: Customer

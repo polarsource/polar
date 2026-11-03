@@ -7,14 +7,33 @@ locals {
     set -euo pipefail
     DATE="$${BACKUP_DATE:-$(date -u +%Y-%m-%d)}"
     echo "Copying Render export for $DATE"
-    URL=$(curl -fsS "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
-      -H "Authorization: Bearer $RENDER_API_KEY" \
-      | jq -r --arg d "$DATE" '[.[] | select(.createdAt | startswith($d))][0].url // empty')
-    if [ -z "$URL" ]; then
+    export_url() {
+      curl -fsS "https://api.render.com/v1/postgres/$RENDER_DATABASE_ID/export" \
+        -H "Authorization: Bearer $RENDER_API_KEY" \
+        | jq -r --arg d "$DATE" '[.[] | select(.createdAt | startswith($d))][0].url // empty'
+    }
+    # Render only lists completed exports, and they can finish hours after 12:00 UTC.
+    for _ in $(seq 36); do
+      [ -n "$(export_url)" ] && break
+      echo "No export for $DATE yet, waiting"
+      sleep 600
+    done
+    if [ -z "$(export_url)" ]; then
       echo "Error: No export for $DATE found" >&2
       exit 1
     fi
-    curl -fsS "$URL" | aws s3 cp - "s3://$BUCKET_NAME/$${DATE//-/}/$${DATE//-/}_backup.tar.gz" \
+    # Render drops long downloads; resume from the last byte with a freshly signed URL.
+    download() {
+      OFFSET=0
+      for ATTEMPT in $(seq 10); do
+        curl -fsS -C "$OFFSET" "$(export_url)" -w '%%{stderr}\n%%{size_download}\n' 2>/tmp/curl.log && return 0
+        OFFSET=$((OFFSET + $(tail -1 /tmp/curl.log)))
+        echo "Attempt $ATTEMPT: $(head -1 /tmp/curl.log), resuming at byte $OFFSET" >&2
+        sleep 30
+      done
+      return 1
+    }
+    download | aws s3 cp - "s3://$BUCKET_NAME/$${DATE//-/}/$${DATE//-/}_backup.tar.gz" \
       --expected-size 200000000000 --checksum-algorithm SHA256
   EOT
 }

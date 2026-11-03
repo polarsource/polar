@@ -1,14 +1,15 @@
 import { schemas } from '@polar-sh/client'
 import {
-  AlertCircleIcon,
-  BanknoteIcon,
-  CheckIcon,
-  ClockIcon,
+  Banknote as BanknoteIcon,
+  Check as CheckIcon,
+  CircleAlert as AlertCircleIcon,
+  Clock as ClockIcon,
   type LucideIcon,
-} from 'lucide-react'
-
+  Users as UsersIcon,
+} from '@polar-sh/orbit/icons'
 export type PayoutAccountState =
   | 'not_connected'
+  | 'managed_by_another_member'
   | schemas['PayoutAccountStatus']
 
 type Tone = 'success' | 'warning' | 'danger' | 'pending' | 'neutral'
@@ -31,6 +32,13 @@ const PRESENTATIONS: Record<
     title: 'Connect payout account',
     description:
       'Connect or create a Stripe account to receive payments from your customers.',
+  },
+  managed_by_another_member: {
+    tone: 'neutral',
+    icon: UsersIcon,
+    title: 'Payout account connected by another member',
+    description:
+      'Only the member who connected it can edit it. You can switch this organization to a payout account of your own.',
   },
   incomplete: {
     tone: 'warning',
@@ -64,7 +72,10 @@ const PRESENTATIONS: Record<
 
 export const getPayoutAccountPresentation = (
   payoutAccount: schemas['PayoutAccount'] | undefined,
+  managedByAnotherMember = false,
 ): PayoutAccountPresentation => {
-  const state: PayoutAccountState = payoutAccount?.status ?? 'not_connected'
+  const state: PayoutAccountState = managedByAnotherMember
+    ? 'managed_by_another_member'
+    : (payoutAccount?.status ?? 'not_connected')
   return { state, ...PRESENTATIONS[state] }
 }

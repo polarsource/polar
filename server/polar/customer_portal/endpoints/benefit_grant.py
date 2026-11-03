@@ -6,21 +6,18 @@ from pydantic import UUID4
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import BenefitGrant
-from polar.models.benefit import BenefitType
 from polar.openapi import APITag
-from polar.order.schemas import OrderID
 from polar.postgres import get_db_session
 from polar.routing import APIRouter
-from polar.subscription.schemas import SubscriptionID
 
 from .. import auth
 from ..schemas.benefit_grant import (
     CustomerBenefitGrant,
     CustomerBenefitGrantAdapter,
     CustomerBenefitGrantUpdate,
+    CustomerPortalBenefitGrantListParams,
 )
 from ..service.benefit_grant import CustomerBenefitGrantSortProperty
 from ..service.benefit_grant import (
@@ -54,41 +51,23 @@ ListSorting = Annotated[
     response_model=ListResource[CustomerBenefitGrant],
 )
 async def list(
+    filters: Annotated[CustomerPortalBenefitGrantListParams, Query()],
     auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    query: str | None = Query(None, description="Filter by benefit description."),
-    type: MultipleQueryFilter[BenefitType] | None = Query(
-        None, title="BenefitType Filter", description="Filter by benefit type."
-    ),
-    benefit_id: MultipleQueryFilter[UUID4] | None = Query(
-        None, title="BenefitID Filter", description="Filter by benefit ID."
-    ),
-    checkout_id: MultipleQueryFilter[UUID4] | None = Query(
-        None, title="CheckoutID Filter", description="Filter by checkout ID."
-    ),
-    order_id: MultipleQueryFilter[OrderID] | None = Query(
-        None, title="OrderID Filter", description="Filter by order ID."
-    ),
-    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
-        None, title="SubscriptionID Filter", description="Filter by subscription ID."
-    ),
-    member_id: MultipleQueryFilter[UUID4] | None = Query(
-        None, title="MemberID Filter", description="Filter by member ID."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerBenefitGrant]:
     """List benefits grants of the authenticated customer."""
     results, count = await customer_benefit_grant_service.list(
         session,
         auth_subject,
-        query=query,
-        type=type,
-        benefit_id=benefit_id,
-        checkout_id=checkout_id,
-        order_id=order_id,
-        subscription_id=subscription_id,
-        member_id=member_id,
+        query=filters.query,
+        type=filters.type,
+        benefit_id=filters.benefit_id,
+        checkout_id=filters.checkout_id,
+        order_id=filters.order_id,
+        subscription_id=filters.subscription_id,
+        member_id=filters.member_id,
         pagination=pagination,
         sorting=sorting,
     )

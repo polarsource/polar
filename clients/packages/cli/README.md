@@ -57,12 +57,24 @@ export POLAR_ACCESS_TOKEN=polar_oat_...
 bun src/cli.ts <command>
 ```
 
+To create a token for an app against the local stack, sign in with
+`auth login --local` (`dev seed` registers its OAuth client). `auth token` then
+opens the local dashboard at `127.0.0.1:3000`. Unset the variables from the token
+setup above first: `auth login` refuses to run with `POLAR_ACCESS_TOKEN` set, and
+`--local` already points at the local API:
+
+```bash
+unset POLAR_API_URL POLAR_ACCESS_TOKEN
+bun src/cli.ts auth login --local
+bun src/cli.ts auth token
+```
+
 ### Generated API commands
 
 The CLI imports its API command tree from the private `@polar-sh/cli-commands`
 package in `sdk/cli-commands` through a local `file:` dependency. The generator
 and templates live in `sdk/generator/cli_commands`; the CLI supplies the Effect
-runtime implementation in `src/utils/api-runtime.ts`.
+runtime implementation in `src/api-runtime.ts`.
 
 Regenerate the commands after an API change with `pnpm generate`. Generation is
 explicit, and the generated files are committed. See
@@ -74,8 +86,8 @@ files, setup, and limitations.
 Every command reports one anonymous `cli_command` event straight to PostHog when
 it finishes: the command path (for example `auth login`), the names of the flags
 used (never their values), whether it succeeded, failed or was interrupted, the
-error type and status code, the name of the flag or argument behind a usage
-mistake, the environment (sandbox or production), the duration, the CLI version,
+error type and status code, the name of the flag, argument or subcommand behind
+a usage mistake, the environment (sandbox or production), the duration, the CLI version,
 OS, architecture, Bun version, whether it ran in CI, and which AI coding agent
 (if any) invoked it. Events are keyed by a random install id stored in
 `~/.polar/telemetry.json`. Access tokens, organization IDs, URLs and payloads

@@ -25,21 +25,21 @@ This URL is a good choice to link from your marketing site, your app's help menu
 
 If your customer is already signed in to your application, you can generate an authenticated link that drops them directly into the portal — no email code required.
 
-Under the hood, this calls the [Create Customer Session](/api-reference/current/customer-sessions/create-customer-session) endpoint and redirects the user to the `customerPortalUrl` it returns.
+Under the hood, this calls the [Create Customer Session](/api-reference/current/customer-sessions/create-customer-session) endpoint and redirects the user to the `customer_portal_url` it returns.
 
 ```typescript
-import { Polar } from "@polar-sh/sdk";
+import { createPolar } from "@polar-sh/sdk/2026-10";
 
-const polar = new Polar({
-  accessToken: process.env["POLAR_ACCESS_TOKEN"] ?? "",
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
 });
 
 async function run() {
   const result = await polar.customerSessions.create({
-    customerId: "<value>",
+    customer_id: "<value>",
   });
 
-  redirect(result.customerPortalUrl);
+  redirect(result.customer_portal_url);
 }
 
 run();

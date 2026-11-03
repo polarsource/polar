@@ -24,7 +24,5 @@ export default async function Page(props: {
     notFound()
   }
 
-  return (
-    <MigrationDetailPage organization={organization} migrationId={params.id} />
-  )
+  return <MigrationDetailPage migrationId={params.id} />
 }

@@ -2,7 +2,10 @@
 
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { AlertCircleIcon, AlertTriangleIcon } from 'lucide-react'
+import {
+  CircleAlert as AlertCircleIcon,
+  TriangleAlert as AlertTriangleIcon,
+} from '@polar-sh/orbit/icons'
 import type { ComponentType, ReactNode } from 'react'
 
 type Tone = 'danger' | 'warning'

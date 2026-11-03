@@ -20,27 +20,27 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 
 export const LicenseKeysBenefitForm = () => {
-  const { control, watch, setValue } =
+  const { control, setValue } =
     useFormContext<schemas['BenefitLicenseKeysCreate']>()
 
-  const expires = watch('properties.expires', undefined)
+  const expires = useWatch({ control, name: 'properties.expires' })
   const showExpirationFields = !!expires
   const defaultExpiration: schemas['BenefitLicenseKeyExpirationProperties'] = {
     ttl: 1,
     timeframe: 'year',
   }
 
-  const activations = watch('properties.activations', undefined)
+  const activations = useWatch({ control, name: 'properties.activations' })
   const showActivationFields = !!activations
   const defaultActivations: schemas['BenefitLicenseKeyActivationProperties'] = {
     limit: 5,
     enable_customer_admin: true,
   }
 
-  const limitUsage = watch('properties.limit_usage', undefined)
+  const limitUsage = useWatch({ control, name: 'properties.limit_usage' })
   const [showLimitUsage, setShowLimitUsage] = useState(!!limitUsage)
 
   return (
@@ -92,47 +92,53 @@ export const LicenseKeysBenefitForm = () => {
         />
       </div>
       {expires && (
-        <div className="flex flex-row space-x-4">
-          <FormField
-            control={control}
-            name="properties.expires.ttl"
-            render={({ field }) => {
-              return (
-                <FormItem className="w-full max-w-full">
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={control}
-            name="properties.expires.timeframe"
-            render={({ field }) => {
-              return (
-                <FormItem>
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select timeframe" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="day">Day</SelectItem>
-                        <SelectItem value="month">Month</SelectItem>
-                        <SelectItem value="year">Year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
+        <div className="flex flex-col gap-y-2">
+          <div className="flex flex-row space-x-4">
+            <FormField
+              control={control}
+              name="properties.expires.ttl"
+              render={({ field }) => {
+                return (
+                  <FormItem className="w-full max-w-full">
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+            <FormField
+              control={control}
+              name="properties.expires.timeframe"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormControl>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select timeframe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="day">Day</SelectItem>
+                          <SelectItem value="month">Month</SelectItem>
+                          <SelectItem value="year">Year</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+          </div>
+          <FormDescription>
+            Only applies to one-time purchases. Keys granted by a subscription
+            don&apos;t expire and are revoked when the subscription ends.
+          </FormDescription>
         </div>
       )}
 

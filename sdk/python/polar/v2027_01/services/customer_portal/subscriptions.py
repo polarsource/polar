@@ -44,7 +44,9 @@ class SubscriptionsSync(SyncServiceBase):
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
-        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = [
+            "-started_at"
+        ],
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
     ) -> ListResourceCustomerSubscription:
@@ -101,7 +103,9 @@ class SubscriptionsSync(SyncServiceBase):
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
-        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = [
+            "-started_at"
+        ],
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
     ) -> typing.Generator[CustomerSubscription, None, None]:
@@ -359,7 +363,9 @@ class SubscriptionsAsync(AsyncServiceBase):
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
-        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = [
+            "-started_at"
+        ],
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
     ) -> ListResourceCustomerSubscription:
@@ -416,7 +422,9 @@ class SubscriptionsAsync(AsyncServiceBase):
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
-        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = [
+            "-started_at"
+        ],
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
     ) -> typing.AsyncGenerator[CustomerSubscription, None]:

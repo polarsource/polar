@@ -25,7 +25,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReviewAppealRequiresReview:
     async def test_orphan_rejected(
         self, session: AsyncSession, organization: Organization
@@ -37,7 +37,7 @@ class TestReviewAppealRequiresReview:
             await session.flush()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestParticipantUniqueness:
     async def test_duplicate_subject_rejected(
         self,
@@ -69,7 +69,7 @@ class TestParticipantUniqueness:
             await session.flush()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddAttachment:
     async def test_links_to_message(
         self,
@@ -123,7 +123,7 @@ class TestAddAttachment:
         assert attachment.audience == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAttachmentCaseConsistency:
     async def test_message_from_other_case_rejected(
         self,
@@ -174,7 +174,7 @@ class TestAttachmentCaseConsistency:
             await session.flush()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAwaitingPlatformExpression:
     async def _awaiting(self, session: AsyncSession, case_id: object) -> bool:
         expr = SupportCaseMessageRepository.awaiting_platform_expression()

@@ -1,7 +1,7 @@
 import type { ClientBase, RequestOptions } from "../../base";
 import type {
   Checkout,
-  CheckoutConfirmStripe,
+  CheckoutConfirm,
   CheckoutCreate,
   CheckoutPublic,
   CheckoutPublicConfirmed,
@@ -14,13 +14,13 @@ import type {
 
 import {
   CheckoutLocked,
+  CheckoutsClientConfirm400Error,
   CheckoutsClientConfirm403Error,
   CheckoutsClientUpdate403Error,
   CheckoutsUpdate403Error,
   ExpiredCheckoutError,
   HTTPValidationError,
   NotPermitted,
-  PaymentError,
   ResourceNotFound,
 } from "../errors";
 
@@ -316,7 +316,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {PaymentError} The payment failed.
+   * @throws {CheckoutsClientConfirm400Error} The payment failed or the shared payment token was rejected.
    * @throws {CheckoutsClientConfirm403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
    * @throws {CheckoutLocked} The checkout session is being processed.
@@ -325,7 +325,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
    */
   return async (
     client_secret: string,
-    body: CheckoutConfirmStripe,
+    body: CheckoutConfirm,
     requestOptions?: RequestOptions,
   ): Promise<CheckoutPublicConfirmed> => {
     const pathParams = {
@@ -341,7 +341,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<CheckoutPublicConfirmed>(response, "json", {
-      400: PaymentError,
+      400: CheckoutsClientConfirm400Error,
       403: CheckoutsClientConfirm403Error,
       404: ResourceNotFound,
       409: CheckoutLocked,

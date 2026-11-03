@@ -17,7 +17,7 @@ def _build(organization: Organization) -> SlackApp:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEncryptClassmethods:
     """Covers the classmethods used by the create and ``update_dict`` write
     paths in the Slack integration service."""
@@ -66,7 +66,7 @@ class TestEncryptClassmethods:
             await encrypted.decrypt(id="not-the-row-id")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSecrets:
     async def test_decrypts_encrypted(self, organization: Organization) -> None:
         integration = _build(organization)
@@ -115,7 +115,7 @@ class TestGetSecrets:
         assert await integration.get_bot_token() is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPersistence:
     async def test_round_trip_through_database(
         self,

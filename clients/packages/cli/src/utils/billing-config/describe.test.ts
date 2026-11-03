@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { describeValue } from '@/utils/billing-config/describe'
+import { describeValue, priceGroups } from '@/utils/billing-config/describe'
 
 const ESC = String.fromCharCode(27)
 
@@ -68,5 +68,185 @@ describe('describeValue', () => {
   test('leaves other values alone', () => {
     expect(describeValue({ team: 'cli' })).toBeUndefined()
     expect(describeValue('text')).toBeUndefined()
+  })
+})
+
+describe('describeValue for products and benefits', () => {
+  test('groups prices by kind with amounts per currency', () => {
+    const groups = priceGroups([
+      {
+        amount_type: 'fixed',
+        price_currency: 'usd',
+        tax_behavior: null,
+        price_amount: 9999,
+      },
+      { amount_type: 'fixed', price_currency: 'jpy', price_amount: 14999 },
+      {
+        amount_type: 'metered_unit',
+        price_currency: 'eur',
+        meter: 'tool_call',
+        unit_amount: '0.09',
+        cap_amount: 9000,
+      },
+      {
+        amount_type: 'metered_unit',
+        price_currency: 'jpy',
+        meter: 'tool_call',
+        unit_amount: '1.5',
+        cap_amount: 15000,
+      },
+      {
+        amount_type: 'metered_unit',
+        price_currency: 'usd',
+        meter: 'image_generation',
+        unit_amount: '12.5',
+        cap_amount: null,
+      },
+    ])
+    expect(groups?.map(({ label, text }) => [label, text.text])).toEqual([
+      ['USD', '$99.99'],
+      ['JPY', '¥14,999'],
+      ['EUR per tool_call', '€0.90 per 1,000\ncapped at €90'],
+      ['JPY per tool_call', '¥1.5\ncapped at ¥15,000'],
+      ['USD per image_generation', '$0.125'],
+    ])
+    expect(
+      priceGroups([
+        {
+          amount_type: 'metered_unit',
+          price_currency: 'usd',
+          meter: 'token',
+          unit_amount: '0.000000000001',
+        },
+        {
+          amount_type: 'metered_unit',
+          price_currency: 'usd',
+          meter: 'token',
+          unit_amount: 1e-12,
+        },
+        {
+          amount_type: 'metered_unit',
+          price_currency: 'usd',
+          meter: 'token',
+          unit_amount: '0.000000000002',
+        },
+      ])?.map(({ text }) => text.text),
+    ).toEqual(['$0.00000000000001\n$0.00000000000001\n$0.00000000000002'])
+    expect(
+      priceGroups([
+        { amount_type: 'fixed', price_currency: 'usd', price_amount: 999 },
+        { amount_type: 'fixed', price_currency: 'usd', price_amount: 9999 },
+      ])?.map(({ label, text }) => [label, text.text]),
+    ).toEqual([['USD', '$9.99\n$99.99']])
+    expect(priceGroups([{ amount_type: 'seat_based' }])).toBeUndefined()
+    expect(priceGroups([])).toBeUndefined()
+  })
+
+  test('names the tax behavior of a price when it is set', () => {
+    expect(
+      priceGroups([
+        {
+          amount_type: 'fixed',
+          price_currency: 'usd',
+          tax_behavior: 'inclusive',
+          price_amount: 1000,
+        },
+        {
+          amount_type: 'metered_unit',
+          price_currency: 'usd',
+          tax_behavior: 'exclusive',
+          meter: 'tool_call',
+          unit_amount: '10',
+        },
+        {
+          amount_type: 'seat_based',
+          price_currency: 'eur',
+          tax_behavior: 'location',
+          tiers: {
+            type: 'volume',
+            tiers: [{ bound: null, unit_amount: '500' }],
+          },
+          minimum_units: 1,
+        },
+      ])?.map(({ text }) => text.text),
+    ).toEqual([
+      '$10\ntax inclusive',
+      '$0.10\ntax exclusive',
+      'volume\n1+  €5\ntax by location',
+    ])
+  })
+
+  test('describes a price list inline when it is not expanded into rows', () => {
+    expect(
+      describeValue([
+        { amount_type: 'fixed', price_currency: 'usd', price_amount: 0 },
+        {
+          amount_type: 'metered_unit',
+          price_currency: 'usd',
+          meter: 'tool_call',
+          unit_amount: '10',
+          cap_amount: 500,
+        },
+      ]),
+    ).toBe('USD: $0\nUSD per tool_call: $0.10, capped at $5')
+  })
+
+  test('describes meter credit properties', () => {
+    expect(
+      describeValue({ meter: 'tool_call', units: 1000, rollover: false }),
+    ).toBe('1,000 tool_call credits')
+    expect(
+      describeValue({ meter: 'tool_call', units: 50, rollover: true }),
+    ).toBe('50 tool_call credits, unused credits roll over')
+  })
+
+  test('joins lists of references and names empty lists', () => {
+    expect(describeValue(['custom_servers', 'tool_calls'])).toBe(
+      'custom_servers, tool_calls',
+    )
+    expect(describeValue([])).toBe('none')
+  })
+
+  test('leaves unknown shapes to the caller', () => {
+    expect(describeValue({ foo: 'bar' })).toBeUndefined()
+    expect(describeValue([{ foo: 'bar' }])).toBeUndefined()
+    expect(describeValue({ amount_type: 'seat_based' })).toBeUndefined()
+  })
+})
+
+describe('priceGroups for tiered prices', () => {
+  const tiers = (type: string, ...steps: Array<[number | null, string]>) => ({
+    type,
+    tiers: steps.map(([bound, unit_amount]) => ({ bound, unit_amount })),
+  })
+
+  test('lists each tier with its range, per currency and unit, and usage tiers by bound', () => {
+    const groups = priceGroups([
+      {
+        amount_type: 'unit_based',
+        price_currency: 'usd',
+        tiers: tiers('volume', [10, '1000'], [null, '800']),
+        minimum_units: 2,
+        unit_label: { en: { '=1': 'server', other: 'servers' } },
+      },
+      {
+        amount_type: 'seat_based',
+        price_currency: 'eur',
+        tiers: tiers('graduated', [5, '2000'], [null, '1500']),
+        minimum_units: 1,
+      },
+      {
+        amount_type: 'metered_tiers',
+        price_currency: 'usd',
+        meter: 'tool_call',
+        tiers: tiers('graduated', [1000, '0'], [null, '0.2']),
+        cap_amount: 20000,
+      },
+    ])
+    expect(groups?.map(({ label, text }) => `${label}\n${text.text}`)).toEqual([
+      'USD per server\nvolume, minimum 2\n1–10  $10\n11+   $8',
+      'EUR per seat\ngraduated\n1–5  €20\n6+   €15',
+      'USD per tool_call\ngraduated\nup to 1,000  $0 per 1,000\nover 1,000   $2 per 1,000\ncapped at $200',
+    ])
   })
 })

@@ -18,7 +18,7 @@ export const formatCatalog = (events: ReadonlyArray<TriggerEvent>) => {
   }
   lines.push(
     ui.blank,
-    ui.step(`Send one with ${ui.command('polar trigger <event>')}`),
+    ui.step(`Send one with ${ui.command('polar webhook trigger <event>')}`),
     ui.blank,
   )
   return lines.join('\n')

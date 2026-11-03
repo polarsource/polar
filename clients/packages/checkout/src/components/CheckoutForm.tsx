@@ -34,9 +34,20 @@ import {
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { UseFormReturn, WatchObserver } from 'react-hook-form'
-import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
+import {
+  UseFormReturn,
+  WatchObserver,
+  useWatch,
+  useFormState,
+} from 'react-hook-form'
+import { hasProductCheckout } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
+import {
+  type CheckoutSubmitResult,
+  errorDetail,
+  flattenFormErrors,
+  useCheckoutWebMCP,
+} from '../hooks/webmcp'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { isTemporaryDiscount } from '../utils/discount'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
@@ -77,8 +88,12 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   locale?: AcceptedLocale
   isWalletPayment?: boolean
+  isPaymentFormReady?: boolean
+  isPaymentFormComplete?: boolean
+  focusPaymentForm?: (options: { clear: boolean }) => boolean
   beforeSubmit?: React.ReactNode
   embed?: boolean
+  webMCP?: boolean
 }
 
 const BaseCheckoutForm = ({
@@ -93,22 +108,18 @@ const BaseCheckoutForm = ({
   children,
   locale: localeProp,
   isWalletPayment,
+  isPaymentFormReady = true,
+  isPaymentFormComplete = false,
+  focusPaymentForm,
   beforeSubmit,
   embed,
+  webMCP = false,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
   const interval = hasProductCheckout(checkout)
-    ? isLegacyRecurringProductPrice(checkout.product_price)
-      ? checkout.product_price.recurring_interval
-      : checkout.product.recurring_interval
+    ? checkout.product.recurring_interval
     : null
-  const {
-    control,
-    handleSubmit,
-    watch,
-    clearErrors,
-    resetField,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, watch, clearErrors, resetField } = form
+  const { errors } = useFormState({ control })
 
   const { trialUnavailable } = useCheckoutForm()
 
@@ -121,7 +132,10 @@ const BaseCheckoutForm = ({
 
   const t = useTranslations(locale)
 
-  const country = watch('customer_billing_address.country')
+  const country = useWatch({
+    control,
+    name: 'customer_billing_address.country',
+  })
   const watcher: WatchObserver<schemas['CheckoutUpdatePublic']> = useCallback(
     async (value, { name }) => {
       if (!name) {
@@ -202,7 +216,7 @@ const BaseCheckoutForm = ({
     [checkout, update, clearErrors],
   )
 
-  const discountCode = watch('discount_code')
+  const discountCode = useWatch({ control, name: 'discount_code' })
 
   useEffect(() => {
     if (!discountCode && !checkout.discount) {
@@ -226,7 +240,7 @@ const BaseCheckoutForm = ({
     return () => subscription.unsubscribe()
   }, [watch, debouncedWatcher])
 
-  const taxId = watch('customer_tax_id')
+  const taxId = useWatch({ control, name: 'customer_tax_id' })
   const addTaxID = useCallback(async () => {
     if (!taxId) {
       return
@@ -276,8 +290,42 @@ const BaseCheckoutForm = ({
       if (!isShownToBuyer(error)) {
         throw error
       }
+      return error
     }
   }
+
+  const submitForAgent = async (): Promise<CheckoutSubmitResult> => {
+    let result: CheckoutSubmitResult = {
+      status: 'failed',
+      message: 'The checkout was not submitted',
+    }
+    await handleSubmit(
+      async (data) => {
+        const error = await onSubmit(data)
+        result = error
+          ? {
+              status: 'failed',
+              message: errorDetail(error) || 'The payment failed',
+            }
+          : { status: 'confirmed' }
+      },
+      (errors) => {
+        result = { status: 'invalid', errors: flattenFormErrors(errors) }
+      },
+    )()
+    return result
+  }
+
+  useCheckoutWebMCP({
+    enabled: webMCP && !embed && !disabled,
+    checkout,
+    form,
+    update,
+    submit: submitForAgent,
+    focusPaymentForm,
+    isPaymentFormReady,
+    isPaymentFormComplete,
+  })
 
   const validTaxID = !!checkout.customer_tax_id
 
@@ -532,6 +580,7 @@ const BaseCheckoutForm = ({
                           render={({ field }) => (
                             <>
                               <CountryStatePicker
+                                name={field.name}
                                 autoComplete="billing address-level1"
                                 data-testid="billing-state"
                                 country={country}
@@ -573,6 +622,7 @@ const BaseCheckoutForm = ({
                                 allowedCountries={
                                   enums.addressInputCountryValues
                                 }
+                                name={field.name}
                                 autoComplete="billing country"
                                 value={field.value || undefined}
                                 onChange={field.onChange}
@@ -734,7 +784,7 @@ const BaseCheckoutForm = ({
                 size="lg"
                 wrapperClassNames="text-base"
                 className="w-full"
-                disabled={disabled || isUpdatePending}
+                disabled={disabled || isUpdatePending || !isPaymentFormReady}
                 loading={loading}
               >
                 {checkoutLabel}
@@ -801,10 +851,12 @@ interface CheckoutFormProps {
   locale?: AcceptedLocale
   beforeSubmit?: React.ReactNode
   embed?: boolean
+  webMCP?: boolean
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const {
+    form,
     checkout,
     confirm,
     update,
@@ -828,10 +880,30 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const isWalletPayment = selectedPaymentMethod
     ? WALLET_PAYMENT_METHODS.includes(selectedPaymentMethod)
     : false
+  const t = useTranslations(locale ?? 'en')
+  const [isPaymentElementReady, setIsPaymentElementReady] = useState(false)
+  const [isPaymentElementComplete, setIsPaymentElementComplete] =
+    useState(false)
+  if (!checkout.is_payment_form_required && isPaymentElementReady) {
+    setIsPaymentElementReady(false)
+  }
+  const isPaymentFormReady =
+    !checkout.is_payment_form_required || isPaymentElementReady
+
+  const onPaymentElementReady = useCallback(() => {
+    setIsPaymentElementReady(true)
+  }, [])
+
+  const onPaymentElementLoadError = useCallback(() => {
+    form.setError('root', {
+      message: t('checkout.loading.paymentFormNotLoaded'),
+    })
+  }, [form, t])
 
   const onPaymentElementChange = useCallback(
     async (event: StripePaymentElementChangeEvent) => {
       setSelectedPaymentMethod(event.value.type)
+      setIsPaymentElementComplete(event.value.type === 'card' && event.complete)
       if (event.value.type !== checkout.payment_method_type) {
         try {
           await update({ payment_method_type: event.value.type })
@@ -904,6 +976,19 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             checkout={checkout}
             confirm={(data) => confirm(data, stripe, elements)}
             isWalletPayment={isWalletPayment}
+            isPaymentFormReady={isPaymentFormReady}
+            isPaymentFormComplete={isPaymentElementComplete}
+            focusPaymentForm={({ clear }) => {
+              const paymentElement = elements?.getElement('payment')
+              if (!paymentElement) {
+                return false
+              }
+              if (clear) {
+                paymentElement.clear()
+              }
+              paymentElement.focus()
+              return true
+            }}
           >
             {checkout.is_payment_form_required && (
               <PaymentElement
@@ -936,6 +1021,8 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
                   },
                 }}
                 onChange={onPaymentElementChange}
+                onReady={onPaymentElementReady}
+                onLoadError={onPaymentElementLoadError}
               />
             )}
           </BaseCheckoutForm>

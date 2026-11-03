@@ -32,7 +32,7 @@ class _StubClient:
         return _EmptyResponse()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestFetchPolicyContent:
     async def test_returns_and_caches_live_content(self, mocker: MockerFixture) -> None:
         download = mocker.patch.object(

@@ -1,3 +1,4 @@
+import ManagedAsCodeGuard from '@/components/Auth/ManagedAsCodeGuard'
 import OrganizationPermissionGuard from '@/components/Auth/OrganizationPermissionGuard'
 
 export default async function Layout({
@@ -15,7 +16,9 @@ export default async function Layout({
       permission="products:manage"
       standalone
     >
-      {children}
+      <ManagedAsCodeGuard organizationSlug={organization} standalone>
+        {children}
+      </ManagedAsCodeGuard>
     </OrganizationPermissionGuard>
   )
 }

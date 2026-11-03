@@ -3,7 +3,7 @@ import type { Polar } from '@polar-sh/sdk/2026-10'
 import { Effect } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
-import { data, mergeInput } from '../inputs'
+import { fields, data, mergeInput } from '../inputs'
 
 type Query = NonNullable<
   Parameters<Polar['customers']['listPaymentMethodsExternal']>[1]
@@ -12,6 +12,7 @@ type Query = NonNullable<
 export const command = Command.make(
   'list_payment_methods_external',
   {
+    fields,
     path: {
       external_id: Argument.String('external_id'),
     },
@@ -39,6 +40,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) =>
           client.customers.listPaymentMethodsExternal(
             config.path.external_id,

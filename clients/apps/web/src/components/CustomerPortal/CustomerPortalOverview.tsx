@@ -3,8 +3,9 @@
 import { usePortalAuthenticatedUser } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
+import { AllInclusiveOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
+import { Fragment } from 'react'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { CustomerPortalOrders } from './CustomerPortalOrders'
@@ -14,6 +15,7 @@ import {
 } from './CustomerPortalSubscriptions'
 import { EmptyState } from '../Shared/EmptyState'
 import { LatestPurchaseOverview } from './LatestPurchaseOverview'
+import { UpcomingUsageCharge } from './UpcomingUsageCharge'
 export interface CustomerPortalProps {
   organization: schemas['CustomerOrganization']
   products: schemas['CustomerProduct'][]
@@ -63,12 +65,14 @@ export const CustomerPortalOverview = ({
         <div className="flex flex-col gap-y-12">
           <div className="flex flex-col gap-y-4">
             {activeOwnedSubscriptions.map((s) => (
-              <CurrentPeriodOverview
-                key={s.id}
-                products={products}
-                subscription={s}
-                api={api}
-              />
+              <Fragment key={s.id}>
+                <UpcomingUsageCharge subscription={s} api={api} />
+                <CurrentPeriodOverview
+                  products={products}
+                  subscription={s}
+                  api={api}
+                />
+              </Fragment>
             ))}
           </div>
           <ActiveSubscriptionsOverview

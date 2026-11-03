@@ -2,13 +2,15 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.email_update.service import EmailAlreadyInUse, InvalidEmailUpdate
 from polar.email_update.service import email_update as email_update_service
+from polar.models import User
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_user
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVerify:
     async def test_marks_email_verified(
         self,
@@ -26,3 +28,48 @@ class TestVerify:
 
         assert updated_user.email == "new.email@example.com"
         assert updated_user.email_verified is True
+
+    async def test_email_taken_since_request(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+    ) -> None:
+        resend_mock = mocker.patch("polar.email_update.service.resend_service")
+        user = await create_user(save_fixture, email="user@example.com")
+        _, token = await email_update_service.request_email_update(
+            "new.email@example.com", session, AuthSubject(user, set(), None)
+        )
+
+        await create_user(save_fixture, email="New.Email@example.com")
+
+        with pytest.raises(EmailAlreadyInUse):
+            await email_update_service.verify(session, token, user)
+
+        assert user.email == "user@example.com"
+        resend_mock.enqueue_sync_user.assert_not_called()
+
+    @pytest.mark.auth
+    async def test_stale_token_cannot_overwrite_verified_email(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch("polar.email_update.service.resend_service")
+        user = auth_subject.subject
+
+        _, token_first = await email_update_service.request_email_update(
+            "first@example.com", session, auth_subject
+        )
+        _, token_second = await email_update_service.request_email_update(
+            "second@example.com", session, auth_subject
+        )
+
+        await email_update_service.verify(session, token_second, user)
+        assert user.email == "second@example.com"
+
+        with pytest.raises(InvalidEmailUpdate):
+            await email_update_service.verify(session, token_first, user)
+
+        assert user.email == "second@example.com"

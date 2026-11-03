@@ -16,7 +16,7 @@ from tests.fixtures.random_objects import (
 from tests.transaction.conftest import create_transaction
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetHeldCountsByAccounts:
     async def test_empty_input(self, session: AsyncSession) -> None:
         repository = PayoutRepository.from_session(session)
@@ -116,7 +116,7 @@ class TestGetHeldCountsByAccounts:
         assert counts == {account.id: 1}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetById:
     async def test_for_update(
         self,

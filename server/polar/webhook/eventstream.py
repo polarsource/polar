@@ -35,7 +35,7 @@ async def publish_webhook_event(
         organization_id: The organization to publish the event for
         payload: The raw JSON string of the webhook payload
         webhook_event_id: Identifier for the event, generated when omitted
-        triggered: Whether the event was produced by `polar trigger`
+        triggered: Whether the event was produced by `polar webhook trigger`
             rather than by real activity
     """
     redis = _get_check_redis()

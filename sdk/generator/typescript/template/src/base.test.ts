@@ -225,6 +225,14 @@ describe("organization", () => {
   });
 });
 
+test("sends the SDK user agent", () => {
+  const [, requestInit] = client.buildRequest("GET", "/v1/items/");
+
+  expect((requestInit.headers as Headers).get("User-Agent")).toBe(
+    "polar-sdk-typescript/{{ version }}",
+  );
+});
+
 describe("parseResponse", () => {
   test.each([
     ["without Content-Type", {}],

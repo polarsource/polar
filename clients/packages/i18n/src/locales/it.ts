@@ -248,6 +248,8 @@ export default {
       confirmationTokenFailed:
         'Impossibile creare il token di conferma, riprova più tardi.',
       paymentNotCompleted: 'Il pagamento non è stato completato. Riprova.',
+      paymentFormNotLoaded:
+        'Impossibile caricare il modulo di pagamento. Aggiorna la pagina e riprova.',
     },
     cta: {
       startTrial: 'Inizia la prova',

@@ -10,7 +10,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit, create_benefit_grant
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListBenefitGrants:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_customer(
@@ -280,7 +280,7 @@ class TestListBenefitGrants:
         }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetBenefitGrant:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_public_benefit(
@@ -353,7 +353,7 @@ class TestGetBenefitGrant:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateBenefitGrant:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_private_benefit_not_found(

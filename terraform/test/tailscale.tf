@@ -1,3 +1,8 @@
+variable "tailscale_version" {
+  description = "Shared Tailscale release from the Global Settings variable set."
+  type        = string
+}
+
 resource "aws_secretsmanager_secret" "ec2_tailscale" {
   count = local.test_enabled ? 1 : 0
 
@@ -27,6 +32,7 @@ module "ec2_tailscale" {
   advertise_routes           = module.vpc[0].secondary_private_subnet_cidr_blocks
   advertise_tags             = ["tag:router", "tag:test"]
   tailscale_oauth_secret_arn = aws_secretsmanager_secret.ec2_tailscale[0].arn
+  tailscale_version          = var.tailscale_version
   permissions_boundary_arn   = data.aws_iam_policy.permission_boundary.arn
 
   tags = {

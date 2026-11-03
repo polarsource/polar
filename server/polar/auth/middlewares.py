@@ -11,7 +11,6 @@ from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
 from polar.authz.service import get_accessible_organization
-from polar.config import settings
 from polar.customer_session.service import (
     CUSTOMER_SESSION_TOKEN_PREFIX,
 )
@@ -23,6 +22,7 @@ from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member_session.service import member_session as member_session_service
 from polar.models import (
+    Agent,
     CustomerSession,
     MemberSession,
     OAuth2Token,
@@ -50,8 +50,6 @@ from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
 )
 from polar.postgres import AsyncSession
-from polar.rate_limit import clear_cached_identity, write_cached_identity
-from polar.redis import Redis
 from polar.sentry import set_sentry_user
 from polar.worker import JobQueueManager, enqueue_job
 
@@ -135,7 +133,7 @@ async def get_member_session(session: AsyncSession, value: str) -> MemberSession
 async def get_auth_subject(
     connection: HTTPConnection, session: AsyncSession
 ) -> AuthSubject[Subject]:
-    subject: User | Organization
+    subject: User | Organization | Agent
     credential: (
         UserSession | OAuth2Token | PersonalAccessToken | OrganizationAccessToken
     )
@@ -212,6 +210,13 @@ async def get_auth_subject(
     ):
         raise RequestedOrganizationNotAccessible()
 
+    if (
+        organization_id is not None
+        and isinstance(subject, Agent)
+        and organization_id != subject.organization_id
+    ):
+        raise RequestedOrganizationNotAccessible()
+
     if organization_id is not None and isinstance(subject, User):
         credential_auth_subject = AuthSubject(
             subject, scopes, credential, organization_ids
@@ -241,9 +246,8 @@ def get_requested_organization_id(connection: HTTPConnection) -> UUID | None:
 
 
 class AuthSubjectMiddleware:
-    def __init__(self, app: ASGIApp, redis: Redis) -> None:
+    def __init__(self, app: ASGIApp) -> None:
         self.app = app
-        self.redis = redis
 
     async def __call__(self, scope: ASGIScope, receive: Receive, send: Send) -> None:
         if scope["type"] not in ("http", "websocket"):
@@ -271,9 +275,6 @@ class AuthSubjectMiddleware:
                     session = connection.state.async_session
                 auth_subject = await get_auth_subject(connection, session)
         except OAuth2Error as e:
-            token = get_bearer_token(connection)
-            if token is not None:
-                await clear_cached_identity(self.redis, token)
             response = await oauth2_error_exception_handler(connection, e)
         except PolarAuthError as e:
             response = await polar_exception_handler(connection, e)
@@ -289,20 +290,6 @@ class AuthSubjectMiddleware:
             return await response(scope, receive, send)
 
         scope["state"]["auth_subject"] = auth_subject
-
-        cookie = connection.cookies.get(settings.USER_SESSION_COOKIE_KEY)
-        if not isinstance(auth_subject.subject, Anonymous):
-            token = get_bearer_token(connection)
-            if token is not None:
-                await write_cached_identity(
-                    self.redis, token, auth_subject.rate_limit_key
-                )
-            if cookie is not None:
-                await write_cached_identity(
-                    self.redis, cookie, auth_subject.rate_limit_key
-                )
-        elif cookie is not None:
-            await clear_cached_identity(self.redis, cookie)
 
         with logfire.set_baggage(**auth_subject.log_context):
             log.info("Authenticated subject", **auth_subject.log_context)

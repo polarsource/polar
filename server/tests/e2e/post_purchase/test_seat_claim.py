@@ -7,7 +7,6 @@ invitation token, which triggers benefit grants.
 """
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
@@ -25,7 +24,7 @@ from tests.fixtures.random_objects import (
 SEAT_RECIPIENT_EMAIL = "teammate@example.com"
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
     """Organization with seat-based pricing enabled, linked to the test user."""
     account = await create_account(save_fixture, user)
@@ -37,7 +36,7 @@ async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
     return org
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def seat_product(save_fixture: SaveFixture, seat_org: Organization) -> Product:
     return await create_product(
         save_fixture,
@@ -48,7 +47,7 @@ async def seat_product(save_fixture: SaveFixture, seat_org: Organization) -> Pro
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSeatClaim:
     @E2E_SEAT_AUTH
     async def test_assign_and_claim_seat(

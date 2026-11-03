@@ -99,7 +99,7 @@ class TestRoutingBroker:
         assert job.message_id == message.message_id
         assert job.debounce_key == "debounce:test:key"
 
-    @pytest.mark.asyncio
+    @pytest.mark.anyio
     async def test_group_completion_callback_runs_through_sqs(
         self, mocker: MockerFixture
     ) -> None:

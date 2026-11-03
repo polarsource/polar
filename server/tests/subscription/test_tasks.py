@@ -32,7 +32,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionCancelForOrganization:
     async def test_cancels_organization_subscriptions(
         self,
@@ -96,7 +96,7 @@ class TestSubscriptionCancelForOrganization:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateProductBenefitsGrants:
     async def test_not_existing_subscription_tier(self, session: AsyncSession) -> None:
         # then
@@ -125,7 +125,7 @@ class TestSubscriptionUpdateProductBenefitsGrants:
         update_product_benefits_grants_mock.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionEnqueueBenefitsGrants:
     async def test_not_existing_subscription(self, session: AsyncSession) -> None:
         session.expunge_all()
@@ -157,7 +157,7 @@ class TestSubscriptionEnqueueBenefitsGrants:
         enqueue_benefits_grants_mock.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionResume:
     async def test_not_existing_subscription(self, session: AsyncSession) -> None:
         session.expunge_all()
@@ -260,7 +260,7 @@ class TestSubscriptionResume:
         resume_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionCycle:
     async def test_multi_period_lag_raises_and_halts(
         self,
@@ -358,7 +358,7 @@ class TestSubscriptionCycle:
         assert refreshed.current_period_end > old_period_end
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestScanGraceExpiredRevocations:
     @pytest.mark.parametrize(
         ("grace_period_days", "past_due_days", "grant_active", "should_enqueue"),

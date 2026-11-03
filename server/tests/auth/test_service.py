@@ -7,7 +7,7 @@ from polar.models import Organization, User, UserSessionOrganization
 from polar.postgres import AsyncSession
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateUserSession:
     async def test_unscoped_by_default(self, session: AsyncSession, user: User) -> None:
         _, user_session = await auth_service._create_user_session(

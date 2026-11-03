@@ -2,12 +2,13 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
-import { confirm } from '../inputs'
+import { confirm, fields } from '../inputs'
 
 export const command = Command.make(
   'revoke_seat',
   {
     confirm,
+    fields,
     path: {
       seat_id: Argument.String('seat_id'),
     },
@@ -20,8 +21,9 @@ export const command = Command.make(
         method: 'DELETE',
         requiresConfirmation: true,
         confirm: config.confirm,
+        fields: config.fields,
         invoke: (client) =>
           client.customerSeats.revokeSeat(config.path.seat_id),
       })
     }),
-).pipe(Command.withDescription('**Scopes**: `customer_seats:write`'))
+).pipe(Command.withDescription('Revoke a customer seat.'))

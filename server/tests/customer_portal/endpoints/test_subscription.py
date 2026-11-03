@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -11,6 +12,7 @@ from polar.models import Customer, Member, Organization, Product, Subscription
 from polar.models.order import OrderStatus
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription_meter import SubscriptionMeter
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import (
     CUSTOMER_AUTH_SUBJECT,
@@ -23,6 +25,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
     create_canceled_subscription,
+    create_meter,
     create_order,
     create_payment_method,
     create_product,
@@ -31,7 +34,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscription:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_excludes_non_public_benefits(
@@ -69,7 +72,70 @@ class TestGetSubscription:
         assert str(private_benefit.id) not in benefit_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
+class TestGetMeterChargePreview:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_usage_on_renewal_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        period_end = utc_now() + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=period_end,
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_end = period_end
+        meter = await create_meter(save_fixture, organization=organization)
+        await save_fixture(
+            SubscriptionMeter(subscription=subscription, meter=meter, amount=500)
+        )
+
+        response = await client.get(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/meter-charge-preview"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=utc_now() + timedelta(days=60),
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_end = utc_now() + timedelta(days=10)
+        meter = await create_meter(save_fixture, organization=organization)
+        await save_fixture(
+            SubscriptionMeter(subscription=subscription, meter=meter, amount=500)
+        )
+
+        response = await client.get(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/meter-charge-preview"
+        )
+
+        assert response.status_code == 200
+        assert response.json()["total_amount"] == 500
+
+
+@pytest.mark.anyio
 class TestGetCancelPreview:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(
@@ -111,7 +177,7 @@ class TestGetCancelPreview:
         assert json["outstanding_amount"] == 1000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionProductUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
@@ -292,7 +358,7 @@ class TestCustomerSubscriptionProductUpdate:
         assert "below the minimum of 5 seats" in error["detail"][0]["msg"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionUpdateUnknownFields:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_unknown_field(
@@ -305,7 +371,7 @@ class TestCustomerSubscriptionUpdateUnknownFields:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionUpdateCancel:
     async def test_anonymous(
         self,
@@ -386,7 +452,7 @@ class TestCustomerSubscriptionUpdateCancel:
         assert updated_subscription["customer_cancellation_comment"] == comment
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateUncancel:
     async def test_anonymous(
         self,
@@ -536,7 +602,7 @@ class TestSubscriptionUpdateUncancel:
         }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionCancel:
     async def test_anonymous(
         self,
@@ -603,7 +669,7 @@ class TestCustomerSubscriptionCancel:
         assert updated_subscription["ends_at"] == current_period_end
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCustomerSubscriptionRevoke:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -712,7 +778,7 @@ class TestCustomerSubscriptionRevoke:
         assert response.status_code == 403
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMemberRoleEnforcementSubscriptionUpdate:
     """Tests for role-based access control on subscription update endpoint.
 
@@ -808,7 +874,7 @@ class TestMemberRoleEnforcementSubscriptionUpdate:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMemberRoleEnforcementSubscriptionCancel:
     """Tests for role-based access control on subscription cancel endpoint.
 
@@ -893,7 +959,7 @@ class TestMemberRoleEnforcementSubscriptionCancel:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPreviewChange:
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_product_change(

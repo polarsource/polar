@@ -2,10 +2,12 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
+import { fields } from '../inputs'
 
 export const command = Command.make(
   'resend_invitation',
   {
+    fields,
     path: {
       seat_id: Argument.String('seat_id'),
     },
@@ -18,8 +20,11 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        fields: config.fields,
         invoke: (client) =>
           client.customerSeats.resendInvitation(config.path.seat_id),
       })
     }),
-).pipe(Command.withDescription('**Scopes**: `customer_seats:write`'))
+).pipe(
+  Command.withDescription('Resend an invitation for a pending customer seat.'),
+)

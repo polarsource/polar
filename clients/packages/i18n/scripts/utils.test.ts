@@ -7,11 +7,14 @@ import {
   findPluralPaths,
   flattenKeys,
   flattenKeysToStrings,
+  getPluralCategoryKeys,
+  getPluralCategorySamples,
   getStringValue,
   hasLlmContext,
   isLeafNode,
   normalizeResponse,
   prepareForLLM,
+  resolveSourceKey,
   unflattenKeys,
 } from './utils'
 
@@ -451,6 +454,102 @@ describe('findOrphanedKeys', () => {
 
     expect(result).toEqual(['messages.oldMessage'])
   })
+
+  it('keeps plural category keys the locale uses', () => {
+    const sourceKeys = new Map<string, string | { value: string }>([
+      ['seats.=1', '# seat'],
+      ['seats.other', '# seats'],
+    ])
+    const existing = {
+      seats: {
+        _mode: 'plural' as const,
+        '=1': '# stanowisko',
+        few: '# stanowiska',
+        other: '# stanowisk',
+      },
+    }
+
+    expect(
+      findOrphanedKeys(sourceKeys, existing, new Set(['seats']), [
+        'few',
+        'many',
+      ]),
+    ).toEqual([])
+    expect(
+      findOrphanedKeys(sourceKeys, existing, new Set(['seats']), []),
+    ).toEqual(['seats.few'])
+  })
+})
+
+describe('getPluralCategoryKeys', () => {
+  it('returns few and many for Polish', () => {
+    expect(getPluralCategoryKeys('pl')).toEqual(['few', 'many'])
+  })
+
+  it('includes one when it covers more than the count 1', () => {
+    expect(getPluralCategoryKeys('fr')).toEqual(['one', 'many'])
+    expect(getPluralCategoryKeys('ru')).toEqual(['one', 'few', 'many'])
+  })
+
+  it('excludes zero, one and two when they only cover their exact count', () => {
+    expect(getPluralCategoryKeys('de')).toEqual([])
+    expect(getPluralCategoryKeys('en')).toEqual([])
+    expect(getPluralCategoryKeys('ar')).toEqual(['few', 'many'])
+  })
+
+  it('returns nothing for locales with only other', () => {
+    expect(getPluralCategoryKeys('ja')).toEqual([])
+  })
+})
+
+describe('getPluralCategorySamples', () => {
+  it('lists example counts per category', () => {
+    expect(getPluralCategorySamples('ru').one).toEqual([1, 21, 31, 41, 51])
+    expect(getPluralCategorySamples('fr').one).toEqual([0, 1])
+  })
+})
+
+describe('resolveSourceKey', () => {
+  const sourceKeys = new Map<string, string>([
+    ['seats.=1', '# seat'],
+    ['seats.other', '# seats'],
+    ['label', 'Seats'],
+  ])
+  const pluralPaths = new Set(['seats'])
+
+  it('maps source keys to themselves', () => {
+    expect(resolveSourceKey('label', sourceKeys, pluralPaths, [])).toBe('label')
+    expect(resolveSourceKey('seats.=1', sourceKeys, pluralPaths, [])).toBe(
+      'seats.=1',
+    )
+  })
+
+  it('maps allowed plural category keys to the plural other', () => {
+    expect(
+      resolveSourceKey('seats.few', sourceKeys, pluralPaths, ['few', 'many']),
+    ).toBe('seats.other')
+  })
+
+  it('rejects category keys the locale does not use', () => {
+    expect(
+      resolveSourceKey('seats.few', sourceKeys, pluralPaths, []),
+    ).toBeUndefined()
+  })
+
+  it('rejects category keys outside plural paths', () => {
+    expect(
+      resolveSourceKey('label.few', sourceKeys, pluralPaths, ['few']),
+    ).toBeUndefined()
+  })
+
+  it('maps one only for locales where it is allowed', () => {
+    expect(
+      resolveSourceKey('seats.one', sourceKeys, pluralPaths, ['one', 'many']),
+    ).toBe('seats.other')
+    expect(
+      resolveSourceKey('seats.one', sourceKeys, pluralPaths, ['few', 'many']),
+    ).toBeUndefined()
+  })
 })
 
 describe('prepareForLLM', () => {
@@ -518,6 +617,26 @@ describe('prepareForLLM', () => {
       greeting: { value: 'hello' },
     })
     expect(result.farewell).toBeUndefined()
+  })
+
+  it('flags the other variant of plural paths', () => {
+    const sourceKeys = new Map<string, string>([
+      ['seats.=1', '# seat'],
+      ['seats.other', '# seats'],
+      ['misc.other', 'Other'],
+    ])
+
+    const result = prepareForLLM(
+      sourceKeys,
+      ['seats.=1', 'seats.other', 'misc.other'],
+      new Set(['seats']),
+    )
+
+    expect(result).toEqual({
+      'seats.=1': { value: '# seat' },
+      'seats.other': { value: '# seats', _pluralOther: true },
+      'misc.other': { value: 'Other' },
+    })
   })
 
   it('skips keys not in sourceKeys', () => {

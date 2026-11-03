@@ -25,7 +25,7 @@ from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitGrant:
     async def test_not_existing_customer(
         self,
@@ -108,7 +108,7 @@ class TestBenefitGrant:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitRevoke:
     async def test_not_existing_customer(
         self,
@@ -217,7 +217,7 @@ class TestBenefitRevoke:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitUpdate:
     async def test_not_existing_grant(
         self,
@@ -287,7 +287,7 @@ class TestBenefitUpdate:
             await benefit_update(grant.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitDelete:
     async def test_soft_deleted_benefit(
         self,
@@ -314,7 +314,7 @@ class TestBenefitDelete:
         enqueue_job_mock.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitDeleteGrant:
     async def test_not_existing_grant(
         self,
@@ -384,7 +384,7 @@ class TestBenefitDeleteGrant:
             await benefit_delete_grant(grant.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBenefitEnqueueGrants:
     async def test_does_not_reset_meters(
         self,

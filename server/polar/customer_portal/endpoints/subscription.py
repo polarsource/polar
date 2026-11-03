@@ -6,18 +6,17 @@ from fastapi import Depends, Query
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Subscription
 from polar.openapi import APITag
 from polar.order.service import PaymentFailed
 from polar.postgres import get_db_session
-from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 from polar.subscription.schemas import (
     SubscriptionCancelPreview,
     SubscriptionChargePreview,
     SubscriptionID,
+    SubscriptionMeterChargePreview,
 )
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
@@ -27,6 +26,7 @@ from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
 from ..schemas.subscription import (
+    CustomerPortalSubscriptionListParams,
     CustomerSubscription,
     CustomerSubscriptionChangePreview,
     CustomerSubscriptionRevoke,
@@ -65,28 +65,19 @@ ListSorting = Annotated[
     "/", summary="List Subscriptions", response_model=ListResource[CustomerSubscription]
 )
 async def list(
+    filters: Annotated[CustomerPortalSubscriptionListParams, Query()],
     auth_subject: auth.CustomerPortalUnionRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    active: bool | None = Query(
-        None,
-        description=("Filter by active or cancelled subscription."),
-    ),
-    query: str | None = Query(
-        None, description="Search by product or organization name."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerSubscription]:
     """List subscriptions of the authenticated customer."""
     results, count = await customer_subscription_service.list(
         session,
         auth_subject,
-        product_id=product_id,
-        active=active,
-        query=query,
+        product_id=filters.product_id,
+        active=filters.active,
+        query=filters.query,
         pagination=pagination,
         sorting=sorting,
     )
@@ -155,6 +146,38 @@ async def get_charge_preview(
         raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.get(
+    "/{id}/meter-charge-preview",
+    summary="Preview Usage Charge For Active Subscription",
+    response_model=SubscriptionMeterChargePreview,
+    responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
+)
+async def get_meter_charge_preview(
+    id: SubscriptionID,
+    auth_subject: auth.CustomerPortalUnionRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionMeterChargePreview:
+    """
+    Get a preview of the usage charge settled at the end of the current meter cycle.
+
+    Only available when the meter cycle ends before the next subscription invoice;
+    otherwise usage is part of the charge preview.
+    """
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
+
+    if subscription is None or not subscription_service.bills_usage_on_meter_cycle(
+        subscription
+    ):
+        raise ResourceNotFound()
+
+    return await subscription_service.calculate_meter_charge_preview(
+        session, subscription
+    )
 
 
 @router.get(

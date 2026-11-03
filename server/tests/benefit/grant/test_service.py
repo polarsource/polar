@@ -46,7 +46,7 @@ def benefit_strategy_mock(mocker: MockerFixture) -> MagicMock:
     return strategy_mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGrantBenefit:
     async def test_not_existing_grant(
         self,
@@ -217,7 +217,7 @@ class TestGrantBenefit:
         assert grant.properties == {}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeBenefit:
     async def test_not_existing_grant(
         self,
@@ -404,7 +404,7 @@ class TestRevokeBenefit:
         benefit_strategy_mock.revoke.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueBenefitsGrants:
     async def test_grant_no_existing_grants(
         self,
@@ -590,6 +590,43 @@ class TestEnqueueBenefitsGrants:
         )
         group_mock.return_value.run.assert_called_once()
 
+    async def test_revoke_pending_action_required_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        customer: Customer,
+    ) -> None:
+        group_mock = mocker.patch("polar.benefit.grant.service.group")
+        broker_mock = mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        revoke_actor = MagicMock()
+        broker_mock.return_value.get_actor.side_effect = lambda name: (
+            revoke_actor if name == "benefit.revoke" else MagicMock()
+        )
+
+        order = await create_order(save_fixture, customer=customer, product=product)
+        grant = BenefitGrant(order=order, customer=customer, benefit=benefits[0])
+        grant.set_grant_failed(BenefitActionRequiredError("Connect GitHub"))
+        await save_fixture(grant)
+
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "revoke", customer, product, order=order
+        )
+
+        revoke_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            benefit_id=benefits[0].id,
+            member_id=None,
+            order_id=order.id,
+        )
+        group_mock.return_value.run.assert_called_once()
+
     async def test_revoke_no_grants_enqueues_nothing(
         self,
         mocker: MockerFixture,
@@ -682,7 +719,7 @@ class TestEnqueueBenefitsGrants:
         group_mock.return_value.run.assert_called_once()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueBenefitGrantUpdates:
     async def test_not_required_update(
         self,
@@ -777,7 +814,7 @@ class TestEnqueueBenefitGrantUpdates:
         enqueue_job_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdateBenefitGrant:
     async def test_revoked_grant(
         self,
@@ -900,7 +937,7 @@ class TestUpdateBenefitGrant:
         assert updated_grant.error["type"] == "BenefitActionRequiredError"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueBenefitGrantCycles:
     async def test_required_update_revoked(
         self,
@@ -939,7 +976,7 @@ class TestEnqueueBenefitGrantCycles:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCycleBenefitGrant:
     async def test_revoked_grant(
         self,
@@ -1029,7 +1066,7 @@ class TestCycleBenefitGrant:
         assert "timestamp" in updated_grant.error
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueBenefitGrantDeletions:
     async def test_valid(
         self,
@@ -1066,7 +1103,7 @@ class TestEnqueueBenefitGrantDeletions:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueCustomerGrantDeletions:
     async def test_valid(
         self,
@@ -1106,7 +1143,7 @@ class TestEnqueueCustomerGrantDeletions:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEnqueueMemberGrantDeletions:
     async def test_includes_errored_grants(
         self,
@@ -1161,7 +1198,7 @@ class TestEnqueueMemberGrantDeletions:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteBenefitGrant:
     async def test_revoked_grant(
         self,
@@ -1300,7 +1337,7 @@ class TestDeleteBenefitGrant:
         assert revoke_kwargs["member"].id == member.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetByBenefitAndScope:
     async def test_existing_grant_incorrect_scope(
         self,
@@ -1517,7 +1554,7 @@ class TestGetByBenefitAndScope:
         assert retrieved_grant2.id == grant2.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGrantBenefitWithMember:
     """Tests for grant_benefit with member support."""
 
@@ -1663,7 +1700,7 @@ class TestGrantBenefitWithMember:
         assert grant2.customer_id == customer.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeBenefitWithMember:
     """Tests for revoke_benefit with member support."""
 

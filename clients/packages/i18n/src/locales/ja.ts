@@ -251,6 +251,8 @@ export default {
         '確認トークンの作成に失敗しました。後でもう一度お試しください。',
       paymentNotCompleted:
         'お支払いが完了しませんでした。もう一度お試しください。',
+      paymentFormNotLoaded:
+        'お支払いフォームの読み込みに失敗しました。ページを再読み込みして、もう一度お試しください。',
     },
     cta: {
       startTrial: 'トライアルを開始',

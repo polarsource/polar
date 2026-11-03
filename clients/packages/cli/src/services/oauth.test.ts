@@ -1,9 +1,17 @@
-import { beforeEach, expect, vi, test } from 'vitest'
+import { beforeEach, describe, expect, vi, test } from 'vitest'
 import { ChildProcess } from 'node:child_process'
 import * as http from 'node:http'
 import { Console, Effect, Layer, Redacted } from 'effect'
 import * as browser from 'open'
-import { exchange, layer, OAuth, validateCallback } from '@/services/oauth'
+import type { PolarEnvironment } from '@/schemas/Auth'
+import { Environment } from '@/services/api'
+import {
+  authorizationUrl,
+  exchange,
+  layer,
+  OAuth,
+  validateCallback,
+} from '@/services/oauth'
 import { captureConsole } from '@/utils/test-utils/cli'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { session } from '@/utils/test-utils/services'
@@ -214,4 +222,47 @@ test('callback verifies state before accepting codes or OAuth denial', async () 
   await expect(
     run(validateCallback(new URL(`${base}?state=expected`), 'expected')),
   ).rejects.toThrow('missing')
+})
+
+describe('authorizationUrl', () => {
+  const resolve = (
+    env: Record<string, string>,
+    environment: PolarEnvironment = 'sandbox',
+  ) =>
+    Effect.runPromise(
+      authorizationUrl(environment).pipe(
+        Effect.map(String),
+        Effect.provideService(Environment, env),
+        Effect.result,
+      ),
+    )
+
+  test('uses the environment dashboard by default', async () => {
+    expect(await resolve({})).toMatchObject({
+      success: 'https://sandbox.polar.sh/oauth2/authorize',
+    })
+  })
+
+  test('uses the local dashboard for a local stack', async () => {
+    expect(await resolve({}, 'local')).toMatchObject({
+      success: 'http://127.0.0.1:3000/oauth2/authorize',
+    })
+  })
+
+  test('honors POLAR_DASHBOARD_URL', async () => {
+    expect(
+      await resolve({
+        POLAR_API_URL: 'http://127.0.0.1:8000',
+        POLAR_DASHBOARD_URL: 'http://127.0.0.1:3000/',
+      }),
+    ).toMatchObject({ success: 'http://127.0.0.1:3000/oauth2/authorize' })
+  })
+
+  test('refuses to pair a custom API with the hosted dashboard', async () => {
+    expect(
+      await resolve({ POLAR_API_URL: 'http://127.0.0.1:8000' }),
+    ).toMatchObject({
+      failure: { message: expect.stringContaining('POLAR_DASHBOARD_URL') },
+    })
+  })
 })

@@ -83,7 +83,7 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.benefit.service.enqueue_job")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestList:
     @pytest.mark.auth(AuthSubjectFixture(scopes=set()))
     async def test_user(
@@ -191,8 +191,30 @@ class TestList:
         assert len(results) == 1
         assert results[0].id == benefit_organization.id
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_excludes_previous_versions(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        previous = await create_benefit(
+            save_fixture, organization=organization, external_id="a", is_current=False
+        )
+        current = await create_benefit(
+            save_fixture, organization=organization, external_id="a"
+        )
+        session.expunge_all()
 
-@pytest.mark.asyncio
+        results, _ = await benefit_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert [benefit.id for benefit in results] == [current.id]
+
+
+@pytest.mark.anyio
 class TestGet:
     @pytest.mark.auth
     async def test_user(
@@ -257,7 +279,7 @@ class TestGet:
         assert organization_benefit is not None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUserCreate:
     @pytest.mark.auth
     async def test_user_missing_organization(
@@ -630,7 +652,7 @@ class TestUserCreate:
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -856,7 +878,7 @@ class TestUpdate:
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDelete:
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

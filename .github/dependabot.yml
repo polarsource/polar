@@ -53,6 +53,21 @@ updates:
         dependency-type: "development"
         patterns:
           - "*"
+  - package-ecosystem: "uv"
+    directory: "/sdk/generator"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      sdk-generator-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      sdk-generator-development:
+        dependency-type: "development"
+        patterns:
+          - "*"
   - package-ecosystem: "npm"
     directories:
       - "/clients"

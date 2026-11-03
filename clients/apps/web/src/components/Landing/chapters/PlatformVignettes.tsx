@@ -1,9 +1,10 @@
 'use client'
 
+import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { useInView } from '@/hooks/useInView'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, LoaderCircle } from 'lucide-react'
+import { Check, LoaderCircle } from '@polar-sh/orbit/icons'
 import { useReducedMotion } from 'motion/react'
 import { Shimmer } from '../Shimmer'
 import { ReactNode, useEffect, useState, useSyncExternalStore } from 'react'
@@ -32,23 +33,32 @@ const useSteps = (durations: number[], restingStep: number) => {
   return { ref, step: mounted && reducedMotion ? restingStep : step }
 }
 
+/** The hero's chrome: a dark frame with a hairline and a 4px inset, a header on the frame, a lighter sheet inside. */
 const Card = ({
+  header,
   children,
   rowGap = 'm',
 }: {
+  header: ReactNode
   children: ReactNode
   rowGap?: 'xs' | 'm' | 'l'
 }) => (
-  <Box
-    flexDirection="column"
-    rowGap={rowGap}
-    backgroundColor="background-card"
-    padding="xl"
-    width="100%"
-    maxWidth="19rem"
-  >
-    {children}
-  </Box>
+  <div className="dark:bg-polar-950 dark:border-polar-800 flex w-full max-w-[20rem] flex-col rounded-2xl border border-gray-200 bg-gray-100 p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]">
+    <Box
+      alignItems="center"
+      justifyContent="between"
+      columnGap="l"
+      paddingHorizontal="l"
+      paddingVertical="m"
+    >
+      {header}
+    </Box>
+    <div className="dark:bg-polar-900 flex w-full flex-col overflow-hidden rounded-xl bg-white">
+      <Box flexDirection="column" rowGap={rowGap} padding="l">
+        {children}
+      </Box>
+    </div>
+  </div>
 )
 
 const Status = ({
@@ -80,10 +90,10 @@ const METER_DURATIONS = [
   1600,
   500,
 ]
-
 export const MeterVignette = () => {
   const { ref, step } = useSteps(METER_DURATIONS, METER_STEPS - 1)
   const progress = Math.min(step, METER_STEPS - 1)
+  const tokens = 4.2 + progress * 0.31
 
   return (
     <Box
@@ -94,42 +104,57 @@ export const MeterVignette = () => {
       transitionProperty="opacity"
       transitionDuration="slower"
     >
-      <Card>
-        <Box alignItems="center" columnGap="s">
+      <Card
+        rowGap="l"
+        header={
+          <>
+            <Box alignItems="center" columnGap="xs">
+              <LogoIcon size={12} />
+              <Text variant="caption" color="muted">
+                Meter
+              </Text>
+            </Box>
+            <Text variant="caption" monospace color="muted">
+              tokens.out
+            </Text>
+          </>
+        }
+      >
+        <Box flexDirection="column" rowGap="xs">
+          <Text variant="caption" color="muted">
+            Acme Inc · this cycle
+          </Text>
+          <Text variant="heading-xxs" tabularNums>
+            {tokens.toFixed(1)}M
+            <Text as="span" variant="heading-xxs" color="muted">
+              {' '}
+              tokens
+            </Text>
+          </Text>
+        </Box>
+        <Box flexDirection="column" rowGap="m">
           <Box
-            width={20}
-            height={20}
-            alignItems="center"
-            justifyContent="center"
-            backgroundColor="background-secondary"
+            display="block"
+            height="0.2rem"
+            backgroundColor="background-card"
+            overflow="hidden"
           >
-            <Text variant="caption">L</Text>
+            <Box
+              height="100%"
+              width={`${24 + progress * 6.5}%`}
+              backgroundColor="background-inverse"
+              transitionProperty="all"
+              transitionDuration="slower"
+            />
           </Box>
-          <Text variant="body" color="muted">
-            Lumen
-          </Text>
-        </Box>
-        <Box justifyContent="between" alignItems="baseline" columnGap="l">
-          <Text variant="body" monospace>
-            gpt-4o
-          </Text>
-          <Text variant="body" color="muted" tabularNums>
-            {(0.3 + progress * 0.1).toFixed(1)}M tokens
-          </Text>
-        </Box>
-        <Box
-          display="block"
-          height="0.2rem"
-          backgroundColor="background-secondary"
-          overflow="hidden"
-        >
-          <Box
-            height="100%"
-            width={`${20 + progress * 8}%`}
-            backgroundColor="background-inverse"
-            transitionProperty="all"
-            transitionDuration="slower"
-          />
+          <Box justifyContent="between" columnGap="l">
+            <Text variant="caption" color="muted" tabularNums>
+              ${(tokens * 2).toFixed(2)} at $2.00 / 1M
+            </Text>
+            <Text variant="caption" color="muted">
+              Nov 1
+            </Text>
+          </Box>
         </Box>
       </Card>
     </Box>
@@ -143,10 +168,25 @@ export const CheckoutVignette = () => {
 
   return (
     <Box ref={ref} width="100%" justifyContent="center">
-      <Card rowGap="l">
+      <Card
+        rowGap="l"
+        header={
+          <>
+            <Box alignItems="center" columnGap="xs">
+              <LogoIcon size={12} />
+              <Text variant="caption" color="muted">
+                Checkout
+              </Text>
+            </Box>
+            <Text variant="caption" color="muted">
+              Secure
+            </Text>
+          </>
+        }
+      >
         <Box justifyContent="between" alignItems="baseline" columnGap="xl">
           <Text variant="body">Pro plan</Text>
-          <Text variant="body" color="muted">
+          <Text variant="body" color="muted" tabularNums>
             $20/mo
           </Text>
         </Box>
@@ -180,16 +220,28 @@ export const PayoutVignette = () => {
 
   return (
     <Box ref={ref} width="100%" justifyContent="center">
-      <Card rowGap="xs">
+      <Card
+        rowGap="xs"
+        header={
+          <>
+            <Box alignItems="center" columnGap="xs">
+              <LogoIcon size={12} />
+              <Text variant="caption" color="muted">
+                Payout
+              </Text>
+            </Box>
+            <Text variant="caption" color="muted">
+              SEB •••• 9128
+            </Text>
+          </>
+        }
+      >
         <Box justifyContent="between" alignItems="baseline" columnGap="l">
-          <Text variant="body">Payout</Text>
-          <Text variant="body" tabularNums>
+          <Text variant="body">Acme Inc</Text>
+          <Text variant="heading-xxs" tabularNums>
             {PAYOUTS[Math.floor(step / 2)]}
           </Text>
         </Box>
-        <Text variant="body" color="muted">
-          Acme Inc · SEB **** 9128
-        </Text>
         <Box paddingTop="s">
           <Status done={arrived} color="muted" shimmer>
             {arrived ? 'Completed' : 'Wiring payout...'}

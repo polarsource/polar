@@ -1,4 +1,4 @@
-import pytest_asyncio
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from polar.enums import SubscriptionRecurringInterval
@@ -22,7 +22,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def subscription_with_seats(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -45,7 +45,7 @@ async def subscription_with_seats(
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_seat_pending(
     save_fixture: SaveFixture,
     subscription_with_seats: Subscription,
@@ -74,7 +74,7 @@ async def customer_seat_pending(
     return seat
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_seat_claimed(
     save_fixture: SaveFixture,
     subscription_with_seats: Subscription,
@@ -97,7 +97,7 @@ async def customer_seat_claimed(
     return seat
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def order_with_seats(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -120,7 +120,7 @@ async def order_with_seats(
     return order
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def customer_seat_order_pending(
     save_fixture: SaveFixture,
     order_with_seats: Order,

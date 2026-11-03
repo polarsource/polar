@@ -14,7 +14,6 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
 )
 from polar.openapi import APITag
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
 from polar.routing import APIRouter
 
@@ -34,6 +33,7 @@ from .schemas import (
     MerchantMigrationCutoverReport,
     MerchantMigrationCutoverRequest,
     MerchantMigrationImportRequest,
+    MerchantMigrationListParams,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordTaxUpdate,
@@ -79,15 +79,15 @@ router = APIRouter(
     summary="List Merchant Migrations",
 )
 async def list(
+    filters: Annotated[MerchantMigrationListParams, Query()],
     auth_subject: MerchantMigrationRead,
     pagination: PaginationParamsQuery,
-    organization_id: Annotated[OrganizationID, Query()],
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[MerchantMigrationSchema]:
     results, count = await merchant_migration_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
+        organization_id=filters.organization_id,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(

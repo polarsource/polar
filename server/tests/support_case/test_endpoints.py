@@ -23,7 +23,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSupportCase:
     async def test_anonymous(
         self,
@@ -108,7 +108,7 @@ class TestGetSupportCase:
         assert response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReplyToSupportCase:
     async def test_anonymous(
         self,
@@ -387,7 +387,7 @@ class TestReplyToSupportCase:
         assert greeting_calls == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDownloadSupportCaseAttachment:
     @pytest.mark.auth
     async def test_valid(
@@ -452,7 +452,7 @@ class TestDownloadSupportCaseAttachment:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSupportCases:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/support-cases/")

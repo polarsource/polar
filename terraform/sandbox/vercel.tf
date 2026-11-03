@@ -19,6 +19,7 @@ module "vercel" {
       dns = {
         zone_id = "22bcd1b07ec25452aab472486bc8df94"
         content = "50b537f2e43aa1b6.vercel-dns-016.com"
+        proxied = true
       }
     },
   ]
@@ -45,7 +46,6 @@ module "vercel" {
     mintlify_assistant_api_key  = var.mintlify_assistant_api_key
     gram_api_key                = var.gram_api_key
     sentry_auth_token           = var.sentry_auth_token
-    polar_preview_access_token  = var.polar_preview_access_token
   }
 
   # Environment-specific or target-varies-by-env.
@@ -54,7 +54,6 @@ module "vercel" {
     { key = "NEXT_PUBLIC_ENVIRONMENT", value = "sandbox" },
     { key = "POLAR_AUTH_COOKIE_KEY", value = "polar_sandbox_session" },
     { key = "NEXT_PUBLIC_PRODUCT_LINK_BASE_URL", value = "https://sandbox.polar.sh/api/checkout?price=" },
-    { key = "POLAR_PREVIEW_BACKEND_HOST", value = "", target = ["preview"] },
     { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key, target = ["production", "development"] },
     { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key_preview, target = ["preview"], sensitive = true },
     { key = "MCP_OAUTH2_CLIENT_ID", value = var.mcp_oauth2_client_id, target = ["production", "preview", "development"] },

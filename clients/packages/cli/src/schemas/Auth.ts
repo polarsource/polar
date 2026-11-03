@@ -1,6 +1,6 @@
 import { Data, Schema } from 'effect'
 
-export const environments = ['sandbox', 'production'] as const
+export const environments = ['sandbox', 'production', 'local'] as const
 export const PolarEnvironment = Schema.Literals(environments)
 export type PolarEnvironment = typeof PolarEnvironment.Type
 

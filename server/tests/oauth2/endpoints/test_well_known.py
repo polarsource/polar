@@ -1,8 +1,12 @@
 import pytest
+from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
 from httpx import AsyncClient
 
+from polar.auth.scope import SCOPES_SUPPORTED
+from polar.oauth2.constants import CLAIM_GRANT_TYPE, ISSUER
 
-@pytest.mark.asyncio
+
+@pytest.mark.anyio
 async def test_jwks(client: AsyncClient) -> None:
     response = await client.get("/.well-known/jwks.json")
 
@@ -15,7 +19,7 @@ async def test_jwks(client: AsyncClient) -> None:
         assert "d" not in key
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     "path",
     [
@@ -33,3 +37,55 @@ async def test_authorization_server_metadata(client: AsyncClient, path: str) -> 
     assert len(json["introspection_endpoint_auth_methods_supported"]) > 0
     assert len(json["code_challenge_methods_supported"]) > 0
     assert json["authorization_response_iss_parameter_supported"] is True
+
+
+@pytest.mark.anyio
+async def test_authorization_server_metadata_agent_sign_up(
+    client: AsyncClient,
+) -> None:
+    response = await client.get("/.well-known/oauth-authorization-server")
+
+    assert response.status_code == 200
+    json = response.json()
+    assert JWT_BEARER_GRANT_TYPE in json["grant_types_supported"]
+    assert CLAIM_GRANT_TYPE in json["grant_types_supported"]
+    assert json["agent_auth"] == {
+        "skill": "http://test/auth.md",
+        "identity_endpoint": "http://test/v1/agent/identity",
+        "claim_endpoint": "http://test/v1/agent/identity/claim",
+        "identity_types_supported": ["anonymous"],
+    }
+
+
+@pytest.mark.anyio
+class TestProtectedResourceMetadata:
+    async def test_valid(self, client: AsyncClient) -> None:
+        response = await client.get("/.well-known/oauth-protected-resource")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["resource"] == ISSUER
+        assert json["authorization_servers"] == [ISSUER]
+        assert json["scopes_supported"] == SCOPES_SUPPORTED
+        assert json["bearer_methods_supported"] == ["header"]
+
+
+UNAUTHORIZED_HEADERS = [
+    pytest.param({}, id="no token"),
+    pytest.param({"Authorization": "Bearer polar_at_u_invalid"}, id="bad token"),
+]
+
+
+@pytest.mark.anyio
+class TestUnauthorizedChallenge:
+    @pytest.mark.parametrize("headers", UNAUTHORIZED_HEADERS)
+    async def test_points_to_protected_resource_metadata(
+        self, client: AsyncClient, headers: dict[str, str]
+    ) -> None:
+        response = await client.get("/v1/oauth2/userinfo", headers=headers)
+
+        assert response.status_code == 401
+        assert (
+            f'resource_metadata="{ISSUER}/.well-known/oauth-protected-resource"'
+            in response.headers["WWW-Authenticate"]
+        )

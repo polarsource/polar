@@ -22,7 +22,7 @@ def _payload(organization: Organization, **overrides: object) -> dict[str, objec
     return base
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubmitFeedback:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization

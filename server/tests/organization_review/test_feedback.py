@@ -626,7 +626,7 @@ class TestPriorFeedbackSchema:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetFeedbackHistory:
     async def test_returns_empty_when_no_feedback(
         self,
@@ -774,7 +774,7 @@ class TestGetFeedbackHistory:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCollectFeedbackDataIntegration:
     async def test_full_pipeline(
         self,

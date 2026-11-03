@@ -13,7 +13,7 @@ description: "Migrations run under a lock timeout sized to what they actually wa
 
 ## Context
 
-Three things make migrations risky during a deploy:
+Four things make migrations risky during a deploy:
 
 - **Locks.** A blocking `ALTER` or an unbatched `UPDATE` on a hot table takes an `ACCESS EXCLUSIVE`
   lock, which can stall live API traffic until it finishes.
@@ -22,6 +22,9 @@ Three things make migrations risky during a deploy:
 - **Snapshot waits.** `CREATE INDEX CONCURRENTLY` takes no blocking lock, but it finishes by
   waiting for every concurrent transaction in the database to end, whatever table they touch. A
   short timeout there fails the deploy without protecting anything.
+- **Dropped columns.** Migrations run before the new code goes live, so the old code still runs
+  against the new schema. SQLAlchemy names every mapped column in an ORM `INSERT`, as `NULL` when
+  nothing sets it. Once the column is gone, every insert through the old code fails.
 
 ## Decision
 
@@ -35,6 +38,9 @@ Three things make migrations risky during a deploy:
 - The enforce migration runs an unconditional `UPDATE ... WHERE col IS NULL` immediately before
   `SET NOT NULL`. The batched script does the real work first, so by the time the migration runs
   this `UPDATE` matches nothing and rewrites nothing.
+- Drop a column across two PRs. The first removes the attribute from the model and adds the
+  column to `UNMAPPED_COLUMNS` in `server/migrations/env.py`, with no migration. The second, once
+  the first is deployed, drops the column and removes its entry.
 - Keep migration PRs isolated from application code.
 
 ```python
@@ -46,6 +52,17 @@ def upgrade() -> None:
 The `UPDATE` stays because the script misses two things: environments where nobody ran it, and
 rows written NULL between the backfill and the deploy. Either one fails `SET NOT NULL` and
 strands the schema on the previous revision.
+
+`UNMAPPED_COLUMNS` lists columns the database still holds but no model maps. `include_object`
+skips them, so `alembic check` passes between the two PRs:
+
+```python
+UNMAPPED_COLUMNS = {("events", "ingest_sequence")}
+```
+
+This protects the app, not the migration. The drop still takes an `ACCESS EXCLUSIVE` lock, and on
+a busy table it can still miss its lock timeout. When that is likely, plan the drop for that table
+before merging.
 
 A concurrent index build sets its own timeout and clears the leftover from any failed attempt:
 
@@ -73,6 +90,8 @@ with op.get_context().autocommit_block():
   `alembic check` catches model-versus-migration drift.
 - The batched script stays mandatory. The migration's `UPDATE` is only cheap because the script
   has already left it nothing to do.
+- No running code names a column when it is dropped. A drop on a busy table can still fail on its
+  lock, but it fails the deploy, not the app.
 
 ## Alternatives considered
 
@@ -84,6 +103,11 @@ with op.get_context().autocommit_block():
 - **Keep the 5s default for concurrent index builds too**: uniform, but it makes every deploy a
   race against unrelated traffic. It failed repeatedly on a table holding **zero rows** before we
   raised it, because none of those 5 seconds were spent building anything.
+- **Mark the column `deferred=True` before dropping it**: takes it out of `SELECT`, not out of
+  `INSERT`. The old code still writes it, and fails once it is gone. This broke inserts during the
+  deploy of [#14617](https://github.com/polarsource/polar/pull/14617).
+- **Keep the column on the model's `Table` with `exclude_properties`**: works, but spreads the
+  pending drops across models. One list in `env.py` shows them all.
 
 ## References
 

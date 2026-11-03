@@ -63,7 +63,7 @@ def _not_found() -> SDKResourceNotFound:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestTriggerOrderInvoiceGeneration:
     async def test_409_order_not_eligible_raises_polar_self_order_not_eligible(
         self, mocker: MockerFixture
@@ -163,7 +163,7 @@ def _async_iter(items: list[Any]) -> AsyncIterator[Any]:
     return _gen()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListBillingContacts:
     async def test_resource_not_found_for_role_is_skipped(
         self, mocker: MockerFixture

@@ -29,8 +29,29 @@ from polar.tax.tax_id import TaxIDFormat
 def _adapter(mocker: MockerFixture) -> tuple[StripeAdapter, Any]:
     adapter = StripeAdapter("rk_test")
     client: Any = mocker.MagicMock()
+    client.v1.invoice_items.list_async = mocker.AsyncMock(
+        return_value=mocker.MagicMock(data=[], has_more=False)
+    )
     adapter._client = client
     return adapter, client
+
+
+def _pending_invoice_item(
+    *, customer: str = "cus_1", subscription: str | None = None
+) -> stripe_lib.InvoiceItem:
+    return stripe_lib.InvoiceItem.construct_from(
+        {
+            "id": "ii_1",
+            "customer": customer,
+            "parent": {
+                "type": "subscription_details",
+                "subscription_details": {"subscription": subscription},
+            }
+            if subscription is not None
+            else None,
+        },
+        None,
+    )
 
 
 def _all_scopes_present(mocker: MockerFixture, client: Any) -> None:
@@ -58,7 +79,7 @@ def _all_scopes_present(mocker: MockerFixture, client: Any) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestVerifyScopes:
     async def test_all_scopes_present(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
@@ -158,7 +179,7 @@ class TestVerifyScopes:
             await adapter.verify_scopes()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAccountId:
     async def test_returns_account_id(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
@@ -207,7 +228,7 @@ class TestGetAccountId:
         assert await adapter.get_account_id() == "acct_123"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSourceAccount:
     async def test_platform_with_connected_accounts_is_flagged(
         self, mocker: MockerFixture
@@ -483,7 +504,7 @@ async def _extracted_products(adapter: StripeAdapter) -> list[CanonicalProduct]:
             return products
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExtractProducts:
     async def test_single_currency_price_keeps_the_source_id(
         self, mocker: MockerFixture
@@ -882,7 +903,7 @@ class TestMapTaxId:
         assert mapped.tax_id_dropped is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExtractPages:
     async def test_customer_page_resumes_and_advances_to_subscriptions(
         self, mocker: MockerFixture
@@ -1020,6 +1041,41 @@ class TestExtractPages:
         kwargs = client.v1.subscriptions.list_async.await_args.kwargs
         assert "data.latest_invoice" not in kwargs["params"]["expand"]
 
+    @pytest.mark.parametrize(
+        ("item", "expected"),
+        [
+            pytest.param(
+                {"subscription": "sub_1"}, True, id="proration-on-this-subscription"
+            ),
+            pytest.param({}, True, id="customer-item-lands-on-any-subscription"),
+            pytest.param(
+                {"subscription": "sub_other"}, False, id="another-subscription"
+            ),
+            pytest.param({"customer": "cus_other"}, False, id="another-customer"),
+        ],
+    )
+    async def test_flags_pending_invoice_items(
+        self, mocker: MockerFixture, item: dict[str, Any], expected: bool
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(data=[_stripe_subscription()], has_more=False)
+        )
+        client.v1.invoice_items.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[_pending_invoice_item(**item)], has_more=False
+            )
+        )
+
+        page = await adapter.extract_page({"phase": "subscriptions"})
+
+        [subscription] = page.records
+        assert isinstance(subscription, CanonicalSubscription)
+        assert subscription.has_pending_invoice_items is expected
+        client.v1.invoice_items.list_async.assert_awaited_once_with(
+            params={"pending": True, "limit": 100}
+        )
+
     async def test_last_subscription_page_finishes_extraction(
         self, mocker: MockerFixture
     ) -> None:
@@ -1131,7 +1187,7 @@ def _stripe_promotion_code(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExtractCoupons:
     async def test_coupon_page_maps_remaining_and_advances(
         self, mocker: MockerFixture
@@ -1381,7 +1437,7 @@ class TestExtractCoupons:
         assert exc.value.status_code == 400
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscription:
     async def test_reads_the_current_state(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)
@@ -1395,6 +1451,27 @@ class TestGetSubscription:
         assert subscription.status == CanonicalSubscriptionStatus.active
         assert subscription.cancel_at_period_end is True
         assert subscription.current_period_end is not None
+
+    async def test_reads_the_customer_pending_invoice_items(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription()
+        )
+        client.v1.invoice_items.list_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(
+                data=[_pending_invoice_item(subscription="sub_1")], has_more=False
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.has_pending_invoice_items is True
+        client.v1.invoice_items.list_async.assert_awaited_once_with(
+            params={"pending": True, "limit": 100, "customer": "cus_1"}
+        )
 
     async def test_reads_a_set_end_date(self, mocker: MockerFixture) -> None:
         stripe_subscription = _stripe_subscription()
@@ -1890,7 +1967,7 @@ class TestGetSubscription:
         assert subscription.cancel_at_period_end_known is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestStopSourceSubscription:
     async def test_cancels_with_a_traceable_comment(
         self, mocker: MockerFixture
@@ -2063,7 +2140,7 @@ class TestMapCustomer:
         assert mapped.tax_exempt is expected
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDiscountAttachments:
     async def test_item_discount_on_one_item_folds_into_the_subscription(
         self, mocker: MockerFixture
@@ -2461,7 +2538,7 @@ class TestDiscountAttachments:
         assert record.discount_source_ids == ["coupon_now"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAddOn:
     async def test_second_item_maps_as_add_on(self, mocker: MockerFixture) -> None:
         record = await _extracted_subscription(

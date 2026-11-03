@@ -1,5 +1,25 @@
 # @polar-sh/cli
 
+## 3.1.0
+
+### Minor Changes
+
+- d3ae634: `polar --help` lists every command, and `polar <command> --help` shows the flags of every command under it at once.
+
+### Patch Changes
+
+- 2e2c654: `benefits update`, `customers update`, `customers update_external`, `customers members update`, `customers members update_external` and `products update_benefits` ask for confirmation, or `--confirm` without a terminal.
+
+## 3.0.0
+
+### Major Changes
+
+- dd16120: `polar listen` and `polar trigger` are now `polar webhook listen` and `polar webhook trigger`. Add `polar auth token` to create an organization access token through the dashboard. Add `--json` to every command and `--fields` to trim API command output. Destructive API commands ask for confirmation, or `--confirm` without a terminal.
+
+### Patch Changes
+
+- cc6f9f5: Mark `polar webhooks reset_webhook_endpoint_secret` as destructive so it requires user confirmation.
+
 ## 2.0.2
 
 ### Patch Changes

@@ -6,7 +6,11 @@ import { getSeatPrice } from '@polar-sh/checkout/guards'
 import type { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
-import { MailCheckIcon, PlusIcon, XIcon } from 'lucide-react'
+import {
+  MailCheck as MailCheckIcon,
+  Plus as PlusIcon,
+  X as XIcon,
+} from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
 

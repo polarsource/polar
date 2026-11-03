@@ -29,7 +29,7 @@ from tests.fixtures.random_objects import create_discount
 from tests.fixtures.stripe import build_stripe_charge
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPaymentFailure:
     @E2E_AUTH
     async def test_stale_failure_does_not_block_fulfillment(

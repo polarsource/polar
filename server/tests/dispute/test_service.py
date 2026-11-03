@@ -3,10 +3,10 @@ from typing import Literal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
+from polar.customer_seat.service import SeatService
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
 from polar.dispute.service import DisputeNotOpenError, DisputePaymentNotFoundError
 from polar.dispute.service import dispute as dispute_service
@@ -35,8 +35,10 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_dispute,
     create_order,
+    create_order_with_seats,
     create_payment,
     create_payment_transaction,
+    create_product,
     create_refund,
 )
 from tests.fixtures.stripe import (
@@ -57,6 +59,11 @@ def dispute_transaction_service_mock(mocker: MockerFixture) -> MagicMock:
 @pytest.fixture
 def refund_service_mock(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("polar.dispute.service.refund_service", spec=RefundService)
+
+
+@pytest.fixture
+def customer_seat_service_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.dispute.service.customer_seat_service", spec=SeatService)
 
 
 @pytest.fixture
@@ -95,7 +102,7 @@ async def _message_types(
     return [message.type for message in messages]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromStripe:
     async def test_not_existing_order(self, session: AsyncSession) -> None:
         stripe_dispute = build_stripe_dispute(
@@ -655,6 +662,45 @@ class TestUpsertFromStripe:
             order=order,
         )
 
+    async def test_revoke_seat_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        benefit_grant_service_mock: MagicMock,
+        customer_seat_service_mock: MagicMock,
+        dispute_transaction_service_mock: MagicMock,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+        order = await create_order_with_seats(
+            save_fixture, product=product, customer=customer, seats=3
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[],
+        )
+
+        await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        customer_seat_service_mock.revoke_all_seats_for_order.assert_awaited_once()
+        assert (
+            customer_seat_service_mock.revoke_all_seats_for_order.await_args.args[1].id
+            == order.id
+        )
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_not_awaited()
+
     async def test_revoke_subscription(
         self,
         save_fixture: SaveFixture,
@@ -689,7 +735,7 @@ class TestUpsertFromStripe:
         assert subscription.status == "canceled"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromStripeDisputeCase:
     async def test_opens_case_when_needs_response(
         self,
@@ -1069,7 +1115,7 @@ class TestUpsertFromStripeDisputeCase:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpsertFromChargebackStop:
     async def test_not_existing_order(
         self, session: AsyncSession, mocker: MockerFixture
@@ -1331,6 +1377,57 @@ class TestUpsertFromChargebackStop:
             order=order,
         )
 
+    async def test_prevented_revokes_benefits_deleted_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        product_one_time: Product,
+        benefit_grant_service_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time,
+            subtotal_amount=1000,
+            tax_amount=200,
+        )
+        charge_id = "STRIPE_CHARGE_ID"
+        payment_intent_id = "STRIPE_PAYMENT_INTENT_ID"
+        await create_payment(
+            save_fixture, organization, amount=1200, order=order, processor_id=charge_id
+        )
+        payment_intent = build_stripe_payment_intent(
+            id=payment_intent_id, latest_charge=charge_id
+        )
+        mocker.patch(
+            "polar.dispute.service.stripe_service.get_payment_intent",
+            return_value=payment_intent,
+        )
+
+        customer.set_deleted_at()
+        await save_fixture(customer)
+
+        alert = build_chargeback_stop_alert(
+            integration_transaction_id=payment_intent_id,
+            transaction_refund_outcome="REFUNDED",
+            transaction_amount_in_cents=1200,
+            transaction_currency_code="USD",
+        )
+
+        dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+        assert dispute.status == DisputeStatus.prevented
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_awaited_once_with(
+            session,
+            task="revoke",
+            customer=customer,
+            product=product_one_time,
+            order=order,
+        )
+
     async def test_already_prevented_does_not_revoke_again(
         self,
         save_fixture: SaveFixture,
@@ -1513,7 +1610,7 @@ class TestUpsertFromChargebackStop:
         assert await dispute_case_service.is_open(session, case)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAccept:
     async def test_concedes_and_marks_lost(
         self,
@@ -1627,7 +1724,7 @@ def balance_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def organization_with_account(
     save_fixture: SaveFixture, organization: Organization, user: User
 ) -> Organization:
@@ -1637,7 +1734,7 @@ async def organization_with_account(
     return organization
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAutoAcceptApplies:
     async def test_under_threshold(
         self,
@@ -1846,7 +1943,7 @@ class TestAutoAcceptApplies:
         assert await dispute_service.auto_accept_applies(session, dispute) is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAnnounceAutoAccept:
     async def test_announces_when_eligible(
         self,
@@ -1903,7 +2000,7 @@ class TestAnnounceAutoAccept:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAutoAcceptCancelledByReply:
     async def test_merchant_reply_blocks_and_retracts(
         self,

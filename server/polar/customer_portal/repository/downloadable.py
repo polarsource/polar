@@ -50,7 +50,7 @@ class DownloadableRepository(RepositoryBase[Downloadable]):
 
     def get_customer_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[Downloadable]]:
+    ) -> Select[Downloadable]:
         from polar.models import Benefit
 
         statement = (

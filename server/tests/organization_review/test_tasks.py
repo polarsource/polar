@@ -107,7 +107,7 @@ async def _mock_session_maker(
     yield session
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunReviewAgentSubmission:
     """SUBMISSION re-run overwrites the existing canonical OrganizationReview
     row (grandfathered or otherwise) and clears any prior appeal state."""
@@ -520,7 +520,7 @@ class TestRunReviewAgentSubmission:
         assert organization.status == OrganizationStatus.DENIED
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunReviewAgentMissingOrganization:
     """A deleted/missing organization must be skipped gracefully, not raise —
     the org can disappear between enqueue and (debounced) execution."""
@@ -549,7 +549,7 @@ class TestRunReviewAgentMissingOrganization:
         run_review_mock.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReviewAppeal:
     async def test_approve_activates_org(
         self,
@@ -689,7 +689,7 @@ class TestReviewAppeal:
         run_mock.assert_not_awaited()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRunReviewAgentProductChanged:
     """PRODUCT_CHANGED re-reviews an active org with enough revenue when it
     creates or edits a product. A bad verdict pulls it back into REVIEW for a
@@ -738,6 +738,10 @@ class TestRunReviewAgentProductChanged:
         assert decision.actor_type == ActorType.AGENT
         assert decision.decision == DecisionType.ESCALATE
         assert decision.review_context == ReviewContext.PRODUCT_CHANGED
+
+        agent_review = await agent_review_repo.get_latest_agent_review(organization.id)
+        assert agent_review is not None
+        assert decision.agent_review_id == agent_review.id
 
     async def test_approve_keeps_org_active(
         self,
@@ -835,6 +839,50 @@ class TestRunReviewAgentProductChanged:
         run_review_mock.assert_not_awaited()
         await session.refresh(organization)
         assert organization.status == OrganizationStatus.ACTIVE
+
+
+@pytest.mark.anyio
+class TestRunReviewAgentThresholdManualOverride:
+    @pytest.mark.parametrize("actor_type", [ActorType.HUMAN, ActorType.STRIPE])
+    async def test_manual_escalation_blocks_auto_approve(
+        self,
+        actor_type: ActorType,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        await save_fixture(organization)
+        await AgentReviewRepository.from_session(session).save_review_decision(
+            organization_id=organization.id,
+            actor_type=actor_type,
+            decision=DecisionType.ESCALATE,
+            review_context=ReviewContext.MANUAL,
+        )
+        await session.flush()
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                new_callable=AsyncMock,
+                return_value=_make_agent_result(verdict=ReviewVerdict.APPROVE),
+            ),
+            patch(
+                "polar.organization_review.tasks.organization_service.handle_ongoing_review_verdict",
+                new_callable=AsyncMock,
+            ) as handle_verdict_mock,
+        ):
+            await _run_review_agent(
+                organization.id,
+                context=ReviewContext.THRESHOLD,
+                auto_approve_eligible=True,
+            )
+
+        handle_verdict_mock.assert_not_called()
 
 
 class TestRunAgentDebounceKey:

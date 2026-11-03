@@ -2,7 +2,7 @@ from collections.abc import Awaitable, Callable
 from typing import Literal, NewType
 from uuid import UUID
 
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.models import Organization as OrganizationModel
 from polar.postgres import AsyncReadSession
 
@@ -14,6 +14,6 @@ AccessibleOrganizationID = NewType("AccessibleOrganizationID", UUID)
 PolicyResult = Literal[True] | str
 
 PolicyFn = Callable[
-    [AsyncReadSession, AuthSubject[User | Organization], OrganizationModel],
+    [AsyncReadSession, AuthSubject[User | Organization | Agent], OrganizationModel],
     Awaitable[PolicyResult],
 ]

@@ -3,10 +3,11 @@ from pydantic import UUID4, BaseModel
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization, User, UserOrganization
+from polar.models import Agent, Organization, User, UserOrganization
 from polar.models.user_organization import OrganizationRole
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
 
@@ -14,7 +15,7 @@ class OrganizationIDPayload(BaseModel):
     organization_id: UUID4 | None = None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetPayloadOrganization:
     @pytest.mark.auth
     async def test_single_org_down_scope_resolves_implicitly(
@@ -110,4 +111,31 @@ class TestGetPayloadOrganization:
         with pytest.raises(PolarRequestValidationError):
             await get_payload_organization(
                 session, auth_subject, OrganizationIDPayload()
+            )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_resolves_implicitly(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        result = await get_payload_organization(
+            session, auth_subject, OrganizationIDPayload()
+        )
+
+        assert result == organization
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_other_organization_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization_second: Organization,
+    ) -> None:
+        with pytest.raises(PolarRequestValidationError):
+            await get_payload_organization(
+                session,
+                auth_subject,
+                OrganizationIDPayload(organization_id=organization_second.id),
             )

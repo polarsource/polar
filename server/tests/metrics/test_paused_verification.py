@@ -26,7 +26,7 @@ SQL_METRICS = [
 ]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_paused_subscription_in_metrics(
     session: AsyncSession,
     save_fixture: SaveFixture,

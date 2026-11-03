@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from polar.models.account import Account
+from polar.models.dispute import DisputeStatus
 from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import Product
@@ -39,6 +40,7 @@ from tests.fixtures.random_objects import (
     create_checkout,
     create_checkout_link,
     create_customer,
+    create_dispute,
     create_order,
     create_organization,
     create_payment,
@@ -90,7 +92,7 @@ def _make_typed_report(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSaveAgentReview:
     async def test_stores_version_and_review_type(
         self,
@@ -170,7 +172,7 @@ class TestSaveAgentReview:
         assert parsed.report.verdict == ReviewVerdict.APPROVE
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetLatestAgentReview:
     async def test_returns_latest_by_reviewed_at(
         self,
@@ -204,7 +206,7 @@ class TestGetLatestAgentReview:
         assert parsed.review_type == "threshold"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetLatestHumanFeedback:
     async def test_returns_latest_human_decision(
         self,
@@ -270,7 +272,7 @@ class TestGetLatestHumanFeedback:
         assert await repo.get_latest_human_feedback(agent_review.id) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRecordHumanDecision:
     async def test_derives_context_from_agent_review(
         self,
@@ -457,7 +459,7 @@ class TestRecordHumanDecision:
         assert decision.violated_aup_section is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSaveReviewDecision:
     async def test_agent_decision(
         self,
@@ -566,7 +568,7 @@ class TestSaveReviewDecision:
         assert decision.violated_aup_section.value == "osint"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCurrentDecision:
     async def test_returns_decision_when_exists(
         self,
@@ -614,7 +616,7 @@ class TestGetCurrentDecision:
         assert current is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeactivateCurrentDecisions:
     async def test_deactivates_existing_current(
         self,
@@ -681,7 +683,7 @@ class TestDeactivateCurrentDecisions:
         assert current.id == second.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRecordAgentDecision:
     async def test_creates_decision_with_correct_fields(
         self,
@@ -760,7 +762,7 @@ class TestRecordAgentDecision:
         assert second.is_current is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRiskScorePercentiles:
     async def test_no_payments(
         self,
@@ -874,7 +876,7 @@ class TestGetRiskScorePercentiles:
         assert p90 == 10
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRefundStats:
     async def test_multiple_refunds_on_same_order_counts_as_one(
         self,
@@ -989,7 +991,7 @@ class TestGetRefundStats:
         assert refund_amount == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCheckoutSuccessUrls:
     async def test_returns_distinct_success_urls(
         self,
@@ -1095,7 +1097,7 @@ class TestGetCheckoutSuccessUrls:
         assert urls == ["https://recent.com/thanks"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCheckoutReturnUrls:
     async def test_returns_distinct_return_urls(
         self,
@@ -1155,7 +1157,7 @@ class TestGetCheckoutReturnUrls:
         assert urls == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetCheckoutLinksWithBenefits:
     async def test_returns_checkout_links(
         self,
@@ -1205,7 +1207,7 @@ class TestGetCheckoutLinksWithBenefits:
         assert links == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAdhocPriceCount:
     async def test_zero_when_no_prices(
         self,
@@ -1306,3 +1308,62 @@ class TestAUPSectionEnum:
         assert len(AUP_SECTION_LABELS) == len(AUPSection)
         for member in AUPSection:
             assert AUP_SECTION_LABELS[member]
+
+
+class TestDisputeStats:
+    async def _create_disputes(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        statuses: list[DisputeStatus],
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            stripe_customer_id="STRIPE_CUST_DISPUTE_STATS",
+        )
+        for i, status in enumerate(statuses):
+            order = await create_order(save_fixture, customer=customer)
+            payment = await create_payment(
+                save_fixture,
+                organization,
+                amount=1000,
+                status=PaymentStatus.succeeded,
+            )
+            await create_dispute(
+                save_fixture,
+                order,
+                payment,
+                status=status,
+                amount=1000,
+                payment_processor_id=f"STRIPE_DISPUTE_{i}",
+            )
+
+    async def test_no_disputes(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_dispute_stats(organization.id) == (0, 0)
+        assert await repo.get_chargeback_stop_stats(organization.id) == (0, 0)
+
+    async def test_separates_chargeback_stop_from_disputes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        await self._create_disputes(
+            save_fixture,
+            organization,
+            [
+                DisputeStatus.needs_response,
+                DisputeStatus.lost,
+                DisputeStatus.prevented,
+                DisputeStatus.prevented,
+                DisputeStatus.early_warning,
+            ],
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_dispute_stats(organization.id) == (2, 2000)
+        assert await repo.get_chargeback_stop_stats(organization.id) == (3, 3000)

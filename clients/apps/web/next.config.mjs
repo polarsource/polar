@@ -4,20 +4,7 @@ import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 import { docsCSP, ENVIRONMENT, nonEmbeddedCSP, oauth2CSP } from './src/csp.mjs'
 
-const PREVIEW_BUILD = process.env.POLAR_PREVIEW_BUILD === '1'
-
-// Vercel preview: compute basePath and API URL from PR number + Tailscale hostname
-let previewBasePath = ''
-if (
-  process.env.VERCEL_GIT_PULL_REQUEST_ID &&
-  process.env.POLAR_PREVIEW_BACKEND_HOST
-) {
-  const prNum = parseInt(process.env.VERCEL_GIT_PULL_REQUEST_ID)
-  previewBasePath = `/pr-${prNum}`
-  const baseUrl = `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}${previewBasePath}`
-  process.env.NEXT_PUBLIC_API_URL = baseUrl
-  process.env.NEXT_PUBLIC_FRONTEND_BASE_URL = baseUrl
-}
+const TYPE_CHECKED_IN_CI = process.env.VERCEL === '1'
 
 // Vercel services deployments: deployment URLs change with
 // every deployment, so derive base from the deployment's own URL
@@ -41,20 +28,15 @@ const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
 const nextConfig = {
   allowedDevOrigins: ['127.0.0.1', '*.taildbff7b.ts.net'],
   reactStrictMode: true,
+  reactCompiler: true,
   experimental: {
     useTypeScriptCli: false,
+    optimizePackageImports: ['@polar-sh/orbit/icons'],
   },
   transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
 
-  ...(previewBasePath && {
-    basePath: previewBasePath,
-    env: {
-      POLAR_API_URL: `https://${process.env.POLAR_PREVIEW_BACKEND_HOST}:8443${previewBasePath}`,
-    },
-  }),
-
-  ...(PREVIEW_BUILD && {
+  ...(TYPE_CHECKED_IN_CI && {
     typescript: { ignoreBuildErrors: true },
   }),
 
@@ -107,41 +89,32 @@ const nextConfig = {
   },
 
   async rewrites() {
-    const apiUrl = process.env.POLAR_API_URL || process.env.NEXT_PUBLIC_API_URL
-    return [
-      ...(PREVIEW_BUILD && apiUrl
-        ? [
-            {
-              source: '/v1/:path*',
-              destination: `${apiUrl}/v1/:path*`,
-            },
-            {
-              source: '/backoffice/:path*',
-              destination: `${apiUrl}/backoffice/:path*`,
-            },
-            {
-              source: '/healthz',
-              destination: `${apiUrl}/healthz`,
-            },
-            {
-              source: '/openapi.json',
-              destination: `${apiUrl}/openapi.json`,
-            },
-          ]
-        : []),
-      {
-        source: '/ingest/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
-      },
-      {
-        source: '/ingest/:path*',
-        destination: 'https://us.i.posthog.com/:path*',
-      },
-      {
-        source: '/ingest/decide',
-        destination: 'https://us.i.posthog.com/decide',
-      },
-    ]
+    return {
+      beforeFiles: [
+        {
+          source: '/perspectives',
+          destination: 'https://polar.shadowdocument.com/perspectives',
+        },
+        {
+          source: '/perspectives/:path*',
+          destination: 'https://polar.shadowdocument.com/perspectives/:path*',
+        },
+      ],
+      afterFiles: [
+        {
+          source: '/ingest/static/:path*',
+          destination: 'https://us-assets.i.posthog.com/static/:path*',
+        },
+        {
+          source: '/ingest/:path*',
+          destination: 'https://us.i.posthog.com/:path*',
+        },
+        {
+          source: '/ingest/decide',
+          destination: 'https://us.i.posthog.com/decide',
+        },
+      ],
+    }
   },
 
   async redirects() {
@@ -245,27 +218,22 @@ const nextConfig = {
       },
 
       // Redirect /dashboard to correct domain if on a different domain name
-      // Skip in preview builds — preview env uses a single domain via Caddy proxy
-      ...(!previewBasePath
-        ? [
-            {
-              source: '/dashboard/:path*',
-              destination: `https://${defaultFrontendHostname}/dashboard/:path*`,
-              missing: [
-                {
-                  type: 'host',
-                  value: defaultFrontendHostname,
-                },
-                {
-                  type: 'header',
-                  key: 'x-forwarded-host',
-                  value: defaultFrontendHostname,
-                },
-              ],
-              permanent: false,
-            },
-          ]
-        : []),
+      {
+        source: '/dashboard/:path*',
+        destination: `https://${defaultFrontendHostname}/dashboard/:path*`,
+        missing: [
+          {
+            type: 'host',
+            value: defaultFrontendHostname,
+          },
+          {
+            type: 'header',
+            key: 'x-forwarded-host',
+            value: defaultFrontendHostname,
+          },
+        ],
+        permanent: false,
+      },
 
       {
         source: '/maintainer',
@@ -337,6 +305,11 @@ const nextConfig = {
         destination: '/dashboard/:organization/analytics/costs',
         permanent: true,
       },
+      {
+        source: '/dashboard/:organization/analytics/metrics/:metric',
+        destination: '/dashboard/:organization/analytics/metrics#:metric',
+        permanent: false,
+      },
 
       // Account Settings Redirects
       {
@@ -348,7 +321,7 @@ const nextConfig = {
       // Access tokens redirect
       {
         source: '/settings/tokens',
-        destination: '/account/developer',
+        destination: '/dashboard/account/developer',
         permanent: false,
       },
 
@@ -425,7 +398,7 @@ const nextConfig = {
 
     return [
       {
-        source: '/((?!checkout|embed|oauth2|docs).*)',
+        source: '/((?!checkout|embed|oauth2|docs|perspectives).*)',
         headers: baseHeaders,
       },
       {

@@ -1,9 +1,11 @@
+import LogoType from '@/components/Brand/logos/LogoType'
 import { StaticImage } from '@/components/Image/StaticImage'
 import { Chapter } from '@/components/Landing/Chapter'
 import { TextRings } from '@/components/Landing/graphics/TextRings'
 import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
+import { HeroMark } from './HeroMark'
 import { HowWeWork } from './HowWeWork'
 import { investors } from './investors'
 import { OpenRoles } from './OpenRoles'
@@ -32,22 +34,25 @@ export default function CompanyPage() {
         >
           <Box
             flexDirection="column"
-            justifyContent="end"
+            justifyContent={{ base: 'end', lg: 'between' }}
             alignItems="start"
             rowGap="2xl"
           >
-            <Box display="block" maxWidth="32rem">
-              <Text variant="heading-s" as="h1" wrap="pretty">
-                A small, senior team working remotely across the world.
-              </Text>
-              <Text variant="heading-s" as="p" color="muted" wrap="pretty">
-                Building the finance layer for the next generation of AI
-                products.
-              </Text>
+            <HeroMark />
+            <Box flexDirection="column" alignItems="start" rowGap="2xl">
+              <Box display="block" maxWidth="32rem">
+                <Text variant="heading-s" as="h1" wrap="pretty">
+                  A small senior team, remote across the world.
+                </Text>
+                <Text variant="heading-s" as="p" color="muted" wrap="pretty">
+                  Building the billing stack for the next generation of AI
+                  companies.
+                </Text>
+              </Box>
+              <a href="#open-roles">
+                <Button size="lg">Join us</Button>
+              </a>
             </Box>
-            <a href="#open-roles">
-              <Button size="lg">Join us</Button>
-            </a>
           </Box>
           <TeamCarouselWrapper />
         </Grid>
@@ -80,14 +85,23 @@ export default function CompanyPage() {
               ))}
             </Box>
           </Box>
-          <StaticImage
-            src="/assets/landing/company/polar.jpg"
-            alt="Polar graphic"
-            width={1920}
-            height={1080}
-            className="object-cover"
-            sizes="100vw"
-          />
+          <Box
+            position="relative"
+            width="100%"
+            overflow="hidden"
+            aspectRatio="16 / 9"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <StaticImage
+              src="/assets/landing/company/Polar_Flow_03_No_Logo.jpg"
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(min-width: 1280px) 80rem, 100vw"
+            />
+            <LogoType className="relative h-auto w-[16%] text-white" />
+          </Box>
         </Box>
       </Chapter>
 
@@ -135,9 +149,9 @@ export default function CompanyPage() {
       <Chapter
         index="04"
         name="Join us"
-        title="Open roles"
+        title="Exceptional Talent"
         subtitle="Remote, senior, high ownership"
-        description="We're a small, senior team working remotely across the world. High ownership, high pace and a direct line to the people using what you build."
+        description="We're a small, senior team working remotely across the world. High ownership and pace, building the finance layer for the next generation of AI products."
       >
         <OpenRoles />
       </Chapter>
@@ -152,14 +166,14 @@ export default function CompanyPage() {
         <Grid
           templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
           columnGap="l"
-          rowGap="xl"
+          rowGap="l"
         >
           {investors.map((investor) => (
             <Box key={investor.name} flexDirection="column">
-              <Text variant="heading-xxs" as="span">
+              <Text variant="body" as="span">
                 {investor.name}
               </Text>
-              <Text variant="heading-xxs" as="span" color="muted">
+              <Text variant="body" as="span" color="muted">
                 {investor.company}
               </Text>
             </Box>

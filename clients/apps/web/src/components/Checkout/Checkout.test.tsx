@@ -22,7 +22,7 @@ describe('Checkout page', () => {
     const { api, posthog } = renderCheckout()
 
     expect(screen.getByText('Test Product')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /pay/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /pay/i })).toBeInTheDocument()
 
     await waitFor(() =>
       expect(api.requests).toContainEqual(
@@ -38,6 +38,15 @@ describe('Checkout page', () => {
     )
   })
 
+  it('reports the rendered locale and checkout id on the page view', () => {
+    const { checkout, posthog } = renderCheckout({ locale: 'de' })
+
+    expect(posthog.events).toContainEqual({
+      event: 'storefront:checkout:page:view',
+      properties: { checkout_id: checkout.id, locale: 'de' },
+    })
+  })
+
   it('blocks payment when the organization has been denied', async () => {
     renderCheckout({
       paymentStatus: {
@@ -48,11 +57,11 @@ describe('Checkout page', () => {
     })
 
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: /pay/i })).toBeDisabled(),
+      expect(
+        screen.getAllByText('Payments are currently unavailable').length,
+      ).toBeGreaterThan(0),
     )
-    expect(
-      screen.getAllByText('Payments are currently unavailable').length,
-    ).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: /pay/i })).toBeDisabled()
   })
 
   describe('collapsed order summary', () => {

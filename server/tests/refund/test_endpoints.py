@@ -79,7 +79,7 @@ async def create_order_and_payment(
     return order, payment, transaction
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListRefunds(StripeRefund):
     async def seed_refunds(
         self,
@@ -291,7 +291,7 @@ class TestListRefunds(StripeRefund):
         assert json["pagination"]["total_count"] == 3
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateRefunds(StripeRefund):
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -565,7 +565,7 @@ class TestCreateRefunds(StripeRefund):
         assert updated.status == OrderStatus.paid
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateRefundsAndRevokeBenefits(StripeRefund):
     @pytest.mark.auth
     async def test_disallow_subscriptions(

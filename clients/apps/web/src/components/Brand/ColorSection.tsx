@@ -1,5 +1,6 @@
-import React from 'react'
-import { BrandSection } from './BrandSection'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { Chapter } from '../Landing/Chapter'
 import { BrandColor, brandColors, brandSections } from './brand'
 
 function isLight(hex: string): boolean {
@@ -12,46 +13,60 @@ function isLight(hex: string): boolean {
 
 function ColorColumn({ color }: { color: BrandColor }) {
   const light = isLight(color.hex)
-  const fg = light ? '#070708' : '#F5F6FA'
-  const muted = light ? 'rgba(7,7,8,0.5)' : 'rgba(245,246,250,0.5)'
 
   return (
     <div
       className="flex min-h-[40vh] flex-col justify-between p-8 md:min-h-[60vh] md:p-10"
-      style={{ flex: color.flex, backgroundColor: color.hex, color: fg }}
+      style={{
+        flex: color.flex,
+        backgroundColor: color.hex,
+        color: light ? '#070708' : '#F5F6FA',
+      }}
     >
-      <div className="flex items-baseline justify-between gap-x-8">
-        <span className="text-lg font-medium tracking-tight">{color.name}</span>
-        <span className="text-lg" style={{ color: muted }}>
-          {color.role}
-        </span>
-      </div>
-      <div className="flex flex-col gap-3 font-mono text-sm leading-snug">
-        <div className="flex flex-col gap-0.5">
-          <span style={{ color: muted }}>HEX</span>
-          <span>{color.hex}</span>
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <span style={{ color: muted }}>OKLCH</span>
-          <span className="whitespace-nowrap">{color.oklch}</span>
-        </div>
-      </div>
+      <Box justifyContent="between" alignItems="baseline" columnGap="l">
+        <Text as="span" color="inherit">
+          {color.name}
+        </Text>
+        <Text as="span" color="inherit">
+          <Box as="span" opacity={0.5}>
+            {color.role}
+          </Box>
+        </Text>
+      </Box>
+      <Box flexDirection="column" rowGap="xs">
+        <Text variant="caption" color="inherit" monospace>
+          {color.hex}
+        </Text>
+        <Text variant="caption" color="inherit" monospace wrap="nowrap">
+          {color.oklch}
+        </Text>
+      </Box>
     </div>
   )
 }
 
 export function ColorSection() {
   return (
-    <BrandSection
-      meta={brandSections[1]}
+    <Chapter
+      id={brandSections[1].id}
+      index={brandSections[1].index}
+      name={brandSections[1].label}
       title="A monochrome color system"
-      lead="The palette runs from Night to Snow in a single neutral hue. Ether is the only accent, reserved for moments that need to carry energy."
+      subtitle="Night to Snow in a single neutral hue"
+      description="Ether is the only accent, reserved for moments that need to carry energy."
     >
-      <div className="border-brand-line/20 flex w-full flex-col overflow-hidden border md:flex-row">
+      <Box
+        width="100%"
+        flexDirection={{ base: 'column', md: 'row' }}
+        overflow="hidden"
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
         {brandColors.map((color) => (
           <ColorColumn key={color.name} color={color} />
         ))}
-      </div>
-    </BrandSection>
+      </Box>
+    </Chapter>
   )
 }

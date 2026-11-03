@@ -47,7 +47,7 @@ describe('CheckoutFormProvider', () => {
       })
 
       expect(resultId).toBe('ch_new')
-      expect(getCtx().form.formState.errors).toEqual({})
+      expect(getCtx().errors).toEqual({})
     })
 
     it('surfaces RequestValidationError as field-level form errors', async () => {
@@ -73,7 +73,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.customer_email?.message).toContain(
+      expect(getCtx().errors.customer_email?.message).toContain(
         'The domain name example.com does not accept email.',
       )
     })
@@ -101,7 +101,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.customer_email?.message).toBe(
+      expect(getCtx().errors.customer_email?.message).toBe(
         'Email is already taken',
       )
     })
@@ -126,9 +126,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.root?.message).toBe(
-        `${errorCode} detail`,
-      )
+      expect(getCtx().errors.root?.message).toBe(`${errorCode} detail`)
     })
 
     it('sets discount_code error for DiscountRedemptionLimitReached when the code input is shown', async () => {
@@ -148,9 +146,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.discount_code?.message).toBe(
-        'limit reached',
-      )
+      expect(getCtx().errors.discount_code?.message).toBe('limit reached')
     })
 
     it('sets root error for DiscountRedemptionLimitReached when discount codes are disabled', async () => {
@@ -170,7 +166,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.root?.message).toBe('limit reached')
+      expect(getCtx().errors.root?.message).toBe('limit reached')
     })
 
     it('sets root error for DiscountRedemptionLimitReached when no discount applies', async () => {
@@ -190,7 +186,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.root?.message).toBe('limit reached')
+      expect(getCtx().errors.root?.message).toBe('limit reached')
     })
 
     it.each(['ResourceNotFound', 'ExpiredCheckoutError'] as const)(
@@ -211,7 +207,7 @@ describe('CheckoutFormProvider', () => {
           ).rejects.toBeDefined()
         })
 
-        expect(getCtx().form.formState.errors).toEqual({})
+        expect(getCtx().errors).toEqual({})
       },
     )
   })
@@ -409,7 +405,7 @@ describe('CheckoutFormProvider', () => {
       })
 
       expect(result).toMatchObject({ id: 'ch_confirmed' })
-      expect(getCtx().form.formState.errors).toEqual({})
+      expect(getCtx().errors).toEqual({})
     })
 
     it('surfaces RequestValidationError as field-level form errors', async () => {
@@ -437,7 +433,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.customer_email?.message).toBe(
+      expect(getCtx().errors.customer_email?.message).toBe(
         'Invalid email domain',
       )
     })
@@ -465,9 +461,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.root?.message).toBe(
-        `${errorCode} detail`,
-      )
+      expect(getCtx().errors.root?.message).toBe(`${errorCode} detail`)
     })
 
     it.each([
@@ -522,9 +516,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.discount_code?.message).toBe(
-        'limit reached',
-      )
+      expect(getCtx().errors.discount_code?.message).toBe('limit reached')
     })
 
     it('sets root error for DiscountRedemptionLimitReached when discount codes are disabled', async () => {
@@ -549,7 +541,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.root?.message).toBe('limit reached')
+      expect(getCtx().errors.root?.message).toBe('limit reached')
     })
 
     it.each(['ResourceNotFound', 'ExpiredCheckoutError'] as const)(
@@ -572,7 +564,7 @@ describe('CheckoutFormProvider', () => {
           ).rejects.toBeDefined()
         })
 
-        expect(getCtx().form.formState.errors).toEqual({})
+        expect(getCtx().errors).toEqual({})
       },
     )
 
@@ -613,7 +605,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toThrow('card declined')
       })
 
-      expect(getCtx().form.formState.errors.root?.message).toBe('card declined')
+      expect(getCtx().errors.root?.message).toBe('card declined')
     })
 
     it('does not set root error for validation errors from elements.submit()', async () => {
@@ -639,7 +631,7 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toThrow('card incomplete')
       })
 
-      expect(getCtx().form.formState.errors.root).toBeUndefined()
+      expect(getCtx().errors.root).toBeUndefined()
     })
 
     it('on TrialAlreadyRedeemed, flags trialUnavailable and retries with allow_trial=false without a root error', async () => {
@@ -666,7 +658,7 @@ describe('CheckoutFormProvider', () => {
       })
 
       expect(getCtx().trialUnavailable).toBe(true)
-      expect(getCtx().form.formState.errors.root).toBeUndefined()
+      expect(getCtx().errors.root).toBeUndefined()
       expect(update).toHaveBeenCalledWith({ allow_trial: false })
     })
 
@@ -779,7 +771,7 @@ describe('CheckoutFormProvider', () => {
       expect(cancelPayment).toHaveBeenCalledTimes(1)
       expect(getCtx().loadingLabel).toBe('Processing payment')
       expect(getCtx().loading).toBe(false)
-      expect(getCtx().form.formState.errors.root?.message).toBeDefined()
+      expect(getCtx().errors.root?.message).toBeDefined()
     })
 
     it('resolves with the confirmed checkout when the payment went through before the dismissal', async () => {
@@ -805,7 +797,7 @@ describe('CheckoutFormProvider', () => {
       })
 
       expect(result).toEqual(confirmedCheckout)
-      expect(getCtx().form.formState.errors.root).toBeUndefined()
+      expect(getCtx().errors.root).toBeUndefined()
     })
 
     it('starts a new payment on the next submit after a dismissal', async () => {

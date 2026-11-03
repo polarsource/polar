@@ -2,7 +2,7 @@
 
 import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 import { type CodeLang, useHighlightedCode } from '@/lib/shiki'
 

@@ -97,6 +97,151 @@ const customerState = await getStateExternalCustomers(polar)("customer_external_
 console.log(customerState);
 ```
 
+## Metering
+
+The metering helper buffers and batches events, with optional local reduction through Outpost.
+Create one shared helper outside your request handler. Resources start on the first operation;
+there is no explicit startup or async disposal step.
+
+```typescript
+import { createPolar } from "@polar-sh/sdk/{{ (ir.versions[-2] | default(ir.versions[0])).version }}";
+
+const polar = createPolar({ accessToken: "polar_oat_xxx" });
+const metering = polar.metering();
+
+async function recordUsage() {
+  await metering.track({
+    name: "api_request",
+    external_customer_id: "customer_123",
+    metadata: { tokens: 42 },
+  });
+}
+```
+
+`track()` resolves when the event is queued, not when Polar accepts it. Events without a
+`timestamp` are dated when you call `track()`.
+
+### Actor context
+
+Bind a customer once when tracking several events. Actor creation may warm Outpost state.
+
+```typescript
+const actor = await metering.actor({ external_customer_id: "customer_123" });
+await actor.track({ name: "api_request", metadata: { tokens: 42 } });
+await actor.track({ name: "api_request", metadata: { tokens: 17 } });
+```
+
+### Delivery
+
+On long-running servers such as Express, the buffer sends batches by size or interval.
+Call `await metering.close()` during graceful shutdown to drain events and release resources.
+Closing stops new operations and is idempotent; a closed helper cannot be reused.
+
+In serverless handlers, wait for delivery before returning:
+
+```typescript
+export async function POST() {
+  await metering.track({ name: "api_request", external_customer_id: "customer_123" });
+  await metering.flush();
+  return Response.json({ ok: true });
+}
+```
+
+In a Next.js App Router Route Handler, use [`after()`](https://nextjs.org/docs/app/api-reference/functions/after)
+to flush the queue after the response. Queue the event in the handler, then return
+the `flush()` promise from the callback so Next.js can wait for delivery.
+
+```typescript
+import { after } from "next/server";
+
+export async function POST() {
+  await metering.track({ name: "api_request", external_customer_id: "customer_123" });
+  after(() => metering.flush());
+
+  return Response.json({ ok: true });
+}
+```
+
+The response can return before delivery is confirmed. Await `flush()` in the handler
+itself when the response needs to confirm Polar accepted the events. The callback
+still counts toward the route's maximum duration.
+
+`flush()` waits for events queued before its call. Concurrent requests share HTTP batches;
+calling `flush()` does not close the helper or create a separate buffer. Later events are
+outside that flush's boundary. This is a shared queue barrier, not request-specific delivery.
+
+Dropped events are retained for reporting until a completed flush or close acknowledges them.
+Every overlapping flush reports failures within its boundary, including background drops from
+before the flush. After reporting a failure, later flushes can succeed for healthy traffic.
+Long-running applications should periodically flush to observe failures and release their
+retained event records. Callbacks alone do not acknowledge failures.
+
+`flush()` and `close()` wait up to 30 seconds by default. Override the wait per call:
+
+```typescript
+await metering.flush({ timeoutMs: 60_000 });
+await metering.close({ timeoutMs: 10_000 });
+```
+
+A flush timeout stops only the caller's wait; delivery and other callers continue. It does not
+acknowledge failures, so a later flush can observe the eventual outcome. Shutdown aborts
+unfinished buffered delivery at its deadline. Timeouts do not confirm that an event is absent
+from Polar: the API may have accepted it before the connection failed.
+
+Delivery failures reject with `MeteringDeliveryError` from `@polar-sh/sdk/metering`. Its `events`
+and `failures` describe unconfirmed events, reasons, and original causes. Lifecycle timeouts
+reject with `MeteringTimeoutError`; a flush waiting on pending events can instead report a
+`MeteringDeliveryError` with reason `flush_timeout`. Unexpected worker or callback errors also
+reject; callbacks are still called and never turn a drop into a successful flush.
+
+The buffer retries network and server errors with exponential backoff and jitter. Rate limits
+honor `Retry-After`, up to five minutes per batch; caller deadlines can expire sooner. Other
+Polar API errors drop the batch without retrying. Successful delivery means API acceptance,
+not immediate visibility in meter reads. Buffers and failure records are in memory: forced
+termination still requires external durable storage and replay for strict no-loss delivery.
+
+### Read meters
+
+Read a customer's meter directly or through an actor:
+
+```typescript
+const meter = await metering.meter("meter_uuid", {
+  external_customer_id: "customer_123",
+});
+const actorMeter = await actor.meter("meter_uuid");
+if (meter !== null) console.log(meter.consumed_units, meter.credited_units, meter.balance);
+```
+
+### Local reduction with Outpost
+
+Pass `outpost: true` to `polar.metering()` to enable Redis-backed local reduction, using
+`REDIS_URL`. Pass an object to configure it. This provides low-latency meter reads across
+clients. Every Outpost event requires an `external_id`; `track()` rejects events without one.
+An event counts locally until Polar confirms storage or the buffer gives it up.
+
+### Options
+
+#### Buffered
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `batchSize` | `100` | Maximum events per HTTP request. |
+| `batchIntervalMs` | `1000` | Milliseconds to collect a batch after its first event. |
+| `maxAttempts` | `3` | Total attempts per batch, including the first. |
+| `onDelivered` | `undefined` | Callback for events Polar accepted; may be async. |
+| `onDropped` | `undefined` | Callback for dropped events and their reason; may be async. |
+
+#### Outpost
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `redisUrl` | `REDIS_URL` environment variable | Redis instance used by Outpost. |
+| `telemetry` | `true` | Send Outpost metrics and traces to Polar. |
+| `snapshotTimeout` | `5000` | Milliseconds a cold read waits for its initial snapshot. |
+| `confirmTimeout` | `2000` | Milliseconds a snapshot waits for Polar to confirm events. |
+
+Telemetry can also be disabled with `POLAR_OUTPOST_TELEMETRY=0`.
+
 ## Webhooks
 
 Use `webhooks.validateEvent` to verify that a webhook was sent by Polar and parse it into a typed

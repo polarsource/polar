@@ -66,6 +66,9 @@ class AttachedCustomFieldCreate(typing.TypedDict):
 class BenefitCustomCreate(typing.TypedDict):
     """Schema to create a benefit of type `custom`."""
 
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -106,6 +109,9 @@ class BenefitCustomProperties(typing.TypedDict):
 
 
 class BenefitCustomUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -131,6 +137,9 @@ You can store up to **50 key-value pairs**."""
 
 
 class BenefitDiscordCreate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -172,6 +181,9 @@ class BenefitDiscordCreateProperties(typing.TypedDict):
 
 
 class BenefitDiscordUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -194,6 +206,9 @@ You can store up to **50 key-value pairs**."""
 
 
 class BenefitDownloadablesCreate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -228,6 +243,9 @@ class BenefitDownloadablesCreateProperties(typing.TypedDict):
 
 
 class BenefitDownloadablesUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -251,6 +269,9 @@ You can store up to **50 key-value pairs**."""
 
 class BenefitFeatureFlagCreate(typing.TypedDict):
     """Schema to create a benefit of type `feature_flag`."""
+
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -283,13 +304,14 @@ class BenefitFeatureFlagCreateProperties(typing.TypedDict):
     """Properties for creating a benefit of type `feature_flag`."""
 
 
-
 class BenefitFeatureFlagProperties(typing.TypedDict):
     """Properties for a benefit of type `feature_flag`."""
 
 
-
 class BenefitFeatureFlagUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -315,6 +337,9 @@ You can store up to **50 key-value pairs**."""
 
 
 class BenefitGitHubRepositoryCreate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -356,6 +381,9 @@ class BenefitGitHubRepositoryCreateProperties(typing.TypedDict):
 
 
 class BenefitGitHubRepositoryUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -390,6 +418,9 @@ class BenefitLicenseKeyExpirationProperties(typing.TypedDict):
 
 
 class BenefitLicenseKeysCreate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -428,6 +459,9 @@ class BenefitLicenseKeysCreateProperties(typing.TypedDict):
 
 
 class BenefitLicenseKeysUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -454,6 +488,9 @@ You can store up to **50 key-value pairs**."""
 
 class BenefitMeterCreditCreate(typing.TypedDict):
     """Schema to create a benefit of type `meter_unit`."""
+
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -493,6 +530,9 @@ class BenefitMeterCreditCreateProperties(typing.TypedDict):
 
 
 class BenefitMeterCreditUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -518,6 +558,9 @@ You can store up to **50 key-value pairs**."""
 
 
 class BenefitSlackSharedChannelCreate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -561,6 +604,9 @@ class BenefitSlackSharedChannelCreateProperties(typing.TypedDict):
 
 
 class BenefitSlackSharedChannelUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -582,6 +628,52 @@ You can store up to **50 key-value pairs**."""
     properties: typing.NotRequired[BenefitSlackSharedChannelCreateProperties | None]
 
 
+class CheckoutConfirmSharedPaymentToken(typing.TypedDict):
+    """Confirm a checkout session using a Stripe shared payment token granted by an agent.
+
+    Only supported for one-time payments."""
+
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
+    """Key-value object storing custom field values."""
+
+    product_id: typing.NotRequired[str | None]
+    """ID of the product to checkout. Must be present in the checkout's product list."""
+
+    amount: typing.NotRequired[int | None]
+
+    seats: typing.NotRequired[int | None]
+    """Number of seats for seat-based pricing."""
+
+    units: typing.NotRequired[int | None]
+    """Number of units for unit-based pricing."""
+
+    is_business_customer: typing.NotRequired[bool | None]
+
+    customer_name: typing.NotRequired[str | None]
+
+    customer_email: typing.NotRequired[str | None]
+
+    customer_billing_name: typing.NotRequired[str | None]
+
+    customer_billing_address: typing.NotRequired[AddressInput | None]
+
+    customer_tax_id: typing.NotRequired[str | None]
+
+    locale: typing.NotRequired[str | None]
+
+    payment_method_type: typing.NotRequired[str | None]
+    """Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."""
+
+    discount_code: typing.NotRequired[str | None]
+    """Discount code to apply to the checkout."""
+
+    allow_trial: typing.NotRequired[typing.Literal[False] | None]
+    """Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one."""
+
+    shared_payment_token_id: str
+    """ID of the Stripe shared payment token (`spt_...`)."""
+
+
 class CheckoutConfirmStripe(typing.TypedDict):
     """Confirm a checkout session using a Stripe confirmation token."""
 
@@ -590,9 +682,6 @@ class CheckoutConfirmStripe(typing.TypedDict):
 
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
-
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
     amount: typing.NotRequired[int | None]
 
@@ -629,7 +718,109 @@ class CheckoutConfirmStripe(typing.TypedDict):
     """ID of the Stripe confirmation token. Required for fixed prices and custom prices."""
 
 
-class CheckoutCreate(typing.TypedDict):
+class CheckoutLinkCreateProducts(typing.TypedDict):
+    """Schema to create a new checkout link."""
+
+    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
+    """Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
+
+    trial_interval: typing.NotRequired[TrialInterval | None]
+    """The interval unit for the trial period."""
+
+    trial_interval_count: typing.NotRequired[int | None]
+    """The number of interval units for the trial period."""
+
+    payment_processor: typing.Literal["stripe"]
+    """Payment processor to use. Currently only Stripe is supported."""
+
+    label: typing.NotRequired[str | None]
+    """Optional label to distinguish links internally"""
+
+    allow_discount_codes: typing.NotRequired[bool]
+    """Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."""
+
+    require_billing_address: typing.NotRequired[bool]
+    """Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."""
+
+    discount_id: typing.NotRequired[str | None]
+    """ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."""
+
+    seats: typing.NotRequired[int | None]
+    """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
+    units: typing.NotRequired[int | None]
+    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
+    success_url: typing.NotRequired[str | None]
+    """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
+
+    return_url: typing.NotRequired[str | None]
+    """When set, a back button will be shown in the checkout to return to this URL."""
+
+    products: list[str]
+    """List of products that will be available to select at checkout."""
+
+
+class CheckoutLinkUpdate(typing.TypedDict):
+    """Schema to update an existing checkout link."""
+
+    trial_interval: typing.NotRequired[TrialInterval | None]
+    """The interval unit for the trial period."""
+
+    trial_interval_count: typing.NotRequired[int | None]
+    """The number of interval units for the trial period."""
+
+    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
+    """Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**."""
+
+    products: typing.NotRequired[list[str] | None]
+    """List of products that will be available to select at checkout."""
+
+    label: typing.NotRequired[str | None]
+
+    allow_discount_codes: typing.NotRequired[bool | None]
+    """Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."""
+
+    require_billing_address: typing.NotRequired[bool | None]
+    """Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."""
+
+    discount_id: typing.NotRequired[str | None]
+    """ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."""
+
+    seats: typing.NotRequired[int | None]
+    """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
+    units: typing.NotRequired[int | None]
+    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+
+    success_url: typing.NotRequired[str | None]
+    """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
+
+    return_url: typing.NotRequired[str | None]
+    """When set, a back button will be shown in the checkout to return to this URL."""
+
+
+class CheckoutProductsCreate(typing.TypedDict):
     """Create a new checkout session from a list of products.
     Customers will be able to switch between those products.
 
@@ -760,10 +951,19 @@ You can store up to **50 key-value pairs**."""
     """Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used."""
 
 
-class CheckoutLinkCreateProduct(typing.TypedDict):
-    """Schema to create a new checkout link from a a single product.
+class CheckoutProductsExternalCreate(typing.TypedDict):
+    """Create a new checkout session from a list of products,
+    referenced by their external ID.
+    Customers will be able to switch between those products.
 
-    **Deprecated**: Use `CheckoutLinkCreateProducts` instead."""
+    Metadata set on the checkout will be copied
+    to the resulting order and/or subscription."""
+
+    trial_interval: typing.NotRequired[TrialInterval | None]
+    """The interval unit for the trial period."""
+
+    trial_interval_count: typing.NotRequired[int | None]
+    """The number of interval units for the trial period."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -778,49 +978,64 @@ The value must be either:
 
 You can store up to **50 key-value pairs**."""
 
-    trial_interval: typing.NotRequired[TrialInterval | None]
-    """The interval unit for the trial period."""
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
+    """Key-value object storing custom field values."""
 
-    trial_interval_count: typing.NotRequired[int | None]
-    """The number of interval units for the trial period."""
-
-    payment_processor: typing.Literal["stripe"]
-    """Payment processor to use. Currently only Stripe is supported."""
-
-    label: typing.NotRequired[str | None]
-    """Optional label to distinguish links internally"""
+    discount_id: typing.NotRequired[str | None]
+    """ID of the discount to apply to the checkout."""
 
     allow_discount_codes: typing.NotRequired[bool]
     """Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."""
 
     require_billing_address: typing.NotRequired[bool]
-    """Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."""
+    """Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`."""
 
-    discount_id: typing.NotRequired[str | None]
-    """ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."""
+    amount: typing.NotRequired[int | None]
 
     seats: typing.NotRequired[int | None]
-    """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+    """Predefined number of seats (works with seat-based pricing only)"""
+
+    min_seats: typing.NotRequired[int | None]
+    """Minimum number of seats (works with seat-based pricing only)"""
+
+    max_seats: typing.NotRequired[int | None]
+    """Maximum number of seats (works with seat-based pricing only)"""
 
     units: typing.NotRequired[int | None]
-    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+    """Predefined number of units (works with unit-based pricing only)"""
 
-    success_url: typing.NotRequired[str | None]
-    """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
+    min_units: typing.NotRequired[int | None]
+    """Minimum number of units (works with unit-based pricing only)"""
 
-    return_url: typing.NotRequired[str | None]
-    """When set, a back button will be shown in the checkout to return to this URL."""
+    max_units: typing.NotRequired[int | None]
+    """Maximum number of units (works with unit-based pricing only)"""
 
-    product_id: str
+    allow_trial: typing.NotRequired[bool]
+    """Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured."""
 
+    customer_id: typing.NotRequired[str | None]
+    """ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer."""
 
-class CheckoutLinkCreateProductPrice(typing.TypedDict):
-    """Schema to create a new checkout link from a a single product price.
+    is_business_customer: typing.NotRequired[bool]
+    """Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name."""
 
-    **Deprecated**: Use `CheckoutLinkCreateProducts` instead."""
+    external_customer_id: typing.NotRequired[str | None]
+    """ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."""
 
-    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
-    """Key-value object allowing you to store additional information.
+    customer_name: typing.NotRequired[str | None]
+
+    customer_email: typing.NotRequired[str | None]
+
+    customer_ip_address: typing.NotRequired[str | None]
+
+    customer_billing_name: typing.NotRequired[str | None]
+
+    customer_billing_address: typing.NotRequired[AddressInput | None]
+
+    customer_tax_id: typing.NotRequired[str | None]
+
+    customer_metadata: typing.NotRequired[dict[str, str | int | float | bool]]
+    """Key-value object allowing you to store additional information that'll be copied to the created customer.
 
 The key must be a string with a maximum length of **40 characters**.
 The value must be either:
@@ -832,32 +1047,8 @@ The value must be either:
 
 You can store up to **50 key-value pairs**."""
 
-    trial_interval: typing.NotRequired[TrialInterval | None]
-    """The interval unit for the trial period."""
-
-    trial_interval_count: typing.NotRequired[int | None]
-    """The number of interval units for the trial period."""
-
-    payment_processor: typing.Literal["stripe"]
-    """Payment processor to use. Currently only Stripe is supported."""
-
-    label: typing.NotRequired[str | None]
-    """Optional label to distinguish links internally"""
-
-    allow_discount_codes: typing.NotRequired[bool]
-    """Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."""
-
-    require_billing_address: typing.NotRequired[bool]
-    """Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."""
-
-    discount_id: typing.NotRequired[str | None]
-    """ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."""
-
-    seats: typing.NotRequired[int | None]
-    """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
-
-    units: typing.NotRequired[int | None]
-    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
+    subscription_id: typing.NotRequired[str | None]
+    """ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."""
 
     success_url: typing.NotRequired[str | None]
     """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
@@ -865,109 +1056,31 @@ You can store up to **50 key-value pairs**."""
     return_url: typing.NotRequired[str | None]
     """When set, a back button will be shown in the checkout to return to this URL."""
 
-    product_price_id: str
+    embed_origin: typing.NotRequired[str | None]
+    """If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."""
 
+    locale: typing.NotRequired[str | None]
 
-class CheckoutLinkCreateProducts(typing.TypedDict):
-    """Schema to create a new checkout link."""
+    currency: typing.NotRequired[PresentmentCurrency | None]
 
-    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
-    """Key-value object allowing you to store additional information.
+    external_products: list[str]
+    """List of product external IDs available to select at that checkout. The first one will be selected by default."""
 
-The key must be a string with a maximum length of **40 characters**.
-The value must be either:
-
-* A string with a maximum length of **500 characters**
-* An integer
-* A floating-point number
-* A boolean
-
-You can store up to **50 key-value pairs**."""
-
-    trial_interval: typing.NotRequired[TrialInterval | None]
-    """The interval unit for the trial period."""
-
-    trial_interval_count: typing.NotRequired[int | None]
-    """The number of interval units for the trial period."""
-
-    payment_processor: typing.Literal["stripe"]
-    """Payment processor to use. Currently only Stripe is supported."""
-
-    label: typing.NotRequired[str | None]
-    """Optional label to distinguish links internally"""
-
-    allow_discount_codes: typing.NotRequired[bool]
-    """Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."""
-
-    require_billing_address: typing.NotRequired[bool]
-    """Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."""
-
-    discount_id: typing.NotRequired[str | None]
-    """ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."""
-
-    seats: typing.NotRequired[int | None]
-    """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
-
-    units: typing.NotRequired[int | None]
-    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
-
-    success_url: typing.NotRequired[str | None]
-    """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
-
-    return_url: typing.NotRequired[str | None]
-    """When set, a back button will be shown in the checkout to return to this URL."""
-
-    products: list[str]
-    """List of products that will be available to select at checkout."""
-
-
-class CheckoutLinkUpdate(typing.TypedDict):
-    """Schema to update an existing checkout link."""
-
-    trial_interval: typing.NotRequired[TrialInterval | None]
-    """The interval unit for the trial period."""
-
-    trial_interval_count: typing.NotRequired[int | None]
-    """The number of interval units for the trial period."""
-
-    metadata: typing.NotRequired[dict[str, str | int | float | bool]]
-    """Key-value object allowing you to store additional information.
-
-The key must be a string with a maximum length of **40 characters**.
-The value must be either:
-
-* A string with a maximum length of **500 characters**
-* An integer
-* A floating-point number
-* A boolean
-
-You can store up to **50 key-value pairs**."""
-
-    products: typing.NotRequired[list[str] | None]
-    """List of products that will be available to select at checkout."""
-
-    label: typing.NotRequired[str | None]
-
-    allow_discount_codes: typing.NotRequired[bool | None]
-    """Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it."""
-
-    require_billing_address: typing.NotRequired[bool | None]
-    """Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting."""
-
-    discount_id: typing.NotRequired[str | None]
-    """ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."""
-
-    seats: typing.NotRequired[int | None]
-    """Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
-
-    units: typing.NotRequired[int | None]
-    """Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."""
-
-    success_url: typing.NotRequired[str | None]
-    """URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."""
-
-    return_url: typing.NotRequired[str | None]
-    """When set, a back button will be shown in the checkout to return to this URL."""
+    prices: typing.NotRequired[
+        dict[
+            str,
+            list[
+                ProductPriceFixedCreate
+                | ProductPriceCustomCreate
+                | ProductPriceSeatBasedCreate
+                | ProductPriceUnitBasedCreate
+                | ProductPriceMeteredUnitCreate
+                | ProductPriceMeteredTiersCreate
+            ],
+        ]
+        | None
+    ]
+    """Optional mapping of product external IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used."""
 
 
 class CheckoutUpdate(typing.TypedDict):
@@ -978,9 +1091,6 @@ class CheckoutUpdate(typing.TypedDict):
 
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
-
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
     amount: typing.NotRequired[int | None]
 
@@ -1070,9 +1180,6 @@ class CheckoutUpdatePublic(typing.TypedDict):
 
     product_id: typing.NotRequired[str | None]
     """ID of the product to checkout. Must be present in the checkout's product list."""
-
-    product_price_id: typing.NotRequired[str | None]
-    """ID of the product price to checkout. Must correspond to a price present in the checkout's product list."""
 
     amount: typing.NotRequired[int | None]
 
@@ -1550,6 +1657,44 @@ You can store up to **50 key-value pairs**."""
     """The email address of the customer. This must be unique within the organization."""
 
 
+class CustomerMeterCreditsExternalIDCreate(typing.TypedDict):
+    """Schema to manually grant credits on a customer meter using external IDs."""
+
+    units: int
+    """The number of units to credit."""
+
+    rollover: typing.NotRequired[bool]
+    """Whether unused credits carry over to the next meter period."""
+
+    external_id: typing.NotRequired[str | None]
+    """Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."""
+
+    external_customer_id: str
+    """The external ID of the customer."""
+
+    external_meter_id: str
+    """The external ID of the meter, as set by config as code."""
+
+
+class CustomerMeterCreditsIDCreate(typing.TypedDict):
+    """Schema to manually grant credits on a customer meter using Polar IDs."""
+
+    units: int
+    """The number of units to credit."""
+
+    rollover: typing.NotRequired[bool]
+    """Whether unused credits carry over to the next meter period."""
+
+    external_id: typing.NotRequired[str | None]
+    """Your unique identifier for this credit. Retrying with the same `external_id` doesn't grant the credit twice."""
+
+    customer_id: str
+    """The ID of the customer."""
+
+    meter_id: str
+    """The ID of the meter."""
+
+
 class CustomerOrderConfirmPayment(typing.TypedDict):
     """Schema to confirm a retry payment using either a saved payment method or a new confirmation token."""
 
@@ -1858,6 +2003,9 @@ You can store up to **50 key-value pairs**."""
 class DiscountFixedCreate(typing.TypedDict):
     """Schema to create a fixed amount discount."""
 
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -1907,15 +2055,15 @@ Required when `duration` is `repeating`. Must be omitted otherwise.
 For this to work on yearly pricing, you should multiply this by 12.
 For example, to apply the discount for 2 years, set this to 24."""
 
-    amount: typing.NotRequired[int | None]
-
-    currency: typing.NotRequired[PresentmentCurrency | None]
-
-    amounts: typing.NotRequired[dict[str, int] | None]
+    amounts: dict[str, int]
+    """Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."""
 
 
 class DiscountPercentageCreate(typing.TypedDict):
     """Schema to create a percentage discount."""
+
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -1976,6 +2124,9 @@ For example, to create a 25.5% discount, set this to 2550."""
 class DiscountUpdate(typing.TypedDict):
     """Schema to update a discount."""
 
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2011,10 +2162,6 @@ You can store up to **50 key-value pairs**."""
     duration_in_months: typing.NotRequired[int | None]
 
     type: typing.NotRequired[DiscountType | None]
-
-    amount: typing.NotRequired[int | None]
-
-    currency: typing.NotRequired[PresentmentCurrency | None]
 
     amounts: typing.NotRequired[dict[str, int] | None]
 
@@ -2320,6 +2467,9 @@ class MemberUpdate(typing.TypedDict):
 
 
 class MeterCreate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2356,6 +2506,9 @@ You can store up to **50 key-value pairs**."""
 
 
 class MeterUpdate(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2422,9 +2575,7 @@ class OAuth2ClientConfiguration(typing.TypedDict):
     token_endpoint_auth_method: typing.NotRequired[TokenEndpointAuthMethod]
 
     grant_types: typing.NotRequired[
-        list[
-            typing.Literal["authorization_code", "refresh_token"]
-        ]
+        list[typing.Literal["authorization_code", "refresh_token"]]
     ]
 
     response_types: typing.NotRequired[list[typing.Literal["code"]]]
@@ -2450,9 +2601,7 @@ class OAuth2ClientConfigurationUpdate(typing.TypedDict):
     token_endpoint_auth_method: typing.NotRequired[TokenEndpointAuthMethod]
 
     grant_types: typing.NotRequired[
-        list[
-            typing.Literal["authorization_code", "refresh_token"]
-        ]
+        list[typing.Literal["authorization_code", "refresh_token"]]
     ]
 
     response_types: typing.NotRequired[list[typing.Literal["code"]]]
@@ -2582,7 +2731,7 @@ class OrganizationCreate(typing.TypedDict):
     socials: typing.NotRequired[list[OrganizationSocialLink] | None]
     """Link to social profiles."""
 
-    details: typing.NotRequired[OrganizationDetails | None]
+    details: typing.NotRequired[OrganizationDetailsInput | None]
     """Additional, private, business details Polar needs about active organizations for compliance (KYC)."""
 
     country: typing.NotRequired[CountryAlpha2Input | None]
@@ -2645,10 +2794,7 @@ class OrganizationCustomerPortalSettings(typing.TypedDict):
     customer: typing.NotRequired[CustomerPortalCustomerSettings]
 
 
-class OrganizationDetails(typing.TypedDict):
-    about: typing.NotRequired[str | None]
-    """Brief information about you and your business."""
-
+class OrganizationDetailsInput(typing.TypedDict):
     product_description: typing.NotRequired[str | None]
     """Description of digital products being sold."""
 
@@ -2658,15 +2804,6 @@ class OrganizationDetails(typing.TypedDict):
     pricing_models: typing.NotRequired[list[str]]
     """Pricing models used by the organization."""
 
-    intended_use: typing.NotRequired[str | None]
-    """How the organization will integrate and use Polar."""
-
-    customer_acquisition: typing.NotRequired[list[str]]
-    """Main customer acquisition channels."""
-
-    future_annual_revenue: typing.NotRequired[int | None]
-    """Estimated revenue in the next 12 months"""
-
     switching: typing.NotRequired[bool]
     """Switching from another platform?"""
 
@@ -2674,9 +2811,6 @@ class OrganizationDetails(typing.TypedDict):
         typing.Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ]
     """Which platform the organization is migrating from."""
-
-    previous_annual_revenue: typing.NotRequired[int | None]
-    """Revenue from last year if applicable."""
 
 
 class OrganizationDisputeSettingsUpdate(typing.TypedDict):
@@ -2689,9 +2823,6 @@ class OrganizationFeatureSettingsUpdate(typing.TypedDict):
 
     Other feature settings are managed by Polar staff: they're ignored if
     provided and keep their current value."""
-
-    member_model_enabled: typing.NotRequired[bool]
-    """If this organization has the Member model enabled"""
 
     checkout_localization_enabled: typing.NotRequired[bool]
     """If this organization has checkout localization enabled"""
@@ -2738,7 +2869,7 @@ class OrganizationUpdate(typing.TypedDict):
     socials: typing.NotRequired[list[OrganizationSocialLink] | None]
     """Links to social profiles."""
 
-    details: typing.NotRequired[OrganizationDetails | None]
+    details: typing.NotRequired[OrganizationDetailsInput | None]
     """Additional, private, business details Polar needs about active organizations for compliance (KYC)."""
 
     country: typing.NotRequired[CountryAlpha2Input | None]
@@ -2778,6 +2909,9 @@ class ProductBenefitsUpdate(typing.TypedDict):
 
 
 class ProductCreateOneTime(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -2827,6 +2961,9 @@ You can store up to **50 key-value pairs**."""
 
 
 class ProductCreateRecurring(typing.TypedDict):
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -3428,6 +3565,9 @@ class ProductPriceUnitBasedCreate(typing.TypedDict):
 class ProductUpdate(typing.TypedDict):
     """Schema to update a product."""
 
+    external_id: typing.NotRequired[str | None]
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
 
@@ -3481,9 +3621,7 @@ You can store up to **50 key-value pairs**."""
     medias: typing.NotRequired[list[str] | None]
     """List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."""
 
-    attached_custom_fields: typing.NotRequired[
-        list[AttachedCustomFieldCreate] | None
-    ]
+    attached_custom_fields: typing.NotRequired[list[AttachedCustomFieldCreate] | None]
 
 
 class PropertyAggregation(typing.TypedDict):
@@ -3638,6 +3776,9 @@ You can store up to **50 key-value pairs**."""
     product_id: str
     """The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow."""
 
+    currency: typing.NotRequired[PresentmentCurrency | None]
+    """The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."""
+
     customer_id: str
     """The ID of the customer to create the subscription for."""
 
@@ -3660,6 +3801,9 @@ You can store up to **50 key-value pairs**."""
 
     product_id: str
     """The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow."""
+
+    currency: typing.NotRequired[PresentmentCurrency | None]
+    """The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."""
 
     external_customer_id: str
     """The ID of the customer in your system to create the subscription for. It must already exist in Polar."""
@@ -3876,10 +4020,12 @@ BenefitCreate: typing.TypeAlias = (
     | BenefitSlackSharedChannelCreate
 )
 
-CheckoutLinkCreate: typing.TypeAlias = (
-    CheckoutLinkCreateProductPrice
-    | CheckoutLinkCreateProduct
-    | CheckoutLinkCreateProducts
+CheckoutConfirm: typing.TypeAlias = (
+    CheckoutConfirmStripe | CheckoutConfirmSharedPaymentToken
+)
+
+CheckoutCreate: typing.TypeAlias = (
+    CheckoutProductsCreate | CheckoutProductsExternalCreate
 )
 
 CustomFieldCreate: typing.TypeAlias = (
@@ -3931,10 +4077,7 @@ FileCreate: typing.TypeAlias = (
 )
 
 MetadataQuery: typing.TypeAlias = (
-    dict[
-        str, str | int | bool | list[str] | list[int] | list[bool]
-    ]
-    | None
+    dict[str, str | int | bool | list[str] | list[int] | list[bool]] | None
 )
 
 ProductCreate: typing.TypeAlias = ProductCreateRecurring | ProductCreateOneTime

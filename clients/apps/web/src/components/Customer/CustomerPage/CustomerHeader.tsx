@@ -1,5 +1,6 @@
 'use client'
 
+import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModal'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker, {
@@ -16,7 +17,7 @@ import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
 import { permissionDeniedMessage } from '@/utils/permissions'
 import { usePushRouteWithoutCache } from '@/utils/router'
-import MoreVert from '@mui/icons-material/MoreVert'
+import { MoreVert } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -60,13 +61,16 @@ export const CustomerHeader = ({
     hide: hideDeleteCustomerModal,
     isShown: isDeleteCustomerModalShown,
   } = useModal()
+  const {
+    show: showAddCreditsModal,
+    hide: hideAddCreditsModal,
+    isShown: isAddCreditsModalShown,
+  } = useModal()
   const safeCopy = useSafeCopy(toast)
   const canManageCustomers = useHasPermission(
     organization.id,
     'customers:manage',
   )
-  const memberModelEnabled =
-    !!organization.feature_settings?.member_model_enabled
   const createCustomerSession = useCallback(async () => {
     if (!canManageCustomers) {
       toast({
@@ -77,7 +81,7 @@ export const CustomerHeader = ({
     }
 
     let memberId: string | undefined
-    if (memberModelEnabled && customer.type === 'team') {
+    if (customer.type === 'team') {
       const { data: membersData } = await api.GET(
         '/v1/customers/{id}/members',
         {
@@ -120,7 +124,7 @@ export const CustomerHeader = ({
       title: 'Copied To Clipboard',
       description: `Customer Portal Link was copied to clipboard`,
     })
-  }, [canManageCustomers, safeCopy, customer, organization, memberModelEnabled])
+  }, [canManageCustomers, safeCopy, customer, organization])
 
   const deleteCustomer = useDeleteCustomer(
     customer.id,
@@ -194,6 +198,11 @@ export const CustomerHeader = ({
           <DropdownMenuItem onClick={showEditCustomerModal}>
             Edit Customer
           </DropdownMenuItem>
+          {canManageCustomers && (
+            <DropdownMenuItem onClick={showAddCreditsModal}>
+              Add Credits
+            </DropdownMenuItem>
+          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem destructive onClick={showDeleteCustomerModal}>
             Delete Customer
@@ -207,6 +216,17 @@ export const CustomerHeader = ({
           <EditCustomerModal
             customer={customer}
             onClose={hideEditCustomerModal}
+          />
+        }
+      />
+      <InlineModal
+        isShown={isAddCreditsModalShown}
+        hide={hideAddCreditsModal}
+        modalContent={
+          <AddCreditsModal
+            organization={organization}
+            customer={customer}
+            onClose={hideAddCreditsModal}
           />
         }
       />

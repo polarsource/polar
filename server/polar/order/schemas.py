@@ -18,7 +18,7 @@ from polar.custom_field.data import (
     CustomFieldDataInputMixin,
     CustomFieldDataOutputMixin,
 )
-from polar.customer.schemas.customer import CustomerBase
+from polar.customer.schemas.customer import CustomerBase, CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountMinimal
 from polar.exceptions import ResourceNotFound
 from polar.kit.address import Address, AddressInput
@@ -28,18 +28,27 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     TimestampedSchema,
     empty_str_to_none,
 )
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.order import (
     OrderBillingReason,
     OrderBillingReasonInternal,
     OrderStatus,
 )
+from polar.models.product import ProductBillingType
 from polar.organization.schemas import OrganizationID
-from polar.product.schemas import ProductBase, ProductPrice
-from polar.subscription.schemas import SubscriptionBase
+from polar.product.schemas import (
+    ProductBase,
+    ProductID,
+    ProductPrice,
+    ProductVersionOutputMixin,
+)
+from polar.subscription.schemas import SubscriptionBase, SubscriptionID
+from polar.version import V2026_10, V2027_01
 
 OrderID = Annotated[UUID4, Path(description="The order ID.")]
 
@@ -126,7 +135,9 @@ class OrderBase(TimestampedSchema, IDSchema):
 
     customer_id: UUID4
     product_id: UUID4 | None
-    product_price_id: SkipJsonSchema[UUID4 | None] = Field(
+    product_price_id: Annotated[
+        SkipJsonSchema[UUID4 | None], Version(up_to=V2026_10)
+    ] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -147,6 +158,7 @@ class OrderBase(TimestampedSchema, IDSchema):
     )
 
     @computed_field(
+        exclude_if=Version(up_to=V2026_10).exclude_if,
         description="Amount in cents, after discounts but before taxes.",
         deprecated=(
             "Use `net_amount`. "
@@ -156,7 +168,10 @@ class OrderBase(TimestampedSchema, IDSchema):
     def amount(self) -> SkipJsonSchema[int]:
         return self.net_amount
 
-    @computed_field(deprecated="Use `applied_balance_amount`.")
+    @computed_field(
+        exclude_if=Version(up_to=V2026_10).exclude_if,
+        deprecated="Use `applied_balance_amount`.",
+    )
     def from_balance_amount(self) -> SkipJsonSchema[int]:
         return self.applied_balance_amount
 
@@ -214,14 +229,14 @@ class OrderUser(Schema):
     github_username: str | None = Field(None)
 
 
-class OrderProduct(ProductBase, MetadataOutputMixin): ...
+class OrderProduct(ProductVersionOutputMixin, ProductBase, MetadataOutputMixin): ...
 
 
 OrderDiscount = Annotated[DiscountMinimal, MergeJSONSchema({"title": "OrderDiscount"})]
 
 
 class OrderSubscription(SubscriptionBase, MetadataOutputMixin):
-    user_id: SkipJsonSchema[UUID4] = Field(
+    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -264,7 +279,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         description="Currency of the platform fee.", examples=["usd"]
     )
     customer: OrderCustomer
-    user_id: SkipJsonSchema[UUID4] = Field(
+    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -273,7 +288,7 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         ),
         deprecated="Use `customer_id`.",
     )
-    user: SkipJsonSchema[OrderUser] = Field(
+    user: Annotated[SkipJsonSchema[OrderUser], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -283,7 +298,9 @@ class Order(CustomFieldDataOutputMixin, MetadataOutputMixin, OrderBase):
         deprecated="Use `customer`.",
     )
     product: OrderProduct | None
-    product_price: SkipJsonSchema[ProductPrice | None] = Field(
+    product_price: Annotated[
+        SkipJsonSchema[ProductPrice | None], Version(up_to=V2026_10)
+    ] = Field(
         deprecated="Use `items` instead.",
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
@@ -408,3 +425,57 @@ class OrderReceipt(Schema):
     """Order's receipt data."""
 
     url: str = Field(..., description="The URL to the receipt PDF.")
+
+
+class OrderListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    product_id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_product_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="ExternalProductID Filter",
+        description="Filter by product external ID.",
+    )
+    product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Field(
+        None,
+        title="ProductBillingType Filter",
+        description=(
+            "Filter by product billing type. "
+            "`recurring` will filter data corresponding "
+            "to subscriptions creations or renewals. "
+            "`one_time` will filter data corresponding to one-time purchases."
+        ),
+    )
+    discount_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="DiscountID Filter", description="Filter by discount ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[ExternalCustomerID] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by customer external ID.",
+    )
+    checkout_id: MultipleQueryFilter[UUID4] | None = Field(
+        None, title="CheckoutID Filter", description="Filter by checkout ID."
+    )
+    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Field(
+        None, title="SubscriptionID Filter", description="Filter by subscription ID."
+    )
+    status: MultipleQueryFilter[OrderStatus] | None = Field(
+        None, title="Status Filter", description="Filter by order status."
+    )
+    created_after: datetime | None = Field(
+        None,
+        description="Only include orders created after this date",
+    )
+    created_before: datetime | None = Field(
+        None,
+        description="Only include orders created before this date",
+    )

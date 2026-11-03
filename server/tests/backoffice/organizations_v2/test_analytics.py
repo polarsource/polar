@@ -25,7 +25,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSucceededPaymentsStats:
     async def test_uses_transaction_amount_in_usd(
         self,
@@ -92,7 +92,7 @@ class TestGetSucceededPaymentsStats:
         assert total_amount == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRiskScores:
     async def test_includes_succeeded_and_failed(
         self,
@@ -145,7 +145,7 @@ class TestGetRiskScores:
         assert risk_scores == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetRefundStats:
     async def test_uses_transaction_amount_in_usd(
         self,
@@ -303,7 +303,57 @@ class TestGetRefundStats:
         assert refund_amount == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
+class TestGetChargebackStopStats:
+    async def test_counts_only_prevented_and_early_warning(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        org = await create_organization(save_fixture, account)
+        customer = await create_customer(
+            save_fixture,
+            organization=org,
+            stripe_customer_id="STRIPE_CUST_CHARGEBACK_STOP",
+        )
+        statuses = [
+            DisputeStatus.prevented,
+            DisputeStatus.early_warning,
+            DisputeStatus.needs_response,
+            DisputeStatus.lost,
+        ]
+        for i, status in enumerate(statuses):
+            order = await create_order(save_fixture, customer=customer)
+            payment = await create_payment(
+                save_fixture, org, status=PaymentStatus.succeeded
+            )
+            await create_dispute(
+                save_fixture,
+                order,
+                payment,
+                status=status,
+                payment_processor_id=f"STRIPE_DISPUTE_{i}",
+            )
+
+        service = PaymentAnalyticsService(session)
+        assert await service.get_chargeback_stop_stats(org.id) == 2
+        dispute_count, _, chargeback_count, _ = await service.get_dispute_stats(org.id)
+        assert dispute_count == 2
+        assert chargeback_count == 1
+
+    async def test_no_alerts(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        org = await create_organization(save_fixture, account)
+        service = PaymentAnalyticsService(session)
+        assert await service.get_chargeback_stop_stats(org.id) == 0
+
+
+@pytest.mark.anyio
 class TestGetDisputeStats:
     async def test_uses_transaction_amount_in_usd(
         self,

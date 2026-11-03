@@ -1,14 +1,55 @@
 import abc
+import dataclasses
 import pathlib
 import re
 import subprocess
 import typing
+from typing import Literal
 
 from jinja2 import Environment, FileSystemLoader, Template
 
 from generator.ir import APIIR, APIVersion, LiteralType
 
 _LOOP_DIRECTORY_PATTERN = re.compile(r"^\[\[([\w\.]+)\]\]$")
+# The Outpost Lua scripts, which every SDK embeds in a string literal.
+OUTPOST_SCRIPTS_DIRECTORY = pathlib.Path(__file__).parent.parent / "outpost"
+_LITERAL_BREAKERS = ("`", "${", '"""', "\\")
+
+
+def load_outpost_scripts() -> dict[str, str]:
+    scripts = {}
+    for path in sorted(OUTPOST_SCRIPTS_DIRECTORY.glob("*.lua")):
+        script = path.read_text()
+        if breaker := next((b for b in _LITERAL_BREAKERS if b in script), None):
+            raise ValueError(
+                f"{path.name} contains {breaker!r}, which breaks its literal"
+            )
+        scripts[path.stem] = script
+    return scripts
+
+
+PrereleaseLabel = Literal["alpha", "beta", "rc"]
+_PRERELEASE_PATTERN = re.compile(r"^(alpha|beta|rc)\.(\d+)$")
+
+
+@dataclasses.dataclass(frozen=True)
+class Prerelease:
+    label: PrereleaseLabel
+    number: int
+
+    @classmethod
+    def parse(cls, value: str) -> Prerelease:
+        match = _PRERELEASE_PATTERN.match(value)
+        if not match:
+            raise ValueError(
+                f"Invalid prerelease '{value}'. "
+                "Expected <label>.<number> where label is one of: alpha, beta, rc."
+            )
+        label = typing.cast(PrereleaseLabel, match.group(1))
+        return cls(label=label, number=int(match.group(2)))
+
+    def __str__(self) -> str:
+        return f"{self.label}.{self.number}"
 
 
 class EmitterBase(abc.ABC):
@@ -17,9 +58,12 @@ class EmitterBase(abc.ABC):
         ir: APIIR,
         version: str,
         templates_dir: pathlib.Path | str,
+        *,
+        prerelease: Prerelease | None = None,
     ):
         self.ir = ir
         self.version = version
+        self.prerelease = prerelease
         self.templates_dir = pathlib.Path(templates_dir)
         self.env = Environment(
             loader=FileSystemLoader(self.templates_dir),
@@ -34,26 +78,32 @@ class EmitterBase(abc.ABC):
     @abc.abstractmethod
     def get_version_string(self, api: APIVersion) -> str: ...
 
+    @abc.abstractmethod
+    def format_version(self) -> str:
+        """Return the full SDK version string formatted for the target language."""
+
     def setup_environment(self) -> None:
         """Setup the Jinja2 environment with default context and filters.
 
         Override this method in subclasses to add custom filters, globals, or extensions.
         """
-        pass
 
     def run_post_actions(self, root_directory: pathlib.Path | str) -> None:
         """Run any post-processing actions after emitting files.
 
         Override this method in subclasses to perform actions like formatting or linting.
         """
-        pass
 
     def get_context(self) -> dict[str, typing.Any]:
         """Get the context dictionary for template rendering.
 
         Override this method in subclasses to add custom context variables.
         """
-        return {"ir": self.ir, "version": self.version}
+        return {
+            "ir": self.ir,
+            "version": self.format_version(),
+            "outpost_scripts": load_outpost_scripts(),
+        }
 
     def get_version_context(self, api: APIVersion) -> dict[str, typing.Any]:
         """Get the context dictionary for template rendering for a specific API version.

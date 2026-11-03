@@ -26,7 +26,7 @@ async def create_oauth2_state(
     return oauth2_state
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteExpired:
     async def test_deletes_only_expired(
         self, session: AsyncSession, save_fixture: SaveFixture

@@ -180,8 +180,7 @@
                     "group": "CLI commands",
                     "pages": [
                       "integrate/cli/reference/auth",
-                      "integrate/cli/reference/listen",
-                      "integrate/cli/reference/trigger",
+                      "integrate/cli/reference/webhook",
                       "integrate/cli/reference/update"
                     ]
                   },
@@ -1174,7 +1173,12 @@
                   },
                   {
                     "group": "Customer Meters",
-                    "pages": ["GET /v1/customer-meters/{id}", "GET /v1/customer-meters/"]
+                    "pages": [
+                      "GET /v1/customer-meters/{id}",
+                      "GET /v1/customer-meters/",
+                      "POST /v1/customer-meters/credits",
+                      "POST /v1/customer-meters/credits/{id}/reverse"
+                    ]
                   },
                   {
                     "group": "License Keys",
@@ -1466,6 +1470,14 @@
     }
   },
   "redirects": [
+    {
+      "source": "/integrate/cli/reference/listen",
+      "destination": "/integrate/cli/reference/webhook"
+    },
+    {
+      "source": "/integrate/cli/reference/trigger",
+      "destination": "/integrate/cli/reference/webhook"
+    },
     {
       "source": "/api",
       "destination": "/api-reference"

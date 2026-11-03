@@ -1,37 +1,25 @@
-import { describeValue } from '@/utils/billing-config/describe'
 import type { AppliedEntry } from '@/schemas/BillingConfig'
+import {
+  Rendered,
+  describeValue,
+  name,
+  priceGroups,
+} from '@/utils/billing-config/describe'
+import { recurrence } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-const MARKS: Record<AppliedEntry['action'], string> = {
+type Action = AppliedEntry['action']
+type Change = AppliedEntry['diff'][number]
+type Color = (text: string) => string
+
+export const MARKS: Record<Action, string> = {
   created: ui.green('+'),
   updated: ui.yellow('~'),
   unchanged: ui.dim('='),
+  removed: ui.red('-'),
 }
 
-const bySection = (entries: ReadonlyArray<AppliedEntry>) =>
-  [...new Set(entries.map((entry) => entry.section))].map((section) => ({
-    section,
-    entries: entries.filter((entry) => entry.section === section),
-  }))
-
-type Labels = Record<AppliedEntry['action'], string>
-
-export const DONE: Labels = {
-  created: 'created',
-  updated: 'updated',
-  unchanged: 'unchanged',
-}
-
-export const PLANNED: Labels = {
-  created: 'will be created',
-  updated: 'will be updated',
-  unchanged: 'unchanged',
-}
-
-const DIFF_INDENT = ui.INDENT.repeat(4)
 const INLINE_LIMIT = 40
-
-type Color = (text: string) => string
 
 const describe = (input: unknown) => {
   if (input === undefined || input === null) return undefined
@@ -42,94 +30,212 @@ const describe = (input: unknown) => {
   return inline.length <= INLINE_LIMIT ? inline : JSON.stringify(input, null, 2)
 }
 
-const lines = (input: unknown) => (describe(input) ?? 'unset').split('\n')
+export const valueLines = (input: unknown) =>
+  (describe(input) ?? 'unset').split('\n')
 
-const isInline = (input: unknown) => lines(input).length === 1
+const isInline = (input: unknown) => valueLines(input).length === 1
 
 const paint = (input: unknown, color: Color) =>
   input === undefined || input === null
     ? ui.dim('unset')
-    : color(lines(input)[0] ?? '')
+    : color(valueLines(input)[0] ?? '')
 
 const row = (
+  indent: string,
   label: string,
   width: number,
   first: string,
   rest: string[] = [],
 ) => [
-  `${DIFF_INDENT}${ui.dim(label.padEnd(width))}  ${first}`,
-  ...rest.map((line) => `${DIFF_INDENT}${' '.repeat(width + 2)}${line}`),
+  `${indent}${ui.dim(label.padEnd(width))}  ${first}`,
+  ...rest.map((line) => `${indent}${' '.repeat(width + 2)}${line}`),
 ]
 
-const block = (input: unknown, prefix: string, color: Color) =>
-  lines(input).map(
-    (line, index) =>
-      `${DIFF_INDENT}${ui.INDENT}${color(`${index === 0 ? prefix : ' '.repeat(prefix.length)}${line}`)}`,
-  )
+export type Mark = ' ' | '-' | '+'
 
-const formatChange = (
-  change: AppliedEntry['diff'][number],
-  action: AppliedEntry['action'],
-  width: number,
+const sharedPrefix = (
+  before: ReadonlyArray<string>,
+  after: ReadonlyArray<string>,
 ) => {
-  if (action === 'created') {
-    const [first = '', ...rest] = lines(change.after).map(ui.green)
-    return row(change.field, width, first, rest)
-  }
-  if (isInline(change.before) && isInline(change.after)) {
-    return row(
-      change.field,
-      width,
-      `${paint(change.before, ui.red)} ${ui.dim('→')} ${paint(change.after, ui.green)}`,
-    )
-  }
+  const index = before.findIndex((line, i) => line !== after[i])
+  return Math.min(index === -1 ? before.length : index, after.length)
+}
+
+const marked = (mark: Mark, lines: ReadonlyArray<string>) =>
+  lines.map((line) => ({ mark, line }))
+
+export const lineDiff = (
+  before: ReadonlyArray<string>,
+  after: ReadonlyArray<string>,
+) => {
+  const start = sharedPrefix(before, after)
+  const end = sharedPrefix(
+    before.slice(start).toReversed(),
+    after.slice(start).toReversed(),
+  )
   return [
-    `${DIFF_INDENT}${ui.dim(change.field)}`,
-    ...block(change.before, '- ', ui.red),
-    ...block(change.after, '+ ', ui.green),
+    ...marked(' ', before.slice(0, start)),
+    ...marked('-', before.slice(start, before.length - end)),
+    ...marked('+', after.slice(start, after.length - end)),
+    ...marked(' ', before.slice(before.length - end)),
   ]
 }
 
-const formatDiff = (entry: AppliedEntry, width: number) =>
-  entry.diff.flatMap((change) => formatChange(change, entry.action, width))
+const MARK_COLORS: Record<Mark, Color> = {
+  ' ': (text) => text,
+  '-': ui.red,
+  '+': ui.green,
+}
 
-const name = (input: string) => ui.printable(input).replace(/\s+/g, ' ').trim()
+const formatChange = (
+  indent: string,
+  change: Change,
+  action: Action,
+  width: number,
+) => {
+  if (action === 'created') {
+    const [first = '', ...rest] = valueLines(change.after).map(ui.green)
+    return row(indent, change.field, width, first, rest)
+  }
+  const inline = `${paint(change.before, ui.red)} ${ui.dim('→')} ${paint(change.after, ui.green)}`
+  const fits =
+    indent.length + width + 2 + Bun.stringWidth(inline) <= ui.boxInner()
+  if (isInline(change.before) && isInline(change.after) && fits) {
+    return row(indent, change.field, width, inline)
+  }
+  return [
+    `${indent}${ui.dim(change.field)}`,
+    ...lineDiff(valueLines(change.before), valueLines(change.after)).map(
+      ({ mark, line }) =>
+        `${indent}${ui.INDENT}${MARK_COLORS[mark](`${mark} ${line}`)}`,
+    ),
+  ]
+}
 
-const sanitize = (entry: AppliedEntry): AppliedEntry => ({
-  ...entry,
-  id: name(entry.id),
-  diff: entry.diff.map((change) => ({ ...change, field: name(change.field) })),
+const expand = (change: Change): Change[] => {
+  const before = priceGroups(change.before)
+  const after = priceGroups(change.after)
+  if (before === undefined && after === undefined) return [change]
+  const labels = [
+    ...new Set([...(before ?? []), ...(after ?? [])].map(({ label }) => label)),
+  ]
+  return labels.flatMap((label) => {
+    const was = before?.find((group) => group.label === label)?.text
+    const is = after?.find((group) => group.label === label)?.text
+    return was?.text === is?.text
+      ? []
+      : [{ field: `${change.field} (${label})`, before: was, after: is }]
+  })
+}
+
+const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
+  const interval = diff.find((change) => change.field === 'recurring_interval')
+  const count = diff.find(
+    (change) => change.field === 'recurring_interval_count',
+  )
+  if (interval === undefined || count === undefined) return [...diff]
+  const merged: Change = {
+    field: 'recurrence',
+    before: new Rendered(recurrence(interval.before, count.before)),
+    after: new Rendered(recurrence(interval.after, count.after)),
+  }
+  return diff.flatMap((change) =>
+    change === interval ? [merged] : change === count ? [] : [change],
+  )
+}
+
+const SETTING_VALUES: Record<string, (value: string) => string> = {
+  currency: (value) => value.toUpperCase(),
+  tax: (value) => value,
+}
+
+const settingValue = (field: string, value: unknown) =>
+  typeof value === 'string' && SETTING_VALUES[field]
+    ? new Rendered(SETTING_VALUES[field](value))
+    : value
+
+const renderSetting = (change: Change): Change => ({
+  ...change,
+  before: settingValue(change.field, change.before),
+  after: settingValue(change.field, change.after),
 })
 
-export const formatEntries = (
-  raw: ReadonlyArray<AppliedEntry>,
-  labels: Labels = DONE,
+export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
+  mergeRecurrence(diff)
+    .map((change) => (section === 'settings' ? renderSetting(change) : change))
+    .flatMap(expand)
+    .map((change) => ({ ...change, field: name(change.field) }))
+
+export const formatRows = (
+  indent: string,
+  diff: ReadonlyArray<Change>,
+  action: Action,
+  section?: string,
 ) => {
-  const entries = raw.map(sanitize)
-  const width = Math.max(...entries.map((entry) => entry.id.length))
-  const fieldWidth = Math.max(
-    width - ui.INDENT.length,
-    ...entries.flatMap((entry) =>
-      entry.diff.map((change) => change.field.length),
-    ),
+  const changes = fieldChanges(diff, section)
+  const width = Math.max(0, ...changes.map((change) => change.field.length))
+  return changes.flatMap((change) =>
+    formatChange(indent, change, action, width),
   )
-  return bySection(entries)
-    .map(({ section, entries }) =>
-      [
-        `${ui.INDENT}${ui.bold(section)}`,
-        ...entries.flatMap((entry) => [
-          `${ui.INDENT}${ui.INDENT}${MARKS[entry.action]} ${entry.id.padEnd(width)}  ${ui.dim(labels[entry.action])}`,
-          ...formatDiff(entry, fieldWidth),
-        ]),
-      ].join('\n'),
-    )
-    .join('\n\n')
+}
+
+type Labels = Record<Action, string>
+
+const DONE: Labels = {
+  created: 'created',
+  updated: 'updated',
+  unchanged: 'unchanged',
+  removed: 'removed',
+}
+
+const COLORS: Record<Action, Color> = {
+  created: ui.green,
+  updated: ui.yellow,
+  unchanged: ui.dim,
+  removed: ui.red,
+}
+
+const count = (entries: ReadonlyArray<AppliedEntry>, action: Action) =>
+  entries.filter((entry) => entry.action === action).length
+
+const counted = (
+  entries: ReadonlyArray<AppliedEntry>,
+  action: Action,
+  label: string,
+) => {
+  const total = count(entries, action)
+  return (total === 0 ? ui.dim : COLORS[action])(`${total} ${label}`)
 }
 
 export const tally = (entries: ReadonlyArray<AppliedEntry>) =>
-  (['created', 'updated', 'unchanged'] as const)
-    .map(
-      (action) =>
-        `${entries.filter((entry) => entry.action === action).length} ${action}`,
-    )
+  (['created', 'updated', 'removed', 'unchanged'] as const)
+    .filter((action) => action !== 'removed' || count(entries, action) > 0)
+    .map((action) => counted(entries, action, DONE[action]))
     .join(', ')
+
+export const changeCount = (entries: ReadonlyArray<AppliedEntry>) =>
+  count(entries, 'created') +
+  count(entries, 'updated') +
+  count(entries, 'removed')
+
+export const planTally = (entries: ReadonlyArray<AppliedEntry>) =>
+  [
+    counted(entries, 'updated', 'to change'),
+    counted(entries, 'created', 'to add'),
+    ...(count(entries, 'removed') > 0
+      ? [counted(entries, 'removed', 'to remove')]
+      : []),
+    counted(entries, 'unchanged', 'unchanged'),
+  ].join(', ')
+
+export const updatedBenefits = (entries: ReadonlyArray<AppliedEntry>) =>
+  new Set(
+    entries
+      .filter(
+        ({ section, action }) => section === 'benefits' && action === 'updated',
+      )
+      .map(({ id }) => name(id)),
+  )
+
+export const planSummary = (entries: ReadonlyArray<AppliedEntry>) =>
+  `${ui.INDENT}${ui.dim('Plan:')} ${planTally(entries)}`

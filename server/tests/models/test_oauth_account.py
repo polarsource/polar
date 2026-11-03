@@ -19,7 +19,7 @@ async def _build(user: User) -> OAuthAccount:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSetTokens:
     async def test_dual_writes_plain_and_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
@@ -68,7 +68,7 @@ class TestSetTokens:
         assert oauth_account.refresh_token_encrypted is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestEncryptClassmethods:
     """Covers the classmethods used by the Core ``update().values()`` write
     paths in factor.py / apple.py, which don't go through the instance setters."""
@@ -102,7 +102,7 @@ class TestEncryptClassmethods:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetTokens:
     async def test_decrypts_encrypted(self, user: User) -> None:
         oauth_account = await _build(user)
@@ -141,7 +141,7 @@ class TestGetTokens:
         assert enrollment.refresh_token == "the-refresh-token"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPersistence:
     async def test_round_trip_through_database(
         self, save_fixture: SaveFixture, session: AsyncSession, user: User

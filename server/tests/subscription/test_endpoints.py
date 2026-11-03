@@ -3,7 +3,6 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
 import pytest
-import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -24,6 +23,7 @@ from polar.models.customer_seat import SeatStatus
 from polar.models.order import OrderStatus
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
+from polar.models.subscription_meter import SubscriptionMeter
 from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
@@ -36,6 +36,7 @@ from tests.fixtures.random_objects import (
     create_canceled_subscription,
     create_customer,
     create_customer_seat,
+    create_meter,
     create_order,
     create_product,
     create_subscription,
@@ -43,7 +44,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def subscription_organization_second(
     save_fixture: SaveFixture,
     product_organization_second: Product,
@@ -56,7 +57,7 @@ async def subscription_organization_second(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSubscriptions:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -129,6 +130,47 @@ class TestListSubscriptions:
 
         json = response.json()
         assert json["pagination"]["total_count"] == 2
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_external_product_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        old_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+        old_pro.is_current = False
+        await save_fixture(old_pro)
+        new_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
+        for product in (old_pro, new_pro, product_second):
+            await create_active_subscription(
+                save_fixture, product=product, customer=customer
+            )
+
+        response = await client.get(
+            "/v1/subscriptions/", params={"external_product_id": "pro"}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert {item["product_id"] for item in json["items"]} == {
+            str(old_pro.id),
+            str(new_pro.id),
+        }
 
     @pytest.mark.auth
     async def test_customer_cancellation_reason(
@@ -309,7 +351,7 @@ class TestListSubscriptions:
         assert json["pagination"]["total_count"] == 1
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateSubscription:
     async def test_anonymous(
         self,
@@ -428,7 +470,7 @@ class TestCreateSubscription:
         assert json["metadata"] == metadata
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionProductUpdate:
     async def test_anonymous(
         self, client: AsyncClient, session: AsyncSession, subscription: Subscription
@@ -753,7 +795,7 @@ class TestSubscriptionProductUpdate:
         assert pending_update["discount_unset"] is True
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateMetadata:
     @pytest.mark.auth
     async def test_valid(
@@ -806,7 +848,7 @@ class TestSubscriptionUpdateMetadata:
         assert updated_subscription["metadata"] == {"reference_id": "ABC"}
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateMixedFields:
     @pytest.mark.auth
     async def test_mixed_seats_and_discount_returns_422(
@@ -838,7 +880,7 @@ class TestSubscriptionUpdateMixedFields:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateCancel:
     async def test_anonymous(
         self,
@@ -962,7 +1004,7 @@ class TestSubscriptionUpdateCancel:
         assert updated_subscription["status"] == SubscriptionStatus.past_due
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateUncancel:
     async def test_anonymous(
         self,
@@ -1093,7 +1135,7 @@ class TestSubscriptionUpdateUncancel:
         }
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateRevoke:
     async def test_anonymous(
         self,
@@ -1184,7 +1226,7 @@ class TestSubscriptionUpdateRevoke:
         assert updated_subscription["customer_cancellation_comment"] == comment
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionRevoke:
     async def test_anonymous(
         self,
@@ -1245,7 +1287,7 @@ class TestSubscriptionRevoke:
         assert updated_subscription["status"] == SubscriptionStatus.canceled
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateSeats:
     async def test_anonymous(
         self, client: AsyncClient, subscription: Subscription
@@ -1465,7 +1507,7 @@ class TestSubscriptionUpdateSeats:
         assert updated["amount"] == 10000
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateTrial:
     @pytest.mark.auth
     async def test_end_trial_payment_failure_returns_402(
@@ -1552,7 +1594,7 @@ class TestSubscriptionUpdateTrial:
         assert datetime.fromisoformat(updated["trial_end"]) == new_trial_end
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateBillingPeriod:
     async def test_anonymous(
         self,
@@ -1707,7 +1749,7 @@ EXPORT_DEFAULT_HEADER = (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestExportSubscriptions:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/subscriptions/export")
@@ -1917,6 +1959,47 @@ class TestExportSubscriptions:
         assert csv_lines == ["Product", product_second.name]
 
     @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_external_product_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        old_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Pro v1",
+            external_id="pro",
+        )
+        old_pro.is_current = False
+        await save_fixture(old_pro)
+        new_pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Pro v2",
+            external_id="pro",
+        )
+        for product in (old_pro, new_pro, product_second):
+            await create_active_subscription(
+                save_fixture, product=product, customer=customer
+            )
+
+        response = await client.get(
+            "/v1/subscriptions/export",
+            params={"external_product_id": "pro", "columns": ["product"]},
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert sorted(csv_lines[1:]) == ["Pro v1", "Pro v2"]
+
+    @pytest.mark.auth
     async def test_naive_date_bounds(
         self, client: AsyncClient, user_organization: UserOrganization
     ) -> None:
@@ -2002,7 +2085,7 @@ class TestExportSubscriptions:
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetSubscription:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}")
@@ -2051,7 +2134,7 @@ class TestGetSubscription:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetChargePreview:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}/charge-preview")
@@ -2122,7 +2205,81 @@ class TestGetChargePreview:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
+class TestGetMeterChargePreview:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(
+            f"/v1/subscriptions/{uuid.uuid4()}/meter-charge-preview"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_usage_on_renewal_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        period_end = utc_now() + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=period_end,
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_end = period_end
+        meter = await create_meter(save_fixture, organization=organization)
+        await save_fixture(
+            SubscriptionMeter(subscription=subscription, meter=meter, amount=500)
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/meter-charge-preview"
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=utc_now() + timedelta(days=60),
+        )
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_end = utc_now() + timedelta(days=10)
+        meter = await create_meter(save_fixture, organization=organization)
+        await save_fixture(
+            SubscriptionMeter(subscription=subscription, meter=meter, amount=500)
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/meter-charge-preview"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["metered_amount"] == 500
+        assert json["total_amount"] == 500
+
+
+@pytest.mark.anyio
 class TestGetCancelPreview:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}/cancel-preview")
@@ -2224,7 +2381,7 @@ class TestGetCancelPreview:
         assert json["outstanding_amount"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdatePause:
     async def test_anonymous(
         self,
@@ -2328,7 +2485,7 @@ class TestSubscriptionUpdatePause:
         assert response.status_code == 409
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestSubscriptionUpdateResume:
     @pytest.mark.auth
     async def test_valid(
@@ -2419,3 +2576,124 @@ class TestSubscriptionUpdateResume:
         )
 
         assert response.status_code == 409
+
+
+@pytest.fixture
+async def current_product(
+    save_fixture: SaveFixture, organization: Organization
+) -> Product:
+    organization.feature_settings = {"config_as_code_enabled": True}
+    await save_fixture(organization)
+    return await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=SubscriptionRecurringInterval.month,
+        external_id="pro",
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestBulkUpdate:
+    async def test_anonymous(
+        self, client: AsyncClient, current_product: Product
+    ) -> None:
+        response = await client.post(
+            "/v1/subscriptions/bulk-update",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(current_product.id),
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_current_target(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        current_product: Product,
+    ) -> None:
+        current_product.is_current = False
+        await save_fixture(current_product)
+
+        response = await client.post(
+            "/v1/subscriptions/bulk-update",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(current_product.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_without_catalog_versioning(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        current_product: Product,
+    ) -> None:
+        organization.feature_settings = {}
+        await save_fixture(organization)
+
+        response = await client.post(
+            "/v1/subscriptions/bulk-update",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(current_product.id),
+            },
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        current_product: Product,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.subscription.bulk_update.enqueue_job")
+
+        response = await client.post(
+            "/v1/subscriptions/bulk-update",
+            json={
+                "product_external_id": "pro",
+                "target_product_id": str(current_product.id),
+            },
+        )
+
+        assert response.status_code == 202
+        json = response.json()
+        assert json["organization_id"] == str(organization.id)
+        assert json["product_external_id"] == "pro"
+        assert json["target_product_id"] == str(current_product.id)
+        assert json["proration_behavior"] == SubscriptionProrationBehavior.next_period
+        assert json["completed_at"] is None
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.bulk_update", bulk_update_id=uuid.UUID(json["id"])
+        )
+
+        response = await client.get(f"/v1/subscriptions/bulk-update/{json['id']}")
+
+        assert response.status_code == 200
+        assert response.json()["id"] == json["id"]
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestGetBulkUpdate:
+    @pytest.mark.auth
+    async def test_not_found(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get(f"/v1/subscriptions/bulk-update/{uuid.uuid4()}")
+
+        assert response.status_code == 404

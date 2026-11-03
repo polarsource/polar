@@ -46,6 +46,10 @@ const describe = (issue: ConfigIssue): Problem => {
           : lowercaseFirst(issue.message),
       location: issue.location,
       path: issue.path,
+      help:
+        issue.code === 'unknown_event'
+          ? `The meter counts events with this name, so it stays at zero until your app sends one. Fine for a new event; if the name looks wrong, compare it with ${ui.command('polar events list_names')}.`
+          : undefined,
     }
   }
   const base = {
@@ -89,6 +93,13 @@ const describe = (issue: ConfigIssue): Problem => {
         title: `Duplicate external_id ${issue.got ?? quote(key)}`,
         label: 'already used by another entry',
       }
+    case 'missing_currency':
+    case 'not_supported':
+    case 'unknown_reference':
+    case 'deprecated_reference':
+    case 'type_changed':
+    case 'interval_changed':
+      return { ...base, title: message, label }
     default:
       return {
         ...base,

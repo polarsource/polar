@@ -244,6 +244,8 @@ export default {
       confirmationTokenFailed:
         'Kunde inte skapa bekräftelsetoken, försök igen senare.',
       paymentNotCompleted: 'Betalningen genomfördes inte. Försök igen.',
+      paymentFormNotLoaded:
+        'Betalningsformuläret kunde inte laddas. Uppdatera sidan och försök igen.',
     },
     cta: {
       startTrial: 'Starta testperiod',

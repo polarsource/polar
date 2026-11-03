@@ -4,7 +4,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { useMembers } from '@/hooks/queries/members'
 import { useMultipleCustomerSeats } from '@/hooks/queries/seats'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
   Avatar,
@@ -25,7 +25,6 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo, useState } from 'react'
-import { isCustomerMembersEnabled } from './isCustomerMembersEnabled'
 import { EditMemberModal } from '../EditMemberModal'
 import { seatStatusDisplayConfig } from '../../Seats/seatStatus'
 
@@ -61,7 +60,7 @@ export const MembersSection = ({
   const { data: membersData, isLoading } = useMembers(customer.id)
   const copyMemberLoginLink = useCopyMemberLoginLink(organization.slug)
 
-  const isEnabled = isCustomerMembersEnabled(organization, customer)
+  const isEnabled = customer.type === 'team'
 
   // Filters out non-seat subscriptions and orders to minimize no. requests.
   // Could in future be replaced with an endpoint

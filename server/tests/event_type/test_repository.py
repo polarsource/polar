@@ -7,7 +7,7 @@ from polar.models import EventType, Organization
 from polar.postgres import AsyncSession
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_ensure_by_names_is_idempotent(
     session: AsyncSession, organization: Organization
 ) -> None:
@@ -35,7 +35,7 @@ async def test_ensure_by_names_is_idempotent(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 async def test_ensure_by_names_restores_soft_deleted_type(
     session: AsyncSession, organization: Organization
 ) -> None:

@@ -3,7 +3,6 @@ from collections.abc import AsyncIterator
 from unittest.mock import patch
 
 import pytest
-import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.models import OrganizationReview
@@ -49,7 +48,7 @@ def _reply(body: str) -> ReviewAppealSupportCaseMessageCreate:
     )
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def denied_review(
     save_fixture: SaveFixture, organization: Organization
 ) -> OrganizationReview:
@@ -70,7 +69,7 @@ async def _participants(
     return list(await repository.get_all(statement))
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestHumanReview:
     async def test_creates_linked_case(
         self,
@@ -147,7 +146,7 @@ class TestRequestHumanReview:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReplyAndLock:
     async def test_locked_after_final_decision(
         self,
@@ -189,7 +188,7 @@ class TestReplyAndLock:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestReplyNotifiesMerchant:
     async def test_merchant_visible_reply_enqueues_email(
         self,
@@ -283,7 +282,7 @@ class TestReplyNotifiesMerchant:
         publish.assert_called_once_with(case.organization_id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestPostAppealGreeting:
     async def test_posts_greeting(
         self,

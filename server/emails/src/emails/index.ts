@@ -2,6 +2,7 @@ import { ChargebackPreventionRefund } from './chargeback_prevention_refund'
 import { CustomerEmailChangedNotification } from './customer_email_changed_notification'
 import { CustomerEmailUpdateVerification } from './customer_email_update_verification'
 import { CustomerSessionCode } from './customer_session_code'
+import { DomainVerificationLost } from './domain_verification_lost'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
 import { NotificationCreditsGranted } from './notification_credits_granted'
@@ -39,6 +40,7 @@ import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionTrialConversionReminder } from './subscription_trial_conversion_reminder'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
 import { SubscriptionUpdated } from './subscription_updated'
+import { SubscriptionUsageInvoice } from './subscription_usage_invoice'
 import { SupportCaseOrganizationNewMessage } from './support_case_organization_new_message'
 import { WebhookEndpointDisabled } from './webhook_endpoint_disabled'
 
@@ -70,6 +72,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   subscription_trial_conversion_reminder: SubscriptionTrialConversionReminder,
   subscription_uncanceled: SubscriptionUncanceled,
   subscription_updated: SubscriptionUpdated,
+  subscription_usage_invoice: SubscriptionUsageInvoice,
   support_case_organization_new_message: SupportCaseOrganizationNewMessage,
   webhook_endpoint_disabled: WebhookEndpointDisabled,
   notification_new_sale: NotificationNewSale,
@@ -79,6 +82,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   notification_subscription_cancellation: NotificationSubscriptionCancellation,
   notification_credits_granted: NotificationCreditsGranted,
   notification_file_flagged_malicious: NotificationFileFlaggedMalicious,
+  domain_verification_lost: DomainVerificationLost,
   chargeback_prevention_refund: ChargebackPreventionRefund,
   polar_self_subscription_cancellation: PolarSelfSubscriptionCancellation,
   polar_self_subscription_confirmation: PolarSelfSubscriptionConfirmation,

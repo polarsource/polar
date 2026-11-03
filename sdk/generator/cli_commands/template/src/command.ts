@@ -25,6 +25,9 @@ export const command = Command.make(
 {% if needs_confirmation %}
     confirm,
 {% endif %}
+{% if selectable %}
+    fields,
+{% endif %}
 {% if method.path_params %}
     path: {
 {% for param in method.path_params %}
@@ -49,7 +52,7 @@ export const command = Command.make(
     },
 {% endif %}
   },
-  ({% if method.path_params or input_type or needs_confirmation or not method.requires_authentication %}config{% endif %}) => Effect.gen(function* () {
+  ({% if method.path_params or input_type or needs_confirmation or selectable or not method.requires_authentication %}config{% endif %}) => Effect.gen(function* () {
     const api = yield* ApiRuntime
 {% if input_type %}
     const {% if has_organization and input_type == 'Body' %}{ organization_id: organizationId, ...{{ input_type | lower }} }{% else %}{{ input_type | lower }}{% endif %} = mergeInput<{{ input_type }}>(config.data, {
@@ -80,6 +83,9 @@ export const command = Command.make(
 {% endif %}
     yield* api.execute({
       operationId: {{ method.operation_id | quote }},
+{% if is_next %}
+      apiVersion: {{ api.version | quote }},
+{% endif %}
       method: {{ method.http_method | quote }},
       requiresConfirmation: {{ confirmation_expression }},
       confirm: {% if needs_confirmation %}config.confirm{% else %}false{% endif %},
@@ -93,6 +99,9 @@ export const command = Command.make(
 {% else %}
       organizationId: {{ input_type | lower }}.organization_id,
 {% endif %}
+{% endif %}
+{% if selectable %}
+      fields: config.fields,
 {% endif %}
 {% if preview %}
       preview: {

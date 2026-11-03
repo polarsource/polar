@@ -112,6 +112,19 @@ class Checkout(
             "created_at",
             postgresql_where="anonymized_at IS NULL AND status = 'expired'",
         ),
+        Index(
+            "ix_checkouts_organization_id_created_at", "organization_id", "created_at"
+        ),
+        {
+            "postgresql_with": {
+                "autovacuum_vacuum_threshold": 1000,
+                "autovacuum_vacuum_scale_factor": 0.01,
+                "autovacuum_vacuum_insert_threshold": 1000,
+                "autovacuum_vacuum_insert_scale_factor": 0.01,
+                "autovacuum_analyze_threshold": 1000,
+                "autovacuum_analyze_scale_factor": 0.02,
+            }
+        },
     )
 
     payment_processor: Mapped[PaymentProcessor] = mapped_column(

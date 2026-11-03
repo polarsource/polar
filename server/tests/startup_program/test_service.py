@@ -76,7 +76,7 @@ def client_mock(mocker: MockerFixture) -> MagicMock:
     return client
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkInvited:
     async def test_raises_when_not_configured(
         self,
@@ -230,7 +230,7 @@ class TestMarkInvited:
         assert "Startup Program" in call_kwargs["subject"]
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUninvite:
     @pytest.mark.usefixtures("configure_startup_program")
     async def test_deletes_discount_and_clears_pointer(
@@ -327,7 +327,7 @@ class TestUninvite:
             await startup_program_service.uninvite(organization)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetStatus:
     @pytest.mark.usefixtures("configure_startup_program")
     async def test_none_when_no_customer(self, client_mock: MagicMock) -> None:
@@ -399,7 +399,7 @@ class TestGetStatus:
         )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResolveCheckoutDiscountId:
     @pytest.mark.usefixtures("configure_startup_program")
     async def test_returns_id_when_invited(self, client_mock: MagicMock) -> None:

@@ -22,7 +22,7 @@ def _auth_subject(scopes: set[Scope]) -> AuthSubject[User]:
     return AuthSubject(user, scopes, session)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestWebUserAuthorizer:
     async def test_passes_when_required_scope_present(self) -> None:
         dependency = WebUserAuthorizer({Scope.user_write})
@@ -83,7 +83,7 @@ class TestWebUserAuthorizer:
             await dependency(auth_subject=auth_subject)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestImpersonationContract:
     """Verify the system invariant that ``READ_ONLY_SCOPES`` (the scope set
     given to backoffice impersonation sessions) is read-able everywhere but

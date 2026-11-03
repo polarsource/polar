@@ -71,13 +71,6 @@
 }
 
 @font-face {
-  font-family: 'Louize';
-  font-style: italic;
-  font-display: swap;
-  src: url('/fonts/Louize-Italic-205TF.otf') format('opentype');
-}
-
-@font-face {
   font-family: 'GeistMono';
   font-style: normal;
   font-display: swap;
@@ -103,16 +96,6 @@
   --font-mono: 'GeistMono', monospace;
 
   --text-xxs: 0.65rem;
-
-  /* Brand microsite palette (dark-only /brand page). Single source of truth
-     for the otherwise hard-coded hex values used across Brand components. */
-  --color-brand-surface: #090909;
-  --color-brand-raised: #141414;
-  --color-brand-line: #7b7b7b;
-  --color-brand-muted: #7b7b7b;
-  --color-brand-foreground: #d8d8d8;
-  --color-brand-bright: #f5f6fa;
-  --color-brand-accent: #625fff;
 
   --color-blue-50: oklch(0.97 0.014 254.604);
   --color-blue-100: oklch(0.932 0.032 255.585);
@@ -471,5 +454,54 @@ pre.shiki {
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+@keyframes settle {
+  from {
+    opacity: 0.25;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
   }
 }

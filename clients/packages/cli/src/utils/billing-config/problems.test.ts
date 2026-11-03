@@ -40,6 +40,7 @@ describe('formatProblems for a generated config', () => {
       [
         '  Warning: No events named "tool_call" have been received yet',
         '    at polar.config.ts › meters.tool_calls.filter.clauses.0.value',
+        '  help: The meter counts events with this name, so it stays at zero until your app sends one. Fine for a new event; if the name looks wrong, compare it with polar events list_names.',
         '',
         '  Error: Cannot change "filter" of meters.tool_calls',
         '    at polar.config.ts › meters.tool_calls.filter',
@@ -54,5 +55,19 @@ describe('formatProblems for a generated config', () => {
     )
     expect(output).toContain('at polar.config.ts › meters.tool_calls.name')
     expect(output).toContain('help: Got 1.')
+  })
+
+  test('shows the missing currency message', () => {
+    const missing: ConfigIssue = {
+      severity: 'error',
+      code: 'missing_currency',
+      path: 'products.pack.prices',
+      message:
+        "The product must have a price in the organization's default currency, EUR.",
+    }
+    const output = stripAnsi(formatProblems(generated, [missing]))
+    expect(output).toContain(
+      "Error: The product must have a price in the organization's default currency, EUR.",
+    )
   })
 })

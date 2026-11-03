@@ -126,7 +126,7 @@ Invitation emails are sent automatically when seats are assigned. The claim flow
 If you want to manage seat assignment programmatically (e.g., auto-assigning seats when users sign up), use the [Customer Seats API](/api-reference/current/customer-seats/assign-seat):
 
 ```typescript
-const seat = await polar.customerSeats.assign({
+const seat = await polar.customerSeats.assignSeat({
   subscription_id: subscriptionId,
   email: "engineer@company.com",
   immediate_claim: true  // Skip invitation email, grant benefits immediately
@@ -170,8 +170,7 @@ app.post('/webhooks/polar', async (req, res) => {
 **Subscriptions** — modify the seat count:
 
 ```typescript
-await polar.subscriptions.update({
-  id: subscriptionId,
+await polar.subscriptions.update(subscriptionId, {
   seats: newTotal  // Cannot be less than currently assigned seats (pending + claimed)
 });
 ```

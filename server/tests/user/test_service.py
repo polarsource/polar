@@ -31,7 +31,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetByEmailOrCreate:
     async def test_existing_user(self, session: AsyncSession, user: User) -> None:
         result, created = await user_service.get_by_email_or_create(
@@ -72,7 +72,7 @@ class TestGetByEmailOrCreate:
             await user_service.get_by_email_or_create(session, user.email)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCheckCanDelete:
     async def test_can_delete_no_organizations(
         self,
@@ -137,7 +137,7 @@ class TestCheckCanDelete:
         assert result.blocking_organizations == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestUpdate:
     async def test_enqueues_member_name_update_when_name_changes(
         self,
@@ -213,7 +213,7 @@ class TestUpdate:
         enqueue_mock.assert_not_called()
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRequestDeletion:
     async def test_immediate_deletion_no_organizations(
         self,
@@ -409,7 +409,7 @@ def _verification_session(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateIdentityVerification:
     async def test_creates_first_session(
         self,
@@ -561,7 +561,7 @@ class TestCreateIdentityVerification:
         assert user.identity_verification_id == "vs_new"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIdentityVerificationVerified:
     async def test_activates_organizations_owned_by_user(
         self,
@@ -673,7 +673,7 @@ class TestIdentityVerificationVerified:
             )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIdentityVerificationPending:
     async def test_sets_pending_from_unverified(
         self,
@@ -781,7 +781,7 @@ class TestIdentityVerificationPending:
         assert user.identity_verification_status == IdentityVerificationStatus.failed
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIdentityVerificationFailed:
     async def test_sets_failed_from_pending(
         self,
@@ -858,7 +858,7 @@ class TestIdentityVerificationFailed:
         assert user.identity_verification_status == IdentityVerificationStatus.pending
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestIdentityVerificationAfterDeletion:
     async def test_verified_no_ops_via_metadata_for_deleted_user(
         self,

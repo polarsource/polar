@@ -9,7 +9,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_email_log
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteBefore:
     async def test_deletes_only_logs_created_before_cutoff(
         self, session: AsyncSession, save_fixture: SaveFixture

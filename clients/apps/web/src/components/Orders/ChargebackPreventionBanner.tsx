@@ -5,7 +5,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ExternalLinkIcon } from 'lucide-react'
+import { ExternalLink as ExternalLinkIcon } from '@polar-sh/orbit/icons'
 import type { ReactNode } from 'react'
 
 const REFUNDS_DOCS_URL = 'https://docs.polar.sh/features/refunds'

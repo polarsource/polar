@@ -40,6 +40,7 @@ const run = (file: string) =>
       const clients = {
         sandbox: yield* authenticatedClient('sandbox'),
         production: yield* authenticatedClient('production'),
+        local: yield* authenticatedClient('local'),
       }
       const config = yield* loader(yield* FileSystem.FileSystem)(file)
       return yield* plan(clients)(config, acme)
@@ -80,9 +81,16 @@ describe('plan', () => {
     api.routes[`POST ${planUrl}`] = Response.json({
       changes: [
         {
+          resource: 'meter',
           external_id: 'tool-calls',
           action: 'created',
           diff: [{ field: 'name', before: null, after: 'Tool calls' }],
+        },
+        {
+          resource: 'benefit',
+          external_id: 'support',
+          action: 'unchanged',
+          diff: [],
         },
       ],
       issues: [
@@ -105,6 +113,7 @@ describe('plan', () => {
         action: 'created',
         diff: [{ field: 'name', before: null, after: 'Tool calls' }],
       },
+      { section: 'benefits', id: 'support', action: 'unchanged', diff: [] },
     ])
     expect(result.issues).toEqual([
       {
@@ -116,6 +125,55 @@ describe('plan', () => {
         location: { line: 5, column: 52, length: 2 },
       },
     ])
+  })
+
+  test('lists removals, in place of the deprecated entry', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [
+        {
+          resource: 'benefit',
+          external_id: 'support',
+          action: 'unchanged',
+          diff: [],
+        },
+      ],
+      removed: [
+        { resource: 'benefit', external_id: 'support', reason: 'deprecated' },
+        { resource: 'product', external_id: 'legacy', reason: 'missing' },
+      ],
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.entries).toEqual([
+      {
+        section: 'benefits',
+        id: 'support',
+        action: 'removed',
+        reason: 'deprecated',
+        diff: [],
+      },
+      {
+        section: 'products',
+        id: 'legacy',
+        action: 'removed',
+        reason: 'missing',
+        diff: [],
+      },
+    ])
+  })
+
+  test('keeps the catalog the plan publishes', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      catalog: { before: { id: 'catalog-1', name: 'v1' }, name: 'v2' },
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.catalog).toEqual({ before: { name: 'v1' }, name: 'v2' })
   })
 
   test('turns 422 structural errors into issues with no changes', async () => {
@@ -168,8 +226,62 @@ describe('plan', () => {
       { status: 403 },
     )
 
-    const error = await failure(run(await write(source)))
+    const error = await failure(
+      run(await write(JSON.stringify({ meters: [], benefits: [] }))),
+    )
 
-    expect(error.hint).toContain('meters:read')
+    expect(error.hint).toBe(
+      'The token needs the meters:read, benefits:read scopes.',
+    )
+  })
+
+  test('lists settings changes first, grouped by section', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      settings: {
+        action: 'updated',
+        diff: [
+          { field: 'payments.currency', before: 'usd', after: 'eur' },
+          { field: 'payments.tax', before: 'location', after: 'inclusive' },
+        ],
+      },
+      issues: [],
+    })
+
+    const result = await run(
+      await write(
+        JSON.stringify({
+          settings: { payments: { currency: 'eur' } },
+          meters: [],
+        }),
+      ),
+    )
+
+    expect(result.entries).toEqual([
+      {
+        section: 'settings',
+        id: 'payments',
+        action: 'updated',
+        diff: [
+          { field: 'currency', before: 'usd', after: 'eur' },
+          { field: 'tax', before: 'location', after: 'inclusive' },
+        ],
+      },
+    ])
+  })
+
+  test('asks for the organizations scope for settings', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json(
+      { error: 'NotPermitted', detail: 'Not permitted' },
+      { status: 403 },
+    )
+
+    const error = await failure(
+      run(await write(JSON.stringify({ settings: {}, meters: [] }))),
+    )
+
+    expect(error.hint).toBe(
+      'The token needs the meters:read, organizations:read scopes.',
+    )
   })
 })

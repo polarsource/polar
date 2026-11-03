@@ -19,14 +19,21 @@ from polar.kit.metadata import (
     MetadataKey,
     MetadataValue,
 )
-from polar.kit.schemas import IDSchema, Int32, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    Int32,
+    MultipleQueryFilter,
+    Schema,
+    TimestampedSchema,
+)
 from polar.kit.utils import generate_uuid, utc_now
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.models.license_key import LicenseKeyStatus
 from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
-from polar.openapi import cli_confirm_one_of
+from polar.openapi import destructive_when_one_of
 from polar.order.schemas import OrderBase
+from polar.organization.schemas import OrganizationID
 from polar.subscription.schemas import SubscriptionBase
 from polar.version import V2026_10, V2027_01
 
@@ -159,7 +166,7 @@ class LicenseKeyUser(Schema):
 
 class LicenseKeyRead(TimestampedSchema, IDSchema):
     organization_id: UUID4
-    user_id: SkipJsonSchema[UUID4] = Field(
+    user_id: Annotated[SkipJsonSchema[UUID4], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user_id",
@@ -169,7 +176,7 @@ class LicenseKeyRead(TimestampedSchema, IDSchema):
         deprecated="Use `customer_id`.",
     )
     customer_id: UUID4
-    user: SkipJsonSchema[LicenseKeyUser] = Field(
+    user: Annotated[SkipJsonSchema[LicenseKeyUser], Version(up_to=V2026_10)] = Field(
         validation_alias=AliasChoices(
             # Validate from stored webhook payload
             "user",
@@ -282,7 +289,7 @@ class LicenseKeyActivationCreated(LicenseKeyActivationRead):
 class LicenseKeyUpdate(Schema):
     status: LicenseKeyStatus | None = Field(
         default=None,
-        json_schema_extra=cli_confirm_one_of("revoked", "disabled"),
+        json_schema_extra=destructive_when_one_of("revoked", "disabled"),
     )
     usage: Int32 = 0
     limit_activations: Int32 | None = Field(gt=0, default=None)
@@ -307,17 +314,20 @@ class LicenseKeyCreate(LicenseKeyUpdate):
 
     @classmethod
     def generate_expiration_dt(
-        cls, ttl: int, timeframe: Literal["year", "month", "day"]
+        cls,
+        ttl: int,
+        timeframe: Literal["year", "month", "day"],
+        start: datetime | None = None,
     ) -> datetime:
-        now = utc_now()
+        start = start or utc_now()
         try:
             match timeframe:
                 case "year":
-                    return now + relativedelta(years=ttl)
+                    return start + relativedelta(years=ttl)
                 case "month":
-                    return now + relativedelta(months=ttl)
+                    return start + relativedelta(months=ttl)
                 case _:
-                    return now + relativedelta(days=ttl)
+                    return start + relativedelta(days=ttl)
         except ValueError, OverflowError:
             raise ValueError(
                 f"Expiration date overflows: ttl={ttl} with timeframe='{timeframe}' "
@@ -392,3 +402,17 @@ class LicenseKeyCreate(LicenseKeyUpdate):
             limit_usage=limit_usage,
             expires_at=expires_at,
         )
+
+
+class LicenseKeyListParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Field(
+        None, title="BenefitID Filter", description="Filter by benefit ID."
+    )
+    status: MultipleQueryFilter[LicenseKeyStatus] | None = Field(
+        None,
+        title="LicenseKeyStatus Filter",
+        description="Filter by license key status.",
+    )

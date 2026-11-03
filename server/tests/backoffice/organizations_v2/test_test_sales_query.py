@@ -28,7 +28,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCountTestSales:
     async def test_member_orders_not_counted_as_test_sales(
         self,

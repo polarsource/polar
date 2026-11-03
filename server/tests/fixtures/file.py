@@ -10,7 +10,6 @@ from uuid import UUID
 
 import boto3
 import pytest
-import pytest_asyncio
 from botocore.config import Config
 from httpx import AsyncClient, Response
 from minio import Minio
@@ -18,7 +17,12 @@ from minio import Minio
 from polar.config import settings
 from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
-from polar.file.schemas import DownloadableFileCreate, FileUpload, FileUploadCompleted
+from polar.file.schemas import (
+    DownloadableFileCreate,
+    FileUpload,
+    FileUploadCompleted,
+    ProductMediaFileCreate,
+)
 from polar.file.service import file as file_service
 from polar.integrations.aws.s3.schemas import (
     S3FileCreateMultipart,
@@ -105,6 +109,15 @@ class TestFile:
             size=self.size,
             checksum_sha256_base64=self.base64,
             upload=S3FileCreateMultipart(parts=create_parts),
+        )
+
+    def build_product_media_create(
+        self, organization_id: UUID
+    ) -> ProductMediaFileCreate:
+        create = self.build_create(organization_id)
+        return ProductMediaFileCreate(
+            service=FileServiceTypes.product_media,
+            **create.model_dump(exclude={"service"}),
         )
 
     def build_create_part(self, number: int, parts: int) -> S3FileCreatePart:
@@ -306,7 +319,7 @@ def non_ascii_file_name() -> TestFile:
     return TestFile("étonnante-🦄.png")
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def uploaded_logo_png(session: AsyncSession, organization: Organization) -> File:
     img = TestFile("logo.png")
     return await uploaded_fixture(session, organization, img)
@@ -317,10 +330,20 @@ def logo_jpg() -> TestFile:
     return TestFile("logo.jpg")
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def uploaded_logo_jpg(session: AsyncSession, organization: Organization) -> File:
     img = TestFile("logo.jpg")
     return await uploaded_fixture(session, organization, img)
+
+
+@pytest.fixture
+def malicious_svg() -> TestFile:
+    return TestFile("malicious.svg")
+
+
+@pytest.fixture
+def malformed_svg() -> TestFile:
+    return TestFile("malformed.svg")
 
 
 @pytest.fixture

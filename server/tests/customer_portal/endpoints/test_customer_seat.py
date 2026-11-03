@@ -25,7 +25,7 @@ def email_sender_mock(mocker: MockerFixture) -> MagicMock:
     return mock
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSeats:
     async def test_anonymous(
         self, client: AsyncClient, subscription: Subscription
@@ -104,7 +104,7 @@ class TestListSeats:
         assert len(data["seats"]) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAssignSeat:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -337,7 +337,7 @@ class TestAssignSeat:
         assert response.status_code == 404
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeSeat:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.delete(
@@ -427,7 +427,7 @@ class TestRevokeSeat:
         assert data["status"] == "revoked"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestResendInvitation:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
@@ -557,7 +557,7 @@ class TestResendInvitation:
         assert data["status"] == "pending"
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListClaimedSubscriptions:
     async def test_anonymous(self, client: AsyncClient) -> None:
         """Verify that unauthenticated requests are rejected."""
@@ -763,7 +763,7 @@ class TestListClaimedSubscriptions:
         assert str(subscription2.id) in subscription_ids
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListSeatsForOrder:
     """Test listing seats for order-based (one-time purchase) products."""
 
@@ -800,7 +800,7 @@ class TestListSeatsForOrder:
         assert len(data["seats"]) == 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAssignSeatForOrder:
     """Test assigning seats for order-based (one-time purchase) products."""
 
@@ -847,7 +847,7 @@ class TestAssignSeatForOrder:
         assert data["subscription_id"] is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestRevokeSeatForOrder:
     """Test revoking seats for order-based (one-time purchase) products."""
 

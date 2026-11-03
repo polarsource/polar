@@ -1,6 +1,6 @@
-"""Fixtures for subscription purchase E2E tests."""
+import pytest
 
-import pytest_asyncio
+"""Fixtures for subscription purchase E2E tests."""
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.models import Organization, Product
@@ -8,7 +8,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_product
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 async def monthly_product(
     save_fixture: SaveFixture, organization: Organization
 ) -> Product:

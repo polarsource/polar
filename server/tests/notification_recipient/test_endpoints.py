@@ -9,7 +9,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_notification_recipient
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestCreateNotificationRecipient:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -117,7 +117,7 @@ class TestCreateNotificationRecipient:
         assert json["user_id"] == str(user_second.id)
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestListNotificationRecipients:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/notifications/recipients")
@@ -161,7 +161,7 @@ class TestListNotificationRecipients:
         assert json["pagination"]["total_count"] == 2
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestDeleteNotificationRecipient:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.delete("/v1/notifications/recipients/123")

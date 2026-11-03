@@ -6,7 +6,7 @@ const Header = () => (
       <Img
         alt="Polar Logo"
         height="48"
-        src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/polar-logo-black-badge.png"
+        src="https://polar-public-assets.s3.us-east-2.amazonaws.com/emails/polar-logo-2026-black-badge.png"
       />
     </div>
   </Section>

@@ -9,7 +9,9 @@ import * as stylex from '@stylexjs/stylex'
 import { textColorStyles, textRoleStyles } from '../tokens/semantics.stylex'
 import {
   textAlignStyles,
+  textLeadingStyles,
   textUtilityStyles,
+  textWeightStyles,
   textWrapStyles,
 } from '../utils/text-styles'
 
@@ -59,12 +61,16 @@ export type TextColor =
 
 export type TextAlign = 'left' | 'center' | 'right' | 'justify'
 export type TextWrap = 'wrap' | 'nowrap' | 'balance' | 'pretty'
+export type TextLeading = 'none' | 'tight' | 'snug' | 'normal' | 'relaxed'
+export type TextWeight = 'light' | 'book' | 'regular' | 'medium' | 'semibold'
 
 export type TextStyleProps = {
   variant?: TextVariant
   color?: TextColor
   align?: TextAlign
   wrap?: TextWrap
+  leading?: TextLeading
+  weight?: TextWeight
 }
 
 // The role each variant plays decides which element it should render as, so the
@@ -156,6 +162,16 @@ type TextProps<E extends TextTag = 'p'> = TextStyleProps & {
    * body `pretty`); set this to override. Ignored while truncating.
    */
   wrap?: TextStyleProps['wrap']
+  /**
+   * Line height, overriding the variant's default. Headings default to `snug`;
+   * use `tight` when a multi-line headline needs to read as one block.
+   */
+  leading?: TextStyleProps['leading']
+  /**
+   * Override the variant's font weight. Prefer the variant's own weight; reach
+   * for this when one piece of text needs to read lighter or heavier.
+   */
+  weight?: TextStyleProps['weight']
   /**
    * The text to render. Prefer plain strings and numbers; inline elements are
    * allowed where you genuinely need them (a `<br>`, an inline link), but reach
@@ -252,6 +268,8 @@ function Text<E extends TextTag = 'p'>({
   color,
   align,
   wrap,
+  leading,
+  weight,
   children,
   style,
   loading,
@@ -295,6 +313,8 @@ function Text<E extends TextTag = 'p'>({
     textColorStyles[color ?? 'default'],
     align && textAlignStyles[align],
     resolvedWrap && textWrapStyles[resolvedWrap],
+    leading && textLeadingStyles[leading],
+    weight && textWeightStyles[weight],
     monospace && textUtilityStyles.monospace,
     tabularNums && textUtilityStyles.tabularNums,
     lineThrough && textUtilityStyles.lineThrough,

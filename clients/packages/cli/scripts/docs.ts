@@ -4,11 +4,12 @@ import { Console, Effect, Layer, Option } from 'effect'
 import { CliConfig, CliOutput, Command, type HelpDoc } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { ApiRuntime } from '@polar-sh/cli-commands'
-import { builtIns, program } from '@/program'
+import { program, referenceBuiltIns } from '@/program'
 import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Deliveries } from '@/services/deliveries'
 import { Organizations } from '@/services/organizations'
+import { TokenHandoff } from '@/services/token-handoff'
 import { Trigger } from '@/services/trigger'
 import { Updater } from '@/services/updater'
 import { captureConsole } from '@/utils/test-utils/cli'
@@ -20,10 +21,16 @@ const helpOnlyServices = Layer.mergeAll(
   Layer.succeed(Auth, fakeAuth().auth),
   Layer.succeed(
     BillingConfig,
-    BillingConfig.of({ load: unused, plan: unused, apply: unused }),
+    BillingConfig.of({
+      load: unused,
+      plan: unused,
+      apply: unused,
+      prune: unused,
+    }),
   ),
   Layer.succeed(Organizations, fakeOrganizations().organizations),
   Layer.succeed(Trigger, Trigger.of({ listEvents: unused, send: unused })),
+  Layer.succeed(TokenHandoff, TokenHandoff.of({ receive: unused })),
   Layer.succeed(ApiRuntime, ApiRuntime.of({ execute: unused })),
   Layer.succeed(Deliveries, Deliveries.of({ record: unused, await: unused })),
   Layer.succeed(
@@ -177,7 +184,7 @@ const helpFor = (path: string[]) =>
       Effect.provide(
         Layer.mergeAll(
           BunServices.layer,
-          CliConfig.layer({ builtIns }),
+          CliConfig.layer({ builtIns: referenceBuiltIns }),
           CliOutput.layer(formatter),
           helpOnlyServices,
         ),

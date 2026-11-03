@@ -30,7 +30,7 @@ def build_connection(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestBuildSSOFactor:
     async def test_client_secret(self, session: AsyncSession) -> None:
         connection = build_connection(

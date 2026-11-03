@@ -6,7 +6,7 @@ from typing import Annotated, Any
 import structlog
 from fastapi import Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 from tagflow import classes, tag, text
 
 from polar.backoffice.routing import BackofficeRouter
@@ -27,6 +27,8 @@ router = BackofficeRouter()
 
 
 def empty_str_to_none(v: str | None) -> str | None:
+    if v is not None:
+        v = v.strip()
     if v == "":
         return None
     return v
@@ -72,13 +74,15 @@ async def list_email_logs(
                 )
             )
         except ValueError:
-            query_lower = query.lower()
-            statement = statement.where(
-                or_(
-                    func.lower(EmailLog.to_email_addr).ilike(f"%{query_lower}%"),
-                    func.lower(EmailLog.subject).ilike(f"%{query_lower}%"),
+            if "@" in query:
+                statement = statement.where(EmailLog.to_email_addr.ilike(f"%{query}%"))
+            else:
+                statement = statement.where(
+                    or_(
+                        EmailLog.to_email_addr.ilike(f"%{query}%"),
+                        EmailLog.subject.ilike(f"%{query}%"),
+                    )
                 )
-            )
 
     if status is not None:
         statement = statement.where(EmailLog.status == status)

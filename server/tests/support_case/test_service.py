@@ -21,7 +21,7 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGet:
     @pytest.mark.auth
     async def test_returns_case_for_managing_user(
@@ -87,7 +87,7 @@ class TestGet:
         assert fetched.id == case.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetThread:
     async def test_open_and_audience_filtered(
         self,
@@ -162,7 +162,7 @@ class TestGetThread:
         assert is_open is False
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestGetAttachment:
     async def test_hidden_when_not_in_audience(
         self,
@@ -202,7 +202,7 @@ class TestGetAttachment:
         assert fetched.id == attachment.id
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestAssignment:
     async def test_events_are_internal(
         self,
@@ -226,7 +226,7 @@ class TestAssignment:
         assert released.audience == []
 
 
-@pytest.mark.asyncio
+@pytest.mark.anyio
 class TestMarkRead:
     async def test_creates_then_updates_participant(
         self,

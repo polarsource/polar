@@ -438,6 +438,7 @@ class Outpost:
         self._confirm_script: AsyncScript | None = None
         self._confirm_timeout = confirm_timeout
         self._confirmations: dict[str, _Confirmation] = {}
+        self._confirming = anyio.Lock()
         self._read_state: AsyncScript | None = None
         self._cache: collections.OrderedDict[str, LocalState] = (
             collections.OrderedDict()
@@ -1186,31 +1187,37 @@ class Outpost:
                     for value in statistics
                 ):
                     raise ValueError("Snapshot values must be finite")
-                waiting = self._confirmations.get(identity)
-                if waiting is not None:
-                    newest = waiting.next or waiting.snapshot
-                    if snapshot["version"] >= newest["version"]:
+                async with self._confirming:
+                    waiting = self._confirmations.get(identity)
+                    if waiting is None:
+                        await self._receive_snapshot(identity, customer, snapshot)
+                    elif (
+                        snapshot["version"]
+                        >= (waiting.next or waiting.snapshot)["version"]
+                    ):
                         waiting.next = snapshot
-                    continue
-                await self._receive_snapshot(identity, customer, snapshot)
             elif message["type"] == "confirmed":
                 payload = message["payload"]
                 customer = self._customer_key(
                     payload["customer_id"], payload["external_customer_id"]
                 )
-                confirmation = self._confirmations.get(
-                    f"{customer}:{payload['reducer_id']}"
-                )
-                if confirmation is None:
-                    continue
-                confirmation.confirmed.setdefault(payload["bucket_start"], []).extend(
-                    payload["ids"]
-                )
-                if payload["snapshot"]["version"] >= confirmation.snapshot["version"]:
-                    confirmation.snapshot = payload["snapshot"]
-                confirmation.awaited -= 1
-                if confirmation.awaited == 0:
-                    await self._settle_confirmation(confirmation, answered=True)
+                async with self._confirming:
+                    confirmation = self._confirmations.get(
+                        f"{customer}:{payload['reducer_id']}"
+                    )
+                    if confirmation is None:
+                        continue
+                    confirmation.confirmed.setdefault(
+                        payload["bucket_start"], []
+                    ).extend(payload["ids"])
+                    if (
+                        payload["snapshot"]["version"]
+                        >= confirmation.snapshot["version"]
+                    ):
+                        confirmation.snapshot = payload["snapshot"]
+                    confirmation.awaited -= 1
+                    if confirmation.awaited == 0:
+                        await self._settle_confirmation(confirmation, answered=True)
 
     async def _receive_snapshot(
         self, identity: str, customer: str, snapshot: Snapshot
@@ -1294,7 +1301,8 @@ class Outpost:
             confirmation.timer = timer
             await anyio.sleep(self._confirm_timeout)
         if not timer.cancel_called:
-            await self._settle_confirmation(confirmation, answered=False)
+            async with self._confirming:
+                await self._settle_confirmation(confirmation, answered=False)
 
     async def _settle_confirmation(
         self, confirmation: _Confirmation, *, answered: bool

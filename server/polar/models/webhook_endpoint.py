@@ -14,6 +14,7 @@ from polar.version import CURRENT_API_VERSION
 
 if TYPE_CHECKING:
     from .organization import Organization
+    from .user import User
 
 
 class WebhookEventType(StrEnum):
@@ -116,6 +117,10 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
     user_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=True, default=None
     )
+
+    @declared_attr
+    def user(cls) -> Mapped["User | None"]:
+        return relationship("User", lazy="raise")
 
     organization_id: Mapped[UUID] = mapped_column(
         Uuid,

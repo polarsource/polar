@@ -18,6 +18,7 @@ from polar.models import (
     WebhookEndpoint,
     WebhookEvent,
 )
+from polar.models.webhook_endpoint import WebhookFormat
 
 
 class WebhookEventRepository(
@@ -91,6 +92,7 @@ class WebhookEventRepository(
             .options(contains_eager(WebhookEvent.webhook_endpoint))
             .where(
                 WebhookEndpoint.organization_id.in_(org_ids),
+                WebhookEndpoint.format != WebhookFormat.mcp,
                 ~WebhookEndpoint.is_deleted,
             )
         )
@@ -175,7 +177,13 @@ class WebhookDeliveryRepository(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[WebhookDelivery]:
         return self.get_base_statement().where(
-            WebhookDelivery.organization_id.in_(org_ids)
+            WebhookDelivery.organization_id.in_(org_ids),
+            WebhookDelivery.webhook_endpoint_id.not_in(
+                select(WebhookEndpoint.id).where(
+                    WebhookEndpoint.organization_id.in_(org_ids),
+                    WebhookEndpoint.format == WebhookFormat.mcp,
+                )
+            ),
         )
 
 
@@ -190,7 +198,8 @@ class WebhookEndpointRepository(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[WebhookEndpoint]:
         return self.get_base_statement().where(
-            WebhookEndpoint.organization_id.in_(org_ids)
+            WebhookEndpoint.organization_id.in_(org_ids),
+            WebhookEndpoint.format != WebhookFormat.mcp,
         )
 
     async def get_all_by_external_ids(
@@ -213,7 +222,10 @@ class WebhookEndpointRepository(
         statement = (
             self.get_base_statement()
             .with_only_columns(WebhookEndpoint.id)
-            .where(WebhookEndpoint.organization_id == organization_id)
+            .where(
+                WebhookEndpoint.organization_id == organization_id,
+                WebhookEndpoint.format != WebhookFormat.mcp,
+            )
             .limit(1)
         )
         result = await self.session.execute(statement)

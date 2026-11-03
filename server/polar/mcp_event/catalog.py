@@ -1,18 +1,25 @@
-from typing import NamedTuple
+from typing import Annotated, NamedTuple
 
-from pydantic import UUID4
+from pydantic import UUID4, BeforeValidator
 
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import Schema
 from polar.models.customer import CustomerType
-from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.subscription import SubscriptionRecurringInterval, SubscriptionStatus
+from polar.models.order import (
+    OrderBillingReason,
+    OrderBillingReasonInternal,
+    OrderStatus,
+)
+from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 
 
 class OrderEventData(Schema):
     id: UUID4
     status: OrderStatus
-    billing_reason: OrderBillingReasonInternal
+    billing_reason: Annotated[
+        OrderBillingReason, BeforeValidator(OrderBillingReasonInternal.to_public)
+    ]
     customer_id: UUID4
     product_id: UUID4 | None
     subscription_id: UUID4 | None

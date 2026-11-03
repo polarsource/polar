@@ -84,8 +84,35 @@ EndpointURL = Annotated[
     BeforeValidator(lambda v: v.strip() if isinstance(v, str) else v),
     AfterValidator(validate_hostname),
 ]
+
+
+def _is_public_format(format: WebhookFormat) -> WebhookFormat:
+    if format == WebhookFormat.mcp:
+        raise ValueError(f"Invalid format: {format}")
+    return format
+
+
+class _PublicWebhookFormat:
+    def __get_pydantic_core_schema__(
+        self, source_type: object, handler: GetCoreSchemaHandler
+    ) -> core_schema.CoreSchema:
+        return core_schema.no_info_after_validator_function(
+            _is_public_format, handler(source_type)
+        )
+
+    def __get_pydantic_json_schema__(
+        self, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
+    ) -> JsonSchemaValue:
+        json_schema = handler.resolve_ref_schema(handler(schema))
+        json_schema["enum"] = [
+            format.value for format in WebhookFormat if format != WebhookFormat.mcp
+        ]
+        return json_schema
+
+
 EndpointFormat = Annotated[
     WebhookFormat,
+    _PublicWebhookFormat(),
     Field(description="The format of the webhook payload."),
 ]
 EndpointSecret = Annotated[

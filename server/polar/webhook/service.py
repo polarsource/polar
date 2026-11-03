@@ -35,7 +35,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNo
 from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
-from polar.kit.utils import utc_now
+from polar.kit.utils import generate_uuid, utc_now
 from polar.logging import Logger
 from polar.models import (
     Benefit,
@@ -471,13 +471,22 @@ class WebhookService:
         if len(recent_outcomes) >= settings.WEBHOOK_FAILURE_THRESHOLD and all(
             succeeded is False for succeeded in recent_outcomes
         ):
+            webhook_endpoint_repository = WebhookEndpointRepository.from_session(
+                session
+            )
+            if endpoint.format == WebhookFormat.mcp:
+                log.warning(
+                    "Deleting MCP subscription due to consecutive failures",
+                    webhook_endpoint_id=endpoint.id,
+                    failure_count=len(recent_outcomes),
+                )
+                await webhook_endpoint_repository.soft_delete(endpoint)
+                return
+
             log.warning(
                 "Disabling webhook endpoint due to consecutive failures",
                 webhook_endpoint_id=endpoint.id,
                 failure_count=len(recent_outcomes),
-            )
-            webhook_endpoint_repository = WebhookEndpointRepository.from_session(
-                session
             )
             await webhook_endpoint_repository.update(
                 endpoint, update_dict={"enabled": False}, flush=True
@@ -954,8 +963,12 @@ class WebhookService:
                 update={"api_version": endpoint.api_version}
             )
             try:
-                payload_data = endpoint_payload.get_payload(endpoint.format, target)
+                event_id = generate_uuid()
+                payload_data = endpoint_payload.get_payload(
+                    endpoint.format, target, event_id=event_id
+                )
                 event_type = WebhookEvent(
+                    id=event_id,
                     created_at=endpoint_payload.timestamp,
                     webhook_endpoint=endpoint,
                     type=event,
@@ -1047,6 +1060,10 @@ class WebhookService:
         statement = select(WebhookEndpoint).where(
             ~WebhookEndpoint.is_deleted,
             WebhookEndpoint.enabled,
+            or_(
+                WebhookEndpoint.expires_at.is_(None),
+                WebhookEndpoint.expires_at > utc_now(),
+            ),
             WebhookEndpoint.events.bool_op("@>")(text(f"'[\"{event}\"]'")),
             WebhookEndpoint.organization_id == target.id,
         )

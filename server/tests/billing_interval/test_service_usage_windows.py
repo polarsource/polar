@@ -96,7 +96,6 @@ class TestBillUsage:
             subscription,
             [meter.id],
             order_id=order_id,
-            billable_from=EARLIER,
             cutoff=CUTOFF,
         )
 
@@ -107,7 +106,6 @@ class TestBillUsage:
             [meter.id],
             order_id=order_id,
             windows=(own,),
-            billable_from=EARLIER,
             cutoff=CUTOFF,
         )
 
@@ -143,7 +141,6 @@ class TestBillUsage:
             subscription,
             [meter.id],
             order_id=uuid4(),
-            billable_from=EARLIER,
             cutoff=CUTOFF,
         )
 
@@ -191,7 +188,6 @@ class TestBillUsage:
             subscription,
             [meter.id],
             order_id=uuid4(),
-            billable_from=EARLIER,
             cutoff=CUTOFF,
         )
 

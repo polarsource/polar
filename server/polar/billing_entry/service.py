@@ -124,8 +124,7 @@ class BillingEntryService:
             else:
                 await repository.update_order_item_id(selector, order_item.id)
 
-        billable_from = subscription.trial_end or subscription.started_at
-        if consumed_units and billable_from is not None:
+        if consumed_units:
             order_id = next(iter(item_entries_map)).order_id
             with logfire.span(
                 "Bill and compare reducer usage",
@@ -139,7 +138,6 @@ class BillingEntryService:
                     subscription,
                     set(consumed_units),
                     order_id=order_id,
-                    billable_from=billable_from,
                     cutoff=cutoff,
                 )
                 reducer_net_units = {

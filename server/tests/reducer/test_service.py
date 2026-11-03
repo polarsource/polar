@@ -1562,7 +1562,6 @@ class TestBill:
             [meter.id],
             order_id=order_id,
             windows=[window],
-            billable_from=START,
             cutoff=CUTOFF,
         )
 
@@ -1601,7 +1600,6 @@ class TestBill:
             [meter.id],
             order_id=order.id,
             windows=(),
-            billable_from=START,
             cutoff=CUTOFF,
         )
 
@@ -1629,7 +1627,6 @@ class TestBill:
             [meter.id],
             order_id=order.id,
             windows=(),
-            billable_from=START,
             cutoff=CUTOFF,
         )
 
@@ -1671,7 +1668,6 @@ class TestBill:
             [meter.id],
             order_id=order.id,
             windows=[usage_window(meter, CUTOFF, NEXT_BUCKET_START)],
-            billable_from=CUTOFF,
             cutoff=NEXT_BUCKET_START,
         )
 
@@ -1764,7 +1760,6 @@ class TestBillUsageWindows:
             [tokens_meter.id],
             order_id=order.id,
             windows=[usage_window(tokens_meter, BUCKET_START, CUTOFF)],
-            billable_from=BUCKET_START,
             cutoff=CUTOFF,
         )
 
@@ -1797,7 +1792,6 @@ class TestBillUsageWindows:
                 [tokens_meter.id],
                 order_id=order_id,
                 windows=[window],
-                billable_from=BUCKET_START,
                 cutoff=CUTOFF,
             )
             for order_id in (order.id, second_order.id)
@@ -1839,7 +1833,6 @@ class TestBillUsageWindows:
                 usage_window(tokens_meter, BUCKET_START, CUTOFF),
                 usage_window(meter, BUCKET_START, CUTOFF),
             ],
-            billable_from=BUCKET_START,
             cutoff=CUTOFF,
         )
 
@@ -1873,7 +1866,6 @@ class TestBillUsageWindows:
             [tokens_meter.id],
             order_id=order.id,
             windows=[usage_window(tokens_meter, BUCKET_START, CUTOFF)],
-            billable_from=BUCKET_START,
             cutoff=CUTOFF,
         )
 

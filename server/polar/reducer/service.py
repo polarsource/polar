@@ -226,13 +226,11 @@ class ReducerService:
         *,
         order_id: UUID,
         windows: Sequence[UsageWindow],
-        billable_from: datetime,
         cutoff: datetime,
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
         """Marks the customer's usage in `windows` and its credits since the latest
-        reset, from `billable_from` at the earliest, as billed by the order, and
-        returns their quantities per meter. Raises on failure: the caller rolls
-        it back."""
+        reset as billed by the order, and returns their quantities per meter.
+        Raises on failure: the caller rolls it back."""
         meter_ids = sorted(meter_ids)
         reducers = await self._get_reducers(session, meter_ids, ReducerKind.usage)
         observed = await self._bill_windows(
@@ -272,9 +270,7 @@ class ReducerService:
             reset = await event_repository.get_latest_meter_reset(
                 customer, meter_id, cutoff=cutoff
             )
-            since = (
-                billable_from if reset is None else max(billable_from, reset.timestamp)
-            )
+            since = None if reset is None else reset.timestamp
             await self._seal_buckets(
                 session, [credit_reducer], customer, since=since, until=cutoff
             )
@@ -905,7 +901,7 @@ class ReducerService:
         customer: Customer,
         *,
         order_id: UUID,
-        since: datetime,
+        since: datetime | None,
         until: datetime,
     ) -> dict[UUID, Decimal]:
         """Marks the customer's sealed, unbilled usage within [since, until] as

@@ -503,12 +503,15 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         identities: Sequence[tuple[UUID | None, str | None]],
         order_id: UUID,
         *,
-        since: datetime,
+        since: datetime | None,
         until: datetime,
         billed_at: datetime,
     ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
         """Marks the identities' sealed, unbilled buckets within [since, until] as
         billed by the order, and returns their count, sum, min and max."""
+        clauses = [ReducerBucket.bucket_end <= until]
+        if since is not None:
+            clauses.append(ReducerBucket.bucket_start >= since)
         unbilled_ids = (
             select(ReducerBucket.id)
             .where(
@@ -517,8 +520,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 _is_any_customer(identities),
                 ReducerBucket.sealed_at.is_not(None),
                 ReducerBucket.billed_at.is_(None),
-                ReducerBucket.bucket_start >= since,
-                ReducerBucket.bucket_end <= until,
+                *clauses,
             )
             .order_by(ReducerBucket.bucket_start)
             .with_for_update()

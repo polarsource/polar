@@ -247,7 +247,6 @@ class TestBackfillBuckets:
             [meter.id],
             order_id=next_order.id,
             windows=[UsageWindow(uuid4(), uuid4(), meter.id, SUBSCRIPTION_START, END)],
-            billable_from=SUBSCRIPTION_START,
             cutoff=END,
         )
         assert quantities == {meter.id: (Decimal(13), Decimal(0))}

@@ -109,7 +109,6 @@ class BillingIntervalService:
         meter_ids: Iterable[UUID],
         *,
         order_id: UUID,
-        billable_from: datetime,
         cutoff: datetime,
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
         """Marks the reducer usage the subscription owns on the meters, and its
@@ -139,7 +138,6 @@ class BillingIntervalService:
                     windows=select_settlement_windows(
                         windows, billing_subscription_id=subscription.id
                     ),
-                    billable_from=billable_from,
                     cutoff=cutoff,
                 )
         except Exception:

@@ -49,3 +49,34 @@ class TestAggregateEvents:
         ).aggregate_events(reducer, BUCKET_START, BUCKET_END, customer.id, None)
 
         assert (count, total, minimum, maximum) == (2, 7, -3, 10)
+
+    async def test_usage_reducer_bounds_ingestion_by_the_bucket_start(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.usage
+        )
+        assert reducer is not None
+        for ingested_at in (
+            BUCKET_START - timedelta(seconds=4),
+            BUCKET_START - timedelta(seconds=6),
+        ):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                timestamp=BUCKET_START,
+                ingested_at=ingested_at,
+                customer=customer,
+            )
+
+        count, *_ = await ReducerBucketRepository.from_session(
+            session
+        ).aggregate_events(reducer, BUCKET_START, BUCKET_END, customer.id, None)
+
+        assert count == 1

@@ -65,6 +65,16 @@ class CatalogRepository(
         result = await self.session.execute(statement)
         return {id: version_hash for id, version_hash in result.tuples()}
 
+    async def get_by_id_with_organization(
+        self, org_ids: set[AccessibleOrganizationID], id: UUID
+    ) -> Catalog | None:
+        statement = (
+            self.get_statement_by_org_ids(org_ids)
+            .where(Catalog.id == id)
+            .options(joinedload(Catalog.organization))
+        )
+        return await self.get_one_or_none(statement)
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[Catalog]:

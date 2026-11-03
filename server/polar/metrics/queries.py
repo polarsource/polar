@@ -41,12 +41,9 @@ from polar.models import (
     User,
 )
 from polar.models.product import ProductBillingType
+from polar.models.transaction import TransactionType
 
-from .fx import (
-    closest_recorded_exchange_rate,
-    recorded_exchange_rate,
-    recorded_exchange_rate_clauses,
-)
+from .fx import closest_recorded_exchange_rate, recorded_exchange_rate
 
 if TYPE_CHECKING:
     from .metrics import SQLMetric
@@ -102,29 +99,29 @@ def _get_readable_orders_statement(
     billing_type: Sequence[ProductBillingType] | None = None,
     customer_id: Sequence[uuid.UUID] | None = None,
 ) -> Select[uuid.UUID]:
-    statement = select(Order.id).join(
-        Product, onclause=Order.product_id == Product.id, isouter=True
-    )
+    statement = select(Order.id)
 
     if is_user(auth_subject):
         statement = statement.where(
-            Product.organization_id.in_(
+            Order.organization_id.in_(
                 select_accessible_org_ids(
                     auth_subject, permission=OrganizationPermission.analytics_read
                 )
             )
         )
     elif is_organization(auth_subject):
-        statement = statement.where(Product.organization_id == auth_subject.subject.id)
+        statement = statement.where(Order.organization_id == auth_subject.subject.id)
 
     if organization_id is not None:
-        statement = statement.where(Product.organization_id.in_(organization_id))
+        statement = statement.where(Order.organization_id.in_(organization_id))
 
     if product_id is not None:
         statement = statement.where(Order.product_id.in_(product_id))
 
     if billing_type is not None:
-        statement = statement.where(Product.billing_type.in_(billing_type))
+        statement = statement.join(
+            Product, onclause=Order.product_id == Product.id
+        ).where(Product.billing_type.in_(billing_type))
 
     if customer_id is not None:
         statement = statement.join(
@@ -179,7 +176,10 @@ def get_active_subscriptions_cte(
         .select_from(Transaction)
         .join(Order, Order.id == Transaction.order_id)
         .where(
-            *recorded_exchange_rate_clauses(),
+            Transaction.type == TransactionType.payment,
+            Transaction.presentment_currency.is_not(None),
+            Transaction.currency == "usd",
+            Transaction.exchange_rate.is_not(None),
             Order.created_at >= start_timestamp,
             Order.created_at <= end_timestamp,
             Transaction.order_id.in_(readable_orders_statement),

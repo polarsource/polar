@@ -6,6 +6,7 @@ import pytest
 from polar.billing_interval.service import (
     BillingIntervalConflict,
     derive_meter_billing_states,
+    get_interval_boundaries,
     plan_interval_changes,
     plan_meter_interval_change,
     resolve_meter_interval_history,
@@ -461,3 +462,14 @@ class TestPlanIntervalChanges:
 
         with pytest.raises(BillingIntervalConflict, match="Multiple billing states"):
             plan_interval_changes([interval], desired_states, effective_at=CHANGE)
+
+
+class TestGetIntervalBoundaries:
+    def test_returns_distinct_boundaries_up_to_until(self) -> None:
+        intervals = [
+            BillingInterval(period_start=START, period_end=CHANGE),
+            BillingInterval(period_start=CHANGE, period_end=END),
+            BillingInterval(period_start=END, period_end=None),
+        ]
+
+        assert get_interval_boundaries(intervals, until=CHANGE) == (START, CHANGE)

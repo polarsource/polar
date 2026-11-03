@@ -10,7 +10,7 @@ import structlog
 
 from polar.exceptions import PolarError
 from polar.logging import Logger
-from polar.models import BillingInterval, Meter, Subscription
+from polar.models import BillingInterval, Customer, Meter, Subscription
 from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -85,6 +85,35 @@ class BillingIntervalService:
     ) -> BillingComparison:
         """Capture a request; execution starts in a fresh task transaction."""
         raise NotImplementedError
+
+    async def get_boundaries(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        until: datetime,
+    ) -> tuple[datetime, ...]:
+        """The customer's interval boundaries on the meter up to `until`."""
+        repository = BillingIntervalRepository.from_session(session)
+        intervals = await repository.get_by_customer_and_meter(
+            customer, meter_id, until=until
+        )
+        return get_interval_boundaries(intervals, until=until)
+
+
+def get_interval_boundaries(
+    intervals: Sequence[BillingInterval],
+    *,
+    until: datetime,
+) -> tuple[datetime, ...]:
+    boundaries = {
+        boundary
+        for interval in intervals
+        for boundary in (interval.period_start, interval.period_end)
+        if boundary is not None
+    }
+    return tuple(sorted(boundary for boundary in boundaries if boundary <= until))
 
 
 def derive_meter_billing_states(

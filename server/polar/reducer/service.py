@@ -11,6 +11,7 @@ import structlog
 from redis.exceptions import RedisError
 from sqlalchemy import Row
 
+from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncReadSession
@@ -110,15 +111,17 @@ class ReducerService:
         meter_id: UUID,
         *,
         at: datetime,
+        boundaries: Sequence[datetime],
     ) -> None:
-        """Makes `at` a bucket boundary and seals the customer's buckets of every
-        reducer of the meter before it."""
+        """Makes `at` and `boundaries` bucket boundaries and seals the customer's
+        buckets of every reducer of the meter before `at`."""
         await self._seal(
             session,
             customer,
             meter_id,
             [kind for kind in ReducerKind if _is_sealed_on_reset(kind)],
             at=at,
+            boundaries=boundaries,
         )
 
     async def seal_credits(
@@ -169,6 +172,7 @@ class ReducerService:
         kinds: Iterable[ReducerKind],
         *,
         at: datetime,
+        boundaries: Sequence[datetime] = (),
     ) -> None:
         try:
             async with session.begin_nested():
@@ -179,7 +183,9 @@ class ReducerService:
                         await self._get_reducers(session, [meter_id], kind)
                     ).values()
                 ]
-                await self._seal_buckets(session, reducers, customer, until=at)
+                await self._seal_buckets(
+                    session, reducers, customer, until=at, boundaries=boundaries
+                )
         except Exception:
             log.exception(
                 "Failed to seal reducer buckets",
@@ -220,7 +226,8 @@ class ReducerService:
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
         """Marks the customer's usage within [billable_from, cutoff] and its credits
         since the latest reset as billed by the order, and returns their quantities
-        per meter."""
+        per meter. Usage it seals is first split at the billing interval boundaries
+        of the meters."""
         meter_ids = sorted(meter_ids)
         try:
             async with session.begin_nested():
@@ -231,12 +238,20 @@ class ReducerService:
                 # That task and this run at roughly the same time, so if it
                 # hasn't run already we seal it here. The one that runs
                 # afterward becomes a no-op.
+                boundaries: set[datetime] = set()
+                for meter_id in reducers:
+                    boundaries.update(
+                        await billing_interval_service.get_boundaries(
+                            session, customer, meter_id, until=cutoff
+                        )
+                    )
                 await self._seal_buckets(
                     session,
                     list(reducers.values()),
                     customer,
                     since=billable_from,
                     until=cutoff,
+                    boundaries=sorted(boundaries),
                 )
                 quantities = await self._bill_buckets(
                     session,
@@ -721,12 +736,20 @@ class ReducerService:
         *,
         until: datetime,
         since: datetime | None = None,
+        boundaries: Sequence[datetime] = (),
     ) -> None:
         """Seals the customer's unsealed usage until `until`, from `since` if
-        given, making both bucket boundaries."""
+        given. `until`, `since` and, for usage reducers, `boundaries` all become
+        bucket boundaries."""
         repository = ReducerBucketRepository.from_session(session)
         identities = get_customer_identities(customer)
-        boundaries = [until] if since is None else sorted({since, until})
+        edges = {until} if since is None else {since, until}
+        split_at = {
+            reducer.id: sorted(
+                {*edges, *boundaries} if reducer.kind == ReducerKind.usage else edges
+            )
+            for reducer in reducers
+        }
         await self._lock_buckets(
             repository,
             [
@@ -736,8 +759,8 @@ class ReducerService:
                     customer_id,
                     external_customer_id,
                 )
-                for at in boundaries
                 for reducer in reducers
+                for at in split_at[reducer.id]
                 for customer_id, external_customer_id in identities
             ],
         )
@@ -749,7 +772,7 @@ class ReducerService:
                     reducer,
                     customer,
                     (customer_id, external_customer_id),
-                    boundaries,
+                    split_at[reducer.id],
                 )
             with logfire.span(
                 "Seal reducer buckets",

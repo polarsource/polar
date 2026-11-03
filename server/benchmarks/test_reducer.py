@@ -286,7 +286,7 @@ def test_seal_288_buckets(
         run(savepoint.rollback())
 
     def seal() -> None:
-        run(reducer_service.seal(session, customer, meter_id, at=at))
+        run(reducer_service.seal(session, customer, meter_id, at=at, boundaries=()))
 
     begin()
     seal()

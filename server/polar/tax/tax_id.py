@@ -583,9 +583,6 @@ def to_stripe_tax_id(value: TaxID) -> CustomerCreateParamsTaxIdDatum:
     if not tax_id_type.is_stripe_supported():
         raise IncompatibleTaxIDFormat(tax_id_type)
 
-    if tax_id_type == TaxIDFormat.eu_vat:
-        tax_id = _normalize_eu_vat(tax_id)
-
     return {
         "type": str(tax_id_type),  # type: ignore
         "value": tax_id,

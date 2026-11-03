@@ -342,6 +342,16 @@ class ProductService:
 
         return product
 
+    async def _lock_product(
+        self,
+        session: AsyncSession,
+        product: Product,
+        relationships: set[str],
+    ) -> None:
+        # Lock the product row and reload the collections being replaced.
+        # Two transactions otherwise both delete the rows and insert order=0.
+        await session.refresh(product, relationships, with_for_update=True)
+
     async def update(
         self,
         session: AsyncSession,
@@ -480,6 +490,14 @@ class ProductService:
                 ]
             )
 
+        relationships: set[str] = set()
+        if update_schema.medias is not None:
+            relationships.add("product_medias")
+        if update_schema.attached_custom_fields is not None:
+            relationships.add("attached_custom_fields")
+        if relationships:
+            await self._lock_product(session, product, relationships)
+
         if update_schema.medias is not None:
             medias_errors: list[ValidationError] = []
             try:
@@ -511,11 +529,6 @@ class ProductService:
                 errors.extend(medias_errors)
 
         if update_schema.attached_custom_fields is not None:
-            # Lock the product row and reload attached_custom_fields. Two
-            # transactions otherwise both delete the rows and insert order=0.
-            await session.refresh(
-                product, {"attached_custom_fields"}, with_for_update=True
-            )
             attached_custom_fields_errors: list[ValidationError] = []
             try:
                 async with session.begin_nested():
@@ -610,6 +623,8 @@ class ProductService:
         )
         if not declarative_config:
             await assert_catalog_editable(session, product.organization_id)
+
+        await self._lock_product(session, product, {"product_benefits"})
 
         previous_benefits = set(product.benefits)
         new_benefits: set[Benefit] = set()

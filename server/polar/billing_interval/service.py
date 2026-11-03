@@ -1,8 +1,9 @@
 """Meter availability and comparison execution are unimplemented."""
 
+import dataclasses
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import UTC, datetime
 from itertools import pairwise
 from uuid import UUID
 
@@ -16,6 +17,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
 from polar.reducer.types import UsageWindow
+from polar.subscription.repository import SubscriptionRepository
 
 from .comparison import BillingComparison
 from .repository import BillingIntervalRepository
@@ -100,6 +102,28 @@ class BillingIntervalService:
             customer, meter_id, until=until
         )
         return get_interval_boundaries(intervals, until=until)
+
+    async def get_usage_windows(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        cutoff: datetime,
+    ) -> tuple[UsageWindow, ...]:
+        """The customer's chargeable usage windows on the meter before `cutoff`."""
+        repository = BillingIntervalRepository.from_session(session)
+        intervals = await repository.get_by_customer_and_meter(
+            customer, meter_id, until=cutoff
+        )
+        if not intervals:
+            return ()
+        subscription_starts = await SubscriptionRepository.from_session(
+            session
+        ).get_started_at_by_ids(
+            list({interval.subscription_id for interval in intervals})
+        )
+        return resolve_ownership(intervals, subscription_starts, cutoff=cutoff)
 
 
 def get_interval_boundaries(
@@ -246,8 +270,59 @@ def resolve_ownership(
     *,
     cutoff: datetime,
 ) -> tuple[UsageWindow, ...]:
-    """Select owners before excluding usage won by trial or paused intervals."""
-    raise NotImplementedError
+    """Chargeable windows before `cutoff`, each owned by the covering interval of
+    the earliest started subscription. Usage won by a trial or paused interval is
+    excluded, not passed to the next subscription."""
+
+    def rank(interval: BillingInterval) -> tuple[bool, datetime, UUID]:
+        started_at = subscription_starts[interval.subscription_id]
+        return (
+            started_at is None,
+            started_at or datetime.max.replace(tzinfo=UTC),
+            interval.subscription_id,
+        )
+
+    history_by_meter: dict[UUID, list[BillingInterval]] = defaultdict(list)
+    for interval in intervals:
+        if interval.period_start < cutoff:
+            history_by_meter[interval.meter_id].append(interval)
+
+    windows: list[UsageWindow] = []
+    for meter_id in sorted(history_by_meter):
+        history = history_by_meter[meter_id]
+        boundaries = sorted(
+            {interval.period_start for interval in history}
+            | {
+                interval.period_end
+                for interval in history
+                if interval.period_end is not None and interval.period_end < cutoff
+            }
+            | {cutoff}
+        )
+        for start, end in pairwise(boundaries):
+            covering = [
+                interval
+                for interval in history
+                if interval.period_start <= start
+                and (interval.period_end is None or start < interval.period_end)
+            ]
+            if not covering:
+                continue
+            owner = min(covering, key=rank)
+            if owner.usage_policy != UsagePolicy.charge:
+                continue
+            previous = windows[-1] if windows else None
+            if (
+                previous is not None
+                and previous.interval_id == owner.id
+                and previous.end == start
+            ):
+                windows[-1] = dataclasses.replace(previous, end=end)
+            else:
+                windows.append(
+                    UsageWindow(owner.id, owner.subscription_id, meter_id, start, end)
+                )
+    return tuple(windows)
 
 
 def select_settlement_windows(

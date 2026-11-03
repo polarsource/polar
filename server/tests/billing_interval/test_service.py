@@ -10,6 +10,7 @@ from polar.billing_interval.service import (
     plan_interval_changes,
     plan_meter_interval_change,
     resolve_meter_interval_history,
+    resolve_ownership,
 )
 from polar.billing_interval.types import (
     IntervalChangePlan,
@@ -26,6 +27,7 @@ from polar.models import (
 )
 from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
+from polar.reducer.types import UsageWindow
 
 START = datetime(2026, 1, 1, tzinfo=UTC)
 CHANGE = datetime(2026, 2, 1, tzinfo=UTC)
@@ -473,3 +475,104 @@ class TestGetIntervalBoundaries:
         ]
 
         assert get_interval_boundaries(intervals, until=CHANGE) == (START, CHANGE)
+
+
+def day(number: int) -> datetime:
+    return datetime(2026, 1, number, tzinfo=UTC)
+
+
+def owned_interval(
+    subscription_id: UUID,
+    period_start: datetime,
+    period_end: datetime | None,
+    usage_policy: UsagePolicy = UsagePolicy.charge,
+) -> BillingInterval:
+    return BillingInterval(
+        id=uuid4(),
+        subscription_id=subscription_id,
+        meter_id=UUID(int=1),
+        period_start=period_start,
+        period_end=period_end,
+        usage_policy=usage_policy,
+    )
+
+
+def window(interval: BillingInterval, start: datetime, end: datetime) -> UsageWindow:
+    return UsageWindow(
+        interval.id, interval.subscription_id, interval.meter_id, start, end
+    )
+
+
+class TestResolveOwnership:
+    @pytest.mark.parametrize("policy", [UsagePolicy.paused, UsagePolicy.trial])
+    def test_earliest_subscription_owns_overlapping_usage(
+        self, policy: UsagePolicy
+    ) -> None:
+        a, b = UUID(int=10), UUID(int=20)
+        first_price = owned_interval(a, day(1), day(10))
+        second_price = owned_interval(a, day(10), day(11))
+        excluded = owned_interval(a, day(11), day(12), policy)
+        overlapping = owned_interval(b, day(5), None)
+
+        windows = resolve_ownership(
+            [overlapping, excluded, second_price, first_price],
+            {a: day(1), b: day(5)},
+            cutoff=day(20),
+        )
+
+        assert windows == (
+            window(first_price, day(1), day(10)),
+            window(second_price, day(10), day(11)),
+            window(overlapping, day(12), day(20)),
+        )
+
+    def test_equal_starts_go_to_the_smallest_id_and_missing_starts_lose(
+        self,
+    ) -> None:
+        smallest, larger, undated = UUID(int=2), UUID(int=3), UUID(int=1)
+        owner = owned_interval(smallest, day(1), None)
+
+        windows = resolve_ownership(
+            [
+                owned_interval(undated, day(1), None),
+                owned_interval(larger, day(1), None),
+                owner,
+            ],
+            {smallest: day(1), larger: day(1), undated: None},
+            cutoff=day(2),
+        )
+
+        assert windows == (window(owner, day(1), day(2)),)
+
+    def test_subscription_start_not_interval_start_decides_ownership(self) -> None:
+        a, b = UUID(int=10), UUID(int=20)
+        first_price = owned_interval(a, day(1), day(6))
+        second_price = owned_interval(a, day(6), None)
+        later_subscription = owned_interval(b, day(3), None)
+
+        windows = resolve_ownership(
+            [later_subscription, second_price, first_price],
+            {a: day(1), b: day(3)},
+            cutoff=day(10),
+        )
+
+        assert windows == (
+            window(first_price, day(1), day(6)),
+            window(second_price, day(6), day(10)),
+        )
+
+    def test_uncovered_time_has_no_window(self) -> None:
+        subscription_id = UUID(int=1)
+        ended = owned_interval(subscription_id, day(1), day(3))
+        resubscribed = owned_interval(UUID(int=2), day(5), None)
+
+        windows = resolve_ownership(
+            [ended, resubscribed],
+            {subscription_id: day(1), UUID(int=2): day(5)},
+            cutoff=day(7),
+        )
+
+        assert windows == (
+            window(ended, day(1), day(3)),
+            window(resubscribed, day(5), day(7)),
+        )

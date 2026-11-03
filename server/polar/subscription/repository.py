@@ -734,6 +734,16 @@ class SubscriptionRepository(
             case SubscriptionSortProperty.discount:
                 return Discount.name
 
+    async def get_started_at_by_ids(
+        self, subscription_ids: Sequence[UUID]
+    ) -> dict[UUID, datetime | None]:
+        """`started_at` of the subscriptions, including soft-deleted ones."""
+        statement = select(Subscription.id, Subscription.started_at).where(
+            Subscription.id.in_(subscription_ids)
+        )
+        result = await self.session.execute(statement)
+        return {subscription_id: started_at for subscription_id, started_at in result}
+
 
 class SubscriptionProductPriceRepository(
     RepositorySoftDeletionIDMixin[SubscriptionProductPrice, UUID],

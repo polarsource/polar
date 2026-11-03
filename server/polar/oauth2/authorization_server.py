@@ -7,6 +7,7 @@ import structlog
 from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.errors import (
+    InvalidRequestError,
     UnsupportedResponseTypeError,
 )
 from authlib.oauth2.rfc6749.hooks import hooked
@@ -274,21 +275,15 @@ class _QueryTokenMixin:
     def query_token(
         self,
         token_string: str,
-        token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
+        token_type_hint: str | None,
     ) -> OAuth2Token | None:
         token_hashes = get_token_hash_candidates(token_string).values()
-        statement = select(OAuth2Token)
-        if token_type_hint == "access_token":
-            statement = statement.where(OAuth2Token.access_token.in_(token_hashes))
-        elif token_type_hint == "refresh_token":
-            statement = statement.where(OAuth2Token.refresh_token.in_(token_hashes))
-        else:
-            statement = statement.where(
-                or_(
-                    OAuth2Token.access_token.in_(token_hashes),
-                    OAuth2Token.refresh_token.in_(token_hashes),
-                )
+        statement = select(OAuth2Token).where(
+            or_(
+                OAuth2Token.access_token.in_(token_hashes),
+                OAuth2Token.refresh_token.in_(token_hashes),
             )
+        )
 
         result = self.server.session.execute(statement)
         return result.unique().scalar_one_or_none()
@@ -296,6 +291,13 @@ class _QueryTokenMixin:
 
 class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
     CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
+
+    def check_params(
+        self, request: StarletteOAuth2Request, client: OAuth2Client
+    ) -> None:
+        # RFC 7009 requires ignoring unknown hints, unlike Authlib's default.
+        if "token" not in request.form:
+            raise InvalidRequestError()
 
     def authenticate_endpoint_client(
         self, request: StarletteOAuth2Request
@@ -333,10 +335,8 @@ class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
 
     def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
         now = int(time.time())
-        hint = request.form.get("token_type_hint")
         token.access_token_revoked_at = now  # pyright: ignore
-        if hint != "access_token":
-            token.refresh_token_revoked_at = now  # pyright: ignore
+        token.refresh_token_revoked_at = now  # pyright: ignore
         self.server.session.add(token)
         self.server.session.flush()
 

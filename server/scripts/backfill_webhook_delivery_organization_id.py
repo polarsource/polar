@@ -13,7 +13,7 @@ Usage:
 """
 
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, cast
 
 import typer
@@ -29,6 +29,11 @@ cli = typer.Typer()
 console = Console()
 
 configure_script_logging()
+
+
+def parse_cursor(value: str) -> datetime:
+    cursor = datetime.fromisoformat(value)
+    return cursor if cursor.tzinfo is not None else cursor.replace(tzinfo=UTC)
 
 
 async def backfill_batch(
@@ -68,7 +73,9 @@ async def backfill_batch(
 @typer_async
 async def backfill(
     created_after: datetime | None = typer.Option(
-        None, help="Only process deliveries created after this cursor"
+        None,
+        parser=parse_cursor,
+        help="Only process deliveries created after this ISO 8601 cursor",
     ),
     batch_size: int = typer.Option(
         5000, min=1, help="Number of rows to process per batch"

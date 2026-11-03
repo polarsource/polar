@@ -422,7 +422,7 @@ class EventService:
 
         repository = EventRepository.from_session(session)
         timestamps = await repository.get_timestamp_series(
-            start_timestamp, end_timestamp, interval
+            start_timestamp, end_timestamp, interval, timezone
         )
 
         type _EventKey = tuple[str, str]  # (organization_id, name)

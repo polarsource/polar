@@ -165,7 +165,13 @@ class OutpostService:
         message = OutgoingMessageAdapter.validate_python(
             {
                 "type": OutgoingMessageType.configuration,
-                "payload": {"reducers": reducers},
+                "payload": {
+                    "reducers": [
+                        reducer
+                        for reducer in reducers
+                        if not isinstance(reducer.aggregation, UniqueAggregation)
+                    ]
+                },
             }
         )
         await send_stream.send(message)

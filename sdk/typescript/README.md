@@ -147,6 +147,25 @@ export async function POST() {
 }
 ```
 
+In a Next.js App Router Route Handler, use [`after()`](https://nextjs.org/docs/app/api-reference/functions/after)
+to flush the queue after the response. Queue the event in the handler, then return
+the `flush()` promise from the callback so Next.js can wait for delivery.
+
+```typescript
+import { after } from "next/server";
+
+export async function POST() {
+    await metering.track({ name: "api_request", external_customer_id: "customer_123" });
+    after(() => metering.flush());
+
+    return Response.json({ ok: true });
+}
+```
+
+The response can return before delivery is confirmed. Await `flush()` in the handler
+itself when the response needs to confirm Polar accepted the events. The callback
+still counts toward the route's maximum duration.
+
 `flush()` waits for events queued before its call. Concurrent requests share HTTP batches;
 calling `flush()` does not close the helper or create a separate buffer. Later events are
 outside that flush's boundary. This is a shared queue barrier, not request-specific delivery.

@@ -26,6 +26,11 @@ class WebhookDelivery(RecordModel):
             "organization_id",
             "created_at",
         ),
+        Index(
+            "ix_webhook_deliveries_webhook_endpoint_id_created_at",
+            "webhook_endpoint_id",
+            "created_at",
+        ),
         {
             "postgresql_with": {
                 "autovacuum_vacuum_threshold": 100000,

@@ -366,6 +366,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitCustomProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -443,6 +448,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitDiscordProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -528,6 +538,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitDownloadablesProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -607,6 +622,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitFeatureFlagProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -681,6 +701,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -786,6 +811,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitLicenseKeysProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -868,6 +898,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitMeterCreditProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -947,6 +982,11 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean

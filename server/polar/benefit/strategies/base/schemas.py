@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import UUID4, Field, computed_field, field_validator
 from pydantic.json_schema import SkipJsonSchema
@@ -11,7 +12,7 @@ from polar.kit.visibility import Visibility
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.benefit_grant import BenefitGrantError
 from polar.organization.schemas import OrganizationID, OrganizationPublicBase
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
@@ -81,6 +82,16 @@ class BenefitBase(MetadataOutputMixin, ExternalIDOutputMixin, BenefitPublicBase)
     visibility: BenefitVisibility = Field(
         description="The visibility of the benefit in the customer portal."
     )
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the benefit. "
+                "None for benefits not managed by declarative config."
+            )
+        ),
+    ]
 
     @field_validator("visibility", mode="before")
     @classmethod

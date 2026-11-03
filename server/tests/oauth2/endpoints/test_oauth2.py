@@ -2457,8 +2457,76 @@ class TestOAuth2Token:
 
 @pytest.mark.anyio
 class TestOAuth2Revoke:
+    @pytest.mark.parametrize("token_type", ["access_token", "refresh_token"])
+    @pytest.mark.parametrize(
+        "hint", ["access_token", "refresh_token", None, "unknown", ""]
+    )
+    async def test_revokes_token_pair(
+        self,
+        token_type: str,
+        hint: str | None,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        token = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_revoke",
+            refresh_token="polar_rt_u_revoke",
+            scopes=["openid"],
+            user=user,
+        )
+        credentials = {
+            "client_id": oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+        }
+        data = {
+            **credentials,
+            "token": "polar_at_u_revoke"
+            if token_type == "access_token"
+            else "polar_rt_u_revoke",
+        }
+        if hint is not None:
+            data["token_type_hint"] = hint
+
+        response = await client.post("/v1/oauth2/revoke", data=data)
+
+        assert response.status_code == 200
+        saved_token = sync_session.get(OAuth2Token, token.id)
+        assert saved_token is not None
+        assert saved_token.access_token_revoked_at > 0
+        assert saved_token.refresh_token_revoked_at > 0
+
+        introspection = await client.post(
+            "/v1/oauth2/introspect",
+            data={**credentials, "token": "polar_at_u_revoke"},
+        )
+        assert introspection.status_code == 200
+        assert introspection.json() == {"active": False}
+
+        refresh = await client.post(
+            "/v1/oauth2/token",
+            data={
+                **credentials,
+                "grant_type": "refresh_token",
+                "refresh_token": "polar_rt_u_revoke",
+            },
+        )
+        assert refresh.status_code == 400
+        assert refresh.json()["error"] == "invalid_grant"
+
+        repeated = await client.post("/v1/oauth2/revoke", data=data)
+        assert repeated.status_code == 200
+
+    @pytest.mark.parametrize(
+        "hint", ["access_token", "refresh_token", None, "unknown", ""]
+    )
     async def test_agent_token_without_client_credentials(
         self,
+        hint: str | None,
         save_fixture: SaveFixture,
         sync_session: Session,
         client: AsyncClient,
@@ -2473,9 +2541,13 @@ class TestOAuth2Revoke:
             agent=agent,
         )
 
+        data = {"token": "polar_at_a_123"}
+        if hint is not None:
+            data["token_type_hint"] = hint
+
         response = await client.post(
             "/v1/oauth2/revoke",
-            data={"token": "polar_at_a_123", "token_type_hint": "access_token"},
+            data=data,
         )
 
         assert response.status_code == 200
@@ -2538,3 +2610,100 @@ class TestOAuth2Revoke:
 
         assert response.status_code == 401
         assert response.json()["error"] == "invalid_client"
+
+    @pytest.mark.parametrize(
+        ("token", "status_code"),
+        [(None, 400), ("", 200), ("unknown-token", 200)],
+    )
+    async def test_missing_or_unknown_token(
+        self,
+        token: str | None,
+        status_code: int,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        data = {
+            "client_id": oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+            "token_type_hint": "unknown",
+        }
+        if token is not None:
+            data["token"] = token
+
+        response = await client.post("/v1/oauth2/revoke", data=data)
+
+        assert response.status_code == status_code
+        if token is None:
+            assert response.json()["error"] == "invalid_request"
+
+    async def test_cannot_revoke_another_clients_token(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+        agent: Agent,
+    ) -> None:
+        token = await create_oauth2_token(
+            save_fixture,
+            client=agent.oauth2_client,
+            access_token="polar_at_a_other_client",
+            refresh_token=None,
+            scopes=sorted(UNCLAIMED_AGENT_SCOPES),
+            agent=agent,
+        )
+
+        response = await client.post(
+            "/v1/oauth2/revoke",
+            data={
+                "client_id": oauth2_client.client_id,
+                "client_secret": "polar_cs_123",
+                "token": "polar_at_a_other_client",
+                "token_type_hint": "unknown",
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "invalid_grant"
+        saved_token = sync_session.get(OAuth2Token, token.id)
+        assert saved_token is not None
+        assert saved_token.access_token_revoked_at == 0
+        assert saved_token.refresh_token_revoked_at == 0
+
+
+@pytest.mark.anyio
+class TestOAuth2Introspect:
+    @pytest.mark.parametrize("token_type", ["access_token", "refresh_token"])
+    @pytest.mark.parametrize("hint", ["access_token", "refresh_token", None])
+    async def test_finds_token_regardless_of_hint(
+        self,
+        token_type: str,
+        hint: str | None,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        oauth2_client: OAuth2Client,
+        user: User,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_introspect",
+            refresh_token="polar_rt_u_introspect",
+            scopes=["openid"],
+            user=user,
+        )
+        data = {
+            "client_id": oauth2_client.client_id,
+            "client_secret": "polar_cs_123",
+            "token": "polar_at_u_introspect"
+            if token_type == "access_token"
+            else "polar_rt_u_introspect",
+        }
+        if hint is not None:
+            data["token_type_hint"] = hint
+
+        response = await client.post("/v1/oauth2/introspect", data=data)
+
+        assert response.status_code == 200
+        assert response.json()["active"] is True
+        assert response.json()["sub"] == str(user.id)

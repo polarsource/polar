@@ -76,6 +76,7 @@ from .oauth2_authorization_code import OAuth2AuthorizationCode
 from .oauth2_authorization_code_organization import OAuth2AuthorizationCodeOrganization
 from .oauth2_client import OAuth2Client
 from .oauth2_grant import OAuth2Grant
+from .oauth2_grant_organization import OAuth2GrantOrganization
 from .oauth2_state import OAuth2State
 from .oauth2_token import OAuth2Token
 from .oauth2_token_organization import OAuth2TokenOrganization
@@ -218,6 +219,7 @@ __all__ = [
     "OAuth2AuthorizationCodeOrganization",
     "OAuth2Client",
     "OAuth2Grant",
+    "OAuth2GrantOrganization",
     "OAuth2State",
     "OAuth2Token",
     "OAuth2TokenOrganization",

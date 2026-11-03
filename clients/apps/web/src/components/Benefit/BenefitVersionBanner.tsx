@@ -77,6 +77,10 @@ const OlderBenefitBanner = ({
     isGranted: true,
   })
 
+  if (catalog?.status !== 'archived') {
+    return null
+  }
+
   return (
     <Box
       flexDirection={{ base: 'column', md: 'row' }}

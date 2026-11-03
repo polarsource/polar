@@ -11,6 +11,8 @@ if (!accessToken) {
 export const polar = RuntimeSDK(config, {
   accessToken,
   environment: 'sandbox',
+  // Outpost is opt-in since @polar-sh/sdk 1.0.3-alpha.6
+  metering: { outpost: Boolean(process.env.REDIS_URL) },
   // baseUrl: 'http://127.0.0.1:8000',
 })
 

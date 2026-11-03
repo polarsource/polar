@@ -5,7 +5,10 @@ import {
   isSeatBasedPrice,
   isUnitBasedPrice,
 } from '@/utils/product'
-import { billsUsageOnMeterCycle } from '@/utils/subscription'
+import {
+  billsUsageOnMeterCycle,
+  formatBilledMeterUnits,
+} from '@/utils/subscription'
 import { keyByContent } from '@/utils/keys'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -225,16 +228,29 @@ export const CurrentPeriodOverview = ({
         <>
           <span className="font-medium">Metered Charges</span>
 
-          {subscription.meters.map((meter) => (
-            <div key={meter.id} className="flex items-center justify-between">
-              <span className="dark:text-polar-400 text-gray-600">
-                {meter.meter.name}
-              </span>
-              <span className="font-medium">
-                {formatCurrency('compact')(meter.amount, subscription.currency)}
-              </span>
-            </div>
-          ))}
+          {subscription.meters.map((meter) => {
+            const billedUnits = formatBilledMeterUnits(meter)
+            return (
+              <div key={meter.id} className="flex items-center justify-between">
+                <Box flexDirection="column">
+                  <span className="dark:text-polar-400 text-gray-600">
+                    {meter.meter.name}
+                  </span>
+                  {billedUnits && (
+                    <Text variant="caption" color="muted">
+                      {billedUnits}
+                    </Text>
+                  )}
+                </Box>
+                <span className="font-medium">
+                  {formatCurrency('compact')(
+                    meter.amount,
+                    subscription.currency,
+                  )}
+                </span>
+              </div>
+            )
+          })}
         </>
       )}
 

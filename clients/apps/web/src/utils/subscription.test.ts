@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   billsUsageOnMeterCycle,
+  formatBilledMeterUnits,
   getPauseAction,
   MeterCycleSubscription,
   PauseActionSubscription,
@@ -99,5 +100,34 @@ describe('billsUsageOnMeterCycle', () => {
     expect(billsUsageOnMeterCycle(meterCycleSubscription({ meters: [] }))).toBe(
       false,
     )
+  })
+})
+
+describe('formatBilledMeterUnits', () => {
+  it('shows usage beyond the credited units as billable', () => {
+    expect(
+      formatBilledMeterUnits({ consumed_units: 12500, credited_units: 10000 }),
+    ).toBe('2,500 billable')
+  })
+
+  it('shows all usage as billable when nothing is credited', () => {
+    expect(
+      formatBilledMeterUnits({ consumed_units: 1234, credited_units: 0 }),
+    ).toBe('1,234 billable')
+  })
+
+  it('hides the units when the billable usage rounds to zero', () => {
+    expect(
+      formatBilledMeterUnits({
+        consumed_units: 1000.004,
+        credited_units: 1000,
+      }),
+    ).toBeNull()
+  })
+
+  it('hides the units when usage stays within the credited units', () => {
+    expect(
+      formatBilledMeterUnits({ consumed_units: 200, credited_units: 1000 }),
+    ).toBeNull()
   })
 })

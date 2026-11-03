@@ -5,7 +5,7 @@ import {
   name,
   priceGroups,
 } from '@/utils/billing-config/describe'
-import { recurrence } from '@/utils/billing-config/sentences'
+import { meterCycle, recurrence } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
 type Action = AppliedEntry['action']
@@ -144,6 +144,26 @@ const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
   )
 }
 
+const merge = (
+  diff: ReadonlyArray<Change>,
+  fields: ReadonlyArray<string>,
+  field: string,
+  render: (values: Record<string, unknown>) => string | undefined,
+): Change[] => {
+  const parts = diff.filter((change) => fields.includes(change.field))
+  if (parts.length === 0) return [...diff]
+  const side = (key: 'before' | 'after') => {
+    const text = render(
+      Object.fromEntries(parts.map((change) => [change.field, change[key]])),
+    )
+    return text === undefined ? null : new Rendered(text)
+  }
+  const merged: Change = { field, before: side('before'), after: side('after') }
+  return diff.flatMap((change) =>
+    change === parts[0] ? [merged] : parts.includes(change) ? [] : [change],
+  )
+}
+
 const SETTING_VALUES: Record<string, (value: string) => string> = {
   currency: (value) => value.toUpperCase(),
   tax: (value) => value,
@@ -160,8 +180,17 @@ const renderSetting = (change: Change): Change => ({
   after: settingValue(change.field, change.after),
 })
 
+const METER_CYCLE = ['meter_interval', 'meter_interval_count']
+
+const mergeMeterCycle = (diff: ReadonlyArray<Change>) =>
+  METER_CYCLE.every((field) => diff.some((change) => change.field === field))
+    ? merge(diff, METER_CYCLE, 'meter cycle', (values) =>
+        meterCycle(values['meter_interval'], values['meter_interval_count']),
+      )
+    : [...diff]
+
 export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
-  mergeRecurrence(diff)
+  mergeMeterCycle(mergeRecurrence(diff))
     .map((change) => (section === 'settings' ? renderSetting(change) : change))
     .flatMap(expand)
     .map((change) => ({ ...change, field: name(change.field) }))

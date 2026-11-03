@@ -243,6 +243,7 @@ export const pricingConfig = defineConfig({
           .cap(usd(500), eur(475)),
       )
       .recurring(3, 'months')
+      .meterCycle('monthly')
       .trial(1, 'month'),
     devices: product('Devices')
       .prices(

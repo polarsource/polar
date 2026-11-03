@@ -62,6 +62,64 @@ const compositionIssues = (
   return [...issues]
 }
 
+// Mirrors meter_interval_divides_billing_interval on the backend: the meter
+// cycle must re-align with the billing cycle at every renewal.
+const meterCycleDividesBilling = (
+  meter: IntervalUnit,
+  meterCount: number,
+  billing: IntervalUnit,
+  billingCount: number,
+): boolean => {
+  if (meter === billing) return billingCount % meterCount === 0
+  if (meter === 'day' && billing === 'week') {
+    return (billingCount * 7) % meterCount === 0
+  }
+  if (meter === 'month' && billing === 'year') {
+    return (billingCount * 12) % meterCount === 0
+  }
+  if (meter === 'day') return meterCount === 1
+  return false
+}
+
+const meterCycleIssue = ({
+  recurring_interval,
+  recurring_interval_count,
+  meter_interval,
+  meter_interval_count,
+}: {
+  readonly recurring_interval: IntervalUnit | null
+  readonly recurring_interval_count: number | null
+  readonly meter_interval?: IntervalUnit
+  readonly meter_interval_count?: number
+}) => {
+  if (meter_interval === undefined) {
+    return meter_interval_count === undefined
+      ? undefined
+      : {
+          path: ['meter_interval_count'],
+          issue: 'A meter interval count requires a meter interval.',
+        }
+  }
+  if (recurring_interval === null) {
+    return {
+      path: ['meter_interval'],
+      issue: 'A meter cycle is only supported on recurring products.',
+    }
+  }
+  return meterCycleDividesBilling(
+    meter_interval,
+    meter_interval_count ?? 1,
+    recurring_interval,
+    recurring_interval_count ?? 1,
+  )
+    ? undefined
+    : {
+        path: ['meter_interval'],
+        issue:
+          'The meter cycle must evenly divide the billing cycle, so it re-aligns with the billing cycle at every renewal.',
+      }
+}
+
 export const ProductConfig = Schema.Struct({
   external_id: Schema.String.check(Schema.isMinLength(1)),
   name: Schema.String.check(Schema.isMinLength(3), Schema.isMaxLength(64)),
@@ -79,6 +137,13 @@ export const ProductConfig = Schema.Struct({
       Schema.isLessThanOrEqualTo(1000),
     ),
   ),
+  meter_interval: Schema.optionalKey(IntervalUnit),
+  meter_interval_count: Schema.optionalKey(
+    Schema.Int.check(
+      Schema.isGreaterThanOrEqualTo(1),
+      Schema.isLessThanOrEqualTo(999),
+    ),
+  ),
   prices: Schema.Array(PriceConfig).check(Schema.isMinLength(1)),
   benefits: Schema.Array(Schema.String),
   metadata: Schema.optionalKey(Metadata),
@@ -89,6 +154,10 @@ export const ProductConfig = Schema.Struct({
   Schema.makeFilter(({ prices }) =>
     compositionIssues(prices).map((issue) => ({ path: ['prices'], issue })),
   ),
+  Schema.makeFilter((product) => {
+    const issue = meterCycleIssue(product)
+    return issue === undefined ? [] : [issue]
+  }),
 )
 
 export type ProductConfig = typeof ProductConfig.Type
@@ -122,6 +191,18 @@ type Trial = {
   readonly trial_interval_count: number
 }
 
+type MeterCycle = {
+  readonly meter_interval: IntervalUnit
+  readonly meter_interval_count: number
+}
+
+type Cycle =
+  | [cadence: keyof typeof cadences]
+  | [count: number, interval: Interval]
+
+const cycleOf = (args: Cycle): [IntervalUnit, number] =>
+  args.length === 1 ? [cadences[args[0]], 1] : [unitOf(args[1]), args[0]]
+
 type Prices<Meter extends string> = readonly [
   PriceDefinition<Meter>,
   ...PriceDefinition<Meter>[],
@@ -135,6 +216,7 @@ class ProductBuilder<
   Granted extends Benefit = never,
 > extends withDeprecation(withMetadata(withVisibility(Builder))) {
   readonly trialPeriod: Trial | undefined = undefined
+  readonly meterPeriod: MeterCycle | undefined = undefined
   readonly benefits: ReadonlyArray<Granted> = []
   readonly descriptionText: string | undefined = undefined
 
@@ -169,20 +251,16 @@ class ProductBuilder<
     ProductBuilder<Meter, Benefit, P, Recurring, Granted>
   >
   recurring(
-    ...args:
-      | [cadence: keyof typeof cadences]
-      | [count: number, interval: Interval]
+    ...args: Cycle
   ): KeepDeprecation<
     this,
     ProductBuilder<Meter, Benefit, P, Recurring, Granted>
   > {
-    const billing: Recurring =
-      args.length === 1
-        ? { recurring_interval: cadences[args[0]], recurring_interval_count: 1 }
-        : {
-            recurring_interval: unitOf(args[1]),
-            recurring_interval_count: args[0],
-          }
+    const [interval, count] = cycleOf(args)
+    const billing: Recurring = {
+      recurring_interval: interval,
+      recurring_interval_count: count,
+    }
     return this.with({ billing })
   }
 
@@ -194,7 +272,11 @@ class ProductBuilder<
       recurring_interval: null,
       recurring_interval_count: null,
     }
-    return this.with({ billing, trialPeriod: undefined })
+    return this.with({
+      billing,
+      trialPeriod: undefined,
+      meterPeriod: undefined,
+    })
   }
 
   trial(
@@ -207,6 +289,25 @@ class ProductBuilder<
         trial_interval: unitOf(interval),
         trial_interval_count: count,
       },
+    })
+  }
+
+  meterCycle(
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    cadence: keyof typeof cadences,
+  ): this
+  meterCycle(
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    count: number,
+    interval: Interval,
+  ): this
+  meterCycle(
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    ...args: Cycle
+  ): this {
+    const [interval, count] = cycleOf(args)
+    return this.with({
+      meterPeriod: { meter_interval: interval, meter_interval_count: count },
     })
   }
 

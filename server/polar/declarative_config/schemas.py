@@ -17,7 +17,7 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
-from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import IDSchema, Int32, Schema, SetSchemaReference
@@ -33,6 +33,7 @@ from polar.models.catalog import CatalogStatus
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
+from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
     PriceAmount,
     ProductDescription,
@@ -269,6 +270,23 @@ class ConfigProduct(
         le=999,
         description="Billing cycle length in intervals. Defaults to 1.",
     )
+    meter_interval: MeterInterval | None = Field(
+        default=None,
+        description=(
+            "Optional meter cycle, independent of the billing interval. "
+            "Overage settlement, meter resets and meter-credit grants run on it. "
+            "It must evenly divide the billing interval. "
+            "Leave it empty to follow the billing interval. "
+            "Can't be updated once the product is applied. "
+            "Leaving it empty on an existing product keeps its current cycle."
+        ),
+    )
+    meter_interval_count: int | None = Field(
+        default=None,
+        ge=1,
+        le=999,
+        description="Meter cycle length in intervals. Defaults to 1.",
+    )
     prices: list[ConfigProductPrice] = Field(
         min_length=1, description="The prices of the product."
     )
@@ -288,6 +306,10 @@ class ConfigProduct(
                 raise ValueError(
                     "Trial configuration is only supported on recurring products."
                 )
+            if self.meter_interval is not None or self.meter_interval_count is not None:
+                raise ValueError(
+                    "A meter cycle is only supported on recurring products."
+                )
             if any(
                 isinstance(
                     price,
@@ -298,9 +320,35 @@ class ConfigProduct(
                 raise ValueError(
                     "Metered pricing is not supported on one-time products."
                 )
-        elif self.recurring_interval_count is None:
-            self.recurring_interval_count = 1
+        else:
+            if self.recurring_interval_count is None:
+                self.recurring_interval_count = 1
+            self._validate_meter_cycle(
+                self.recurring_interval, self.recurring_interval_count
+            )
         return self
+
+    def _validate_meter_cycle(
+        self,
+        recurring_interval: SubscriptionRecurringInterval,
+        recurring_interval_count: int,
+    ) -> None:
+        if self.meter_interval is None:
+            if self.meter_interval_count is not None:
+                raise ValueError("A meter interval count requires a meter interval.")
+            return
+        if self.meter_interval_count is None:
+            self.meter_interval_count = 1
+        if not meter_interval_divides_billing_interval(
+            self.meter_interval,
+            self.meter_interval_count,
+            recurring_interval,
+            recurring_interval_count,
+        ):
+            raise ValueError(
+                "The meter cycle must evenly divide the billing cycle, "
+                "so it re-aligns with the billing cycle at every renewal."
+            )
 
 
 class ConfigWebhookEndpoint(Schema):
@@ -428,6 +476,7 @@ class ConfigIssueType(StrEnum):
     deprecated_reference = "deprecated_reference"
     duplicate_external_id = "duplicate_external_id"
     interval_changed = "interval_changed"
+    meter_cycle_unused = "meter_cycle_unused"
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"
     not_supported = "not_supported"
@@ -714,6 +763,8 @@ class ConfigProductRead(_ConfigRead):
     recurring_interval_count: int | None
     trial_interval: TrialInterval | None
     trial_interval_count: int | None
+    meter_interval: MeterInterval | None
+    meter_interval_count: int | None
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
     metadata: MetadataOutputType

@@ -1651,6 +1651,80 @@ async def test_applies_a_snapshot_polar_did_not_confirm_in_time(
 
 
 @pytest.mark.anyio
+async def test_waits_for_a_confirmation_before_confirming_a_newer_snapshot(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    websocket_requests: list[dict[str, typing.Any]],
+    confirmations: dict[str, bool],
+    polar_sends: list[typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    newer = {**_sealing(4, 40), "version": 1791807000000006}
+
+    async def send(message: dict[str, typing.Any]) -> None:
+        await polar_sends[-1]({"type": "websocket.send", "text": json.dumps(message)})
+
+    async def answer(ids: list[str], answered: dict[str, typing.Any]) -> None:
+        await send(
+            {
+                "type": "confirmed",
+                "payload": {
+                    "reducer_id": "tokens",
+                    "customer_id": None,
+                    "external_customer_id": "alice",
+                    "bucket_start": BUCKET,
+                    "ids": ids,
+                    "snapshot": {
+                        **answered,
+                        "customer_exists": True,
+                        "reducer_id": "tokens",
+                    },
+                },
+            }
+        )
+
+    def confirmed(count: int) -> collections.abc.Callable[[], typing.Awaitable[bool]]:
+        async def asked() -> bool:
+            return (
+                sum(request["type"] == "confirm" for request in websocket_requests)
+                == count
+            )
+
+        return asked
+
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(10):
+            await outpost.track(_usage(f"event-{index}", 10))
+        confirmations["answer"] = False
+        snapshots["external:alice:tokens"] = _sealing(0, 0)
+        async with Outpost(url, client=polar_client, confirm_timeout=10) as other:
+            await other.actor(external_customer_id="alice")
+            await _wait_for(confirmed(1))
+            await send(
+                {
+                    "type": "meter_usage",
+                    "payload": {
+                        **newer,
+                        "customer_exists": True,
+                        "reducer_id": "tokens",
+                    },
+                }
+            )
+            # Polar answers the first confirmation as it stood when asked: nothing stored yet.
+            await answer([], _sealing(0, 0))
+            await _wait_for(confirmed(2))
+            await answer([f"event-{index}" for index in range(4)], newer)
+
+            async def settled() -> bool:
+                return await _consumed(other) == 100
+
+            await _wait_for(settled)
+
+
+@pytest.mark.anyio
 async def test_asks_for_pending_events_a_thousand_at_a_time(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

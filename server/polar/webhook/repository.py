@@ -174,14 +174,8 @@ class WebhookDeliveryRepository(
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[WebhookDelivery]:
-        return (
-            self.get_base_statement()
-            .join(
-                WebhookEndpoint,
-                WebhookDelivery.webhook_endpoint_id == WebhookEndpoint.id,
-            )
-            .options(contains_eager(WebhookDelivery.webhook_endpoint))
-            .where(WebhookEndpoint.organization_id.in_(org_ids))
+        return self.get_base_statement().where(
+            WebhookDelivery.organization_id.in_(org_ids)
         )
 
 

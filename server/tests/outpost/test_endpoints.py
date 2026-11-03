@@ -1,7 +1,10 @@
+import json
+import typing
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+import anyio
 import httpx
 import httpx_ws
 import pytest
@@ -30,6 +33,7 @@ from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.outpost.schemas import to_epoch_microseconds
 from polar.outpost.service import SYNCED_LOOKBACK
+from polar.outpost.service import outpost as outpost_service
 from polar.outpost.stream import publish
 from polar.redis import Redis
 from polar.reducer.service import get_reducer_bucket_start
@@ -119,6 +123,39 @@ class TestOutpost:
                 assert reducer_payload["aggregation"] == meter.aggregation.model_dump(
                     mode="json"
                 )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_request_answered_while_an_earlier_one_is_handled(
+        self, client: httpx.AsyncClient, mocker: MockerFixture
+    ) -> None:
+        released = anyio.Event()
+        handle_incoming_message = outpost_service.handle_incoming_message
+
+        async def handle(*args: typing.Any) -> None:
+            if json.loads(args[2])["type"] == "meter_usage":
+                await released.wait()
+            await handle_incoming_message(*args)
+
+        mocker.patch.object(outpost_service, "handle_incoming_message", handle)
+
+        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
+            await websocket.receive_json()
+            await websocket.send_json(
+                {
+                    "type": "meter_usage",
+                    "payload": {
+                        "reducer_id": str(uuid.uuid4()),
+                        "external_customer_id": "alice",
+                    },
+                }
+            )
+            await websocket.send_json({"type": "configuration"})
+            try:
+                response = await websocket.receive_json(timeout=2)
+            finally:
+                released.set()
+
+        assert response["type"] == "configuration"
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])

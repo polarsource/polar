@@ -4,13 +4,13 @@ import {
   type McpServer,
 } from '@modelcontextprotocol/server'
 import { Effect } from 'effect'
-import { HttpClient, HttpClientRequest, type HttpMethod } from 'effect/http'
+import { HttpClientRequest, type HttpMethod } from 'effect/http'
 import generatedTools from '../generated/tools.json'
 import { intentJsonSchema } from '../intent'
 import { RequestLog } from '../log'
-import type { PolarApiOutboundProps } from '../outbound'
+import { polarApiClient, type PolarApiOutboundProps } from '../outbound'
 import { makeToolRunner, ToolError } from '../results'
-import { rejectedFields, spec } from '../spec'
+import { rejectedFields } from '../spec'
 
 type Arguments = Record<string, unknown>
 
@@ -79,15 +79,7 @@ export const registerOperationTools = Effect.fn('registerOperationTools')(
     { apiUrl, token, readOnly }: PolarApiOutboundProps,
   ) {
     const runTool = yield* makeToolRunner
-    const client = (yield* HttpClient.HttpClient).pipe(
-      HttpClient.mapRequest((request) =>
-        request.pipe(
-          HttpClientRequest.bearerToken(token),
-          HttpClientRequest.setHeader('User-Agent', 'polar-mcp'),
-          HttpClientRequest.setHeader('Polar-Version', spec.apiVersion),
-        ),
-      ),
-    )
+    const client = yield* polarApiClient(token)
 
     const execute = Effect.fn('Operation.execute')(
       function* (definition: OperationTool, args: Arguments) {

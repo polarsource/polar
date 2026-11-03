@@ -44,14 +44,14 @@ class WebhookDelivery(RecordModel):
     def webhook_endpoint(cls) -> Mapped["WebhookEndpoint"]:
         return relationship("WebhookEndpoint", lazy="raise")
 
-    organization_id: Mapped[UUID | None] = mapped_column(
+    organization_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("organizations.id", ondelete="CASCADE"),
-        nullable=True,
+        nullable=False,
     )
 
     @declared_attr
-    def organization(cls) -> Mapped["Organization | None"]:
+    def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
 
     webhook_event_id: Mapped[UUID] = mapped_column(

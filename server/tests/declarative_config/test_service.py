@@ -852,6 +852,31 @@ class TestApply:
             ConfigAction.unchanged
         }
 
+        omitted = Config.model_validate(
+            {
+                "meters": [TOOL_CALLS_METER],
+                "products": [
+                    {
+                        **{
+                            k: v
+                            for k, v in ANNUAL_PRODUCT.items()
+                            if k != "meter_interval"
+                        },
+                        "name": "Annual renamed",
+                    }
+                ],
+            }
+        )
+        await declarative_config_service.apply(session, redis, auth_subject, omitted)
+
+        [renamed] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["annual"])
+        assert renamed.id != product.id
+        assert renamed.name == "Annual renamed"
+        assert renamed.meter_interval == MeterInterval.month
+        assert renamed.meter_interval_count == 1
+
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_deprecated_product_not_created(
         self,

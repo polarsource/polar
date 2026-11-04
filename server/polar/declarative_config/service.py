@@ -781,13 +781,21 @@ class DeclarativeConfigService:
                                 auth_subject,
                                 declarative_config=True,
                             )
+                            update_dict: dict[str, Any] = {
+                                "external_id": config.external_id
+                            }
                             if change.existing is not None:
                                 catalog_service.copy_product_settings(
                                     change.existing, product
                                 )
-                            await repository.update(
-                                product, update_dict={"external_id": config.external_id}
-                            )
+                                if config.meter_interval is None:
+                                    update_dict["meter_interval"] = (
+                                        change.existing.meter_interval
+                                    )
+                                    update_dict["meter_interval_count"] = (
+                                        change.existing.meter_interval_count
+                                    )
+                            await repository.update(product, update_dict=update_dict)
                     except IntegrityError as e:
                         if _constraint_name(e) != _PRODUCT_EXTERNAL_ID_INDEX:
                             raise

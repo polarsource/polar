@@ -128,6 +128,8 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
+    OUTPOST_PULL_INTERVAL: timedelta = timedelta(seconds=30)
+
     SECRET: str = "super secret jwt secret"
     HASH_SECRETS: dict[str, str] = {}
     CURRENT_HASH_SECRET_ID: str | None = None

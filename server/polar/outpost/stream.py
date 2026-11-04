@@ -1,10 +1,13 @@
 import collections.abc
 import datetime
+import functools
 import json
 import typing
 import uuid
 
 import anyio
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
 
 from polar.kit.json import json_obj_serializer
 from polar.redis import Redis
@@ -18,7 +21,60 @@ class ReducerBucketOutpostEvent(typing.TypedDict):
     external_customer_id: str | None
 
 
-type OutpostEvent = ReducerBucketOutpostEvent
+class ConfigurationOutpostEvent(typing.TypedDict):
+    type: typing.Literal["configuration"]
+
+
+type OutpostEvent = ReducerBucketOutpostEvent | ConfigurationOutpostEvent
+
+MAX_SEQUENCE = 2**64 - 1
+
+
+@functools.total_ordering
+class Cursor:
+    """A stream entry id: milliseconds and a sequence within them."""
+
+    __slots__ = ("milliseconds", "sequence")
+
+    def __init__(self, milliseconds: int, sequence: int) -> None:
+        self.milliseconds = milliseconds
+        self.sequence = sequence
+
+    @classmethod
+    def parse(cls, value: str | bytes) -> typing.Self:
+        milliseconds, sequence = (
+            value.decode() if isinstance(value, bytes) else value
+        ).split("-")
+        return cls(int(milliseconds), int(sequence))
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls, source: typing.Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(
+            cls._validate,
+            core_schema.str_schema(pattern=r"^\d+-\d+$"),
+            serialization=core_schema.to_string_ser_schema(),
+        )
+
+    @classmethod
+    def _validate(cls, value: str) -> typing.Self:
+        cursor = cls.parse(value)
+        if max(cursor.milliseconds, cursor.sequence) > MAX_SEQUENCE:
+            raise ValueError("A stream id holds two 64-bit numbers.")
+        return cursor
+
+    def __str__(self) -> str:
+        return f"{self.milliseconds}-{self.sequence}"
+
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Cursor) and self._key() == other._key()
+
+    def __lt__(self, other: "Cursor") -> bool:
+        return self._key() < other._key()
+
+    def _key(self) -> tuple[int, int]:
+        return self.milliseconds, self.sequence
 
 
 # A cursor older than this has missed changes: the client starts over.
@@ -43,6 +99,29 @@ async def publish(
     event: OutpostEvent,
 ) -> None:
     await redis.publish(_get_channel(organization_id), _encode(event))
+
+
+async def read_changes(
+    redis: Redis, organization_id: uuid.UUID, after: Cursor | None, limit: int
+) -> tuple[list[tuple[Cursor, OutpostEvent]], int]:
+    """The changes after the cursor, and Redis' time in milliseconds when it read
+    them: any later entry gets a later id."""
+    async with redis.pipeline(transaction=True) as pipeline:
+        if after is not None:
+            pipeline.xrange(
+                get_changes_key(organization_id),
+                # "(" makes the bound exclusive: the entry at the cursor was read.
+                min=f"({after}",
+                count=limit,
+            )
+        pipeline.time()
+        *entries, (seconds, microseconds) = await pipeline.execute()
+    # Each entry holds one field: the event.
+    changes = [
+        (Cursor.parse(entry_id), json.loads(next(iter(fields.values()))))
+        for entry_id, fields in (entries[0] if entries else [])
+    ]
+    return changes, int(seconds) * 1000 + int(microseconds) // 1000
 
 
 def enqueue(organization_id: uuid.UUID, event: OutpostEvent) -> None:

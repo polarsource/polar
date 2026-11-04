@@ -6799,6 +6799,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/outpost/changes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Changes
+     * @description The snapshots that changed since the cursor.
+     *
+     *     When no cursor is provided, returns the cursor to start pulling from.
+     *
+     *     **Scopes**: `events:write`
+     */
+    get: operations['outpost:changes']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/agent/claim/{link_token}/preview': {
     parameters: {
       query?: never
@@ -13795,6 +13819,40 @@ export interface components {
        * @description The benefits in this version, ordered by key. Empty for versions published before benefits were versioned.
        */
       benefits: components['schemas']['CatalogBenefit'][]
+    }
+    /** Changes */
+    Changes: {
+      /**
+       * Changes
+       * @description A snapshot of each customer and reducer that changed since the cursor.
+       */
+      changes: components['schemas']['MeterUsageOutgoingMessagePayload'][]
+      /**
+       * Cursor
+       * @description Pull the next changes after this one.
+       */
+      cursor: string
+      /**
+       * Has More
+       * @description The page is full: pull again from the cursor right away.
+       */
+      has_more: boolean
+      /**
+       * Reset
+       * @description Changes were missed: every snapshot the client holds may be stale. The client
+       *     drops them, and fetches each customer again at its next read.
+       */
+      reset: boolean
+      /**
+       * Configuration Changed
+       * @description The organization's reducers changed: fetch the configuration again.
+       */
+      configuration_changed: boolean
+      /**
+       * Next Poll In
+       * @description Seconds until the next pull.
+       */
+      next_poll_in: number
     }
     /** ChannelNamePreviewRequest */
     ChannelNamePreviewRequest: {
@@ -23843,6 +23901,7 @@ export interface components {
       /** Return To */
       return_to?: string | null
     }
+    EpochMicroseconds: number
     Event:
       | components['schemas']['SystemEvent']
       | components['schemas']['UserEvent']
@@ -27232,6 +27291,30 @@ export interface components {
        * @description Whether the meter is archived. Archived meters are no longer used for billing.
        */
       is_archived?: boolean | null
+    }
+    /** MeterUsageOutgoingMessagePayload */
+    MeterUsageOutgoingMessagePayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** Customer Id */
+      customer_id: string | null
+      /** External Customer Id */
+      external_customer_id: string | null
+      /** Customer Exists */
+      customer_exists: boolean
+      version: components['schemas']['EpochMicroseconds']
+      cold_until: components['schemas']['EpochMicroseconds']
+      /** Count */
+      count: number
+      /** Sum */
+      sum: number
+      /** Min */
+      min: number | null
+      /** Max */
+      max: number | null
     }
     /**
      * Metric
@@ -63850,6 +63933,38 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Feedback']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'outpost:changes': {
+    parameters: {
+      query?: {
+        cursor?: string | null
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Changes']
         }
       }
       /** @description Validation Error */

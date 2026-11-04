@@ -13,6 +13,7 @@ from pydantic import (
     TypeAdapter,
 )
 
+from polar.kit.schemas import Schema
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.models.reducer import ReducerKind
@@ -189,6 +190,24 @@ class ConfirmedOutgoingMessagePayload(MessageBase):
     ids: list[str]
     # Read in the same transaction as the ids, so the two agree.
     snapshot: MeterUsageOutgoingMessagePayload
+
+
+class Changes(Schema):
+    model_config = ConfigDict(use_attribute_docstrings=True)
+
+    changes: list[MeterUsageOutgoingMessagePayload]
+    """A snapshot of each customer and reducer that changed since the cursor."""
+    cursor: str
+    """Pull the next changes after this one."""
+    has_more: bool
+    """The page is full: pull again from the cursor right away."""
+    reset: bool
+    """Changes were missed: every snapshot the client holds may be stale. The client
+    drops them, and fetches each customer again at its next read."""
+    configuration_changed: bool
+    """The organization's reducers changed: fetch the configuration again."""
+    next_poll_in: int
+    """Seconds until the next pull."""
 
 
 class ConfirmedOutgoingMessage(OutgoingMessageBase):

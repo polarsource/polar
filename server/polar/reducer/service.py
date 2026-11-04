@@ -399,6 +399,7 @@ class ReducerService:
                 case _:
                     assert_never(kind)
         assert usage is not None
+        enqueue_outpost_event(meter.organization_id, {"type": "configuration"})
         return usage
 
     async def rollup(

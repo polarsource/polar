@@ -860,6 +860,212 @@ describe('CheckoutForm', () => {
     })
   })
 
+  describe('billing address saves', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+    })
+
+    it('waits for a complete address before saving it', async () => {
+      const update = vi.fn(async () => createCheckout())
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      render(
+        <FormWrapper
+          checkout={createCheckout({
+            customer_billing_address: { country: 'US' },
+            billing_address_fields: {
+              country: 'required',
+              state: 'required',
+              city: 'required',
+              postal_code: 'required',
+              line1: 'required',
+              line2: 'disabled',
+            },
+          })}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          defaultValues={{
+            customer_billing_address: {
+              country: 'US',
+              line1: '548 Market St',
+              city: 'San Francisco',
+              state: 'US-CA',
+              postal_code: '',
+            },
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+      const typePostalCode = async (postalCode: string) => {
+        await act(async () => {
+          form.setValue('customer_billing_address.postal_code', postalCode)
+        })
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(600)
+        })
+      }
+
+      for (const partial of ['9', '94', '941', '9410']) {
+        await typePostalCode(partial)
+      }
+      expect(update).not.toHaveBeenCalled()
+
+      await typePostalCode('94104')
+      expect(update).toHaveBeenCalledExactlyOnceWith({
+        customer_billing_address: expect.objectContaining({
+          country: 'US',
+          postal_code: '94104',
+        }),
+      })
+    })
+
+    it('saves a Canadian address once the province is chosen', async () => {
+      const update = vi.fn(async () => createCheckout())
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      render(
+        <FormWrapper
+          checkout={createCheckout({
+            customer_billing_address: { country: 'CA' },
+            billing_address_fields: {
+              country: 'required',
+              state: 'required',
+              city: 'disabled',
+              postal_code: 'disabled',
+              line1: 'disabled',
+              line2: 'disabled',
+            },
+          })}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          defaultValues={{
+            customer_billing_address: { country: 'CA', state: '' },
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        form.setValue('customer_billing_address.state', 'CA-ON')
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+
+      expect(update).toHaveBeenCalledExactlyOnceWith({
+        customer_billing_address: expect.objectContaining({
+          country: 'CA',
+          state: 'CA-ON',
+        }),
+      })
+    })
+
+    it('saves a new country even when it arrives together with other address fields', async () => {
+      const update = vi.fn(async () => createCheckout())
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      render(
+        <FormWrapper
+          checkout={createCheckout({
+            customer_billing_address: { country: 'US' },
+            billing_address_fields: {
+              country: 'required',
+              state: 'required',
+              city: 'required',
+              postal_code: 'required',
+              line1: 'required',
+              line2: 'disabled',
+            },
+          })}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          defaultValues={{
+            customer_billing_address: { country: 'US', state: '' },
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'GB')
+        form.setValue('customer_billing_address.line1', '10 Downing St')
+        form.setValue('customer_billing_address.city', 'London')
+        form.setValue('customer_billing_address.postal_code', 'SW1A 2AA')
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+
+      expect(update).toHaveBeenCalledExactlyOnceWith({
+        customer_billing_address: expect.objectContaining({
+          country: 'GB',
+          postal_code: 'SW1A 2AA',
+        }),
+      })
+    })
+
+    it('still submits an address it did not save early', async () => {
+      const update = vi.fn(async () => createCheckout())
+      const confirm = vi.fn(defaultProps.confirm)
+      render(
+        <FormWrapper
+          checkout={createCheckout({
+            customer_billing_address: { country: 'US' },
+            billing_address_fields: {
+              country: 'required',
+              state: 'required',
+              city: 'required',
+              postal_code: 'required',
+              line1: 'required',
+              line2: 'disabled',
+            },
+          })}
+          {...defaultProps}
+          update={update}
+          confirm={confirm}
+          defaultValues={{
+            customer_email: 'buyer@example.com',
+            customer_name: 'Buyer Example',
+            customer_billing_address: {
+              country: 'US',
+              line1: '548 Market St',
+              city: 'San Francisco',
+              state: 'US-CA',
+              postal_code: 'ABCDE',
+            },
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+      fireEvent.click(screen.getByText('mock ready'))
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Pay now' }))
+      })
+
+      expect(update).not.toHaveBeenCalled()
+      expect(confirm).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          customer_billing_address: expect.objectContaining({
+            postal_code: 'ABCDE',
+          }),
+        }),
+        null,
+        null,
+      )
+    })
+  })
+
   describe('Stripe checkout form', () => {
     const stripeCheckout = (
       overrides: Partial<ProductCheckoutPublic> = {},

@@ -402,6 +402,34 @@ describe('CheckoutFormProvider', () => {
       })
       expect(confirm).toHaveBeenCalledTimes(1)
     })
+
+    it.each([
+      [
+        'keeps submit enabled while saving an address',
+        { customer_billing_address: { country: 'US' } },
+        false,
+      ],
+      [
+        'disables submit when an address save also clears the tax ID',
+        { customer_billing_address: { country: 'US' }, customer_tax_id: null },
+        true,
+      ],
+    ] as [
+      string,
+      Parameters<CheckoutFormContextProps['update']>[0],
+      boolean,
+    ][])('%s', async (_, payload, blocksSubmit) => {
+      const update = vi.fn<CheckoutContextProps['update']>(
+        () => createDeferred<UpdateResult>().promise,
+      )
+      const getCtx = renderWithCheckout({ update })
+
+      await act(async () => {
+        void getCtx().update(payload)
+      })
+
+      expect(getCtx().isUpdatePending).toBe(blocksSubmit)
+    })
   })
 
   describe('confirm (free checkout path)', () => {

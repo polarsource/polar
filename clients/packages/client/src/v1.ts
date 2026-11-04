@@ -6823,6 +6823,72 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/outpost/configuration': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Configuration
+     * @description The reducers Outpost runs.
+     *
+     *     **Scopes**: `events:write`
+     */
+    get: operations['outpost:configuration']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/meter-usage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Meter Usage
+     * @description The snapshot of every identity of the customer.
+     *
+     *     **Scopes**: `events:write`
+     */
+    post: operations['outpost:meter_usage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm
+     * @description The pending ids Polar counts, with the snapshot that counts them.
+     *
+     *     **Scopes**: `events:write`
+     */
+    post: operations['outpost:confirm']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/agent/claim/{link_token}/preview': {
     parameters: {
       query?: never
@@ -17185,6 +17251,74 @@ export interface components {
        */
       api_version: '2026-04' | '2026-10' | '2027-01'
     }
+    /** ConfigurationOutgoingMessagePayload */
+    ConfigurationOutgoingMessagePayload: {
+      /** Reducers */
+      reducers: components['schemas']['ConfigurationReducer'][]
+    }
+    /** ConfigurationReducer */
+    ConfigurationReducer: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      kind: components['schemas']['ReducerKind']
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /** Aggregation */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      /** Meter Ids */
+      meter_ids: string[]
+    }
+    /** ConfirmIncomingMessageCustomerPayload */
+    ConfirmIncomingMessageCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      bucket_start: components['schemas']['EpochMicroseconds-Input']
+      /** Ids */
+      ids: string[]
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+    }
+    /** ConfirmIncomingMessageExternalCustomerPayload */
+    ConfirmIncomingMessageExternalCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      bucket_start: components['schemas']['EpochMicroseconds-Input']
+      /** Ids */
+      ids: string[]
+      /** External Customer Id */
+      external_customer_id: string
+    }
+    /** ConfirmedOutgoingMessagePayload */
+    ConfirmedOutgoingMessagePayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** Customer Id */
+      customer_id: string | null
+      /** External Customer Id */
+      external_customer_id: string | null
+      bucket_start: components['schemas']['EpochMicroseconds-Output']
+      /** Ids */
+      ids: string[]
+      snapshot: components['schemas']['MeterUsageOutgoingMessagePayload']
+    }
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -23901,7 +24035,9 @@ export interface components {
       /** Return To */
       return_to?: string | null
     }
-    EpochMicroseconds: number
+    /** Format: date-time */
+    'EpochMicroseconds-Input': string
+    'EpochMicroseconds-Output': number
     Event:
       | components['schemas']['SystemEvent']
       | components['schemas']['UserEvent']
@@ -27292,6 +27428,29 @@ export interface components {
        */
       is_archived?: boolean | null
     }
+    /** MeterUsageIncomingMessageCustomerPayload */
+    MeterUsageIncomingMessageCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+    }
+    /** MeterUsageIncomingMessageExternalCustomerPayload */
+    MeterUsageIncomingMessageExternalCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** External Customer Id */
+      external_customer_id: string
+    }
     /** MeterUsageOutgoingMessagePayload */
     MeterUsageOutgoingMessagePayload: {
       /**
@@ -27305,8 +27464,8 @@ export interface components {
       external_customer_id: string | null
       /** Customer Exists */
       customer_exists: boolean
-      version: components['schemas']['EpochMicroseconds']
-      cold_until: components['schemas']['EpochMicroseconds']
+      version: components['schemas']['EpochMicroseconds-Output']
+      cold_until: components['schemas']['EpochMicroseconds-Output']
       /** Count */
       count: number
       /** Sum */
@@ -35299,6 +35458,11 @@ export interface components {
      * @enum {string}
      */
     RecurringInterval: 'day' | 'week' | 'month' | 'year'
+    /**
+     * ReducerKind
+     * @enum {string}
+     */
+    ReducerKind: 'usage' | 'credit'
     /** Refund */
     Refund: {
       /**
@@ -63978,6 +64142,114 @@ export interface operations {
       }
     }
   }
+  'outpost:configuration': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigurationOutgoingMessagePayload']
+        }
+      }
+    }
+  }
+  'outpost:meter_usage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['MeterUsageIncomingMessageCustomerPayload']
+          | components['schemas']['MeterUsageIncomingMessageExternalCustomerPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeterUsageOutgoingMessagePayload'][]
+        }
+      }
+      /** @description Reducer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'outpost:confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['ConfirmIncomingMessageCustomerPayload']
+          | components['schemas']['ConfirmIncomingMessageExternalCustomerPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfirmedOutgoingMessagePayload']
+        }
+      }
+      /** @description Reducer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'agent:preview_claim': {
     parameters: {
       query?: never
@@ -73983,6 +74255,9 @@ export const propertyAggregationFuncValues: ReadonlyArray<
 export const recurringIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RecurringInterval']
 > = ['day', 'week', 'month', 'year']
+export const reducerKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ReducerKind']
+> = ['usage', 'credit']
 export const refundCreateReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundCreate']['reason']
 > = [

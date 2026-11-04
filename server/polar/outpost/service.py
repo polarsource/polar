@@ -50,7 +50,7 @@ from .schemas import (
     OutgoingMessageAdapter,
     OutgoingMessageType,
 )
-from .stream import MAX_SEQUENCE, OutpostEvent, ReducerBucketOutpostEvent
+from .stream import MAX_SEQUENCE, Cursor, OutpostEvent, ReducerBucketOutpostEvent
 
 log: Logger = structlog.get_logger(__name__)
 
@@ -113,12 +113,11 @@ class OutpostService:
         session: AsyncReadSession,
         redis: Redis,
         organization: Organization,
-        cursor: str | None,
+        after: Cursor | None,
         limit: int,
     ) -> Changes:
         """The snapshots of the identities that changed after the cursor, computed
         once each from the current database."""
-        after = stream.parse_cursor(cursor) if cursor is not None else None
         # One more than the limit tells whether more follow.
         entries, now = await stream.read_changes(
             redis, organization.id, after, limit + 1
@@ -126,15 +125,16 @@ class OutpostService:
         has_more = len(entries) > limit
         entries = entries[:limit]
         # Later entries get an id from this millisecond on.
-        seen = (now - 1, MAX_SEQUENCE)
+        seen = Cursor(now - 1, MAX_SEQUENCE)
         next_poll_in = int(settings.OUTPOST_PULL_INTERVAL.total_seconds())
-        reset = after is not None and after[0] < now - CURSOR_MAX_AGE / timedelta(
-            milliseconds=1
+        reset = (
+            after is not None
+            and after.milliseconds < now - CURSOR_MAX_AGE / timedelta(milliseconds=1)
         )
         if after is None or reset:
             return Changes(
                 changes=[],
-                cursor=stream.format_cursor(seen),
+                cursor=str(seen),
                 has_more=False,
                 reset=reset,
                 configuration_changed=False,
@@ -167,7 +167,7 @@ class OutpostService:
         last = entries[-1][0] if entries else after
         return Changes(
             changes=changes,
-            cursor=stream.format_cursor(last if has_more else max(last, seen)),
+            cursor=str(last if has_more else max(last, seen)),
             has_more=has_more,
             reset=False,
             configuration_changed=configuration_changed,

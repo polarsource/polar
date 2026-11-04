@@ -7,7 +7,6 @@ import structlog
 from anyio import Semaphore, create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from fastapi import Body, Depends, Query, Response, WebSocket
-from pydantic import AfterValidator
 
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import Logger
@@ -139,18 +138,10 @@ async def outpost(
         task_group.cancel_scope.cancel()
 
 
-def _check_cursor(cursor: str | None) -> str | None:
-    if cursor is not None and max(stream.parse_cursor(cursor)) > stream.MAX_SEQUENCE:
-        raise ValueError("A stream id holds two 64-bit numbers.")
-    return cursor
-
-
 @router.get("/changes", response_model=Changes)
 async def changes(
     auth_subject: OutpostWrite,
-    cursor: Annotated[
-        str | None, Query(pattern=r"^\d+-\d+$"), AfterValidator(_check_cursor)
-    ] = None,
+    cursor: Annotated[stream.Cursor | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=1000)] = 500,
     redis: Redis = Depends(get_redis),
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),

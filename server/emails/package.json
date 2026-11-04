@@ -29,7 +29,7 @@
     "@yao-pkg/pkg": "^6.24.0",
     "openapi-typescript": "^7.13.0",
     "oxfmt": "^0.75.0",
-    "tsdown": "0.23.2",
+    "tsdown": "0.23.3",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "oxlint": "^1.89.0",
     "@typescript/native": "npm:typescript@7.0.2"

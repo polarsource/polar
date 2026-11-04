@@ -113,6 +113,10 @@ services:
     ports:
       - "${TINYBIRD_PORT:-7181}:7181"
       - "${TINYBIRD_ADMIN_PORT:-7182}:7182"
+    environment:
+      - TB_LOCAL_CSV_WORKERS=1
+      - TB_LOCAL_MCP=false
+      - TB_LOCAL_KAFKA=false
     volumes:
       - ./tinybird:/tinybird:ro
       - ../dev/docker/scripts/tinybird-setup.sh:/scripts/tinybird-setup.sh:ro

@@ -143,7 +143,7 @@ export const layer = Layer.effect(
           const selection = yield* config.getActiveOrganization
           if (!selection) {
             return yield* new AuthError({
-              message: `No active organization. Run ${orgCommand} or supply --org <id>.`,
+              message: `No active organization. Run ${orgCommand} <id> with an ID from polar auth list, or pass --org <id> to commands that accept it.`,
             })
           }
           return yield* get(selection.id, selection.environment).pipe(

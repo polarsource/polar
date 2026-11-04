@@ -48,9 +48,6 @@ locals {
     },
   ]
 
-  # Read replica connection info
-  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
-
   # Redis connection info
   redis_host = var.redis_private_link_host
   redis_port = "6379"

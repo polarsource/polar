@@ -1,4 +1,4 @@
-import { PointerEvent, useState } from 'react'
+import { PointerEvent, useEffect, useRef, useState } from 'react'
 
 const EDGE_HIT_PX = 6
 
@@ -17,6 +17,18 @@ interface Drag {
 }
 
 export type BrushCursor = 'crosshair' | 'grab' | 'grabbing' | 'ew-resize'
+
+interface Pointer {
+  clientX: number
+  altKey: boolean
+  element: HTMLElement
+}
+
+const toPointer = (event: PointerEvent<HTMLElement>): Pointer => ({
+  clientX: event.clientX,
+  altKey: event.altKey,
+  element: event.currentTarget,
+})
 
 const sameBrush = (a: Brush | null, b: Brush | null) =>
   a?.start === b?.start && a?.end === b?.end
@@ -65,9 +77,18 @@ export const useHistogramSelection = (
   const settled =
     pending && sameBrush(value, pending.replacing) ? pending.brush : value
 
-  const locate = (event: PointerEvent<HTMLElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const x = clamp(event.clientX - rect.left, 0, rect.width)
+  const latestPointer = useRef<Pointer | null>(null)
+  const frame = useRef<number | null>(null)
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current)
+    },
+    [],
+  )
+
+  const locate = ({ clientX, element }: Pointer) => {
+    const rect = element.getBoundingClientRect()
+    const x = clamp(clientX - rect.left, 0, rect.width)
     const position = x / rect.width
     let mode: DragMode = 'create'
     if (settled) {
@@ -124,8 +145,18 @@ export const useHistogramSelection = (
         : 'ew-resize'
 
   const reset = () => {
+    if (frame.current !== null) cancelAnimationFrame(frame.current)
+    frame.current = null
+    latestPointer.current = null
     setDrag(null)
     setDraft(null)
+  }
+
+  const applyPointer = (pointer: Pointer) => {
+    const { position, index, mode } = locate(pointer)
+    setHovered(index)
+    if (drag) setDraft(project(drag, position, pointer.altKey))
+    else setHoverMode(mode)
   }
 
   return {
@@ -137,7 +168,7 @@ export const useHistogramSelection = (
       onPointerDown: (event: PointerEvent<HTMLElement>) => {
         if (event.button !== 0 || barCount === 0) return
         event.currentTarget.setPointerCapture(event.pointerId)
-        const { position, index, mode } = locate(event)
+        const { position, index, mode } = locate(toPointer(event))
         const next: Drag = {
           mode,
           origin: position,
@@ -149,14 +180,19 @@ export const useHistogramSelection = (
       },
       onPointerMove: (event: PointerEvent<HTMLElement>) => {
         if (barCount === 0) return
-        const { position, index, mode } = locate(event)
-        setHovered(index)
-        if (drag) setDraft(project(drag, position, event.altKey))
-        else setHoverMode(mode)
+        latestPointer.current = toPointer(event)
+        if (frame.current !== null) return
+        frame.current = requestAnimationFrame(() => {
+          frame.current = null
+          if (latestPointer.current) applyPointer(latestPointer.current)
+        })
       },
-      onPointerUp: () => {
-        if (draft) {
-          const snapped = snapBrush(draft, barCount)
+      onPointerUp: (event: PointerEvent<HTMLElement>) => {
+        const final = drag
+          ? project(drag, locate(toPointer(event)).position, event.altKey)
+          : draft
+        if (final) {
+          const snapped = snapBrush(final, barCount)
           if (!sameBrush(snapped, settled)) {
             setPending({ brush: snapped, replacing: value })
             onChange(snapped)

@@ -1,10 +1,11 @@
 import { useEventTimeseriesChunks } from '@/hooks/queries/events'
 import { toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { addDays, min, startOfDay } from 'date-fns'
 import { twMerge } from 'tailwind-merge'
+import { HistogramBar, HistogramTooltip } from './HistogramBar'
 import {
   EventsHistogramControls,
   formatBarStart,
@@ -19,7 +20,6 @@ import {
 } from './useHistogramSelection'
 
 const TARGET_BARS = 150
-const BAR_STAGGER_MS = 250
 // The API caps hourly ranges at 7 days and daily ranges at 366 days.
 const CHUNK_DAYS = { hour: 7, day: 366 }
 
@@ -176,7 +176,8 @@ export const EventsHistogram = ({
     })
     .toSorted((a, b) => a.start.getTime() - b.start.getTime())
 
-  const bars = rebin(periods)
+  const isLoading = results.some((result) => result.isPending)
+  const bars = isLoading ? [] : rebin(periods)
   const max = Math.max(1, ...bars.map((bar) => bar.count))
   const labels = [bars[0], bars[Math.floor(bars.length / 2)], bars.at(-1)]
 
@@ -196,6 +197,11 @@ export const EventsHistogram = ({
     return center >= brush.start && center <= brush.end
   }
   const brushRange = brush ? toRange(brush) : null
+  const hoveredBar = hovered !== null ? bars[hovered] : undefined
+  const tooltipBar =
+    !brush && !dragging && hoveredBar && hoveredBar.count > 0
+      ? hoveredBar
+      : null
   const totalCount = bars.reduce((sum, bar) => sum + bar.count, 0)
   const brushCount = brush
     ? bars
@@ -240,53 +246,23 @@ export const EventsHistogram = ({
           {...handlers}
         >
           {bars.map((bar, index) => (
-            <Tooltip
+            <HistogramBar
               key={bar.start.toISOString()}
-              delayDuration={0}
-              open={dragging || brush || bar.count === 0 ? false : undefined}
-            >
-              <TooltipTrigger asChild>
-                <Box
-                  flexGrow={1}
-                  flexBasis={0}
-                  height="100%"
-                  alignItems="end"
-                  backgroundColor={
-                    !brush && index === hovered && bar.count > 0
-                      ? 'background-card'
-                      : undefined
-                  }
-                >
-                  {bar.count > 0 && (
-                    <div
-                      className="motion-safe:animate-bar-grow w-full origin-bottom"
-                      style={{
-                        height: `${(bar.count / max) * 100}%`,
-                        minHeight: 2,
-                        animationDelay: `${(index / bars.length) * BAR_STAGGER_MS}ms`,
-                      }}
-                    >
-                      <Box
-                        width="100%"
-                        height="100%"
-                        backgroundColor="background-inverse"
-                        opacity={isActive(index) ? 0.8 : brush ? 0.15 : 0.35}
-                        transitionProperty="opacity"
-                        transitionDuration="fast"
-                      />
-                    </div>
-                  )}
-                </Box>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <Text variant="caption" tabularNums>
-                  {formatBarStart(bar.start, hourly)} ·{' '}
-                  {bar.count.toLocaleString('en-US')}{' '}
-                  {bar.count === 1 ? 'event' : 'events'}
-                </Text>
-              </TooltipContent>
-            </Tooltip>
+              count={bar.count}
+              max={max}
+              index={index}
+              total={bars.length}
+              state={isActive(index) ? 'active' : brush ? 'dimmed' : 'idle'}
+              highlighted={!brush && index === hovered && bar.count > 0}
+            />
           ))}
+          {tooltipBar && hovered !== null && (
+            <HistogramTooltip
+              index={hovered}
+              total={bars.length}
+              label={`${formatBarStart(tooltipBar.start, hourly)} · ${tooltipBar.count.toLocaleString('en-US')} ${tooltipBar.count === 1 ? 'event' : 'events'}`}
+            />
+          )}
           {brush && (
             <Box
               position="absolute"

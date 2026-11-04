@@ -118,18 +118,20 @@ class KMSKeyProvider:
         return self._kms_client
 
     def generate_data_key_sync(self, context: dict[str, str]) -> tuple[bytes, bytes]:
-        response = self._client.generate_data_key(
-            KeyId=self._key_id, KeySpec="AES_256", EncryptionContext=context
-        )
+        with logfire.span("KMS GenerateDataKey"):
+            response = self._client.generate_data_key(
+                KeyId=self._key_id, KeySpec="AES_256", EncryptionContext=context
+            )
         return response["Plaintext"], response["CiphertextBlob"]
 
     async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
         return await asyncio.to_thread(self.generate_data_key_sync, context)
 
     def decrypt_data_key_sync(self, wrapped: bytes, context: dict[str, str]) -> bytes:
-        response = self._client.decrypt(
-            CiphertextBlob=wrapped, EncryptionContext=context
-        )
+        with logfire.span("KMS Decrypt"):
+            response = self._client.decrypt(
+                CiphertextBlob=wrapped, EncryptionContext=context
+            )
         return response["Plaintext"]
 
     async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:

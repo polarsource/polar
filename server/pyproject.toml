@@ -16,7 +16,7 @@ dependencies = [
   "githubkit==0.16.1",
   "redis>=5.0.4",
   "sse-starlette>=3.4.5",
-  "stripe>=16.0,<16.1",
+  "stripe>=16.1,<16.2",
   "pyjwt>=2.13.0",
   "pydantic>=2.13.4",
   "sentry-sdk[fastapi,sqlalchemy]>=2.64.0",
@@ -205,7 +205,7 @@ warn_required_dynamic_aliases = false
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false, pypdf = false }
+exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false, pypdf = false, stripe = false }
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

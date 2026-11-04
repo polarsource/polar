@@ -7,7 +7,7 @@ import DateRangePicker, {
   DateRangeInterval,
   DateRangeIntervalSlug,
 } from '@/components/Metrics/DateRangePicker'
-import { useEventNames } from '@/hooks/queries/events'
+import { useEventTypeStats } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import {
   Button,
@@ -59,6 +59,7 @@ export const EventsSidebar = ({
   onDateRangeChange,
   sorting,
   onSortingChange,
+  eventTypeFilters,
   selectedEventTypes,
   onToggleEventType,
   costOnly,
@@ -84,6 +85,7 @@ export const EventsSidebar = ({
   ) => void
   sorting: Sorting
   onSortingChange: (sorting: Sorting) => void
+  eventTypeFilters: Parameters<typeof useEventTypeStats>[1]
   selectedEventTypes: string[]
   onToggleEventType: (name: string) => void
   costOnly: boolean
@@ -99,12 +101,10 @@ export const EventsSidebar = ({
   hasActiveFilters: boolean
   onReset: () => void
 }) => {
-  const { data } = useEventNames(organization.id, {
-    sorting: ['name'],
-    limit: 500,
-    customer_id: selectedCustomerIds ?? undefined,
-  })
-  const eventTypes = data?.pages.flatMap((page) => page.items) ?? []
+  const { data: eventTypes = [] } = useEventTypeStats(
+    organization.id,
+    eventTypeFilters,
+  )
   const [metadataRows, setMetadataRows] = useState(() =>
     metadataToRows(metadata),
   )

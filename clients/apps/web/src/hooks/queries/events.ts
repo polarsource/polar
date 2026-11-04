@@ -1,6 +1,10 @@
 import { api } from '@/utils/client'
 import { operations, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useInfiniteEvents = (
@@ -105,6 +109,29 @@ export const useEarliestEvent = (organizationId: string) =>
         }),
       ).then((result) => result.items[0] ?? null),
     staleTime: 60 * 60 * 1000,
+    retry: defaultRetry,
+  })
+
+export const useEventTypeStats = (
+  organizationId: string,
+  parameters: Omit<
+    NonNullable<
+      operations['events:get_statistics_by_type']['parameters']['query']
+    >,
+    'organization_id'
+  >,
+) =>
+  useQuery({
+    queryKey: ['events', organizationId, 'byType', parameters],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/statistics/by-type', {
+          params: {
+            query: { organization_id: organizationId, ...parameters },
+          },
+        }),
+      ).then((result) => result.items),
+    placeholderData: keepPreviousData,
     retry: defaultRetry,
   })
 

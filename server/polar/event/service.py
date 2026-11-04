@@ -22,6 +22,8 @@ from polar.customer.repository import CustomerRepository
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
 from polar.event_type.repository import EventTypeRepository
+from polar.event_type.schemas import EventTypeWithStats
+from polar.event_type.service import event_type_service
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.integrations.tinybird.service import (
     TinybirdTimeseriesStats,
@@ -477,6 +479,67 @@ class EventService:
         totals = _sort_stats([_row_to_stats(b) for b in tb_totals])
 
         return ListStatisticsTimeseries(periods=periods, totals=totals)
+
+    async def list_event_type_stats(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        filter: Filter | None = None,
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+    ) -> Sequence[EventTypeWithStats]:
+        organization_ids = await self._get_organization_ids_for_subject(
+            session, auth_subject, organization_id
+        )
+        if not organization_ids:
+            return []
+
+        (
+            query_filters,
+            matching_cust_ids,
+            matching_ext_ids,
+            _,
+        ) = await self._resolve_tinybird_filters(
+            session, auth_subject, organization_ids, filter=filter, query=query
+        )
+
+        customer_repository = CustomerRepository.from_session(session)
+        all_customer_ids: list[uuid.UUID] = list(customer_id or [])
+        all_external_ids: list[str] = list(external_customer_id or [])
+        if customer_id is not None:
+            all_external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    organization_ids, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            all_customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    organization_ids, external_customer_id
+                )
+            )
+
+        stats = await TinybirdEventRepository().get_filtered_event_type_stats(
+            organization_id=list(organization_ids),
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            customer_id=all_customer_ids,
+            external_customer_id=all_external_ids,
+            source=source,
+            filters=query_filters,
+            metadata=metadata,
+            query=query,
+            matching_customer_ids=matching_cust_ids,
+            matching_external_customer_ids=matching_ext_ids,
+        )
+        return await event_type_service.build_with_stats(session, stats)
 
     async def list_property_group_stats(
         self,

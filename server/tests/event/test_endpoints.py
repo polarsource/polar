@@ -13,7 +13,7 @@ from polar.models import Event, Organization, UserOrganization
 from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event
+from tests.fixtures.random_objects import create_event, create_event_type
 
 
 @pytest.fixture
@@ -532,6 +532,78 @@ class TestAggregateFieldsValidation:
         )
 
         assert response.status_code == 422
+
+
+@pytest.mark.anyio
+class TestGetStatisticsByType:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-type")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-type")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_counts_matching_events_per_type(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        upload = await create_event_type(
+            buffered_save_fixture, organization=organization, name="upload"
+        )
+        inference = await create_event_type(
+            buffered_save_fixture, organization=organization, name="inference"
+        )
+        now = utc_now()
+        root = await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            name="upload",
+            event_type=upload,
+            timestamp=now - timedelta(minutes=10),
+        )
+        for _ in range(2):
+            await create_event(
+                buffered_save_fixture,
+                organization=organization,
+                name="inference",
+                event_type=inference,
+                parent_id=root.id,
+                root_id=root.id,
+                timestamp=now - timedelta(minutes=9),
+            )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            name="upload",
+            event_type=upload,
+            timestamp=now - timedelta(days=2),
+        )
+
+        await flush_tinybird_events()
+
+        response = await client.get(
+            "/v1/events/statistics/by-type",
+            params={
+                "organization_id": str(organization.id),
+                "start_timestamp": (now - timedelta(hours=1)).isoformat(),
+                "end_timestamp": now.isoformat(),
+            },
+        )
+
+        assert response.status_code == 200
+        counts = {
+            item["name"]: item["occurrences"] for item in response.json()["items"]
+        }
+        assert counts == {"inference": 2, "upload": 1}
 
 
 @pytest.mark.anyio

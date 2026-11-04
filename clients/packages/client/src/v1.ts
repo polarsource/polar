@@ -5898,6 +5898,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/events/statistics/by-type': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get statistics grouped by event type
+     * @description Count matching events per event type.
+     *
+     *     Accepts the same filters as the event list, except the event name, so every
+     *     event type gets a count under the other filters.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_statistics_by_type']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/events/statistics/by-property': {
     parameters: {
       query?: never
@@ -25679,6 +25704,14 @@ export interface components {
        * @description Customers ordered by the primary aggregate field descending.
        */
       items: components['schemas']['CustomerStat'][]
+    }
+    /** ListEventTypeStatistics */
+    ListEventTypeStatistics: {
+      /**
+       * Items
+       * @description Event types with the number of matching events, most frequent first.
+       */
+      items: components['schemas']['EventTypeWithStats'][]
     }
     /**
      * ListPropertyGroupStats
@@ -59097,6 +59130,57 @@ export interface operations {
           'application/json':
             | components['schemas']['ListResource_Event_']
             | components['schemas']['ListResourceWithCursorPagination_Event_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:get_statistics_by_type': {
+    parameters: {
+      query?: {
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Filter events after this timestamp. */
+        start_timestamp?: string | null
+        /** @description Filter events before this timestamp. */
+        end_timestamp?: string | null
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListEventTypeStatistics']
         }
       }
       /** @description Validation Error */

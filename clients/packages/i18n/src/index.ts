@@ -51,6 +51,7 @@ import ja from './locales/ja'
 import tr from './locales/tr'
 import pl from './locales/pl'
 import zhTW from './locales/zh-TW'
+import hr from './locales/hr'
 
 type LocalesRecord = { en: LocaleShape<Translations> } & Record<
   Exclude<SupportedLocale, 'en'>,
@@ -73,6 +74,7 @@ const translations: LocalesRecord = {
   tr,
   pl,
   'zh-TW': zhTW,
+  hr,
 }
 
 const isAtomicLeaf = (v: unknown): boolean => {

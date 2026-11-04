@@ -1117,7 +1117,9 @@ class TestRequests:
         response = await client.get("/v1/outpost/configuration")
 
         assert response.status_code == 200
-        [payload] = response.json()["reducers"]
+        configuration = response.json()
+        assert configuration["organization_id"] == str(organization.id)
+        [payload] = configuration["reducers"]
         assert payload["id"] == str(reducer.id)
         assert payload["meter_ids"] == [str(meter.id)]
 

@@ -14,6 +14,7 @@ export const HistogramBar = ({
   total,
   state,
   highlighted,
+  width,
 }: {
   count: number
   max: number
@@ -21,10 +22,13 @@ export const HistogramBar = ({
   total: number
   state: HistogramBarState
   highlighted: boolean
+  width?: number
 }) => (
   <Box
-    flexGrow={1}
-    flexBasis={0}
+    width={width}
+    flexShrink={0}
+    flexGrow={width === undefined ? 1 : 0}
+    flexBasis={width === undefined ? 0 : undefined}
     height="100%"
     alignItems="end"
     backgroundColor={highlighted ? 'background-card' : undefined}

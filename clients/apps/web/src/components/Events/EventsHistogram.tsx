@@ -6,6 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { addDays, min, startOfDay } from 'date-fns'
 import { twMerge } from 'tailwind-merge'
 import { HistogramBar, HistogramTooltip } from './HistogramBar'
+import { useElementWidth } from './useElementWidth'
 import {
   EventsHistogramControls,
   formatBarStart,
@@ -195,6 +196,14 @@ export const EventsHistogram = ({
     const center = (index + 0.5) / bars.length
     return center >= brush.start && center <= brush.end
   }
+  const [measureRef, chartWidth] = useElementWidth<HTMLDivElement>()
+  const barGap = bars.length > 60 ? 2 : 4
+  // Fractional flex widths round each edge separately, so gaps came out 1 to
+  // 3px. Whole-pixel slots keep every gap exact; bar widths vary by at most 1px.
+  const slotEdge = (index: number) =>
+    Math.floor((index * chartWidth) / bars.length)
+  const isMeasured =
+    bars.length > 0 && Math.floor(chartWidth / bars.length) - barGap >= 1
   const brushRange = brush ? toRange(brush) : null
   const hoveredBar = hovered !== null ? bars[hovered] : undefined
   const tooltipBar =
@@ -236,59 +245,66 @@ export const EventsHistogram = ({
         borderStyle="solid"
         borderColor="border-primary"
       >
-        <div
-          className={twMerge(
-            'relative isolate flex h-12 w-full touch-pan-y items-end select-none',
-            CURSOR_CLASS[cursor],
-            bars.length > 60 ? 'gap-0.5' : 'gap-1',
-          )}
-          {...handlers}
-        >
-          {bars.map((bar, index) => (
-            <HistogramBar
-              key={bar.start.toISOString()}
-              count={bar.count}
-              max={max}
-              index={index}
-              total={bars.length}
-              state={isActive(index) ? 'active' : brush ? 'dimmed' : 'idle'}
-              highlighted={!brush && index === hovered && bar.count > 0}
-            />
-          ))}
-          {tooltipBar && hovered !== null && (
-            <HistogramTooltip
-              index={hovered}
-              total={bars.length}
-              label={`${formatBarStart(tooltipBar.start, hourly)} · ${tooltipBar.count.toLocaleString('en-US')} ${tooltipBar.count === 1 ? 'event' : 'events'}`}
-            />
-          )}
-          {brush && (
-            <Box
-              position="absolute"
-              top={0}
-              bottom={0}
-              left={`${brush.start * 100}%`}
-              width={`${(brush.end - brush.start) * 100}%`}
-              transitionProperty={dragging ? 'none' : 'all'}
-              transitionDuration="fast"
-              ease="decelerate"
-              justifyContent="between"
-              pointerEvents="none"
-              backgroundColor="background-card"
-              zIndex={-1}
-            >
-              <Box
-                width={2}
-                height="100%"
-                backgroundColor="background-inverse"
+        <div ref={measureRef} className="flex w-full justify-center">
+          <div
+            className={twMerge(
+              'relative isolate flex h-12 w-full touch-pan-y items-end select-none',
+              CURSOR_CLASS[cursor],
+            )}
+            style={{ gap: barGap, paddingRight: isMeasured ? barGap : 0 }}
+            {...handlers}
+          >
+            {bars.map((bar, index) => (
+              <HistogramBar
+                key={bar.start.toISOString()}
+                count={bar.count}
+                max={max}
+                index={index}
+                total={bars.length}
+                state={isActive(index) ? 'active' : brush ? 'dimmed' : 'idle'}
+                highlighted={!brush && index === hovered && bar.count > 0}
+                width={
+                  isMeasured
+                    ? slotEdge(index + 1) - slotEdge(index) - barGap
+                    : undefined
+                }
               />
-              <Box
-                width={2}
-                height="100%"
-                backgroundColor="background-inverse"
+            ))}
+            {tooltipBar && hovered !== null && (
+              <HistogramTooltip
+                index={hovered}
+                total={bars.length}
+                label={`${formatBarStart(tooltipBar.start, hourly)} · ${tooltipBar.count.toLocaleString('en-US')} ${tooltipBar.count === 1 ? 'event' : 'events'}`}
               />
-            </Box>
-          )}
+            )}
+            {brush && (
+              <Box
+                position="absolute"
+                top={0}
+                bottom={0}
+                left={`${brush.start * 100}%`}
+                width={`${(brush.end - brush.start) * 100}%`}
+                transitionProperty={dragging ? 'none' : 'all'}
+                transitionDuration="fast"
+                ease="decelerate"
+                justifyContent="between"
+                pointerEvents="none"
+                backgroundColor="background-card"
+                zIndex={-1}
+              >
+                <Box
+                  width={2}
+                  height="100%"
+                  backgroundColor="background-inverse"
+                />
+                <Box
+                  width={2}
+                  height="100%"
+                  backgroundColor="background-inverse"
+                />
+              </Box>
+            )}
+          </div>
         </div>
       </Box>
       <Box justifyContent="between" height={16}>

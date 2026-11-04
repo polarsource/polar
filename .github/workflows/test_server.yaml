@@ -139,6 +139,10 @@ jobs:
         image: tinybirdco/tinybird-local:latest
         ports:
           - 7181:7181
+        env:
+          TB_LOCAL_CSV_WORKERS: 1
+          TB_LOCAL_MCP: false
+          TB_LOCAL_KAFKA: false
         options: >-
           --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1"
           --health-interval 10s
@@ -437,6 +441,10 @@ jobs:
         ports:
           - 7181:7181
           - 7182:7182
+        env:
+          TB_LOCAL_CSV_WORKERS: 1
+          TB_LOCAL_MCP: false
+          TB_LOCAL_KAFKA: false
         options: >-
           --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
           --health-interval 10s

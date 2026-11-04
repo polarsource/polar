@@ -25,7 +25,7 @@ data "tfe_outputs" "sandbox" {
 
 locals {
   private_backoffice_hostname = "backoffice.polar.sh"
-  # Database connection info (derived from postgres resource)
+  # Retain the Render database and pools until the PlanetScale cutover is verified.
   # db_host          = render_postgres.db.id
   db_internal_host = render_postgres.db.id
   db_port          = "5432"
@@ -161,8 +161,9 @@ module "production" {
   registry_credential_id = render_registry_credential.ghcr.id
 
   api_service_config = {
-    postgres_database      = "polar_cpit_p9lf"
-    postgres_read_database = "polar_cpit_p9lf"
+    postgres_database      = module.planetscale.database_name
+    postgres_read_database = module.planetscale.database_name
+    pre_deploy_command     = "env POLAR_POSTGRES_USER=${module.planetscale.app_role_username} POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
     allowed_hosts          = jsonencode(["polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "api.polar.sh" }, { name = "buy.polar.sh" }]
@@ -172,20 +173,7 @@ module "production" {
     redis_db               = "1"
   }
 
-  postgres_config = {
-    host               = module.pgbouncer.host
-    port               = module.pgbouncer.port
-    user               = local.db_user
-    password           = local.db_password
-    host_fallback      = local.db_internal_host
-    port_fallback      = local.db_port
-    read_host          = module.pgbouncer_read["polar-read"].host
-    read_port          = module.pgbouncer_read["polar-read"].port
-    read_user          = local.db_user
-    read_password      = local.db_password
-    read_host_fallback = local.read_replica.id
-    read_port_fallback = local.db_port
-  }
+  postgres_config = local.planetscale_postgres_config
 
   redis_config = {
     host = local.redis_host
@@ -246,7 +234,7 @@ module "production" {
     s3_bucket_name = local.diagnostics_bucket_name
   }
 
-  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]
+  depends_on = [render_registry_credential.ghcr, render_project.polar, render_redis.redis]
 }
 
 # =============================================================================

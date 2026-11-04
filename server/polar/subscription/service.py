@@ -1,4 +1,5 @@
 import contextlib
+import json
 import uuid
 from collections.abc import AsyncGenerator, Sequence
 from datetime import UTC, datetime, timedelta
@@ -1778,6 +1779,10 @@ class SubscriptionService:
                 )
 
             if update.has_metadata:
+                if update.model_fields_set == {"metadata"} and json.dumps(
+                    update.metadata, sort_keys=True
+                ) == json.dumps(subscription.user_metadata, sort_keys=True):
+                    ctx.mark_unchanged()
                 subscription = await self.update_metadata(
                     session, ctx, subscription, metadata=update.metadata
                 )

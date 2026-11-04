@@ -5430,6 +5430,40 @@ class TestUpdate:
             updated,
         )
 
+    @pytest.mark.parametrize(
+        ("metadata", "sent"),
+        [({"reference_id": "ABC"}, False), ({"reference_id": "DEF"}, True)],
+    )
+    async def test_metadata_update_webhook(
+        self,
+        metadata: dict[str, str | int | float | bool],
+        sent: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        webhook_service_send_mock: AsyncMock,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            user_metadata={"reference_id": "ABC"},
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update(
+                session,
+                ctx,
+                subscription,
+                update=SubscriptionUpdateBase(metadata=metadata),
+            )
+
+        assert updated.user_metadata == metadata
+        assert webhook_service_send_mock.called is sent
+
     async def test_discount_update(
         self,
         session: AsyncSession,

@@ -17,7 +17,7 @@ import {
   DateRangeInterval,
   dateRangeIntervals,
 } from '@/components/Metrics/DateRangePicker'
-import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
+import { useEvent, useEvents, useInfiniteEvents } from '@/hooks/queries/events'
 import { useInViewport } from '@/hooks/utils'
 import { buildEventsFilter, formatEventCount } from '@/utils/event'
 import useDebounce from '@/utils/useDebounce'
@@ -34,7 +34,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
-import { startOfDay } from 'date-fns'
+import { min, startOfDay } from 'date-fns'
 import { useEffect, useState } from 'react'
 import z from 'zod'
 import { EventsSidebar } from './EventsSidebar'
@@ -245,6 +245,18 @@ const ClientPage = ({
     setRangeAnchor(new Date())
   }
 
+  const { data: firstEvents } = useEvents(organization.id, {
+    sorting: ['timestamp'],
+    limit: 1,
+  })
+  const firstEventTimestamp = firstEvents?.items[0]?.timestamp
+  const earliest = startOfDay(
+    min([
+      new Date(organization.created_at),
+      ...(firstEventTimestamp ? [new Date(firstEventTimestamp)] : []),
+    ]),
+  )
+
   const items = events?.pages.flatMap((page) => page.items) ?? []
   const firstPagination = events?.pages[0]?.pagination
   const totalCount =
@@ -366,7 +378,7 @@ const ClientPage = ({
           selection={selection}
           onSelectionChange={setSelection}
           onZoom={onZoom}
-          earliest={startOfDay(new Date(organization.created_at))}
+          earliest={earliest}
           latest={rangeAnchor}
         />
         <Box alignItems="start" gap="s">

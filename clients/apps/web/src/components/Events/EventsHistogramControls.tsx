@@ -113,6 +113,7 @@ export const EventsHistogramControls = ({
     >
       <Box
         width={PILL_WIDTH}
+        userSelect="none"
         alignItems="center"
         gap="s"
         paddingLeft="m"

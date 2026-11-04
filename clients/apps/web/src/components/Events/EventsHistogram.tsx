@@ -204,6 +204,19 @@ export const EventsHistogram = ({
     Math.floor((index * chartWidth) / bars.length)
   const isMeasured =
     bars.length > 0 && Math.floor(chartWidth / bars.length) - barGap >= 1
+  // Align the band with bar edges: from the first bar's left edge to the last
+  // bar's right edge, leaving out the gap that follows it.
+  const toPixel = (fraction: number) => Math.floor(fraction * chartWidth + 1e-6)
+  const brushLeft = brush
+    ? isMeasured
+      ? toPixel(brush.start)
+      : `${brush.start * 100}%`
+    : 0
+  const brushWidth = brush
+    ? isMeasured
+      ? Math.max(0, toPixel(brush.end) - barGap - toPixel(brush.start))
+      : `${(brush.end - brush.start) * 100}%`
+    : 0
   const brushRange = brush ? toRange(brush) : null
   const hoveredBar = hovered !== null ? bars[hovered] : undefined
   const tooltipBar =
@@ -282,8 +295,8 @@ export const EventsHistogram = ({
                 position="absolute"
                 top={0}
                 bottom={0}
-                left={`${brush.start * 100}%`}
-                width={`${(brush.end - brush.start) * 100}%`}
+                left={brushLeft}
+                width={brushWidth}
                 transitionProperty={dragging ? 'none' : 'all'}
                 transitionDuration="fast"
                 ease="decelerate"

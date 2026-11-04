@@ -84,7 +84,7 @@ const ZoneRow = ({
     </Box>
     <Text>{formatDate(date, timeZone)}</Text>
     <Box justifyContent="end">
-      <Text color="muted" monospace tabularNums>
+      <Text variant="caption" color="muted" monospace tabularNums>
         {formatTime(date, timeZone)}
       </Text>
     </Box>

@@ -7,12 +7,13 @@ import structlog
 from anyio import Semaphore, create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from fastapi import Body, Depends, Query, Response, WebSocket
+from pydantic import AfterValidator
 
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import Logger
 from polar.models import Organization
 from polar.openapi import APITag
-from polar.postgres import AsyncReadSession, get_db_read_session
+from polar.postgres import get_db_sessionmaker
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -138,19 +139,29 @@ async def outpost(
         task_group.cancel_scope.cancel()
 
 
+def _check_cursor(cursor: str | None) -> str | None:
+    if cursor is not None and max(stream.parse_cursor(cursor)) > stream.MAX_SEQUENCE:
+        raise ValueError("A stream id holds two 64-bit numbers.")
+    return cursor
+
+
 @router.get("/changes", response_model=Changes)
 async def changes(
     auth_subject: OutpostWrite,
-    cursor: Annotated[str | None, Query(pattern=r"^\d+-\d+$")] = None,
+    cursor: Annotated[
+        str | None, Query(pattern=r"^\d+-\d+$"), AfterValidator(_check_cursor)
+    ] = None,
     limit: Annotated[int, Query(ge=1, le=1000)] = 500,
     redis: Redis = Depends(get_redis),
-    session: AsyncReadSession = Depends(get_db_read_session),
+    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
 ) -> Changes:
     """The snapshots that changed since the cursor. Without a cursor, the cursor to
     start from."""
-    return await outpost_service.get_changes(
-        session, redis, auth_subject.subject, cursor, limit
-    )
+    # The primary: a change is logged after its commit, a replica may not have it yet.
+    async with sessionmaker() as session:
+        return await outpost_service.get_changes(
+            session, redis, auth_subject.subject, cursor, limit
+        )
 
 
 @router.post("/telemetry", include_in_schema=False)

@@ -12,7 +12,7 @@ export const SkeletonBar = ({
       width={width}
       height={height}
       borderRadius="s"
-      backgroundColor="background-secondary"
+      backgroundColor="background-card"
     />
   </div>
 )

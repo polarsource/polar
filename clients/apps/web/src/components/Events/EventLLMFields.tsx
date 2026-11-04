@@ -8,6 +8,9 @@ const formatCount = (count: number) =>
 
 export const EventLLMFields = ({ llm }: { llm: schemas['LLMMetadata'] }) => (
   <Box flexDirection="column">
+    <Field label="Model">
+      <Text truncate>{llm.model}</Text>
+    </Field>
     <Field label="Vendor">
       <Text truncate>{llm.vendor}</Text>
     </Field>

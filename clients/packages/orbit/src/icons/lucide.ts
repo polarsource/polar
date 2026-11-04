@@ -93,5 +93,7 @@ export {
   WalletCards,
   WandSparkles,
   X,
+  ZoomIn,
+  ZoomOut,
   type LucideIcon,
 } from 'lucide-react'

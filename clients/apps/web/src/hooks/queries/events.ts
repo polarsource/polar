@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { operations, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useInfiniteEvents = (
@@ -87,6 +87,27 @@ export const useEvent = (
   })
 }
 
+// The earliest event only moves on backfills, so cache it for an hour instead
+// of listing and counting the organization's events on every page mount.
+export const useEarliestEvent = (organizationId: string) =>
+  useQuery({
+    queryKey: ['events', organizationId, 'earliest'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              sorting: ['timestamp'],
+              limit: 1,
+            },
+          },
+        }),
+      ).then((result) => result.items[0] ?? null),
+    staleTime: 60 * 60 * 1000,
+    retry: defaultRetry,
+  })
+
 export const useEventHierarchyStats = (
   organizationId: string,
   parameters: Omit<
@@ -129,6 +150,8 @@ type TimeseriesParameters = Omit<
   'organization_id' | 'timezone' | 'start_date' | 'end_date'
 >
 
+// Fetches every chunk in one query so the chart gets complete data at once,
+// and keeps the previous result while filters change over the same chunks.
 export const useEventTimeseriesChunks = (
   organizationId: string,
   chunks: { start_date: string; end_date: string }[],
@@ -136,28 +159,39 @@ export const useEventTimeseriesChunks = (
 ) => {
   const timezone = Intl.DateTimeFormat().resolvedOptions()
     .timeZone as operations['events:list_statistics_timeseries']['parameters']['query']['timezone']
-  return useQueries({
-    queries: chunks.map((chunk) => ({
-      queryKey: [
-        'eventHierarchyStats',
-        organizationId,
-        { timezone, ...chunk, ...parameters },
-      ],
-      queryFn: () =>
-        unwrap(
-          api.GET('/v1/events/statistics/timeseries', {
-            params: {
-              query: {
-                organization_id: organizationId,
-                timezone,
-                ...chunk,
-                ...parameters,
+  const chunksKey = chunks
+    .map((chunk) => `${chunk.start_date}/${chunk.end_date}`)
+    .join(',')
+  return useQuery({
+    queryKey: [
+      'eventHierarchyStats',
+      organizationId,
+      { timezone, chunks: chunksKey, ...parameters },
+    ],
+    queryFn: () =>
+      Promise.all(
+        chunks.map((chunk) =>
+          unwrap(
+            api.GET('/v1/events/statistics/timeseries', {
+              params: {
+                query: {
+                  organization_id: organizationId,
+                  timezone,
+                  ...chunk,
+                  ...parameters,
+                },
               },
-            },
-          }),
+            }),
+          ),
         ),
-      retry: defaultRetry,
-    })),
+      ),
+    placeholderData: (previous, previousQuery) => {
+      const previousParams = previousQuery?.queryKey[2] as
+        | { chunks?: string }
+        | undefined
+      return previousParams?.chunks === chunksKey ? previous : undefined
+    },
+    retry: defaultRetry,
   })
 }
 

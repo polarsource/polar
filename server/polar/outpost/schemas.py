@@ -13,6 +13,7 @@ from pydantic import (
     TypeAdapter,
 )
 
+from polar.kit.schemas import Schema
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.models.reducer import ReducerKind
@@ -191,7 +192,7 @@ class ConfirmedOutgoingMessagePayload(MessageBase):
     snapshot: MeterUsageOutgoingMessagePayload
 
 
-class Changes(MessageBase):
+class Changes(Schema):
     changes: list[MeterUsageOutgoingMessagePayload]
     # Read the next changes after this one.
     cursor: str

@@ -142,7 +142,6 @@ class CatalogProductRepository(
         )
 
     def get_draft_product_ids_statement(self) -> Select[UUID]:
-        """IDs of the rows the organizations' draft catalogs list."""
         return (
             select(CatalogProduct.product_id)
             .join(Catalog, Catalog.id == CatalogProduct.catalog_id)
@@ -217,7 +216,6 @@ class CatalogBenefitRepository(
         )
 
     def get_draft_benefit_ids_statement(self) -> Select[UUID]:
-        """IDs of the rows the organizations' draft catalogs list."""
         return (
             select(CatalogBenefit.benefit_id)
             .join(Catalog, Catalog.id == CatalogBenefit.catalog_id)

@@ -228,18 +228,6 @@ class TestGet:
 class TestPublish:
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
-    async def test_outdated(
-        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
-    ) -> None:
-        draft, _, _ = catalogs
-
-        response = await client.post(f"/v1/catalogs/{draft.id}/publish")
-
-        assert response.status_code == 409
-        assert response.json()["error"] == "CatalogDraftOutdated"
-
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
     async def test_not_draft(
         self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
     ) -> None:

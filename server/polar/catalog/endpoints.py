@@ -18,7 +18,7 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import Catalog as CatalogSchema
 from .schemas import CatalogListParams, CatalogVersion
-from .service import CatalogDraftOutdated, CatalogNotDraft, CatalogNotFound
+from .service import CatalogNotDraft, CatalogNotFound
 from .service import catalog as catalog_service
 
 router = APIRouter(prefix="/catalogs", tags=["catalogs", APITag.private])
@@ -86,11 +86,8 @@ async def get(
             "model": CatalogNotFound.schema(),
         },
         409: {
-            "description": (
-                "The catalog isn't a draft, or another catalog was published "
-                "since the draft was created."
-            ),
-            "model": CatalogNotDraft.schema() | CatalogDraftOutdated.schema(),
+            "description": "The catalog isn't a draft.",
+            "model": CatalogNotDraft.schema(),
         },
     },
 )

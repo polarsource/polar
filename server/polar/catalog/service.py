@@ -97,15 +97,6 @@ class CatalogNotDraft(PolarError):
         super().__init__(f"The catalog {id} isn't a draft.", 409)
 
 
-class CatalogDraftOutdated(PolarError):
-    def __init__(self) -> None:
-        super().__init__(
-            "Another catalog was published since this draft was created. "
-            "Apply the changes again on top of the live catalog.",
-            409,
-        )
-
-
 class CatalogService:
     async def list(
         self,
@@ -499,8 +490,6 @@ class CatalogService:
         await repository.lock(organization.id)
         await self._assert_still_draft(session, draft)
         live = await repository.get_live(organization.id)
-        if draft.parent_id != (None if live is None else live.id):
-            raise CatalogDraftOutdated()
 
         products = {
             member.external_id: member.product

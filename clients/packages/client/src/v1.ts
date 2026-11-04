@@ -13799,17 +13799,6 @@ export interface components {
        */
       benefit_id: string
     }
-    /** CatalogDraftOutdated */
-    CatalogDraftOutdated: {
-      /**
-       * Error
-       * @example CatalogDraftOutdated
-       * @constant
-       */
-      error: 'CatalogDraftOutdated'
-      /** Detail */
-      detail: string
-    }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
       /**
@@ -53212,15 +53201,13 @@ export interface operations {
           'application/json': components['schemas']['CatalogNotFound']
         }
       }
-      /** @description The catalog isn't a draft, or another catalog was published since the draft was created. */
+      /** @description The catalog isn't a draft. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['CatalogNotDraft']
-            | components['schemas']['CatalogDraftOutdated']
+          'application/json': components['schemas']['CatalogNotDraft']
         }
       }
       /** @description Validation Error */

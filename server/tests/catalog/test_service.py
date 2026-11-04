@@ -4,7 +4,6 @@ from datetime import timedelta
 import pytest
 
 from polar.catalog.service import (
-    CatalogDraftOutdated,
     CatalogNotDraft,
     CatalogNotFound,
 )
@@ -138,17 +137,6 @@ class TestGetCatalogBenefits:
 
 @pytest.mark.anyio
 class TestPublishDraft:
-    async def test_outdated(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
-    ) -> None:
-        _, _, draft, _ = catalogs
-
-        with pytest.raises(CatalogDraftOutdated):
-            await catalog_service.publish_draft(session, organization, draft)
-
     async def test_discarded_meanwhile(
         self,
         session: AsyncSession,

@@ -39,6 +39,7 @@ from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.repository import UserRepository
+from polar.user.service import UserUnavailable
 from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository
 
@@ -245,7 +246,10 @@ async def email_otp_request(
 @router.post(
     "/email-otp/verify",
     responses={
-        403: {"description": "Invalid or expired OTP", "model": NotPermitted.schema()}
+        403: {
+            "description": "Invalid or expired OTP, or account unavailable.",
+            "model": NotPermitted.schema() | UserUnavailable.schema(),
+        }
     },
 )
 async def email_otp_verify(

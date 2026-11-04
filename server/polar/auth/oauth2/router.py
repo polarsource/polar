@@ -21,6 +21,7 @@ from polar.kit.http import ReturnTo
 from polar.postgres import AsyncSession
 from polar.routing import APIRouter
 from polar.user.repository import UserRepository
+from polar.user.service import UserUnavailable
 from polar.user.service import user as user_service
 
 from ..authentication_session import (
@@ -185,7 +186,10 @@ def get_oauth_login_router(
                 set_state_cookie(request, sso_redirect, "", 0)
                 return sso_redirect
 
-            user, _ = await user_service.get_by_email_or_create(session, email)
+            try:
+                user, _ = await user_service.get_by_email_or_create(session, email)
+            except UserUnavailable as e:
+                raise PolarAuthRedirectionError(e.message) from e
             try:
                 enrollment = await factor.enroll(user.id, oauth_account)
             except OAuth2GetProfileException as e:

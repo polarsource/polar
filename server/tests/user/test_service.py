@@ -21,6 +21,7 @@ from polar.user.service import (
     IdentityAlreadyVerified,
     IdentityVerificationForUnknownUser,
     IdentityVerificationProcessing,
+    UserUnavailable,
 )
 from polar.user.service import user as user_service
 from tests.fixtures.database import SaveFixture
@@ -70,6 +71,28 @@ class TestGetByEmailOrCreate:
 
         with pytest.raises(IntegrityError):
             await user_service.get_by_email_or_create(session, user.email)
+
+    async def test_blocked_user(
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+    ) -> None:
+        user.blocked_at = utc_now()
+        await save_fixture(user)
+
+        with pytest.raises(UserUnavailable) as exc_info:
+            await user_service.get_by_email_or_create(session, user.email.upper())
+
+        assert user.email.lower() not in str(exc_info.value).lower()
+
+    async def test_deleted_user_with_original_email(
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+    ) -> None:
+        user.deleted_at = utc_now()
+        await save_fixture(user)
+
+        with pytest.raises(UserUnavailable) as exc_info:
+            await user_service.get_by_email_or_create(session, user.email)
+
+        assert user.email.lower() not in str(exc_info.value).lower()
 
 
 @pytest.mark.anyio

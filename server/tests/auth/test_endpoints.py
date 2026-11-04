@@ -296,3 +296,32 @@ class TestEmailOTPRequest:
 
         assert response.status_code == 202
         enqueue_email_template.assert_called_once()
+
+
+@pytest.mark.anyio
+class TestEmailOTPVerify:
+    async def test_blocked_user(
+        self,
+        login_client: httpx.AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        user.blocked_at = utc_now()
+        await save_fixture(user)
+
+        response, enqueue_email_template = await request_email_otp(
+            login_client, mocker, user.email
+        )
+        assert response.status_code == 202
+        code = enqueue_email_template.call_args.args[0].props.code
+
+        response = await login_client.post(
+            "/v1/auth/email-otp/verify", json={"code": code}
+        )
+
+        assert response.status_code == 403
+        assert response.json() == {
+            "error": "UserUnavailable",
+            "detail": "This account is unavailable. Please contact support.",
+        }

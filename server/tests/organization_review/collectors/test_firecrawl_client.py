@@ -37,6 +37,19 @@ def _patch_client(doc: SimpleNamespace) -> Any:
 
 class TestScrapeMarkdown:
     @pytest.mark.anyio
+    async def test_requests_links_when_enabled(self) -> None:
+        doc = _doc(markdown="# Hi")
+        doc.links = ["https://example.com/about"]
+        with _patch_client(doc) as get_client:
+            result = await scrape_markdown("https://example.com/", include_links=True)
+
+        assert result.links == doc.links
+        assert get_client.return_value.scrape.call_args.kwargs["formats"] == [
+            "markdown",
+            "links",
+        ]
+
+    @pytest.mark.anyio
     async def test_uses_metadata_url_as_final_url(self) -> None:
         """metadata.url is the post-redirect final URL, used in preference to the request."""
         doc = _doc(

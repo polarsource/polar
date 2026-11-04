@@ -1,12 +1,11 @@
 """Thin wrapper around the Firecrawl Cloud `/scrape` endpoint.
 
 Firecrawl renders JavaScript, evades bot/Cloudflare blocks, and uses proxies
-server-side. It backs the JS-render path of the organization-review website
-collector; the browser egress is Firecrawl's network rather than ours.
+server-side. It backs the organization-review website collector.
 """
 
 import functools
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 import structlog
@@ -34,6 +33,7 @@ class ScrapeResult:
     """Final URL after any HTTP/JS/meta-refresh redirects."""
     status_code: int | None
     title: str | None
+    links: list[str] = field(default_factory=list)
 
 
 @functools.cache
@@ -52,7 +52,7 @@ def _get_client() -> AsyncFirecrawl:
     return AsyncFirecrawl(api_key=api_key)
 
 
-async def scrape_markdown(url: str) -> ScrapeResult:
+async def scrape_markdown(url: str, *, include_links: bool = False) -> ScrapeResult:
     """Scrape a URL via Firecrawl Cloud and return its main-content markdown.
 
     Renders JavaScript and follows redirects server-side. Raises on transport
@@ -61,7 +61,7 @@ async def scrape_markdown(url: str) -> ScrapeResult:
     client = _get_client()
     doc = await client.scrape(
         url,
-        formats=["markdown"],
+        formats=["markdown", "links"] if include_links else ["markdown"],
         only_main_content=True,
         wait_for=_SCRAPE_WAIT_FOR_MS,
         timeout=_SCRAPE_TIMEOUT_MS,
@@ -83,4 +83,5 @@ async def scrape_markdown(url: str) -> ScrapeResult:
         url=final_url,
         status_code=status_code,
         title=title,
+        links=(doc.links or []) if include_links else [],
     )

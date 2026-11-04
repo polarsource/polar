@@ -61,7 +61,6 @@ dependencies = [
   "aiocsv>=1.4.1",
   "alembic-utils>=0.8.8",
   "clickhouse-connect[async]>=1.7.1",
-  "trafilatura>=2.1.0",
   "firecrawl-py>=4.31.0",
   "polar-sdk==1.0.3a5",
   "anyio==4.15.1", # Potential culprit for Sep 23-24 memory leak

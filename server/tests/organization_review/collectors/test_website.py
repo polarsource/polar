@@ -1,49 +1,23 @@
 import asyncio
-import socket
-from collections.abc import AsyncIterator, Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpcore
-import httpx
 import pytest
 from pydantic_ai.models.test import TestModel
 
 from polar.config import settings
-from polar.kit.http import SSRFSafeTransport
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.website import (
     MAX_CHARS_PER_PAGE,
     MAX_PAGES,
-    MAX_REDIRECTS,
-    MAX_RESPONSE_BYTES,
     WebsiteDeps,
     _build_tool_response,
-    _extract_links_from_html,
     _get_website_agent,
     _is_allowed_origin,
     browse_page,
     collect_website_data,
-    fetch_page,
 )
 from polar.organization_review.schemas import WebsiteData
-
-
-def _make_client(
-    handler: Callable[[httpx.Request], httpx.Response],
-) -> tuple[httpx.AsyncClient, list[httpx.Request]]:
-    requests: list[httpx.Request] = []
-
-    def _handler(request: httpx.Request) -> httpx.Response:
-        requests.append(request)
-        return handler(request)
-
-    return httpx.AsyncClient(transport=httpx.MockTransport(_handler)), requests
-
-
-# ---------------------------------------------------------------------------
-# _is_allowed_origin
-# ---------------------------------------------------------------------------
 
 
 class TestIsAllowedOrigin:
@@ -72,82 +46,6 @@ class TestIsAllowedOrigin:
 
     def test_no_hostname(self) -> None:
         assert _is_allowed_origin("https://", "example.com") is False
-
-
-# ---------------------------------------------------------------------------
-# _extract_links_from_html
-# ---------------------------------------------------------------------------
-
-
-class TestExtractLinksFromHtml:
-    def test_extracts_same_origin_links(self) -> None:
-        html = """
-        <html><body>
-            <a href="/about">About</a>
-            <a href="https://example.com/pricing">Pricing</a>
-        </body></html>
-        """
-        links = _extract_links_from_html(html, "https://example.com/")
-        assert len(links) == 2
-        assert "About -> https://example.com/about" in links
-        assert "Pricing -> https://example.com/pricing" in links
-
-    def test_filters_external_links(self) -> None:
-        html = """
-        <html><body>
-            <a href="https://example.com/home">Home</a>
-            <a href="https://evil.com/phish">Evil</a>
-        </body></html>
-        """
-        links = _extract_links_from_html(html, "https://example.com/")
-        assert len(links) == 1
-        assert "Home" in links[0]
-
-    def test_skips_javascript_and_anchor_links(self) -> None:
-        html = """
-        <html><body>
-            <a href="javascript:void(0)">JS Link</a>
-            <a href="#section">Anchor</a>
-            <a href="mailto:hi@example.com">Email</a>
-            <a href="/real">Real</a>
-        </body></html>
-        """
-        links = _extract_links_from_html(html, "https://example.com/")
-        assert len(links) == 1
-        assert "Real -> https://example.com/real" in links
-
-    def test_deduplicates_links(self) -> None:
-        html = """
-        <html><body>
-            <a href="/about">About</a>
-            <a href="/about">About Us</a>
-        </body></html>
-        """
-        links = _extract_links_from_html(html, "https://example.com/")
-        assert len(links) == 1
-
-    def test_caps_at_40_links(self) -> None:
-        anchors = "\n".join(f'<a href="/page-{i}">Page {i}</a>' for i in range(60))
-        html = f"<html><body>{anchors}</body></html>"
-        links = _extract_links_from_html(html, "https://example.com/")
-        assert len(links) == 40
-
-    def test_empty_html(self) -> None:
-        links = _extract_links_from_html("", "https://example.com/")
-        assert links == []
-
-    def test_truncates_link_text_at_80_chars(self) -> None:
-        long_text = "A" * 120
-        html = f'<html><body><a href="/page">{long_text}</a></body></html>'
-        links = _extract_links_from_html(html, "https://example.com/")
-        assert len(links) == 1
-        text_part = links[0].split(" -> ")[0]
-        assert len(text_part) == 80
-
-
-# ---------------------------------------------------------------------------
-# _build_tool_response
-# ---------------------------------------------------------------------------
 
 
 class TestBuildToolResponse:
@@ -200,18 +98,6 @@ class TestBuildToolResponse:
         )
         assert "(empty page)" in result
 
-    def test_custom_empty_hint(self) -> None:
-        result = _build_tool_response(
-            title="Test",
-            current_url="https://example.com/",
-            pages_navigated=1,
-            content="",
-            truncated=False,
-            links=[],
-            empty_hint="(needs JS rendering)",
-        )
-        assert "(needs JS rendering)" in result
-
     def test_untitled_page(self) -> None:
         result = _build_tool_response(
             title=None,
@@ -222,173 +108,6 @@ class TestBuildToolResponse:
             links=[],
         )
         assert "Page: Untitled (https://example.com/)" in result
-
-
-# ---------------------------------------------------------------------------
-# fetch_page tool
-# ---------------------------------------------------------------------------
-
-
-class TestFetchPage:
-    @pytest.mark.anyio
-    async def test_rejects_off_origin_url(self) -> None:
-        client, requests = _make_client(lambda request: httpx.Response(200))
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://evil.com/steal")
-
-        assert "off-origin" in result
-        assert deps.pages_navigated == 0
-        assert requests == []
-
-    @pytest.mark.anyio
-    async def test_respects_page_limit(self) -> None:
-        client, requests = _make_client(lambda request: httpx.Response(200))
-        deps = WebsiteDeps(
-            client=client,
-            allowed_domain="example.com",
-            pages_navigated=MAX_PAGES,
-        )
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/page")
-
-        assert "Page limit reached" in result
-        assert requests == []
-
-    @pytest.mark.anyio
-    async def test_successful_fetch(self) -> None:
-        html = """
-        <html>
-        <head><title>My Site</title></head>
-        <body>
-            <p>Welcome to my website. This is a real business.</p>
-            <a href="/about">About</a>
-        </body>
-        </html>
-        """
-        client, requests = _make_client(lambda request: httpx.Response(200, html=html))
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/")
-
-        assert deps.pages_navigated == 1
-        assert len(deps.pages_visited) == 1
-        assert deps.pages_visited[0].url == "https://example.com/"
-        assert deps.pages_visited[0].title == "My Site"
-        assert "Page: My Site" in result
-
-    @pytest.mark.anyio
-    async def test_http_error(self) -> None:
-        client, requests = _make_client(lambda request: httpx.Response(404))
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/missing")
-
-        assert "Error: HTTP 404" in result
-        assert deps.pages_navigated == 1
-
-    @pytest.mark.anyio
-    async def test_connection_error(self) -> None:
-        def handler(request: httpx.Request) -> httpx.Response:
-            raise httpx.ConnectError("Connection refused")
-
-        client, requests = _make_client(handler)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/")
-
-        assert "Error fetching" in result
-        assert deps.pages_navigated == 1
-
-    @pytest.mark.anyio
-    async def test_content_truncation(self) -> None:
-        long_body = "x" * (MAX_CHARS_PER_PAGE + 5_000)
-        html = f"<html><head><title>Big</title></head><body><p>{long_body}</p></body></html>"
-
-        client, requests = _make_client(lambda request: httpx.Response(200, html=html))
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/")
-
-        assert deps.pages_visited[0].content_truncated is True
-        assert len(deps.pages_visited[0].content) <= MAX_CHARS_PER_PAGE
-        assert "(content truncated)" in result
-
-    @pytest.mark.anyio
-    async def test_rejects_binary_content_type(self) -> None:
-        client, requests = _make_client(
-            lambda request: httpx.Response(
-                200,
-                content=b"binary",
-                headers={"content-type": "application/x-apple-diskimage"},
-            )
-        )
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/Koffi.dmg")
-
-        assert "unsupported content type" in result
-        assert deps.pages_visited == []
-
-    @pytest.mark.anyio
-    async def test_rejects_oversized_response(self) -> None:
-        client, requests = _make_client(
-            lambda request: httpx.Response(
-                200,
-                content=b"x" * (MAX_RESPONSE_BYTES + 1),
-                headers={"content-type": "text/html"},
-            )
-        )
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/big")
-
-        assert "response too large" in result
-        assert deps.pages_visited == []
-
-    @pytest.mark.anyio
-    async def test_rejects_oversized_streamed_response(self) -> None:
-        class _BigStream(httpx.AsyncByteStream):
-            async def __aiter__(self) -> AsyncIterator[bytes]:
-                for _ in range(MAX_RESPONSE_BYTES // (1024 * 1024) + 1):
-                    yield b"x" * (1024 * 1024)
-
-        client, requests = _make_client(
-            lambda request: httpx.Response(
-                200,
-                stream=_BigStream(),
-                headers={"content-type": "text/html"},
-            )
-        )
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/chunked")
-
-        assert "response too large" in result
-        assert deps.pages_visited == []
-
-
-# ---------------------------------------------------------------------------
-# collect_website_data (public API)
-# ---------------------------------------------------------------------------
 
 
 class TestGetWebsiteAgent:
@@ -446,7 +165,7 @@ class TestCollectWebsiteData:
 
     @pytest.mark.anyio
     async def test_timeout_returns_error_data(self) -> None:
-        async def slow_agent(url: str) -> WebsiteData:
+        async def slow_agent(url: str, **kwargs: object) -> WebsiteData:
             await asyncio.sleep(999)
             return WebsiteData(base_url=url)
 
@@ -477,139 +196,6 @@ class TestCollectWebsiteData:
         assert "boom" in result.scrape_error
 
 
-# ---------------------------------------------------------------------------
-# fetch_page — SSRF & redirect tests
-# ---------------------------------------------------------------------------
-
-
-class TestFetchPageSSRF:
-    @pytest.mark.anyio
-    async def test_blocks_redirect_to_private_ip(self) -> None:
-        """Redirect targets that resolve to private IPs should be blocked."""
-        backend = httpcore.AsyncMockBackend(
-            [
-                (
-                    b"HTTP/1.1 302 Found\r\n"
-                    b"Location: https://internal.example.com/\r\n"
-                    b"Content-Length: 0\r\n\r\n"
-                )
-            ]
-        )
-        connect_tcp = AsyncMock(wraps=backend.connect_tcp)
-
-        async def fake_getaddrinfo(
-            host: str, *args: object, **kwargs: object
-        ) -> list[tuple[int, int, int, str, tuple[str, int]]]:
-            ip = "10.0.0.1" if host == "internal.example.com" else "93.184.216.34"
-            return [
-                (socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (ip, 0))
-            ]
-
-        with (
-            patch("anyio.getaddrinfo", new=fake_getaddrinfo),
-            patch.object(backend, "connect_tcp", new=connect_tcp),
-            patch("polar.kit.http.httpcore.AnyIOBackend", return_value=backend),
-        ):
-            async with httpx.AsyncClient(transport=SSRFSafeTransport()) as client:
-                deps = WebsiteDeps(client=client, allowed_domain="example.com")
-                ctx = MagicMock()
-                ctx.deps = deps
-
-                result = await fetch_page(ctx, "https://example.com/")
-
-        assert "private/reserved IP 10.0.0.1" in result
-        assert deps.pages_visited == []
-        assert [call.args[0] for call in connect_tcp.await_args_list] == [
-            "93.184.216.34"
-        ]
-
-    @pytest.mark.anyio
-    async def test_blocks_redirect_to_different_domain(self) -> None:
-        """Redirects to a different domain should be blocked."""
-        client, requests = _make_client(
-            lambda request: httpx.Response(
-                302, headers={"location": "https://evil.com/steal"}
-            )
-        )
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/")
-
-        assert "off-origin" in result
-
-    @pytest.mark.anyio
-    async def test_follows_valid_same_origin_redirect(self) -> None:
-        """Valid same-origin redirects should be followed."""
-
-        def handler(request: httpx.Request) -> httpx.Response:
-            if str(request.url) == "https://example.com/old-page":
-                return httpx.Response(
-                    301, headers={"location": "https://example.com/new-page"}
-                )
-            return httpx.Response(
-                200,
-                html="<html><head><title>New</title></head><body><p>Content here</p></body></html>",
-            )
-
-        client, requests = _make_client(handler)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/old-page")
-
-        assert len(requests) == 2
-        assert "Page: New" in result
-
-    @pytest.mark.anyio
-    async def test_follows_www_to_non_www_redirect(self) -> None:
-        """www -> non-www redirects should work when allowed_domain is the root."""
-
-        def handler(request: httpx.Request) -> httpx.Response:
-            if request.url.host == "www.example.com":
-                return httpx.Response(
-                    301, headers={"location": "https://example.com/home"}
-                )
-            return httpx.Response(
-                200,
-                html="<html><head><title>Home</title></head><body><p>Welcome</p></body></html>",
-            )
-
-        client, requests = _make_client(handler)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://www.example.com/")
-
-        assert len(requests) == 2
-        assert "Page: Home" in result
-
-    @pytest.mark.anyio
-    async def test_max_redirects_exceeded(self) -> None:
-        """Exceeding MAX_REDIRECTS should return an error."""
-        client, requests = _make_client(
-            lambda request: httpx.Response(
-                302, headers={"location": "https://example.com/loop"}
-            )
-        )
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
-        ctx = MagicMock()
-        ctx.deps = deps
-
-        result = await fetch_page(ctx, "https://example.com/start")
-
-        assert "too many redirects" in result
-        assert len(requests) == MAX_REDIRECTS
-
-
-# ---------------------------------------------------------------------------
-# browse_page — Firecrawl rendering
-# ---------------------------------------------------------------------------
-
-
 def _patch_scrape_markdown(result: ScrapeResult | Exception) -> Any:
     """Patch scrape_markdown to return a ScrapeResult or raise an exception."""
     if isinstance(result, Exception):
@@ -628,8 +214,7 @@ def _patch_scrape_markdown(result: ScrapeResult | Exception) -> Any:
 class TestBrowsePageFirecrawl:
     @pytest.mark.anyio
     async def test_successful_scrape(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps = WebsiteDeps(allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
 
@@ -638,10 +223,19 @@ class TestBrowsePageFirecrawl:
             url="https://example.com/",
             status_code=200,
             title="My Site",
+            links=[
+                "https://example.com/about",
+                "https://example.com/about",
+                "https://evil.com/",
+                "https://[invalid/",
+            ],
         )
-        with _patch_scrape_markdown(result):
+        with _patch_scrape_markdown(result) as mock_scrape:
             response = await browse_page(ctx, "https://example.com/")
 
+        mock_scrape.assert_awaited_once_with("https://example.com/", include_links=True)
+        assert response.count("https://example.com/about") == 1
+        assert "https://evil.com/" not in response
         assert deps.pages_navigated == 1
         assert len(deps.pages_visited) == 1
         page = deps.pages_visited[0]
@@ -653,8 +247,7 @@ class TestBrowsePageFirecrawl:
 
     @pytest.mark.anyio
     async def test_rejects_off_origin_url(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps = WebsiteDeps(allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
 
@@ -671,10 +264,7 @@ class TestBrowsePageFirecrawl:
 
     @pytest.mark.anyio
     async def test_respects_page_limit(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(
-            client=client, allowed_domain="example.com", pages_navigated=MAX_PAGES
-        )
+        deps = WebsiteDeps(allowed_domain="example.com", pages_navigated=MAX_PAGES)
         ctx = MagicMock()
         ctx.deps = deps
 
@@ -691,8 +281,7 @@ class TestBrowsePageFirecrawl:
     @pytest.mark.anyio
     async def test_off_origin_final_url_blocked(self) -> None:
         """A JS/HTTP redirect that lands off-origin is rejected via the final URL."""
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps = WebsiteDeps(allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
 
@@ -708,8 +297,7 @@ class TestBrowsePageFirecrawl:
 
     @pytest.mark.anyio
     async def test_http_error(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps = WebsiteDeps(allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
 
@@ -724,8 +312,7 @@ class TestBrowsePageFirecrawl:
 
     @pytest.mark.anyio
     async def test_scrape_exception(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps = WebsiteDeps(allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
 
@@ -737,8 +324,7 @@ class TestBrowsePageFirecrawl:
 
     @pytest.mark.anyio
     async def test_content_truncation(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
-        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        deps = WebsiteDeps(allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
 

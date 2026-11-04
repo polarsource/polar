@@ -126,9 +126,7 @@ RUN trust extract --overwrite --format=pem-bundle \
   && trust extract --overwrite --format=pem-bundle \
     --filter='pkcs11:object=emSign%20ECC%20Root%20CA%20-%20G3;type=cert' \
     /etc/pki/ca-trust/source/blocklist/emSign_ECC_Root_CA_-_G3.pem \
-  && update-ca-trust \
-  && dnf install -y libpq \
-  && dnf clean all
+  && update-ca-trust
 
 # Compile dependencies on Amazon Linux to match the Lambda runtime.
 FROM lambda-base AS lambda-build

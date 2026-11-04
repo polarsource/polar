@@ -4,9 +4,6 @@ Python/FastAPI backend with PostgreSQL, Redis, and S3 storage.
 
 ## Quick Commands
 
-Host-based development needs the PostgreSQL client library (`libpq`) for Psycopg.
-Install it with `brew install libpq` on macOS or `apt install libpq5` on Debian and Ubuntu.
-
 ```bash
 uv run task api          # Start API server (http://127.0.0.1:8000)
 uv run task worker       # Start background worker

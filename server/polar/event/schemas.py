@@ -931,9 +931,10 @@ class EventSearchParams(QuerySchema):
     organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     )
-    query: str | None = Field(
-        None, title="Query", description="Query to filter events."
-    )
+    # Preserve the published query schema while enforcing the existing length rule.
+    query: (
+        Annotated[str, Field(min_length=3), WithJsonSchema({"type": "string"})] | None
+    ) = Field(None, title="Query", description="Query to filter events.")
 
     @model_validator(mode="after")
     def validate_search_query(self) -> Self:
@@ -944,8 +945,6 @@ class EventSearchParams(QuerySchema):
                 "value_error",
                 "Query is only supported when organization_id is provided.",
             )
-        if len(self.query) < 3:
-            raise PydanticCustomError("query", "Query must be at least 3 characters.")
         return self
 
 

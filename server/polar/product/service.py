@@ -45,6 +45,7 @@ from polar.models import (
     ProductVisibility,
     User,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_custom_field import ProductCustomField
 from polar.models.product_price import ProductPriceSource
@@ -108,6 +109,7 @@ class ProductService:
         id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        catalog: CatalogStatus | uuid.UUID | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -144,7 +146,10 @@ class ProductService:
 
         if id is not None:
             statement = statement.where(Product.id.in_(id))
-        else:
+
+        if catalog is not None:
+            statement = repository.apply_catalog_filter(statement, catalog)
+        elif id is None:
             statement = statement.where(Product.is_current)
 
         if external_id is not None:

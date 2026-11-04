@@ -19,6 +19,8 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import (
+    Catalog,
+    CatalogProduct,
     CheckoutProduct,
     Product,
     ProductBenefit,
@@ -28,6 +30,7 @@ from polar.models import (
     Subscription,
     SubscriptionUpdate,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSource
 from polar.postgres import sql
 
@@ -306,6 +309,25 @@ class ProductRepository(
             selectinload(Product.attached_custom_fields),
             selectinload(Product.all_prices),
         )
+
+    def apply_catalog_filter(
+        self, statement: Select[Product], catalog: CatalogStatus | UUID
+    ) -> Select[Product]:
+        if catalog == CatalogStatus.live:
+            return statement.where(Product.is_current)
+        members = (
+            select(CatalogProduct.product_id)
+            .join(CatalogProduct.catalog)
+            .where(CatalogProduct.deleted_at.is_(None), Catalog.deleted_at.is_(None))
+        )
+        if isinstance(catalog, CatalogStatus):
+            members = members.where(Catalog.status == catalog)
+        else:
+            members = members.where(Catalog.id == catalog)
+        statement = statement.where(Product.id.in_(members))
+        if catalog == CatalogStatus.archived:
+            statement = statement.where(~Product.is_current)
+        return statement
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

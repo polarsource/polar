@@ -74,6 +74,7 @@ async def list(
         id=filters.id,
         external_id=filters.external_id,
         organization_id=filters.organization_id,
+        catalog=filters.catalog,
         query=filters.query,
         is_archived=filters.is_archived,
         is_recurring=filters.is_recurring,

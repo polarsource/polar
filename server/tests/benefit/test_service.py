@@ -38,8 +38,17 @@ from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.schemas import Schema
 from polar.kit.visibility import Visibility
-from polar.models import Benefit, Organization, SlackApp, User, UserOrganization
+from polar.models import (
+    Benefit,
+    Catalog,
+    CatalogBenefit,
+    Organization,
+    SlackApp,
+    User,
+    UserOrganization,
+)
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.auth import AuthSubjectFixture
@@ -212,6 +221,58 @@ class TestList:
         )
 
         assert [benefit.id for benefit in results] == [current.id]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_catalog_filter(
+        self,
+        auth_subject: AuthSubject[Organization],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        a1 = await create_benefit(
+            save_fixture, organization=organization, external_id="a", is_current=False
+        )
+        a2 = await create_benefit(
+            save_fixture, organization=organization, external_id="a"
+        )
+        a3 = await create_benefit(
+            save_fixture, organization=organization, external_id="a", is_current=False
+        )
+        b = await create_benefit(
+            save_fixture, organization=organization, external_id="b"
+        )
+        catalogs: dict[CatalogStatus, Catalog] = {}
+        for status, a in (
+            (CatalogStatus.archived, a1),
+            (CatalogStatus.live, a2),
+            (CatalogStatus.draft, a3),
+        ):
+            catalog = Catalog(organization=organization, status=status)
+            await save_fixture(catalog)
+            for benefit, external_id in ((a, "a"), (b, "b")):
+                await save_fixture(
+                    CatalogBenefit(
+                        catalog=catalog, benefit=benefit, external_id=external_id
+                    )
+                )
+            catalogs[status] = catalog
+        session.expunge_all()
+
+        async def ids(catalog: CatalogStatus | uuid.UUID | None) -> set[uuid.UUID]:
+            results, _ = await benefit_service.list(
+                session,
+                auth_subject,
+                catalog=catalog,
+                pagination=PaginationParams(1, 10),
+            )
+            return {benefit.id for benefit in results}
+
+        assert await ids(None) == {a2.id, b.id}
+        assert await ids(CatalogStatus.live) == {a2.id, b.id}
+        assert await ids(CatalogStatus.draft) == {a3.id, b.id}
+        assert await ids(CatalogStatus.archived) == {a1.id}
+        assert await ids(catalogs[CatalogStatus.archived].id) == {a1.id, b.id}
 
 
 @pytest.mark.anyio

@@ -23,6 +23,7 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic_core import PydanticCustomError
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
+from polar.catalog.schemas import CATALOG_FILTER_DESCRIPTION
 from polar.custom_field.schemas import (
     AttachedCustomField,
     AttachedCustomFieldListCreate,
@@ -63,6 +64,7 @@ from polar.kit.versioning import QuerySchema, Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
+from polar.models.catalog import CatalogStatus
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -1250,6 +1252,9 @@ class ProductListParams(QuerySchema):
     organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     )
+    catalog: Annotated[
+        CatalogStatus | UUID4 | None, Version(starting_from=V2027_01)
+    ] = Field(None, description=CATALOG_FILTER_DESCRIPTION)
     query: str | None = Field(None, description="Filter by product name.")
     is_archived: bool | None = Field(None, description="Filter on archived products.")
     is_recurring: bool | None = Field(

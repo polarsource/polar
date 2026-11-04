@@ -14,8 +14,9 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Benefit
+from polar.models import Benefit, Catalog, CatalogBenefit
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.product_benefit import ProductBenefit
 
 from .sorting import BenefitSortProperty
@@ -132,6 +133,25 @@ class BenefitRepository(
 
     def get_eager_options(self) -> Options:
         return (joinedload(Benefit.organization),)
+
+    def apply_catalog_filter(
+        self, statement: Select[Benefit], catalog: CatalogStatus | UUID
+    ) -> Select[Benefit]:
+        if catalog == CatalogStatus.live:
+            return statement.where(Benefit.is_current)
+        members = (
+            select(CatalogBenefit.benefit_id)
+            .join(CatalogBenefit.catalog)
+            .where(CatalogBenefit.deleted_at.is_(None), Catalog.deleted_at.is_(None))
+        )
+        if isinstance(catalog, CatalogStatus):
+            members = members.where(Catalog.status == catalog)
+        else:
+            members = members.where(Catalog.id == catalog)
+        statement = statement.where(Benefit.id.in_(members))
+        if catalog == CatalogStatus.archived:
+            statement = statement.where(~Benefit.is_current)
+        return statement
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

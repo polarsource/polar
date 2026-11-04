@@ -7,6 +7,13 @@ from polar.kit.versioning import QuerySchema
 from polar.models.catalog import CatalogStatus
 from polar.organization.schemas import OrganizationID
 
+CATALOG_FILTER_DESCRIPTION = (
+    "Filter by catalog. `live` returns current versions, `draft` the draft "
+    "catalog's versions, `archived` previous versions. A catalog ID returns "
+    "the versions that catalog lists. When omitted, current versions are "
+    "returned unless filtering by ID."
+)
+
 
 class Catalog(IDSchema, TimestampedSchema):
     """A version of an organization's product catalog."""

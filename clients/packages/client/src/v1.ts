@@ -48200,6 +48200,8 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Exclude benefits with these IDs. */
         exclude_id?: string | string[] | null
+        /** @description Filter by catalog. `live` returns current versions, `draft` the draft catalog's versions, `archived` previous versions. A catalog ID returns the versions that catalog lists. When omitted, current versions are returned unless filtering by ID. */
+        catalog?: components['schemas']['CatalogStatus'] | string | null
         /** @description Filter by description. */
         query?: string | null
         /** @description Page number, defaults to 1. */
@@ -48973,6 +48975,8 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by catalog. `live` returns current versions, `draft` the draft catalog's versions, `archived` previous versions. A catalog ID returns the versions that catalog lists. When omitted, current versions are returned unless filtering by ID. */
+        catalog?: components['schemas']['CatalogStatus'] | string | null
         /** @description Filter by product name. */
         query?: string | null
         /** @description Filter on archived products. */

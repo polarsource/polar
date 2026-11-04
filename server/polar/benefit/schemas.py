@@ -22,6 +22,7 @@ from polar.benefit.strategies.meter_credit.properties import (
 from polar.benefit.strategies.slack_shared_channel.properties import (
     BenefitGrantSlackSharedChannelProperties,
 )
+from polar.catalog.schemas import CATALOG_FILTER_DESCRIPTION
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
@@ -33,6 +34,7 @@ from polar.kit.schemas import (
 from polar.kit.versioning import QuerySchema, Version
 from polar.member.schemas import ExternalMemberID, Member
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.organization.schemas import OrganizationID
 from polar.version import V2027_01
 
@@ -279,6 +281,9 @@ class BenefitListParams(QuerySchema):
     exclude_id: MultipleQueryFilter[BenefitID] | None = Field(
         None, title="Exclude IDs", description="Exclude benefits with these IDs."
     )
+    catalog: Annotated[
+        CatalogStatus | UUID4 | None, Version(starting_from=V2027_01)
+    ] = Field(None, description=CATALOG_FILTER_DESCRIPTION)
     query: str | None = Field(None, title="Query", description="Filter by description.")
 
 

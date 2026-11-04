@@ -10,11 +10,9 @@ from sqlalchemy import (
     ColumnElement,
     NotNullable,
     Select,
-    String,
     Uuid,
     and_,
     case,
-    cast,
     column,
     func,
     or_,
@@ -397,30 +395,6 @@ class CustomerRepository(
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())
-
-    async def search_by_query(
-        self,
-        org_ids: set[AccessibleOrganizationID],
-        query: str,
-    ) -> tuple[list[UUID], list[str]]:
-        statement = (
-            self.get_statement_by_org_ids(org_ids)
-            .with_only_columns(Customer.id, Customer.external_id)
-            .where(
-                or_(
-                    cast(Customer.id, String).icontains(query, autoescape=True),
-                    Customer.external_id.icontains(query, autoescape=True),
-                    Customer.name.icontains(query, autoescape=True),
-                    Customer._billing_name.icontains(query, autoescape=True),
-                    Customer.email.icontains(query, autoescape=True),
-                ),
-            )
-        )
-        result = await self.session.execute(statement)
-        rows = result.all()
-        customer_ids = [r.id for r in rows]
-        external_ids = [r.external_id for r in rows if r.external_id is not None]
-        return customer_ids, external_ids
 
     async def get_growth_per_period(
         self,

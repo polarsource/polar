@@ -785,6 +785,13 @@ class DeclarativeConfigService:
                                 catalog_service.copy_product_settings(
                                     change.existing, product
                                 )
+                                if config.meter_interval is None:
+                                    product.meter_interval = (
+                                        change.existing.meter_interval
+                                    )
+                                    product.meter_interval_count = (
+                                        change.existing.meter_interval_count
+                                    )
                             await repository.update(
                                 product, update_dict={"external_id": config.external_id}
                             )

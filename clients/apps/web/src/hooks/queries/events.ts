@@ -87,6 +87,27 @@ export const useEvent = (
   })
 }
 
+// The earliest event only moves on backfills, so cache it for an hour instead
+// of listing and counting the organization's events on every page mount.
+export const useEarliestEvent = (organizationId: string) =>
+  useQuery({
+    queryKey: ['events', organizationId, 'earliest'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/events/', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              sorting: ['timestamp'],
+              limit: 1,
+            },
+          },
+        }),
+      ).then((result) => result.items[0] ?? null),
+    staleTime: 60 * 60 * 1000,
+    retry: defaultRetry,
+  })
+
 export const useEventHierarchyStats = (
   organizationId: string,
   parameters: Omit<

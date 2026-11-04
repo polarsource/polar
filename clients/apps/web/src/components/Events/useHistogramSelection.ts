@@ -144,10 +144,14 @@ export const useHistogramSelection = (
         ? 'crosshair'
         : 'ew-resize'
 
-  const reset = () => {
+  const discardPendingPointer = () => {
     if (frame.current !== null) cancelAnimationFrame(frame.current)
     frame.current = null
     latestPointer.current = null
+  }
+
+  const reset = () => {
+    discardPendingPointer()
     setDrag(null)
     setDraft(null)
   }
@@ -168,6 +172,7 @@ export const useHistogramSelection = (
       onPointerDown: (event: PointerEvent<HTMLElement>) => {
         if (event.button !== 0 || barCount === 0) return
         event.currentTarget.setPointerCapture(event.pointerId)
+        discardPendingPointer()
         const { position, index, mode } = locate(toPointer(event))
         const next: Drag = {
           mode,
@@ -188,8 +193,9 @@ export const useHistogramSelection = (
         })
       },
       onPointerUp: (event: PointerEvent<HTMLElement>) => {
+        const altKey = latestPointer.current?.altKey ?? event.altKey
         const final = drag
-          ? project(drag, locate(toPointer(event)).position, event.altKey)
+          ? project(drag, locate(toPointer(event)).position, altKey)
           : draft
         if (final) {
           const snapped = snapBrush(final, barCount)
@@ -205,7 +211,9 @@ export const useHistogramSelection = (
         setHovered(null)
       },
       onPointerLeave: () => {
-        if (!drag) setHovered(null)
+        if (drag) return
+        discardPendingPointer()
+        setHovered(null)
       },
     },
   }

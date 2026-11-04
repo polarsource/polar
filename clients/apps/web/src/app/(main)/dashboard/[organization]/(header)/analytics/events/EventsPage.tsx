@@ -17,7 +17,11 @@ import {
   DateRangeInterval,
   dateRangeIntervals,
 } from '@/components/Metrics/DateRangePicker'
-import { useEvent, useEvents, useInfiniteEvents } from '@/hooks/queries/events'
+import {
+  useEarliestEvent,
+  useEvent,
+  useInfiniteEvents,
+} from '@/hooks/queries/events'
 import { useInViewport } from '@/hooks/utils'
 import { buildEventsFilter, formatEventCount } from '@/utils/event'
 import useDebounce from '@/utils/useDebounce'
@@ -245,11 +249,8 @@ const ClientPage = ({
     setRangeAnchor(new Date())
   }
 
-  const { data: firstEvents } = useEvents(organization.id, {
-    sorting: ['timestamp'],
-    limit: 1,
-  })
-  const firstEventTimestamp = firstEvents?.items[0]?.timestamp
+  const { data: earliestEvent } = useEarliestEvent(organization.id)
+  const firstEventTimestamp = earliestEvent?.timestamp
   const earliest = startOfDay(
     min([
       new Date(organization.created_at),

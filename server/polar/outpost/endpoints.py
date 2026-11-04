@@ -147,8 +147,9 @@ async def changes(
     # The primary: a change is logged after its commit, a replica may not have it yet.
     session: AsyncSession = Depends(get_db_session),
 ) -> Changes:
-    """The snapshots that changed since the cursor. Without a cursor, the cursor to
-    start from."""
+    """The snapshots that changed since the cursor.
+
+    When no cursor is provided, returns the cursor to start pulling from."""
     return await outpost_service.get_changes(
         session, redis, auth_subject.subject, cursor, limit
     )

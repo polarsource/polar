@@ -6808,8 +6808,9 @@ export interface paths {
     }
     /**
      * Changes
-     * @description The snapshots that changed since the cursor. Without a cursor, the cursor to
-     *     start from.
+     * @description The snapshots that changed since the cursor.
+     *
+     *     When no cursor is provided, returns the cursor to start pulling from.
      *
      *     **Scopes**: `events:write`
      */

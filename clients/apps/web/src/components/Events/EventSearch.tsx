@@ -198,7 +198,8 @@ export const EventSearch = ({
   )
 
   const match = TOKEN_PATTERN.exec(input.trim())
-  const field = match?.[1].toLowerCase() ?? null
+  const rawField = match?.[1] ?? null
+  const field = rawField?.toLowerCase() ?? null
   const value = match?.[2].trim().toLowerCase() ?? ''
 
   const { data: eventNames } = useEventNames(organizationId, {
@@ -310,8 +311,8 @@ export const EventSearch = ({
           },
         }))
     }
-    if (field?.startsWith('metadata.') && value) {
-      const key = field.slice('metadata.'.length)
+    if (rawField && field?.startsWith('metadata.') && value) {
+      const key = rawField.slice('metadata.'.length)
       const raw = match?.[2].trim() ?? ''
       return [
         {

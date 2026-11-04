@@ -74,7 +74,7 @@ export const EventLogRow = ({
         borderColor="border-secondary"
       >
         <Box width={128} flexShrink={0}>
-          <EventTimestamp timestamp={event.timestamp}>
+          <EventTimestamp timestamp={event.timestamp} focusable={false}>
             <Text color="muted" tabularNums truncate>
               {formatEventTimestamp(event.timestamp)}
             </Text>

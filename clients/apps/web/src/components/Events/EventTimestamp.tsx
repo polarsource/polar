@@ -107,14 +107,21 @@ const TimestampDetails = ({ date }: { date: Date }) => {
 
 export const EventTimestamp = ({
   timestamp,
+  focusable = true,
   children,
 }: {
   timestamp: string
+  focusable?: boolean
   children: ReactNode
 }) => (
   <Tooltip delayDuration={300}>
     <TooltipTrigger asChild>
-      <span className="inline-flex max-w-full min-w-0">{children}</span>
+      <span
+        className="inline-flex max-w-full min-w-0"
+        tabIndex={focusable ? 0 : undefined}
+      >
+        {children}
+      </span>
     </TooltipTrigger>
     <TooltipContent side="left" align="center" className="p-3">
       <TimestampDetails date={new Date(timestamp)} />

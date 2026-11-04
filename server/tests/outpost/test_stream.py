@@ -41,3 +41,47 @@ class TestEnqueue:
         }
         assert await redis.llen("dramatiq:high_priority") == 0
         await pubsub.close()
+
+    async def test_appends_to_the_changes_once_flushed(
+        self, redis: Redis, set_job_queue_manager_context: JobQueueManager
+    ) -> None:
+        organization_id = uuid.uuid4()
+        reducer_id = uuid.uuid4()
+        event: ReducerBucketOutpostEvent = {
+            "type": "reducer_bucket",
+            "reducer_id": reducer_id,
+            "customer_id": None,
+            "external_customer_id": "customer",
+        }
+        key = f"outpost:changes:{organization_id}"
+
+        enqueue(organization_id, event)
+        assert await redis.xlen(key) == 0
+        await set_job_queue_manager_context.flush(dramatiq.get_broker(), redis)
+
+        [(_, fields)] = await redis.xrange(key)
+        assert json.loads(fields["event"]) == {
+            "type": "reducer_bucket",
+            "reducer_id": str(reducer_id),
+            "customer_id": None,
+            "external_customer_id": "customer",
+        }
+
+    async def test_discards_the_changes_of_a_failed_block(
+        self, redis: Redis, set_job_queue_manager_context: JobQueueManager
+    ) -> None:
+        organization_id = uuid.uuid4()
+        event: ReducerBucketOutpostEvent = {
+            "type": "reducer_bucket",
+            "reducer_id": uuid.uuid4(),
+            "customer_id": None,
+            "external_customer_id": "customer",
+        }
+
+        with pytest.raises(RuntimeError):
+            with set_job_queue_manager_context.discard_on_error():
+                enqueue(organization_id, event)
+                raise RuntimeError()
+        await set_job_queue_manager_context.flush(dramatiq.get_broker(), redis)
+
+        assert await redis.xlen(f"outpost:changes:{organization_id}") == 0

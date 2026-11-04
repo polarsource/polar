@@ -28,9 +28,6 @@ def upgrade() -> None:
             """
             DELETE FROM oauth2_grants
             WHERE COALESCE(modified_at, created_at) < :cutover
-              AND client_id IN (
-                  SELECT client_id FROM oauth2_clients WHERE first_party = false
-              )
             """
         ).bindparams(cutover=CONSENT_CUTOVER)
     )

@@ -1,7 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from types import SimpleNamespace
 from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
 
@@ -180,13 +179,6 @@ def build_stripe_payment_intent(
 def stripe_service_mock(mocker: MockerFixture, customer: Customer) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.order.service.stripe_service", new=mock)
-
-    mock.get_customer.return_value = SimpleNamespace(
-        id=customer.stripe_customer_id,
-        email=customer.email,
-        name=customer.name,
-        address=customer.billing_address,
-    )
 
     return mock
 

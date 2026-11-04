@@ -1077,10 +1077,12 @@ class TestChanges:
         assert (await _get_changes(client, changes["cursor"]))["reset"] is False
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_invalid_cursor(self, client: httpx.AsyncClient) -> None:
-        response = await client.get(
-            "/v1/outpost/changes", params={"cursor": "not-a-cursor"}
-        )
+    @pytest.mark.parametrize(
+        "cursor",
+        ["not-a-cursor", f"{2**64}-0", f"0-{2**64}"],
+    )
+    async def test_invalid_cursor(self, client: httpx.AsyncClient, cursor: str) -> None:
+        response = await client.get("/v1/outpost/changes", params={"cursor": cursor})
 
         assert response.status_code == 422
 

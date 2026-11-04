@@ -277,6 +277,7 @@ class BenefitGrantRepository(
         value: str,
         *,
         benefit_id: UUID | None = None,
+        customer_id: UUID | None = None,
         for_update: bool = False,
     ) -> BenefitGrant | None:
         filters = [
@@ -285,6 +286,8 @@ class BenefitGrantRepository(
         ]
         if benefit_id is not None:
             filters.append(BenefitGrant.benefit_id == benefit_id)
+        if customer_id is not None:
+            filters.append(BenefitGrant.customer_id == customer_id)
 
         statement = (
             self.get_base_statement()

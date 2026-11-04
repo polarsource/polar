@@ -50,9 +50,10 @@ export const NotificationsPopover = () => {
       </Button>
       <PopoverContent
         sideOffset={8}
+        collisionPadding={8}
         align="start"
         onOpenAutoFocus={(e) => e.preventDefault()}
-        className="w-[400px] overflow-hidden rounded-2xl p-0"
+        className="w-[400px] max-w-[calc(100vw-16px)] overflow-hidden rounded-2xl p-0"
       >
         <Box flexDirection="column" maxHeight={560}>
           <Box

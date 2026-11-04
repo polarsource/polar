@@ -2253,18 +2253,7 @@ class TestListOrders:
         with pytest.raises(PolarSelfNotConfigured):
             await polar_self.list_orders(ORG_A)
 
-    async def test_returns_empty_when_customer_not_found(
-        self, configured: None, orders_client_mock: MagicMock
-    ) -> None:
-        orders_client_mock.get_customer_by_external_id_or_none.return_value = None
-
-        items, total = await polar_self.list_orders(ORG_A)
-
-        assert items == []
-        assert total == 0
-        orders_client_mock.list_customer_orders.assert_not_awaited()
-
-    async def test_lists_orders_for_resolved_customer(
+    async def test_lists_orders_by_external_customer_id(
         self, configured: None, orders_client_mock: MagicMock
     ) -> None:
         order = _make_order(id="ord_1")
@@ -2275,10 +2264,11 @@ class TestListOrders:
         assert items == [order]
         assert total == 1
         orders_client_mock.list_customer_orders.assert_awaited_once_with(
-            customer_id=_CUSTOMER_ID,
+            external_customer_id=str(ORG_A),
             page=2,
             limit=20,
         )
+        orders_client_mock.get_customer_by_external_id_or_none.assert_not_awaited()
 
 
 @pytest.mark.anyio

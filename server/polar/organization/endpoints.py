@@ -51,6 +51,7 @@ from polar.integrations.polar.schemas import (
     organization_payment_method_from_sdk,
 )
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.kit.concurrency import create_task_group
 from polar.kit.http import check_url_reachable, get_ip_address
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.kit.versioning import version
@@ -1021,12 +1022,29 @@ async def list_plans(
     The free plan is synthesized (no underlying Polar product); selecting it in
     the UI cancels the active subscription instead of creating one.
     """
-    products = await polar_self_service.list_plans()
-    subscription = await polar_self_service.get_subscription(authz.organization.id)
+    async with create_task_group() as tg:
+        products = tg.create_task(polar_self_service.list_plans())
+        subscription = tg.create_task(
+            polar_self_service.get_subscription(authz.organization.id)
+        )
     free_plan = await polar_self_service.resolve_free_plan(
-        session, authz.organization.id, subscription=subscription
+        session, authz.organization.id, subscription=subscription.return_value
     )
-    return [free_plan, *(OrganizationPlan.from_sdk(product) for product in products)]
+    return [
+        free_plan,
+        *(OrganizationPlan.from_sdk(product) for product in products.return_value),
+    ]
+
+
+def _apply_startup_program(
+    subscription_obj: OrganizationSubscription, status: str | None
+) -> OrganizationSubscription:
+    if settings.STARTUP_PROGRAM_ENABLED:
+        subscription_obj.startup_program_scale_product_id = (
+            settings.POLAR_SCALE_PRODUCT_ID
+        )
+        subscription_obj.startup_program_status = status
+    return subscription_obj
 
 
 async def _enrich_subscription(
@@ -1035,14 +1053,9 @@ async def _enrich_subscription(
     organization_id: UUID,
 ) -> OrganizationSubscription:
     """Annotate the subscription with Startup Program state when configured."""
-    if settings.STARTUP_PROGRAM_ENABLED:
-        subscription_obj.startup_program_scale_product_id = (
-            settings.POLAR_SCALE_PRODUCT_ID
-        )
-        subscription_obj.startup_program_status = (
-            await startup_program_service.get_status(organization_id)
-        )
-    return subscription_obj
+    return _apply_startup_program(
+        subscription_obj, await startup_program_service.get_status(organization_id)
+    )
 
 
 @router.get(
@@ -1061,7 +1074,15 @@ async def get_subscription(
     Returns a synthesized free-plan representation when the organization has no
     active paid subscription. Grandfathered orgs get the "Early Member" variant.
     """
-    subscription = await polar_self_service.get_subscription(authz.organization.id)
+    async with create_task_group() as tg:
+        subscription_task = tg.create_task(
+            polar_self_service.get_subscription(authz.organization.id)
+        )
+        startup_program_status_task = tg.create_task(
+            startup_program_service.get_status(authz.organization.id)
+        )
+    subscription = subscription_task.return_value
+    startup_program_status = startup_program_status_task.return_value
     if subscription is None:
         free_plan = await polar_self_service.resolve_free_plan(
             session, authz.organization.id, subscription=None
@@ -1069,10 +1090,7 @@ async def get_subscription(
         subscription_obj = OrganizationSubscription.free(plan=free_plan)
     else:
         subscription_obj = OrganizationSubscription.from_sdk(subscription)
-    return await _enrich_subscription(
-        subscription_obj,
-        organization_id=authz.organization.id,
-    )
+    return _apply_startup_program(subscription_obj, startup_program_status)
 
 
 @router.post(

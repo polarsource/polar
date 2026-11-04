@@ -16,6 +16,7 @@ from polar.email.schemas import (
 )
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
+from polar.kit.concurrency import create_task_group
 from polar.models.member import MemberRole
 from polar.models.organization import SupportTier
 from polar.models.user_organization import OrganizationRole
@@ -51,7 +52,6 @@ from polar.worker import enqueue_job
 
 from .client import get_client
 from .exceptions import (
-    PolarSelfCustomerNotFound,
     PolarSelfInvoiceNotReady,
     PolarSelfNoActiveSubscription,
     PolarSelfNotApproved,
@@ -495,15 +495,8 @@ class PolarSelfService:
         if not self.is_configured:
             raise PolarSelfNotConfigured()
 
-        client = get_client()
-        customer = await client.get_customer_by_external_id_or_none(
-            str(organization_id)
-        )
-        if customer is None:
-            return [], 0
-
-        return await client.list_customer_orders(
-            customer_id=customer.id,
+        return await get_client().list_customer_orders(
+            external_customer_id=str(organization_id),
             page=page,
             limit=limit,
         )
@@ -514,7 +507,8 @@ class PolarSelfService:
         *,
         external_member_id: str | None = None,
     ) -> "CustomerPortalCustomer":
-        await self._ensure_polar_customer(organization_id)
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
         return await get_client().portal_get_customer(
             external_customer_id=str(organization_id),
             external_member_id=external_member_id,
@@ -530,7 +524,8 @@ class PolarSelfService:
 
         Returned token authenticates against `/v1/customer-portal/customers/me/*`
         for the duration of its TTL."""
-        await self._ensure_polar_customer(organization_id)
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
         return await get_client().portal_create_customer_session(
             external_customer_id=str(organization_id),
             external_member_id=external_member_id,
@@ -542,18 +537,24 @@ class PolarSelfService:
         *,
         external_member_id: str | None = None,
     ) -> tuple[list["CustomerPaymentMethod"], str | None]:
-        await self._ensure_polar_customer(organization_id)
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
         client = get_client()
-        customer = await client.portal_get_customer(
-            external_customer_id=str(organization_id),
-            external_member_id=external_member_id,
-        )
-        methods = await client.portal_list_payment_methods(
-            external_customer_id=str(organization_id),
-            external_member_id=external_member_id,
-        )
-        default_id = customer.default_payment_method_id
-        return methods, default_id if isinstance(default_id, str) else None
+        async with create_task_group() as tg:
+            customer = tg.create_task(
+                client.portal_get_customer(
+                    external_customer_id=str(organization_id),
+                    external_member_id=external_member_id,
+                )
+            )
+            methods = tg.create_task(
+                client.portal_list_payment_methods(
+                    external_customer_id=str(organization_id),
+                    external_member_id=external_member_id,
+                )
+            )
+        default_id = customer.return_value.default_payment_method_id
+        return methods.return_value, default_id if isinstance(default_id, str) else None
 
     async def delete_payment_method(
         self,
@@ -562,7 +563,8 @@ class PolarSelfService:
         payment_method_id: str,
         external_member_id: str | None = None,
     ) -> None:
-        await self._ensure_polar_customer(organization_id)
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
         await get_client().portal_delete_payment_method(
             external_customer_id=str(organization_id),
             payment_method_id=payment_method_id,
@@ -576,7 +578,8 @@ class PolarSelfService:
         payment_method_id: str,
         external_member_id: str | None = None,
     ) -> "CustomerPortalCustomer":
-        await self._ensure_polar_customer(organization_id)
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
         return await get_client().portal_update_customer(
             external_customer_id=str(organization_id),
             external_member_id=external_member_id,
@@ -590,7 +593,8 @@ class PolarSelfService:
         update: OrganizationBillingDetailsUpdate,
         external_member_id: str | None = None,
     ) -> "CustomerPortalCustomer":
-        await self._ensure_polar_customer(organization_id)
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
         # Only forward fields the client explicitly sent so we don't
         # null out billing_address / tax_id on a partial update.
         sdk_update = cast(
@@ -609,7 +613,8 @@ class PolarSelfService:
         *,
         external_member_id: str | None = None,
     ) -> list[CustomerBenefitGrantSlackSharedChannel]:
-        await self._ensure_polar_customer(organization_id)
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
         grants = await get_client().portal_list_benefit_grants(
             external_customer_id=str(organization_id),
             external_member_id=external_member_id,
@@ -628,7 +633,8 @@ class PolarSelfService:
         update: OrganizationBenefitGrantUpdate,
         external_member_id: str | None = None,
     ) -> CustomerBenefitGrantSlackSharedChannel:
-        await self._ensure_polar_customer(organization_id)
+        if not self.is_configured:
+            raise PolarSelfNotConfigured()
         grant = await get_client().portal_update_benefit_grant(
             external_customer_id=str(organization_id),
             benefit_grant_id=benefit_grant_id,
@@ -645,15 +651,6 @@ class PolarSelfService:
         )
         assert isinstance(grant, CustomerBenefitGrantSlackSharedChannel)
         return grant
-
-    async def _ensure_polar_customer(self, organization_id: uuid.UUID) -> None:
-        if not self.is_configured:
-            raise PolarSelfNotConfigured()
-        customer = await get_client().get_customer_by_external_id_or_none(
-            str(organization_id)
-        )
-        if customer is None:
-            raise PolarSelfCustomerNotFound(organization_id)
 
     async def get_order_invoice_url(
         self, organization_id: uuid.UUID, order_id: str

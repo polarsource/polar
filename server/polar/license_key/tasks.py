@@ -49,6 +49,7 @@ async def sync_benefit_grant(
             "license_key_id",
             str(license_key.id),
             benefit_id=license_key.benefit_id,
+            customer_id=license_key.customer_id,
         )
         if grant is None:
             return

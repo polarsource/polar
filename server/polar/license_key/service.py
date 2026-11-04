@@ -268,6 +268,7 @@ class LicenseKeyService:
             "license_key_id",
             str(license_key.id),
             benefit_id=license_key.benefit_id,
+            customer_id=license_key.customer_id,
         )
 
     async def _enqueue_grant_lifecycle(

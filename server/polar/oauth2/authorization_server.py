@@ -22,6 +22,7 @@ from authlib.oauth2.rfc7592 import (
 )
 from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
 from authlib.oauth2.rfc9207 import IssuerParameter as _IssuerParameter
+from authlib.oidc.core.errors import ConsentRequiredError
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -36,7 +37,7 @@ from polar.kit.crypto import (
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
 from polar.models.oauth2_token_organization import OAuth2TokenOrganization
-from polar.oauth2.sub_type import SubTypeValue
+from polar.oauth2.sub_type import SubType, SubTypeValue
 
 from .constants import (
     ACCESS_TOKEN_PREFIX,
@@ -495,6 +496,16 @@ class AuthorizationServer(_AuthorizationServer):
 
         try:
             redirect_uri = grant.validate_authorization_request()
+            if not save_consent and grant_user is not None:
+                consent_grant = oauth2_grant_service.get_by_sub_and_client_id(
+                    self.session,
+                    sub_type=SubType.user,
+                    sub_id=grant_user.id,
+                    client_id=grant.client.client_id,
+                )
+                if consent_grant is None:
+                    raise ConsentRequiredError(redirect_uri=redirect_uri)
+                grant.consent_grant = consent_grant
             status_code, body, headers = grant.create_authorization_response(
                 redirect_uri, grant_user
             )
@@ -513,6 +524,7 @@ class AuthorizationServer(_AuthorizationServer):
         assert grant.sub_type is not None
         assert grant.sub is not None
         assert grant.client is not None
+        assert grant.organization_ids is not None
         payload = request.payload
         assert payload is not None
         oauth2_grant_service.create_or_update_grant(
@@ -521,6 +533,7 @@ class AuthorizationServer(_AuthorizationServer):
             sub_id=grant.sub.id,
             client_id=grant.client.client_id,
             scope=payload.scope,
+            organization_ids=grant.organization_ids,
         )
 
     @property

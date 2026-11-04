@@ -4,6 +4,7 @@ from .authorization_code import (
     AuthorizationCodeGrant,
     CodeChallenge,
     OpenIDCode,
+    ValidateOrganizationScope,
     ValidateSubAndPrompt,
 )
 from .claim import ClaimGrant
@@ -22,6 +23,7 @@ def register_grants(server: "AuthorizationServer") -> None:
             CodeChallenge(),
             OpenIDCode(server.session, require_nonce=False),
             ValidateSubAndPrompt(server.session),
+            ValidateOrganizationScope(server.session),
         ],
     )
     server.register_grant(RefreshTokenGrant)

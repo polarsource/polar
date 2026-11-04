@@ -24,6 +24,7 @@ class TestCreateOrUpdateGrant:
             sub_id=user.id,
             client_id="polar_ci_user",
             scope="openid",
+            organization_ids=[],
         )
         updated = oauth2_grant_service.create_or_update_grant(
             sync_session,
@@ -31,6 +32,7 @@ class TestCreateOrUpdateGrant:
             sub_id=user.id,
             client_id="polar_ci_user",
             scope="openid email",
+            organization_ids=[],
         )
 
         assert updated.id == created.id

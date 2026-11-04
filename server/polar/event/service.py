@@ -1,7 +1,8 @@
+import math
 import uuid
 from collections import defaultdict
 from collections.abc import Callable, Mapping, Sequence
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -61,6 +62,8 @@ from .repository import EventRepository
 from .schemas import (
     CustomerStat,
     EventCreateCustomer,
+    EventHistogram,
+    EventHistogramBucket,
     EventName,
     EventsIngest,
     EventsIngestResponse,
@@ -77,6 +80,27 @@ from .sorting import EventNamesSortProperty, EventSortProperty
 from .system import SYSTEM_EVENT_LABELS, SystemEvent
 
 log: Logger = structlog.get_logger()
+
+HISTOGRAM_MAX_BUCKETS = 150
+HISTOGRAM_STEPS_SECONDS = (
+    60,
+    2 * 60,
+    5 * 60,
+    10 * 60,
+    15 * 60,
+    30 * 60,
+    3600,
+    2 * 3600,
+    3 * 3600,
+    6 * 3600,
+    12 * 3600,
+    86400,
+    2 * 86400,
+    7 * 86400,
+    14 * 86400,
+    30 * 86400,
+    90 * 86400,
+)
 
 
 class EventError(PolarError): ...
@@ -510,21 +534,9 @@ class EventService:
             session, auth_subject, organization_ids, filter=filter, query=query
         )
 
-        customer_repository = CustomerRepository.from_session(session)
-        all_customer_ids: list[uuid.UUID] = list(customer_id or [])
-        all_external_ids: list[str] = list(external_customer_id or [])
-        if customer_id is not None:
-            all_external_ids.extend(
-                await customer_repository.get_readable_external_ids_by_ids(
-                    organization_ids, customer_id
-                )
-            )
-        if external_customer_id is not None:
-            all_customer_ids.extend(
-                await customer_repository.get_readable_ids_by_external_ids(
-                    organization_ids, external_customer_id
-                )
-            )
+        all_customer_ids, all_external_ids = await self._expand_customer_ids(
+            session, organization_ids, customer_id, external_customer_id
+        )
 
         stats = await TinybirdEventRepository().get_filtered_event_type_stats(
             organization_id=list(organization_ids),
@@ -540,6 +552,100 @@ class EventService:
             matching_external_customer_ids=matching_ext_ids,
         )
         return await event_type_service.build_with_stats(session, stats)
+
+    async def get_histogram(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        filter: Filter | None = None,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        customer_id: Sequence[uuid.UUID] | None = None,
+        external_customer_id: Sequence[str] | None = None,
+        name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+    ) -> EventHistogram:
+        span = (end_timestamp - start_timestamp).total_seconds()
+        step = next(
+            (
+                step
+                for step in HISTOGRAM_STEPS_SECONDS
+                if math.ceil(span / step) <= HISTOGRAM_MAX_BUCKETS
+            ),
+            HISTOGRAM_STEPS_SECONDS[-1],
+        )
+
+        counts: dict[int, int] = {}
+        organization_ids = await self._get_organization_ids_for_subject(
+            session, auth_subject, organization_id
+        )
+        if organization_ids:
+            (
+                query_filters,
+                matching_cust_ids,
+                matching_ext_ids,
+                _,
+            ) = await self._resolve_tinybird_filters(
+                session, auth_subject, organization_ids, filter=filter, query=query
+            )
+            all_customer_ids, all_external_ids = await self._expand_customer_ids(
+                session, organization_ids, customer_id, external_customer_id
+            )
+            counts = await TinybirdEventRepository().get_filtered_bucket_counts(
+                organization_id=list(organization_ids),
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                step_seconds=step,
+                customer_id=all_customer_ids,
+                external_customer_id=all_external_ids,
+                name=name,
+                source=source,
+                filters=query_filters,
+                metadata=metadata,
+                query=query,
+                matching_customer_ids=matching_cust_ids,
+                matching_external_customer_ids=matching_ext_ids,
+            )
+
+        buckets: list[EventHistogramBucket] = []
+        for index in range(max(1, math.ceil(span / step))):
+            bucket_start = start_timestamp + timedelta(seconds=index * step)
+            buckets.append(
+                EventHistogramBucket(
+                    start=bucket_start,
+                    end=min(end_timestamp, bucket_start + timedelta(seconds=step)),
+                    count=counts.get(index, 0),
+                )
+            )
+        return EventHistogram(interval_seconds=step, buckets=buckets)
+
+    async def _expand_customer_ids(
+        self,
+        session: AsyncReadSession,
+        organization_ids: set[AccessibleOrganizationID],
+        customer_id: Sequence[uuid.UUID] | None,
+        external_customer_id: Sequence[str] | None,
+    ) -> tuple[Sequence[uuid.UUID], Sequence[str]]:
+        customer_repository = CustomerRepository.from_session(session)
+        customer_ids: list[uuid.UUID] = [*(customer_id or [])]
+        external_ids: list[str] = [*(external_customer_id or [])]
+        if customer_id is not None:
+            external_ids.extend(
+                await customer_repository.get_readable_external_ids_by_ids(
+                    organization_ids, customer_id
+                )
+            )
+        if external_customer_id is not None:
+            customer_ids.extend(
+                await customer_repository.get_readable_ids_by_external_ids(
+                    organization_ids, external_customer_id
+                )
+            )
+        return customer_ids, external_ids
 
     async def list_property_group_stats(
         self,

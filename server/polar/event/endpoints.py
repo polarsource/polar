@@ -35,6 +35,8 @@ from polar.version import V2027_01
 from . import auth, sorting
 from .schemas import (
     AggregateField,
+    EventHistogram,
+    EventHistogramParams,
     EventID,
     EventListNamesParams,
     EventListParams,
@@ -210,6 +212,55 @@ async def get_statistics_by_type(
         query=filters.query,
     )
     return ListEventTypeStatistics(items=items)
+
+
+@router.get(
+    "/statistics/histogram",
+    summary="Get event histogram",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    tags=[APITag.private],
+    response_model=EventHistogram,
+)
+async def get_histogram(
+    filters: Annotated[EventHistogramParams, Query()],
+    auth_subject: auth.EventRead,
+    metadata: MetadataQuery,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> EventHistogram:
+    """
+    Count matching events in evenly sized buckets across a time range.
+
+    The bucket size is picked so the range is covered by at most 150 buckets,
+    starting at one minute.
+    """
+    if filters.end_timestamp <= filters.start_timestamp:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "msg": "end_timestamp must be after start_timestamp.",
+                    "loc": ("query", "end_timestamp"),
+                    "input": filters.end_timestamp,
+                }
+            ]
+        )
+    parsed_filter = _parse_filter(filters.filter)
+    _validate_query(filters.query, filters.organization_id)
+
+    return await event_service.get_histogram(
+        session,
+        auth_subject,
+        start_timestamp=filters.start_timestamp,
+        end_timestamp=filters.end_timestamp,
+        filter=parsed_filter,
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        name=filters.name,
+        source=filters.source,
+        metadata=metadata,
+        query=filters.query,
+    )
 
 
 @router.get(

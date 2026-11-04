@@ -5923,6 +5923,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/events/statistics/histogram': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get event histogram
+     * @description Count matching events in evenly sized buckets across a time range.
+     *
+     *     The bucket size is picked so the range is covered by at most 150 buckets,
+     *     starting at one minute.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_histogram']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/events/statistics/by-property': {
     parameters: {
       query?: never
@@ -24179,6 +24204,41 @@ export interface components {
        * @description ID of the member in your system within the customer's organization who performed the action. Used for member-level attribution in B2B.
        */
       external_member_id?: string | null
+    }
+    /** EventHistogram */
+    EventHistogram: {
+      /**
+       * Interval Seconds
+       * @description Length of each bucket in seconds.
+       */
+      interval_seconds: number
+      /**
+       * Buckets
+       * @description Consecutive buckets covering the requested range.
+       */
+      buckets: components['schemas']['EventHistogramBucket'][]
+    }
+    /** EventHistogramBucket */
+    EventHistogramBucket: {
+      /**
+       * Start
+       * Format: date-time
+       * @description Bucket start (inclusive).
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      start: string
+      /**
+       * End
+       * Format: date-time
+       * @description Bucket end (exclusive).
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      end: string
+      /**
+       * Count
+       * @description Number of matching events in the bucket.
+       */
+      count: number
     }
     /** EventMetadataInput */
     EventMetadataInput: {
@@ -59181,6 +59241,59 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListEventTypeStatistics']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:get_histogram': {
+    parameters: {
+      query: {
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Start of the histogram, inclusive. */
+        start_timestamp: string
+        /** @description End of the histogram, exclusive. */
+        end_timestamp: string
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Filter by event name. */
+        name?: string | string[] | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['EventHistogram']
         }
       }
       /** @description Validation Error */

@@ -1000,6 +1000,31 @@ class EventTypeStatisticsParams(QuerySchema):
     )
 
 
+class EventHistogramParams(EventTypeStatisticsParams):
+    start_timestamp: AwareDatetime = Field(
+        ..., description="Start of the histogram, inclusive."
+    )
+    end_timestamp: AwareDatetime = Field(
+        ..., description="End of the histogram, exclusive."
+    )
+    name: MultipleQueryFilter[str] | None = Field(
+        None, title="Name Filter", description="Filter by event name."
+    )
+
+
+class EventHistogramBucket(Schema):
+    start: AwareDatetime = Field(description="Bucket start (inclusive).")
+    end: AwareDatetime = Field(description="Bucket end (exclusive).")
+    count: int = Field(description="Number of matching events in the bucket.")
+
+
+class EventHistogram(Schema):
+    interval_seconds: int = Field(description="Length of each bucket in seconds.")
+    buckets: Sequence[EventHistogramBucket] = Field(
+        description="Consecutive buckets covering the requested range."
+    )
+
+
 class ListEventTypeStatistics(Schema):
     items: Sequence[EventTypeWithStats] = Field(
         description="Event types with the number of matching events, most frequent first."

@@ -635,6 +635,84 @@ class TestGetStatisticsByType:
 
 
 @pytest.mark.anyio
+class TestGetHistogram:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/histogram")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_end_before_start(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        now = utc_now()
+        response = await client.get(
+            "/v1/events/statistics/histogram",
+            params={
+                "start_timestamp": now.isoformat(),
+                "end_timestamp": (now - timedelta(minutes=1)).isoformat(),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_minute_buckets(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        start = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
+        root = await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            timestamp=start + timedelta(minutes=2, seconds=10),
+        )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            parent_id=root.id,
+            timestamp=start + timedelta(minutes=2, seconds=50),
+        )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            timestamp=start + timedelta(minutes=29, seconds=30),
+        )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            timestamp=start + timedelta(minutes=31),
+        )
+
+        await flush_tinybird_events()
+
+        response = await client.get(
+            "/v1/events/statistics/histogram",
+            params={
+                "organization_id": str(organization.id),
+                "start_timestamp": start.isoformat(),
+                "end_timestamp": (start + timedelta(minutes=30)).isoformat(),
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["interval_seconds"] == 60
+        counts = [bucket["count"] for bucket in json["buckets"]]
+        assert len(counts) == 30
+        assert counts[2] == 2
+        assert counts[29] == 1
+        assert sum(counts) == 3
+
+
+@pytest.mark.anyio
 class TestGetStatisticsByProperty:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-property")

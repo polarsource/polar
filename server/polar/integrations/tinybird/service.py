@@ -852,6 +852,24 @@ class TinybirdEventsQuery:
             log.error("tinybird.get_event_type_stats.failed", error=str(e))
             raise
 
+    async def get_bucket_counts(
+        self, origin: datetime, step_seconds: int
+    ) -> dict[int, int]:
+        origin_ms = int(origin.timestamp() * 1000)
+        bucket = func.intDiv(
+            func.toUnixTimestamp64Milli(events_table.c.timestamp) - origin_ms,
+            step_seconds * 1000,
+        ).label("bucket")
+        statement = (
+            select(bucket, func.count().label("occurrences"))
+            .where(self._get_organization_filter(), *self._filters)
+            .group_by(bucket)
+        )
+
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return {int(row["bucket"]): int(row["occurrences"]) for row in rows}
+
     async def get_event_ids_and_count(
         self, limit: int, offset: int, descending: bool = True
     ) -> tuple[list[str], int]:

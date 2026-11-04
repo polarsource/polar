@@ -170,57 +170,36 @@ export const useEventHierarchyStats = (
   })
 }
 
-type TimeseriesParameters = Omit<
-  NonNullable<
-    operations['events:list_statistics_timeseries']['parameters']['query']
-  >,
-  'organization_id' | 'timezone' | 'start_date' | 'end_date'
+type HistogramParameters = Omit<
+  NonNullable<operations['events:get_histogram']['parameters']['query']>,
+  'organization_id'
 >
 
-// Fetches every chunk in one query so the chart gets complete data at once,
-// and keeps the previous result while filters change over the same chunks.
-export const useEventTimeseriesChunks = (
+// Keeps the previous bars while only the filters change, so the chart
+// doesn't empty out and replay its entrance animation.
+export const useEventHistogram = (
   organizationId: string,
-  chunks: { start_date: string; end_date: string }[],
-  parameters: TimeseriesParameters,
-) => {
-  const timezone = Intl.DateTimeFormat().resolvedOptions()
-    .timeZone as operations['events:list_statistics_timeseries']['parameters']['query']['timezone']
-  const chunksKey = chunks
-    .map((chunk) => `${chunk.start_date}/${chunk.end_date}`)
-    .join(',')
-  return useQuery({
-    queryKey: [
-      'eventHierarchyStats',
-      organizationId,
-      { timezone, chunks: chunksKey, ...parameters },
-    ],
+  parameters: HistogramParameters,
+) =>
+  useQuery({
+    queryKey: ['events', organizationId, 'histogram', parameters],
     queryFn: () =>
-      Promise.all(
-        chunks.map((chunk) =>
-          unwrap(
-            api.GET('/v1/events/statistics/timeseries', {
-              params: {
-                query: {
-                  organization_id: organizationId,
-                  timezone,
-                  ...chunk,
-                  ...parameters,
-                },
-              },
-            }),
-          ),
-        ),
+      unwrap(
+        api.GET('/v1/events/statistics/histogram', {
+          params: { query: { organization_id: organizationId, ...parameters } },
+        }),
       ),
     placeholderData: (previous, previousQuery) => {
-      const previousParams = previousQuery?.queryKey[2] as
-        | { chunks?: string }
+      const previousParams = previousQuery?.queryKey[3] as
+        | HistogramParameters
         | undefined
-      return previousParams?.chunks === chunksKey ? previous : undefined
+      return previousParams?.start_timestamp === parameters.start_timestamp &&
+        previousParams?.end_timestamp === parameters.end_timestamp
+        ? previous
+        : undefined
     },
     retry: defaultRetry,
   })
-}
 
 export interface PropertyGroupStat {
   value: string

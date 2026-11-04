@@ -191,6 +191,18 @@ class ConfirmedOutgoingMessagePayload(MessageBase):
     snapshot: MeterUsageOutgoingMessagePayload
 
 
+class Changes(MessageBase):
+    changes: list[MeterUsageOutgoingMessagePayload]
+    # Read the next changes after this one.
+    cursor: str
+    has_more: bool
+    # Changes were missed: every snapshot the client holds may be stale.
+    reset: bool
+    configuration_changed: bool
+    # Seconds until the next pull.
+    next_poll_in: int
+
+
 class ConfirmedOutgoingMessage(OutgoingMessageBase):
     type: typing.Literal[OutgoingMessageType.confirmed]
     payload: ConfirmedOutgoingMessagePayload

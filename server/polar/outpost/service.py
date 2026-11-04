@@ -27,12 +27,15 @@ from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
 from polar.models import Customer, Organization, Reducer
 from polar.models.reducer import ReducerKind
+from polar.redis import Redis
 from polar.reducer.bucket_repository import get_customer_identities
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import get_reducer_bucket_start
 from polar.reducer.service import reducer as reducer_service
 
+from . import stream
 from .schemas import (
+    Changes,
     ConfirmedOutgoingMessage,
     ConfirmedOutgoingMessagePayload,
     ConfirmIncomingMessageCustomerPayload,
@@ -47,7 +50,7 @@ from .schemas import (
     OutgoingMessageAdapter,
     OutgoingMessageType,
 )
-from .stream import OutpostEvent, ReducerBucketOutpostEvent
+from .stream import MAX_SEQUENCE, OutpostEvent, ReducerBucketOutpostEvent
 
 log: Logger = structlog.get_logger(__name__)
 
@@ -55,6 +58,10 @@ type Identity = tuple[uuid.UUID | None, str | None]
 
 # Buckets that started earlier than this have been synced.
 SYNCED_LOOKBACK = timedelta(hours=1)
+
+# A cursor older than this may have missed trimmed changes. Half the retention leaves
+# room for the clocks of the API and Redis to disagree.
+CURSOR_MAX_AGE = stream.CHANGES_RETENTION / 2
 
 
 class OutpostService:
@@ -100,6 +107,72 @@ class OutpostService:
                 return await self._send_reducer_bucket(
                     session, organization, event, send_stream
                 )
+
+    async def get_changes(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        organization: Organization,
+        cursor: str | None,
+        limit: int,
+    ) -> Changes:
+        """The snapshots of the identities that changed after the cursor, computed
+        once each from the current database."""
+        after = stream.parse_cursor(cursor) if cursor is not None else None
+        # One more than the limit tells whether more follow.
+        entries, now = await stream.read_changes(
+            redis, organization.id, after, limit + 1
+        )
+        has_more = len(entries) > limit
+        entries = entries[:limit]
+        # Later entries get an id from this millisecond on.
+        seen = (now - 1, MAX_SEQUENCE)
+        next_poll_in = int(settings.OUTPOST_PULL_INTERVAL.total_seconds())
+        reset = after is not None and after[0] < now - CURSOR_MAX_AGE / timedelta(
+            milliseconds=1
+        )
+        if after is None or reset:
+            return Changes(
+                changes=[],
+                cursor=stream.format_cursor(seen),
+                has_more=False,
+                reset=reset,
+                configuration_changed=False,
+                next_poll_in=next_poll_in,
+            )
+
+        with logfire.span(
+            "outpost.changes",
+            organization_id=str(organization.id),
+            entries=len(entries),
+        ) as span:
+            events: dict[tuple[uuid.UUID, Identity], ReducerBucketOutpostEvent] = {}
+            configuration_changed = False
+            for _, event in entries:
+                match event["type"]:
+                    case "reducer_bucket":
+                        identity = (event["customer_id"], event["external_customer_id"])
+                        events[(event["reducer_id"], identity)] = event
+                    case "configuration":
+                        configuration_changed = True
+            changes = [
+                payload
+                for event in events.values()
+                for payload in await self._get_reducer_bucket_usage(
+                    session, organization, event
+                )
+            ]
+            span.set_attribute("changes", len(changes))
+
+        last = entries[-1][0] if entries else after
+        return Changes(
+            changes=changes,
+            cursor=stream.format_cursor(last if has_more else max(last, seen)),
+            has_more=has_more,
+            reset=False,
+            configuration_changed=configuration_changed,
+            next_poll_in=next_poll_in,
+        )
 
     def relay_telemetry(
         self, organization: Organization, body: bytes
@@ -280,23 +353,36 @@ class OutpostService:
         event: ReducerBucketOutpostEvent,
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
+        for payload in await self._get_reducer_bucket_usage(
+            session, organization, event
+        ):
+            await send_stream.send(
+                MeterUsageOutgoingMessage(
+                    type=OutgoingMessageType.meter_usage, payload=payload
+                )
+            )
+
+    async def _get_reducer_bucket_usage(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        event: ReducerBucketOutpostEvent,
+    ) -> list[MeterUsageOutgoingMessagePayload]:
         reducer = await ReducerRepository.from_session(
             session
         ).get_active_by_id_and_kinds(event["reducer_id"], tuple(ReducerKind))
         if reducer is None:
-            return
+            return []
         identity = (event["customer_id"], event["external_customer_id"])
         customer = await self._get_customer(session, organization, identity)
-        await self._send_meter_usage(
+        return await self._get_meter_usage(
             session,
-            organization,
             reducer,
             # Credits are the customer's, whatever identity it reads them with.
             get_customer_identities(customer)
             if reducer.kind == ReducerKind.credit and customer is not None
             else [identity],
             customer,
-            send_stream,
         )
 
     async def _get_customer(

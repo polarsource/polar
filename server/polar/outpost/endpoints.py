@@ -6,18 +6,20 @@ import anyio.to_thread
 import structlog
 from anyio import Semaphore, create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-from fastapi import Body, Depends, Response, WebSocket
+from fastapi import Body, Depends, Query, Response, WebSocket
 
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import Logger
 from polar.models import Organization
 from polar.openapi import APITag
+from polar.postgres import AsyncReadSession, get_db_read_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import stream
 from .auth import OutpostWrite
 from .schemas import (
+    Changes,
     ConnectionOutgoingMessage,
     ConnectionOutgoingMessagePayload,
     OutgoingMessage,
@@ -134,6 +136,21 @@ async def outpost(
         async for payload in websocket.iter_text():
             await incoming_send_stream.send(payload)
         task_group.cancel_scope.cancel()
+
+
+@router.get("/changes", response_model=Changes)
+async def changes(
+    auth_subject: OutpostWrite,
+    cursor: Annotated[str | None, Query(pattern=r"^\d+-\d+$")] = None,
+    limit: Annotated[int, Query(ge=1, le=1000)] = 500,
+    redis: Redis = Depends(get_redis),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Changes:
+    """The snapshots that changed since the cursor. Without a cursor, the cursor to
+    start from."""
+    return await outpost_service.get_changes(
+        session, redis, auth_subject.subject, cursor, limit
+    )
 
 
 @router.post("/telemetry", include_in_schema=False)

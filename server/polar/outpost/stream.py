@@ -18,7 +18,16 @@ class ReducerBucketOutpostEvent(typing.TypedDict):
     external_customer_id: str | None
 
 
-type OutpostEvent = ReducerBucketOutpostEvent
+class ConfigurationOutpostEvent(typing.TypedDict):
+    type: typing.Literal["configuration"]
+
+
+type OutpostEvent = ReducerBucketOutpostEvent | ConfigurationOutpostEvent
+
+# A stream entry id: milliseconds and a sequence within them.
+type Cursor = tuple[int, int]
+
+MAX_SEQUENCE = 2**64 - 1
 
 
 # A cursor older than this has missed changes: the client starts over.
@@ -43,6 +52,39 @@ async def publish(
     event: OutpostEvent,
 ) -> None:
     await redis.publish(_get_channel(organization_id), _encode(event))
+
+
+def parse_cursor(value: str | bytes) -> Cursor:
+    milliseconds, sequence = (
+        value.decode() if isinstance(value, bytes) else value
+    ).split("-")
+    return int(milliseconds), int(sequence)
+
+
+def format_cursor(cursor: Cursor) -> str:
+    return f"{cursor[0]}-{cursor[1]}"
+
+
+async def read_changes(
+    redis: Redis, organization_id: uuid.UUID, after: Cursor | None, limit: int
+) -> tuple[list[tuple[Cursor, OutpostEvent]], int]:
+    """The changes after the cursor, and Redis' time in milliseconds when it read
+    them: any later entry gets a later id."""
+    async with redis.pipeline(transaction=True) as pipeline:
+        if after is not None:
+            pipeline.xrange(
+                get_changes_key(organization_id),
+                min=f"({format_cursor(after)}",
+                count=limit,
+            )
+        pipeline.time()
+        *entries, (seconds, microseconds) = await pipeline.execute()
+    # Each entry holds one field: the event.
+    changes = [
+        (parse_cursor(entry_id), json.loads(next(iter(fields.values()))))
+        for entry_id, fields in (entries[0] if entries else [])
+    ]
+    return changes, int(seconds) * 1000 + int(microseconds) // 1000
 
 
 def enqueue(organization_id: uuid.UUID, event: OutpostEvent) -> None:

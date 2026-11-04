@@ -675,6 +675,9 @@ class TestGetHistogram:
             timestamp=start + timedelta(minutes=2, seconds=10),
         )
         await create_event(
+            buffered_save_fixture, organization=organization, timestamp=start
+        )
+        await create_event(
             buffered_save_fixture,
             organization=organization,
             parent_id=root.id,
@@ -707,9 +710,10 @@ class TestGetHistogram:
         assert json["interval_seconds"] == 60
         counts = [bucket["count"] for bucket in json["buckets"]]
         assert len(counts) == 30
+        assert counts[0] == 1
         assert counts[2] == 2
         assert counts[29] == 1
-        assert sum(counts) == 3
+        assert sum(counts) == 4
 
 
 @pytest.mark.anyio

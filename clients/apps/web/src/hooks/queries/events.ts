@@ -175,8 +175,9 @@ type HistogramParameters = Omit<
   'organization_id'
 >
 
-// Keeps the previous bars while only the filters change, so the chart
-// doesn't empty out and replay its entrance animation.
+// Keeps the previous bars while only the filters change within the same
+// organization and range, so the chart doesn't empty out and replay its
+// entrance animation.
 export const useEventHistogram = (
   organizationId: string,
   parameters: HistogramParameters,
@@ -193,7 +194,8 @@ export const useEventHistogram = (
       const previousParams = previousQuery?.queryKey[3] as
         | HistogramParameters
         | undefined
-      return previousParams?.start_timestamp === parameters.start_timestamp &&
+      return previousQuery?.queryKey[1] === organizationId &&
+        previousParams?.start_timestamp === parameters.start_timestamp &&
         previousParams?.end_timestamp === parameters.end_timestamp
         ? previous
         : undefined

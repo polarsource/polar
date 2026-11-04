@@ -629,7 +629,7 @@ class TinybirdEventsQuery:
     ) -> Self:
         if start is not None:
             self._filters.append(
-                events_table.c.timestamp > start.astimezone(UTC).replace(tzinfo=None)
+                events_table.c.timestamp >= start.astimezone(UTC).replace(tzinfo=None)
             )
         if end is not None:
             self._filters.append(

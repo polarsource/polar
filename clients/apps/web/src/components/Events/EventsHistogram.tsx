@@ -145,7 +145,7 @@ export const EventsHistogram = ({
   const hourly = isHourlyRange(startDate, endDate)
   const interval = hourly ? 'hour' : 'day'
 
-  const results = useEventTimeseriesChunks(
+  const { data: chunkResults, isPending: isLoading } = useEventTimeseriesChunks(
     organizationId,
     chunkRange(startDate, endDate, CHUNK_DAYS[interval]),
     {
@@ -160,8 +160,8 @@ export const EventsHistogram = ({
   )
 
   const seen = new Set<number>()
-  const periods = results
-    .flatMap((result) => result.data?.periods ?? [])
+  const periods = (chunkResults ?? [])
+    .flatMap((result) => result.periods)
     .map((period) => ({
       start: new Date(period.period_start),
       end: new Date(period.period_end),
@@ -176,7 +176,6 @@ export const EventsHistogram = ({
     })
     .toSorted((a, b) => a.start.getTime() - b.start.getTime())
 
-  const isLoading = results.some((result) => result.isPending)
   const bars = isLoading ? [] : rebin(periods)
   const max = Math.max(1, ...bars.map((bar) => bar.count))
   const labels = [bars[0], bars[Math.floor(bars.length / 2)], bars.at(-1)]

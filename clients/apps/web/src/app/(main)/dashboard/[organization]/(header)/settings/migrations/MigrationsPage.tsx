@@ -16,7 +16,7 @@ import { MigrationRow } from './MigrationRow'
 
 // Mirrors the server's create guard: only organizations that finished
 // onboarding (active or under review) can start a migration.
-const MIGRATION_ENABLED_STATUSES: schemas['OrganizationStatus'][] = [
+export const MIGRATION_ENABLED_STATUSES: schemas['OrganizationStatus'][] = [
   'active',
   'review',
 ]

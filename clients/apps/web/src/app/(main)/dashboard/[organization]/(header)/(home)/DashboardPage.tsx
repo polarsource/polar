@@ -16,6 +16,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { PropsWithChildren } from 'react'
 import { DisputesBanner } from './DisputesBanner'
 import { OrganizationStatusBanner } from './OrganizationStatusBanner'
+import { StripeMigrationBanner } from './StripeMigrationBanner'
 
 const cellClassName =
   'dark:border-polar-700 border-t-0 border-r border-b border-l-0 border-gray-200'
@@ -64,6 +65,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       <PlanUpsell organization={organization} />
       <OrganizationStatusBanner organization={organization} />
       <DisputesBanner organization={organization} />
+      <StripeMigrationBanner organization={organization} />
       <div className="flex flex-col gap-y-10">
         <WidgetRow>
           <RevenueWidget className={cellClassName} />

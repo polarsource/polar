@@ -39,6 +39,7 @@ from polar.outpost.service import outpost as outpost_service
 from polar.outpost.stream import publish
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import get_reducer_bucket_start
 from tests.fixtures import AuthSubjectFixture, SaveFixture
 from tests.fixtures.random_objects import (
@@ -932,6 +933,20 @@ class TestChanges:
         assert changes["configuration_changed"] is False
         assert changes["next_poll_in"] == 30
         assert (await _get_changes(client, changes["cursor"]))["changes"] == []
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_idle_poll_reads_no_reducer(
+        self, mocker: MockerFixture, client: httpx.AsyncClient
+    ) -> None:
+        cursor = (await _get_changes(client))["cursor"]
+        get_reducers = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
+
+        changes = await _get_changes(client, cursor)
+
+        assert changes["changes"] == []
+        get_reducers.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_changes_since_cursor(

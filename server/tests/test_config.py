@@ -3,7 +3,7 @@ from typing import Any, Literal
 import pytest
 from freezegun import freeze_time
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
-from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
+from sqlalchemy.dialects.postgresql.psycopg import PGDialect_psycopg
 from sqlalchemy.engine import make_url
 
 from polar.config import Environment, settings
@@ -11,7 +11,7 @@ from polar.enums import TaxProcessor
 
 
 def build_dsn(
-    driver: Literal["asyncpg", "psycopg2"],
+    driver: Literal["asyncpg", "psycopg"],
     *,
     fallback_host: str | None = "fallback.example.com",
     fallback_port: int | None = 5432,
@@ -33,7 +33,7 @@ def get_connect_args(dsn: str) -> dict[str, Any]:
     dialect = (
         PGDialect_asyncpg()
         if url.drivername.endswith("asyncpg")
-        else PGDialect_psycopg2()
+        else PGDialect_psycopg()
     )
     _, connect_args = dialect.create_connect_args(url)
     return connect_args
@@ -103,9 +103,9 @@ class TestBuildPostgresDsn:
         "password",
         ["abc/123XYZ", "p@ss/w0rd"],
     )
-    @pytest.mark.parametrize("driver", ["asyncpg", "psycopg2"])
+    @pytest.mark.parametrize("driver", ["asyncpg", "psycopg"])
     def test_no_fallback_password_with_reserved_chars(
-        self, driver: Literal["asyncpg", "psycopg2"], password: str
+        self, driver: Literal["asyncpg", "psycopg"], password: str
     ) -> None:
         dsn = settings._build_postgres_dsn(
             driver,
@@ -131,8 +131,8 @@ class TestBuildPostgresDsn:
         assert connect_args["port"] == [6432, 5432]
         assert connect_args["password"] == "s3cret"
 
-    def test_fallback_psycopg2(self) -> None:
-        connect_args = get_connect_args(build_dsn("psycopg2"))
+    def test_fallback_psycopg(self) -> None:
+        connect_args = get_connect_args(build_dsn("psycopg"))
 
         assert connect_args["host"] == "primary.example.com,fallback.example.com"
         assert connect_args["port"] == "6432,5432"

@@ -62,7 +62,7 @@ def create_async_read_engine(
 
 def create_sync_engine(process_name: ProcessName) -> Engine:
     return _create_sync_engine(
-        dsn=str(settings.get_postgres_dsn("psycopg2")),
+        dsn=str(settings.get_postgres_dsn("psycopg")),
         application_name=f"{settings.ENV.value}.{process_name}",
         pool_logging_name=f"{process_name}_sync",
         debug=settings.SQLALCHEMY_DEBUG,

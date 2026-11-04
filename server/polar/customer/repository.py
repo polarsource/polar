@@ -1,5 +1,5 @@
 import contextlib
-from collections.abc import AsyncGenerator, Mapping, Sequence
+from collections.abc import AsyncGenerator, Collection, Mapping, Sequence
 from datetime import datetime
 from typing import Any, NamedTuple
 from uuid import UUID
@@ -209,6 +209,18 @@ class CustomerRepository(
             Customer.id == id, Customer.organization_id == organization_id
         )
         return await self.get_one_or_none(statement)
+
+    async def get_all_by_organization_and_ids_or_external_ids(
+        self,
+        organization_id: UUID,
+        ids: Collection[UUID],
+        external_ids: Collection[str],
+    ) -> Sequence[Customer]:
+        statement = self.get_base_statement().where(
+            Customer.organization_id == organization_id,
+            or_(Customer.id.in_(ids), Customer.external_id.in_(external_ids)),
+        )
+        return await self.get_all(statement)
 
     async def get_by_email_and_organization(
         self, email: str, organization_id: UUID

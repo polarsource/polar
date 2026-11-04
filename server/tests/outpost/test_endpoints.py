@@ -18,6 +18,7 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
 )
 from opentelemetry.proto.common.v1.common_pb2 import AnyValue
 from pytest_mock import MockerFixture
+from sqlalchemy import event as sqlalchemy_event
 
 from polar.auth.dependencies import _get_auth_subject_factory
 from polar.auth.scope import Scope
@@ -36,11 +37,14 @@ from polar.outpost.schemas import to_epoch_microseconds
 from polar.outpost.service import SYNCED_LOOKBACK
 from polar.outpost.service import outpost as outpost_service
 from polar.outpost.stream import publish
+from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import get_reducer_bucket_start
 from tests.fixtures import AuthSubjectFixture, SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_customer,
     create_event,
     create_meter,
     create_reducer,
@@ -931,6 +935,20 @@ class TestChanges:
         assert (await _get_changes(client, changes["cursor"]))["changes"] == []
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_idle_poll_reads_no_reducer(
+        self, mocker: MockerFixture, client: httpx.AsyncClient
+    ) -> None:
+        cursor = (await _get_changes(client))["cursor"]
+        get_reducers = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
+
+        changes = await _get_changes(client, cursor)
+
+        assert changes["changes"] == []
+        get_reducers.assert_not_called()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_changes_since_cursor(
         self,
         save_fixture: SaveFixture,
@@ -978,6 +996,67 @@ class TestChanges:
         }
         assert changes["has_more"] is False
         assert (await _get_changes(client, changes["cursor"]))["changes"] == []
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_queries_do_not_grow_with_the_changes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: httpx.AsyncClient,
+        redis: Redis,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        external_ids = ["alice", "bob", "carol"]
+        for value, external_id in enumerate(external_ids, start=1):
+            await create_customer(
+                save_fixture,
+                organization=organization,
+                external_id=external_id,
+                email=f"{external_id}@example.com",
+            )
+            await _save_synced_bucket(
+                save_fixture, organization, reducer, external_id, value
+            )
+        queries = 0
+
+        def count_query(*args: typing.Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        cursor = (await _get_changes(client))["cursor"]
+        pages = []
+        for page in (external_ids[:1], external_ids):
+            for external_id in page:
+                await _append_change(
+                    redis,
+                    organization,
+                    {
+                        "type": "reducer_bucket",
+                        "reducer_id": str(reducer.id),
+                        "customer_id": None,
+                        "external_customer_id": external_id,
+                    },
+                )
+            queries = 0
+            sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+            try:
+                changes = await _get_changes(client, cursor)
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+            cursor = changes["cursor"]
+            pages.append((changes["changes"], queries))
+
+        [(_, one), (changes, three)] = pages
+        assert three == one
+        assert {
+            change["external_customer_id"]: change["sum"] for change in changes
+        } == {"alice": 1.0, "bob": 2.0, "carol": 3.0}
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_credit_change_for_each_identity(

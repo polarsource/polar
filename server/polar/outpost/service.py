@@ -1,5 +1,5 @@
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import timedelta
 
 import logfire
@@ -186,13 +186,9 @@ class OutpostService:
                         events[(event["reducer_id"], identity)] = event
                     case "configuration":
                         configuration_changed = True
-            changes = [
-                payload
-                for event in events.values()
-                for payload in await self._get_reducer_bucket_usage(
-                    session, organization, event
-                )
-            ]
+            changes = await self._get_reducer_bucket_usage(
+                session, organization, list(events.values())
+            )
             span.set_attribute("changes", len(changes))
 
         last = entries[-1][0] if entries else after
@@ -290,12 +286,15 @@ class OutpostService:
             identity: Identity = (payload.customer_id, None)
         else:
             identity = (None, payload.external_customer_id)
-        customer = await self._get_customer(session, organization, identity)
+        customer = (await self._get_customers(session, organization, [identity]))[
+            identity
+        ]
         return await self._get_meter_usage(
             session,
             reducer,
-            get_customer_identities(customer) if customer else [identity],
-            customer,
+            dict.fromkeys(
+                get_customer_identities(customer) if customer else [identity], customer
+            ),
         )
 
     async def confirm(
@@ -338,8 +337,7 @@ class OutpostService:
             snapshots = await self._get_meter_usage(
                 session,
                 reducer,
-                [identity],
-                await self._get_customer(session, organization, identity),
+                await self._get_customers(session, organization, [identity]),
             )
             if not snapshots:
                 raise ResourceNotFound()
@@ -362,7 +360,7 @@ class OutpostService:
         send_stream: MemoryObjectSendStream[OutgoingMessage],
     ) -> None:
         for payload in await self._get_reducer_bucket_usage(
-            session, organization, event
+            session, organization, [event]
         ):
             await send_stream.send(
                 MeterUsageOutgoingMessage(
@@ -374,68 +372,115 @@ class OutpostService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        event: ReducerBucketOutpostEvent,
+        events: Sequence[ReducerBucketOutpostEvent],
     ) -> list[MeterUsageOutgoingMessagePayload]:
-        reducer = await ReducerRepository.from_session(
-            session
-        ).get_active_by_id_and_kinds(event["reducer_id"], tuple(ReducerKind))
-        if reducer is None:
+        if not events:
             return []
-        identity = (event["customer_id"], event["external_customer_id"])
-        customer = await self._get_customer(session, organization, identity)
-        return await self._get_meter_usage(
-            session,
-            reducer,
-            # Credits are the customer's, whatever identity it reads them with.
-            get_customer_identities(customer)
-            if reducer.kind == ReducerKind.credit and customer is not None
-            else [identity],
-            customer,
-        )
-
-    async def _get_customer(
-        self, session: AsyncReadSession, organization: Organization, identity: Identity
-    ) -> Customer | None:
-        customer_id, external_customer_id = identity
-        repository = CustomerRepository.from_session(session)
-        if customer_id is not None:
-            return await repository.get_by_id_and_organization(
-                customer_id, organization.id
+        reducers = {
+            reducer.id: reducer
+            for reducer in await ReducerRepository.from_session(
+                session
+            ).get_all_active_by_organization_and_kinds(
+                organization.id, tuple(ReducerKind)
             )
-        assert external_customer_id is not None
-        return await repository.get_by_external_id_and_organization(
-            external_customer_id, organization.id
+        }
+        customers = await self._get_customers(
+            session,
+            organization,
+            [(event["customer_id"], event["external_customer_id"]) for event in events],
         )
+        identities: dict[uuid.UUID, dict[Identity, Customer | None]] = {}
+        for event in events:
+            reducer = reducers.get(event["reducer_id"])
+            if reducer is None:
+                continue
+            identity = (event["customer_id"], event["external_customer_id"])
+            customer = customers[identity]
+            identities.setdefault(reducer.id, {}).update(
+                dict.fromkeys(
+                    # Credits are the customer's, whatever identity it reads them with.
+                    get_customer_identities(customer)
+                    if reducer.kind == ReducerKind.credit and customer is not None
+                    else [identity],
+                    customer,
+                )
+            )
+        return [
+            payload
+            for reducer_id, reducer_identities in identities.items()
+            for payload in await self._get_meter_usage(
+                session, reducers[reducer_id], reducer_identities
+            )
+        ]
+
+    async def _get_customers(
+        self,
+        session: AsyncReadSession,
+        organization: Organization,
+        identities: Sequence[Identity],
+    ) -> dict[Identity, Customer | None]:
+        customers = await CustomerRepository.from_session(
+            session
+        ).get_all_by_organization_and_ids_or_external_ids(
+            organization.id,
+            {customer_id for customer_id, _ in identities if customer_id is not None},
+            {
+                external_customer_id
+                for customer_id, external_customer_id in identities
+                if customer_id is None and external_customer_id is not None
+            },
+        )
+        by_id = {customer.id: customer for customer in customers}
+        by_external_id: dict[str | None, Customer] = {
+            customer.external_id: customer for customer in customers
+        }
+        return {
+            (customer_id, external_customer_id): by_id.get(customer_id)
+            if customer_id is not None
+            else by_external_id.get(external_customer_id)
+            for customer_id, external_customer_id in identities
+        }
 
     async def _get_meter_usage(
         self,
         session: AsyncReadSession,
         reducer: Reducer,
-        identities: Sequence[Identity],
-        customer: Customer | None,
+        customers: Mapping[Identity, Customer | None],
     ) -> list[MeterUsageOutgoingMessagePayload]:
         if isinstance(reducer.aggregation, UniqueAggregation):
             return []
 
         version = await reducer_service.get_database_now(session)
         since = get_reducer_bucket_start(version - SYNCED_LOOKBACK)
-        # Credits are the customer's and all in Polar: Outpost never counts any.
-        credits = (
-            await reducer_service.get_credits(session, reducer, customer.id)
-            if reducer.kind == ReducerKind.credit and customer is not None
-            else (0, 0, None, None)
-        )
-        payloads = []
-        for customer_id, external_customer_id in identities:
-            if reducer.kind == ReducerKind.credit:
-                cold_until, (count, total, minimum, maximum) = version, credits
-            else:
-                (
-                    cold_until,
-                    (count, total, minimum, maximum),
-                ) = await reducer_service.get_cold_usage(
-                    session, reducer, customer_id, external_customer_id, since=since
+        if reducer.kind == ReducerKind.credit:
+            # Credits are the customer's and all in Polar: Outpost never counts any.
+            credits = await reducer_service.get_credits(
+                session,
+                reducer,
+                [
+                    customer.id
+                    for customer in customers.values()
+                    if customer is not None
+                ],
+            )
+            usage = {
+                identity: (
+                    version,
+                    credits[customer.id]
+                    if customer is not None
+                    else (0, 0, None, None),
                 )
+                for identity, customer in customers.items()
+            }
+        else:
+            usage = await reducer_service.get_cold_usage(
+                session, reducer, list(customers), since=since
+            )
+        payloads = []
+        for (customer_id, external_customer_id), customer in customers.items():
+            cold_until, (count, total, minimum, maximum) = usage[
+                (customer_id, external_customer_id)
+            ]
             payloads.append(
                 MeterUsageOutgoingMessagePayload(
                     reducer_id=reducer.id,

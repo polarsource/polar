@@ -9,7 +9,6 @@ from uuid import UUID
 import logfire
 import structlog
 from redis.exceptions import RedisError
-from sqlalchemy import Row
 
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
@@ -40,7 +39,11 @@ from polar.redis import Redis
 from polar.worker import enqueue_job
 
 from . import cache, redis_store
-from .bucket_repository import ReducerBucketRepository, get_customer_identities
+from .bucket_repository import (
+    ReducerBucketRepository,
+    Totals,
+    get_customer_identities,
+)
 from .repository import ReducerRepository
 from .types import (
     UsageSummary,
@@ -498,40 +501,47 @@ class ReducerService:
         self,
         session: AsyncReadSession,
         reducer: Reducer,
-        customer_id: UUID | None,
-        external_customer_id: str | None,
+        identities: Sequence[tuple[UUID | None, str | None]],
         *,
         since: datetime,
-    ) -> tuple[datetime, Row[Any, Any, Any, Any]]:
-        """The end of the customer identity's last fully synced slot starting from
-        `since`, or `since`, with the count, sum, min and max of its usage not
-        billed yet before it. Clients count whole slots: a slot a seal split, with
-        only its first part synced, stays theirs."""
+    ) -> dict[tuple[UUID | None, str | None], tuple[datetime, Totals]]:
+        """For each customer identity, the end of its last fully synced slot
+        starting from `since`, or `since`, with the count, sum, min and max of its
+        usage not billed yet before it. Clients count whole slots: a slot a seal
+        split, with only its first part synced, stays theirs."""
         repository = ReducerBucketRepository.from_session(session)
-        synced_end = await repository.get_last_synced_end(
-            reducer.organization_id,
-            reducer.id,
-            customer_id,
-            external_customer_id,
-            since=since,
+        synced_ends = await repository.get_last_synced_ends(
+            reducer.organization_id, reducer.id, identities, since=since
         )
-        cold_until = get_reducer_bucket_start(synced_end) if synced_end else since
-        totals = await repository.get_unsealed_totals(
-            reducer.organization_id,
-            reducer.id,
-            [(customer_id, external_customer_id)],
-            before=cold_until,
+        cold_until = {
+            identity: get_reducer_bucket_start(synced_ends[identity])
+            if identity in synced_ends
+            else since
+            for identity in identities
+        }
+        totals = await repository.get_unsealed_totals_by_identity(
+            reducer.organization_id, reducer.id, cold_until
         )
-        return cold_until, totals
+        return {
+            identity: (cold_until[identity], totals[identity])
+            for identity in identities
+        }
 
     async def get_credits(
-        self, session: AsyncReadSession, reducer: Reducer, customer_id: UUID
-    ) -> Row[Any, Any, Any, Any]:
-        """count, sum, min and max of the customer's credits since the meter's
+        self, session: AsyncReadSession, reducer: Reducer, customer_ids: Sequence[UUID]
+    ) -> dict[UUID, Totals]:
+        """count, sum, min and max of each customer's credits since the meter's
         latest reset: the credit reducer's unsealed buckets."""
-        return await ReducerBucketRepository.from_session(session).get_unsealed_totals(
-            reducer.organization_id, reducer.id, [(customer_id, None)]
+        totals = await ReducerBucketRepository.from_session(
+            session
+        ).get_unsealed_totals_by_identity(
+            reducer.organization_id,
+            reducer.id,
+            {(customer_id, None): None for customer_id in customer_ids},
         )
+        return {
+            customer_id: totals[(customer_id, None)] for customer_id in customer_ids
+        }
 
     async def get_stored_external_ids(
         self,

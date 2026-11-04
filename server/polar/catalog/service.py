@@ -14,7 +14,6 @@ from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.repository import BenefitRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
-from polar.discount.repository import DiscountRepository
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -411,7 +410,7 @@ class CatalogService:
             removed_benefits,
         )
         replaced = await self._retire(session, organization, live, products, benefits)
-        await self._carry_over_references(session, replaced)
+        await self._repoint_checkout_links(session, replaced)
         if live is not None:
             await repository.update(
                 live, update_dict={"status": CatalogStatus.archived}, flush=True
@@ -494,8 +493,8 @@ class CatalogService:
         self, session: AsyncSession, organization: Organization, draft: Catalog
     ) -> Catalog:
         """Make the draft live: its new rows become current, the live rows it
-        replaces or leaves out stop being current, and checkout links and
-        discounts follow the new product rows."""
+        replaces or leaves out stop being current, and checkout links follow
+        the new product rows."""
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
         await self._assert_still_draft(session, draft)
@@ -523,7 +522,7 @@ class CatalogService:
                 await benefit_repository.update(
                     benefit, update_dict={"is_current": True}, flush=True
                 )
-        await self._carry_over_references(session, replaced)
+        await self._repoint_checkout_links(session, replaced)
 
         if live is not None:
             await repository.update(
@@ -577,17 +576,14 @@ class CatalogService:
             )
         return replaced
 
-    async def _carry_over_references(
+    async def _repoint_checkout_links(
         self, session: AsyncSession, replaced: Sequence[tuple[Product, Product]]
     ) -> None:
-        """Point checkout links at the new version, and extend discount
-        restrictions to it: the old version stays billable for existing
-        subscriptions."""
+        """Point checkout links at the new version. Discounts restricted to a
+        product already cover all its versions."""
         checkout_link_repository = CheckoutLinkRepository.from_session(session)
-        discount_repository = DiscountRepository.from_session(session)
         for previous, product in replaced:
             await checkout_link_repository.replace_product(previous.id, product.id)
-            await discount_repository.add_product(previous.id, product.id)
 
     async def _assert_still_draft(self, session: AsyncSession, draft: Catalog) -> None:
         """Re-read the draft under the catalog lock: a concurrent publish or

@@ -3270,10 +3270,7 @@ class TestCatalogVersioning:
             new_product.id
         ]
         await session.refresh(discount, ["discount_products"])
-        assert {p.product_id for p in discount.discount_products} == {
-            old_product.id,
-            new_product.id,
-        }
+        assert {p.product_id for p in discount.discount_products} == {old_product.id}
 
     async def test_baseline_from_existing_products(
         self,

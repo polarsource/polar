@@ -161,44 +161,58 @@ async def changes(
     )
 
 
+ReducerNotFound = {
+    "description": "Reducer not found.",
+    "model": ResourceNotFound.schema(),
+}
+
+
 @router.get("/configuration", response_model=ConfigurationOutgoingMessagePayload)
 async def configuration(
     auth_subject: OutpostWrite,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
 ) -> ConfigurationOutgoingMessagePayload:
     """The reducers Outpost runs."""
-    return await outpost_service.get_configuration(session, auth_subject.subject)
+    async with sessionmaker() as session:
+        return await outpost_service.get_configuration(session, auth_subject.subject)
 
 
 @router.post(
     "/meter-usage",
     response_model=list[MeterUsageOutgoingMessagePayload],
-    responses={404: {}},
+    responses={404: ReducerNotFound},
 )
 async def meter_usage(
     payload: MeterUsageIncomingMessagePayload,
     auth_subject: OutpostWrite,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
 ) -> list[MeterUsageOutgoingMessagePayload]:
     """The snapshot of every identity of the customer."""
-    snapshots = await outpost_service.get_requested_meter_usage(
-        session, auth_subject.subject, payload
-    )
+    async with sessionmaker() as session:
+        snapshots = await outpost_service.get_requested_meter_usage(
+            session, auth_subject.subject, payload
+        )
     if snapshots is None:
         raise ResourceNotFound()
     return snapshots
 
 
 @router.post(
-    "/confirm", response_model=ConfirmedOutgoingMessagePayload, responses={404: {}}
+    "/confirm",
+    response_model=ConfirmedOutgoingMessagePayload,
+    responses={404: ReducerNotFound},
 )
 async def confirm(
     payload: ConfirmIncomingMessagePayload,
     auth_subject: OutpostWrite,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
 ) -> ConfirmedOutgoingMessagePayload:
     """The pending ids Polar counts, with the snapshot that counts them."""
-    confirmed = await outpost_service.confirm(session, auth_subject.subject, payload)
+    # A session of its own, on the primary: the ids it reads were just stored.
+    async with sessionmaker() as session:
+        confirmed = await outpost_service.confirm(
+            session, auth_subject.subject, payload
+        )
     if confirmed is None:
         raise ResourceNotFound()
     return confirmed

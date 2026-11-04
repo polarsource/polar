@@ -966,6 +966,113 @@ describe('CheckoutForm', () => {
       })
     })
 
+    const usAddressFields = {
+      country: 'required',
+      state: 'required',
+      city: 'required',
+      postal_code: 'required',
+      line1: 'required',
+      line2: 'disabled',
+    } as const
+
+    it('saves a country switched back before the previous country save returns', async () => {
+      const update = vi.fn(
+        () => new Promise<schemas['CheckoutPublic']>(() => {}),
+      )
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      render(
+        <FormWrapper
+          checkout={createCheckout({
+            customer_billing_address: { country: 'US' },
+            billing_address_fields: usAddressFields,
+          })}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          defaultValues={{
+            customer_billing_address: {
+              country: 'US',
+              line1: '548 Market St',
+              city: 'San Francisco',
+              state: '',
+              postal_code: '',
+            },
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'GB')
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+      expect(update).toHaveBeenCalledWith({
+        customer_billing_address: { country: 'GB' },
+      })
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+        form.setValue('customer_billing_address.postal_code', '9')
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+      expect(update).toHaveBeenLastCalledWith({
+        customer_billing_address: expect.objectContaining({
+          country: 'US',
+          postal_code: '9',
+        }),
+      })
+    })
+
+    it('saves a completed address even when another field changes right after', async () => {
+      const update = vi.fn(async () => createCheckout())
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      render(
+        <FormWrapper
+          checkout={createCheckout({
+            customer_billing_address: { country: 'US' },
+            billing_address_fields: usAddressFields,
+          })}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          defaultValues={{
+            customer_billing_address: {
+              country: 'US',
+              line1: '548 Market St',
+              city: 'San Francisco',
+              state: 'US-CA',
+              postal_code: '',
+            },
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      await act(async () => {
+        form.setValue('customer_billing_address.postal_code', '94104')
+        form.setValue('customer_email', 'buyer@example.com')
+      })
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600)
+      })
+
+      expect(update).toHaveBeenCalledWith({
+        customer_billing_address: expect.objectContaining({
+          postal_code: '94104',
+        }),
+      })
+    })
+
     it('saves a new country even when it arrives together with other address fields', async () => {
       const update = vi.fn(async () => createCheckout())
       let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>

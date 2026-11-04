@@ -310,6 +310,9 @@ class OutpostService:
             organization_id=str(organization.id),
             requested=len(payload.ids),
         ) as span:
+            # The ids and the totals must come from one database snapshot, or an
+            # ingestion between the two reads makes them disagree.
+            # REPEATABLE READ serves the same snapshot for all queries in the session.
             if isinstance(session.bind, AsyncEngine):
                 await session.connection(
                     execution_options={"isolation_level": "REPEATABLE READ"}

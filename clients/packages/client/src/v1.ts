@@ -59139,14 +59139,16 @@ export interface operations {
   'events:list': {
     parameters: {
       query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
         /** @description Filter events after this timestamp. */
         start_timestamp?: string | null
         /** @description Filter events before this timestamp. */
         end_timestamp?: string | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -59160,8 +59162,6 @@ export interface operations {
           | components['schemas']['EventSource']
           | components['schemas']['EventSource'][]
           | null
-        /** @description Query to filter events. */
-        query?: string | null
         /** @description When combined with depth, use this event as the anchor instead of root events. */
         parent_id?: string | null
         /** @description Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events. */
@@ -59206,14 +59206,16 @@ export interface operations {
   'events:get_statistics_by_type': {
     parameters: {
       query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
         /** @description Filter events after this timestamp. */
         start_timestamp?: string | null
         /** @description Filter events before this timestamp. */
         end_timestamp?: string | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -59223,8 +59225,6 @@ export interface operations {
           | components['schemas']['EventSource']
           | components['schemas']['EventSource'][]
           | null
-        /** @description Query to filter events. */
-        query?: string | null
         /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
         metadata?: components['schemas']['MetadataQuery']
       }
@@ -59257,14 +59257,16 @@ export interface operations {
   'events:get_histogram': {
     parameters: {
       query: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
         /** @description Start of the histogram, inclusive. */
         start_timestamp: string
         /** @description End of the histogram, exclusive. */
         end_timestamp: string
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -59274,8 +59276,6 @@ export interface operations {
           | components['schemas']['EventSource']
           | components['schemas']['EventSource'][]
           | null
-        /** @description Query to filter events. */
-        query?: string | null
         /** @description Filter by event name. */
         name?: string | string[] | null
         /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
@@ -61243,6 +61243,10 @@ export interface operations {
   'events:list_statistics_timeseries': {
     parameters: {
       query: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Start date. */
         start_date: string
         /** @description End date. */
@@ -61851,8 +61855,6 @@ export interface operations {
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -61868,8 +61870,6 @@ export interface operations {
           | null
         /** @description Filter by event type ID. */
         event_type_id?: string | null
-        /** @description Query to filter events. */
-        query?: string | null
         /** @description Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */

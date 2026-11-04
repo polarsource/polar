@@ -931,10 +931,9 @@ class EventSearchParams(QuerySchema):
     organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     )
-    # Preserve the published query schema while enforcing the existing length rule.
-    query: (
-        Annotated[str, Field(min_length=3), WithJsonSchema({"type": "string"})] | None
-    ) = Field(None, title="Query", description="Query to filter events.")
+    query: str | None = Field(
+        None, min_length=3, title="Query", description="Query to filter events."
+    )
 
     @model_validator(mode="after")
     def validate_search_query(self) -> Self:

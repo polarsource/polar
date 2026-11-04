@@ -16,12 +16,6 @@ class WebhookDelivery(RecordModel):
     __tablename__ = "webhook_deliveries"
     __table_args__ = (
         Index(
-            "ix_webhook_deliveries_created_at_with_response",
-            "created_at",
-            "id",
-            postgresql_where="response IS NOT NULL",
-        ),
-        Index(
             "ix_webhook_deliveries_organization_id_created_at",
             "organization_id",
             "created_at",
@@ -47,7 +41,6 @@ class WebhookDelivery(RecordModel):
         Uuid,
         ForeignKey("webhook_endpoints.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
     @declared_attr

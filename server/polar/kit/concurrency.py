@@ -11,7 +11,7 @@ async def create_task_group() -> AsyncIterator[TaskGroup]:
     try:
         async with anyio.create_task_group() as tg:
             yield tg
-    except ExceptionGroup as eg:
+    except BaseExceptionGroup as eg:
         if len(eg.exceptions) != 1:
             raise
         error = eg.exceptions[0]

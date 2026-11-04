@@ -49,7 +49,7 @@ dependencies = [
   "plain-client>=0.0.3",
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
-  "dramatiq[redis,watch]>=2.2.1",
+  "dramatiq[redis]>=2.2.1",
   "prometheus-client>=0.25.0",
   "cramjam>=2.14.0",
   "fpdf2>=2.8.3",
@@ -94,6 +94,7 @@ dev = [
   "pytest-xdist[psutil]>=3.8.0",
   "minio>=7.2.9",
   "locust>=2.44.1",
+  "dramatiq[watch]>=2.2.1",
   "pydantic-evals>=1.103.0",
   "gepa>=0.1.0",
   # Quarantined due to supply chain attack:

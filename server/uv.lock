@@ -3026,7 +3026,7 @@ dependencies = [
     { name = "cramjam" },
     { name = "cryptography" },
     { name = "dnspython" },
-    { name = "dramatiq", extra = ["redis", "watch"] },
+    { name = "dramatiq", extra = ["redis"] },
     { name = "email-validator" },
     { name = "exponent-server-sdk" },
     { name = "fastapi" },
@@ -3086,6 +3086,7 @@ dependencies = [
 dev = [
     { name = "boto3-stubs", extra = ["s3", "scheduler", "sqs"] },
     { name = "coverage" },
+    { name = "dramatiq", extra = ["watch"] },
     { name = "fakeredis", extra = ["lua"] },
     { name = "freezegun" },
     { name = "gepa" },
@@ -3125,7 +3126,7 @@ requires-dist = [
     { name = "cramjam", specifier = ">=2.14.0" },
     { name = "cryptography", specifier = ">=48.0.1" },
     { name = "dnspython", specifier = ">=2.9.0" },
-    { name = "dramatiq", extras = ["redis", "watch"], specifier = ">=2.2.1" },
+    { name = "dramatiq", extras = ["redis"], specifier = ">=2.2.1" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = "==0.162.0" },
@@ -3185,6 +3186,7 @@ requires-dist = [
 dev = [
     { name = "boto3-stubs", extras = ["s3", "sqs", "scheduler"], specifier = ">=1.43.26" },
     { name = "coverage", specifier = ">=7.14.1" },
+    { name = "dramatiq", extras = ["watch"], specifier = ">=2.2.1" },
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.36.1" },
     { name = "freezegun", specifier = ">=1.5.1" },
     { name = "gepa", specifier = ">=0.1.0" },

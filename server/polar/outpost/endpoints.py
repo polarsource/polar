@@ -8,6 +8,7 @@ from anyio import Semaphore, create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from fastapi import Body, Depends, Query, Response, WebSocket
 
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import Logger
 from polar.models import Organization
@@ -20,8 +21,13 @@ from . import stream
 from .auth import OutpostWrite
 from .schemas import (
     Changes,
+    ConfigurationOutgoingMessagePayload,
+    ConfirmedOutgoingMessagePayload,
+    ConfirmIncomingMessagePayload,
     ConnectionOutgoingMessage,
     ConnectionOutgoingMessagePayload,
+    MeterUsageIncomingMessagePayload,
+    MeterUsageOutgoingMessagePayload,
     OutgoingMessage,
     OutgoingMessageType,
 )
@@ -153,6 +159,49 @@ async def changes(
     return await outpost_service.get_changes(
         session, redis, auth_subject.subject, cursor, limit
     )
+
+
+@router.get("/configuration", response_model=ConfigurationOutgoingMessagePayload)
+async def configuration(
+    auth_subject: OutpostWrite,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ConfigurationOutgoingMessagePayload:
+    """The reducers Outpost runs."""
+    return await outpost_service.get_configuration(session, auth_subject.subject)
+
+
+@router.post(
+    "/meter-usage",
+    response_model=list[MeterUsageOutgoingMessagePayload],
+    responses={404: {}},
+)
+async def meter_usage(
+    payload: MeterUsageIncomingMessagePayload,
+    auth_subject: OutpostWrite,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> list[MeterUsageOutgoingMessagePayload]:
+    """The snapshot of every identity of the customer."""
+    snapshots = await outpost_service.get_requested_meter_usage(
+        session, auth_subject.subject, payload
+    )
+    if snapshots is None:
+        raise ResourceNotFound()
+    return snapshots
+
+
+@router.post(
+    "/confirm", response_model=ConfirmedOutgoingMessagePayload, responses={404: {}}
+)
+async def confirm(
+    payload: ConfirmIncomingMessagePayload,
+    auth_subject: OutpostWrite,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ConfirmedOutgoingMessagePayload:
+    """The pending ids Polar counts, with the snapshot that counts them."""
+    confirmed = await outpost_service.confirm(session, auth_subject.subject, payload)
+    if confirmed is None:
+        raise ResourceNotFound()
+    return confirmed
 
 
 @router.post("/telemetry", include_in_schema=False)

@@ -36,6 +36,8 @@ from polar.reducer.service import reducer as reducer_service
 from . import stream
 from .schemas import (
     Changes,
+    ConfigurationOutgoingMessage,
+    ConfigurationOutgoingMessagePayload,
     ConfirmedOutgoingMessage,
     ConfirmedOutgoingMessagePayload,
     ConfirmIncomingMessageCustomerPayload,
@@ -47,7 +49,6 @@ from .schemas import (
     MeterUsageOutgoingMessage,
     MeterUsageOutgoingMessagePayload,
     OutgoingMessage,
-    OutgoingMessageAdapter,
     OutgoingMessageType,
 )
 from .stream import MAX_SEQUENCE, Cursor, OutpostEvent, ReducerBucketOutpostEvent
@@ -82,17 +83,32 @@ class OutpostService:
 
         match incoming.type:
             case IncomingMessageType.configuration:
-                return await self._send_configuration(
-                    session, organization, send_stream
+                await send_stream.send(
+                    ConfigurationOutgoingMessage(
+                        type=OutgoingMessageType.configuration,
+                        payload=await self.get_configuration(session, organization),
+                    )
                 )
             case IncomingMessageType.meter_usage:
-                return await self._send_requested_meter_usage(
-                    session, organization, incoming.payload, send_stream
-                )
+                for snapshot in (
+                    await self.get_requested_meter_usage(
+                        session, organization, incoming.payload
+                    )
+                    or []
+                ):
+                    await send_stream.send(
+                        MeterUsageOutgoingMessage(
+                            type=OutgoingMessageType.meter_usage, payload=snapshot
+                        )
+                    )
             case IncomingMessageType.confirm:
-                return await self._send_confirmed(
-                    session, organization, incoming.payload, send_stream
-                )
+                confirmed = await self.confirm(session, organization, incoming.payload)
+                if confirmed is not None:
+                    await send_stream.send(
+                        ConfirmedOutgoingMessage(
+                            type=OutgoingMessageType.confirmed, payload=confirmed
+                        )
+                    )
 
     async def handle_event(
         self,
@@ -223,39 +239,33 @@ class OutpostService:
             for key, value in overrides.items()
         )
 
-    async def _send_configuration(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-        send_stream: MemoryObjectSendStream[OutgoingMessage],
-    ) -> None:
+    async def get_configuration(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> ConfigurationOutgoingMessagePayload:
         reducer_repository = ReducerRepository.from_session(session)
         reducers = await reducer_repository.get_all_active_by_organization_and_kinds(
             organization.id,
             tuple(ReducerKind),
             options=(selectinload(Reducer.meter_reducers),),
         )
-        message = OutgoingMessageAdapter.validate_python(
+        return ConfigurationOutgoingMessagePayload.model_validate(
             {
-                "type": OutgoingMessageType.configuration,
-                "payload": {
-                    "reducers": [
-                        reducer
-                        for reducer in reducers
-                        if not isinstance(reducer.aggregation, UniqueAggregation)
-                    ]
-                },
+                "reducers": [
+                    reducer
+                    for reducer in reducers
+                    if not isinstance(reducer.aggregation, UniqueAggregation)
+                ]
             }
         )
-        await send_stream.send(message)
 
-    async def _send_requested_meter_usage(
+    async def get_requested_meter_usage(
         self,
         session: AsyncReadSession,
         organization: Organization,
         payload: MeterUsageIncomingMessagePayload,
-        send_stream: MemoryObjectSendStream[OutgoingMessage],
-    ) -> None:
+    ) -> list[MeterUsageOutgoingMessagePayload] | None:
+        """The snapshots of every identity of the customer, or None without such a
+        reducer."""
         reducer = await ReducerRepository.from_session(
             session
         ).get_active_by_id_and_kinds(payload.reducer_id, tuple(ReducerKind))
@@ -265,30 +275,27 @@ class OutpostService:
                 organization_id=organization.id,
                 reducer_id=payload.reducer_id,
             )
-            return
+            return None
         if isinstance(payload, MeterUsageIncomingMessageCustomerPayload):
             identity: Identity = (payload.customer_id, None)
         else:
             identity = (None, payload.external_customer_id)
         customer = await self._get_customer(session, organization, identity)
-        await self._send_meter_usage(
+        return await self._get_meter_usage(
             session,
-            organization,
             reducer,
             get_customer_identities(customer) if customer else [identity],
             customer,
-            send_stream,
         )
 
-    async def _send_confirmed(
+    async def confirm(
         self,
         session: AsyncReadSession,
         organization: Organization,
         payload: ConfirmIncomingMessagePayload,
-        send_stream: MemoryObjectSendStream[OutgoingMessage],
-    ) -> None:
+    ) -> ConfirmedOutgoingMessagePayload | None:
         """The requested ids stored so far, with the meter's snapshot read from the same
-        database snapshot: it counts exactly those."""
+        database snapshot: it counts exactly those. None without such a reducer."""
         with logfire.span(
             "outpost.confirm",
             organization_id=str(organization.id),
@@ -307,7 +314,7 @@ class OutpostService:
                     organization_id=organization.id,
                     reducer_id=payload.reducer_id,
                 )
-                return
+                return None
             if isinstance(payload, ConfirmIncomingMessageCustomerPayload):
                 identity: Identity = (payload.customer_id, None)
             else:
@@ -327,23 +334,16 @@ class OutpostService:
                 await self._get_customer(session, organization, identity),
             )
             if not snapshots:
-                return
-            await send_stream.send(
-                ConfirmedOutgoingMessage(
-                    type=OutgoingMessageType.confirmed,
-                    payload=ConfirmedOutgoingMessagePayload(
-                        reducer_id=payload.reducer_id,
-                        customer_id=identity[0],
-                        external_customer_id=identity[1],
-                        bucket_start=payload.bucket_start,
-                        ids=[
-                            external_id
-                            for external_id in payload.ids
-                            if external_id in stored
-                        ],
-                        snapshot=snapshots[0],
-                    ),
-                )
+                return None
+            return ConfirmedOutgoingMessagePayload(
+                reducer_id=payload.reducer_id,
+                customer_id=identity[0],
+                external_customer_id=identity[1],
+                bucket_start=payload.bucket_start,
+                ids=[
+                    external_id for external_id in payload.ids if external_id in stored
+                ],
+                snapshot=snapshots[0],
             )
 
     async def _send_reducer_bucket(
@@ -398,24 +398,6 @@ class OutpostService:
         return await repository.get_by_external_id_and_organization(
             external_customer_id, organization.id
         )
-
-    async def _send_meter_usage(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-        reducer: Reducer,
-        identities: Sequence[Identity],
-        customer: Customer | None,
-        send_stream: MemoryObjectSendStream[OutgoingMessage],
-    ) -> None:
-        for payload in await self._get_meter_usage(
-            session, reducer, identities, customer
-        ):
-            await send_stream.send(
-                MeterUsageOutgoingMessage(
-                    type=OutgoingMessageType.meter_usage, payload=payload
-                )
-            )
 
     async def _get_meter_usage(
         self,

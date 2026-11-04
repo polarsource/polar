@@ -128,8 +128,9 @@ async def apply(
         True,
         description=(
             "Publish the product and benefit changes. With `false`, they're saved "
-            "in the organization's draft catalog, to publish later. Meters, "
-            "settings and webhooks aren't versioned, so they apply right away."
+            "in the organization's draft catalog, to publish later. With `true`, "
+            "a pending draft is discarded. Meters, settings and webhooks aren't "
+            "versioned, so they apply right away."
         ),
     ),
     session: AsyncSession = Depends(get_db_session),

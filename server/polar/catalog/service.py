@@ -485,7 +485,6 @@ class CatalogService:
     async def discard_draft(self, session: AsyncSession, draft: Catalog) -> None:
         repository = CatalogRepository.from_session(session)
         await repository.lock(draft.organization_id)
-        await self._assert_still_draft(session, draft)
         await self._clear_draft(session, draft)
         # A later draft or publish may reach the same contents and hash.
         await repository.update(draft, update_dict={"version_hash": None})

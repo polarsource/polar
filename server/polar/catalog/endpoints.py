@@ -76,18 +76,15 @@ async def get(
     return catalog
 
 
-DraftNotFound = {
-    "description": "No catalog with this ID.",
-    "model": CatalogNotFound.schema(),
-}
-
-
 @router.post(
     "/{id}/publish",
     summary="Publish Draft Catalog",
     response_model=CatalogSchema,
     responses={
-        404: DraftNotFound,
+        404: {
+            "description": "No catalog with this ID.",
+            "model": CatalogNotFound.schema(),
+        },
         409: {
             "description": (
                 "The catalog isn't a draft, or another catalog was published "

@@ -1087,6 +1087,150 @@ class TestChanges:
         assert response.status_code == 422
 
 
+@pytest.mark.anyio
+class TestRequests:
+    async def test_anonymous(self, client: httpx.AsyncClient) -> None:
+        response = await client.get("/v1/outpost/configuration")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_configuration(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        visitors = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Visitors",
+            aggregation=UniqueAggregation(property="visitor"),
+        )
+        await create_reducer(save_fixture, organization=organization, meters=[visitors])
+
+        response = await client.get("/v1/outpost/configuration")
+
+        assert response.status_code == 200
+        [payload] = response.json()["reducers"]
+        assert payload["id"] == str(reducer.id)
+        assert payload["meter_ids"] == [str(meter.id)]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
+    async def test_meter_usage(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+        customer_key: str,
+    ) -> None:
+        customer = customer_external_id
+        assert customer.external_id is not None
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_end = await _save_synced_bucket(
+            save_fixture, organization, reducer, customer.external_id, 4
+        )
+
+        customer_value = {
+            "customer_id": str(customer.id),
+            "external_customer_id": customer.external_id,
+        }[customer_key]
+
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={"reducer_id": str(reducer.id), customer_key: customer_value},
+        )
+
+        assert response.status_code == 200
+        payloads = {
+            (payload["customer_id"], payload["external_customer_id"]): payload
+            for payload in response.json()
+        }
+        assert payloads.keys() == {
+            (str(customer.id), None),
+            (None, customer.external_id),
+            (str(customer.id), customer.external_id),
+        }
+        external = payloads[(None, customer.external_id)]
+        assert external["cold_until"] == to_epoch_microseconds(bucket_end)
+        assert (external["count"], external["sum"]) == (1, 4.0)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_unknown_reducer(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        bucket_end = await _save_synced_bucket(
+            save_fixture, organization, reducer, "alice", 1
+        )
+        bucket_start = bucket_end - timedelta(minutes=5)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=bucket_start + timedelta(seconds=1),
+            external_customer_id="alice",
+            external_id="counted",
+        )
+
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(reducer.id),
+                "external_customer_id": "alice",
+                "bucket_start": to_epoch_microseconds(bucket_start),
+                "ids": ["counted", "unknown"],
+            },
+        )
+
+        assert response.status_code == 200
+        confirmed = response.json()
+        assert confirmed["ids"] == ["counted"]
+        assert confirmed["external_customer_id"] == "alice"
+        assert (confirmed["snapshot"]["count"], confirmed["snapshot"]["sum"]) == (
+            1,
+            1.0,
+        )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_confirm_too_many_ids(self, client: httpx.AsyncClient) -> None:
+        response = await client.post(
+            "/v1/outpost/confirm",
+            json={
+                "reducer_id": str(uuid.uuid4()),
+                "external_customer_id": "alice",
+                "bucket_start": 0,
+                "ids": [f"event-{index}" for index in range(1001)],
+            },
+        )
+
+        assert response.status_code == 422
+
+
 def _export_request(**attributes: str) -> ExportTraceServiceRequest:
     request = ExportTraceServiceRequest()
     resource_spans = request.resource_spans.add()

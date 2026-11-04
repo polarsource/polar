@@ -8,11 +8,12 @@ from anyio import Semaphore, create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from fastapi import Body, Depends, Query, Response, WebSocket
 
+from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import Logger
 from polar.models import Organization
 from polar.openapi import APITag
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -20,8 +21,13 @@ from . import stream
 from .auth import OutpostWrite
 from .schemas import (
     Changes,
+    ConfigurationOutgoingMessagePayload,
+    ConfirmedOutgoingMessagePayload,
+    ConfirmIncomingMessagePayload,
     ConnectionOutgoingMessage,
     ConnectionOutgoingMessagePayload,
+    MeterUsageIncomingMessagePayload,
+    MeterUsageOutgoingMessagePayload,
     OutgoingMessage,
     OutgoingMessageType,
 )
@@ -153,6 +159,54 @@ async def changes(
     return await outpost_service.get_changes(
         session, redis, auth_subject.subject, cursor, limit
     )
+
+
+ReducerNotFound = {
+    "description": "Reducer not found.",
+    "model": ResourceNotFound.schema(),
+}
+
+
+@router.get("/configuration", response_model=ConfigurationOutgoingMessagePayload)
+async def configuration(
+    auth_subject: OutpostWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> ConfigurationOutgoingMessagePayload:
+    """The reducers Outpost runs."""
+    return await outpost_service.get_configuration(session, auth_subject.subject)
+
+
+@router.post(
+    "/meter-usage",
+    response_model=list[MeterUsageOutgoingMessagePayload],
+    responses={404: ReducerNotFound},
+)
+async def meter_usage(
+    payload: MeterUsageIncomingMessagePayload,
+    auth_subject: OutpostWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> list[MeterUsageOutgoingMessagePayload]:
+    """The snapshot of every identity of the customer."""
+    return await outpost_service.get_requested_meter_usage(
+        session, auth_subject.subject, payload
+    )
+
+
+@router.post(
+    "/confirm",
+    response_model=ConfirmedOutgoingMessagePayload,
+    responses={404: ReducerNotFound},
+)
+async def confirm(
+    payload: ConfirmIncomingMessagePayload,
+    auth_subject: OutpostWrite,
+    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+) -> ConfirmedOutgoingMessagePayload:
+    """The pending ids Polar counts, with the snapshot that counts them."""
+    # Its own session in REPEATABLE READ (see comment in service.py)
+    # so that the ids and the totals come from one snapshot.
+    async with sessionmaker() as session:
+        return await outpost_service.confirm(session, auth_subject.subject, payload)
 
 
 @router.post("/telemetry", include_in_schema=False)

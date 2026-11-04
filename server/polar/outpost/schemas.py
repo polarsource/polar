@@ -62,7 +62,7 @@ class ConfigurationIncomingMessage(IncomingMessageBase):
     type: typing.Literal[IncomingMessageType.configuration]
 
 
-class MeterUsageIncomingMessagePayloadBase(MessageBase):
+class MeterUsageIncomingMessagePayloadBase(Schema):
     reducer_id: UUID4
 
 
@@ -87,7 +87,7 @@ class MeterUsageIncomingMessage(IncomingMessageBase):
     payload: MeterUsageIncomingMessagePayload
 
 
-class ConfirmIncomingMessagePayloadBase(MessageBase):
+class ConfirmIncomingMessagePayloadBase(Schema):
     reducer_id: UUID4
     bucket_start: EpochMicroseconds
     ids: list[str] = Field(max_length=CONFIRM_MAX_IDS)
@@ -143,7 +143,7 @@ class ConnectionOutgoingMessage(OutgoingMessageBase):
     payload: ConnectionOutgoingMessagePayload
 
 
-class ConfigurationReducer(MessageBase):
+class ConfigurationReducer(Schema):
     id: UUID4
     kind: ReducerKind
     filter: Filter
@@ -151,7 +151,7 @@ class ConfigurationReducer(MessageBase):
     meter_ids: list[UUID4]
 
 
-class ConfigurationOutgoingMessagePayload(MessageBase):
+class ConfigurationOutgoingMessagePayload(Schema):
     reducers: list[ConfigurationReducer]
 
 
@@ -160,7 +160,7 @@ class ConfigurationOutgoingMessage(OutgoingMessageBase):
     payload: ConfigurationOutgoingMessagePayload
 
 
-class MeterUsageOutgoingMessagePayload(MessageBase):
+class MeterUsageOutgoingMessagePayload(Schema):
     reducer_id: UUID4
     # The bucket identity as events carry it: a customer can have several.
     customer_id: UUID4 | None
@@ -181,7 +181,7 @@ class MeterUsageOutgoingMessage(OutgoingMessageBase):
     payload: MeterUsageOutgoingMessagePayload
 
 
-class ConfirmedOutgoingMessagePayload(MessageBase):
+class ConfirmedOutgoingMessagePayload(Schema):
     reducer_id: UUID4
     customer_id: UUID4 | None
     external_customer_id: str | None

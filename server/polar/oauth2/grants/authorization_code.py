@@ -11,6 +11,7 @@ from authlib.oauth2.rfc6749.errors import (
 from authlib.oauth2.rfc6749.grants import (
     AuthorizationCodeGrant as _AuthorizationCodeGrant,
 )
+from authlib.oauth2.rfc6749.hooks import hooked
 from authlib.oauth2.rfc6749.requests import OAuth2Request
 from authlib.oauth2.rfc7636 import CodeChallenge as _CodeChallenge
 from authlib.oidc.core.errors import ConsentRequiredError, LoginRequiredError
@@ -20,7 +21,6 @@ from authlib.oidc.core.util import create_half_hash
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from polar.auth.models import AuthSubject
 from polar.authz.repository import select_accessible_org_ids
 from polar.kit.crypto import (
     generate_token,
@@ -32,6 +32,7 @@ from polar.models import (
     OAuth2AuthorizationCode,
     OAuth2AuthorizationCodeOrganization,
     OAuth2Client,
+    OAuth2Grant,
     Organization,
     User,
 )
@@ -71,7 +72,14 @@ class SubTypeGrantMixin:
     requires_single_organization: bool = False
 
 
-class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
+class OrganizationScopeGrantMixin:
+    consent_grant: OAuth2Grant | None = None
+    organization_ids: list[uuid.UUID] | None = None
+
+
+class AuthorizationCodeGrant(
+    SubTypeGrantMixin, OrganizationScopeGrantMixin, _AuthorizationCodeGrant
+):
     server: "AuthorizationServer"
     TOKEN_ENDPOINT_AUTH_METHODS = ["client_secret_basic", "client_secret_post", "none"]
 
@@ -113,6 +121,7 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
     def generate_authorization_code(self) -> str:
         return generate_token(prefix=AUTHORIZATION_CODE_PREFIX)
 
+    @hooked
     def save_authorization_code(
         self, code: str, request: StarletteOAuth2Request
     ) -> OAuth2AuthorizationCode:
@@ -139,78 +148,15 @@ class AuthorizationCodeGrant(SubTypeGrantMixin, _AuthorizationCodeGrant):
         authorization_code.sub = self.sub
 
         if self.sub_type == SubType.user:
-            assert request.auth_subject is not None
+            assert self.organization_ids is not None
             authorization_code.organization_scopes = [
                 OAuth2AuthorizationCodeOrganization(organization_id=organization_id)
-                for organization_id in self._resolve_organization_ids(
-                    request.auth_subject, payload
-                )
+                for organization_id in self.organization_ids
             ]
 
         self.server.session.add(authorization_code)
         self.server.session.flush()
         return authorization_code
-
-    def _resolve_organization_ids(
-        self, auth_subject: AuthSubject[User], payload: StarletteOAuth2Payload
-    ) -> list[uuid.UUID]:
-        """Organizations the issued token is down-scoped to.
-
-        The consent-time selection, validated against the orgs the authenticating
-        session can access: membership intersected with the session's own
-        down-scope. A non-SSO session may not explicitly select an SSO-enforced org
-        Unrestricted token are filtered at request time instead (``select_accessible_org_ids``).
-        """
-        accessible_organization_ids = set(
-            self.server.session.execute(select_accessible_org_ids(auth_subject))
-            .scalars()
-            .all()
-        )
-
-        try:
-            selected = {
-                uuid.UUID(value)
-                for value in payload.form_datalist.get("organizations", [])
-            }
-        except ValueError as e:
-            raise InvalidRequestError("Invalid 'organizations' UUID") from e
-
-        for organization_id in selected:
-            if organization_id not in accessible_organization_ids:
-                raise InvalidRequestError(
-                    f"Organization {organization_id} is not accessible"
-                )
-
-        if selected:
-            result = list(selected)
-        elif auth_subject.organization_ids is not None:
-            # No explicit selection over a scoped session: inherit its down-scope
-            # so the token is never broader than the session. An empty set can't
-            # be expressed as a down-scope (no rows == unrestricted), so refuse.
-            if not accessible_organization_ids:
-                raise InvalidRequestError("The session has no accessible organizations")
-            result = list(accessible_organization_ids)
-        else:
-            result = []
-
-        # sub_type=organization must yield exactly one org. The radio UI enforces
-        # this client-side; defend it server-side too rather than silently
-        # widening (empty) or picking arbitrarily (>1).
-        if self.requires_single_organization:
-            if not result:
-                raise InvalidRequestError(
-                    "sub_type=organization requires selecting an organization"
-                )
-            if len(result) > 1:
-                log.warning(
-                    "oauth2.organization_sub_type_multiple_orgs",
-                    client_id=payload.client_id,
-                    user_id=str(auth_subject.subject.id),
-                    organization_ids=[str(value) for value in result],
-                )
-                result = [min(result, key=str)]
-
-        return result
 
     def query_authorization_code(
         self, code: str, client: OAuth2Client
@@ -352,6 +298,7 @@ class ValidateSubAndPrompt:
                 sub_id=grant.sub.id,
                 client_id=grant.client.client_id,
                 scope=client.scope,
+                organization_ids=[],
             )
             return
 
@@ -384,8 +331,7 @@ class ValidateSubAndPrompt:
                     redirect_uri=redirect_uri, redirect_fragment=redirect_fragment
                 )
 
-        # Bypass everything if nothing is specified and conditions are met
-        if prompt is None and has_granted_scope:
+        if prompt in (None, "none") and has_granted_scope:
             grant.prompt = "none"
 
     def _validate_resolved_sub(
@@ -397,3 +343,79 @@ class ValidateSubAndPrompt:
         self._validate_sub(grant, redirect_uri, redirect_fragment)
         if grant.sub is None:
             raise InvalidSubError()
+
+
+class ValidateOrganizationScope:
+    def __init__(self, session: Session) -> None:
+        self._session = session
+
+    def __call__(self, grant: AuthorizationCodeGrant) -> None:
+        grant.register_hook("before_save_authorization_code", self._validate)
+
+    def _validate(
+        self, grant: AuthorizationCodeGrant, code: str, request: StarletteOAuth2Request
+    ) -> None:
+        if grant.sub_type != SubType.user:
+            return
+
+        auth_subject = request.auth_subject
+        assert auth_subject is not None
+        payload = request.payload
+        assert isinstance(payload, StarletteOAuth2Payload)
+
+        accessible_organization_ids = set(
+            self._session.execute(select_accessible_org_ids(auth_subject))
+            .scalars()
+            .all()
+        )
+
+        if grant.consent_grant is not None:
+            selected = {
+                scope.organization_id
+                for scope in grant.consent_grant.organization_scopes
+            }
+        else:
+            try:
+                selected = {
+                    uuid.UUID(value)
+                    for value in payload.form_datalist.get("organizations", [])
+                }
+            except ValueError as e:
+                raise InvalidRequestError("Invalid 'organizations' UUID") from e
+
+        for organization_id in selected:
+            if organization_id not in accessible_organization_ids:
+                raise InvalidRequestError(
+                    f"Organization {organization_id} is not accessible"
+                )
+
+        if selected:
+            result = list(selected)
+        elif auth_subject.organization_ids is not None:
+            # No explicit selection over a scoped session: inherit its down-scope
+            # so the token is never broader than the session. An empty set can't
+            # be expressed as a down-scope (no rows == unrestricted), so refuse.
+            if not accessible_organization_ids:
+                raise InvalidRequestError("The session has no accessible organizations")
+            result = list(accessible_organization_ids)
+        else:
+            result = []
+
+        # sub_type=organization must yield exactly one org. The radio UI enforces
+        # this client-side; defend it server-side too rather than silently
+        # widening (empty) or picking arbitrarily (>1).
+        if grant.requires_single_organization:
+            if not result:
+                raise InvalidRequestError(
+                    "sub_type=organization requires selecting an organization"
+                )
+            if len(result) > 1:
+                log.warning(
+                    "oauth2.organization_sub_type_multiple_orgs",
+                    client_id=payload.client_id,
+                    user_id=str(auth_subject.subject.id),
+                    organization_ids=[str(value) for value in result],
+                )
+                result = [min(result, key=str)]
+
+        grant.organization_ids = result

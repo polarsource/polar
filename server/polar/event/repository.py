@@ -518,6 +518,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         *,
         after_ingested_at: datetime | None,
         after_event_id: UUID | None,
+        before_ingested_at: datetime,
         limit: int,
     ) -> Sequence[tuple[Event, Customer | None]]:
         page_statement = (
@@ -528,7 +529,10 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 MeterEvent.organization_id,
                 MeterEvent.ingested_at,
             )
-            .where(MeterEvent.meter_id == meter_id)
+            .where(
+                MeterEvent.meter_id == meter_id,
+                MeterEvent.ingested_at < before_ingested_at,
+            )
             .order_by(MeterEvent.ingested_at.asc(), MeterEvent.event_id.asc())
             .limit(limit)
         )

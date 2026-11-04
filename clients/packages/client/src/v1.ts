@@ -5898,6 +5898,56 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/events/statistics/by-type': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get statistics grouped by event type
+     * @description Count matching events per event type.
+     *
+     *     Accepts the same filters as the event list, except the event name, so every
+     *     event type gets a count under the other filters.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_statistics_by_type']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/events/statistics/histogram': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get event histogram
+     * @description Count matching events in evenly sized buckets across a time range.
+     *
+     *     The bucket size is picked so the range is covered by at most 150 buckets,
+     *     starting at one minute.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_histogram']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/events/statistics/by-property': {
     parameters: {
       query?: never
@@ -24155,6 +24205,41 @@ export interface components {
        */
       external_member_id?: string | null
     }
+    /** EventHistogram */
+    EventHistogram: {
+      /**
+       * Interval Seconds
+       * @description Length of each bucket in seconds.
+       */
+      interval_seconds: number
+      /**
+       * Buckets
+       * @description Consecutive buckets covering the requested range.
+       */
+      buckets: components['schemas']['EventHistogramBucket'][]
+    }
+    /** EventHistogramBucket */
+    EventHistogramBucket: {
+      /**
+       * Start
+       * Format: date-time
+       * @description Bucket start (inclusive).
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      start: string
+      /**
+       * End
+       * Format: date-time
+       * @description Bucket end (exclusive).
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      end: string
+      /**
+       * Count
+       * @description Number of matching events in the bucket.
+       */
+      count: number
+    }
     /** EventMetadataInput */
     EventMetadataInput: {
       _cost?: components['schemas']['CostMetadata-Input']
@@ -25679,6 +25764,14 @@ export interface components {
        * @description Customers ordered by the primary aggregate field descending.
        */
       items: components['schemas']['CustomerStat'][]
+    }
+    /** ListEventTypeStatistics */
+    ListEventTypeStatistics: {
+      /**
+       * Items
+       * @description Event types with the number of matching events, most frequent first.
+       */
+      items: components['schemas']['EventTypeWithStats'][]
     }
     /**
      * ListPropertyGroupStats
@@ -59097,6 +59190,110 @@ export interface operations {
           'application/json':
             | components['schemas']['ListResource_Event_']
             | components['schemas']['ListResourceWithCursorPagination_Event_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:get_statistics_by_type': {
+    parameters: {
+      query?: {
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Filter events after this timestamp. */
+        start_timestamp?: string | null
+        /** @description Filter events before this timestamp. */
+        end_timestamp?: string | null
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListEventTypeStatistics']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:get_histogram': {
+    parameters: {
+      query: {
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Start of the histogram, inclusive. */
+        start_timestamp: string
+        /** @description End of the histogram, exclusive. */
+        end_timestamp: string
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Filter by event name. */
+        name?: string | string[] | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['EventHistogram']
         }
       }
       /** @description Validation Error */

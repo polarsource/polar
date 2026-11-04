@@ -147,6 +147,16 @@ const ClientPage = ({
   const searchQuery =
     debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null
 
+  const listFilters = {
+    customer_id: selectedCustomerIds ?? null,
+    source: source ?? null,
+    filter: eventsFilter,
+    start_timestamp: listStartDate.toISOString(),
+    end_timestamp: listEndDate.toISOString(),
+    query: searchQuery,
+    metadata: debouncedMetadata ?? null,
+  }
+
   const {
     data: events,
     isFetching,
@@ -155,19 +165,13 @@ const ClientPage = ({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteEvents(organization.id, {
+    ...listFilters,
     name:
       selectedEventTypes && selectedEventTypes.length > 0
         ? selectedEventTypes
         : null,
-    customer_id: selectedCustomerIds ?? null,
-    source: source ?? null,
-    filter: eventsFilter,
     limit: PAGE_SIZE,
     sorting: [sorting],
-    start_timestamp: listStartDate.toISOString(),
-    end_timestamp: listEndDate.toISOString(),
-    query: searchQuery,
-    metadata: debouncedMetadata ?? null,
   })
 
   const { ref: loadMoreRef, inViewport } = useInViewport<HTMLDivElement>()
@@ -318,6 +322,7 @@ const ClientPage = ({
           onDateRangeChange={onDateRangeChange}
           sorting={sorting}
           onSortingChange={setSorting}
+          eventTypeFilters={listFilters}
           selectedEventTypes={selectedEventTypes ?? []}
           onToggleEventType={toggleEventType}
           costOnly={costOnly ?? false}

@@ -55,6 +55,7 @@ from polar.event.system import (
     SubscriptionUpdatedMetadata,
 )
 from polar.event.system import SystemEvent as SystemEventEnum
+from polar.event_type.schemas import EventTypeWithStats
 from polar.kit.metadata import (
     MAXIMUM_EVENT_NUMERIC_VALUE,
     METADATA_DESCRIPTION,
@@ -963,6 +964,70 @@ class EventListParams(QuerySchema):
         ge=0,
         le=5,
         description="Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events.",
+    )
+
+
+class EventTypeStatisticsParams(QuerySchema):
+    filter: str | None = Field(
+        None,
+        description=(
+            "Filter events following filter clauses. "
+            "JSON string following the same schema a meter filter clause. "
+        ),
+    )
+    start_timestamp: AwareDatetime | None = Field(
+        None, description="Filter events after this timestamp."
+    )
+    end_timestamp: AwareDatetime | None = Field(
+        None, description="Filter events before this timestamp."
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    customer_id: MultipleQueryFilter[CustomerID] | None = Field(
+        None, title="CustomerID Filter", description="Filter by customer ID."
+    )
+    external_customer_id: MultipleQueryFilter[str] | None = Field(
+        None,
+        title="ExternalCustomerID Filter",
+        description="Filter by external customer ID.",
+    )
+    source: MultipleQueryFilter[EventSource] | None = Field(
+        None, title="Source Filter", description="Filter by event source."
+    )
+    query: str | None = Field(
+        None, title="Query", description="Query to filter events."
+    )
+
+
+class EventHistogramParams(EventTypeStatisticsParams):
+    start_timestamp: AwareDatetime = Field(
+        ..., description="Start of the histogram, inclusive."
+    )
+    end_timestamp: AwareDatetime = Field(
+        ..., description="End of the histogram, exclusive."
+    )
+    name: MultipleQueryFilter[str] | None = Field(
+        None, title="Name Filter", description="Filter by event name."
+    )
+
+
+class EventHistogramBucket(Schema):
+    start: AwareDatetime = Field(description="Bucket start (inclusive).")
+    end: AwareDatetime = Field(description="Bucket end (exclusive).")
+    count: int = Field(description="Number of matching events in the bucket.")
+
+
+class EventHistogram(Schema):
+    interval_seconds: int = Field(description="Length of each bucket in seconds.")
+    buckets: Sequence[EventHistogramBucket] = Field(
+        description="Consecutive buckets covering the requested range."
+    )
+
+
+class ListEventTypeStatistics(Schema):
+    items: Sequence[EventTypeWithStats] = Field(
+        description="Event types with the number of matching events, most frequent first."
     )
 
 

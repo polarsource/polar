@@ -1,9 +1,7 @@
-import { useEventTimeseriesChunks } from '@/hooks/queries/events'
-import { toISODate } from '@/utils/metrics'
+import { useEventHistogram } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { addDays, min, startOfDay } from 'date-fns'
 import { twMerge } from 'tailwind-merge'
 import { HistogramBar, HistogramTooltip } from './HistogramBar'
 import { useElementWidth } from './useElementWidth'
@@ -20,43 +18,10 @@ import {
   useHistogramSelection,
 } from './useHistogramSelection'
 
-const TARGET_BARS = 150
-// The API caps hourly ranges at 7 days and daily ranges at 366 days.
-const CHUNK_DAYS = { hour: 7, day: 366 }
-
 interface Bar {
   start: Date
   end: Date
   count: number
-}
-
-const chunkRange = (startDate: Date, endDate: Date, size: number) => {
-  const chunks: { start_date: string; end_date: string }[] = []
-  const last = startOfDay(endDate)
-  let cursor = startOfDay(startDate)
-  while (cursor <= last) {
-    const chunkEnd = min([addDays(cursor, size - 1), last])
-    chunks.push({
-      start_date: toISODate(cursor),
-      end_date: toISODate(chunkEnd),
-    })
-    cursor = addDays(chunkEnd, 1)
-  }
-  return chunks
-}
-
-const rebin = (periods: Bar[]): Bar[] => {
-  const size = Math.max(1, Math.ceil(periods.length / TARGET_BARS))
-  const bars: Bar[] = []
-  for (let i = 0; i < periods.length; i += size) {
-    const group = periods.slice(i, i + size)
-    bars.push({
-      start: group[0].start,
-      end: group[group.length - 1].end,
-      count: group.reduce((sum, period) => sum + period.count, 0),
-    })
-  }
-  return bars
 }
 
 const CURSOR_CLASS: Record<BrushCursor, string> = {
@@ -144,40 +109,23 @@ export const EventsHistogram = ({
   latest: Date
 }) => {
   const hourly = isHourlyRange(startDate, endDate)
-  const interval = hourly ? 'hour' : 'day'
 
-  const { data: chunkResults, isPending: isLoading } = useEventTimeseriesChunks(
-    organizationId,
-    chunkRange(startDate, endDate, CHUNK_DAYS[interval]),
-    {
-      interval,
-      name: eventNames && eventNames.length > 0 ? eventNames : undefined,
-      customer_id: customerIds ?? undefined,
-      source: source ?? undefined,
-      filter: filter ?? undefined,
-      query: query ?? undefined,
-      metadata: metadata ?? undefined,
-    },
-  )
+  const { data } = useEventHistogram(organizationId, {
+    start_timestamp: startDate.toISOString(),
+    end_timestamp: endDate.toISOString(),
+    name: eventNames && eventNames.length > 0 ? eventNames : null,
+    customer_id: customerIds,
+    source,
+    filter,
+    query,
+    metadata: metadata ?? undefined,
+  })
 
-  const seen = new Set<number>()
-  const periods = (chunkResults ?? [])
-    .flatMap((result) => result.periods)
-    .map((period) => ({
-      start: new Date(period.period_start),
-      end: new Date(period.period_end),
-      count: period.stats.reduce((sum, stat) => sum + stat.occurrences, 0),
-    }))
-    .filter((period) => period.end > startDate && period.start < endDate)
-    .filter((period) => {
-      const key = period.start.getTime()
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-    .toSorted((a, b) => a.start.getTime() - b.start.getTime())
-
-  const bars = isLoading ? [] : rebin(periods)
+  const bars: Bar[] = (data?.buckets ?? []).map((bucket) => ({
+    start: new Date(bucket.start),
+    end: new Date(bucket.end),
+    count: bucket.count,
+  }))
   const max = Math.max(1, ...bars.map((bar) => bar.count))
   const labels = [bars[0], bars[Math.floor(bars.length / 2)], bars.at(-1)]
 

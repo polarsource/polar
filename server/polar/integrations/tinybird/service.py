@@ -115,6 +115,7 @@ events_table = Table(
     "events_by_timestamp",
     metadata,
     Column("id", String),
+    Column("external_id", String),
     Column("name", String),
     Column("source", String),
     Column("organization_id", String),
@@ -628,7 +629,7 @@ class TinybirdEventsQuery:
     ) -> Self:
         if start is not None:
             self._filters.append(
-                events_table.c.timestamp > start.astimezone(UTC).replace(tzinfo=None)
+                events_table.c.timestamp >= start.astimezone(UTC).replace(tzinfo=None)
             )
         if end is not None:
             self._filters.append(
@@ -680,7 +681,12 @@ class TinybirdEventsQuery:
             _icontains(events_table.c.name, query),
             _icontains(events_table.c.source, query),
             _icontains(events_table.c.user_metadata, query),
+            events_table.c.external_id == query,
         ]
+        try:
+            conditions.append(events_table.c.id == str(UUID(query)))
+        except ValueError:
+            pass
         if matching_customer_ids:
             conditions.append(
                 events_table.c.customer_id.in_([str(c) for c in matching_customer_ids])
@@ -845,6 +851,24 @@ class TinybirdEventsQuery:
         except Exception as e:
             log.error("tinybird.get_event_type_stats.failed", error=str(e))
             raise
+
+    async def get_bucket_counts(
+        self, origin: datetime, step_seconds: int
+    ) -> dict[int, int]:
+        origin_ms = int(origin.timestamp() * 1000)
+        bucket = func.intDiv(
+            func.toUnixTimestamp64Milli(events_table.c.timestamp) - origin_ms,
+            step_seconds * 1000,
+        ).label("bucket")
+        statement = (
+            select(bucket, func.count().label("occurrences"))
+            .where(self._get_organization_filter(), *self._filters)
+            .group_by(bucket)
+        )
+
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return {int(row["bucket"]): int(row["occurrences"]) for row in rows}
 
     async def get_event_ids_and_count(
         self, limit: int, offset: int, descending: bool = True

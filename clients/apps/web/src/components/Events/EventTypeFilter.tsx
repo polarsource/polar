@@ -9,6 +9,11 @@ const compactNumber = new Intl.NumberFormat('en-US', {
   notation: 'compact',
 })
 
+type EventTypeRow = Pick<
+  schemas['EventTypeWithStats'],
+  'name' | 'label' | 'source' | 'occurrences'
+>
+
 const SOURCE_ORDER: Record<schemas['EventSource'], number> = {
   user: 0,
   system: 1,
@@ -26,8 +31,21 @@ export const EventTypeFilter = ({
   const [expanded, setExpanded] = useState(false)
 
   const selectedSet = new Set(selected)
+  const known = new Set(eventTypes.map((eventType) => eventType.name))
+  // Keep selected types listed even when no events match, so they can be unticked.
+  const rows: EventTypeRow[] = [
+    ...eventTypes,
+    ...selected
+      .filter((name) => !known.has(name))
+      .map((name) => ({
+        name,
+        label: name,
+        source: 'user' as const,
+        occurrences: 0,
+      })),
+  ]
 
-  const sorted = eventTypes.toSorted(
+  const sorted = rows.toSorted(
     (a, b) =>
       SOURCE_ORDER[a.source] - SOURCE_ORDER[b.source] ||
       b.occurrences - a.occurrences,
@@ -36,8 +54,8 @@ export const EventTypeFilter = ({
   const visible = expanded ? sorted : sorted.slice(0, VISIBLE_COUNT)
   const hiddenCount = sorted.length - visible.length
 
-  if (eventTypes.length === 0) {
-    return <Text color="muted">No events yet</Text>
+  if (rows.length === 0) {
+    return <Text color="muted">No matching events</Text>
   }
 
   return (

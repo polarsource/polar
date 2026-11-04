@@ -121,7 +121,10 @@ class RefundTransactionService(BaseTransactionService):
 
         # Compute and link fees
         transaction_fees = await processor_fee_transaction_service.create_refund_fees(
-            session, refund=refund, refund_transaction=refund_transaction
+            session,
+            refund=refund,
+            refund_transaction=refund_transaction,
+            balance_transaction=balance_transaction,
         )
         refund_transaction.incurred_transactions = transaction_fees
         session.add(refund_transaction)

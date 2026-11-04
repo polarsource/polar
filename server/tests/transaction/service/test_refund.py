@@ -258,6 +258,11 @@ class TestCreate:
         assert second_call[1]["amount"] == refund.amount * 0.25
 
         create_refund_fees_mock.assert_awaited_once()
+        assert (
+            create_refund_fees_mock.call_args.kwargs["balance_transaction"]
+            == balance_transaction
+        )
+        stripe_service_mock.get_balance_transaction.assert_awaited_once()
 
     async def test_valid_tax_only_refund(
         self,

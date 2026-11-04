@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
 from typing import Literal
 
+import stripe as stripe_lib
+
 from polar.enums import PaymentProcessor
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
@@ -119,6 +121,7 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         *,
         refund: Refund,
         refund_transaction: Transaction,
+        balance_transaction: stripe_lib.BalanceTransaction,
     ) -> list[Transaction]:
         fee_transactions: list[Transaction] = []
 
@@ -126,13 +129,6 @@ class ProcessorFeeTransactionService(BaseTransactionService):
         is_stripe_refund_trx = refund_transaction.processor == Processor.stripe
         if not (is_stripe_refund and is_stripe_refund_trx):
             return fee_transactions
-
-        if refund.processor_balance_transaction_id is None:
-            return fee_transactions
-
-        balance_transaction = await stripe_service.get_balance_transaction(
-            refund.processor_balance_transaction_id,
-        )
 
         refund_fee_transaction = Transaction(
             type=TransactionType.processor_fee,

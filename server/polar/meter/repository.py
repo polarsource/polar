@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, exists, select
-from sqlalchemy.orm import undefer
+from sqlalchemy.orm import selectinload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -32,6 +32,16 @@ class MeterRepository(
         org_ids: set[AccessibleOrganizationID],
     ) -> Meter | None:
         statement = self.get_statement_by_org_ids(org_ids).where(Meter.id == id)
+        return await self.get_one_or_none(statement)
+
+    async def get_for_billing(self, id: UUID) -> Meter | None:
+        """FOR NO KEY UPDATE, so `meter_events` inserts' FK checks don't wait on it."""
+        statement = (
+            self.get_base_statement()
+            .where(Meter.id == id)
+            .options(selectinload(Meter.last_billed_event))
+            .with_for_update(of=Meter, key_share=True)
+        )
         return await self.get_one_or_none(statement)
 
     async def get_all_by_external_ids(

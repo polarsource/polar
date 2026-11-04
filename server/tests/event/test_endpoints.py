@@ -104,6 +104,34 @@ class TestListEvents:
         assert json["items"][0]["id"] == str(event2.id)
 
     @pytest.mark.auth
+    async def test_query_matches_external_id(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        event = await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            external_id="ext_evt_123",
+        )
+        await create_event(buffered_save_fixture, organization=organization)
+
+        await flush_tinybird_events()
+
+        response = await client.get(
+            "/v1/events/",
+            params={"organization_id": str(organization.id), "query": "ext_evt_123"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(event.id)
+
+    @pytest.mark.auth
     async def test_children_sorting(
         self,
         buffered_save_fixture: SaveFixture,

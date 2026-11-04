@@ -115,6 +115,7 @@ events_table = Table(
     "events_by_timestamp",
     metadata,
     Column("id", String),
+    Column("external_id", String),
     Column("name", String),
     Column("source", String),
     Column("organization_id", String),
@@ -680,7 +681,12 @@ class TinybirdEventsQuery:
             _icontains(events_table.c.name, query),
             _icontains(events_table.c.source, query),
             _icontains(events_table.c.user_metadata, query),
+            events_table.c.external_id == query,
         ]
+        try:
+            conditions.append(events_table.c.id == str(UUID(query)))
+        except ValueError:
+            pass
         if matching_customer_ids:
             conditions.append(
                 events_table.c.customer_id.in_([str(c) for c in matching_customer_ids])

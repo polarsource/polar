@@ -1,7 +1,14 @@
 import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
-import { createMetering, type MeteringOptions } from "../metering/client";
+import {
+  createMetering,
+  type Metering,
+  type MeteringOptions,
+} from "../metering/client";
 {% for service in api.services %}
-import { create{{ service.name }}Service } from "./services/{{ service.name | snake }}";
+import {
+  create{{ service.name }}Service,
+  type {{ service.name }},
+} from "./services/{{ service.name | snake }}";
 {% endfor %}
 
 export type Environment = {% for server in api.servers %}"{{ server.environment }}"{% if not loop.last %} | {% endif %}{% endfor %};
@@ -33,7 +40,25 @@ export function createPolarCore(options: PolarOptions) {
 
 export type PolarCore = ReturnType<typeof createPolarCore>;
 
-export function createPolar(options: PolarOptions) {
+export interface Polar {
+  {% for service in api.services %}
+  {{ service.name | service_name }}: {{ service.name }};
+  {% endfor %}
+  /**
+   * Create a helper for buffered event delivery and customer meter reads.
+   *
+   * @param options.buffered Batch and retry options; defaults to 100 events, a 1000-ms
+   * collection interval, a 5000-ms shutdown timeout, and 3 attempts.
+   * @param options.outpost true or Outpost options to enable Outpost. Disabled by default.
+   * Pass false to disable; explicit options require a Redis URL.
+   * @param options.strategies Replace all defaults with custom strategies. Cannot be
+   * combined with buffered or outpost.
+   * @returns A metering helper that starts on its first operation.
+   */
+  metering: (options?: MeteringOptions) => Metering;
+}
+
+export function createPolar(options: PolarOptions): Polar {
   const client = createPolarCore(options);
 
   const services = {
@@ -45,19 +70,7 @@ export function createPolar(options: PolarOptions) {
 
   return {
     ...services,
-    /**
-     * Create a helper for buffered event delivery and customer meter reads.
-     *
-     * @param options.buffered Batch and retry options; defaults to 100 events, a 1000-ms
-     * collection interval, a 5000-ms shutdown timeout, and 3 attempts.
-     * @param options.outpost true or Outpost options to enable Outpost. Disabled by default.
-     * Pass false to disable; explicit options require a Redis URL.
-     * @param options.strategies Replace all defaults with custom strategies. Cannot be
-     * combined with buffered or outpost.
-     * @returns A metering helper that starts on its first operation.
-     */
     metering: (options?: MeteringOptions) => createMetering(services, client, options),
   };
 }
 
-export type Polar = ReturnType<typeof createPolar>;

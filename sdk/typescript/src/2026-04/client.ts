@@ -1,31 +1,31 @@
 import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
-import { createMetering, type MeteringOptions } from "../metering/client";
-import { createBenefitGrantsService } from "./services/benefit_grants";
-import { createBenefitsService } from "./services/benefits";
-import { createCheckoutLinksService } from "./services/checkout_links";
-import { createCheckoutsService } from "./services/checkouts";
-import { createCustomFieldsService } from "./services/custom_fields";
-import { createCustomerMetersService } from "./services/customer_meters";
-import { createCustomerPortalService } from "./services/customer_portal";
-import { createCustomerSeatsService } from "./services/customer_seats";
-import { createCustomerSessionsService } from "./services/customer_sessions";
-import { createCustomersService } from "./services/customers";
-import { createDiscountsService } from "./services/discounts";
-import { createDisputesService } from "./services/disputes";
-import { createEventTypesService } from "./services/event_types";
-import { createEventsService } from "./services/events";
-import { createFilesService } from "./services/files";
-import { createLicenseKeysService } from "./services/license_keys";
-import { createMetersService } from "./services/meters";
-import { createMetricsService } from "./services/metrics";
-import { createOauth2Service } from "./services/oauth2";
-import { createOrdersService } from "./services/orders";
-import { createOrganizationsService } from "./services/organizations";
-import { createPaymentsService } from "./services/payments";
-import { createProductsService } from "./services/products";
-import { createRefundsService } from "./services/refunds";
-import { createSubscriptionsService } from "./services/subscriptions";
-import { createWebhooksService } from "./services/webhooks";
+import { createMetering, type Metering, type MeteringOptions } from "../metering/client";
+import { createBenefitGrantsService, type BenefitGrants } from "./services/benefit_grants";
+import { createBenefitsService, type Benefits } from "./services/benefits";
+import { createCheckoutLinksService, type CheckoutLinks } from "./services/checkout_links";
+import { createCheckoutsService, type Checkouts } from "./services/checkouts";
+import { createCustomFieldsService, type CustomFields } from "./services/custom_fields";
+import { createCustomerMetersService, type CustomerMeters } from "./services/customer_meters";
+import { createCustomerPortalService, type CustomerPortal } from "./services/customer_portal";
+import { createCustomerSeatsService, type CustomerSeats } from "./services/customer_seats";
+import { createCustomerSessionsService, type CustomerSessions } from "./services/customer_sessions";
+import { createCustomersService, type Customers } from "./services/customers";
+import { createDiscountsService, type Discounts } from "./services/discounts";
+import { createDisputesService, type Disputes } from "./services/disputes";
+import { createEventTypesService, type EventTypes } from "./services/event_types";
+import { createEventsService, type Events } from "./services/events";
+import { createFilesService, type Files } from "./services/files";
+import { createLicenseKeysService, type LicenseKeys } from "./services/license_keys";
+import { createMetersService, type Meters } from "./services/meters";
+import { createMetricsService, type Metrics } from "./services/metrics";
+import { createOauth2Service, type Oauth2 } from "./services/oauth2";
+import { createOrdersService, type Orders } from "./services/orders";
+import { createOrganizationsService, type Organizations } from "./services/organizations";
+import { createPaymentsService, type Payments } from "./services/payments";
+import { createProductsService, type Products } from "./services/products";
+import { createRefundsService, type Refunds } from "./services/refunds";
+import { createSubscriptionsService, type Subscriptions } from "./services/subscriptions";
+import { createWebhooksService, type Webhooks } from "./services/webhooks";
 
 export type Environment = "production" | "sandbox";
 
@@ -49,7 +49,48 @@ export function createPolarCore(options: PolarOptions) {
 
 export type PolarCore = ReturnType<typeof createPolarCore>;
 
-export function createPolar(options: PolarOptions) {
+export interface Polar {
+  organizations: Organizations;
+  subscriptions: Subscriptions;
+  oauth2: Oauth2;
+  benefits: Benefits;
+  benefitGrants: BenefitGrants;
+  webhooks: Webhooks;
+  products: Products;
+  orders: Orders;
+  refunds: Refunds;
+  disputes: Disputes;
+  checkouts: Checkouts;
+  files: Files;
+  metrics: Metrics;
+  licenseKeys: LicenseKeys;
+  checkoutLinks: CheckoutLinks;
+  customFields: CustomFields;
+  discounts: Discounts;
+  customers: Customers;
+  customerPortal: CustomerPortal;
+  customerSeats: CustomerSeats;
+  customerSessions: CustomerSessions;
+  events: Events;
+  eventTypes: EventTypes;
+  meters: Meters;
+  customerMeters: CustomerMeters;
+  payments: Payments;
+  /**
+   * Create a helper for buffered event delivery and customer meter reads.
+   *
+   * @param options.buffered Batch and retry options; defaults to 100 events, a 1000-ms
+   * collection interval, a 5000-ms shutdown timeout, and 3 attempts.
+   * @param options.outpost true or Outpost options to enable Outpost. Disabled by default.
+   * Pass false to disable; explicit options require a Redis URL.
+   * @param options.strategies Replace all defaults with custom strategies. Cannot be
+   * combined with buffered or outpost.
+   * @returns A metering helper that starts on its first operation.
+   */
+  metering: (options?: MeteringOptions) => Metering;
+}
+
+export function createPolar(options: PolarOptions): Polar {
   const client = createPolarCore(options);
 
   const services = {
@@ -83,19 +124,6 @@ export function createPolar(options: PolarOptions) {
 
   return {
     ...services,
-    /**
-     * Create a helper for buffered event delivery and customer meter reads.
-     *
-     * @param options.buffered Batch and retry options; defaults to 100 events, a 1000-ms
-     * collection interval, a 5000-ms shutdown timeout, and 3 attempts.
-     * @param options.outpost true or Outpost options to enable Outpost. Disabled by default.
-     * Pass false to disable; explicit options require a Redis URL.
-     * @param options.strategies Replace all defaults with custom strategies. Cannot be
-     * combined with buffered or outpost.
-     * @returns A metering helper that starts on its first operation.
-     */
     metering: (options?: MeteringOptions) => createMetering(services, client, options),
   };
 }
-
-export type Polar = ReturnType<typeof createPolar>;

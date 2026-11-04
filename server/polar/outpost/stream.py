@@ -6,7 +6,7 @@ import typing
 import uuid
 
 import anyio
-from pydantic import GetCoreSchemaHandler
+from pydantic import GetCoreSchemaHandler, TypeAdapter
 from pydantic_core import CoreSchema, core_schema
 
 from polar.kit.json import json_obj_serializer
@@ -93,6 +93,13 @@ def _encode(event: OutpostEvent) -> str:
     return json.dumps(event, default=json_obj_serializer)
 
 
+_events: TypeAdapter[OutpostEvent] = TypeAdapter(OutpostEvent)
+
+
+def _decode(data: str | bytes) -> OutpostEvent:
+    return _events.validate_json(data)
+
+
 async def publish(
     redis: Redis,
     organization_id: uuid.UUID,
@@ -118,7 +125,7 @@ async def read_changes(
         *entries, (seconds, microseconds) = await pipeline.execute()
     # Each entry holds one field: the event.
     changes = [
-        (Cursor.parse(entry_id), json.loads(next(iter(fields.values()))))
+        (Cursor.parse(entry_id), _decode(next(iter(fields.values()))))
         for entry_id, fields in (entries[0] if entries else [])
     ]
     return changes, int(seconds) * 1000 + int(microseconds) // 1000
@@ -148,7 +155,7 @@ async def subscribe(
                 ignore_subscribe_messages=True, timeout=1.0
             )
             if message is not None:
-                yield json.loads(message["data"])
+                yield _decode(message["data"])
     finally:
         with anyio.CancelScope(shield=True):
             await pubsub.close()

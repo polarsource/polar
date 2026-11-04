@@ -400,12 +400,7 @@ class CatalogService:
             removed,
             removed_benefits,
         )
-        replaced = await self._retire(session, organization, live, products, benefits)
-        await self._repoint_checkout_links(session, replaced)
-        if live is not None:
-            await repository.update(
-                live, update_dict={"status": CatalogStatus.archived}, flush=True
-            )
+        await self._replace_live(session, organization, live, products, benefits)
         catalog = await repository.create(
             Catalog(
                 organization=organization,
@@ -498,7 +493,7 @@ class CatalogService:
             ).get_all_by_catalog(draft.id)
         }
         benefits = await self.get_catalog_benefits(session, organization, draft)
-        replaced = await self._retire(session, organization, live, products, benefits)
+        await self._replace_live(session, organization, live, products, benefits)
         product_repository = ProductRepository.from_session(session)
         for product in products.values():
             if product.catalog_id == draft.id:
@@ -511,12 +506,6 @@ class CatalogService:
                 await benefit_repository.update(
                     benefit, update_dict={"is_current": True}, flush=True
                 )
-        await self._repoint_checkout_links(session, replaced)
-
-        if live is not None:
-            await repository.update(
-                live, update_dict={"status": CatalogStatus.archived}, flush=True
-            )
         return await repository.update(
             draft,
             update_dict={
@@ -527,6 +516,21 @@ class CatalogService:
             },
             flush=True,
         )
+
+    async def _replace_live(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        live: Catalog | None,
+        products: Mapping[str, Product],
+        benefits: Mapping[str, Benefit],
+    ) -> None:
+        replaced = await self._retire(session, organization, live, products, benefits)
+        await self._repoint_checkout_links(session, replaced)
+        if live is not None:
+            await CatalogRepository.from_session(session).update(
+                live, update_dict={"status": CatalogStatus.archived}, flush=True
+            )
 
     async def _retire(
         self,

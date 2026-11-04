@@ -183,11 +183,7 @@ class TestApplyAndPublishDraft:
 
         async def run_second() -> None:
             async with sessionmaker() as session:
-                try:
-                    await operations[second](session)
-                except CatalogNotDraft:
-                    await session.rollback()
-                    raise
+                await operations[second](session)
                 await session.commit()
 
         async with sessionmaker() as session:

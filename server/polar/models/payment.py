@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, Literal, Self
+from typing import TYPE_CHECKING, Any, Self
 from uuid import UUID
 
 from sqlalchemy import BigInteger, ColumnElement, ForeignKey, SmallInteger, String, Uuid
@@ -90,9 +90,7 @@ class PaymentStatus(StrEnum):
     failed = "failed"
 
     @classmethod
-    def from_stripe_charge(
-        cls, stripe_status: Literal["failed", "pending", "succeeded"]
-    ) -> Self:
+    def from_stripe_charge(cls, stripe_status: str) -> Self:
         return cls(stripe_status)
 
 

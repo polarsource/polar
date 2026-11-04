@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from polar.enums import TaxBehavior
 from polar.integrations.stripe import stripe_lib
+from polar.integrations.stripe.utils import get_stripe_field
 from polar.kit.address import Address
 from polar.kit.schemas import Schema
 from polar.kit.utils import utc_now
@@ -366,7 +367,9 @@ class StripeAdapter:
             # Deleted products have no catalog row; subscriptions on them stay
             # on the source. Archived products and inactive prices are catalog
             # rows, so their subscriptions can still move.
-            if not isinstance(product, stripe_lib.Product) or product.get("deleted"):
+            if not isinstance(product, stripe_lib.Product) or get_stripe_field(
+                product, "deleted"
+            ):
                 continue
             recurring = price.recurring
             interval = recurring.interval if recurring else None
@@ -381,7 +384,7 @@ class StripeAdapter:
                     recurring_interval=interval,
                     recurring_interval_count=interval_count,
                     prices=[],
-                    archived=not bool(product.get("active")),
+                    archived=not bool(get_stripe_field(product, "active")),
                 )
                 grouped[key] = canonical
             canonical.prices.extend(self._map_prices(price, product))
@@ -580,8 +583,8 @@ class StripeAdapter:
             params["starting_after"] = items.data[-1].id
 
     def _invoice_item_owner(self, item: stripe_lib.InvoiceItem) -> str:
-        parent = item.get("parent")
-        details = parent.get("subscription_details") if parent else None
+        parent = get_stripe_field(item, "parent")
+        details = get_stripe_field(parent, "subscription_details") if parent else None
         if details:
             return details["subscription"]
         return self._id_of(item.customer)
@@ -627,12 +630,15 @@ class StripeAdapter:
             )
         except stripe_lib.InvalidRequestError:
             return None
-        if coupon.get("deleted"):
+        if get_stripe_field(coupon, "deleted"):
             return None
-        applies_to = coupon.get("applies_to")
+        applies_to = get_stripe_field(coupon, "applies_to")
         if applies_to is None:
             return []
-        return [self._id_of(product) for product in applies_to.get("products") or []]
+        return [
+            self._id_of(product)
+            for product in get_stripe_field(applies_to, "products") or []
+        ]
 
     def _item_product_ids(
         self, subscription: stripe_lib.Subscription
@@ -647,10 +653,10 @@ class StripeAdapter:
         )
 
     def _item_product_id(self, item: Any) -> str | None:
-        price = item.get("price")
+        price = get_stripe_field(item, "price")
         if price is None or isinstance(price, str):
             return None
-        product = price.get("product")
+        product = get_stripe_field(price, "product")
         if product is None:
             return None
         return self._id_of(product)
@@ -695,14 +701,17 @@ class StripeAdapter:
     ) -> list[CanonicalPrice]:
         pricing_scheme = self._map_pricing_scheme(price)
         amounts: dict[str, int | None] = {price.currency: price.unit_amount}
-        for currency, option in (price.get("currency_options") or {}).items():
-            amounts[currency] = option.get("unit_amount")
-        default_price = product.get("default_price")
+        options = get_stripe_field(price, "currency_options")
+        for currency, option in (
+            options.to_dict() if options is not None else {}
+        ).items():
+            amounts[currency] = get_stripe_field(option, "unit_amount")
+        default_price = get_stripe_field(product, "default_price")
         is_default = (
             default_price is not None and self._id_of(default_price) == price.id
         )
-        created_at = self._to_datetime(price.get("created"))
-        active = bool(price.get("active"))
+        created_at = self._to_datetime(get_stripe_field(price, "created"))
+        active = bool(get_stripe_field(price, "active"))
         return [
             CanonicalPrice(
                 source_id=price.id,
@@ -729,10 +738,13 @@ class StripeAdapter:
     def _package_rounds_down(self, price: stripe_lib.Price) -> bool:
         # One unit rounded down to whole packages bills nothing. Rounded up it bills
         # one package, the flat unit amount, which imports as a fixed price.
-        transform = price.get("transform_quantity")
+        transform = get_stripe_field(price, "transform_quantity")
         if transform is None:
             return False
-        return transform.get("round") == "down" and transform.get("divide_by") > 1
+        return (
+            get_stripe_field(transform, "round") == "down"
+            and get_stripe_field(transform, "divide_by") > 1
+        )
 
     def _map_subscription(
         self,
@@ -743,7 +755,7 @@ class StripeAdapter:
         items = subscription["items"]["data"]
         plan_item, add_on_item = self._split_items(items)
         discounts = self._map_discount_attachments(subscription)
-        current_period_end = plan_item.get("current_period_end")
+        current_period_end = get_stripe_field(plan_item, "current_period_end")
         return CanonicalSubscription(
             source_id=subscription.id,
             customer_source_id=self._id_of(subscription.customer),
@@ -753,7 +765,7 @@ class StripeAdapter:
                 subscription.collection_method
             ),
             current_period_start=self._to_datetime(
-                plan_item.get("current_period_start")
+                get_stripe_field(plan_item, "current_period_start")
             ),
             current_period_end=self._to_datetime(current_period_end),
             trialing=subscription.status == "trialing",
@@ -788,7 +800,9 @@ class StripeAdapter:
             anchor_day=self._anchor_day(subscription),
             currency=subscription.currency,
             automatic_tax=self._automatic_tax(subscription),
-            price_tax_behavior=self._price_tax_behavior(plan_item.get("price")),
+            price_tax_behavior=self._price_tax_behavior(
+                get_stripe_field(plan_item, "price")
+            ),
             has_tax_rates=self._has_tax_rates(subscription, plan_item),
             tax_rate_behavior=self._tax_rate_behavior(subscription, plan_item),
             customer_balance=self._customer_balance(subscription),
@@ -814,20 +828,21 @@ class StripeAdapter:
 
     def _interval(self, item: Any) -> tuple[str, int]:
         recurring = item["price"]["recurring"]
-        return recurring["interval"], recurring.get("interval_count") or 1
+        return recurring["interval"], get_stripe_field(recurring, "interval_count") or 1
 
     def _map_add_on(
         self, subscription: stripe_lib.Subscription, plan_item: Any, item: Any
     ) -> CanonicalSubscriptionAddOn:
         price = item["price"]
-        transform = price.get("transform_quantity")
+        transform = get_stripe_field(price, "transform_quantity")
         return CanonicalSubscriptionAddOn(
             price_source_id=self._id_of(price),
             quantity=self._quantity(item),
             # Bought in quantity, a package price bills per package however it
             # rounds, so it can't move as a per-unit price.
             pricing_scheme=CanonicalPricingScheme.package
-            if transform is not None and (transform.get("divide_by") or 1) > 1
+            if transform is not None
+            and (get_stripe_field(transform, "divide_by") or 1) > 1
             else self._map_pricing_scheme(price),
             price_tax_behavior=self._price_tax_behavior(price),
             tax_rates_differ=self._tax_rate_ids(subscription, plan_item)
@@ -843,15 +858,19 @@ class StripeAdapter:
         self, subscription: stripe_lib.Subscription, item: Any
     ) -> list[Any]:
         # An item's own rates replace the subscription's defaults.
-        return item.get("tax_rates") or subscription.get("default_tax_rates") or []
+        return (
+            get_stripe_field(item, "tax_rates")
+            or get_stripe_field(subscription, "default_tax_rates")
+            or []
+        )
 
     def _managed_payments(self, subscription: stripe_lib.Subscription) -> bool:
-        settings = subscription.get("managed_payments")
-        return bool(settings and settings.get("enabled"))
+        settings = get_stripe_field(subscription, "managed_payments")
+        return bool(settings and get_stripe_field(settings, "enabled"))
 
     def _quantity(self, item: Any) -> int:
         # Metered items carry no quantity; 0 is a real quantity that bills nothing.
-        quantity = item.get("quantity")
+        quantity = get_stripe_field(item, "quantity")
         return 1 if quantity is None else quantity
 
     def _map_subscription_discounts(
@@ -859,7 +878,7 @@ class StripeAdapter:
     ) -> MappedSubscriptionDiscounts:
         """Expanded Clover discounts carry ``source.coupon``. A bare id still
         means a coupon is present, but not which one."""
-        discounts = subscription.get("discounts") or []
+        discounts = get_stripe_field(subscription, "discounts") or []
         source_ids: list[str] = []
         starts: dict[str, datetime] = {}
         started_at: datetime | None = None
@@ -869,7 +888,9 @@ class StripeAdapter:
                 continue
             source_ids.append(coupon_id)
             start = self._to_datetime(
-                discount.get("start") if not isinstance(discount, str) else None
+                get_stripe_field(discount, "start")
+                if not isinstance(discount, str)
+                else None
             )
             if start is not None:
                 starts[coupon_id] = start
@@ -885,8 +906,12 @@ class StripeAdapter:
     def _coupon_id_of_discount(self, discount: Any) -> str | None:
         if isinstance(discount, str):
             return None
-        source = discount.get("source")
-        coupon = source.get("coupon") if source is not None else discount.get("coupon")
+        source = get_stripe_field(discount, "source")
+        coupon = (
+            get_stripe_field(source, "coupon")
+            if source is not None
+            else get_stripe_field(discount, "coupon")
+        )
         if coupon is None:
             return None
         return self._id_of(coupon)
@@ -899,7 +924,8 @@ class StripeAdapter:
         mapped = self._map_subscription_discounts(subscription)
         items = subscription["items"]["data"]
         per_item = [
-            self._coupon_applications(item.get("discounts") or []) for item in items
+            self._coupon_applications(get_stripe_field(item, "discounts") or [])
+            for item in items
         ]
         any_item = any(per_item)
         customer_id, customer_started_at, customer_present = self._customer_discount(
@@ -984,7 +1010,7 @@ class StripeAdapter:
             applications.append(
                 _CouponApplication(
                     self._coupon_id_of_discount(discount),
-                    self._to_datetime(discount.get("start")),
+                    self._to_datetime(get_stripe_field(discount, "start")),
                 )
             )
         return applications
@@ -999,7 +1025,9 @@ class StripeAdapter:
     ) -> bool:
         """Several different coupons on the subscription each come off the invoice."""
         keys: set[str] = set()
-        for index, discount in enumerate(subscription.get("discounts") or []):
+        for index, discount in enumerate(
+            get_stripe_field(subscription, "discounts") or []
+        ):
             if isinstance(discount, str):
                 keys.add(f"id:{discount}")
                 continue
@@ -1007,7 +1035,7 @@ class StripeAdapter:
             if coupon_id is not None:
                 keys.add(f"coupon:{coupon_id}")
                 continue
-            discount_id = discount.get("id")
+            discount_id = get_stripe_field(discount, "id")
             keys.add(f"id:{discount_id}" if discount_id else f"unknown:{index}")
         return len(keys) > 1
 
@@ -1024,43 +1052,43 @@ class StripeAdapter:
     def _customer_discount(
         self, subscription: stripe_lib.Subscription
     ) -> tuple[str | None, datetime | None, bool]:
-        customer = subscription.get("customer")
+        customer = get_stripe_field(subscription, "customer")
         if customer is None or isinstance(customer, str):
             return None, None, False
-        discount = customer.get("discount")
+        discount = get_stripe_field(customer, "discount")
         if not discount:
             return None, None, False
         if isinstance(discount, str):
             return None, None, True
         return (
             self._coupon_id_of_discount(discount),
-            self._to_datetime(discount.get("start")),
+            self._to_datetime(get_stripe_field(discount, "start")),
             True,
         )
 
     def _schedule_discount_block(
         self, subscription: stripe_lib.Subscription
     ) -> str | None:
-        schedule = subscription.get("schedule")
+        schedule = get_stripe_field(subscription, "schedule")
         if not schedule:
             return None
         if isinstance(schedule, str):
             return SubscriptionDiscountBlock.scheduled
-        if schedule.get("status") != "active":
+        if get_stripe_field(schedule, "status") != "active":
             return None
-        phases = schedule.get("phases") or []
+        phases = get_stripe_field(schedule, "phases") or []
         if any(self._phase_discounts_an_invoice_item(phase) for phase in phases):
             return SubscriptionDiscountBlock.invoice_item
-        current = schedule.get("current_phase")
+        current = get_stripe_field(schedule, "current_phase")
         if not current:
             return SubscriptionDiscountBlock.scheduled
-        boundary = current.get("end_date")
+        boundary = get_stripe_field(current, "end_date")
         if boundary is None:
             return None
         known = self._known_discount_keys(subscription)
         current_signature = self._live_discount_signature(subscription)
         for phase in phases:
-            start = phase.get("start_date")
+            start = get_stripe_field(phase, "start_date")
             if start is None or start < boundary:
                 continue
             if self._signatures_differ(
@@ -1084,30 +1112,31 @@ class StripeAdapter:
 
     def _phase_discounts_an_invoice_item(self, phase: Any) -> bool:
         return any(
-            item.get("discounts") for item in (phase.get("add_invoice_items") or [])
+            get_stripe_field(item, "discounts")
+            for item in (get_stripe_field(phase, "add_invoice_items") or [])
         )
 
     def _known_discount_keys(
         self, subscription: stripe_lib.Subscription
     ) -> dict[str, str]:
         known: dict[str, str] = {}
-        discounts = list(subscription.get("discounts") or [])
-        customer = subscription.get("customer")
+        discounts = list(get_stripe_field(subscription, "discounts") or [])
+        customer = get_stripe_field(subscription, "customer")
         if customer is not None and not isinstance(customer, str):
-            customer_discount = customer.get("discount")
+            customer_discount = get_stripe_field(customer, "discount")
             if customer_discount:
                 discounts.append(customer_discount)
         for item in subscription["items"]["data"]:
-            discounts.extend(item.get("discounts") or [])
+            discounts.extend(get_stripe_field(item, "discounts") or [])
         for discount in discounts:
             if isinstance(discount, str):
                 continue
             key = self._live_discount_key(discount)
-            discount_id = discount.get("id")
+            discount_id = get_stripe_field(discount, "id")
             if key is None or not discount_id:
                 continue
             known[discount_id] = key
-            promo = discount.get("promotion_code")
+            promo = get_stripe_field(discount, "promotion_code")
             if promo:
                 known[f"promo:{self._id_of(promo)}"] = key
         return known
@@ -1117,13 +1146,13 @@ class StripeAdapter:
     ) -> tuple[frozenset[str], tuple[frozenset[str], ...]]:
         subscription_keys = frozenset(
             key
-            for discount in (subscription.get("discounts") or [])
+            for discount in (get_stripe_field(subscription, "discounts") or [])
             if (key := self._live_discount_key(discount)) is not None
         )
         item_keys = tuple(
             frozenset(
                 key
-                for discount in (item.get("discounts") or [])
+                for discount in (get_stripe_field(item, "discounts") or [])
                 if (key := self._live_discount_key(discount)) is not None
             )
             for item in subscription["items"]["data"]
@@ -1136,10 +1165,10 @@ class StripeAdapter:
         coupon_id = self._coupon_id_of_discount(discount)
         if coupon_id is not None:
             return f"coupon:{coupon_id}"
-        promo = discount.get("promotion_code")
+        promo = get_stripe_field(discount, "promotion_code")
         if promo:
             return f"promo:{self._id_of(promo)}"
-        discount_id = discount.get("id")
+        discount_id = get_stripe_field(discount, "id")
         if discount_id:
             return f"id:{discount_id}"
         return None
@@ -1148,11 +1177,11 @@ class StripeAdapter:
         self, phase: Any, known: dict[str, str]
     ) -> tuple[frozenset[str], tuple[frozenset[str], ...]]:
         subscription_keys = self._phase_discount_keys(
-            phase.get("discounts") or [], known
+            get_stripe_field(phase, "discounts") or [], known
         )
-        phase_items = phase.get("items") or []
+        phase_items = get_stripe_field(phase, "items") or []
         item_keys = tuple(
-            self._phase_discount_keys(item.get("discounts") or [], known)
+            self._phase_discount_keys(get_stripe_field(item, "discounts") or [], known)
             for item in phase_items
         )
         return subscription_keys, item_keys
@@ -1169,14 +1198,14 @@ class StripeAdapter:
     def _phase_discount_key(self, entry: Any, known: dict[str, str]) -> str | None:
         if isinstance(entry, str):
             return known.get(entry, f"id:{entry}")
-        coupon = entry.get("coupon")
+        coupon = get_stripe_field(entry, "coupon")
         if coupon:
             return f"coupon:{self._id_of(coupon)}"
-        promo = entry.get("promotion_code")
+        promo = get_stripe_field(entry, "promotion_code")
         if promo:
             promo_id = self._id_of(promo)
             return known.get(f"promo:{promo_id}", f"promo:{promo_id}")
-        discount = entry.get("discount")
+        discount = get_stripe_field(entry, "discount")
         if discount:
             discount_id = (
                 discount if isinstance(discount, str) else self._id_of(discount)
@@ -1185,7 +1214,7 @@ class StripeAdapter:
         return None
 
     def _map_coupon(self, coupon: stripe_lib.Coupon) -> CanonicalDiscount | None:
-        if coupon.get("deleted"):
+        if get_stripe_field(coupon, "deleted"):
             return None
         try:
             duration = CanonicalDiscountDuration(coupon.duration)
@@ -1203,7 +1232,7 @@ class StripeAdapter:
         remaining = self._remaining_redemptions(
             coupon.max_redemptions, coupon.times_redeemed or 0
         )
-        applies_to = coupon.get("applies_to")
+        applies_to = get_stripe_field(coupon, "applies_to")
         product_source_ids = list(applies_to.products) if applies_to is not None else []
         return CanonicalDiscount(
             source_id=coupon.id,
@@ -1226,7 +1255,7 @@ class StripeAdapter:
         if coupon is None or isinstance(coupon, str):
             return None
         # A customer's own code says nothing about the coupon's public code.
-        if promotion_code.get("customer"):
+        if get_stripe_field(promotion_code, "customer"):
             return None
         mapped = self._map_coupon(coupon)
         if mapped is None:
@@ -1237,15 +1266,16 @@ class StripeAdapter:
         remaining = tighter_cap(
             mapped.max_redemptions,
             self._remaining_redemptions(
-                promotion_code.get("max_redemptions"),
-                promotion_code.get("times_redeemed") or 0,
+                get_stripe_field(promotion_code, "max_redemptions"),
+                get_stripe_field(promotion_code, "times_redeemed") or 0,
             ),
         )
         ends_at = earlier_datetime(
-            mapped.ends_at, self._to_datetime(promotion_code.get("expires_at"))
+            mapped.ends_at,
+            self._to_datetime(get_stripe_field(promotion_code, "expires_at")),
         )
         spent = (
-            not promotion_code.get("active", True)
+            not get_stripe_field(promotion_code, "active", True)
             or remaining == 0
             or (ends_at is not None and ends_at <= utc_now())
         )
@@ -1263,19 +1293,22 @@ class StripeAdapter:
     def _promotion_code_is_restricted(
         self, promotion_code: stripe_lib.PromotionCode
     ) -> bool:
-        restrictions = promotion_code.get("restrictions")
+        restrictions = get_stripe_field(promotion_code, "restrictions")
         if restrictions is None:
             return False
-        return bool(restrictions.get("first_time_transaction")) or (
-            restrictions.get("minimum_amount") is not None
+        return bool(get_stripe_field(restrictions, "first_time_transaction")) or (
+            get_stripe_field(restrictions, "minimum_amount") is not None
         )
 
     def _coupon_amounts(self, coupon: stripe_lib.Coupon) -> dict[str, int]:
         amounts: dict[str, int] = {}
         if coupon.amount_off is not None and coupon.currency is not None:
             amounts[coupon.currency] = coupon.amount_off
-        for currency, option in (coupon.get("currency_options") or {}).items():
-            amount_off = option.get("amount_off")
+        options = get_stripe_field(coupon, "currency_options")
+        for currency, option in (
+            options.to_dict() if options is not None else {}
+        ).items():
+            amount_off = get_stripe_field(option, "amount_off")
             if amount_off is not None:
                 amounts[currency] = amount_off
         return amounts
@@ -1288,33 +1321,33 @@ class StripeAdapter:
         return max(max_redemptions - times_redeemed, 0)
 
     def _automatic_tax(self, subscription: stripe_lib.Subscription) -> bool | None:
-        automatic_tax = subscription.get("automatic_tax")
+        automatic_tax = get_stripe_field(subscription, "automatic_tax")
         if automatic_tax is None:
             return None
-        return bool(automatic_tax.get("enabled"))
+        return bool(get_stripe_field(automatic_tax, "enabled"))
 
     def _price_tax_behavior(self, price: Any) -> TaxBehavior | None:
         if price is None or isinstance(price, str):
             return None
-        return parse_tax_behavior(price.get("tax_behavior"))
+        return parse_tax_behavior(get_stripe_field(price, "tax_behavior"))
 
     def _has_tax_rates(
         self, subscription: stripe_lib.Subscription, plan_item: Any
     ) -> bool:
-        return bool(subscription.get("default_tax_rates")) or bool(
-            plan_item.get("tax_rates")
+        return bool(get_stripe_field(subscription, "default_tax_rates")) or bool(
+            get_stripe_field(plan_item, "tax_rates")
         )
 
     def _has_scheduled_changes(self, subscription: stripe_lib.Subscription) -> bool:
         """Any attached schedule counts, even one only running its current phase:
         the merchant can add a phase to it at any time."""
-        return bool(subscription.get("schedule"))
+        return bool(get_stripe_field(subscription, "schedule"))
 
     def _tax_rate_behavior(
         self, subscription: stripe_lib.Subscription, plan_item: Any
     ) -> TaxBehavior | None:
         inclusive = {
-            rate.get("inclusive")
+            get_stripe_field(rate, "inclusive")
             for rate in self._item_tax_rates(subscription, plan_item)
         }
         if inclusive == {True}:
@@ -1327,7 +1360,7 @@ class StripeAdapter:
         customer = subscription.customer
         if not isinstance(customer, stripe_lib.Customer):
             return None
-        return customer.get("balance")
+        return get_stripe_field(customer, "balance")
 
     def _anchor_day(self, subscription: stripe_lib.Subscription) -> int | None:
         anchor = self._to_datetime(subscription.billing_cycle_anchor)
@@ -1345,18 +1378,18 @@ class StripeAdapter:
 
     def _latest_invoice_unpaid(self, subscription: stripe_lib.Subscription) -> bool:
         """An unexpanded invoice counts: we can't tell whether it was paid."""
-        invoice = subscription.get("latest_invoice")
+        invoice = get_stripe_field(subscription, "latest_invoice")
         if not invoice:
             return False
         if isinstance(invoice, str):
             return True
-        return invoice.get("status") in {"draft", "open"} and bool(
-            invoice.get("amount_due")
+        return get_stripe_field(invoice, "status") in {"draft", "open"} and bool(
+            get_stripe_field(invoice, "amount_due")
         )
 
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:
-        address = customer.get("address")
-        country = address.get("country") if address is not None else None
+        address = get_stripe_field(customer, "address")
+        country = get_stripe_field(address, "country") if address is not None else None
         tax_id = self._map_tax_id(customer, country)
         return CanonicalCustomer(
             source_id=customer.id,
@@ -1367,7 +1400,7 @@ class StripeAdapter:
             billing_address=self._billing_address(address, country),
             tax_id=tax_id,
             tax_id_dropped=tax_id is None and self._has_source_tax_id(customer),
-            tax_exempt=customer.get("tax_exempt") == "exempt",
+            tax_exempt=get_stripe_field(customer, "tax_exempt") == "exempt",
         )
 
     def _billing_address(self, address: Any, country: str | None) -> Address | None:
@@ -1376,11 +1409,11 @@ class StripeAdapter:
         try:
             return Address.model_validate(
                 {
-                    "line1": address.get("line1"),
-                    "line2": address.get("line2"),
-                    "postal_code": address.get("postal_code"),
-                    "city": address.get("city"),
-                    "state": address.get("state"),
+                    "line1": get_stripe_field(address, "line1"),
+                    "line2": get_stripe_field(address, "line2"),
+                    "postal_code": get_stripe_field(address, "postal_code"),
+                    "city": get_stripe_field(address, "city"),
+                    "state": get_stripe_field(address, "state"),
                     "country": country.upper(),
                 }
             )
@@ -1388,9 +1421,9 @@ class StripeAdapter:
             return None
 
     def _customer_country_hint(self, customer: stripe_lib.Customer) -> str | None:
-        invoice_settings = customer.get("invoice_settings")
+        invoice_settings = get_stripe_field(customer, "invoice_settings")
         payment_method = (
-            invoice_settings.get("default_payment_method")
+            get_stripe_field(invoice_settings, "default_payment_method")
             if invoice_settings is not None
             else None
         )
@@ -1398,7 +1431,7 @@ class StripeAdapter:
         if billing_country or card_country:
             return billing_country or card_country
         source_billing_country, source_card_country = self._source_countries(
-            customer.get("default_source")
+            get_stripe_field(customer, "default_source")
         )
         return source_billing_country or source_card_country
 
@@ -1407,36 +1440,46 @@ class StripeAdapter:
     ) -> tuple[str | None, str | None]:
         if not isinstance(payment_method, stripe_lib.PaymentMethod):
             return None, None
-        billing_details = payment_method.get("billing_details")
+        billing_details = get_stripe_field(payment_method, "billing_details")
         address = (
-            billing_details.get("address") if billing_details is not None else None
+            get_stripe_field(billing_details, "address")
+            if billing_details is not None
+            else None
         )
-        billing_country = address.get("country") if address is not None else None
-        details = payment_method.get(payment_method.type) or {}
-        return billing_country, details.get("country")
+        billing_country = (
+            get_stripe_field(address, "country") if address is not None else None
+        )
+        details = get_stripe_field(payment_method, payment_method.type) or {}
+        return billing_country, get_stripe_field(details, "country")
 
     def _source_countries(self, source: Any) -> tuple[str | None, str | None]:
         if source is None or isinstance(source, str):
             return None, None
-        owner = source.get("owner") or {}
-        address = owner.get("address") or {}
-        billing_country = source.get("address_country") or address.get("country")
-        card = source.get("card") or {}
-        return billing_country, source.get("country") or card.get("country")
+        owner = get_stripe_field(source, "owner") or {}
+        address = get_stripe_field(owner, "address") or {}
+        billing_country = get_stripe_field(
+            source, "address_country"
+        ) or get_stripe_field(address, "country")
+        card = get_stripe_field(source, "card") or {}
+        return billing_country, get_stripe_field(source, "country") or get_stripe_field(
+            card, "country"
+        )
 
     def _has_source_tax_id(self, customer: stripe_lib.Customer) -> bool:
-        tax_ids = customer.get("tax_ids")
-        return customer.get("tax_exempt") == "reverse" or bool(
+        tax_ids = get_stripe_field(customer, "tax_ids")
+        return get_stripe_field(customer, "tax_exempt") == "reverse" or bool(
             tax_ids and tax_ids["data"]
         )
 
     def _map_tax_id(
         self, customer: stripe_lib.Customer, country: str | None
     ) -> TaxID | None:
-        tax_ids = customer.get("tax_ids")
+        tax_ids = get_stripe_field(customer, "tax_ids")
         mapped: list[TaxID] = []
         for item in (tax_ids["data"] if tax_ids else None) or []:
-            tax_id = from_stripe_tax_id(item.get("type") or "", item.get("value"))
+            tax_id = from_stripe_tax_id(
+                get_stripe_field(item, "type") or "", get_stripe_field(item, "value")
+            )
             if tax_id is not None:
                 mapped.append(tax_id)
         if not mapped:
@@ -1499,15 +1542,15 @@ class StripeAdapter:
             type = CanonicalPaymentMethodType(payment_method.type)
         except ValueError:
             type = CanonicalPaymentMethodType.other
-        details = payment_method.get(payment_method.type) or {}
+        details = get_stripe_field(payment_method, payment_method.type) or {}
         billing_country, card_country = self._payment_method_countries(payment_method)
         return CanonicalPaymentMethod(
             source_id=payment_method.id,
             type=type,
-            last4=details.get("last4"),
-            brand=details.get("brand"),
-            exp_month=details.get("exp_month"),
-            exp_year=details.get("exp_year"),
+            last4=get_stripe_field(details, "last4"),
+            brand=get_stripe_field(details, "brand"),
+            exp_month=get_stripe_field(details, "exp_month"),
+            exp_year=get_stripe_field(details, "exp_year"),
             billing_country=billing_country,
             card_country=card_country,
         )

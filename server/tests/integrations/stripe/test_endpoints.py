@@ -1,3 +1,4 @@
+import json
 import uuid
 
 import pytest
@@ -186,3 +187,26 @@ class TestWebhookEventGetter:
         with pytest.raises(HTTPException) as exc_info:
             await WebhookEventGetter("whsec_test")(_request_without_signature())
         assert exc_info.value.status_code == 400
+
+    @pytest.mark.parametrize("event_object", ["event", "v2.core.event"])
+    async def test_preserves_signed_event_payload(self, event_object: str) -> None:
+        event = {"id": "evt_test", "type": "test.event", "object": event_object}
+        payload = json.dumps(event)
+        secret = "whsec_test"
+        signature = stripe_lib.WebhookSignature.generate_signature_header(
+            payload, secret
+        )
+
+        async def receive() -> dict[str, object]:
+            return {
+                "type": "http.request",
+                "body": payload.encode(),
+                "more_body": False,
+            }
+
+        request = Request(
+            {"type": "http", "headers": [(b"stripe-signature", signature.encode())]},
+            receive,
+        )
+
+        assert await WebhookEventGetter(secret)(request) == event

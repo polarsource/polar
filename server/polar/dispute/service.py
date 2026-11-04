@@ -287,11 +287,13 @@ class DisputeService:
         # Capture what Stripe expects in response, and the submission state it
         # reports back (kept current by every `charge.dispute.updated` event).
         # Stripe omits null optional fields from the payload, and the SDK raises
-        # AttributeError on a missing key — so read those via `.get()`.
+        # AttributeError on a missing key when accessed as attributes.
         evidence_details = stripe_dispute.evidence_details
-        due_by = evidence_details.get("due_by")
+        due_by = getattr(evidence_details, "due_by", None)
         dispute.reason = stripe_dispute.reason
-        dispute.network_reason_code = stripe_dispute.get("network_reason_code")
+        dispute.network_reason_code = getattr(
+            stripe_dispute, "network_reason_code", None
+        )
         dispute.evidence_due_by = (
             datetime.fromtimestamp(due_by, tz=UTC) if due_by else None
         )

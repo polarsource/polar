@@ -5882,7 +5882,7 @@ class TestTriggerPayment:
 
         params = stripe_service_mock.create_payment_intent.call_args.kwargs
         assert params["off_session"] is True
-        assert params.get("payment_method_types") == (
+        assert params.get("allowed_payment_method_types") == (
             ["sepa_debit"] if method_type == "sepa_debit" else None
         )
         assert "automatic_payment_methods" not in params
@@ -6320,10 +6320,10 @@ class TestProcessRetryPayment:
         params = stripe_service_mock.create_payment_intent.call_args.kwargs
         assert params["payment_method"] == payment_method.processor_id
         if method_type == "sepa_debit":
-            assert params["payment_method_types"] == ["sepa_debit"]
+            assert params["allowed_payment_method_types"] == ["sepa_debit"]
             assert "automatic_payment_methods" not in params
         else:
-            assert "payment_method_types" not in params
+            assert "allowed_payment_method_types" not in params
             assert params["automatic_payment_methods"] == {
                 "enabled": True,
                 "allow_redirects": "never",

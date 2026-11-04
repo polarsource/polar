@@ -482,7 +482,11 @@ def _listed_prices(
 ) -> None:
     async def list_async(*, params: dict[str, Any]) -> Any:
         active = params.get("active", True)
-        matching = [price for price in prices if bool(price.get("active")) is active]
+        matching = [
+            price
+            for price in prices
+            if bool(price.to_dict(recursive=False).get("active")) is active
+        ]
         return mocker.MagicMock(data=matching, has_more=has_more)
 
     client.v1.prices.list_async = mocker.AsyncMock(side_effect=list_async)

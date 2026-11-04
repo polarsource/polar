@@ -215,6 +215,9 @@ async def simulate_webhook(
     """
     from polar.external_event.service import external_event as external_event_service
 
+    if isinstance(data, stripe_lib.StripeObject):
+        data = data.to_dict(for_json=True)
+
     task_name = f"stripe.webhook.{event_type}"
     event_id = f"evt_e2e_{uuid.uuid4().hex[:8]}"
     stripe_event_data = {

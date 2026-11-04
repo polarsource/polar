@@ -12,6 +12,7 @@ from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor
 from polar.external_event.service import external_event as external_event_service
 from polar.integrations.stripe.service import stripe as stripe_service
+from polar.integrations.stripe.utils import get_stripe_field
 from polar.logging import Logger
 from polar.models.dispute import DisputeStatus
 from polar.observability.task_logging import LoggableField
@@ -122,7 +123,9 @@ async def payment_intent_succeeded(
             )
 
             # Handle retry payments - save credit card and update subscription payment method
-            if payment_intent.metadata and payment_intent.metadata.get("order_id"):
+            if payment_intent.metadata and get_stripe_field(
+                payment_intent.metadata, "order_id"
+            ):
                 try:
                     order = await payment.resolve_order(session, payment_intent, None)
                 except payment.OrderDoesNotExist as e:

@@ -53,7 +53,7 @@ SEPA_PAYMENT_METHOD_TYPES: Final = ("bancontact", "ideal", "sepa_debit", "sofort
 
 
 stripe_lib.api_key = settings.STRIPE_SECRET_KEY
-stripe_lib.api_version = "2026-01-28.clover"
+stripe_lib.api_version = "2026-10-28.endive"
 
 stripe_http_client = stripe_lib.HTTPXClient(allow_sync_methods=True)
 instrument_httpx(stripe_http_client._client_async)
@@ -147,7 +147,9 @@ class StripeService:
             account_id=id,
             reason=reason,
         )
-        return await stripe_lib.Account.reject_async(id, reason=reason)
+        return await stripe_lib.Account.reject_async(
+            id, reason="fraud_other" if reason == "fraud" else reason
+        )
 
     async def retrieve_balance(self, account_id: str, currency: str) -> tuple[str, int]:
         balance = await stripe_lib.Balance.retrieve_async(stripe_account=account_id)
@@ -228,7 +230,7 @@ class StripeService:
         *,
         amount: int | None = None,
         metadata: dict[str, str] | None = None,
-    ) -> stripe_lib.Reversal:
+    ) -> stripe_lib.TransferReversal:
         reverse_params: TransferCreateReversalParams = {
             "metadata": metadata or {},
             "idempotency_key": f"polar:transfer_reverse:{id}",

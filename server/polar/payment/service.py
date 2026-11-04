@@ -137,9 +137,9 @@ class PaymentService:
         payment_method_details = charge.payment_method_details
         assert payment_method_details is not None
         payment.method = payment_method_details.type
-        payment.method_metadata = dict(
-            payment_method_details[payment_method_details.type]
-        )
+        payment.method_metadata = payment_method_details[
+            payment_method_details.type
+        ].to_dict(for_json=True)
         payment.customer_email = charge.billing_details.email
 
         if charge.outcome is not None:
@@ -151,7 +151,7 @@ class PaymentService:
             risk_level = charge.outcome.risk_level
             if risk_level is not None and risk_level != "not_assessed":
                 payment.risk_level = risk_level
-                payment.risk_score = charge.outcome.get("risk_score")
+                payment.risk_score = getattr(charge.outcome, "risk_score", None)
 
         payment.trigger = trigger
         payment.checkout = checkout
@@ -200,7 +200,9 @@ class PaymentService:
         payment_method = payment_error.payment_method
         assert payment_method is not None
         payment.method = payment_method.type
-        payment.method_metadata = dict(payment_method[payment_method.type])
+        payment.method_metadata = payment_method[payment_method.type].to_dict(
+            for_json=True
+        )
         payment.customer_email = payment_intent.receipt_email
 
         payment.decline_reason = getattr(payment_error, "code", None)

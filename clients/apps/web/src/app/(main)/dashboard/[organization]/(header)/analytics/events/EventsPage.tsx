@@ -34,6 +34,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
+import { startOfDay } from 'date-fns'
 import { useEffect, useState } from 'react'
 import z from 'zod'
 import { EventsSidebar } from './EventsSidebar'
@@ -365,6 +366,8 @@ const ClientPage = ({
           selection={selection}
           onSelectionChange={setSelection}
           onZoom={onZoom}
+          earliest={startOfDay(new Date(organization.created_at))}
+          latest={rangeAnchor}
         />
         <Box alignItems="start" gap="s">
           <div className="min-w-0 flex-1">

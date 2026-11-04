@@ -64,10 +64,41 @@ const CURSOR_CLASS: Record<BrushCursor, string> = {
   'ew-resize': 'cursor-ew-resize',
 }
 
-const zoomOut = ({ from, to }: TimeRange): TimeRange => {
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+const ZOOM_LEVELS = [
+  30 * MINUTE,
+  HOUR,
+  3 * HOUR,
+  12 * HOUR,
+  DAY,
+  3 * DAY,
+  7 * DAY,
+  14 * DAY,
+  30 * DAY,
+  90 * DAY,
+  180 * DAY,
+  365 * DAY,
+]
+const MIN_ZOOM_STEP = 1.5
+
+// Steps to the next zoom level around the current center, never past `bounds`.
+// Once the next level exceeds the bounds, it shows all of them.
+const zoomOut = ({ from, to }: TimeRange, bounds: TimeRange): TimeRange => {
   const span = to.getTime() - from.getTime()
-  const end = Math.min(Date.now(), to.getTime() + span / 2)
-  return { from: new Date(end - span * 2), to: new Date(end) }
+  const maxSpan = bounds.to.getTime() - bounds.from.getTime()
+  const level =
+    ZOOM_LEVELS.find((candidate) => candidate >= span * MIN_ZOOM_STEP) ??
+    maxSpan
+  const target = Math.min(level, maxSpan)
+  const center = (from.getTime() + to.getTime()) / 2
+  const end = Math.min(bounds.to.getTime(), center + target / 2)
+  const start = Math.max(bounds.from.getTime(), end - target)
+  return {
+    from: new Date(start),
+    to: new Date(Math.min(bounds.to.getTime(), start + target)),
+  }
 }
 
 const toBrush = (bars: Bar[], range: TimeRange | null): Brush | null => {
@@ -92,6 +123,8 @@ export const EventsHistogram = ({
   selection,
   onSelectionChange,
   onZoom,
+  earliest,
+  latest,
 }: {
   organizationId: string
   startDate: Date
@@ -105,6 +138,8 @@ export const EventsHistogram = ({
   selection: TimeRange | null
   onSelectionChange: (selection: TimeRange | null) => void
   onZoom: (range: TimeRange, selection: TimeRange | null) => void
+  earliest: Date
+  latest: Date
 }) => {
   const hourly = isHourlyRange(startDate, endDate)
   const interval = hourly ? 'hour' : 'day'
@@ -176,8 +211,17 @@ export const EventsHistogram = ({
         count={brush ? brushCount : totalCount}
         hourly={hourly}
         onZoomIn={brushRange ? () => onZoom(brushRange, null) : undefined}
-        onZoomOut={() =>
-          onZoom(zoomOut({ from: startDate, to: endDate }), selection)
+        onZoomOut={
+          startDate > earliest || endDate < latest
+            ? () =>
+                onZoom(
+                  zoomOut(
+                    { from: startDate, to: endDate },
+                    { from: earliest, to: new Date() },
+                  ),
+                  selection,
+                )
+            : undefined
         }
         onClear={selection ? () => onSelectionChange(null) : undefined}
       />

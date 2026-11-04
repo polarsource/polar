@@ -94,7 +94,7 @@ export const EventsHistogramControls = ({
   count: number
   hourly: boolean
   onZoomIn?: () => void
-  onZoomOut: () => void
+  onZoomOut?: () => void
   onClear?: () => void
 }) => (
   <Box position="relative" height={36}>

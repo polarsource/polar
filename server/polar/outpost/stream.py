@@ -1,4 +1,5 @@
 import collections.abc
+import datetime
 import json
 import typing
 import uuid
@@ -20,8 +21,16 @@ class ReducerBucketOutpostEvent(typing.TypedDict):
 type OutpostEvent = ReducerBucketOutpostEvent
 
 
+# A cursor older than this has missed changes: the client starts over.
+CHANGES_RETENTION = datetime.timedelta(hours=1)
+
+
 def _get_channel(organization_id: uuid.UUID) -> str:
     return f"outpost:{organization_id}"
+
+
+def get_changes_key(organization_id: uuid.UUID) -> str:
+    return f"outpost:changes:{organization_id}"
 
 
 def _encode(event: OutpostEvent) -> str:
@@ -37,8 +46,15 @@ async def publish(
 
 
 def enqueue(organization_id: uuid.UUID, event: OutpostEvent) -> None:
-    """Publish the event once the transaction committed."""
-    JobQueueManager.get().publish(_get_channel(organization_id), _encode(event))
+    """Publish the event and append it to the organization's changes once the
+    transaction committed."""
+    job_queue_manager = JobQueueManager.get()
+    job_queue_manager.publish(_get_channel(organization_id), _encode(event))
+    job_queue_manager.append(
+        get_changes_key(organization_id),
+        {"event": _encode(event)},
+        retention=CHANGES_RETENTION,
+    )
 
 
 async def subscribe(

@@ -41,7 +41,7 @@ class Cursor:
         self.sequence = sequence
 
     @classmethod
-    def parse(cls, value: str | bytes) -> "Cursor":
+    def parse(cls, value: str | bytes) -> typing.Self:
         milliseconds, sequence = (
             value.decode() if isinstance(value, bytes) else value
         ).split("-")
@@ -58,7 +58,7 @@ class Cursor:
         )
 
     @classmethod
-    def _validate(cls, value: str) -> "Cursor":
+    def _validate(cls, value: str) -> typing.Self:
         cursor = cls.parse(value)
         if max(cursor.milliseconds, cursor.sequence) > MAX_SEQUENCE:
             raise ValueError("A stream id holds two 64-bit numbers.")

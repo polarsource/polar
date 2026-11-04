@@ -588,7 +588,7 @@ class CatalogService:
     async def _assert_still_draft(self, session: AsyncSession, draft: Catalog) -> None:
         """Re-read the draft under the catalog lock: a concurrent publish or
         discard may have committed since it was loaded."""
-        await session.refresh(draft)
+        await CatalogRepository.from_session(session).refresh(draft)
         if draft.status != CatalogStatus.draft or draft.deleted_at is not None:
             raise CatalogNotDraft(draft.id)
 

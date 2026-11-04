@@ -28,6 +28,9 @@ class CatalogRepository(
         """Serialize catalog writes for an organization."""
         await pg_advisory_xact_lock(self.session, "catalog", organization_id)
 
+    async def refresh(self, catalog: Catalog) -> None:
+        await self.session.refresh(catalog)
+
     async def get_live(self, organization_id: UUID) -> Catalog | None:
         statement = self.get_base_statement().where(
             Catalog.organization_id == organization_id,

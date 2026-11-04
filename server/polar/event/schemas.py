@@ -13,6 +13,8 @@ from pydantic import (
     AwareDatetime,
     Discriminator,
     Field,
+    Json,
+    WithJsonSchema,
 )
 from pydantic.type_adapter import TypeAdapter
 from pydantic_extra_types.timezone_name import TimeZoneName
@@ -70,6 +72,7 @@ from polar.kit.schemas import (
 )
 from polar.kit.time_queries import TimeInterval
 from polar.kit.versioning import QuerySchema
+from polar.meter.filter import Filter
 from polar.meter.schemas import MeterID
 from polar.models.event import EventSource
 from polar.organization.schemas import OrganizationID
@@ -918,8 +921,12 @@ type AggregateField = Annotated[
 ]
 
 
+# Keep the JSON-encoded query parameter a string in generated clients.
+EventQueryFilter = Annotated[Json[Filter], WithJsonSchema({"type": "string"})]
+
+
 class EventListParams(QuerySchema):
-    filter: str | None = Field(
+    filter: EventQueryFilter | None = Field(
         None,
         description=(
             "Filter events following filter clauses. "
@@ -968,7 +975,7 @@ class EventListParams(QuerySchema):
 
 
 class EventTypeStatisticsParams(QuerySchema):
-    filter: str | None = Field(
+    filter: EventQueryFilter | None = Field(
         None,
         description=(
             "Filter events following filter clauses. "
@@ -1081,7 +1088,7 @@ class EventListStatisticsTimeseriesParams(QuerySchema):
         description="Timezone to use for the dates. Default is UTC.",
     )
     interval: TimeInterval = Field(..., description="Interval between two dates.")
-    filter: str | None = Field(
+    filter: EventQueryFilter | None = Field(
         None,
         description=(
             "Filter events following filter clauses. "

@@ -209,4 +209,5 @@ class TestWebhookEventGetter:
             receive,
         )
 
-        assert await WebhookEventGetter(secret)(request) == event
+        getter = WebhookEventGetter(secret, thin=event_object == "v2.core.event")
+        assert await getter(request) == event

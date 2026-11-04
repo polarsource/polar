@@ -104,8 +104,9 @@ async def stripe_connect_refresh(
 
 
 class WebhookEventGetter:
-    def __init__(self, secret: str) -> None:
+    def __init__(self, secret: str, *, thin: bool = False) -> None:
         self.secret = secret
+        self.thin = thin
 
     async def __call__(self, request: Request) -> dict[str, Any]:
         # An empty secret verifies against an empty key, which anyone can forge.
@@ -119,10 +120,15 @@ class WebhookEventGetter:
             raise HTTPException(status_code=400)
 
         try:
-            stripe.WebhookSignature.verify_header(
-                payload, sig_header, self.secret, stripe.Webhook.DEFAULT_TOLERANCE
-            )
-            event = json.loads(payload)
+            if self.thin:
+                stripe.WebhookSignature.verify_header(
+                    payload, sig_header, self.secret, stripe.Webhook.DEFAULT_TOLERANCE
+                )
+                event = json.loads(payload)
+            else:
+                event = stripe.Webhook.construct_event(
+                    payload, sig_header, self.secret
+                ).to_dict(for_json=True)
             if (
                 not isinstance(event, dict)
                 or not isinstance(event.get("id"), str)
@@ -166,7 +172,7 @@ async def webhook_connect(
 async def webhook_account_risk(
     session: AsyncSession = Depends(get_db_session),
     event: dict[str, Any] = Depends(
-        WebhookEventGetter(settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET)
+        WebhookEventGetter(settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET, thin=True)
     ),
 ) -> None:
     if is_account_risk_event(event["type"]):

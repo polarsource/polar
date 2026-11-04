@@ -36,6 +36,7 @@ export const HistogramBar = ({
           height: `${(count / max) * 100}%`,
           minHeight: 2,
           animationDelay: `${(index / total) * BAR_STAGGER_MS}ms`,
+          transition: 'height 200ms cubic-bezier(0, 0, 0, 1)',
         }}
       >
         <Box

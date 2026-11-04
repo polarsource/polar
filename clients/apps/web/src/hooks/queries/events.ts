@@ -122,6 +122,9 @@ export const useEventHierarchyStats = (
   })
 }
 
+type TimeseriesResult =
+  operations['events:list_statistics_timeseries']['responses'][200]['content']['application/json']
+
 type TimeseriesParameters = Omit<
   NonNullable<
     operations['events:list_statistics_timeseries']['parameters']['query']
@@ -157,6 +160,20 @@ export const useEventTimeseriesChunks = (
           }),
         ),
       retry: defaultRetry,
+      // Keep showing the previous result while other filters change, but not
+      // when the chunk covers a different time span.
+      placeholderData: (
+        previous: TimeseriesResult | undefined,
+        previousQuery: { queryKey: readonly unknown[] } | undefined,
+      ) => {
+        const previousChunk = previousQuery?.queryKey[2] as
+          | { start_date?: string; end_date?: string }
+          | undefined
+        return previousChunk?.start_date === chunk.start_date &&
+          previousChunk?.end_date === chunk.end_date
+          ? previous
+          : undefined
+      },
     })),
   })
 }

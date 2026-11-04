@@ -14,9 +14,11 @@ from pydantic import (
     Discriminator,
     Field,
     Json,
+    ValidationInfo,
     WithJsonSchema,
 )
 from pydantic.type_adapter import TypeAdapter
+from pydantic_core import PydanticCustomError
 from pydantic_extra_types.timezone_name import TimeZoneName
 from typing_extensions import TypedDict
 
@@ -925,6 +927,21 @@ type AggregateField = Annotated[
 EventQueryFilter = Annotated[Json[Filter], WithJsonSchema({"type": "string"})]
 
 
+def _validate_query(query: str, info: ValidationInfo) -> str:
+    if info.data is None or "organization_id" not in info.data:
+        return query
+    if info.data["organization_id"] is None:
+        raise PydanticCustomError(
+            "value_error", "Query is only supported when organization_id is provided."
+        )
+    if len(query) < 3:
+        raise PydanticCustomError("query", "Query must be at least 3 characters.")
+    return query
+
+
+EventSearchQuery = Annotated[str, AfterValidator(_validate_query)]
+
+
 class EventListParams(QuerySchema):
     filter: EventQueryFilter | None = Field(
         None,
@@ -959,7 +976,7 @@ class EventListParams(QuerySchema):
     source: MultipleQueryFilter[EventSource] | None = Field(
         None, title="Source Filter", description="Filter by event source."
     )
-    query: str | None = Field(
+    query: EventSearchQuery | None = Field(
         None, title="Query", description="Query to filter events."
     )
     parent_id: EventID | None = Field(
@@ -1002,7 +1019,7 @@ class EventTypeStatisticsParams(QuerySchema):
     source: MultipleQueryFilter[EventSource] | None = Field(
         None, title="Source Filter", description="Filter by event source."
     )
-    query: str | None = Field(
+    query: EventSearchQuery | None = Field(
         None, title="Query", description="Query to filter events."
     )
 
@@ -1120,7 +1137,7 @@ class EventListStatisticsTimeseriesParams(QuerySchema):
         title="Event Type ID Filter",
         description="Filter by event type ID.",
     )
-    query: str | None = Field(
+    query: EventSearchQuery | None = Field(
         None, title="Query", description="Query to filter events."
     )
     aggregate_fields: Sequence[AggregateField] = Field(

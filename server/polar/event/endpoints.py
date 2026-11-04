@@ -60,33 +60,6 @@ from .service import event as event_service
 router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
 
-def _validate_query(query: str | None, organization_id: Sequence[UUID4] | None) -> None:
-    if query is None:
-        return
-    if organization_id is None:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "msg": "Query is only supported when organization_id is provided.",
-                    "loc": ("query", "query"),
-                    "input": query,
-                }
-            ]
-        )
-    if len(query) < 3:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "query",
-                    "msg": "Query must be at least 3 characters.",
-                    "loc": ("query", "query"),
-                    "input": query,
-                }
-            ]
-        )
-
-
 EventNotFound = {"description": "Event not found.", "model": ResourceNotFound.schema()}
 
 
@@ -123,8 +96,6 @@ async def list(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[EventSchema] | ListResourceWithCursorPagination[EventSchema]:
     """List events."""
-
-    _validate_query(filters.query, filters.organization_id)
 
     result = await event_service.list(
         session,
@@ -183,7 +154,6 @@ async def get_statistics_by_type(
     Accepts the same filters as the event list, except the event name, so every
     event type gets a count under the other filters.
     """
-    _validate_query(filters.query, filters.organization_id)
 
     items = await event_service.list_event_type_stats(
         session,
@@ -231,7 +201,6 @@ async def get_histogram(
                 }
             ]
         )
-    _validate_query(filters.query, filters.organization_id)
 
     return await event_service.get_histogram(
         session,
@@ -379,8 +348,6 @@ async def list_statistics_timeseries(
                 }
             ]
         )
-
-    _validate_query(filters.query, filters.organization_id)
 
     return await event_service.list_statistics_timeseries(
         session,

@@ -87,7 +87,7 @@ const ZoneRow = ({
 const TimestampDetails = ({ date }: { date: Date }) => {
   const now = useNow()
   const local = offsetLabel(date)
-  const isUtc = local === 'GMT' || local === 'UTC'
+  const isUtc = date.getTimezoneOffset() === 0
 
   return (
     <Box flexDirection="column" gap="m" padding="xs">

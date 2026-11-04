@@ -73,7 +73,7 @@ const IconButton = ({
   </button>
 )
 
-const PILL_WIDTH = 380
+const PILL_WIDTH = 320
 
 const anchorProps = ({ start, end }: { start: number; end: number }) => ({
   left: `${((start + end) / 2) * 100}%`,

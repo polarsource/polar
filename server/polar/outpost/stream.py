@@ -110,6 +110,7 @@ async def read_changes(
         if after is not None:
             pipeline.xrange(
                 get_changes_key(organization_id),
+                # "(" makes the bound exclusive: the entry at the cursor was read.
                 min=f"({after}",
                 count=limit,
             )

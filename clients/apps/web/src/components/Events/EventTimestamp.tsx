@@ -72,16 +72,9 @@ const ZoneRow = ({
   timeZone?: string
 }) => (
   <>
-    <Box
-      paddingHorizontal="xs"
-      borderRadius="s"
-      backgroundColor="background-card"
-      alignSelf="center"
-    >
-      <Text variant="caption" color="muted" monospace>
-        {label}
-      </Text>
-    </Box>
+    <Text variant="caption" color="muted" monospace>
+      {label}
+    </Text>
     <Text>{formatDate(date, timeZone)}</Text>
     <Box justifyContent="end">
       <Text variant="caption" color="muted" monospace tabularNums>

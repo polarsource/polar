@@ -1122,6 +1122,7 @@ class TestRequests:
         assert payload["meter_ids"] == [str(meter.id)]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])
     async def test_meter_usage(
         self,
         save_fixture: SaveFixture,
@@ -1129,6 +1130,7 @@ class TestRequests:
         organization: Organization,
         customer_external_id: Customer,
         meter: Meter,
+        customer_key: str,
     ) -> None:
         customer = customer_external_id
         assert customer.external_id is not None
@@ -1139,9 +1141,14 @@ class TestRequests:
             save_fixture, organization, reducer, customer.external_id, 4
         )
 
+        customer_value = {
+            "customer_id": str(customer.id),
+            "external_customer_id": customer.external_id,
+        }[customer_key]
+
         response = await client.post(
             "/v1/outpost/meter-usage",
-            json={"reducer_id": str(reducer.id), "customer_id": str(customer.id)},
+            json={"reducer_id": str(reducer.id), customer_key: customer_value},
         )
 
         assert response.status_code == 200

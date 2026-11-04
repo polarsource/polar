@@ -17,8 +17,8 @@ down_revision = "30bb4db922cb"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
-# Provisional: set after the consent fix is fully deployed, before merging.
-CONSENT_CUTOVER = datetime(2026, 11, 4, tzinfo=UTC)
+# Consent fix deployment: https://github.com/polarsource/polar/actions/runs/41813539755
+CONSENT_CUTOVER = datetime(2026, 11, 4, 10, 27, 13, tzinfo=UTC)
 
 
 def upgrade() -> None:

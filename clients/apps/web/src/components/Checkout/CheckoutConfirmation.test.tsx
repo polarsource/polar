@@ -17,6 +17,12 @@ describe('CheckoutConfirmation', () => {
     ).toBeInTheDocument()
   })
 
+  it('states when a trial ends', () => {
+    renderConfirmation({ checkout: { trial_end: '2026-12-27T12:00:00Z' } })
+
+    expect(screen.getByText('Free until December 27, 2026')).toBeInTheDocument()
+  })
+
   it('shows processing until the checkout succeeds, then the success state', async () => {
     const { api } = renderConfirmation({ checkout: { status: 'confirmed' } })
 

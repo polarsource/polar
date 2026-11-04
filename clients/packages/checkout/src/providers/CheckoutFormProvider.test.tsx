@@ -800,6 +800,24 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().errors.root).toBeUndefined()
     })
 
+    it('never mentions payment for a card setup without a charge, like a free trial', async () => {
+      const stripe = makeStripe(
+        vi.fn(async () => ({ setupIntent: { status: 'succeeded' } })),
+      )
+
+      const getCtx = renderWithCheckout({
+        checkout: { ...paidCheckout, is_payment_required: false },
+        update: vi.fn(),
+        confirm: makeConfirm(),
+      })
+
+      await act(async () => {
+        await getCtx().confirm({ customer_email: 'a@b.com' }, stripe, elements)
+      })
+
+      expect(getCtx().loadingLabel).toBe('Processing order...')
+    })
+
     it('starts a new payment on the next submit after a dismissal', async () => {
       const handleNextAction = vi
         .fn()

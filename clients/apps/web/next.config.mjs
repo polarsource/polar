@@ -199,6 +199,11 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/auth.md',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/auth.md`,
+        permanent: false,
+      },
 
       // Logged-in user redirections
       {

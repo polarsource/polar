@@ -2157,9 +2157,12 @@ class TestSyncCredits:
         for _ in range(2):
             await reducer_service.sync_credits(session, customer, meter.id)
 
-            count, total, _, _ = await ReducerBucketRepository.from_session(
+            totals = await ReducerBucketRepository.from_session(
                 session
-            ).get_unsealed_totals(organization.id, credit.id, [(customer.id, None)])
+            ).get_unsealed_totals_by_identity(
+                organization.id, credit.id, {(customer.id, None): None}
+            )
+            count, total, _, _ = totals[(customer.id, None)]
             assert (count, total) == (2, 10)
 
 

@@ -2,7 +2,7 @@ import re
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
 from decimal import Decimal
-from typing import Annotated, Literal, NotRequired
+from typing import Annotated, Literal, NotRequired, Self
 
 from annotated_types import Len, Predicate
 from fastapi import Path
@@ -14,8 +14,8 @@ from pydantic import (
     Discriminator,
     Field,
     Json,
-    ValidationInfo,
     WithJsonSchema,
+    model_validator,
 )
 from pydantic.type_adapter import TypeAdapter
 from pydantic_core import PydanticCustomError
@@ -927,22 +927,29 @@ type AggregateField = Annotated[
 EventQueryFilter = Annotated[Json[Filter], WithJsonSchema({"type": "string"})]
 
 
-def _validate_query(query: str, info: ValidationInfo) -> str:
-    if info.data is None or "organization_id" not in info.data:
-        return query
-    if info.data["organization_id"] is None:
-        raise PydanticCustomError(
-            "value_error", "Query is only supported when organization_id is provided."
-        )
-    if len(query) < 3:
-        raise PydanticCustomError("query", "Query must be at least 3 characters.")
-    return query
+class EventSearchParams(QuerySchema):
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    query: str | None = Field(
+        None, title="Query", description="Query to filter events."
+    )
+
+    @model_validator(mode="after")
+    def validate_search_query(self) -> Self:
+        if self.query is None:
+            return self
+        if self.organization_id is None:
+            raise PydanticCustomError(
+                "value_error",
+                "Query is only supported when organization_id is provided.",
+            )
+        if len(self.query) < 3:
+            raise PydanticCustomError("query", "Query must be at least 3 characters.")
+        return self
 
 
-EventSearchQuery = Annotated[str, AfterValidator(_validate_query)]
-
-
-class EventListParams(QuerySchema):
+class EventListParams(EventSearchParams):
     filter: EventQueryFilter | None = Field(
         None,
         description=(
@@ -955,9 +962,6 @@ class EventListParams(QuerySchema):
     )
     end_timestamp: AwareDatetime | None = Field(
         None, description="Filter events before this timestamp."
-    )
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
     )
     customer_id: MultipleQueryFilter[CustomerID] | None = Field(
         None, title="CustomerID Filter", description="Filter by customer ID."
@@ -976,9 +980,6 @@ class EventListParams(QuerySchema):
     source: MultipleQueryFilter[EventSource] | None = Field(
         None, title="Source Filter", description="Filter by event source."
     )
-    query: EventSearchQuery | None = Field(
-        None, title="Query", description="Query to filter events."
-    )
     parent_id: EventID | None = Field(
         None,
         description="When combined with depth, use this event as the anchor instead of root events.",
@@ -991,7 +992,7 @@ class EventListParams(QuerySchema):
     )
 
 
-class EventTypeStatisticsParams(QuerySchema):
+class EventTypeStatisticsParams(EventSearchParams):
     filter: EventQueryFilter | None = Field(
         None,
         description=(
@@ -1005,9 +1006,6 @@ class EventTypeStatisticsParams(QuerySchema):
     end_timestamp: AwareDatetime | None = Field(
         None, description="Filter events before this timestamp."
     )
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    )
     customer_id: MultipleQueryFilter[CustomerID] | None = Field(
         None, title="CustomerID Filter", description="Filter by customer ID."
     )
@@ -1018,9 +1016,6 @@ class EventTypeStatisticsParams(QuerySchema):
     )
     source: MultipleQueryFilter[EventSource] | None = Field(
         None, title="Source Filter", description="Filter by event source."
-    )
-    query: EventSearchQuery | None = Field(
-        None, title="Query", description="Query to filter events."
     )
 
 
@@ -1094,7 +1089,7 @@ class EventStatisticsByVarianceParams(EventStatisticsParams):
     limit: int = Field(default=100, le=1000)
 
 
-class EventListStatisticsTimeseriesParams(QuerySchema):
+class EventListStatisticsTimeseriesParams(EventSearchParams):
     start_date: date = Field(
         ...,
         description="Start date.",
@@ -1111,9 +1106,6 @@ class EventListStatisticsTimeseriesParams(QuerySchema):
             "Filter events following filter clauses. "
             "JSON string following the same schema a meter filter clause. "
         ),
-    )
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
     )
     customer_id: MultipleQueryFilter[CustomerID] | None = Field(
         None, title="CustomerID Filter", description="Filter by customer ID."
@@ -1136,9 +1128,6 @@ class EventListStatisticsTimeseriesParams(QuerySchema):
         None,
         title="Event Type ID Filter",
         description="Filter by event type ID.",
-    )
-    query: EventSearchQuery | None = Field(
-        None, title="Query", description="Query to filter events."
     )
     aggregate_fields: Sequence[AggregateField] = Field(
         default=["_cost.amount"],

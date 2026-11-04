@@ -12,7 +12,7 @@ from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import Logger
 from polar.models import Organization
 from polar.openapi import APITag
-from polar.postgres import get_db_sessionmaker
+from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -144,15 +144,14 @@ async def changes(
     cursor: Annotated[stream.Cursor | None, Query()] = None,
     limit: Annotated[int, Query(ge=1, le=1000)] = 500,
     redis: Redis = Depends(get_redis),
-    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+    # The primary: a change is logged after its commit, a replica may not have it yet.
+    session: AsyncSession = Depends(get_db_session),
 ) -> Changes:
     """The snapshots that changed since the cursor. Without a cursor, the cursor to
     start from."""
-    # The primary: a change is logged after its commit, a replica may not have it yet.
-    async with sessionmaker() as session:
-        return await outpost_service.get_changes(
-            session, redis, auth_subject.subject, cursor, limit
-        )
+    return await outpost_service.get_changes(
+        session, redis, auth_subject.subject, cursor, limit
+    )
 
 
 @router.post("/telemetry", include_in_schema=False)

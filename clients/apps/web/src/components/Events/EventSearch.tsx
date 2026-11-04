@@ -98,11 +98,16 @@ const Token = ({
   )
 
   return (
-    <span className="dark:bg-polar-900 inline-flex min-w-0 items-center rounded-full bg-gray-100">
+    <span
+      className={twMerge(
+        'dark:bg-polar-900 inline-flex min-w-0 items-center rounded-full bg-gray-100 transition-colors',
+        onEdit && 'dark:hover:bg-polar-700 hover:bg-gray-200',
+      )}
+    >
       {onEdit ? (
         <button
           type="button"
-          className="dark:hover:bg-polar-700 flex min-w-0 cursor-pointer items-center rounded-full text-left hover:bg-gray-200"
+          className="flex min-w-0 cursor-pointer items-center rounded-full text-left"
           aria-label={`Edit ${children}`}
           onClick={(e) => {
             e.stopPropagation()

@@ -116,7 +116,7 @@ export const EventTimestamp = ({
     <TooltipTrigger asChild>
       <span className="inline-flex max-w-full min-w-0">{children}</span>
     </TooltipTrigger>
-    <TooltipContent side="bottom" align="start" className="p-3">
+    <TooltipContent side="left" align="center" className="p-3">
       <TimestampDetails date={new Date(timestamp)} />
     </TooltipContent>
   </Tooltip>

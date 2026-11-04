@@ -13,7 +13,7 @@ from polar.kit.db.postgres import AsyncSessionMaker
 from polar.logging import Logger
 from polar.models import Organization
 from polar.openapi import APITag
-from polar.postgres import AsyncSession, get_db_session
+from polar.postgres import AsyncSession, get_db_session, get_db_sessionmaker
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
@@ -170,11 +170,10 @@ ReducerNotFound = {
 @router.get("/configuration", response_model=ConfigurationOutgoingMessagePayload)
 async def configuration(
     auth_subject: OutpostWrite,
-    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+    session: AsyncSession = Depends(get_db_session),
 ) -> ConfigurationOutgoingMessagePayload:
     """The reducers Outpost runs."""
-    async with sessionmaker() as session:
-        return await outpost_service.get_configuration(session, auth_subject.subject)
+    return await outpost_service.get_configuration(session, auth_subject.subject)
 
 
 @router.post(
@@ -185,13 +184,12 @@ async def configuration(
 async def meter_usage(
     payload: MeterUsageIncomingMessagePayload,
     auth_subject: OutpostWrite,
-    sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+    session: AsyncSession = Depends(get_db_session),
 ) -> list[MeterUsageOutgoingMessagePayload]:
     """The snapshot of every identity of the customer."""
-    async with sessionmaker() as session:
-        snapshots = await outpost_service.get_requested_meter_usage(
-            session, auth_subject.subject, payload
-        )
+    snapshots = await outpost_service.get_requested_meter_usage(
+        session, auth_subject.subject, payload
+    )
     if snapshots is None:
         raise ResourceNotFound()
     return snapshots
@@ -208,7 +206,7 @@ async def confirm(
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
 ) -> ConfirmedOutgoingMessagePayload:
     """The pending ids Polar counts, with the snapshot that counts them."""
-    # A session of its own, on the primary: the ids it reads were just stored.
+    # A session of its own on the primary: the ids it reads were just stored.
     async with sessionmaker() as session:
         confirmed = await outpost_service.confirm(
             session, auth_subject.subject, payload

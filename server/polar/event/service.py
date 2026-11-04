@@ -147,8 +147,6 @@ class EventService:
 
         (
             query_filters,
-            matching_cust_ids,
-            matching_ext_ids,
             numeric_metadata_property,
         ) = await self._resolve_tinybird_filters(
             session,
@@ -156,7 +154,6 @@ class EventService:
             organization_ids,
             filter=filter,
             meter_id=meter_id,
-            query=query,
         )
 
         customer_repository = CustomerRepository.from_session(session)
@@ -194,8 +191,6 @@ class EventService:
             filters=query_filters,
             metadata=metadata,
             query=query,
-            matching_customer_ids=matching_cust_ids,
-            matching_external_customer_ids=matching_ext_ids,
             numeric_metadata_property=numeric_metadata_property,
             depth=depth,
             parent_id=parent_id,
@@ -354,8 +349,6 @@ class EventService:
 
         (
             query_filters,
-            matching_cust_ids,
-            matching_ext_ids,
             numeric_metadata_property,
         ) = await self._resolve_tinybird_filters(
             session,
@@ -363,7 +356,6 @@ class EventService:
             organization_ids,
             filter=filter,
             meter_id=meter_id,
-            query=query,
         )
 
         customer_repository = CustomerRepository.from_session(session)
@@ -395,8 +387,6 @@ class EventService:
             "filters": query_filters,
             "metadata": metadata,
             "query": query,
-            "matching_customer_ids": matching_cust_ids,
-            "matching_external_customer_ids": matching_ext_ids,
             "numeric_metadata_property": numeric_metadata_property,
         }
 
@@ -527,11 +517,9 @@ class EventService:
 
         (
             query_filters,
-            matching_cust_ids,
-            matching_ext_ids,
             _,
         ) = await self._resolve_tinybird_filters(
-            session, auth_subject, organization_ids, filter=filter, query=query
+            session, auth_subject, organization_ids, filter=filter
         )
 
         all_customer_ids, all_external_ids = await self._expand_customer_ids(
@@ -548,8 +536,6 @@ class EventService:
             filters=query_filters,
             metadata=metadata,
             query=query,
-            matching_customer_ids=matching_cust_ids,
-            matching_external_customer_ids=matching_ext_ids,
         )
         return await event_type_service.build_with_stats(session, stats)
 
@@ -586,11 +572,9 @@ class EventService:
         if organization_ids:
             (
                 query_filters,
-                matching_cust_ids,
-                matching_ext_ids,
                 _,
             ) = await self._resolve_tinybird_filters(
-                session, auth_subject, organization_ids, filter=filter, query=query
+                session, auth_subject, organization_ids, filter=filter
             )
             all_customer_ids, all_external_ids = await self._expand_customer_ids(
                 session, organization_ids, customer_id, external_customer_id
@@ -607,8 +591,6 @@ class EventService:
                 filters=query_filters,
                 metadata=metadata,
                 query=query,
-                matching_customer_ids=matching_cust_ids,
-                matching_external_customer_ids=matching_ext_ids,
             )
 
         buckets: list[EventHistogramBucket] = []
@@ -1015,13 +997,7 @@ class EventService:
         *,
         filter: Filter | None = None,
         meter_id: uuid.UUID | None = None,
-        query: str | None = None,
-    ) -> tuple[
-        Sequence[Filter],
-        Sequence[uuid.UUID] | None,
-        Sequence[str] | None,
-        str | None,
-    ]:
+    ) -> tuple[Sequence[Filter], str | None]:
         query_filters: list[Filter] = []
         if filter is not None:
             query_filters.append(filter)
@@ -1049,21 +1025,7 @@ class EventService:
                 if prop not in Event._filterable_fields:
                     numeric_metadata_property = prop
 
-        matching_cust_ids: list[uuid.UUID] | None = None
-        matching_ext_ids: list[str] | None = None
-        if query is not None:
-            customer_repository = CustomerRepository.from_session(session)
-            (
-                matching_cust_ids,
-                matching_ext_ids,
-            ) = await customer_repository.search_by_query(organization_ids, query)
-
-        return (
-            query_filters,
-            matching_cust_ids,
-            matching_ext_ids,
-            numeric_metadata_property,
-        )
+        return query_filters, numeric_metadata_property
 
     async def ingest(
         self,

@@ -671,12 +671,7 @@ class TinybirdEventsQuery:
             self._filters.append(or_(*[attr == v for v in values]))
         return self
 
-    def filter_by_query(
-        self,
-        query: str,
-        matching_customer_ids: Sequence[UUID] | None = None,
-        matching_external_customer_ids: Sequence[str] | None = None,
-    ) -> Self:
+    def filter_by_query(self, query: str) -> Self:
         conditions: list[Any] = [
             _icontains(events_table.c.name, query),
             _icontains(events_table.c.source, query),
@@ -687,16 +682,6 @@ class TinybirdEventsQuery:
             conditions.append(events_table.c.id == str(UUID(query)))
         except ValueError:
             pass
-        if matching_customer_ids:
-            conditions.append(
-                events_table.c.customer_id.in_([str(c) for c in matching_customer_ids])
-            )
-        if matching_external_customer_ids:
-            conditions.append(
-                events_table.c.external_customer_id.in_(
-                    list(matching_external_customer_ids)
-                )
-            )
         self._filters.append(or_(*conditions))
         return self
 

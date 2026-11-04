@@ -403,7 +403,7 @@ class ProductService:
         await session.flush()
 
         if notify:
-            await self._after_product_created(session, auth_subject, product)
+            await self.after_product_created(session, auth_subject, product)
 
         return product
 
@@ -1037,7 +1037,7 @@ class ProductService:
         product.is_archived = False
         return product
 
-    async def _after_product_created(
+    async def after_product_created(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],

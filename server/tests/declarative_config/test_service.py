@@ -80,6 +80,7 @@ from polar.product.tiers import Tiers
 from polar.redis import Redis
 from polar.version import CURRENT_API_VERSION, V2026_04
 from polar.webhook.repository import WebhookEndpointRepository
+from polar.webhook.service import webhook as webhook_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -851,6 +852,45 @@ class TestApply:
         assert {change.action for change in unchanged.changes} == {
             ConfigAction.unchanged
         }
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_created_webhooks_carry_external_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        sent: list[tuple[WebhookEventType, str | None]] = []
+
+        async def record_webhook(
+            session: AsyncSession,
+            target: Organization,
+            event: WebhookEventType,
+            data: Any,
+        ) -> list[Any]:
+            sent.append((event, data.external_id))
+            return []
+
+        mocker.patch.object(webhook_service, "send", side_effect=record_webhook)
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT],
+                    "products": [{**MONTHLY_PRO, "benefits": ["beta"]}],
+                }
+            ),
+        )
+
+        assert sent == [
+            (WebhookEventType.benefit_created, "beta"),
+            (WebhookEventType.product_created, "pro"),
+            (WebhookEventType.product_updated, "pro"),
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_deprecated_product_not_created(

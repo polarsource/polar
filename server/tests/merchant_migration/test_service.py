@@ -2096,7 +2096,7 @@ class TestImportCatalog:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
-        after_created = mocker.spy(product_service, "_after_product_created")
+        after_created = mocker.spy(product_service, "after_product_created")
 
         await _import_catalog(session, auth_subject, migration.id)
 

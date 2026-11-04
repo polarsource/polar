@@ -708,6 +708,7 @@ class DeclarativeConfigService:
                                 meter_ids,
                             ),
                             auth_subject,
+                            notify=False,
                             declarative_config=True,
                         )
                         update_dict: dict[str, Any] = {
@@ -727,6 +728,9 @@ class DeclarativeConfigService:
                     if _constraint_name(e) != _BENEFIT_EXTERNAL_ID_INDEX:
                         raise
                     raise ConfigBenefitConflict() from e
+                await webhook_service.send(
+                    session, organization, WebhookEventType.benefit_created, benefit
+                )
                 new_benefits[change.config.external_id] = benefit
             benefit_ids[change.config.external_id] = benefit.id
             results.append(
@@ -779,6 +783,7 @@ class DeclarativeConfigService:
                                     meter_ids,
                                 ),
                                 auth_subject,
+                                notify=False,
                                 declarative_config=True,
                             )
                             if change.existing is not None:
@@ -792,6 +797,9 @@ class DeclarativeConfigService:
                         if _constraint_name(e) != _PRODUCT_EXTERNAL_ID_INDEX:
                             raise
                         raise ConfigProductConflict() from e
+                    await product_service.after_product_created(
+                        session, auth_subject, product
+                    )
                 if (change.existing is None or copy_on_write) and config.benefits:
                     await product_service.update_benefits(
                         session,

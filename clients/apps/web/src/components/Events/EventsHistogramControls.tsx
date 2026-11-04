@@ -41,7 +41,7 @@ export const formatTimeRange = ({ from, to }: TimeRange, hourly: boolean) => {
   if (hourly) {
     return isSameDay(from, last)
       ? `${formatDay(from)}, ${formatTime(from)}–${formatTime(to)}`
-      : `${formatDay(from)} ${formatTime(from)} – ${formatDay(last)} ${formatTime(to)}`
+      : `${formatDay(from)}, ${formatTime(from)} – ${formatDay(last)}, ${formatTime(to)}`
   }
   if (isSameDay(from, last)) return formatDay(from)
   if (

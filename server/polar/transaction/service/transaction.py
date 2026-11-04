@@ -6,7 +6,7 @@ from typing import Any, cast
 
 from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload, subqueryload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject
@@ -57,17 +57,17 @@ class TransactionService(BaseTransactionService):
 
         statement = statement.options(
             # Incurred transactions
-            subqueryload(Transaction.account_incurred_transactions),
+            selectinload(Transaction.account_incurred_transactions),
             # Pledge
-            subqueryload(Transaction.pledge),
+            selectinload(Transaction.pledge),
             # IssueReward
-            subqueryload(Transaction.issue_reward),
+            selectinload(Transaction.issue_reward),
             # Order
-            subqueryload(Transaction.order).options(
+            selectinload(Transaction.order).options(
                 joinedload(Order.product).options(joinedload(Product.organization)),
             ),
             # Payment Transaction
-            subqueryload(Transaction.payment_transaction),
+            selectinload(Transaction.payment_transaction),
         )
 
         if type is not None:

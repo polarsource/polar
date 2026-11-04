@@ -786,7 +786,7 @@ class Settings(BaseSettings):
 
     def _build_postgres_dsn(
         self,
-        driver: Literal["asyncpg", "psycopg2"],
+        driver: Literal["asyncpg", "psycopg"],
         *,
         username: str | None,
         password: str | None,
@@ -818,7 +818,7 @@ class Settings(BaseSettings):
             },
         ).render_as_string(hide_password=False)
 
-    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
+    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg"]) -> str:
         return self._build_postgres_dsn(
             driver,
             username=self.POSTGRES_USER,
@@ -842,7 +842,7 @@ class Settings(BaseSettings):
         )
 
     def get_postgres_read_dsn(
-        self, driver: Literal["asyncpg", "psycopg2"]
+        self, driver: Literal["asyncpg", "psycopg"]
     ) -> str | None:
         if not self.is_read_replica_configured():
             return None

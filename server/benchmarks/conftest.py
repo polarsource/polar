@@ -57,7 +57,7 @@ def run(loop: asyncio.AbstractEventLoop) -> Run[typing.Any]:
 
 @pytest.fixture(scope="session", autouse=True)
 def database() -> collections.abc.Iterator[None]:
-    sync_url = get_database_url(DATABASE, "psycopg2")
+    sync_url = get_database_url(DATABASE, "psycopg")
     if database_exists(sync_url):
         drop_database(sync_url)
     create_database(sync_url)

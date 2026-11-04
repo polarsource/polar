@@ -79,10 +79,10 @@ class BenefitService:
                     ).get_draft_benefit_ids_statement()
                 )
             )
-        elif id_in is None:
-            statement = statement.where(Benefit.is_current)
         if id_in is not None:
             statement = statement.where(Benefit.id.in_(id_in))
+        elif catalog is None:
+            statement = statement.where(Benefit.is_current)
 
         if id_not_in is not None:
             statement = statement.where(Benefit.id.notin_(id_not_in))

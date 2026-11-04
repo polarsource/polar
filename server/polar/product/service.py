@@ -153,10 +153,10 @@ class ProductService:
                     ).get_draft_product_ids_statement()
                 )
             )
-        elif id is None:
-            statement = statement.where(Product.is_current)
         if id is not None:
             statement = statement.where(Product.id.in_(id))
+        elif catalog is None:
+            statement = statement.where(Product.is_current)
 
         if external_id is not None:
             statement = statement.where(Product.external_id.in_(external_id))

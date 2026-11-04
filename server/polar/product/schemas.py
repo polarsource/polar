@@ -1270,8 +1270,8 @@ class ProductListParams(QuerySchema):
     ] = Field(
         None,
         description=(
-            "With `draft`, return the products of the draft catalog instead of "
-            "the current ones."
+            "With `draft`, only return the products of the organization's draft "
+            "catalog."
         ),
     )
 

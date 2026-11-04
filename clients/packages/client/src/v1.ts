@@ -48236,7 +48236,7 @@ export interface operations {
         exclude_id?: string | string[] | null
         /** @description Filter by description. */
         query?: string | null
-        /** @description With `draft`, return the benefits of the draft catalog instead of the current ones. */
+        /** @description With `draft`, only return the benefits of the organization's draft catalog. */
         catalog?: 'draft' | null
         /** @description Page number, defaults to 1. */
         page?: number
@@ -49019,7 +49019,7 @@ export interface operations {
         benefit_id?: string | string[] | null
         /** @description Filter by visibility. */
         visibility?: components['schemas']['ProductVisibility'][] | null
-        /** @description With `draft`, return the products of the draft catalog instead of the current ones. */
+        /** @description With `draft`, only return the products of the organization's draft catalog. */
         catalog?: 'draft' | null
         /** @description Page number, defaults to 1. */
         page?: number

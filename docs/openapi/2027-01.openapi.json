@@ -2492,10 +2492,10 @@
                   "type": "null"
                 }
               ],
-              "description": "With `draft`, return the benefits of the draft catalog instead of the current ones.",
+              "description": "With `draft`, only return the benefits of the organization's draft catalog.",
               "title": "Catalog"
             },
-            "description": "With `draft`, return the benefits of the draft catalog instead of the current ones."
+            "description": "With `draft`, only return the benefits of the organization's draft catalog."
           },
           {
             "name": "page",
@@ -5181,10 +5181,10 @@
                   "type": "null"
                 }
               ],
-              "description": "With `draft`, return the products of the draft catalog instead of the current ones.",
+              "description": "With `draft`, only return the products of the organization's draft catalog.",
               "title": "Catalog"
             },
-            "description": "With `draft`, return the products of the draft catalog instead of the current ones."
+            "description": "With `draft`, only return the products of the organization's draft catalog."
           },
           {
             "name": "page",

@@ -102,7 +102,10 @@ export const useHistogramSelection = (
       case 'resize-start':
         return symmetric
           ? around(center, center - position)
-          : { start: Math.min(position, initial.end), end: initial.end }
+          : {
+              start: Math.min(position, initial.end - 1 / barCount),
+              end: initial.end,
+            }
       case 'resize-end':
         return symmetric
           ? around(center, position - center)

@@ -63,77 +63,70 @@ const Token = ({
   const field = separator >= 0 ? children.slice(0, separator) : children
   const value = separator >= 0 ? children.slice(separator + 1) : ''
 
-  return (
-    <span
-      className={twMerge(
-        'dark:bg-polar-900 inline-flex min-w-0 rounded-full bg-gray-100',
-        onEdit && 'dark:hover:bg-polar-700 cursor-pointer hover:bg-gray-200',
-      )}
-      role={onEdit ? 'button' : undefined}
-      tabIndex={onEdit ? 0 : undefined}
-      onClick={
-        onEdit
-          ? (e) => {
-              e.stopPropagation()
-              onEdit()
-            }
-          : undefined
-      }
-      onKeyDown={
-        onEdit
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onEdit()
-              }
-            }
-          : undefined
-      }
+  const label = (
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      gap="xs"
+      paddingLeft="m"
+      paddingRight={onRemove ? 'xs' : 'm'}
+      paddingVertical="xs"
+      minWidth={0}
     >
-      <Box
-        as="span"
-        display="inline-flex"
-        alignItems="center"
-        gap="xs"
-        paddingLeft="m"
-        paddingRight={onRemove ? 's' : 'm'}
-        paddingVertical="xs"
-        minWidth={0}
-      >
-        {colon ? (
-          <Text as="span" truncate>
-            <Text as="span" color="muted">
-              {field}
-              {separator >= 0 ? ':' : ''}
-            </Text>
-            {value}
+      {colon ? (
+        <Text as="span" truncate>
+          <Text as="span" color="muted">
+            {field}
+            {separator >= 0 ? ':' : ''}
           </Text>
-        ) : (
-          <>
-            <Text as="span" color="muted">
-              {field}
+          {value}
+        </Text>
+      ) : (
+        <>
+          <Text as="span" color="muted">
+            {field}
+          </Text>
+          {value && (
+            <Text as="span" truncate>
+              {value}
             </Text>
-            {value && (
-              <Text as="span" truncate>
-                {value}
-              </Text>
-            )}
-          </>
-        )}
-        {onRemove && (
-          <button
-            type="button"
-            className="dark:text-polar-500 dark:hover:text-polar-200 flex cursor-pointer items-center text-gray-400 hover:text-gray-700"
-            aria-label={`Remove ${children}`}
-            onClick={(e) => {
-              e.stopPropagation()
-              onRemove()
-            }}
-          >
-            <X className="h-3 w-3" />
-          </button>
-        )}
-      </Box>
+          )}
+        </>
+      )}
+    </Box>
+  )
+
+  return (
+    <span className="dark:bg-polar-900 inline-flex min-w-0 items-center rounded-full bg-gray-100">
+      {onEdit ? (
+        <button
+          type="button"
+          className="dark:hover:bg-polar-700 flex min-w-0 cursor-pointer items-center rounded-full text-left hover:bg-gray-200"
+          aria-label={`Edit ${children}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onEdit()
+          }}
+        >
+          {label}
+        </button>
+      ) : (
+        label
+      )}
+      {onRemove && (
+        <button
+          type="button"
+          className="dark:text-polar-500 dark:hover:text-polar-200 flex cursor-pointer items-center pr-2 text-gray-400 hover:text-gray-700"
+          aria-label={`Remove ${children}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onRemove()
+          }}
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
     </span>
   )
 }
@@ -321,7 +314,14 @@ export const EventSearch = ({
           kind: 'metadata',
           token: `metadata.${key}:${raw}`,
           apply: () => {
-            onMetadataChange({ ...metadataBase, [key]: raw })
+            const existing = metadata[key]
+            onMetadataChange({
+              ...metadataBase,
+              [key]:
+                existing !== undefined && String(existing) === raw
+                  ? existing
+                  : raw,
+            })
             commit('')
           },
         },

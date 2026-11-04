@@ -1,17 +1,29 @@
-import { useCustomers, useCustomersByIds } from '@/hooks/queries'
+import { useCustomer, useCustomers, useCustomersByIds } from '@/hooks/queries'
 import { useEventNames } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Search, X } from '@polar-sh/orbit/icons'
+import { DateRangeInterval } from '@/components/Metrics/DateRangePicker'
 import { useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type Metadata = Record<string, string | number | boolean>
 type EventSource = schemas['EventSource']
 
+type ChipKind = 'time' | 'event' | 'customer' | 'source' | 'metadata'
+
+interface Chip {
+  kind: ChipKind
+  value: string
+  token: string
+  edit: string
+  remove?: () => void
+}
+
 interface Suggestion {
   section: 'Suggestions' | 'Filters' | 'Event'
+  kind?: ChipKind
   token: string
   hint?: string
   apply: () => void
@@ -21,6 +33,7 @@ const FILTER_PREFIXES = [
   { token: 'event:', hint: 'Event name' },
   { token: 'customer:', hint: 'Name or email' },
   { token: 'source:', hint: 'user or system' },
+  { token: 'time:', hint: 'Time range' },
   { token: 'metadata.', hint: 'metadata.key:value' },
 ]
 
@@ -37,9 +50,13 @@ const inputToQuery = (input: string) => {
 
 const Token = ({
   children,
+  colon = false,
+  onEdit,
   onRemove,
 }: {
   children: string
+  colon?: boolean
+  onEdit?: () => void
   onRemove?: () => void
 }) => {
   const separator = children.indexOf(':')
@@ -47,36 +64,77 @@ const Token = ({
   const value = separator >= 0 ? children.slice(separator + 1) : ''
 
   return (
-    <Box
-      as="span"
-      display="inline-flex"
-      alignItems="center"
-      gap="xs"
-      paddingLeft="m"
-      paddingRight={onRemove ? 's' : 'm'}
-      paddingVertical="xs"
-      borderRadius="s"
-      backgroundColor="background-secondary"
-      minWidth={0}
-    >
-      <Text as="span" truncate>
-        <Text as="span" color="muted">
-          {field}
-          {separator >= 0 ? ':' : ''}
-        </Text>
-        {value}
-      </Text>
-      {onRemove && (
-        <button
-          type="button"
-          className="dark:text-polar-500 dark:hover:text-polar-200 flex cursor-pointer items-center text-gray-400 hover:text-gray-700"
-          aria-label={`Remove ${children}`}
-          onClick={onRemove}
-        >
-          <X className="h-3 w-3" />
-        </button>
+    <span
+      className={twMerge(
+        'dark:bg-polar-900 inline-flex min-w-0 rounded-full bg-gray-100',
+        onEdit && 'dark:hover:bg-polar-700 cursor-pointer hover:bg-gray-200',
       )}
-    </Box>
+      role={onEdit ? 'button' : undefined}
+      tabIndex={onEdit ? 0 : undefined}
+      onClick={
+        onEdit
+          ? (e) => {
+              e.stopPropagation()
+              onEdit()
+            }
+          : undefined
+      }
+      onKeyDown={
+        onEdit
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onEdit()
+              }
+            }
+          : undefined
+      }
+    >
+      <Box
+        as="span"
+        display="inline-flex"
+        alignItems="center"
+        gap="xs"
+        paddingLeft="m"
+        paddingRight={onRemove ? 's' : 'm'}
+        paddingVertical="xs"
+        minWidth={0}
+      >
+        {colon ? (
+          <Text as="span" truncate>
+            <Text as="span" color="muted">
+              {field}
+              {separator >= 0 ? ':' : ''}
+            </Text>
+            {value}
+          </Text>
+        ) : (
+          <>
+            <Text as="span" color="muted">
+              {field}
+            </Text>
+            {value && (
+              <Text as="span" truncate>
+                {value}
+              </Text>
+            )}
+          </>
+        )}
+        {onRemove && (
+          <button
+            type="button"
+            className="dark:text-polar-500 dark:hover:text-polar-200 flex cursor-pointer items-center text-gray-400 hover:text-gray-700"
+            aria-label={`Remove ${children}`}
+            onClick={(e) => {
+              e.stopPropagation()
+              onRemove()
+            }}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </Box>
+    </span>
   )
 }
 
@@ -92,6 +150,10 @@ export const EventSearch = ({
   onSourceChange,
   metadata,
   onMetadataChange,
+  timeRangeLabel,
+  onClearTimeRange,
+  timeRanges,
+  onTimeRangeChange,
   onOpenEvent,
 }: {
   organizationId: string
@@ -105,6 +167,10 @@ export const EventSearch = ({
   onSourceChange: (source: EventSource | null) => void
   metadata: Metadata
   onMetadataChange: (metadata: Metadata | null) => void
+  timeRangeLabel: string | null
+  onClearTimeRange?: () => void
+  timeRanges: DateRangeInterval[]
+  onTimeRangeChange: (interval: DateRangeInterval) => void
   onOpenEvent: (id: string) => void
 }) => {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -118,6 +184,20 @@ export const EventSearch = ({
   }
   const [open, setOpen] = useState(false)
   const [highlighted, setHighlighted] = useState(-1)
+  const [editing, setEditing] = useState<Chip | null>(null)
+  const editingValue = (kind: ChipKind) =>
+    editing?.kind === kind ? editing.value : null
+  const eventTypesBase = selectedEventTypes.filter(
+    (name) => name !== editingValue('event'),
+  )
+  const customerIdsBase = selectedCustomerIds.filter(
+    (id) => id !== editingValue('customer'),
+  )
+  const metadataBase = Object.fromEntries(
+    Object.entries(metadata).filter(
+      ([key]) => key !== editingValue('metadata'),
+    ),
+  )
 
   const match = TOKEN_PATTERN.exec(input.trim())
   const field = match?.[1].toLowerCase() ?? null
@@ -132,7 +212,15 @@ export const EventSearch = ({
     query: field === 'customer' ? value : undefined,
     limit: 8,
   })
-  const customers = customerPages?.pages.flatMap((page) => page.items) ?? []
+  const { data: customerById } = useCustomer(
+    field === 'customer' && UUID_PATTERN.test(value) ? value : null,
+  )
+  const customers = [
+    ...(customerById ? [customerById] : []),
+    ...(customerPages?.pages.flatMap((page) => page.items) ?? []).filter(
+      (customer) => customer.id !== customerById?.id,
+    ),
+  ]
   const selectedCustomers = useCustomersByIds(selectedCustomerIds)
 
   const commit = (next: string) => {
@@ -142,9 +230,11 @@ export const EventSearch = ({
   }
 
   const addEventType = (name: string) => {
-    if (!selectedEventTypes.includes(name)) {
-      onEventTypesChange([...selectedEventTypes, name])
-    }
+    onEventTypesChange(
+      eventTypesBase.includes(name)
+        ? eventTypesBase
+        : [...eventTypesBase, name],
+    )
     commit('')
   }
 
@@ -152,7 +242,7 @@ export const EventSearch = ({
     eventTypes
       .filter(
         (eventType) =>
-          !selectedEventTypes.includes(eventType.name) &&
+          !eventTypesBase.includes(eventType.name) &&
           (eventType.name.toLowerCase().includes(filter) ||
             eventType.label.toLowerCase().includes(filter)),
       )
@@ -160,6 +250,7 @@ export const EventSearch = ({
       .slice(0, limit)
       .map((eventType) => ({
         section: 'Suggestions',
+        kind: 'event',
         token: `event:${eventType.name}`,
         hint: eventType.occurrences.toLocaleString('en-US'),
         apply: () => addEventType(eventType.name),
@@ -183,13 +274,27 @@ export const EventSearch = ({
     if (field === 'event') return eventSuggestions(value, 8)
     if (field === 'customer') {
       return customers
-        .filter((customer) => !selectedCustomerIds.includes(customer.id))
+        .filter((customer) => !customerIdsBase.includes(customer.id))
         .map((customer) => ({
           section: 'Suggestions',
+          kind: 'customer',
           token: `customer:${customer.name ?? customer.email}`,
-          hint: customer.name ? customer.email : undefined,
+          hint: customer.name ? (customer.email ?? undefined) : undefined,
           apply: () => {
-            onCustomerIdsChange([...selectedCustomerIds, customer.id])
+            onCustomerIdsChange([...customerIdsBase, customer.id])
+            commit('')
+          },
+        }))
+    }
+    if (field === 'time') {
+      return timeRanges
+        .filter((interval) => interval.label.toLowerCase().includes(value))
+        .map((interval) => ({
+          section: 'Suggestions',
+          kind: 'time',
+          token: `time:${interval.label}`,
+          apply: () => {
+            onTimeRangeChange(interval)
             commit('')
           },
         }))
@@ -199,6 +304,7 @@ export const EventSearch = ({
         .filter((s) => s.startsWith(value))
         .map((s) => ({
           section: 'Suggestions',
+          kind: 'source',
           token: `source:${s}`,
           apply: () => {
             onSourceChange(s)
@@ -212,9 +318,10 @@ export const EventSearch = ({
       return [
         {
           section: 'Suggestions',
+          kind: 'metadata',
           token: `metadata.${key}:${raw}`,
           apply: () => {
-            onMetadataChange({ ...metadata, [key]: raw })
+            onMetadataChange({ ...metadataBase, [key]: raw })
             commit('')
           },
         },
@@ -234,33 +341,97 @@ export const EventSearch = ({
     ]
   })()
 
-  const chips = [
-    ...selectedEventTypes.map((name) => ({
-      token: `event:${name}`,
-      remove: () =>
-        onEventTypesChange(selectedEventTypes.filter((n) => n !== name)),
-    })),
-    ...selectedCustomerIds.map((id, index) => {
+  const chips: Chip[] = [
+    ...(timeRangeLabel
+      ? [
+          {
+            kind: 'time',
+            value: timeRangeLabel,
+            token: `time:${timeRangeLabel}`,
+            edit: 'time:',
+            remove: onClearTimeRange,
+          } satisfies Chip,
+        ]
+      : []),
+    ...selectedEventTypes.map(
+      (name): Chip => ({
+        kind: 'event',
+        value: name,
+        token: `event:${name}`,
+        edit: `event:${name}`,
+        remove: () =>
+          onEventTypesChange(selectedEventTypes.filter((n) => n !== name)),
+      }),
+    ),
+    ...selectedCustomerIds.map((id, index): Chip => {
       const customer = selectedCustomers[index]?.data
+      const label = customer?.name ?? customer?.email ?? '…'
       return {
-        token: `customer:${customer?.name ?? customer?.email ?? '…'}`,
+        kind: 'customer',
+        value: id,
+        token: `customer:${label}`,
+        edit: `customer:${customer ? label : ''}`,
         remove: () =>
           onCustomerIdsChange(selectedCustomerIds.filter((c) => c !== id)),
       }
     }),
     ...(source
-      ? [{ token: `source:${source}`, remove: () => onSourceChange(null) }]
+      ? [
+          {
+            kind: 'source',
+            value: source,
+            token: `source:${source}`,
+            edit: 'source:',
+            remove: () => onSourceChange(null),
+          } satisfies Chip,
+        ]
       : []),
-    ...Object.entries(metadata).map(([key, v]) => ({
-      token: `metadata.${key}:${v}`,
-      remove: () => {
-        const { [key]: _removed, ...rest } = metadata
-        onMetadataChange(Object.keys(rest).length > 0 ? rest : null)
-      },
-    })),
+    ...Object.entries(metadata).map(
+      ([key, v]): Chip => ({
+        kind: 'metadata',
+        value: key,
+        token: `metadata.${key}:${v}`,
+        edit: `metadata.${key}:${v}`,
+        remove: () => {
+          const { [key]: _removed, ...rest } = metadata
+          onMetadataChange(Object.keys(rest).length > 0 ? rest : null)
+        },
+      }),
+    ),
   ]
+  const visibleChips = chips.filter(
+    (chip) => chip.kind !== editing?.kind || chip.value !== editing.value,
+  )
+
+  const startEditing = (chip: Chip) => {
+    setEditing(chip)
+    setInput(chip.edit)
+    setHighlighted(-1)
+    setOpen(true)
+    onQueryChange(null)
+    inputRef.current?.focus()
+  }
+
+  const stopEditing = () => {
+    if (!editing) return
+    setEditing(null)
+    setInput('')
+    onQueryChange(null)
+  }
+
+  const runSuggestion = (suggestion: Suggestion) => {
+    if (editing && suggestion.kind && suggestion.kind !== editing.kind) {
+      editing.remove?.()
+    }
+    suggestion.apply()
+    if (suggestion.kind) setEditing(null)
+  }
 
   const onChange = (next: string) => {
+    if (editing && next === '') {
+      editing.remove?.()
+      setEditing(null)
+    }
     setInput(next)
     setHighlighted(-1)
     setOpen(true)
@@ -287,14 +458,23 @@ export const EventSearch = ({
       const suggestion =
         suggestions[highlighted] ?? (isFilter ? suggestions[0] : undefined)
       if (open && suggestion) {
-        suggestion.apply()
+        runSuggestion(suggestion)
       } else {
         inputRef.current?.blur()
       }
+    } else if (e.key === ' ' && editing) {
+      e.preventDefault()
+      const suggestion = suggestions[highlighted] ?? suggestions[0]
+      if (suggestion?.kind) runSuggestion(suggestion)
+      else stopEditing()
     } else if (e.key === 'Escape') {
       inputRef.current?.blur()
-    } else if (e.key === 'Backspace' && input === '' && chips.length > 0) {
-      chips[chips.length - 1].remove()
+    } else if (e.key === 'Backspace' && input === '' && !editing) {
+      const last = visibleChips.at(-1)
+      if (last) {
+        e.preventDefault()
+        startEditing(last)
+      }
     }
   }
 
@@ -305,20 +485,29 @@ export const EventSearch = ({
         onClick={() => inputRef.current?.focus()}
       >
         <Search className="dark:text-polar-400 mr-1 h-4 w-4 shrink-0 text-gray-500" />
-        {chips.map((chip) => (
-          <Token key={chip.token} onRemove={chip.remove}>
+        {visibleChips.map((chip) => (
+          <Token
+            key={chip.token}
+            onEdit={() => startEditing(chip)}
+            onRemove={chip.remove}
+          >
             {chip.token}
           </Token>
         ))}
         <input
           ref={inputRef}
           value={input}
-          placeholder={chips.length > 0 ? '' : 'Search events or filter…'}
+          placeholder={
+            visibleChips.length > 0 ? '' : 'Search events or filter…'
+          }
           className="dark:placeholder:text-polar-500 min-w-24 flex-1 border-0 bg-transparent p-0 py-1 text-sm shadow-none ring-0 outline-none placeholder:text-gray-400 focus:ring-0 focus:outline-none dark:text-white"
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={onKeyDown}
           onFocus={() => setOpen(true)}
-          onBlur={() => setOpen(false)}
+          onBlur={() => {
+            setOpen(false)
+            stopEditing()
+          }}
         />
       </div>
       {open && suggestions.length > 0 && (
@@ -345,7 +534,7 @@ export const EventSearch = ({
                   )}
                   onMouseDown={(e) => e.preventDefault()}
                   onMouseEnter={() => setHighlighted(index)}
-                  onClick={suggestion.apply}
+                  onClick={() => runSuggestion(suggestion)}
                 >
                   <Box
                     alignItems="center"
@@ -354,7 +543,7 @@ export const EventSearch = ({
                     paddingHorizontal="m"
                     paddingVertical="xs"
                   >
-                    <Token>{suggestion.token}</Token>
+                    <Token colon>{suggestion.token}</Token>
                     {suggestion.hint && (
                       <Text variant="caption" color="muted" truncate>
                         {suggestion.hint}

@@ -3,6 +3,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { twMerge } from 'tailwind-merge'
+import { EventTimestamp } from './EventTimestamp'
 
 export const formatEventTimestamp = (timestamp: string) =>
   new Date(timestamp).toLocaleString('en-US', {
@@ -73,9 +74,11 @@ export const EventLogRow = ({
         borderColor="border-secondary"
       >
         <Box width={128} flexShrink={0}>
-          <Text color="muted" tabularNums truncate>
-            {formatEventTimestamp(event.timestamp)}
-          </Text>
+          <EventTimestamp timestamp={event.timestamp}>
+            <Text color="muted" tabularNums truncate>
+              {formatEventTimestamp(event.timestamp)}
+            </Text>
+          </EventTimestamp>
         </Box>
         <Box
           flexGrow={2}

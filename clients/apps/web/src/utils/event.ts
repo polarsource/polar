@@ -4,6 +4,12 @@ export const buildEventDashboardPath = (
 ): string =>
   `/dashboard/${organizationSlug}/analytics/events?${new URLSearchParams({ event: eventId })}`
 
+export const buildCustomerEventsPath = (
+  organizationSlug: string,
+  customerId: string,
+): string =>
+  `/dashboard/${organizationSlug}/analytics/events?${new URLSearchParams({ customerIds: customerId, range: 'allTime' })}`
+
 const COST_EVENTS_FILTER = {
   conjunction: 'or',
   clauses: [
@@ -32,3 +38,9 @@ export const buildEventsFilter = ({
     ? JSON.stringify({ conjunction: 'and', clauses: filters })
     : null
 }
+
+export const formatEventCount = (count: number) =>
+  new Intl.NumberFormat('en-US', {
+    notation: count < 100_000 ? 'standard' : 'compact',
+    maximumFractionDigits: 1,
+  }).format(count)

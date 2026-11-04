@@ -4,6 +4,7 @@ import { schemas } from '@polar-sh/client'
 import { Subnav, SubnavItem } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { buildCustomerEventsPath } from '@/utils/event'
 import { CUSTOMER_METRICS_QUERY_PARAMS } from './useCustomerMetricsParams'
 
 interface CustomerSubnavProps {
@@ -22,7 +23,11 @@ export const CustomerSubnav = ({
   const items = [
     { label: 'Overview', href: base },
     { label: 'Usage', href: `${base}/usage` },
-    { label: 'Events', href: `${base}/events` },
+    {
+      label: 'Events',
+      href: buildCustomerEventsPath(organization.slug, customer.id),
+      external: true,
+    },
     { label: 'Costs', href: `${base}/costs` },
     ...(customer.type === 'team'
       ? [{ label: 'Members', href: `${base}/members` }]
@@ -40,9 +45,9 @@ export const CustomerSubnav = ({
 
   return (
     <Subnav label="Customer sections">
-      {items.map(({ label, href }) => (
+      {items.map(({ label, href, external }) => (
         <SubnavItem key={href} active={pathname === href}>
-          <Link href={`${href}${query}`}>{label}</Link>
+          <Link href={external ? href : `${href}${query}`}>{label}</Link>
         </SubnavItem>
       ))}
     </Subnav>

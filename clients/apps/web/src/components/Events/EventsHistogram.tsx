@@ -3,13 +3,22 @@ import { toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { addDays, differenceInDays, min, startOfDay } from 'date-fns'
-import { useState } from 'react'
+import { addDays, min, startOfDay } from 'date-fns'
 import { twMerge } from 'tailwind-merge'
+import {
+  EventsHistogramControls,
+  formatBarStart,
+  isHourlyRange,
+  TimeRange,
+} from './EventsHistogramControls'
+import {
+  Brush,
+  brushIndices,
+  BrushCursor,
+  useHistogramSelection,
+} from './useHistogramSelection'
 
 const TARGET_BARS = 150
-const HEIGHT = 49
-const HOURLY_MAX_DAYS = 35
 // The API caps hourly ranges at 7 days and daily ranges at 366 days.
 const CHUNK_DAYS = { hour: 7, day: 366 }
 
@@ -48,12 +57,27 @@ const rebin = (periods: Bar[]): Bar[] => {
   return bars
 }
 
-const formatBarStart = (date: Date, hourly: boolean) =>
-  date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    ...(hourly ? { hour: '2-digit', minute: '2-digit', hour12: false } : {}),
-  })
+const CURSOR_CLASS: Record<BrushCursor, string> = {
+  crosshair: 'cursor-crosshair',
+  grab: 'cursor-grab',
+  grabbing: 'cursor-grabbing',
+  'ew-resize': 'cursor-ew-resize',
+}
+
+const zoomOut = ({ from, to }: TimeRange): TimeRange => {
+  const span = to.getTime() - from.getTime()
+  const end = Math.min(Date.now(), to.getTime() + span / 2)
+  return { from: new Date(end - span * 2), to: new Date(end) }
+}
+
+const toBrush = (bars: Bar[], range: TimeRange | null): Brush | null => {
+  if (!range || bars.length === 0) return null
+  const start = bars.findIndex((bar) => bar.end > range.from)
+  const end = bars.findLastIndex((bar) => bar.start < range.to)
+  return start < 0 || end < start
+    ? null
+    : { start: start / bars.length, end: (end + 1) / bars.length }
+}
 
 export const EventsHistogram = ({
   organizationId,
@@ -65,7 +89,9 @@ export const EventsHistogram = ({
   filter,
   query,
   metadata,
-  onSelectRange,
+  selection,
+  onSelectionChange,
+  onZoom,
 }: {
   organizationId: string
   startDate: Date
@@ -76,10 +102,11 @@ export const EventsHistogram = ({
   filter: string | null
   query: string | null
   metadata: Record<string, string | number | boolean> | null
-  onSelectRange: (range: { from: Date; to: Date }) => void
+  selection: TimeRange | null
+  onSelectionChange: (selection: TimeRange | null) => void
+  onZoom: (range: TimeRange, selection: TimeRange | null) => void
 }) => {
-  const [hovered, setHovered] = useState<number | null>(null)
-  const hourly = differenceInDays(endDate, startDate) <= HOURLY_MAX_DAYS
+  const hourly = isHourlyRange(startDate, endDate)
   const interval = hourly ? 'hour' : 'day'
 
   const results = useEventTimeseriesChunks(
@@ -117,68 +144,125 @@ export const EventsHistogram = ({
   const max = Math.max(1, ...bars.map((bar) => bar.count))
   const labels = [bars[0], bars[Math.floor(bars.length / 2)], bars.at(-1)]
 
+  const toRange = (brush: Brush): TimeRange => {
+    const { first, last } = brushIndices(brush, bars.length)
+    return { from: bars[first].start, to: bars[last].end }
+  }
+
+  const { hovered, brush, dragging, cursor, handlers } = useHistogramSelection(
+    bars.length,
+    toBrush(bars, selection),
+    (next) => onSelectionChange(toRange(next)),
+  )
+  const isActive = (index: number) => {
+    if (!brush) return index === hovered
+    const center = (index + 0.5) / bars.length
+    return center >= brush.start && center <= brush.end
+  }
+  const brushRange = brush ? toRange(brush) : null
+  const totalCount = bars.reduce((sum, bar) => sum + bar.count, 0)
+  const brushCount = brush
+    ? bars
+        .filter((_, index) => isActive(index))
+        .reduce((sum, bar) => sum + bar.count, 0)
+    : 0
+
   return (
-    <Box flexDirection="column" gap="s" height={HEIGHT} flexShrink={0}>
-      <div onMouseLeave={() => setHovered(null)}>
-        <Box
-          borderBottomWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
+    <Box flexDirection="column" gap="s" flexShrink={0}>
+      <EventsHistogramControls
+        anchor={brush ?? { start: 0, end: 1 }}
+        dragging={dragging}
+        range={brushRange ?? { from: startDate, to: endDate }}
+        count={brush ? brushCount : totalCount}
+        hourly={hourly}
+        onZoomIn={brushRange ? () => onZoom(brushRange, null) : undefined}
+        onZoomOut={() =>
+          onZoom(zoomOut({ from: startDate, to: endDate }), selection)
+        }
+        onClear={selection ? () => onSelectionChange(null) : undefined}
+      />
+      <Box
+        borderBottomWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
+        <div
+          className={twMerge(
+            'relative isolate flex h-12 w-full touch-pan-y items-end select-none',
+            CURSOR_CLASS[cursor],
+            bars.length > 60 ? 'gap-0.5' : 'gap-1',
+          )}
+          {...handlers}
         >
-          <div
-            className={twMerge(
-              'flex h-6 w-full items-end',
-              bars.length > 60 ? 'gap-0.5' : 'gap-1',
-            )}
-          >
-            {bars.map((bar, index) =>
-              bar.count === 0 ? (
+          {bars.map((bar, index) => (
+            <Tooltip
+              key={bar.start.toISOString()}
+              delayDuration={0}
+              open={dragging || brush || bar.count === 0 ? false : undefined}
+            >
+              <TooltipTrigger asChild>
                 <Box
-                  key={bar.start.toISOString()}
                   flexGrow={1}
                   flexBasis={0}
                   height="100%"
-                  onMouseEnter={() => setHovered(null)}
-                />
-              ) : (
-                <Tooltip key={bar.start.toISOString()} delayDuration={0}>
-                  <TooltipTrigger asChild>
+                  alignItems="end"
+                  backgroundColor={
+                    !brush && index === hovered && bar.count > 0
+                      ? 'background-card'
+                      : undefined
+                  }
+                >
+                  {bar.count > 0 && (
                     <Box
-                      flexGrow={1}
-                      flexBasis={0}
-                      height="100%"
-                      alignItems="end"
-                      backgroundColor={
-                        index === hovered ? 'background-secondary' : undefined
-                      }
-                      cursor="pointer"
-                      onMouseEnter={() => setHovered(index)}
-                      onClick={() =>
-                        onSelectRange({ from: bar.start, to: bar.end })
-                      }
-                    >
-                      <Box
-                        width="100%"
-                        height={`${(bar.count / max) * 100}%`}
-                        minHeight={2}
-                        backgroundColor="background-inverse"
-                        opacity={index === hovered ? 0.8 : 0.35}
-                      />
-                    </Box>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <Text variant="caption" tabularNums>
-                      {formatBarStart(bar.start, hourly)} ·{' '}
-                      {bar.count.toLocaleString('en-US')}{' '}
-                      {bar.count === 1 ? 'event' : 'events'}
-                    </Text>
-                  </TooltipContent>
-                </Tooltip>
-              ),
-            )}
-          </div>
-        </Box>
-      </div>
+                      width="100%"
+                      height={`${(bar.count / max) * 100}%`}
+                      minHeight={2}
+                      backgroundColor="background-inverse"
+                      opacity={isActive(index) ? 0.8 : brush ? 0.15 : 0.35}
+                      transitionProperty="opacity"
+                      transitionDuration="fast"
+                    />
+                  )}
+                </Box>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <Text variant="caption" tabularNums>
+                  {formatBarStart(bar.start, hourly)} ·{' '}
+                  {bar.count.toLocaleString('en-US')}{' '}
+                  {bar.count === 1 ? 'event' : 'events'}
+                </Text>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+          {brush && (
+            <Box
+              position="absolute"
+              top={0}
+              bottom={0}
+              left={`${brush.start * 100}%`}
+              width={`${(brush.end - brush.start) * 100}%`}
+              transitionProperty={dragging ? 'none' : 'all'}
+              transitionDuration="fast"
+              ease="decelerate"
+              justifyContent="between"
+              pointerEvents="none"
+              backgroundColor="background-card"
+              zIndex={-1}
+            >
+              <Box
+                width={2}
+                height="100%"
+                backgroundColor="background-inverse"
+              />
+              <Box
+                width={2}
+                height="100%"
+                backgroundColor="background-inverse"
+              />
+            </Box>
+          )}
+        </div>
+      </Box>
       <Box justifyContent="between" height={16}>
         {labels.map((bar, index) => (
           <Text key={index} variant="caption" color="muted" tabularNums>

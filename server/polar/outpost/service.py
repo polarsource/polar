@@ -374,6 +374,8 @@ class OutpostService:
         organization: Organization,
         events: Sequence[ReducerBucketOutpostEvent],
     ) -> list[MeterUsageOutgoingMessagePayload]:
+        if not events:
+            return []
         reducers = {
             reducer.id: reducer
             for reducer in await ReducerRepository.from_session(

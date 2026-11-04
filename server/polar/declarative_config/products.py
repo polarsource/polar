@@ -2,6 +2,7 @@ from uuid import UUID
 
 from polar.exceptions import PolarRequestValidationError
 from polar.exceptions import ValidationError as RequestValidationError
+from polar.models import Product
 from polar.product.schemas import (
     ProductCreateOneTime,
     ProductCreateRecurring,
@@ -92,6 +93,7 @@ def product_create(
     config: ConfigProduct,
     organization_id: UUID | None,
     meter_ids: dict[str, UUID],
+    existing: Product | None = None,
 ) -> ProductCreateRecurring | ProductCreateOneTime:
     fields = config.model_dump(
         include={"name", "description", "visibility", "metadata"}
@@ -103,14 +105,15 @@ def product_create(
         return ProductCreateOneTime(
             **fields, prices=prices, organization_id=organization_id
         )
+    meter_cycle = config if existing is None or config.meter_interval else existing
     return ProductCreateRecurring(
         **fields,
         recurring_interval=config.recurring_interval,
         recurring_interval_count=config.recurring_interval_count or 1,
         trial_interval=config.trial_interval,
         trial_interval_count=config.trial_interval_count,
-        meter_interval=config.meter_interval,
-        meter_interval_count=config.meter_interval_count,
+        meter_interval=meter_cycle.meter_interval,
+        meter_interval_count=meter_cycle.meter_interval_count,
         prices=prices,
         organization_id=organization_id,
     )

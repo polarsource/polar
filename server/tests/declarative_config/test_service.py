@@ -805,6 +805,7 @@ class TestApply:
     @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
     async def test_product_meter_cycle(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         redis: Redis,
         auth_subject: AuthSubject[Organization],
@@ -867,7 +868,16 @@ class TestApply:
                 ],
             }
         )
+        sent_cycles: list[MeterInterval | None] = []
+
+        async def record_webhook(*args: Any) -> None:
+            sent_cycles.append(args[-1].meter_interval)
+
+        mocker.patch(
+            "polar.product.service.webhook_service.send", side_effect=record_webhook
+        )
         await declarative_config_service.apply(session, redis, auth_subject, omitted)
+        assert sent_cycles == [MeterInterval.month]
 
         [renamed] = await ProductRepository.from_session(
             session

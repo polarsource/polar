@@ -13821,17 +13821,36 @@ export interface components {
     }
     /** Changes */
     Changes: {
-      /** Changes */
+      /**
+       * Changes
+       * @description A snapshot of each customer and reducer that changed since the cursor.
+       */
       changes: components['schemas']['MeterUsageOutgoingMessagePayload'][]
-      /** Cursor */
+      /**
+       * Cursor
+       * @description Pull the next changes after this one.
+       */
       cursor: string
-      /** Has More */
+      /**
+       * Has More
+       * @description The page is full: pull again from the cursor right away.
+       */
       has_more: boolean
-      /** Reset */
+      /**
+       * Reset
+       * @description Changes were missed: every snapshot the client holds may be stale. The client
+       *     drops them, and fetches each customer again at its next read.
+       */
       reset: boolean
-      /** Configuration Changed */
+      /**
+       * Configuration Changed
+       * @description The organization's reducers changed: fetch the configuration again.
+       */
       configuration_changed: boolean
-      /** Next Poll In */
+      /**
+       * Next Poll In
+       * @description Seconds until the next pull.
+       */
       next_poll_in: number
     }
     /** ChannelNamePreviewRequest */

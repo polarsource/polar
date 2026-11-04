@@ -193,15 +193,21 @@ class ConfirmedOutgoingMessagePayload(MessageBase):
 
 
 class Changes(Schema):
+    model_config = ConfigDict(use_attribute_docstrings=True)
+
     changes: list[MeterUsageOutgoingMessagePayload]
-    # Read the next changes after this one.
+    """A snapshot of each customer and reducer that changed since the cursor."""
     cursor: str
+    """Pull the next changes after this one."""
     has_more: bool
-    # Changes were missed: every snapshot the client holds may be stale.
+    """The page is full: pull again from the cursor right away."""
     reset: bool
+    """Changes were missed: every snapshot the client holds may be stale. The client
+    drops them, and fetches each customer again at its next read."""
     configuration_changed: bool
-    # Seconds until the next pull.
+    """The organization's reducers changed: fetch the configuration again."""
     next_poll_in: int
+    """Seconds until the next pull."""
 
 
 class ConfirmedOutgoingMessage(OutgoingMessageBase):

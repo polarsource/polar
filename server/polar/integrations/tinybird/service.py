@@ -10,6 +10,7 @@ from uuid import UUID
 import logfire
 import sqlalchemy
 import structlog
+from anyio import create_task_group
 from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
 from clickhouse_connect.cc_sqlalchemy.sql.compiler import ChStatementCompiler
 from sqlalchemy import (
@@ -876,14 +877,16 @@ class TinybirdEventsQuery:
         count_sql, count_params = _compile(count_statement)
         ids_sql, ids_params = _compile(ids_statement)
 
-        count_rows = await client.query(
-            count_sql, parameters=count_params, db_statement=count_sql
-        )
+        async with create_task_group() as tg:
+            count_handle = tg.create_task(
+                client.query(count_sql, parameters=count_params, db_statement=count_sql)
+            )
+            ids_handle = tg.create_task(
+                client.query(ids_sql, parameters=ids_params, db_statement=ids_sql)
+            )
+        count_rows = count_handle.return_value
+        id_rows = ids_handle.return_value
         total = count_rows[0]["total"] if count_rows else 0
-
-        id_rows = await client.query(
-            ids_sql, parameters=ids_params, db_statement=ids_sql
-        )
         event_ids = [str(row["id"]) for row in id_rows]
 
         return event_ids, total

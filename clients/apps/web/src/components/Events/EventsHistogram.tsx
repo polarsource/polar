@@ -19,6 +19,7 @@ import {
 } from './useHistogramSelection'
 
 const TARGET_BARS = 150
+const BAR_STAGGER_MS = 250
 // The API caps hourly ranges at 7 days and daily ranges at 366 days.
 const CHUNK_DAYS = { hour: 7, day: 366 }
 
@@ -257,15 +258,23 @@ export const EventsHistogram = ({
                   }
                 >
                   {bar.count > 0 && (
-                    <Box
-                      width="100%"
-                      height={`${(bar.count / max) * 100}%`}
-                      minHeight={2}
-                      backgroundColor="background-inverse"
-                      opacity={isActive(index) ? 0.8 : brush ? 0.15 : 0.35}
-                      transitionProperty="opacity"
-                      transitionDuration="fast"
-                    />
+                    <div
+                      className="motion-safe:animate-bar-grow w-full origin-bottom"
+                      style={{
+                        height: `${(bar.count / max) * 100}%`,
+                        minHeight: 2,
+                        animationDelay: `${(index / bars.length) * BAR_STAGGER_MS}ms`,
+                      }}
+                    >
+                      <Box
+                        width="100%"
+                        height="100%"
+                        backgroundColor="background-inverse"
+                        opacity={isActive(index) ? 0.8 : brush ? 0.15 : 0.35}
+                        transitionProperty="opacity"
+                        transitionDuration="fast"
+                      />
+                    </div>
                   )}
                 </Box>
               </TooltipTrigger>

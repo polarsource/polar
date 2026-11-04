@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
-from pydantic import UUID4, ValidationError
+from pydantic import UUID4
 
 from polar.exceptions import (
     NotPermitted,
@@ -19,7 +19,6 @@ from polar.kit.pagination import (
 )
 from polar.kit.time_queries import is_under_limits
 from polar.kit.versioning import version
-from polar.meter.filter import Filter
 from polar.models import Event
 from polar.openapi import APITag
 from polar.postgres import (
@@ -61,43 +60,6 @@ from .service import event as event_service
 router = APIRouter(prefix="/events", tags=["events", APITag.public])
 
 
-def _parse_filter(filter: str | None) -> Filter | None:
-    # FastAPI does not support complex schemas in query parameters.
-    if filter is None:
-        return None
-    try:
-        return Filter.model_validate_json(filter)
-    except ValidationError as e:
-        raise RequestValidationError(e.errors()) from e
-
-
-def _validate_query(query: str | None, organization_id: Sequence[UUID4] | None) -> None:
-    if query is None:
-        return
-    if organization_id is None:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "msg": "Query is only supported when organization_id is provided.",
-                    "loc": ("query", "query"),
-                    "input": query,
-                }
-            ]
-        )
-    if len(query) < 3:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "query",
-                    "msg": "Query must be at least 3 characters.",
-                    "loc": ("query", "query"),
-                    "input": query,
-                }
-            ]
-        )
-
-
 EventNotFound = {"description": "Event not found.", "model": ResourceNotFound.schema()}
 
 
@@ -135,13 +97,10 @@ async def list(
 ) -> ListResource[EventSchema] | ListResourceWithCursorPagination[EventSchema]:
     """List events."""
 
-    parsed_filter = _parse_filter(filters.filter)
-    _validate_query(filters.query, filters.organization_id)
-
     result = await event_service.list(
         session,
         auth_subject,
-        filter=parsed_filter,
+        filter=filters.filter,
         start_timestamp=filters.start_timestamp,
         end_timestamp=filters.end_timestamp,
         organization_id=filters.organization_id,
@@ -195,13 +154,11 @@ async def get_statistics_by_type(
     Accepts the same filters as the event list, except the event name, so every
     event type gets a count under the other filters.
     """
-    parsed_filter = _parse_filter(filters.filter)
-    _validate_query(filters.query, filters.organization_id)
 
     items = await event_service.list_event_type_stats(
         session,
         auth_subject,
-        filter=parsed_filter,
+        filter=filters.filter,
         start_timestamp=filters.start_timestamp,
         end_timestamp=filters.end_timestamp,
         organization_id=filters.organization_id,
@@ -244,15 +201,13 @@ async def get_histogram(
                 }
             ]
         )
-    parsed_filter = _parse_filter(filters.filter)
-    _validate_query(filters.query, filters.organization_id)
 
     return await event_service.get_histogram(
         session,
         auth_subject,
         start_timestamp=filters.start_timestamp,
         end_timestamp=filters.end_timestamp,
-        filter=parsed_filter,
+        filter=filters.filter,
         organization_id=filters.organization_id,
         customer_id=filters.customer_id,
         external_customer_id=filters.external_customer_id,
@@ -394,9 +349,6 @@ async def list_statistics_timeseries(
             ]
         )
 
-    parsed_filter = _parse_filter(filters.filter)
-    _validate_query(filters.query, filters.organization_id)
-
     return await event_service.list_statistics_timeseries(
         session,
         auth_subject,
@@ -404,7 +356,7 @@ async def list_statistics_timeseries(
         end_date=filters.end_date,
         timezone=ZoneInfo(filters.timezone),
         interval=filters.interval,
-        filter=parsed_filter,
+        filter=filters.filter,
         organization_id=filters.organization_id,
         customer_id=filters.customer_id,
         external_customer_id=filters.external_customer_id,

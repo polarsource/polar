@@ -73,6 +73,8 @@ const IconButton = ({
   </button>
 )
 
+const PILL_WIDTH = 380
+
 const anchorProps = ({ start, end }: { start: number; end: number }) => ({
   left: `${((start + end) / 2) * 100}%`,
   transform: 'translateX(-50%)',
@@ -110,6 +112,7 @@ export const EventsHistogramControls = ({
       {...anchorProps(anchor)}
     >
       <Box
+        width={PILL_WIDTH}
         alignItems="center"
         gap="s"
         paddingLeft="m"
@@ -118,12 +121,16 @@ export const EventsHistogramControls = ({
         borderRadius="full"
         backgroundColor="background-card"
       >
-        <Text variant="caption" tabularNums>
-          {formatTimeRange(range, hourly)}
-        </Text>
-        <Text variant="caption" color="muted" tabularNums>
-          {formatEventCount(count)} {count === 1 ? 'event' : 'events'}
-        </Text>
+        <Box flexGrow={1} minWidth={0}>
+          <Text variant="caption" tabularNums truncate>
+            {formatTimeRange(range, hourly)}
+          </Text>
+        </Box>
+        <Box flexShrink={0}>
+          <Text variant="caption" color="muted" tabularNums>
+            {formatEventCount(count)} {count === 1 ? 'event' : 'events'}
+          </Text>
+        </Box>
         <Box
           height={14}
           borderLeftWidth={1}
@@ -137,10 +144,12 @@ export const EventsHistogramControls = ({
           <IconButton label="Zoom out" onClick={onZoomOut}>
             <ZoomOut className="h-3.5 w-3.5" />
           </IconButton>
-          {onClear && (
+          {onClear ? (
             <IconButton label="Clear selection" onClick={onClear}>
               <X className="h-3.5 w-3.5" />
             </IconButton>
+          ) : (
+            <Box width={28} height={28} />
           )}
         </Box>
       </Box>

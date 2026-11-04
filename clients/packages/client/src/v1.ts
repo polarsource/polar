@@ -3716,13 +3716,7 @@ export interface paths {
     get: operations['catalogs:get']
     put?: never
     post?: never
-    /**
-     * Discard Draft Catalog
-     * @description Discard the draft catalog and the product and benefit versions only it has.
-     *
-     *     **Scopes**: `products:write`
-     */
-    delete: operations['catalogs:discard']
+    delete?: never
     options?: never
     head?: never
     patch?: never
@@ -53176,53 +53170,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'catalogs:discard': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Draft discarded. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description No catalog with this ID. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CatalogNotFound']
-        }
-      }
-      /** @description The catalog isn't a draft. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CatalogNotDraft']
         }
       }
       /** @description Validation Error */

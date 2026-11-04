@@ -106,26 +106,3 @@ async def publish(
     ones for new sales. Existing customers stay on their versions until moved."""
     draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
     return await catalog_service.publish_draft(session, draft.organization, draft)
-
-
-@router.delete(
-    "/{id}",
-    summary="Discard Draft Catalog",
-    status_code=204,
-    responses={
-        204: {"description": "Draft discarded."},
-        404: DraftNotFound,
-        409: {
-            "description": "The catalog isn't a draft.",
-            "model": CatalogNotDraft.schema(),
-        },
-    },
-)
-async def discard(
-    id: UUID4,
-    auth_subject: auth.CatalogWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> None:
-    """Discard the draft catalog and the product and benefit versions only it has."""
-    draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
-    await catalog_service.discard_draft(session, draft)

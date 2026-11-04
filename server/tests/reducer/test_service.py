@@ -1,9 +1,11 @@
+import json
 import uuid
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, cast
 
+import dramatiq
 import pytest
 from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
@@ -50,6 +52,7 @@ from polar.reducer.types import (
     UsageWindow,
     WindowUsage,
 )
+from polar.worker import JobQueueManager
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
@@ -2070,6 +2073,19 @@ def build_credit_event(meter_id: uuid.UUID, units: int) -> Event:
 
 @pytest.mark.anyio
 class TestSyncMeter:
+    async def test_tells_outpost_the_configuration_changed(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        set_job_queue_manager_context: JobQueueManager,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        await set_job_queue_manager_context.flush(dramatiq.get_broker(), redis)
+
+        [(_, fields)] = await redis.xrange(f"outpost:changes:{meter.organization_id}")
+        assert json.loads(fields[b"event"]) == {"type": "configuration"}
+
     async def test_creates_usage_and_credit_reducers(
         self, session: AsyncSession, meter: Meter
     ) -> None:

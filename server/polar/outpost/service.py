@@ -265,11 +265,12 @@ class OutpostService:
         )
         return ConfigurationOutgoingMessagePayload.model_validate(
             {
+                "organization_id": organization.id,
                 "reducers": [
                     reducer
                     for reducer in reducers
                     if not isinstance(reducer.aggregation, UniqueAggregation)
-                ]
+                ],
             }
         )
 

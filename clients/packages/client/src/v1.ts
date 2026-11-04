@@ -17253,6 +17253,11 @@ export interface components {
     }
     /** ConfigurationOutgoingMessagePayload */
     ConfigurationOutgoingMessagePayload: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
       /** Reducers */
       reducers: components['schemas']['ConfigurationReducer'][]
     }

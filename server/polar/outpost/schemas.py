@@ -152,6 +152,7 @@ class ConfigurationReducer(Schema):
 
 
 class ConfigurationOutgoingMessagePayload(Schema):
+    organization_id: UUID4
     reducers: list[ConfigurationReducer]
 
 

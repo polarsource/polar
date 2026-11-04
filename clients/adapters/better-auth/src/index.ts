@@ -6,6 +6,7 @@ export type {
   SelectSeatProductsForMember,
   SelectSeatProductsForMemberInput,
 } from './organization/types'
+export type { PolarBetterAuthPlugin } from './server'
 export type { PolarOptions } from './types'
 
 export * from './plugins/portal'

@@ -187,12 +187,9 @@ async def meter_usage(
     session: AsyncSession = Depends(get_db_session),
 ) -> list[MeterUsageOutgoingMessagePayload]:
     """The snapshot of every identity of the customer."""
-    snapshots = await outpost_service.get_requested_meter_usage(
+    return await outpost_service.get_requested_meter_usage(
         session, auth_subject.subject, payload
     )
-    if snapshots is None:
-        raise ResourceNotFound()
-    return snapshots
 
 
 @router.post(
@@ -208,12 +205,7 @@ async def confirm(
     """The pending ids Polar counts, with the snapshot that counts them."""
     # A session of its own on the primary: the ids it reads were just stored.
     async with sessionmaker() as session:
-        confirmed = await outpost_service.confirm(
-            session, auth_subject.subject, payload
-        )
-    if confirmed is None:
-        raise ResourceNotFound()
-    return confirmed
+        return await outpost_service.confirm(session, auth_subject.subject, payload)
 
 
 @router.post("/telemetry", include_in_schema=False)

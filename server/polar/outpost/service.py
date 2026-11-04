@@ -21,7 +21,7 @@ from sqlalchemy.orm import selectinload
 
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
-from polar.exceptions import BadRequest
+from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
@@ -90,25 +90,40 @@ class OutpostService:
                     )
                 )
             case IncomingMessageType.meter_usage:
-                for snapshot in (
-                    await self.get_requested_meter_usage(
+                try:
+                    snapshots = await self.get_requested_meter_usage(
                         session, organization, incoming.payload
                     )
-                    or []
-                ):
+                except ResourceNotFound:
+                    log.warning(
+                        "Reducer not found",
+                        organization_id=organization.id,
+                        reducer_id=incoming.payload.reducer_id,
+                    )
+                    return
+                for snapshot in snapshots:
                     await send_stream.send(
                         MeterUsageOutgoingMessage(
                             type=OutgoingMessageType.meter_usage, payload=snapshot
                         )
                     )
             case IncomingMessageType.confirm:
-                confirmed = await self.confirm(session, organization, incoming.payload)
-                if confirmed is not None:
-                    await send_stream.send(
-                        ConfirmedOutgoingMessage(
-                            type=OutgoingMessageType.confirmed, payload=confirmed
-                        )
+                try:
+                    confirmed = await self.confirm(
+                        session, organization, incoming.payload
                     )
+                except ResourceNotFound:
+                    log.warning(
+                        "Reducer not found",
+                        organization_id=organization.id,
+                        reducer_id=incoming.payload.reducer_id,
+                    )
+                    return
+                await send_stream.send(
+                    ConfirmedOutgoingMessage(
+                        type=OutgoingMessageType.confirmed, payload=confirmed
+                    )
+                )
 
     async def handle_event(
         self,
@@ -263,19 +278,13 @@ class OutpostService:
         session: AsyncReadSession,
         organization: Organization,
         payload: MeterUsageIncomingMessagePayload,
-    ) -> list[MeterUsageOutgoingMessagePayload] | None:
-        """The snapshots of every identity of the customer, or None without such a
-        reducer."""
+    ) -> list[MeterUsageOutgoingMessagePayload]:
+        """The snapshots of every identity of the customer."""
         reducer = await ReducerRepository.from_session(
             session
         ).get_active_by_id_and_kinds(payload.reducer_id, tuple(ReducerKind))
         if reducer is None or reducer.organization_id != organization.id:
-            log.warning(
-                "Reducer not found",
-                organization_id=organization.id,
-                reducer_id=payload.reducer_id,
-            )
-            return None
+            raise ResourceNotFound()
         if isinstance(payload, MeterUsageIncomingMessageCustomerPayload):
             identity: Identity = (payload.customer_id, None)
         else:
@@ -293,9 +302,9 @@ class OutpostService:
         session: AsyncReadSession,
         organization: Organization,
         payload: ConfirmIncomingMessagePayload,
-    ) -> ConfirmedOutgoingMessagePayload | None:
+    ) -> ConfirmedOutgoingMessagePayload:
         """The requested ids stored so far, with the meter's snapshot read from the same
-        database snapshot: it counts exactly those. None without such a reducer."""
+        database snapshot: it counts exactly those."""
         with logfire.span(
             "outpost.confirm",
             organization_id=str(organization.id),
@@ -309,12 +318,7 @@ class OutpostService:
                 session
             ).get_active_by_id_and_kinds(payload.reducer_id, (ReducerKind.usage,))
             if reducer is None or reducer.organization_id != organization.id:
-                log.warning(
-                    "Reducer not found",
-                    organization_id=organization.id,
-                    reducer_id=payload.reducer_id,
-                )
-                return None
+                raise ResourceNotFound()
             if isinstance(payload, ConfirmIncomingMessageCustomerPayload):
                 identity: Identity = (payload.customer_id, None)
             else:
@@ -334,7 +338,7 @@ class OutpostService:
                 await self._get_customer(session, organization, identity),
             )
             if not snapshots:
-                return None
+                raise ResourceNotFound()
             return ConfirmedOutgoingMessagePayload(
                 reducer_id=payload.reducer_id,
                 customer_id=identity[0],

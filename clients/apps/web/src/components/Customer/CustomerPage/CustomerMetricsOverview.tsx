@@ -1,15 +1,12 @@
 'use client'
 
-import MetricChartBox from '@/components/Metrics/MetricChartBox'
-import { StatisticCard } from '@/components/Shared/StatisticCard'
-import { ParsedMetricsResponse, useMetrics, useWallets } from '@/hooks/queries'
-import { formatPercentage } from '@/utils/formatters'
-import { getPreviousDateRange } from '@/utils/metrics'
+import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
+import { ParsedMetricsResponse, useMetrics } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import React, { useMemo } from 'react'
-import { CustomerTrendStatBox } from './CustomerTrendStatBox'
+import { useMemo } from 'react'
+import { CustomerMetricsRangeControl } from './CustomerMetricsRangeControl'
 
 const RELEVANT_METRIC_KEYS: (keyof schemas['Metrics'])[] = [
   'active_subscriptions',
@@ -42,6 +39,19 @@ const RELEVANT_METRIC_KEYS: (keyof schemas['Metrics'])[] = [
   'succeeded_checkouts',
 ]
 
+const CHART_METRICS: (keyof schemas['Metrics'])[] = [
+  'revenue',
+  'costs',
+  'gross_margin',
+  'gross_margin_percentage',
+  'orders',
+]
+
+const DISPLAY_NAMES: Record<string, string> = {
+  gross_margin: 'Profit',
+  gross_margin_percentage: 'Profit Margin',
+}
+
 interface CustomerMetricsOverviewProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
@@ -55,14 +65,6 @@ export const CustomerMetricsOverview = ({
   dateRange,
   interval,
 }: CustomerMetricsOverviewProps) => {
-  const [selectedMetric, setSelectedMetric] =
-    React.useState<keyof schemas['Metrics']>('cashflow')
-
-  const { data: billingWallets } = useWallets(organization.id, {
-    customer_id: customer.id,
-    type: 'billing',
-  })
-
   const { data: metricsData, isLoading: metricsLoading } = useMetrics({
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
@@ -71,83 +73,21 @@ export const CustomerMetricsOverview = ({
     customer_id: [customer.id],
   })
 
-  const [previousStartDate, previousEndDate] = getPreviousDateRange(
-    dateRange.startDate,
-    dateRange.endDate,
-  )
-
-  const { data: previousPeriodMetrics } = useMetrics(
-    {
-      startDate: previousStartDate,
-      endDate: previousEndDate,
-      organization_id: organization.id,
-      interval: interval,
-      customer_id: [customer.id],
-    },
-    true,
-  )
-
-  const calculateTrend = React.useCallback(
-    (
-      metricKey: keyof schemas['MetricsTotals'],
-    ):
-      | {
-          value: number
-          direction: 'up' | 'down' | 'none'
-          metric: schemas['Metric']
-          previousValue: number
-        }
-      | undefined => {
-      if (!metricsData?.totals || !previousPeriodMetrics?.totals) {
-        return undefined
-      }
-
-      const metric = metricsData.metrics[metricKey]
-      if (!metric) {
-        return undefined
-      }
-      const currentValue = metricsData.totals[metricKey]
-      const previousValue = previousPeriodMetrics.totals[metricKey]
-
-      if (
-        typeof currentValue !== 'number' ||
-        typeof previousValue !== 'number'
-      ) {
-        return undefined
-      }
-
-      if (previousValue === 0) {
-        if (currentValue === 0)
-          return { value: 0, direction: 'none', metric, previousValue }
-        return { value: 100, direction: 'up', metric, previousValue }
-      }
-
-      const percentageChange =
-        ((currentValue - previousValue) / Math.abs(previousValue)) * 100
-
-      if (Math.abs(percentageChange) < 0.01) {
-        return { value: 0, direction: 'none', metric, previousValue }
-      }
-
-      return {
-        value: percentageChange,
-        direction: percentageChange > 0 ? 'up' : 'down',
-        previousValue,
-        metric,
-      }
-    },
-    [metricsData, previousPeriodMetrics],
-  )
-
   const relevantMetricsData = useMemo(() => {
     if (!metricsData) {
       return metricsData
     }
 
     const metrics = Object.fromEntries(
-      Object.entries(metricsData.metrics).filter(([key]) =>
-        RELEVANT_METRIC_KEYS.includes(key as keyof schemas['Metrics']),
-      ),
+      Object.entries(metricsData.metrics)
+        .filter(([key]) =>
+          RELEVANT_METRIC_KEYS.includes(key as keyof schemas['Metrics']),
+        )
+        .map(([key, metric]) =>
+          key in DISPLAY_NAMES && metric
+            ? [key, { ...metric, display_name: DISPLAY_NAMES[key] }]
+            : [key, metric],
+        ),
     ) as ParsedMetricsResponse['metrics']
 
     return {
@@ -157,73 +97,25 @@ export const CustomerMetricsOverview = ({
   }, [metricsData])
 
   return (
-    <>
+    <Box flexDirection="column" rowGap="xl">
       <Box
-        display={{ base: 'grid', xl: 'flex' }}
-        gridTemplateColumns="repeat(2, 1fr)"
-        gap={{ base: 'l', md: 'xl' }}
+        flexDirection={{ base: 'column', md: 'row' }}
+        alignItems={{ base: 'start', md: 'center' }}
+        justifyContent="between"
+        gap="l"
       >
-        <CustomerTrendStatBox
-          title="Revenue"
-          size="lg"
-          trend={calculateTrend('revenue')}
-        >
-          {typeof metricsData?.totals.revenue === 'number'
-            ? formatCurrency('statistics')(metricsData.totals.revenue, 'usd')
-            : '—'}
-        </CustomerTrendStatBox>
-        <CustomerTrendStatBox
-          title="Cost"
-          size="lg"
-          trend={calculateTrend('costs')}
-          trendUpIsBad
-        >
-          {typeof metricsData?.totals.costs === 'number'
-            ? formatCurrency('subcent')(metricsData.totals.costs, 'usd')
-            : '—'}
-        </CustomerTrendStatBox>
-        <CustomerTrendStatBox
-          title="Profit"
-          size="lg"
-          trend={calculateTrend('gross_margin')}
-        >
-          {typeof metricsData?.totals.gross_margin === 'number'
-            ? formatCurrency('statistics')(
-                metricsData.totals.gross_margin,
-                'usd',
-              )
-            : '—'}
-        </CustomerTrendStatBox>
-        <CustomerTrendStatBox
-          title="Profit Margin"
-          size="lg"
-          trend={calculateTrend('gross_margin_percentage')}
-        >
-          {typeof metricsData?.totals.gross_margin_percentage === 'number'
-            ? formatPercentage(metricsData.totals.gross_margin_percentage)
-            : '—'}
-        </CustomerTrendStatBox>
-        <StatisticCard title="Customer Balance" size="lg">
-          {billingWallets && billingWallets.items.length > 0
-            ? billingWallets.items.map((wallet) => (
-                <div key={wallet.id}>
-                  {formatCurrency('statistics')(
-                    wallet.balance,
-                    wallet.currency,
-                  )}
-                </div>
-              ))
-            : '—'}
-        </StatisticCard>
+        <Text as="h2" variant="heading-xxs">
+          Metrics
+        </Text>
+        <CustomerMetricsRangeControl customer={customer} />
       </Box>
-
-      <MetricChartBox
-        metric={selectedMetric}
-        onMetricChange={setSelectedMetric}
-        interval={interval}
+      <MetricGroup
+        metricKeys={CHART_METRICS}
         data={relevantMetricsData}
+        interval={interval}
         loading={metricsLoading}
+        context={customer.name ?? customer.email ?? undefined}
       />
-    </>
+    </Box>
   )
 }

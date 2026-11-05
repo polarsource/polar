@@ -1,40 +1,43 @@
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface StatisticCardProps {
   title: string
   className?: string
-  valueClassName?: string
   size?: 'sm' | 'lg'
 }
 
+// A ruled column of type rather than a filled card: hairline on top, a small
+// label, then the figure.
 export const StatisticCard = ({
   title,
   children,
   className,
-  valueClassName,
   size = 'sm',
-}: PropsWithChildren<StatisticCardProps>) => {
-  return (
-    <div
-      className={twMerge(
-        'dark:bg-polar-800 dark:border-polar-700 flex flex-1 flex-col gap-2 bg-gray-50',
-        className,
-        size === 'lg'
-          ? 'rounded-2xl px-5 py-4'
-          : 'rounded-lg px-4 py-3 text-sm',
-      )}
+}: PropsWithChildren<StatisticCardProps>) => (
+  <div className={twMerge('flex min-w-0 flex-1', className)}>
+    <Box
+      flex={1}
+      flexDirection="column"
+      rowGap={size === 'lg' ? 's' : 'xs'}
+      minWidth={0}
+      paddingTop="m"
+      borderTopWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
     >
-      <span className="dark:text-polar-500 text-gray-500">{title}</span>
-      <span
-        className={twMerge(
-          'font-mono',
-          valueClassName,
-          size === 'lg' ? 'text-xl' : '',
-        )}
+      <Text color="muted" truncate>
+        {title}
+      </Text>
+      <Text
+        as="div"
+        variant={size === 'lg' ? 'heading-s' : 'heading-xxs'}
+        truncate
       >
         {children}
-      </span>
-    </div>
-  )
-}
+      </Text>
+    </Box>
+  </div>
+)

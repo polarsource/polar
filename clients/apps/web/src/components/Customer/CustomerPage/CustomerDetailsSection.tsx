@@ -1,40 +1,98 @@
 'use client'
 
 import { ClickToCopy, copyable } from '@/components/Shared/ClickToCopy'
-import { DetailRow } from '@/components/Shared/DetailRow'
+import { useWallets } from '@/hooks/queries'
 import { formatCountry } from '@/utils/formatters'
+import { formatCurrency } from '@polar-sh/currency'
 import { schemas } from '@polar-sh/client'
-import { Status, Text } from '@polar-sh/orbit'
+import { Grid, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { PropsWithChildren, ReactNode } from 'react'
 
 interface CustomerDetailsSectionProps {
+  organization: schemas['Organization']
   customer: schemas['Customer']
 }
 
+const Section = ({ title, children }: PropsWithChildren<{ title: string }>) => (
+  <Box as="section" flexDirection="column" rowGap="s">
+    <Text as="h3">{title}</Text>
+    <Box flexDirection="column">{children}</Box>
+  </Box>
+)
+
+const Row = ({ label, value }: { label: string; value: ReactNode }) => (
+  <Box
+    alignItems="baseline"
+    justifyContent="between"
+    columnGap="m"
+    paddingVertical="s"
+    borderTopWidth={1}
+    borderStyle="solid"
+    borderColor="border-secondary"
+  >
+    <Box flexShrink={0}>
+      <Text color="muted">{label}</Text>
+    </Box>
+    <Box minWidth={0} justifyContent="end" textAlign="right">
+      {value ? (
+        <Text as="div" truncate>
+          {value}
+        </Text>
+      ) : (
+        <Text color="muted">—</Text>
+      )}
+    </Box>
+  </Box>
+)
+
+const formatAddress = (address: schemas['Customer']['billing_address']) => {
+  const lines = [
+    address?.line1,
+    address?.line2,
+    [address?.postal_code, address?.city].filter(Boolean).join(' '),
+    address?.state,
+  ].filter((line): line is string => !!line)
+  return lines.length > 0 ? lines.join(', ') : null
+}
+
+// Titled sections of hairline label/value rows, side by side from md, with long values
+// truncated (copying still takes the full value).
 export const CustomerDetailsSection = ({
+  organization,
   customer,
-}: CustomerDetailsSectionProps) => (
-  <ShadowBox className="flex flex-col gap-8">
-    <Box flexDirection="column" rowGap="l">
-      <Text variant="heading-xxs" as="h2">
-        Customer Details
-      </Text>
-      <Box flexDirection="column" rowGap={{ base: 'm', md: 'none' }}>
-        <DetailRow
-          label="ID"
-          value={copyable(customer.id)}
-          valueClassName="font-mono text-xs"
-        />
-        <DetailRow
-          label="External ID"
-          value={copyable(customer.external_id)}
-          valueClassName="min-w-0 break-all"
-        />
-        <DetailRow label="Email" value={copyable(customer.email)} />
-        <DetailRow label="Name" value={copyable(customer.name)} />
-        <DetailRow
+}: CustomerDetailsSectionProps) => {
+  const address = formatAddress(customer.billing_address)
+  const { data: billingWallets } = useWallets(organization.id, {
+    customer_id: customer.id,
+    type: 'billing',
+  })
+  const balance =
+    billingWallets && billingWallets.items.length > 0
+      ? billingWallets.items
+          .map((wallet) =>
+            formatCurrency('statistics')(wallet.balance, wallet.currency),
+          )
+          .join(', ')
+      : null
+
+  return (
+    <Grid
+      templateColumns={{
+        base: 'minmax(0, 1fr)',
+        md: 'repeat(2, minmax(0, 1fr))',
+      }}
+      columnGap="3xl"
+      rowGap="2xl"
+      alignItems="start"
+    >
+      <Section title="Details">
+        <Row label="ID" value={copyable(customer.id)} />
+        <Row label="External ID" value={copyable(customer.external_id)} />
+        <Row label="Email" value={copyable(customer.email)} />
+        <Row label="Name" value={copyable(customer.name)} />
+        <Row
           label="Type"
           value={
             <Status
@@ -44,77 +102,44 @@ export const CustomerDetailsSection = ({
             />
           }
         />
-        <DetailRow
-          label="Created At"
+        <Row
+          label="Created"
           value={<FormattedDateTime datetime={customer.created_at} />}
         />
-      </Box>
-    </Box>
-    <Box flexDirection="column" rowGap="l">
-      <Text variant="title" as="h3">
-        Billing Information
-      </Text>
-      <Box flexDirection="column" rowGap={{ base: 'm', md: 'none' }}>
-        <DetailRow
-          label="Billing Name"
-          value={copyable(customer.billing_name)}
-        />
-        <DetailRow
+      </Section>
+      <Section title="Billing">
+        <Row label="Balance" value={balance} />
+        <Row label="Name" value={copyable(customer.billing_name)} />
+        <Row
           label="Tax ID"
           value={
             customer.tax_id ? (
               <Box as="span" alignItems="center" columnGap="xs">
                 <ClickToCopy>{customer.tax_id[0]}</ClickToCopy>
-                <Text as="span" variant="caption" color="muted" monospace>
+                <Text as="span" variant="caption" color="muted">
                   {customer.tax_id[1].toLocaleUpperCase().replace('_', ' ')}
                 </Text>
               </Box>
-            ) : (
-              '—'
-            )
+            ) : null
           }
         />
-        <DetailRow
-          label="Line 1"
-          value={copyable(customer.billing_address?.line1)}
-        />
-        <DetailRow
-          label="Line 2"
-          value={copyable(customer.billing_address?.line2)}
-        />
-        <DetailRow
-          label="City"
-          value={copyable(customer.billing_address?.city)}
-        />
-        <DetailRow
-          label="State"
-          value={copyable(customer.billing_address?.state)}
-        />
-        <DetailRow
-          label="Postal Code"
-          value={copyable(customer.billing_address?.postal_code)}
-        />
-        <DetailRow
+        {address && <Row label="Address" value={copyable(address)} />}
+        <Row
           label="Country"
           value={
             customer.billing_address?.country
               ? copyable(formatCountry(customer.billing_address.country))
-              : undefined
+              : null
           }
         />
-      </Box>
-    </Box>
-    {Object.keys(customer.metadata).length > 0 && (
-      <Box flexDirection="column" rowGap="l">
-        <Text variant="title" as="h3">
-          Metadata
-        </Text>
-        <Box flexDirection="column" rowGap={{ base: 'm', md: 'none' }}>
+      </Section>
+      {Object.keys(customer.metadata).length > 0 && (
+        <Section title="Metadata">
           {Object.entries(customer.metadata).map(([key, value]) => (
-            <DetailRow key={key} label={key} value={copyable(String(value))} />
+            <Row key={key} label={key} value={copyable(String(value))} />
           ))}
-        </Box>
-      </Box>
-    )}
-  </ShadowBox>
-)
+        </Section>
+      )}
+    </Grid>
+  )
+}

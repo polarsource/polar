@@ -2,10 +2,6 @@
 
 import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModal'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
-import DateRangePicker from '@/components/Metrics/DateRangePicker'
-import IntervalPicker, {
-  getNextValidInterval,
-} from '@/components/Metrics/IntervalPicker'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
@@ -29,7 +25,6 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useCallback } from 'react'
-import { useCustomerMetricsParams } from './useCustomerMetricsParams'
 
 interface CustomerHeaderProps {
   customer: schemas['Customer']
@@ -41,15 +36,6 @@ export const CustomerHeader = ({
   organization,
 }: CustomerHeaderProps) => {
   const pushRouteWithoutCache = usePushRouteWithoutCache()
-  const {
-    startDate,
-    endDate,
-    setStartDate,
-    setEndDate,
-    interval,
-    setInterval,
-  } = useCustomerMetricsParams(customer)
-
   const {
     show: showEditCustomerModal,
     hide: hideEditCustomerModal,
@@ -155,33 +141,8 @@ export const CustomerHeader = ({
     organization.slug,
   ])
 
-  const onDateChange = useCallback(
-    (date: { from: Date; to: Date }) => {
-      const validInterval = getNextValidInterval(interval, date.from, date.to)
-      setStartDate(date.from)
-      setEndDate(date.to)
-      if (validInterval !== interval) {
-        setInterval(validInterval)
-      }
-    },
-    [interval, setStartDate, setEndDate, setInterval],
-  )
-
   return (
     <Box columnGap="s">
-      <Box display="block">
-        <IntervalPicker
-          interval={interval}
-          onChange={setInterval}
-          startDate={startDate}
-          endDate={endDate}
-        />
-      </Box>
-      <DateRangePicker
-        className="shrink-0"
-        date={{ from: startDate, to: endDate }}
-        onDateChange={onDateChange}
-      />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="default" className="size-10" variant="secondary">

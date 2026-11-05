@@ -3,19 +3,17 @@
 import { Spinner } from '@polar-sh/orbit'
 import { ParsedMetricsResponse } from '@/hooks/queries'
 import { getFormattedMetricValue } from '@/utils/metrics'
-import { ArrowOutwardOutlined, MoreVertOutlined } from '@polar-sh/orbit/icons'
+import {
+  ArrowDownRight,
+  ArrowOutwardOutlined,
+  ArrowUpRight,
+  MoreVertOutlined,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/orbit'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { Status } from '@polar-sh/orbit'
 import {
   DropdownMenu,
@@ -31,14 +29,8 @@ import { useModal } from '../Modal/useModal'
 import MetricChart from './MetricChart'
 import { ShareChartModal } from './ShareChartModal'
 
-interface MetricOption {
-  slug: keyof schemas['Metrics']
-  display_name: string
-}
-
 interface MetricChartBoxProps {
   metric: keyof schemas['Metrics']
-  onMetricChange?: (metric: keyof schemas['Metrics']) => void
   data?: ParsedMetricsResponse
   previousData?: ParsedMetricsResponse
   interval: schemas['TimeInterval']
@@ -52,8 +44,8 @@ interface MetricChartBoxProps {
   exportable?: boolean
   simple?: boolean
   chartType?: 'line' | 'bar'
-  /** Override the list of metrics shown in the dropdown. If not provided, uses metrics from data. */
-  availableMetrics?: MetricOption[]
+  /** Whose data this is, such as a customer's name. Shown before the metric title. */
+  context?: string
   /** Controlled hover index — syncs cursor across charts in a group. */
   hoveredPeriodIndex?: number | null
   onHoverPeriodChange?: (index: number | null) => void
@@ -73,7 +65,6 @@ const EXPERIMENTAL_METRICS: Record<string, { tooltip: string }> = {
 const MetricChartBox = ({
   ref,
   metric,
-  onMetricChange,
   data,
   previousData,
   interval,
@@ -87,7 +78,7 @@ const MetricChartBox = ({
   exportable = true,
   simple = false,
   chartType = 'line',
-  availableMetrics,
+  context,
   hoveredPeriodIndex: hoveredPeriodIndexProp,
   onHoverPeriodChange,
 }: MetricChartBoxProps & {
@@ -185,10 +176,10 @@ const MetricChartBox = ({
   }, [data, previousData, hoveredPeriod, hoveredPreviousPeriod, metric])
 
   return (
-    <ShadowBox
+    <div
       ref={ref}
       className={twMerge(
-        'dark:bg-polar-800 group relative flex w-full flex-col justify-between bg-gray-50 p-2 shadow-xs',
+        'group relative flex w-full flex-col justify-between gap-y-4 p-6',
         className,
       )}
     >
@@ -200,7 +191,6 @@ const MetricChartBox = ({
       <div
         className={twMerge(
           'flex flex-row items-start justify-between gap-6',
-          compact ? 'p-4' : 'px-6 py-4',
           loading && 'invisible',
         )}
       >
@@ -212,75 +202,39 @@ const MetricChartBox = ({
               : 'flex-col gap-y-4',
           )}
         >
-          {onMetricChange ? (
-            <div className="flex flex-row items-center gap-x-2">
-              <Select value={metric} onValueChange={onMetricChange}>
-                <SelectTrigger className="dark:hover:bg-polar-700 -mt-2 -ml-3 h-fit w-fit rounded-lg border-0 border-none bg-transparent px-3 py-2 shadow-none ring-0 transition-colors hover:bg-gray-200 focus-visible:ring-0 focus-visible:ring-offset-0">
-                  <SelectValue placeholder="Select a metric" />
-                </SelectTrigger>
-                <SelectContent className="dark:bg-polar-800 dark:ring-polar-700 ring-1 ring-gray-200">
-                  {availableMetrics
-                    ? availableMetrics.map((m) => (
-                        <SelectItem key={m.slug} value={m.slug}>
-                          {m.display_name}
-                        </SelectItem>
-                      ))
-                    : data &&
-                      Object.values(data.metrics)
-                        .filter(
-                          (m): m is NonNullable<typeof m> =>
-                            m !== null && m !== undefined,
-                        )
-                        .map((m) => (
-                          <SelectItem key={m.slug} value={m.slug}>
-                            {m.display_name}
-                          </SelectItem>
-                        ))}
-                </SelectContent>
-              </Select>
-              {metric in EXPERIMENTAL_METRICS && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex cursor-help">
-                      <Status status="Experimental" color="blue" size="small" />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    {EXPERIMENTAL_METRICS[metric]?.tooltip}
-                  </TooltipContent>
-                </Tooltip>
+          <div className="flex flex-row items-center gap-x-2">
+            <h3 className={compact ? 'text-base' : 'text-lg'}>
+              {selectedMetric?.display_name}
+              {context && !shareable && (
+                <span className="dark:text-polar-500 ml-3 text-gray-500">
+                  {context}
+                </span>
               )}
-            </div>
-          ) : (
-            <div className="flex flex-row items-center gap-x-2">
-              <h3 className={compact ? 'text-base' : 'text-lg'}>
-                {selectedMetric?.display_name}
-              </h3>
-              {metric in EXPERIMENTAL_METRICS && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex cursor-help">
-                      <Status status="Experimental" color="blue" size="small" />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    {EXPERIMENTAL_METRICS[metric]?.tooltip}
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-          )}
-          <h2
-            className={
-              compact ? 'text-base' : 'text-3xl xl:text-5xl xl:font-[350]'
-            }
+            </h3>
+            {metric in EXPERIMENTAL_METRICS && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex cursor-help">
+                    <Status status="Experimental" color="blue" size="small" />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  {EXPERIMENTAL_METRICS[metric]?.tooltip}
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+          <Text
+            as="h2"
+            variant={compact ? 'default' : 'heading-l'}
+            weight="book"
           >
             {metricValue}
-          </h2>
-          {!compact && (
+          </Text>
+          {!compact && previousData && (
             <div className="flex flex-col gap-x-6 gap-y-2 md:flex-row md:items-center">
               <div className="flex flex-row items-center gap-x-2 text-sm">
-                <span className="h-3 w-3 rounded-full border-2 border-blue-500" />
+                <span className="h-0.5 w-3 bg-blue-600" />
                 {hoveredPeriod ? (
                   <FormattedDateTime
                     datetime={hoveredPeriod.timestamp}
@@ -298,39 +252,43 @@ const MetricChartBox = ({
                   </span>
                 )}
               </div>
-              {previousData && (
-                <div className="flex flex-row items-center gap-x-2 text-sm">
-                  <span className="dark:border-polar-600 h-3 w-3 rounded-full border-2 border-gray-500" />
-                  {hoveredPreviousPeriod ? (
-                    <FormattedDateTime
-                      datetime={hoveredPreviousPeriod.timestamp}
-                      dateStyle="medium"
-                    />
-                  ) : (
-                    <span className="dark:text-polar-500 text-gray-500">
-                      {previousStartDate && previousEndDate && (
-                        <FormattedInterval
-                          startDatetime={previousStartDate}
-                          endDatetime={previousEndDate}
-                          hideCurrentYear={false}
-                        />
-                      )}
-                    </span>
-                  )}
-                </div>
-              )}
+              <div className="flex flex-row items-center gap-x-2 text-sm">
+                <span className="dark:bg-polar-600 h-0.5 w-3 bg-gray-300" />
+                {hoveredPreviousPeriod ? (
+                  <FormattedDateTime
+                    datetime={hoveredPreviousPeriod.timestamp}
+                    dateStyle="medium"
+                  />
+                ) : (
+                  <span className="dark:text-polar-500 text-gray-500">
+                    {previousStartDate && previousEndDate && (
+                      <FormattedInterval
+                        startDatetime={previousStartDate}
+                        endDatetime={previousEndDate}
+                        hideCurrentYear={false}
+                      />
+                    )}
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>
 
         <div className="flex shrink-0 flex-row items-center gap-x-4">
-          {trend !== 0 && !isNaN(trend) && trend !== Infinity && (
-            <Status
-              status={
-                trend > 0 ? `+${trend.toFixed(0)}%` : `${trend.toFixed(0)}%`
-              }
-              color={trend > 0 ? 'green' : 'red'}
-            />
+          {trend !== 0 && Number.isFinite(trend) && (
+            <Box alignItems="center" columnGap="xs">
+              <Box color={trend > 0 ? 'text-success' : 'text-danger'}>
+                {trend > 0 ? (
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                ) : (
+                  <ArrowDownRight className="h-3.5 w-3.5" />
+                )}
+              </Box>
+              <Text variant="caption" tabularNums>
+                {Math.abs(trend).toFixed(0)}%
+              </Text>
+            </Box>
           )}
           {shareable && (
             <Tooltip>
@@ -374,12 +332,7 @@ const MetricChartBox = ({
           )}
         </div>
       </div>
-      <div
-        className={twMerge(
-          'dark:bg-polar-900 flex w-full flex-col gap-y-2 rounded-3xl bg-white',
-          chartClassName,
-        )}
-      >
+      <div className={twMerge('flex w-full flex-col gap-y-2', chartClassName)}>
         {loading ? (
           <div
             style={{ height }}
@@ -409,7 +362,7 @@ const MetricChartBox = ({
       </div>
       {shareable && data && (
         <Modal
-          title={`Share ${selectedMetric?.display_name} Metric`}
+          title={`Share ${context ? `${context} ` : ''}${selectedMetric?.display_name} Metric`}
           className="lg:w-fit!"
           isShown={isModalOpen}
           hide={hideModal}
@@ -419,11 +372,12 @@ const MetricChartBox = ({
               previousData={previousData}
               interval={interval}
               metric={selectedMetric?.slug as keyof schemas['Metrics']}
+              context={context}
             />
           }
         />
       )}
-    </ShadowBox>
+    </div>
   )
 }
 

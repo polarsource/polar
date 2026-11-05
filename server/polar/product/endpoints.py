@@ -160,13 +160,7 @@ async def report_flagged_name(
     status_code=201,
     summary="Create Product",
     openapi_extra=open_world(),
-    responses={
-        201: {"description": "Product created."},
-        403: {
-            "model": NotPermitted.schema(),
-            "description": "Organization product limit reached.",
-        },
-    },
+    responses={201: {"description": "Product created."}},
 )
 async def create(
     product_create: legacy_schemas.ProductCreate,

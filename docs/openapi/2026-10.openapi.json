@@ -2580,16 +2580,6 @@
               }
             }
           },
-          "403": {
-            "description": "Organization benefit limit reached.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotPermitted"
-                }
-              }
-            }
-          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5026,16 +5016,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Product"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Organization product limit reached.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotPermitted"
                 }
               }
             }

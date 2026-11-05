@@ -107,7 +107,9 @@ const ClientPage = ({
   const preset =
     [...rangeIntervals, ...dateRangeIntervals(organization)].find(
       (interval) => interval.slug === selectedRange,
-    ) ?? rangeIntervals[0]
+    ) ??
+    rangeIntervals.find((interval) => interval.slug === DEFAULT_RANGE) ??
+    rangeIntervals[0]
   const startDate = isCustomRange ? customStartDate : preset.value[0]
   const endDate = isCustomRange ? customEndDate : preset.value[1]
   const selection =

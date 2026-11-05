@@ -483,7 +483,9 @@ class OrderService:
             auth_subject,
             id,
             options=repository.get_eager_options(
-                product_load=joinedload(Order.product),
+                product_load=joinedload(Order.product).defer(
+                    Product.is_deletable, raiseload=True
+                ),
             ),
         )
 

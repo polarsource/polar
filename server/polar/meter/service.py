@@ -56,6 +56,7 @@ from polar.models import (
     ProductPrice,
     SubscriptionProductPrice,
 )
+from polar.models.catalog import CatalogStatus
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.reducer.service import reducer as reducer_service
@@ -100,6 +101,8 @@ class MeterService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         metadata: MetadataQuery | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -113,6 +116,10 @@ class MeterService:
             session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
+        if catalog_id is not None or catalog_status is not None:
+            statement = repository.apply_catalog_filter(
+                statement, org_ids, catalog_id, catalog_status
+            )
 
         if organization_id is not None:
             statement = statement.where(Meter.organization_id.in_(organization_id))

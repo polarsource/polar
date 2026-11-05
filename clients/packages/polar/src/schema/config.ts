@@ -561,7 +561,7 @@ export const defineConfig = <
           owner,
           'custom field',
           customFieldSlugs,
-          definition.asked.map(([field]) => field),
+          definition.fieldList.map(([field]) => field),
         )
         if (!deprecated) {
           assertNotDeprecated(
@@ -592,10 +592,10 @@ export const defineConfig = <
           ...(definition[metadataKey] !== undefined && {
             metadata: definition[metadataKey],
           }),
-          ...(definition.asked.length > 0 && {
-            custom_fields: definition.asked.map(([field, asked]) => ({
+          ...(definition.fieldList.length > 0 && {
+            custom_fields: definition.fieldList.map(([field, requirement]) => ({
               field,
-              required: asked === 'required',
+              required: requirement === 'required',
             })),
           }),
           ...(definition.descriptionText !== undefined && {

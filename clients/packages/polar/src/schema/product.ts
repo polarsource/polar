@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
-import type { Asked } from './customField'
+import type { FieldRequirement } from './customField'
 import { withDeprecation } from './deprecation'
 import type { KeepDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
@@ -228,7 +228,7 @@ class ProductBuilder<
   readonly trialPeriod: Trial | undefined = undefined
   readonly meterPeriod: MeterCycle | undefined = undefined
   readonly benefits: ReadonlyArray<Granted> = []
-  readonly asked: ReadonlyArray<readonly [string, Asked]> = []
+  readonly fieldList: ReadonlyArray<readonly [string, FieldRequirement]> = []
   readonly descriptionText: string | undefined = undefined
 
   constructor(
@@ -333,16 +333,16 @@ class ProductBuilder<
 
   /**
    * The custom fields checkout asks for, in this order:
-   * `{ company: 'required', vat: 'optional' }`, or `[slug, asked]` entries
+   * `{ company: 'required', vat: 'optional' }`, or `[slug, requirement]` entries
    * when a slug looks like an integer.
    */
-  asks<const Fields extends Field>(
+  customFields<const Fields extends Field>(
     fields:
-      | { readonly [Key in Fields]: Asked }
-      | ReadonlyArray<readonly [Fields, Asked]>,
+      | { readonly [Key in Fields]: FieldRequirement }
+      | ReadonlyArray<readonly [Fields, FieldRequirement]>,
   ): this {
     return this.with({
-      asked: Array.isArray(fields) ? fields : Object.entries(fields),
+      fieldList: Array.isArray(fields) ? fields : Object.entries(fields),
     })
   }
 

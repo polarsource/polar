@@ -149,4 +149,4 @@ export const customFieldHelpers = {
 
 export type CustomFieldHelpers = typeof customFieldHelpers
 
-export type Asked = 'required' | 'optional'
+export type FieldRequirement = 'required' | 'optional'

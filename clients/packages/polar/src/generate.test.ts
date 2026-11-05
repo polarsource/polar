@@ -300,11 +300,11 @@ const cases: [string, PolarConfig][] = [
           pro: product('Pro')
             .prices(free())
             .recurring('monthly')
-            .asks({ terms: 'required', 'team-size': 'optional' }),
+            .customFields({ terms: 'required', 'team-size': 'optional' }),
           tens: product('Tens')
             .prices(free())
             .once()
-            .asks([
+            .customFields([
               ['team-size', 'optional'],
               ['10', 'required'],
             ]),

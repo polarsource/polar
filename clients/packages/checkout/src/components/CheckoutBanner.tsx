@@ -16,7 +16,7 @@ export const CheckoutBanner = ({
   return (
     <div
       className={cn(
-        'dark:border-polar-700 dark:bg-polar-800 flex w-full flex-col gap-1 rounded-lg border border-gray-200 bg-gray-50 p-3 text-left',
+        'dark:border-polar-700 dark:bg-polar-800 flex w-full flex-col gap-1 rounded-lg border border-gray-200 bg-gray-50 p-3 text-start',
         className,
       )}
     >

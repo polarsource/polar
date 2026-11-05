@@ -22,6 +22,7 @@ export type Clients = Record<PolarEnvironment, ApiClient>
 
 export interface CatalogOptions {
   readonly name?: string | undefined
+  readonly catalogId?: string | undefined
 }
 
 // Sections the config API doesn't accept yet

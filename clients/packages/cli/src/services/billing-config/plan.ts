@@ -28,7 +28,9 @@ export const plan =
     Effect.gen(function* () {
       const response = yield* post(
         clients,
-        '/config/plan',
+        options.catalogId === undefined
+          ? '/config/plan'
+          : `/config/plan?catalog_id=${options.catalogId}`,
         config,
         organization,
         options,

@@ -2,11 +2,14 @@ import { describe, expect, test, vi } from 'vitest'
 import { Cause, Effect, Exit } from 'effect'
 import { publish } from '@/commands/config/publish'
 import {
+  type AppliedEntry,
   BillingConfigError,
   type Catalog,
   type Catalogs,
+  type LoadedConfig,
 } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
+import type { CatalogOptions } from '@/services/billing-config/api'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { keys, runCli, stripAnsi } from '@/utils/test-utils/cli'
@@ -24,11 +27,30 @@ const withDraft: Catalogs = {
   draft: { id: 'cat-draft', name: null },
 }
 
+const config: LoadedConfig = {
+  file: 'polar.json',
+  source: '{"products":[{"external_id":"pro"}]}',
+  input: { products: [{ external_id: 'pro' }] },
+  generated: false,
+}
+
+const repriced: AppliedEntry = {
+  section: 'products',
+  id: 'pro',
+  action: 'updated',
+  diff: [{ field: 'name', before: 'Pro', after: 'Pro plus' }],
+}
+
 const run = async (
   catalogs: Catalogs,
   args: ReadonlyArray<string> = [],
   options: Parameters<typeof runCli>[2] = {},
+  entries: ReadonlyArray<AppliedEntry> | null = [],
 ) => {
+  const planned = vi.fn(
+    (_config: unknown, _organization: unknown, _options?: CatalogOptions) =>
+      Effect.succeed({ entries: entries ?? [], issues: [] }),
+  )
   const published = vi.fn((_organization: unknown, draft: Catalog) =>
     Effect.succeed({ ...draft, name: 'v4' }),
   )
@@ -38,8 +60,16 @@ const run = async (
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
-          load: () => Effect.die('unused'),
-          plan: () => Effect.die('unused'),
+          load: () =>
+            entries === null
+              ? Effect.fail(
+                  new BillingConfigError({
+                    message:
+                      'No billing config file found in the current directory',
+                  }),
+                )
+              : Effect.succeed(config),
+          plan: planned,
           apply: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.succeed(catalogs),
@@ -60,6 +90,7 @@ const run = async (
     output: stripAnsi(cli.output()),
     terminal: stripAnsi(cli.terminal()),
     published: published.mock.calls.map(([, draft]) => draft.id),
+    planned: planned.mock.calls.map(([, , options]) => options?.catalogId),
     message: Exit.isFailure(exit)
       ? (Cause.squash(exit.cause) as BillingConfigError).message
       : undefined,
@@ -74,6 +105,52 @@ describe('polar config publish', () => {
     expect(output).toMatch(/Catalog {7}v3 → draft/)
     expect(output).toContain(
       'v4 is live for Acme (sandbox). Existing customers stay on their current versions.',
+    )
+  })
+
+  test('compares the config file with the draft', async () => {
+    const { output, planned } = await run(withDraft, ['--confirm'])
+    expect(planned).toEqual(['cat-draft'])
+    expect(output).toContain('polar.json matches the draft')
+    expect(output).not.toContain('Not in the draft')
+  })
+
+  test('shows changes in the config file that the draft is missing', async () => {
+    const { output, published } = await run(withDraft, ['--confirm'], {}, [
+      repriced,
+      { section: 'meters', id: 'tokens', action: 'updated', diff: [] },
+      { section: 'benefits', id: 'support', action: 'unchanged', diff: [] },
+    ])
+    expect(published).toEqual(['cat-draft'])
+    expect(output).toContain('polar.json has 1 change not in the draft')
+    expect(output).toContain('Not in the draft polar.json')
+    expect(output).toMatch(/~ pro/)
+    expect(output).not.toContain('tokens')
+  })
+
+  test('warns in the confirmation when the draft is missing changes', async () => {
+    const { terminal } = await run(
+      withDraft,
+      [],
+      { interactive: true, input: [...keys.type('n'), keys.enter] },
+      [repriced],
+    )
+    expect(terminal).toContain(
+      'Warning: polar.json has changes that are not in the draft.',
+    )
+  })
+
+  test('publishes without comparing when there is no config file', async () => {
+    const { output, published, planned } = await run(
+      withDraft,
+      ['--confirm'],
+      {},
+      null,
+    )
+    expect(planned).toEqual([])
+    expect(published).toEqual(['cat-draft'])
+    expect(output).toContain(
+      'skipped: No billing config file found in the current directory',
     )
   })
 
@@ -109,6 +186,7 @@ describe('polar config publish', () => {
       live: { id: 'cat-draft', name: 'v4' },
       draft: null,
       published: true,
+      drift: [],
     })
   })
 })

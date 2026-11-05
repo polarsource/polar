@@ -2,16 +2,20 @@ import { Effect, Option, Stdio } from 'effect'
 import { Command, Prompt } from 'effect/cli'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
+  type AppliedEntry,
   BillingConfigError,
   type Catalog,
   type Catalogs,
+  type LoadedConfig,
   PublishOutput,
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { next, nextOpen, section, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
-import { confirm as confirmed, org } from '@/utils/flags'
+import { plural } from '@/utils/billing-config/problems'
+import { formatTree } from '@/utils/billing-config/tree'
+import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
 import * as ui from '@/utils/ui'
@@ -31,6 +35,29 @@ const summary = (organization: ActiveOrganization, { live, draft }: Catalogs) =>
       ],
     ]),
   )
+
+interface Drift {
+  readonly config: LoadedConfig
+  readonly entries: ReadonlyArray<AppliedEntry>
+}
+
+// Meters, settings and webhooks apply right away, only products and benefits wait in the draft
+const drifted = (entries: ReadonlyArray<AppliedEntry>) =>
+  entries.filter(
+    (entry) =>
+      (entry.section === 'products' || entry.section === 'benefits') &&
+      entry.action !== 'unchanged',
+  )
+
+const report = (drift: Drift | null) =>
+  drift === null || drift.entries.length === 0
+    ? []
+    : section(
+        `Not in the draft ${ui.dim(drift.config.file)}`,
+        formatTree(drift.config.input, drift.entries),
+      )
+
+const warning = ui.bold(ui.yellow('Warning:'))
 
 const interactive = Effect.gen(function* () {
   const stdio = yield* Stdio.Stdio
@@ -60,6 +87,7 @@ const keypress = (frame: string) =>
 
 const approve = (
   organization: ActiveOrganization,
+  drift: Drift | null,
   json: boolean,
   confirmed: boolean,
   say: Say['say'],
@@ -76,12 +104,20 @@ const approve = (
     const accepted = yield* Prompt.run(
       keypress(
         [
-          ...ui.boxRows(
-            `${ui.INDENT}${ui.bold(ui.yellow('Warning:'))} Publishing makes the draft live for new checkouts`,
-          ),
-          ...ui.boxRows(
+          ...[
+            ...(drift && drift.entries.length > 0
+              ? [
+                  `${ui.INDENT}${warning} ${drift.config.file} has changes that are not in the draft.`,
+                  `${ui.INDENT}Run ${ui.command('polar config apply')} first to include them.`,
+                  '',
+                  `${ui.INDENT}Publishing makes the draft live for new checkouts.`,
+                ]
+              : [
+                  `${ui.INDENT}${warning} Publishing makes the draft live for new checkouts.`,
+                ]),
+            '',
             `${ui.INDENT}${ui.green('y')} to publish  ${ui.red('n')} to cancel`,
-          ),
+          ].flatMap((line) => ui.boxRows(line)),
           ui.boxBottom(),
         ].join('\n'),
       ),
@@ -115,14 +151,15 @@ const render = (
         ui.blank,
       ]
 
-export const publish = Command.make('publish', { org, confirmed }).pipe(
+export const publish = Command.make('publish', { file, org, confirmed }).pipe(
   Command.withDescription(
     "Make your organization's draft catalog live, so new checkouts sell its products and benefits",
   ),
   Command.withExamples([
     {
       command: 'polar config publish',
-      description: 'Publish the draft after confirmation',
+      description:
+        'Publish the draft after confirmation, warning about changes in polar.config.ts that the draft is missing',
     },
     {
       command: 'polar config publish --org acme',
@@ -135,11 +172,11 @@ export const publish = Command.make('publish', { org, confirmed }).pipe(
   ]),
   output({
     result: PublishOutput,
-    run: ({ org, confirmed }, { say }: Say) =>
+    run: ({ file, org, confirmed }, { say }: Say) =>
       Effect.gen(function* () {
         const billing = yield* BillingConfig
         const { json } = yield* Output
-        const { organization, catalogs } = yield* withProgress(
+        const { organization, catalogs, drift } = yield* withProgress(
           (progress) =>
             Effect.gen(function* () {
               yield* progress.open('Preflight')
@@ -151,25 +188,64 @@ export const publish = Command.make('publish', { org, confirmed }).pipe(
               yield* progress.finish(
                 catalogs.draft ? 'draft found' : 'no draft',
               )
+              if (catalogs.draft === null) {
+                yield* progress.close
+                return { organization, catalogs, drift: null }
+              }
+              yield* progress.start('Comparing')
+              const draft = catalogs.draft
+              const drift = yield* billing
+                .load(Option.getOrUndefined(file))
+                .pipe(
+                  Effect.flatMap((config) =>
+                    billing
+                      .plan(config, organization, { catalogId: draft.id })
+                      .pipe(
+                        Effect.map(
+                          (plan): Drift => ({
+                            config,
+                            entries: drifted(plan.entries),
+                          }),
+                        ),
+                      ),
+                  ),
+                  Effect.tap(({ config, entries }) =>
+                    progress.finish(
+                      entries.length === 0
+                        ? `${config.file} matches the draft`
+                        : `${config.file} has ${plural(entries.length, 'change')} not in the draft`,
+                    ),
+                  ),
+                  Effect.catchTag('BillingConfigError', (error) =>
+                    progress
+                      .finish(`skipped: ${error.message}`)
+                      .pipe(Effect.as(null)),
+                  ),
+                )
               yield* progress.close
-              return { organization, catalogs }
+              return { organization, catalogs, drift }
             }),
           'columns',
         )
         if (catalogs.draft === null) {
-          return { organization, catalogs, published: false }
+          return { organization, catalogs, published: false, drift }
         }
-        yield* say(summary(organization, catalogs))
-        yield* approve(organization, json, confirmed, say)
+        yield* say([...summary(organization, catalogs), ...report(drift)])
+        yield* approve(organization, drift, json, confirmed, say)
         const live = yield* billing.publish(organization, catalogs.draft)
         return {
           organization,
           catalogs: { live, draft: null },
           published: true,
+          drift,
         }
       }),
     render: ({ organization, catalogs, published }) =>
       render(organization, catalogs, published),
-    json: ({ catalogs, published }) => ({ ...catalogs, published }),
+    json: ({ catalogs, published, drift }) => ({
+      ...catalogs,
+      published,
+      drift: drift?.entries ?? [],
+    }),
   }),
 )

@@ -190,6 +190,7 @@ export type Catalogs = typeof Catalogs.Type
 export const PublishOutput = Schema.Struct({
   ...Catalogs.fields,
   published: Schema.Boolean,
+  drift: Schema.Array(AppliedEntry),
 })
 
 export interface LoadedConfig {

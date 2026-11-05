@@ -12,6 +12,7 @@ import {
   type Prepared,
 } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
+import type { Unkeyed } from '@/utils/billing-config/keys'
 import { keys, runCli, stripAnsi } from '@/utils/test-utils/cli'
 import { fakeAuth, fakeOrganizations } from '@/utils/test-utils/services'
 
@@ -42,6 +43,7 @@ interface Setup {
   sessions?: ActiveOrganization['environment'][]
   install?: boolean
   installs?: boolean
+  unkeyed?: Unkeyed[]
 }
 
 let directory: string
@@ -65,6 +67,7 @@ const run = async (
 ) => {
   const calls: Array<{ organization: ActiveOrganization; target: InitTarget }> =
     []
+  const keyed: unknown[] = []
   const installed: Array<{ command: ReadonlyArray<string>; cwd: string }> = []
   const items = setup.organizations ?? [acme]
   const cli = runCli(init, args, options)
@@ -79,16 +82,22 @@ const run = async (
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),
-          init: (organization, target) => {
-            calls.push({ organization, target })
-            const format = target.format ?? 'ts'
-            return Effect.succeed({
-              file: target.file ?? `polar.config.${format}`,
-              format,
-              install: setup.install ? INSTALL : undefined,
-              installDirectory: setup.install ? target.directory : undefined,
-            } satisfies Prepared)
-          },
+          init: (organization, target, name) =>
+            Effect.gen(function* () {
+              calls.push({ organization, target })
+              const named = yield* name(setup.unkeyed ?? [])
+              keyed.push(...named)
+              const format = target.format ?? 'ts'
+              return {
+                file: target.file ?? `polar.config.${format}`,
+                format,
+                imported: { meters: 0, benefits: 0, products: named.length },
+                keyed: named,
+                skipped: [],
+                install: setup.install ? INSTALL : undefined,
+                installDirectory: setup.install ? target.directory : undefined,
+              } satisfies Prepared
+            }),
           install: (command, cwd) => {
             installed.push({ command, cwd })
             return Effect.succeed({
@@ -117,6 +126,7 @@ const run = async (
   )
   return {
     calls,
+    keyed,
     installed,
     exit,
     output: stripAnsi(cli.output()),
@@ -153,6 +163,7 @@ describe('polar config init', () => {
     expect(installed).toEqual([{ command: INSTALL, cwd: directory }])
     expect(output).toContain('✔ Resolving organization\n    Acme (sandbox)')
     expect(output).toContain('✔ Writing config\n    polar.config.ts')
+    expect(output).toMatch(/Imported {6}0 meters, 0 benefits, 0 products/)
     expect(output).toContain('✔ Your billing config is ready')
     expect(output).toMatch(/Package {7}@polar-sh\/polar installed/)
     expect(output).not.toContain('Install the config package')
@@ -296,8 +307,12 @@ describe('polar config init', () => {
     const { output } = await run(['--json'], {}, { install: true })
 
     expect(JSON.parse(output)).toEqual({
+      status: 'written',
       file: 'polar.config.ts',
       format: 'ts',
+      imported: { meters: 0, benefits: 0, products: 0 },
+      keyed: [],
+      skipped: [],
       install: { command: 'pnpm add @polar-sh/polar', status: 'installed' },
       organization: acme,
       next: [
@@ -305,6 +320,137 @@ describe('polar config init', () => {
         'polar config plan',
         'polar config apply',
       ],
+    })
+  })
+
+  describe('an organization with products without an external ID', () => {
+    const unkeyed: Unkeyed[] = [
+      {
+        resource: 'product',
+        id: 'p-1',
+        name: 'Pro Plan',
+        suggestion: 'pro-plan',
+      },
+      { resource: 'product', id: 'p-2', name: 'Team', suggestion: 'team' },
+    ]
+
+    test('asks for each external ID, suggesting one', async () => {
+      const { keyed, output, terminal } = await run(
+        [],
+        {
+          interactive: true,
+          input: [keys.enter, keys.ctrlU, ...keys.type('teams'), keys.enter],
+        },
+        { unkeyed },
+      )
+
+      expect(terminal).toContain('External ID for product Pro Plan')
+      expect(keyed).toEqual([
+        {
+          resource: 'product',
+          id: 'p-1',
+          name: 'Pro Plan',
+          external_id: 'pro-plan',
+        },
+        { resource: 'product', id: 'p-2', name: 'Team', external_id: 'teams' },
+      ])
+      expect(output).toContain('+ pro-plan product Pro Plan')
+      expect(output).toContain(
+        'Review the meters, benefits and products in polar.config.ts',
+      )
+    })
+
+    test('lists the suggestions and writes nothing without --confirm outside a terminal', async () => {
+      const { keyed, output, exit } = await run(['--json'], {}, { unkeyed })
+
+      expect(Exit.isFailure(exit)).toBe(true)
+      expect(keyed).toEqual([])
+      expect(JSON.parse(output)).toEqual({
+        status: 'external_ids_required',
+        organization: acme,
+        external_ids: [
+          {
+            resource: 'product',
+            id: 'p-1',
+            name: 'Pro Plan',
+            external_id: 'pro-plan',
+          },
+          { resource: 'product', id: 'p-2', name: 'Team', external_id: 'team' },
+        ],
+        next: [
+          'polar config init --confirm',
+          'polar config init --confirm --external-id <id>=<external ID>',
+        ],
+      })
+    })
+
+    test('uses the suggestions with --confirm, except the ones overridden', async () => {
+      const { keyed, exit } = await run(
+        ['--json', '--confirm', '--external-id', 'p-2=team-yearly'],
+        {},
+        { unkeyed },
+      )
+
+      expect(Exit.isSuccess(exit)).toBe(true)
+      expect(
+        keyed.map((entry) => (entry as { external_id: string }).external_id),
+      ).toEqual(['pro-plan', 'team-yearly'])
+    })
+
+    test('needs no --confirm when every resource is given an external ID', async () => {
+      const { keyed } = await run(
+        ['--json', '--external-id', 'p-1=pro', '--external-id', 'p-2=team'],
+        {},
+        { unkeyed },
+      )
+
+      expect(keyed).toHaveLength(2)
+    })
+
+    test('only asks for the resources not given an external ID', async () => {
+      const { keyed, terminal } = await run(
+        ['--external-id', 'p-1=pro'],
+        { interactive: true, input: [keys.enter] },
+        { unkeyed },
+      )
+
+      expect(terminal).not.toContain('External ID for product Pro Plan')
+      expect(terminal).toContain('External ID for product Team')
+      expect(
+        keyed.map((entry) => (entry as { external_id: string }).external_id),
+      ).toEqual(['pro', 'team'])
+    })
+
+    test('rejects unknown IDs, malformed values and duplicate external IDs', async () => {
+      expect(
+        message(
+          (
+            await run(
+              ['--json', '--confirm', '--external-id', 'p-9=x'],
+              {},
+              { unkeyed },
+            )
+          ).exit,
+        ),
+      ).toBe(
+        'No meter, benefit or product without an external ID has the ID p-9',
+      )
+      expect(
+        message(
+          (await run(['--json', '--external-id', 'p-1'], {}, { unkeyed })).exit,
+        ),
+      ).toBe('--external-id p-1 is not <id>=<external ID>')
+      expect(
+        message(
+          (
+            await run(
+              ['--json', '--confirm', '--external-id', 'p-1=team'],
+              {},
+              { unkeyed },
+            )
+          ).exit,
+        ),
+      ).toBe('Two products would get the external ID team')
     })
   })
 })

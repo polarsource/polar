@@ -36,8 +36,6 @@ const PULL_INTERVAL = 30_000;
 const PULL_LIMIT = 500;
 // Pending ids per confirm request: Polar refuses a bigger one.
 const CONFIRM_BATCH = 1_000;
-// Events Polar has not counted yet are asked about again this much later.
-const CONFIRM_RETRY = 30_000;
 // A customer tells its organization it is awake this often, and is forgotten after the
 // retention of Polar's changes without a sign of life.
 const REGISTER_INTERVAL = 5 * 60_000;
@@ -203,9 +201,8 @@ export class CustomerDO extends DurableObject<OutpostEnv> {
   }
 
   // Asks Polar which pending events of the sealed buckets it counts. The rest stay pending
-  // until a later snapshot counts them, an hour at most.
+  // until a later snapshot counts them and arms the alarm again, an hour at most.
   async alarm(): Promise<void> {
-    let remaining = false;
     for (const [key, stored] of await this.ctx.storage.list<ReducerState>({ prefix: "reducer:" })) {
       const reducerId = key.slice("reducer:".length);
       const state = this.states.get(reducerId) ?? stored;
@@ -224,9 +221,7 @@ export class CustomerDO extends DurableObject<OutpostEnv> {
           if (applySnapshot(state, answer.snapshot) || confirmed) await this.save(reducerId, state);
         }
       }
-      remaining ||= sealedPending(state).length > 0;
     }
-    if (remaining) await this.ctx.storage.setAlarm(Date.now() + CONFIRM_RETRY);
   }
 
   private get sync(): DurableObjectStub<SyncDO> {
@@ -310,9 +305,7 @@ export class SyncDO extends DurableObject<OutpostEnv> {
 
   /** A customer is awake: it gets the changes of the next pulls. */
   async register(customer: string): Promise<Pulled> {
-    const registered = await this.registered();
-    registered.set(customer, Date.now());
-    await this.ctx.storage.put("registered", registered);
+    await this.ctx.storage.put(`registered:${customer}`, Date.now());
     // The cursor must predate the customer's first fetch: changes in between would be missed.
     if ((await this.ctx.storage.get("cursor")) === undefined) await this.pull();
     else if ((await this.ctx.storage.getAlarm()) === null)
@@ -349,12 +342,18 @@ export class SyncDO extends DurableObject<OutpostEnv> {
     };
   }
 
-  // The customers awake, less those silent for the retention of Polar's changes.
+  // The customers awake, one key each so that registering is one small write, less those silent
+  // for the retention of Polar's changes.
   private async registered(): Promise<Map<string, number>> {
-    const registered =
-      (await this.ctx.storage.get<Map<string, number>>("registered")) ?? new Map<string, number>();
+    const registered = new Map<string, number>();
     const cutoff = Date.now() - REGISTRATION_TTL;
-    for (const [customer, seen] of registered) if (seen < cutoff) registered.delete(customer);
+    const silent: string[] = [];
+    for (const [key, seen] of await this.ctx.storage.list<number>({ prefix: "registered:" })) {
+      if (seen < cutoff) silent.push(key);
+      else registered.set(key.slice("registered:".length), seen);
+    }
+    for (let offset = 0; offset < silent.length; offset += 128)
+      await this.ctx.storage.delete(silent.slice(offset, offset + 128));
     return registered;
   }
 
@@ -398,7 +397,6 @@ export class SyncDO extends DurableObject<OutpostEnv> {
       );
       await this.ctx.storage.put({
         cursor: changes.cursor,
-        registered,
         pulled_at: pulled.pulledAt,
         interval: pulled.interval,
       });

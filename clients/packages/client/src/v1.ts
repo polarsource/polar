@@ -9942,6 +9942,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitCustomProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10308,6 +10313,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitDiscordProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10680,6 +10690,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitDownloadablesProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10970,6 +10985,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitFeatureFlagProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -11251,6 +11271,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -12482,6 +12507,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitLicenseKeysProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -12786,6 +12816,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitMeterCreditProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -13198,6 +13233,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -15193,6 +15233,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
       /**
        * Prices
        * @description List of prices for this product.
@@ -29246,6 +29291,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
     }
     /**
      * OrderReceipt
@@ -34087,6 +34137,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
       /**
        * External Id
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
@@ -48258,7 +48313,7 @@ export interface operations {
         exclude_id?: string | string[] | null
         /** @description Filter by catalog ID. */
         catalog_id?: string | string[] | null
-        /** @description Filter by catalog status. Defaults to `live` unless filtering by ID or catalog ID. */
+        /** @description Filter by catalog status. */
         catalog_status?:
           | components['schemas']['CatalogStatus']
           | components['schemas']['CatalogStatus'][]
@@ -49047,7 +49102,7 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by catalog ID. */
         catalog_id?: string | string[] | null
-        /** @description Filter by catalog status. Defaults to `live` unless filtering by ID or catalog ID. */
+        /** @description Filter by catalog status. */
         catalog_status?:
           | components['schemas']['CatalogStatus']
           | components['schemas']['CatalogStatus'][]

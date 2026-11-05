@@ -288,10 +288,7 @@ class BenefitListParams(QuerySchema):
     ] = Field(
         None,
         title="CatalogStatus Filter",
-        description=(
-            "Filter by catalog status. "
-            "Defaults to `live` unless filtering by ID or catalog ID."
-        ),
+        description="Filter by catalog status.",
     )
     query: str | None = Field(None, title="Query", description="Filter by description.")
 

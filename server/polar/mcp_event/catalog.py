@@ -51,6 +51,9 @@ class MCPEventDefinition(NamedTuple):
 
 
 MCP_EVENTS: dict[WebhookEventType, MCPEventDefinition] = {
+    WebhookEventType.order_created: MCPEventDefinition(
+        "An order was created. It may not be paid yet.", OrderEventData
+    ),
     WebhookEventType.order_paid: MCPEventDefinition(
         "An order was paid.", OrderEventData
     ),
@@ -60,8 +63,24 @@ MCP_EVENTS: dict[WebhookEventType, MCPEventDefinition] = {
     WebhookEventType.subscription_created: MCPEventDefinition(
         "A subscription was created.", SubscriptionEventData
     ),
+    WebhookEventType.subscription_active: MCPEventDefinition(
+        "A subscription became active.", SubscriptionEventData
+    ),
     WebhookEventType.subscription_canceled: MCPEventDefinition(
         "A subscription was canceled.", SubscriptionEventData
+    ),
+    WebhookEventType.subscription_uncanceled: MCPEventDefinition(
+        "A pending subscription cancellation was revoked.", SubscriptionEventData
+    ),
+    WebhookEventType.subscription_revoked: MCPEventDefinition(
+        "A subscription was revoked and the customer lost access.",
+        SubscriptionEventData,
+    ),
+    WebhookEventType.subscription_paused: MCPEventDefinition(
+        "A subscription was paused.", SubscriptionEventData
+    ),
+    WebhookEventType.subscription_resumed: MCPEventDefinition(
+        "A paused subscription was resumed.", SubscriptionEventData
     ),
     WebhookEventType.subscription_past_due: MCPEventDefinition(
         "A subscription payment failed and the subscription is past due.",
@@ -69,5 +88,11 @@ MCP_EVENTS: dict[WebhookEventType, MCPEventDefinition] = {
     ),
     WebhookEventType.customer_created: MCPEventDefinition(
         "A customer was created.", CustomerEventData
+    ),
+    WebhookEventType.customer_updated: MCPEventDefinition(
+        "A customer was updated.", CustomerEventData
+    ),
+    WebhookEventType.customer_deleted: MCPEventDefinition(
+        "A customer was deleted.", CustomerEventData
     ),
 }

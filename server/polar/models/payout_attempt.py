@@ -40,7 +40,7 @@ class PayoutAttempt(RecordModel):
     __tablename__ = "payout_attempts"
 
     payout_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("payouts.id", ondelete="cascade"), nullable=False
+        Uuid, ForeignKey("payouts.id", ondelete="cascade"), nullable=False, index=True
     )
     """ID of the associated Payout."""
     payout: Mapped["Payout"] = relationship("Payout", back_populates="attempts")

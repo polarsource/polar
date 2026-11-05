@@ -1,11 +1,11 @@
 ---
 title: "Connecting to the Database"
-description: "Query Render Postgres over Tailscale on the private network"
+description: "Query PlanetScale Postgres over Tailscale on the private network"
 ---
 
-Query Render Postgres over Tailscale. Do not add a laptop IP under **Access Control** on the database. Engineer access stays on Tailscale. An allowlist entry publishes the database on the public internet.
+Query the database over Tailscale. Do not add a laptop IP under **Access Control** on the Render database. Engineer access stays on Tailscale. An allowlist entry publishes the database on the public internet.
 
-Test and sandbox run on PlanetScale, not Render Postgres. Every instance on the account uses the same private-network suffix.
+All environments run on PlanetScale. Every instance on the account uses the same private-network suffix.
 
 <Warning>
   These instances hold live data. Confirm the database name before running anything that writes. Use a read replica when you only need to inspect rows.

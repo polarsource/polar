@@ -7,7 +7,7 @@ import {
   type MetadataShape,
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
-import { CustomFieldConfig, customFieldHelpers } from './customField'
+import { CustomFieldConfig, customFieldHelpers, required } from './customField'
 import type { CustomFieldDefinition, CustomFieldHelpers } from './customField'
 import { deprecatedKey } from './deprecation'
 import type { Deprecated } from './deprecation'
@@ -457,6 +457,7 @@ export const defineConfig = <
     units,
     tier,
     meter: metered,
+    required,
   })
   const productEntries =
     products === undefined ? [] : toEntries<ProductDefinition>(products)
@@ -561,7 +562,7 @@ export const defineConfig = <
           owner,
           'custom field',
           customFieldSlugs,
-          definition.fieldList.map(([field]) => field),
+          definition.fieldList.map(({ field }) => field),
         )
         if (!deprecated) {
           assertNotDeprecated(
@@ -593,10 +594,7 @@ export const defineConfig = <
             metadata: definition[metadataKey],
           }),
           ...(definition.fieldList.length > 0 && {
-            custom_fields: definition.fieldList.map(([field, requirement]) => ({
-              field,
-              required: requirement === 'required',
-            })),
+            custom_fields: definition.fieldList,
           }),
           ...(definition.descriptionText !== undefined && {
             description: definition.descriptionText,

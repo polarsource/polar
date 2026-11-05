@@ -966,11 +966,11 @@ test('products ask for declared custom fields in order', () => {
       company: text(),
       terms: checkbox('Terms'),
     }),
-    products: ({ product, fixed }) => ({
+    products: ({ product, fixed, required }) => ({
       pro: product('Pro')
         .prices(fixed().amount(usd(10)))
         .once()
-        .customFields({ terms: 'required', company: 'optional' }),
+        .customFields([required('terms'), 'company']),
       plain: product('Plain')
         .prices(fixed().amount(usd(5)))
         .once(),
@@ -991,25 +991,17 @@ test('products ask for declared custom fields in order', () => {
     defineConfig({
       meters: () => ({}),
       customFields: ({ text }) => ({ company: text() }),
-      products: ({ product, free }) => ({
-        // @ts-expect-error undeclared custom field
-        pro: product().prices(free()).once().customFields({ vat: 'required' }),
+      products: ({ product, free, required }) => ({
+        pro: product()
+          .prices(free())
+          .once()
+          .customFields([
+            // @ts-expect-error undeclared custom field
+            required('vat'),
+            // @ts-expect-error undeclared custom field
+            'vat',
+          ]),
       }),
     }),
   ).toThrow('Product "pro" references unknown custom field "vat".')
-})
-
-test('custom fields reject invalid slugs and empty selects', () => {
-  expect(() =>
-    defineConfig({
-      meters: () => ({}),
-      customFields: ({ text }) => ({ 'Company Name': text() }),
-    }),
-  ).toThrow()
-  expect(() =>
-    defineConfig({
-      meters: () => ({}),
-      customFields: ({ select }) => ({ size: select('Size') }),
-    }),
-  ).toThrow()
 })

@@ -43,6 +43,7 @@ const FieldChange = Schema.Struct({
 type FieldChange = typeof FieldChange.Type
 
 export const ConfigResource = Schema.Literals([
+  'custom_field',
   'meter',
   'benefit',
   'product',

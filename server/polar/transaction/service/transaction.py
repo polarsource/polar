@@ -295,13 +295,7 @@ class TransactionService(BaseTransactionService):
                 onclause=Organization.account_id == Account.id,
                 isouter=True,
             )
-            .join(User, onclause=User.account_id == Account.id, isouter=True)
-            .where(
-                or_(
-                    User.id == auth_subject.subject.id,
-                    Organization.id.in_(readable_org_ids),
-                )
-            )
+            .where(Organization.id.in_(readable_org_ids))
         )
 
         return statement

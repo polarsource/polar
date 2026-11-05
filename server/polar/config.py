@@ -530,6 +530,9 @@ class Settings(BaseSettings):
     PAYOUT_INVOICES_PREFIX: str = "POLAR-"
 
     # Application behaviours
+    ORGANIZATION_DEFAULT_PRODUCTS_LIMIT: int = 1000
+    ORGANIZATION_DEFAULT_BENEFITS_LIMIT: int = 1000
+
     API_PAGINATION_MAX_LIMIT: int = 100
     API_MAX_REQUEST_BODY_SIZE: int = 10 * 1024 * 1024
 

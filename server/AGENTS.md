@@ -60,7 +60,7 @@ class ResourceRepository(
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[UUID] | None = None,
-    ) -> Select[tuple[Resource]]:
+    ) -> Select[Resource]:
         statement = self.get_base_statement()
         if is_user(auth_subject):
             statement = statement.where(

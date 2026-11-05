@@ -6,9 +6,11 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select
 
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.models import (
+    BillingInterval,
     Customer,
     Meter,
     OrderItem,
@@ -17,6 +19,8 @@ from polar.models import (
     ReducerBucket,
 )
 from polar.models.billing_entry import BillingEntryType
+from polar.models.billing_interval import UsagePolicy
+from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageWindow
@@ -72,11 +76,22 @@ class TestBackfillBuckets:
         count_price = await create_product_price_metered_unit(
             save_fixture, product=product, meter=count_meter
         )
-        await create_subscription(
+        subscription = await create_subscription(
             save_fixture,
             product=product,
             customer=customer,
             started_at=SUBSCRIPTION_START,
+        )
+        await save_fixture(
+            BillingInterval(
+                organization=organization,
+                subscription=subscription,
+                customer=customer,
+                meter=meter,
+                product_price=price,
+                period_start=SUBSCRIPTION_START,
+                usage_policy=UsagePolicy.charge,
+            )
         )
         order = await create_order(
             save_fixture,
@@ -169,7 +184,7 @@ class TestBackfillBuckets:
                 )
                 for b in buckets
             ] == [
-                # Before the subscription: never billed.
+                # Before the billing interval: never billed.
                 (
                     START,
                     SUBSCRIPTION_START,
@@ -245,7 +260,7 @@ class TestBackfillBuckets:
             assert sum(b.count for b in count_buckets) == 6
             assert all(b.sealed_at is None for b in count_buckets)
 
-        # The next billing bills everything still open since the subscription
+        # The next billing bills everything still open since the interval
         # started: the late event, the pending one and the unbilled one. Usage
         # before the subscription stays open.
         next_order = await create_order(save_fixture, customer=customer)
@@ -273,6 +288,49 @@ class TestBackfillBuckets:
             order.id,
             next_order.id,
             next_order.id,
+        ]
+
+    async def test_splits_at_meter_resets(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        reset_at = START + timedelta(minutes=2)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=reset_at,
+            metadata={"meter_id": str(meter.id)},
+        )
+        for minutes in (1, 3):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                timestamp=START + timedelta(minutes=minutes),
+            )
+
+        await backfill_organization(session, organization.id, START, END)
+
+        buckets = (
+            await session.scalars(
+                select(ReducerBucket)
+                .where(ReducerBucket.reducer_id == reducer.id)
+                .order_by(ReducerBucket.bucket_start)
+            )
+        ).all()
+        assert [(b.bucket_start, b.bucket_end, b.count) for b in buckets] == [
+            (START, reset_at, 1),
+            (reset_at, START + BUCKET, 1),
         ]
 
     async def test_keeps_credit_buckets(

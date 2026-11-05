@@ -10,22 +10,25 @@ import typer
 from sqlalchemy import (
     ColumnElement,
     Row,
+    String,
     and_,
     case,
+    cast,
     delete,
     event,
-    func,
     literal,
     null,
     or_,
     select,
 )
 
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation, UniqueAggregation
 from polar.models import (
     BillingEntry,
+    BillingInterval,
     Customer,
     Event,
     MeterReducer,
@@ -34,7 +37,6 @@ from polar.models import (
     ProductPrice,
     Reducer,
     ReducerBucket,
-    Subscription,
 )
 from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
@@ -54,9 +56,9 @@ type BucketKey = tuple[UUID, datetime, datetime, UUID | None, str | None]
 """reducer_id, bucket_start, bucket_end, customer_id, external_customer_id"""
 type Boundaries = dict[tuple[UUID | str, UUID], list[datetime]]
 """Per customer id or external id and reducer, the sorted timestamps buckets
-are split at: each subscription's billable start, so that usage before it can
-never be billed. Past billing cutoffs aren't reconstructed: what each order
-billed is a sealed generation, what's pending an open one."""
+are split at, like live seals and bills split them: each billing interval's start
+and end, and each meter reset. What each order billed is a sealed generation,
+what's pending an open one."""
 
 
 @dataclass
@@ -194,29 +196,36 @@ async def _get_reducers(
 async def _get_boundaries(session: AsyncSession, organization_id: UUID) -> Boundaries:
     """The timestamps the organization's buckets are split at, per customer and
     reducer, with the customer's external id as an alternate key."""
-    billable_from = (
+    interval_bounds = [
+        select(Customer.id, Customer.external_id, MeterReducer.reducer_id, bound)
+        .join(Customer, Customer.id == BillingInterval.customer_id)
+        .join(MeterReducer, MeterReducer.meter_id == BillingInterval.meter_id)
+        .where(BillingInterval.organization_id == organization_id, bound.is_not(None))
+        for bound in (BillingInterval.period_start, BillingInterval.period_end)
+    ]
+    resets = (
         select(
-            Subscription.customer_id,
-            Customer.external_id,
-            MeterReducer.reducer_id,
-            func.coalesce(Subscription.trial_end, Subscription.started_at),
+            Customer.id, Customer.external_id, MeterReducer.reducer_id, Event.timestamp
         )
-        .join(Customer, Customer.id == Subscription.customer_id)
-        .join(ProductPrice, ProductPrice.product_id == Subscription.product_id)
-        .join(MeterReducer, MeterReducer.meter_id == ProductPrice.__table__.c.meter_id)
+        .join(Customer, Customer.id == Event.customer_id)
+        .join(
+            MeterReducer,
+            cast(MeterReducer.meter_id, String)
+            == Event.user_metadata["meter_id"].as_string(),
+        )
         .where(
-            Subscription.organization_id == organization_id,
-            Subscription.started_at.is_not(None),
+            Event.organization_id == organization_id,
+            Event.source == EventSource.system,
+            Event.name == SystemEvent.meter_reset,
         )
     )
     boundaries: Boundaries = {}
-    for statement in (billable_from,):
-        for customer_id, external_id, reducer_id, at in await session.execute(
-            statement
-        ):
-            boundaries.setdefault((customer_id, reducer_id), []).append(at)
-            if external_id is not None:
-                boundaries.setdefault((external_id, reducer_id), []).append(at)
+    for customer_id, external_id, reducer_id, at in await session.execute(
+        resets.union_all(*interval_bounds)
+    ):
+        boundaries.setdefault((customer_id, reducer_id), []).append(at)
+        if external_id is not None:
+            boundaries.setdefault((external_id, reducer_id), []).append(at)
     return {key: sorted(set(ats)) for key, ats in boundaries.items()}
 
 

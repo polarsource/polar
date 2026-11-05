@@ -1,3 +1,4 @@
+import { copyable } from '@/components/Shared/ClickToCopy'
 import { ContextCard } from '@/components/Shared/ContextCard'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { buildCustomerDashboardPath } from '@/utils/customer'
@@ -19,11 +20,19 @@ export const DisputeCustomerContextCard = ({
       Customer
     </Text>
     <Box flexDirection="column">
-      <DetailRow label="Name" value={customer.name} />
-      <DetailRow label="Email" value={customer.email} />
-      <DetailRow label="ID" value={customer.id} valueClassName="font-mono" />
+      <DetailRow label="Name" value={copyable(customer.name)} />
+      <DetailRow label="Email" value={copyable(customer.email)} />
+      <DetailRow
+        label="ID"
+        value={copyable(customer.id)}
+        valueClassName="font-mono text-xs"
+      />
       {customer.external_id ? (
-        <DetailRow label="External ID" value={customer.external_id} />
+        <DetailRow
+          label="External ID"
+          value={copyable(customer.external_id)}
+          valueClassName="min-w-0 break-all"
+        />
       ) : null}
       <DetailRow
         label="Created At"

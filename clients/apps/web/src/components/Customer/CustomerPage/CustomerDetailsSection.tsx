@@ -1,5 +1,6 @@
 'use client'
 
+import { ClickToCopy, copyable } from '@/components/Shared/ClickToCopy'
 import { DetailRow } from '@/components/Shared/DetailRow'
 import { formatCountry } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
@@ -21,10 +22,18 @@ export const CustomerDetailsSection = ({
         Customer Details
       </Text>
       <Box flexDirection="column" rowGap={{ base: 'm', md: 'none' }}>
-        <DetailRow label="ID" value={customer.id} />
-        <DetailRow label="External ID" value={customer.external_id} />
-        <DetailRow label="Email" value={customer.email ?? '—'} />
-        <DetailRow label="Name" value={customer.name} />
+        <DetailRow
+          label="ID"
+          value={copyable(customer.id)}
+          valueClassName="font-mono text-xs"
+        />
+        <DetailRow
+          label="External ID"
+          value={copyable(customer.external_id)}
+          valueClassName="min-w-0 break-all"
+        />
+        <DetailRow label="Email" value={copyable(customer.email)} />
+        <DetailRow label="Name" value={copyable(customer.name)} />
         <DetailRow
           label="Type"
           value={
@@ -46,13 +55,16 @@ export const CustomerDetailsSection = ({
         Billing Information
       </Text>
       <Box flexDirection="column" rowGap={{ base: 'm', md: 'none' }}>
-        <DetailRow label="Billing Name" value={customer.billing_name} />
+        <DetailRow
+          label="Billing Name"
+          value={copyable(customer.billing_name)}
+        />
         <DetailRow
           label="Tax ID"
           value={
             customer.tax_id ? (
               <Box as="span" alignItems="center" columnGap="xs">
-                <span>{customer.tax_id[0]}</span>
+                <ClickToCopy>{customer.tax_id[0]}</ClickToCopy>
                 <Text as="span" variant="caption" color="muted" monospace>
                   {customer.tax_id[1].toLocaleUpperCase().replace('_', ' ')}
                 </Text>
@@ -62,19 +74,31 @@ export const CustomerDetailsSection = ({
             )
           }
         />
-        <DetailRow label="Line 1" value={customer.billing_address?.line1} />
-        <DetailRow label="Line 2" value={customer.billing_address?.line2} />
-        <DetailRow label="City" value={customer.billing_address?.city} />
-        <DetailRow label="State" value={customer.billing_address?.state} />
+        <DetailRow
+          label="Line 1"
+          value={copyable(customer.billing_address?.line1)}
+        />
+        <DetailRow
+          label="Line 2"
+          value={copyable(customer.billing_address?.line2)}
+        />
+        <DetailRow
+          label="City"
+          value={copyable(customer.billing_address?.city)}
+        />
+        <DetailRow
+          label="State"
+          value={copyable(customer.billing_address?.state)}
+        />
         <DetailRow
           label="Postal Code"
-          value={customer.billing_address?.postal_code}
+          value={copyable(customer.billing_address?.postal_code)}
         />
         <DetailRow
           label="Country"
           value={
             customer.billing_address?.country
-              ? formatCountry(customer.billing_address.country)
+              ? copyable(formatCountry(customer.billing_address.country))
               : undefined
           }
         />
@@ -87,7 +111,7 @@ export const CustomerDetailsSection = ({
         </Text>
         <Box flexDirection="column" rowGap={{ base: 'm', md: 'none' }}>
           {Object.entries(customer.metadata).map(([key, value]) => (
-            <DetailRow key={key} label={key} value={value} />
+            <DetailRow key={key} label={key} value={copyable(String(value))} />
           ))}
         </Box>
       </Box>

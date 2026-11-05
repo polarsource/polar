@@ -129,7 +129,7 @@ const approve = (
 
 export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
   Command.withDescription(
-    'Apply a billing config file to your organization. Products and benefits are saved as a draft until you publish them',
+    'Apply a billing config file to your organization. Products and benefits are saved as a draft until you publish them. Meters, settings and webhooks apply right away',
   ),
   Command.withExamples([
     {

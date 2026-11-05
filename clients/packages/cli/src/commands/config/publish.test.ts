@@ -6,7 +6,9 @@ import {
   BillingConfigError,
   type Catalog,
   type Catalogs,
+  type ConfigIssue,
   type LoadedConfig,
+  NO_CONFIG_FILE,
 } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
 import type { CatalogOptions } from '@/services/billing-config/api'
@@ -46,10 +48,11 @@ const run = async (
   args: ReadonlyArray<string> = [],
   options: Parameters<typeof runCli>[2] = {},
   entries: ReadonlyArray<AppliedEntry> | null = [],
+  issues: ReadonlyArray<ConfigIssue> = [],
 ) => {
   const planned = vi.fn(
     (_config: unknown, _organization: unknown, _options?: CatalogOptions) =>
-      Effect.succeed({ entries: entries ?? [], issues: [] }),
+      Effect.succeed({ entries: entries ?? [], issues }),
   )
   const published = vi.fn((_organization: unknown, draft: Catalog) =>
     Effect.succeed({ ...draft, name: 'v4' }),
@@ -62,12 +65,7 @@ const run = async (
         BillingConfig.of({
           load: () =>
             entries === null
-              ? Effect.fail(
-                  new BillingConfigError({
-                    message:
-                      'No billing config file found in the current directory',
-                  }),
-                )
+              ? Effect.fail(new BillingConfigError({ message: NO_CONFIG_FILE }))
               : Effect.succeed(config),
           plan: planned,
           apply: () => Effect.die('unused'),
@@ -149,8 +147,39 @@ describe('polar config publish', () => {
     )
     expect(planned).toEqual([])
     expect(published).toEqual(['cat-draft'])
-    expect(output).toContain(
-      'skipped: No billing config file found in the current directory',
+    expect(output).toContain('skipped, no config file found')
+  })
+
+  test('stops when a named config file is missing', async () => {
+    const { published, message } = await run(
+      withDraft,
+      ['billing.json', '--confirm'],
+      {},
+      null,
+    )
+    expect(published).toEqual([])
+    expect(message).toBe(NO_CONFIG_FILE)
+  })
+
+  test('stops when the config file has errors', async () => {
+    const { published, message } = await run(
+      withDraft,
+      ['--confirm'],
+      {},
+      [],
+      [
+        {
+          severity: 'error',
+          code: 'missing',
+          path: 'products.0.name',
+          message: 'Field required',
+          location: { line: 1, column: 2, length: 1 },
+        },
+      ],
+    )
+    expect(published).toEqual([])
+    expect(message).toBe(
+      'Could not compare polar.json with the draft, it has 1 error',
     )
   })
 

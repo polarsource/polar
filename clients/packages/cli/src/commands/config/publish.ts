@@ -7,11 +7,18 @@ import {
   type Catalog,
   type Catalogs,
   type LoadedConfig,
+  NO_CONFIG_FILE,
   PublishOutput,
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { next, nextOpen, section, target } from '@/utils/billing-config/review'
+import {
+  errors,
+  next,
+  nextOpen,
+  section,
+  target,
+} from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
 import { plural } from '@/utils/billing-config/problems'
 import { formatTree } from '@/utils/billing-config/tree'
@@ -201,11 +208,16 @@ export const publish = Command.make('publish', { file, org, confirmed }).pipe(
                     billing
                       .plan(config, organization, { catalogId: draft.id })
                       .pipe(
-                        Effect.map(
-                          (plan): Drift => ({
-                            config,
-                            entries: drifted(plan.entries),
-                          }),
+                        Effect.flatMap((plan) =>
+                          errors(plan.issues) > 0
+                            ? new BillingConfigError({
+                                message: `Could not compare ${config.file} with the draft, it has ${plural(errors(plan.issues), 'error')}`,
+                                hint: `Run polar config plan to see them, then fix ${config.file}.`,
+                              })
+                            : Effect.succeed<Drift>({
+                                config,
+                                entries: drifted(plan.entries),
+                              }),
                         ),
                       ),
                   ),
@@ -216,10 +228,15 @@ export const publish = Command.make('publish', { file, org, confirmed }).pipe(
                         : `${config.file} has ${plural(entries.length, 'change')} not in the draft`,
                     ),
                   ),
-                  Effect.catchTag('BillingConfigError', (error) =>
-                    progress
-                      .finish(`skipped: ${error.message}`)
-                      .pipe(Effect.as(null)),
+                  Effect.catchIf(
+                    (error) =>
+                      error._tag === 'BillingConfigError' &&
+                      error.message === NO_CONFIG_FILE &&
+                      Option.isNone(file),
+                    () =>
+                      progress
+                        .finish('skipped, no config file found')
+                        .pipe(Effect.as(null)),
                   ),
                 )
               yield* progress.close
@@ -245,7 +262,7 @@ export const publish = Command.make('publish', { file, org, confirmed }).pipe(
     json: ({ catalogs, published, drift }) => ({
       ...catalogs,
       published,
-      drift: drift?.entries ?? [],
+      drift: drift?.entries ?? null,
     }),
   }),
 )

@@ -1,5 +1,8 @@
 import { Data, Schema } from 'effect'
 
+export const NO_CONFIG_FILE =
+  'No billing config file found in the current directory'
+
 export const DEFAULT_CONFIG_FILES = [
   'polar.config.ts',
   'polar.config.mts',
@@ -190,7 +193,7 @@ export type Catalogs = typeof Catalogs.Type
 export const PublishOutput = Schema.Struct({
   ...Catalogs.fields,
   published: Schema.Boolean,
-  drift: Schema.Array(AppliedEntry),
+  drift: Schema.NullOr(Schema.Array(AppliedEntry)),
 })
 
 export interface LoadedConfig {

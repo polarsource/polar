@@ -12,6 +12,8 @@ module "planetscale" {
     app = {
       parameters = {
         pgbouncer = {
+          default_pool_size      = "200"
+          max_client_conn        = "1000"
           track_extra_parameters = "IntervalStyle,statement_timeout"
         }
       }
@@ -20,6 +22,8 @@ module "planetscale" {
       target = "replica"
       parameters = {
         pgbouncer = {
+          default_pool_size      = "50"
+          max_client_conn        = "200"
           track_extra_parameters = "IntervalStyle,statement_timeout"
         }
       }

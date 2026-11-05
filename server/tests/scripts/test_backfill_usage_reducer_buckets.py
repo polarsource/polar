@@ -339,36 +339,59 @@ class TestBackfillBuckets:
             save_fixture, organization=organization, meters=[meter]
         )
         reset_at = START + timedelta(minutes=2)
-        await create_event(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            source=EventSource.system,
-            name=SystemEvent.meter_reset,
-            timestamp=reset_at,
-            metadata={"meter_id": str(meter.id)},
-        )
-        for minutes in (1, 3):
+        # In a slot without events.
+        empty_reset_at = START + BUCKET + timedelta(minutes=2)
+        for at in (reset_at, empty_reset_at):
             await create_event(
                 save_fixture,
                 organization=organization,
                 customer=customer,
-                timestamp=START + timedelta(minutes=minutes),
+                source=EventSource.system,
+                name=SystemEvent.meter_reset,
+                timestamp=at,
+                metadata={"meter_id": str(meter.id)},
             )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=START + timedelta(minutes=1),
+        )
 
         await backfill_organization(session, organization.id, START, END)
 
-        buckets = (
-            await session.scalars(
-                select(ReducerBucket)
-                .where(ReducerBucket.reducer_id == reducer.id)
-                .order_by(ReducerBucket.bucket_start)
-            )
-        ).all()
-        assert [(b.bucket_start, b.bucket_end, b.count) for b in buckets] == [
+        async def get_buckets() -> list[tuple[datetime, datetime, int]]:
+            buckets = (
+                await session.scalars(
+                    select(ReducerBucket)
+                    .where(
+                        ReducerBucket.reducer_id == reducer.id,
+                        ReducerBucket.customer_id == customer.id,
+                        ReducerBucket.external_customer_id.is_(None),
+                    )
+                    .order_by(ReducerBucket.bucket_start)
+                    .execution_options(populate_existing=True)
+                )
+            ).all()
+            return [(b.bucket_start, b.bucket_end, b.count) for b in buckets]
+
+        # Each part of a split slot exists, empty or not, like a split creates it.
+        assert await get_buckets() == [
             (START, reset_at, 1),
-            (reset_at, START + BUCKET, 1),
+            (reset_at, START + BUCKET, 0),
+            (START + BUCKET, empty_reset_at, 0),
+            (empty_reset_at, START + 2 * BUCKET, 0),
         ]
+
+        # So sync counts a late event in the empty part.
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=START + timedelta(minutes=3),
+        )
+        await reducer_service.sync_bucket(session, reducer.id, START, customer.id, None)
+        assert (await get_buckets())[1] == (reset_at, START + BUCKET, 1)
 
     async def test_keeps_credit_buckets(
         self,

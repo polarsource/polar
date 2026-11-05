@@ -4,7 +4,7 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, synchronize, edited, labeled, unlabeled]
+    types: [opened, synchronize, edited]
   merge_group:
 
 concurrency:
@@ -181,11 +181,7 @@ jobs:
   migration-check:
     name: "Server: Migration Check 📚"
     needs: changes
-    # Maintainers can approve mixed migration/application changes after deploy review.
-    if: >-
-      needs.changes.outputs.migrations == 'true' &&
-      github.event_name == 'pull_request' &&
-      !contains(github.event.pull_request.labels.*.name, 'migration-reviewed')
+    if: needs.changes.outputs.migrations == 'true' && github.event_name == 'pull_request'
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Check for disallowed files

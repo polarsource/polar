@@ -27,7 +27,7 @@ from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import TaxBehavior, TaxProcessor
 from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
-from polar.kit.db.models import RecordModel
+from polar.kit.db.models import OrganizationCreatedAtIndexMixin, RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
@@ -103,7 +103,9 @@ class RefundAmountTooHigh(OrderError):
         super().__init__(message)
 
 
-class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
+class Order(
+    CustomFieldDataMixin, MetadataMixin, OrganizationCreatedAtIndexMixin, RecordModel
+):
     __tablename__ = "orders"
     __table_args__ = (
         Index("ix_total_amount", text("(net_amount_v2 + tax_amount_v2)")),

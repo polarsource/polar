@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import Boolean, ForeignKey, Index, Integer, Text, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.kit.db.models.base import RecordModel
+from polar.kit.db.models.base import OrganizationCreatedAtIndexMixin, RecordModel
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -12,14 +12,9 @@ if TYPE_CHECKING:
     from .webhook_event import WebhookEvent
 
 
-class WebhookDelivery(RecordModel):
+class WebhookDelivery(OrganizationCreatedAtIndexMixin, RecordModel):
     __tablename__ = "webhook_deliveries"
     __table_args__ = (
-        Index(
-            "ix_webhook_deliveries_organization_id_created_at",
-            "organization_id",
-            "created_at",
-        ),
         Index(
             "ix_webhook_deliveries_webhook_endpoint_id_created_at",
             "webhook_endpoint_id",

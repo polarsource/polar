@@ -47,7 +47,7 @@ const CheckoutEmbedClose: React.FC<
     <button
       ref={closeButtonRef}
       type="button"
-      className="dark:bg-polar-950 fixed top-2 right-2 cursor-pointer rounded-full bg-transparent bg-white p-2 shadow-xl md:top-4 md:right-4 dark:text-white"
+      className="dark:bg-polar-950 fixed inset-e-2 top-2 cursor-pointer rounded-full bg-transparent bg-white p-2 shadow-xl md:inset-e-4 md:top-4 dark:text-white"
       onClick={onClose}
     >
       <X className="h-4 w-4 md:h-6 md:w-6" />

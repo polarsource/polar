@@ -67,7 +67,7 @@ export const CheckoutOrderSummary = ({
                     className="h-10 w-10 rounded-lg object-cover"
                   />
                   {checkout.product.medias.length > 1 && (
-                    <span className="absolute right-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
+                    <span className="absolute inset-e-0 bottom-0 rounded bg-black/60 px-1 py-0.5 text-[10px] leading-none font-medium text-white">
                       +{checkout.product.medias.length - 1}
                     </span>
                   )}

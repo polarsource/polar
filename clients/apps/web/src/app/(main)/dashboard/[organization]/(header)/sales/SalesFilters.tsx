@@ -77,8 +77,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
     organization.id,
     {
       is_archived: null,
-      catalog_status: null,
-      ...(productQuery ? { query: productQuery } : {}),
+      ...(productQuery ? { query: productQuery, catalog_status: null } : {}),
       sorting: ['name'],
       limit: 50,
     },

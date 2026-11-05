@@ -91,8 +91,7 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
     organization.id,
     {
       is_recurring: true,
-      catalog_status: null,
-      ...(productQuery ? { query: productQuery } : {}),
+      ...(productQuery ? { query: productQuery, catalog_status: null } : {}),
       sorting: ['name'],
       limit: 100,
     },

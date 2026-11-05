@@ -134,8 +134,9 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   >(
     () => ({
       is_archived: includeArchived ? null : false,
-      ...(includeArchived ? { catalog_status: null } : {}),
-      ...(query ? { query } : {}),
+      ...(query
+        ? { query, ...(includeArchived ? { catalog_status: null } : {}) }
+        : {}),
       sorting: ['name'],
       limit: 50,
     }),

@@ -81,7 +81,7 @@ const rowLine = (row: Row, width: number) => {
   const marker = row.added ? ui.green('+') : ' '
   const name = ui.dim(ui.printable(row.name))
   return row.renamed
-    ? `${ui.INDENT}${marker} ${ui.yellow(id)}  ${name} ${ui.yellow('name taken, check this one')}`
+    ? `${ui.INDENT}${marker} ${ui.yellow(id)}  ${name} ${ui.yellow('duplicate name, suffix added')}`
     : `${ui.INDENT}${marker} ${row.added ? id : ui.dim(id)}  ${name}`
 }
 

@@ -144,7 +144,7 @@ const review = (
       ...(flagged > 0
         ? [
             ui.warning(
-              `${plural(flagged, 'suggestion')} got a number because another resource has the same name`,
+              `${plural(flagged, 'suggestion')} ${flagged === 1 ? 'has' : 'have'} a numbered suffix because of a duplicate name. Double-check ${flagged === 1 ? 'it' : 'them'} before continuing.`,
             ),
           ]
         : []),

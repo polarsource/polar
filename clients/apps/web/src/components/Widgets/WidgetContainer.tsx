@@ -19,21 +19,24 @@ export const WidgetContainer = ({
 }: PropsWithChildren<WidgetContainerProps>) => {
   return (
     <div
-      className={twMerge('flex h-88 flex-col gap-6 overflow-hidden', className)}
+      className={twMerge('flex h-82 flex-col gap-6 overflow-hidden', className)}
     >
       <Box
         flexShrink={0}
-        alignItems="start"
-        justifyContent="between"
-        columnGap="m"
+        flexDirection="column"
+        rowGap="s"
         paddingHorizontal="xl"
         paddingTop="xl"
       >
-        <Box flexDirection="column" rowGap="s" minWidth={0}>
-          <Text as="h3">{title}</Text>
-          {headline}
+        <Box alignItems="center" justifyContent="between" columnGap="m">
+          <Box minWidth={0}>
+            <Text as="h3" truncate>
+              {title}
+            </Text>
+          </Box>
+          <Box flexShrink={0}>{action}</Box>
         </Box>
-        {action}
+        {headline}
       </Box>
       <div className="flex flex-1 flex-col overflow-y-auto px-6">
         {children}

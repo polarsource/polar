@@ -6,7 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ArrowDownRight, ArrowUpRight } from '@polar-sh/orbit/icons'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { useContext } from 'react'
-import { SegmentedBars } from './SegmentedBars'
+import { MonthlyBars } from './MonthlyBars'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetLink } from './WidgetLink'
 import { WidgetGuard } from './WidgetGuard'
@@ -16,7 +16,19 @@ interface RevenueWidgetProps {
 }
 
 const WIDGET_TITLE = 'Revenue'
-const MONTHS = 6
+const MONTHS = 5
+
+// Whole dollars, then compact from $10K so six months of labels stay narrow.
+const formatBarValue = (cents: number) =>
+  Math.abs(cents) >= 1_000_000
+    ? new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'usd',
+        currencyDisplay: 'narrowSymbol',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(cents / 100)
+    : formatCurrency('statistics')(Math.round(cents / 100) * 100, 'usd')
 
 const RevenueWidget = ({ className }: RevenueWidgetProps) => (
   <WidgetGuard
@@ -103,19 +115,14 @@ const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
       }
       className={className}
     >
-      <Box
-        flexDirection="column"
-        flex={1}
-        justifyContent="end"
-        paddingBottom="xl"
-      >
-        <SegmentedBars
+      <Box flexDirection="column" paddingBottom="m">
+        <MonthlyBars
           loading={isLoading}
           bars={periods.map((period, index) => ({
             key: period.timestamp,
             label: format(period.timestamp, 'MMM'),
             value: period.revenue ?? 0,
-            tooltip: `${formatCurrency('compact')(period.revenue ?? 0, 'usd')} in ${format(period.timestamp, 'MMMM')}`,
+            formatted: formatBarValue(period.revenue ?? 0),
             highlighted: index === periods.length - 1,
           }))}
         />

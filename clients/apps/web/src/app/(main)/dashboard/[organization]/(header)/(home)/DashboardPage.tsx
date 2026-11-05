@@ -5,10 +5,10 @@ import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { PlanUpsell } from '@/components/Upsell/PlanUpsell'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
+import { ActivityWidget } from '@/components/Widgets/ActivityWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { CustomerRiskWidget } from '@/components/Widgets/CustomerRiskWidget'
 import { GrossMarginWidget } from '@/components/Widgets/GrossMarginWidget'
-import { SalesWidget } from '@/components/Widgets/SalesWidget'
 import { TopCustomersWidget } from '@/components/Widgets/TopCustomersWidget'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Text } from '@polar-sh/orbit'
@@ -22,7 +22,7 @@ const cellClassName =
 
 const WidgetRow = ({ children }: PropsWithChildren) => (
   <div className="dark:border-polar-700 overflow-hidden rounded-xl border border-gray-200">
-    <div className="grid grid-cols-1 [clip-path:inset(1px_1px_1px_1px)] lg:grid-cols-3">
+    <div className="-mr-px -mb-px grid grid-cols-1 lg:grid-cols-3">
       {children}
     </div>
   </div>
@@ -67,13 +67,13 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       <div className="flex flex-col gap-y-10">
         <WidgetRow>
           <RevenueWidget className={cellClassName} />
-          <CustomerRiskWidget className={cellClassName} />
+          <ActivityWidget className={cellClassName} />
           <AccountWidget className={cellClassName} />
         </WidgetRow>
         <WidgetRow>
           <TopCustomersWidget className={cellClassName} />
+          <CustomerRiskWidget className={cellClassName} />
           <GrossMarginWidget className={cellClassName} />
-          <SalesWidget className={cellClassName} />
         </WidgetRow>
       </div>
 

@@ -241,6 +241,14 @@
   }
 
   --animate-bar-grow: bar-grow 0.3s cubic-bezier(0, 0, 0, 1) both;
+
+  @keyframes bar-grow-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  --animate-bar-grow-x: bar-grow-x 0.3s cubic-bezier(0, 0, 0, 1) both;
 }
 
 @layer base {

@@ -1317,9 +1317,8 @@ class EventService:
 
         for org_id, org_events in events_by_org.items():
             meters = await meter_repository.get_all(
-                meter_repository.get_base_statement().where(
-                    Meter.organization_id == org_id,
-                    Meter.archived_at.is_(None),
+                meter_repository.get_active_statement().where(
+                    Meter.organization_id == org_id
                 )
             )
 

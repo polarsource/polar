@@ -130,11 +130,8 @@ class CustomerMeterService:
     ) -> None:
         repository = MeterRepository.from_session(session)
         statement = (
-            repository.get_base_statement()
-            .where(
-                Meter.organization_id == customer.organization_id,
-                Meter.archived_at.is_(None),
-            )
+            repository.get_active_statement()
+            .where(Meter.organization_id == customer.organization_id)
             .order_by(Meter.created_at.asc())
         )
 
@@ -279,10 +276,9 @@ class CustomerMeterService:
         else:
             meter_field = "external_meter_id"
             meter_value = credit_create.external_meter_id
-            meters = await meter_repository.get_all_by_external_ids(
-                customer.organization_id, [credit_create.external_meter_id]
+            meter = await meter_repository.get_billed_by_external_id(
+                customer.organization_id, credit_create.external_meter_id, customer.id
             )
-            meter = meters[0] if meters else None
 
         if (
             meter is None

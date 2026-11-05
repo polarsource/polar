@@ -2284,6 +2284,10 @@ async def create_meter(
     last_billed_event: Event | None = None,
     external_id: str | None = None,
     user_metadata: dict[str, str | int | bool] | None = None,
+    is_current: bool = True,
+    catalog: Catalog | None = None,
+    archived_at: datetime | None = None,
+    deleted_at: datetime | None = None,
 ) -> Meter:
     meter = Meter(
         id=id,
@@ -2294,6 +2298,10 @@ async def create_meter(
         last_billed_event=last_billed_event,
         external_id=external_id,
         user_metadata=user_metadata or {},
+        is_current=is_current,
+        catalog=catalog,
+        archived_at=archived_at,
+        deleted_at=deleted_at,
     )
     await save_fixture(meter)
     return meter

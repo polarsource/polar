@@ -515,6 +515,20 @@ def _compile(statement: Select[*tuple[Any, ...]]) -> tuple[str, dict[str, Any]]:
     return str(compiled), dict(compiled.params)
 
 
+def _stats_order_by(
+    sorting: Sequence[tuple[str, bool]],
+    columns: Mapping[str, Any],
+    *,
+    tiebreak: Any,
+) -> list[Any]:
+    clauses = [
+        columns[criterion].desc() if is_desc else columns[criterion].asc()
+        for criterion, is_desc in sorting
+        if criterion in columns
+    ]
+    return [*clauses, tiebreak.desc()]
+
+
 def _parse_datetime(value: datetime | date | str) -> datetime:
     if isinstance(value, datetime):
         if value.tzinfo is None:
@@ -1249,6 +1263,7 @@ class TinybirdEventsQuery:
         property: str,
         aggregate_fields: Sequence[str] = ("_cost.amount",),
         limit: int = 200,
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> list[TinybirdPropertyGroupStats]:
         base_filter = self._get_organization_filter()
 
@@ -1294,11 +1309,25 @@ class TinybirdEventsQuery:
         for f in self._filters:
             statement = statement.where(f)
 
-        if aggregate_fields:
-            first_label = aggregate_fields[0].replace(".", "_")
-            statement = statement.order_by(literal_column(f"{first_label}_sum").desc())
-
-        statement = statement.limit(limit)
+        occurrences: ColumnElement[Any] = literal_column("occurrences")
+        total = (
+            literal_column(f"{aggregate_fields[0].replace('.', '_')}_sum")
+            if aggregate_fields
+            else occurrences
+        )
+        statement = statement.order_by(
+            *_stats_order_by(
+                sorting,
+                {
+                    "value": literal_column("value"),
+                    "occurrences": occurrences,
+                    "customers": literal_column("customers"),
+                    "total": total,
+                    "average": total / occurrences,
+                },
+                tiebreak=total,
+            )
+        ).limit(limit)
 
         sql, params = _compile(statement)
         rows = await client.query(sql, parameters=params, db_statement=sql)
@@ -1325,6 +1354,7 @@ class TinybirdEventsQuery:
         self,
         aggregate_fields: Sequence[str],
         limit: int = 200,
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> list[TinybirdCustomerStat]:
         per_root = self._build_per_root_subquery(aggregate_fields)
 
@@ -1347,17 +1377,29 @@ class TinybirdEventsQuery:
         ).subquery("customer_sums")
 
         # Primary field for ordering and share computation
+        occurrences = customer_sums.c.occurrences
         if aggregate_fields:
             primary_label = aggregate_fields[0].replace(".", "_")
             primary_col = customer_sums.c[f"{primary_label}_sum"]
             share_col = (primary_col / func.sum(primary_col).over()).label("share")
-            order_col = primary_col.desc()
         else:
+            primary_col = occurrences
             share_col = sqlalchemy.literal(0.0).label("share")  # type: ignore[assignment]
-            order_col = customer_sums.c.occurrences.desc()
 
         statement = (
-            sqlalchemy.select(customer_sums, share_col).order_by(order_col).limit(limit)
+            sqlalchemy.select(customer_sums, share_col)
+            .order_by(
+                *_stats_order_by(
+                    sorting,
+                    {
+                        "occurrences": occurrences,
+                        "total": primary_col,
+                        "average": primary_col / occurrences,
+                    },
+                    tiebreak=primary_col,
+                )
+            )
+            .limit(limit)
         )
 
         sql, params = _compile(statement)

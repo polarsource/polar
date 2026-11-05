@@ -643,6 +643,7 @@ class EventService:
         external_customer_id: Sequence[str] | None = None,
         aggregate_fields: Sequence[str] = ("_cost.amount",),
         limit: int = 200,
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> ListPropertyGroupStats:
         start_timestamp = datetime(
             start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
@@ -682,6 +683,7 @@ class EventService:
             customer_id=all_customer_ids,
             external_customer_id=all_external_ids,
             limit=limit,
+            sorting=sorting,
         )
 
         items = [
@@ -708,6 +710,7 @@ class EventService:
         external_customer_id: Sequence[str] | None = None,
         aggregate_fields: Sequence[str] = ("_cost.amount",),
         limit: int = 200,
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> ListCustomerStats:
         start_timestamp = datetime(
             start_date.year, start_date.month, start_date.day, 0, 0, 0, 0, timezone
@@ -746,6 +749,7 @@ class EventService:
             customer_id=all_customer_ids,
             external_customer_id=all_external_ids,
             limit=limit,
+            sorting=sorting,
         )
 
         # Fetch customer details for all rows that have a Polar customer_id,

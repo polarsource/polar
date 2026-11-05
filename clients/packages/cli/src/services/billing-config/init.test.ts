@@ -20,6 +20,7 @@ import { fakeAuth } from '@/utils/test-utils/services'
 
 const productsUrl =
   'https://sandbox-api.polar.sh/v1/products/?limit=1&is_archived=false'
+const initUrl = 'https://sandbox-api.polar.sh/v1/config/init'
 
 const acme: ActiveOrganization = {
   id: 'org-1',
@@ -36,7 +37,10 @@ let directory: string
 let cwd: string
 
 beforeEach(async () => {
-  api = fakeHttp({ [`GET ${productsUrl}`]: products(0) })
+  api = fakeHttp({
+    [`GET ${productsUrl}`]: products(0),
+    [`POST ${initUrl}`]: new Response(null, { status: 204 }),
+  })
   directory = await realpath(await mkdtemp(join(tmpdir(), 'polar-init-')))
   cwd = process.cwd()
   process.chdir(directory)
@@ -99,6 +103,27 @@ describe('init', () => {
     expect(api.requests[0]!.headers.get('Polar-Organization')).toBe('org-1')
   })
 
+  test('enables config for the organization before writing the file', async () => {
+    await run()
+
+    const enable = api.requests.find((request) => request.url === initUrl)!
+    expect(enable.method).toBe('POST')
+    expect(enable.headers.get('Polar-Organization')).toBe('org-1')
+  })
+
+  test('writes nothing when config cannot be enabled', async () => {
+    api.routes[`POST ${initUrl}`] = Response.json(
+      { error: 'NotPermitted' },
+      { status: 403 },
+    )
+
+    const error = await failure(run())
+
+    expect(error.message).toBe('You do not have access to Acme')
+    expect(error.hint).toBe('The token needs the organizations:write scope.')
+    await expect(read('polar.config.json')).rejects.toThrow()
+  })
+
   test('writes into the project directory and shows the path from the current one', async () => {
     await project()
     await mkdir(join(directory, 'src'))
@@ -142,9 +167,14 @@ describe('init', () => {
     ])
   })
 
-  test('has nothing to install once the package is there, or without a package.json', async () => {
+  test('has nothing to install once package.json declares the package, or without a package.json', async () => {
     expect((await run({ file: 'a.ts' })).install).toBeUndefined()
 
+    await project('{"devDependencies":{"@polar-sh/polar":"^1.0.0"}}')
+    expect((await run({ file: 'b.ts' })).install).toBeUndefined()
+  })
+
+  test('installs when the package is only left over in node_modules', async () => {
     await project()
     await mkdir(join(directory, 'node_modules/@polar-sh/polar'), {
       recursive: true,
@@ -153,7 +183,8 @@ describe('init', () => {
       join(directory, 'node_modules/@polar-sh/polar/package.json'),
       '{}',
     )
-    expect((await run({ file: 'b.ts' })).install).toBeUndefined()
+
+    expect((await run()).install).toEqual(['npm', 'install', '@polar-sh/polar'])
   })
 
   test('installs into the project root for a path given from a subdirectory', async () => {
@@ -167,25 +198,16 @@ describe('init', () => {
     expect(result.installDirectory).toBe(directory)
   })
 
-  test('reads the workspace package manager and hoisted packages from a workspace package', async () => {
+  test('reads the workspace package manager from a workspace package', async () => {
     await project('{"packageManager":"pnpm@10.0.0"}')
     const workspacePackage = join(directory, 'packages/app')
     await mkdir(workspacePackage, { recursive: true })
     await writeFile(join(workspacePackage, 'package.json'), '{}')
 
-    const missing = await run({ directory: workspacePackage })
-    expect(missing.install).toEqual(['pnpm', 'add', '@polar-sh/polar'])
-    expect(missing.installDirectory).toBe(workspacePackage)
+    const result = await run({ directory: workspacePackage })
 
-    await mkdir(join(directory, 'node_modules/@polar-sh/polar'), {
-      recursive: true,
-    })
-    await writeFile(
-      join(directory, 'node_modules/@polar-sh/polar/package.json'),
-      '{}',
-    )
-    const hoisted = await run({ directory: workspacePackage, file: 'b.ts' })
-    expect(hoisted.install).toBeUndefined()
+    expect(result.install).toEqual(['pnpm', 'add', '@polar-sh/polar'])
+    expect(result.installDirectory).toBe(workspacePackage)
   })
 
   test('uses --format for the default file name', async () => {

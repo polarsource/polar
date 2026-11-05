@@ -103,6 +103,23 @@ const countProducts = (clients: Clients, organization: ActiveOrganization) =>
     }),
   )
 
+const enableConfig = (clients: Clients, organization: ActiveOrganization) =>
+  Effect.gen(function* () {
+    const request = yield* HttpClientRequest.post(
+      yield* apiUrl(organization.environment, '/config/init'),
+    ).pipe(withOrganization(organization.id), HttpClientRequest.bodyJson({}))
+    const response = yield* clients[organization.environment].execute(request)
+    if (response.status !== 204) {
+      return yield* unexpected(response, organization, ['organizations:write'])
+    }
+  }).pipe(
+    Effect.scoped,
+    Effect.catchTags({
+      HttpClientError: transportErrors.HttpClientError,
+      HttpBodyError: transportErrors.HttpBodyError,
+    }),
+  )
+
 const display = (path: string) => relative(process.cwd(), path) || '.'
 
 const resolveTarget = (fs: FileSystem.FileSystem, target: InitTarget) =>
@@ -187,6 +204,7 @@ export const init =
           hint: 'polar config init only sets up organizations without products yet. Start from a new organization, or wait for migration support.',
         })
       }
+      yield* enableConfig(clients, organization)
       yield* write(fs, path, yield* renderConfig(format))
       return {
         file: display(path),

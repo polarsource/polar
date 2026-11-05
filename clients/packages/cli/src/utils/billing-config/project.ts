@@ -65,11 +65,22 @@ export const detectPackageManager = (fs: FileSystem.FileSystem, root: string) =>
     return 'npm'
   })
 
+const DEPENDENCY_FIELDS = [
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+] as const
+
 export const isInstalled = (fs: FileSystem.FileSystem, root: string) =>
-  Effect.gen(function* () {
-    for (const directory of ancestors(root)) {
-      const manifest = join(directory, 'node_modules', PACKAGE, 'package.json')
-      if (yield* exists(fs, manifest)) return true
-    }
-    return false
-  })
+  fs.readFileString(join(root, 'package.json')).pipe(
+    Effect.map((source) => {
+      const manifest = JSON.parse(source) as Partial<
+        Record<(typeof DEPENDENCY_FIELDS)[number], Record<string, unknown>>
+      >
+      return DEPENDENCY_FIELDS.some(
+        (field) => PACKAGE in (manifest[field] ?? {}),
+      )
+    }),
+    Effect.orElseSucceed(() => false),
+  )

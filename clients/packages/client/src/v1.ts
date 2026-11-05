@@ -63298,6 +63298,15 @@ export interface operations {
           'application/json': components['schemas']['ConfigInitResult']
         }
       }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description The organization already has products, benefits or meters. */
       409: {
         headers: {

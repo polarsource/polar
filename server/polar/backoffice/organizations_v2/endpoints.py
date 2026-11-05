@@ -134,6 +134,7 @@ from .forms import (
     AddPaymentMethodDomainForm,
     OrganizationOrdersImportForm,
     UpdateAccountSettingsForm,
+    UpdateCatalogLimitsForm,
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
@@ -3715,6 +3716,78 @@ async def edit_rate_limit_group(
             hx_post=str(
                 request.url_for(
                     "organizations:edit_rate_limit_group",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col",
+        ):
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/edit-catalog-limits",
+    name="organizations:edit_catalog_limits",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_catalog_limits(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization catalog limits."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateCatalogLimitsForm.model_validate_form(data)
+            await repository.update(
+                organization,
+                update_dict=form.model_dump(),
+            )
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=settings",
+                303,
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Edit Catalog Limits", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text(
+                "Archived products count towards these limits; deleted products and benefits do not."
+            )
+
+        with UpdateCatalogLimitsForm.render(
+            data={
+                "products_limit": organization.products_limit,
+                "benefits_limit": organization.benefits_limit,
+            },
+            validation_error=validation_error,
+            hx_post=str(
+                request.url_for(
+                    "organizations:edit_catalog_limits",
                     organization_id=organization_id,
                 )
             ),

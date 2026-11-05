@@ -920,3 +920,34 @@ class TestStatusCounts:
         # Active tab badge: the list treats a blank search as no search and
         # hides deleted organizations, so the counts must agree.
         assert 'badge badge-success ml-2">0<' in response.text
+
+
+@pytest.mark.anyio
+class TestEditCatalogLimits:
+    async def test_update(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        url = f"/organizations/{organization.id}/edit-catalog-limits"
+        response = await backoffice_client.get(url)
+        assert response.status_code == 200
+        assert 'name="products_limit"' in response.text
+        assert 'name="benefits_limit"' in response.text
+
+        response = await backoffice_client.post(
+            url, data={"products_limit": "25", "benefits_limit": "0"}
+        )
+        assert response.status_code == 303
+        await session.refresh(organization)
+        assert organization.products_limit == 25
+        assert organization.benefits_limit == 0
+
+        response = await backoffice_client.post(
+            url, data={"products_limit": "-1", "benefits_limit": "2147483648"}
+        )
+        assert response.status_code == 200
+        await session.refresh(organization)
+        assert organization.products_limit == 25
+        assert organization.benefits_limit == 0

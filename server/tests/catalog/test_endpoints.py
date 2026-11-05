@@ -254,10 +254,11 @@ async def benefits_draft(
     products_only_draft: Catalog,
 ) -> Catalog:
     benefit = await create_benefit(
-        save_fixture, organization=organization, is_current=False
+        save_fixture,
+        organization=organization,
+        is_current=False,
+        catalog=products_only_draft,
     )
-    benefit.catalog = products_only_draft
-    await save_fixture(benefit)
     await save_fixture(
         CatalogBenefit(catalog=products_only_draft, benefit=benefit, external_id="beta")
     )

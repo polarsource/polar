@@ -1212,6 +1212,7 @@ async def create_benefit(
     properties: dict[str, Any] | None = None,
     external_id: str | None = None,
     is_current: bool = True,
+    catalog: Catalog | None = None,
 ) -> Benefit:
     if properties is None:
         properties = {"note": None}
@@ -1225,6 +1226,7 @@ async def create_benefit(
         properties=properties,
         external_id=external_id,
         is_current=is_current,
+        catalog=catalog,
     )
     await save_fixture(benefit)
     return benefit

@@ -162,6 +162,16 @@ class OrganizationRepository(
 
         return await self.get_one_or_none(statement)
 
+    async def lock(self, organization_id: UUID) -> Organization:
+        """Lock the organization's row and reload it."""
+        statement = (
+            self.get_base_statement()
+            .where(Organization.id == organization_id)
+            .with_for_update(of=Organization)
+            .execution_options(populate_existing=True)
+        )
+        return await self.get_one(statement)
+
     async def get_by_account(self, account_id: UUID) -> Organization | None:
         """Get the organization that owns the given account."""
         statement = self.get_base_statement().where(

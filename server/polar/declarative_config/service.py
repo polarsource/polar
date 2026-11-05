@@ -568,20 +568,23 @@ class DeclarativeConfigService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
+        organization_repository = OrganizationRepository.from_session(session)
+        # The row lock conflicts with the key-share lock that inserting a
+        # product, benefit or meter takes on its organization.
+        organization = await organization_repository.lock(organization.id)
         if not organization.is_config_as_code_enabled:
-            await CatalogRepository.from_session(session).lock(organization.id)
             products = await ProductRepository.from_session(
                 session
             ).count_by_organization_id(organization.id, include_deleted=True)
             benefits = await BenefitRepository.from_session(
                 session
-            ).count_by_organization_id(organization.id, include_deleted=True)
+            ).count_all_by_organization_id(organization.id)
             meters = await MeterRepository.from_session(
                 session
-            ).count_by_organization_id(organization.id, include_deleted=True)
+            ).count_all_by_organization_id(organization.id)
             if products or benefits or meters:
                 raise ConfigOrganizationNotFresh(products, benefits, meters)
-            organization = await OrganizationRepository.from_session(session).update(
+            organization = await organization_repository.update(
                 organization,
                 update_dict={
                     "feature_settings": {

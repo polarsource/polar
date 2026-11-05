@@ -412,7 +412,10 @@ class TestInit:
         assert counts in json["detail"]
         assert "isn't supported yet" in json["detail"]
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_already_enabled(
         self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization

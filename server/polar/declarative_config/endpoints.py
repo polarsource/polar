@@ -169,6 +169,10 @@ async def apply(
     summary="Init Config",
     responses={
         200: {"description": "Config as code is enabled."},
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
         409: {
             "description": "The organization already has products, benefits or meters.",
             "model": ConfigOrganizationNotFresh.schema(),

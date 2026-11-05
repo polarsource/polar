@@ -121,10 +121,9 @@ class BenefitRepository(
         )
         return await self.get_all(statement)
 
-    async def count_by_organization_id(
-        self, organization_id: UUID, *, include_deleted: bool = False
-    ) -> int:
-        statement = self.get_base_statement(include_deleted=include_deleted).where(
+    async def count_all_by_organization_id(self, organization_id: UUID) -> int:
+        """Count every benefit version, including deleted ones."""
+        statement = self.get_base_statement(include_deleted=True).where(
             Benefit.organization_id == organization_id
         )
         return await self.count(statement)

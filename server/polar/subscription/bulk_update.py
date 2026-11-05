@@ -163,6 +163,7 @@ class SubscriptionBulkUpdateService:
                             subscription,
                             product_id=target.id,
                             proration_behavior=bulk_update.proration_behavior,
+                            check_meter_versions=False,
                         )
                 moved += 1
             except PolarError as e:

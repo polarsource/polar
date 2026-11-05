@@ -196,9 +196,50 @@ export const PublishOutput = Schema.Struct({
   drift: Schema.NullOr(Schema.Array(AppliedEntry)),
 })
 
+export const ConfigDocument = Schema.Record(
+  Schema.String,
+  Schema.Union([
+    Schema.Array(Schema.Unknown),
+    Schema.Record(Schema.String, Schema.Unknown),
+  ]),
+)
+export type ConfigDocument = typeof ConfigDocument.Type
+
+export const KeyedResource = Schema.Literals(['meter', 'benefit', 'product'])
+export type KeyedResource = typeof KeyedResource.Type
+
+export const SkippedResource = Schema.Struct({
+  resource: Schema.String,
+  id: Schema.String,
+  name: Schema.String,
+  reason: Schema.String,
+})
+export type SkippedResource = typeof SkippedResource.Type
+
+export const ConfigExport = Schema.Struct({
+  config: ConfigDocument,
+  skipped: Schema.Array(SkippedResource),
+})
+export type ConfigExport = typeof ConfigExport.Type
+
+export const ExternalIdAssignment = Schema.Struct({
+  resource: KeyedResource,
+  id: Schema.String,
+  name: Schema.String,
+  external_id: Schema.String,
+})
+export type ExternalIdAssignment = typeof ExternalIdAssignment.Type
+
 export const InitResult = Schema.Struct({
   file: Schema.String,
   format: Schema.Literals(['ts', 'json']),
+  imported: Schema.Struct({
+    meters: Schema.Finite,
+    benefits: Schema.Finite,
+    products: Schema.Finite,
+  }),
+  keyed: Schema.Array(ExternalIdAssignment),
+  skipped: Schema.Array(SkippedResource),
   install: Schema.optionalKey(
     Schema.Struct({
       command: Schema.String,

@@ -14,6 +14,7 @@ import { apply } from '@/services/billing-config/apply'
 import {
   init,
   type InitTarget,
+  type NameResources,
   type Prepared,
   type Ran,
   run,
@@ -26,6 +27,7 @@ import { authenticatedClient } from '@/services/client'
 
 export type {
   InitTarget,
+  NameResources,
   Prepared,
   Ran,
   Run,
@@ -45,10 +47,11 @@ export class BillingConfig extends Context.Service<
       organization: ActiveOrganization,
       options?: CatalogOptions,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
-    init: (
+    init: <E, R>(
       organization: ActiveOrganization,
       target: InitTarget,
-    ) => Effect.Effect<Prepared, AuthError | BillingConfigError>
+      name: NameResources<E, R>,
+    ) => Effect.Effect<Prepared, AuthError | BillingConfigError | E, R>
     install: (
       command: ReadonlyArray<string>,
       directory: string,

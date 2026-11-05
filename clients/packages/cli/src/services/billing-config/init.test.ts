@@ -13,13 +13,16 @@ import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem, Layer } from 'effect'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import { Auth } from '@/services/auth'
-import { init, type InitTarget } from '@/services/billing-config/init'
+import {
+  init,
+  type InitTarget,
+  type NameResources,
+} from '@/services/billing-config/init'
 import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
-const productsUrl =
-  'https://sandbox-api.polar.sh/v1/products/?limit=1&is_archived=false'
+const exportUrl = 'https://sandbox-api.polar.sh/v1/config/'
 const initUrl = 'https://sandbox-api.polar.sh/v1/config/init'
 
 const acme: ActiveOrganization = {
@@ -29,8 +32,20 @@ const acme: ActiveOrganization = {
   environment: 'sandbox',
 }
 
-const products = (total_count: number) =>
-  Response.json({ items: [], pagination: { total_count, max_page: 1 } })
+const EMPTY = { meters: [], benefits: [], products: [] }
+
+const exported = (config: object = EMPTY, skipped: object[] = []) =>
+  Response.json({ config, skipped, catalog: null })
+
+const acceptSuggestions: NameResources<never, never> = (resources) =>
+  Effect.succeed(
+    resources.map(({ resource, id, name, suggestion }) => ({
+      resource,
+      id,
+      name,
+      external_id: suggestion,
+    })),
+  )
 
 let api: ReturnType<typeof fakeHttp>
 let directory: string
@@ -38,7 +53,7 @@ let cwd: string
 
 beforeEach(async () => {
   api = fakeHttp({
-    [`GET ${productsUrl}`]: products(0),
+    [`GET ${exportUrl}`]: exported(),
     [`POST ${initUrl}`]: new Response(null, { status: 204 }),
   })
   directory = await realpath(await mkdtemp(join(tmpdir(), 'polar-init-')))
@@ -51,7 +66,10 @@ afterEach(async () => {
   await rm(directory, { recursive: true, force: true })
 })
 
-const run = (target: Partial<InitTarget> = {}) =>
+const run = (
+  target: Partial<InitTarget> = {},
+  name: NameResources<never, never> = acceptSuggestions,
+) =>
   Effect.runPromise(
     Effect.gen(function* () {
       const clients = {
@@ -60,12 +78,16 @@ const run = (target: Partial<InitTarget> = {}) =>
         local: yield* authenticatedClient('local'),
       }
       const fs = yield* FileSystem.FileSystem
-      return yield* init(fs, clients)(acme, {
-        directory,
-        file: undefined,
-        format: undefined,
-        ...target,
-      })
+      return yield* init(fs, clients)(
+        acme,
+        {
+          directory,
+          file: undefined,
+          format: undefined,
+          ...target,
+        },
+        name,
+      )
     }).pipe(
       Effect.provide(Layer.mergeAll(BunServices.layer, api.layer)),
       Effect.provideService(Auth, fakeAuth({ environment: 'sandbox' }).auth),
@@ -94,6 +116,9 @@ describe('init', () => {
     expect(result).toEqual({
       file: 'polar.config.ts',
       format: 'ts',
+      imported: { meters: 0, benefits: 0, products: 0 },
+      keyed: [],
+      skipped: [],
       install: ['npm', 'install', '@polar-sh/polar'],
       installDirectory: directory,
     })
@@ -141,6 +166,9 @@ describe('init', () => {
     expect(result).toEqual({
       file: 'polar.config.json',
       format: 'json',
+      imported: { meters: 0, benefits: 0, products: 0 },
+      keyed: [],
+      skipped: [],
       install: undefined,
       installDirectory: undefined,
     })
@@ -233,16 +261,6 @@ describe('init', () => {
     expect(await read('polar.config.ts')).toBe('keep')
   })
 
-  test('refuses an organization that already has products and writes nothing', async () => {
-    api.routes[`GET ${productsUrl}`] = products(3)
-
-    const error = await failure(run())
-
-    expect(error.message).toBe('Acme already has 3 products')
-    expect(error.hint).toContain('without products')
-    await expect(read('polar.config.ts')).rejects.toThrow()
-  })
-
   test('refuses file types it cannot write and a mismatched --format', async () => {
     expect((await failure(run({ file: 'polar.config.mjs' }))).message).toBe(
       'polar.config.mjs is not a file init can write',
@@ -252,8 +270,8 @@ describe('init', () => {
     ).toBe('polar.json is a .json file, but --format is ts')
   })
 
-  test('names the scope when the token cannot read products', async () => {
-    api.routes[`GET ${productsUrl}`] = Response.json(
+  test('names the scopes when the token cannot export the config', async () => {
+    api.routes[`GET ${exportUrl}`] = Response.json(
       { error: 'NotPermitted' },
       { status: 403 },
     )
@@ -261,6 +279,128 @@ describe('init', () => {
     const error = await failure(run())
 
     expect(error.message).toBe('You do not have access to Acme')
-    expect(error.hint).toBe('The token needs the products:read scope.')
+    expect(error.hint).toBe(
+      'The token needs the organizations:read, meters:read, benefits:read, products:read scopes.',
+    )
+  })
+
+  describe('an organization with a catalog', () => {
+    const pro = {
+      external_id: 'pro',
+      name: 'Pro',
+      description: null,
+      recurring_interval: 'month',
+      recurring_interval_count: 1,
+      prices: [
+        { amount_type: 'fixed', price_amount: 1000, price_currency: 'usd' },
+      ],
+      benefits: [],
+      deprecated: null,
+    }
+    const unkeyed = [
+      {
+        resource: 'product',
+        id: 'p-1',
+        name: 'Pro',
+        reason: 'missing_external_id',
+      },
+      {
+        resource: 'product',
+        id: 'p-2',
+        name: 'Café Plan!',
+        reason: 'missing_external_id',
+      },
+      { resource: 'meter', id: 'm-1', name: 'Old', reason: 'archived' },
+      { resource: 'product', id: 'p-3', name: 'Tiers', reason: 'invalid' },
+    ]
+
+    beforeEach(() => {
+      let exports = 0
+      api.routes[`GET ${exportUrl}`] = () =>
+        exports++ === 0
+          ? exported({ ...EMPTY, products: [pro] }, unkeyed)
+          : exported(
+              {
+                ...EMPTY,
+                products: [
+                  pro,
+                  { ...pro, external_id: 'pro-2' },
+                  { ...pro, external_id: 'cafe-plan' },
+                ],
+              },
+              unkeyed.slice(2),
+            )
+    })
+
+    test('names resources without an external ID, saves them and writes the full config', async () => {
+      const offered: unknown[] = []
+
+      const result = await run({ format: 'json' }, (resources) => {
+        offered.push(...resources)
+        return acceptSuggestions(resources)
+      })
+
+      expect(offered).toEqual([
+        { resource: 'product', id: 'p-1', name: 'Pro', suggestion: 'pro-2' },
+        {
+          resource: 'product',
+          id: 'p-2',
+          name: 'Café Plan!',
+          suggestion: 'cafe-plan',
+        },
+      ])
+      const saves = api.requests.filter((request) => request.url === initUrl)
+      expect(await saves[1]!.json()).toEqual({
+        external_ids: [
+          { resource: 'product', id: 'p-1', external_id: 'pro-2' },
+          { resource: 'product', id: 'p-2', external_id: 'cafe-plan' },
+        ],
+      })
+      expect(result.imported).toEqual({ meters: 0, benefits: 0, products: 3 })
+      expect(result.keyed.map(({ external_id }) => external_id)).toEqual([
+        'pro-2',
+        'cafe-plan',
+      ])
+      expect(result.skipped).toEqual([unkeyed[3]])
+      const written = JSON.parse(await read('polar.config.json'))
+      expect(
+        written.products.map((p: { external_id: string }) => p.external_id),
+      ).toEqual(['pro', 'pro-2', 'cafe-plan'])
+      expect(written.products[0]).not.toHaveProperty('description')
+      expect(written.products[0]).not.toHaveProperty('deprecated')
+    })
+
+    test('renders the imported products as TypeScript', async () => {
+      await run({ format: 'ts' })
+
+      expect(await read('polar.config.ts')).toContain("'cafe-plan'")
+    })
+
+    test('reports why the external IDs were rejected and writes nothing', async () => {
+      let saves = 0
+      api.routes[`POST ${initUrl}`] = () =>
+        saves++ === 0
+          ? new Response(null, { status: 204 })
+          : Response.json(
+              {
+                detail: [
+                  {
+                    type: 'value_error',
+                    loc: ['body', 'external_ids', 1, 'external_id'],
+                    msg: 'Another product already has this external ID.',
+                  },
+                ],
+              },
+              { status: 422 },
+            )
+
+      const error = await failure(run({ format: 'json' }))
+
+      expect(error.message).toBe('Could not save the external IDs')
+      expect(error.hint).toBe(
+        'cafe-plan (product Café Plan!): Another product already has this external ID.',
+      )
+      await expect(read('polar.config.json')).rejects.toThrow()
+    })
   })
 })

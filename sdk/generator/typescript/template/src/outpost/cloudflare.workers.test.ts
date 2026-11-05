@@ -1,4 +1,4 @@
-import { env, runDurableObjectAlarm } from "cloudflare:test";
+import { env, runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { CloudflareOutpost, MissingExternalIdError } from "./cloudflare";
@@ -308,16 +308,23 @@ it("confirms the pending events of a sealed bucket from its alarm", async () => 
   });
   await runDurableObjectAlarm(sync());
   expect((await outpost().meter(meter))?.consumed_units).toBe(16);
-  // Polar has not ingested it yet: it stays pending, the alarm asks again.
+  // Polar has not ingested it yet: it stays pending, and the alarm asks again only once a newer
+  // snapshot arrives, a bucket Polar confirms nothing for would be asked about forever.
   await vi.waitFor(() => expect(requested("/v1/outpost/confirm")).not.toHaveLength(0));
-  expect(await runDurableObjectAlarm(customerObject())).toBe(true);
+  expect(await runDurableObjectAlarm(customerObject())).toBe(false);
   expect((await outpost().meter(meter))?.consumed_units).toBe(16);
   ingested.add(tracked.external_id);
-  expect(await runDurableObjectAlarm(customerObject())).toBe(true);
-  expect((await outpost().meter(meter))?.consumed_units).toBe(13);
-  const confirms = requested("/v1/outpost/confirm");
-  expect(confirms.length).toBeGreaterThanOrEqual(2);
-  for (const confirm of confirms)
+  changes.push({
+    ...change(1791807000000003, 13),
+    cold_until: bucket + BUCKET_SIZE,
+    count: 2,
+    min: 3,
+  });
+  await runDurableObjectAlarm(sync());
+  // The snapshot armed the alarm for now: it may have fired on its own already.
+  await runDurableObjectAlarm(customerObject());
+  await vi.waitFor(async () => expect((await outpost().meter(meter))?.consumed_units).toBe(13));
+  for (const confirm of requested("/v1/outpost/confirm"))
     expect(confirm).toEqual({
       ...customer,
       reducer_id: "tokens",
@@ -325,4 +332,14 @@ it("confirms the pending events of a sealed bucket from its alarm", async () => 
       ids: [tracked.external_id],
     });
   expect(await runDurableObjectAlarm(customerObject())).toBe(false);
+});
+
+it("registers each awake customer under its own key", async () => {
+  seed();
+  await outpost().actor(customer);
+  await outpost().actor({ external_customer_id: "bob" });
+  const keys = await runInDurableObject(sync(), (_, state) =>
+    state.storage.list({ prefix: "registered" }),
+  );
+  expect([...keys.keys()].sort()).toEqual(["registered:external:alice", "registered:external:bob"]);
 });

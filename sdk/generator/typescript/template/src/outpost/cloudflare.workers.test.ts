@@ -1,5 +1,5 @@
-import { createExecutionContext, env, fetchMock, waitOnExecutionContext } from "cloudflare:test";
-import { afterEach, beforeAll, beforeEach, expect, it } from "vitest";
+import { createExecutionContext, env, waitOnExecutionContext } from "cloudflare:test";
+import { beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { CloudflareOutpost, MissingExternalIdError } from "./cloudflare";
 import { getBucketStart, type Reducer } from "./reducer";
@@ -15,7 +15,10 @@ const usageReducer = (id: string, meterId: string): Reducer => ({
   id,
   kind: "usage",
   meter_ids: [meterId],
-  filter: { conjunction: "and", clauses: [{ property: "name", operator: "eq", value: "api_call" }] },
+  filter: {
+    conjunction: "and",
+    clauses: [{ property: "name", operator: "eq", value: "api_call" }],
+  },
   aggregation: { func: "sum", property: "tokens" },
 });
 const creditReducer = (id: string, meterId: string): Reducer => ({
@@ -42,8 +45,10 @@ const creditSnapshot = (units: number, version: number) => ({
   max: units,
 });
 
-// Polar's side of Outpost, behind fetchMock: the configuration, the snapshots, the confirmations
-// and the changes. Each test sets what it answers.
+// Polar's side of Outpost, behind the global fetch the Durable Objects share with the tests: the
+// configuration, the snapshots, the confirmations and the changes. Each test sets what it answers.
+let run = 0;
+let organization = "";
 let reducers: Reducer[];
 let snapshot: Record<string, unknown> | undefined;
 let credited = 100;
@@ -70,9 +75,9 @@ const identity = (reducerId: string, payload: Record<string, unknown>) => {
 };
 
 const answer = (method: string, path: string, body: Record<string, any> | undefined) => {
-  switch (`${method} ${path.split("?")[0]}`) {
+  switch (`${method} ${path}`) {
     case "GET /v1/outpost/configuration":
-      return { organization_id: "org", reducers };
+      return { organization_id: organization, reducers };
     case "POST /v1/outpost/meter-usage":
       return snapshot ? [identity(body!.reducer_id, {})] : [];
     case "POST /v1/outpost/confirm": {
@@ -102,23 +107,25 @@ const answer = (method: string, path: string, body: Record<string, any> | undefi
   return undefined;
 };
 
+const polar = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+  const request = new Request(input, init);
+  const url = new URL(request.url);
+  expect(url.origin).toBe("https://polar.test");
+  expect(request.headers.get("authorization")).toBe("Bearer test-token");
+  const text = await request.text();
+  const body = text ? JSON.parse(text) : undefined;
+  requests.push({ method: request.method, path: url.pathname + url.search, body });
+  const data = answer(request.method, url.pathname, body);
+  return data === undefined ? new Response(null, { status: 404 }) : Response.json(data);
+};
+
 beforeAll(() => {
-  fetchMock.activate();
-  fetchMock.disableNetConnect();
-  fetchMock
-    .get("https://polar.test")
-    .intercept({ path: /.*/, method: /.*/ })
-    .reply(({ method, path, body, headers }) => {
-      expect(new Headers(headers).get("authorization")).toBe("Bearer test-token");
-      const parsed = body ? JSON.parse(body as string) : undefined;
-      requests.push({ method, path, body: parsed });
-      const data = answer(method, path, parsed);
-      return data === undefined ? { statusCode: 404 } : { statusCode: 200, data };
-    })
-    .persist();
+  vi.stubGlobal("fetch", polar);
 });
 
 beforeEach(() => {
+  // Its own organization names each test's Durable Objects: no state crosses over.
+  organization = `org-${++run}`;
   reducers = [usageReducer("tokens", "meter"), creditReducer("credits", "meter")];
   snapshot = undefined;
   credited = 100;
@@ -130,14 +137,17 @@ beforeEach(() => {
   requests.length = 0;
 });
 
-afterEach(() => {
-  fetchMock.assertNoPendingInterceptors();
-});
-
-const outpost = () => new CloudflareOutpost(env, { organizationId: "org" });
+const outpost = () => new CloudflareOutpost(env, { organizationId: organization });
 // Polar's snapshot of the usage reducer: 10 units in the cold buckets before `bucket`.
 const seed = (cold = 10): void => {
-  snapshot = { cold_until: bucket, version: 1791807000000001, count: 1, sum: cold, min: cold, max: cold };
+  snapshot = {
+    cold_until: bucket,
+    version: 1791807000000001,
+    count: 1,
+    sum: cold,
+    min: cold,
+    max: cold,
+  };
 };
 const event = (tokens: number) => ({
   ...customer,

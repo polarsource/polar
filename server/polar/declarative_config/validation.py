@@ -844,7 +844,7 @@ def _get_product_update_dict(
     product_config: ConfigProduct,
     prices: list[dict[str, Any] | None],
     benefits: list[str],
-    custom_fields: list[dict[str, Any]],
+    custom_fields: list[dict[str, Any]] | None,
 ) -> dict[str, Any]:
     update_dict: dict[str, Any] = {}
     for name in (*_PRODUCT_FIELDS, *_TRIAL_FIELDS):
@@ -861,7 +861,7 @@ def _get_product_update_dict(
     config_custom_fields = [
         field.model_dump() for field in product_config.custom_fields
     ]
-    if custom_fields != config_custom_fields:
+    if custom_fields is not None and custom_fields != config_custom_fields:
         update_dict["custom_fields"] = config_custom_fields
     if (
         "metadata" in product_config.model_fields_set
@@ -880,6 +880,7 @@ async def diff_products(
     *,
     for_update: bool,
     catalog: Catalog | None,
+    manage_custom_fields: bool,
 ) -> list[ProductChange]:
     repository = ProductRepository.from_session(session)
     external_ids = [config.external_id for config in product_configs]
@@ -931,7 +932,7 @@ async def diff_products(
                     product_config,
                     prices,
                     product_benefits,
-                    product_custom_fields,
+                    product_custom_fields if manage_custom_fields else None,
                 ),
                 {
                     "prices": [price for price in prices if price is not None],
@@ -1152,6 +1153,7 @@ async def check(
         benefits,
         for_update=for_update,
         catalog=catalog,
+        manage_custom_fields="custom_fields" in config.model_fields_set,
     )
     issues = [
         *unique_external_ids(

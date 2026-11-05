@@ -20,7 +20,14 @@ from polar.custom_field.service import custom_field as custom_field_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Benefit, Organization, Product, User
+from polar.models import (
+    Agent,
+    Benefit,
+    Organization,
+    Product,
+    ProductCustomField,
+    User,
+)
 from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -344,6 +351,7 @@ class DeclarativeConfigService:
             benefit_ids,
             custom_field_ids,
             draft=not publish,
+            manage_custom_fields="custom_fields" in config.model_fields_set,
         )
         catalog: ConfigCatalogChange | None = None
         if new_products or new_benefits or removed:
@@ -912,6 +920,7 @@ class DeclarativeConfigService:
         custom_field_ids: dict[str, UUID],
         *,
         draft: bool,
+        manage_custom_fields: bool,
     ) -> tuple[list[ConfigResult], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
@@ -956,6 +965,15 @@ class DeclarativeConfigService:
                                 catalog_service.copy_product_settings(
                                     change.existing, product
                                 )
+                                if not manage_custom_fields:
+                                    product.attached_custom_fields = [
+                                        ProductCustomField(
+                                            custom_field=attached.custom_field,
+                                            order=attached.order,
+                                            required=attached.required,
+                                        )
+                                        for attached in change.existing.attached_custom_fields
+                                    ]
                                 if config.meter_interval is None:
                                     update_dict["meter_interval"] = (
                                         change.existing.meter_interval

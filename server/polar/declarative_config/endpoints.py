@@ -28,6 +28,7 @@ from .schemas import (
 from .service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
+    ConfigCustomFieldConflict,
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
@@ -139,6 +140,7 @@ async def init(
             | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
             | ConfigProductConflict.schema()
+            | ConfigCustomFieldConflict.schema()
             | ConfigWebhookConflict.schema(),
         },
     },

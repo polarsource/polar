@@ -16675,6 +16675,17 @@ export interface components {
       type: 'checkbox'
       properties: components['schemas']['CustomFieldCheckboxProperties']
     }
+    /** ConfigCustomFieldConflict */
+    ConfigCustomFieldConflict: {
+      /**
+       * Error
+       * @example ConfigCustomFieldConflict
+       * @constant
+       */
+      error: 'ConfigCustomFieldConflict'
+      /** Detail */
+      detail: string
+    }
     /** ConfigCustomFieldDate */
     ConfigCustomFieldDate: {
       /**
@@ -16920,7 +16931,7 @@ export interface components {
       meters: components['schemas']['ConfigMeterRead'][]
       /**
        * Custom Fields
-       * @description Left out without the `custom_fields:read` scope.
+       * @description Left out without the `custom_fields:read` or `custom_fields:write` scope.
        */
       custom_fields?: components['schemas']['ConfigCustomFieldRead'][] | null
       /** Benefits */
@@ -63598,6 +63609,7 @@ export interface operations {
             | components['schemas']['ConfigMeterConflict']
             | components['schemas']['ConfigBenefitConflict']
             | components['schemas']['ConfigProductConflict']
+            | components['schemas']['ConfigCustomFieldConflict']
             | components['schemas']['ConfigWebhookConflict']
         }
       }

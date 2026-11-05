@@ -1575,6 +1575,86 @@ class TestApply:
         )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_omitted_custom_fields_keep_product_attachments(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product_repository = ProductRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "custom_fields": [COMPANY_FIELD],
+                    "products": [
+                        {**PACK_PRODUCT, "custom_fields": [{"field": "company"}]}
+                    ],
+                }
+            ),
+        )
+        [first] = await product_repository.get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
+
+        unchanged = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [PACK_PRODUCT]}),
+        )
+        [change] = [
+            c for c in unchanged.changes if c.resource == ConfigResource.product
+        ]
+        assert change.action == ConfigAction.unchanged
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [{**PACK_PRODUCT, "name": "Pack 2"}]}),
+        )
+        [second] = await product_repository.get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
+        assert second.id != first.id
+        assert await _attached_custom_fields(session, second.id) == [("company", False)]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unexported_custom_field_untouched(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="Legacy Field",
+            organization=organization,
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
+        )
+
+        assert result.removed == []
+        assert (
+            await CustomFieldRepository.from_session(
+                session
+            ).get_by_organization_and_slug(organization.id, "Legacy Field")
+            is not None
+        )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_currency_with_new_products(
         self,
         session: AsyncSession,

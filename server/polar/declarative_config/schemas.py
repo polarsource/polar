@@ -955,7 +955,9 @@ class ConfigExportDocument(_ConfigRead):
     custom_fields: list[ConfigCustomFieldRead] | None = Field(
         default=None,
         exclude_if=lambda custom_fields: custom_fields is None,
-        description="Left out without the `custom_fields:read` scope.",
+        description=(
+            "Left out without the `custom_fields:read` or `custom_fields:write` scope."
+        ),
     )
     benefits: list[ConfigBenefitRead]
     products: list[ConfigProductRead]

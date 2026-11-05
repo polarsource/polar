@@ -148,16 +148,28 @@ async def custom_fields(
     *,
     for_update: bool = False,
 ) -> Sequence[CustomField]:
-    """Custom fields the config doesn't list. Applying deletes them."""
+    """Custom fields the config doesn't list. Applying deletes them.
+
+    Custom fields that pull doesn't export are left untouched.
+    """
     if "custom_fields" not in config.model_fields_set:
         return []
     listed = {custom_field.slug for custom_field in config.custom_fields}
-    return [
+    missing = [
         custom_field
         for custom_field in await CustomFieldRepository.from_session(
             session
         ).get_all_by_organization(organization.id, for_update=for_update)
         if custom_field.slug not in listed
+    ]
+    if not missing:
+        return []
+    exported = await export_config(session, organization, None)
+    describable = {
+        custom_field.slug for custom_field in exported.config.custom_fields or []
+    }
+    return [
+        custom_field for custom_field in missing if custom_field.slug in describable
     ]
 
 

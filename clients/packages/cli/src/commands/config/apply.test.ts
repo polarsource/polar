@@ -153,6 +153,8 @@ const run = async (
           load: () => Effect.succeed(config),
           plan: planned,
           apply: applied,
+          init: () => Effect.die('unused'),
+          install: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),

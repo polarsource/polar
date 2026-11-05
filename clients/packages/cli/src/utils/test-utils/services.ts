@@ -135,17 +135,25 @@ export const fakeOrganizations = (
       Effect.sync(() => {
         state.selected = selection
       }),
-    resolve: (id) =>
+    resolve: (id, environment) =>
       Effect.suspend(() => {
         const found = state.items.find((item) =>
           id
-            ? item.id === id
+            ? item.id === id &&
+              (environment === undefined || item.environment === environment)
             : item.id === state.selected?.id &&
               item.environment === state.selected.environment,
         )
         return found
           ? Effect.succeed(found)
-          : Effect.fail(new AuthError({ message: 'No active organization.' }))
+          : Effect.fail(
+              new AuthError({
+                message:
+                  id && environment
+                    ? `No organization ${id} in ${environment}.`
+                    : 'No active organization.',
+              }),
+            )
       }),
   })
   return { organizations, state }

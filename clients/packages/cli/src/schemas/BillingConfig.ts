@@ -196,6 +196,18 @@ export const PublishOutput = Schema.Struct({
   drift: Schema.NullOr(Schema.Array(AppliedEntry)),
 })
 
+export const InitResult = Schema.Struct({
+  file: Schema.String,
+  format: Schema.Literals(['ts', 'json']),
+  install: Schema.optionalKey(
+    Schema.Struct({
+      command: Schema.String,
+      status: Schema.Literals(['installed', 'failed', 'skipped']),
+    }),
+  ),
+})
+export type InitResult = typeof InitResult.Type
+
 export interface LoadedConfig {
   readonly file: string
   readonly source: string

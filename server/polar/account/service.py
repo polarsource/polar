@@ -29,10 +29,7 @@ class AccountService:
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Account.id == id)
-            .options(
-                joinedload(Account.users),
-                joinedload(Account.organizations),
-            )
+            .options(joinedload(Account.organizations))
         )
         return await repository.get_one_or_none(statement)
 

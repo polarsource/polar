@@ -70,10 +70,21 @@ export const publish =
       if (response.status === 200) {
         return yield* HttpClientResponse.schemaBodyJson(Catalog)(response)
       }
-      if (response.status === 404 || response.status === 409) {
+      // The API answers 404 both for a discarded draft and for a caller without products:manage
+      const gone =
+        response.status === 409 ||
+        (response.status === 404 &&
+          (yield* catalogs(clients)(organization)).draft?.id !== draft.id)
+      if (gone) {
         return yield* new BillingConfigError({
-          message: 'The draft was published or replaced in the meantime',
+          message: 'The draft was published or discarded in the meantime',
           hint: 'Run polar config publish again.',
+        })
+      }
+      if (response.status === 404) {
+        return yield* new BillingConfigError({
+          message: `You cannot publish the draft of ${organization.name}`,
+          hint: 'Publishing needs permission to manage products in this organization.',
         })
       }
       return yield* unexpected(response, organization, ['products:write'])

@@ -94,23 +94,47 @@ describe('publish', () => {
     expect(result).toEqual({ id: 'cat-draft', name: 'v4' })
   })
 
-  test.each([404, 409])(
-    'asks to retry when the draft is gone (%i)',
-    async (status) => {
-      api.routes[`POST ${publishUrl}`] = Response.json(
-        { error: 'CatalogNotDraft', detail: 'Not a draft.' },
-        { status },
-      )
+  test('asks to retry when the draft was already published', async () => {
+    api.routes[`POST ${publishUrl}`] = Response.json(
+      { error: 'CatalogNotDraft', detail: 'Not a draft.' },
+      { status: 409 },
+    )
 
-      const error = await failure(
-        run((clients) => publish(clients)(acme, draft)),
-      )
+    const error = await failure(run((clients) => publish(clients)(acme, draft)))
 
-      expect(error.message).toBe(
-        'The draft was published or replaced in the meantime',
-      )
-    },
-  )
+    expect(error.message).toBe(
+      'The draft was published or discarded in the meantime',
+    )
+  })
+
+  test('asks to retry when the draft was discarded', async () => {
+    api.routes[`POST ${publishUrl}`] = Response.json(
+      { error: 'CatalogNotFound', detail: 'No catalog.' },
+      { status: 404 },
+    )
+    api.routes[`GET ${listUrl}`] = Response.json({ items: [] })
+
+    const error = await failure(run((clients) => publish(clients)(acme, draft)))
+
+    expect(error.message).toBe(
+      'The draft was published or discarded in the meantime',
+    )
+  })
+
+  test('explains a missing permission when the draft is still there', async () => {
+    api.routes[`POST ${publishUrl}`] = Response.json(
+      { error: 'CatalogNotFound', detail: 'No catalog.' },
+      { status: 404 },
+    )
+    api.routes[`GET ${listUrl}`] = Response.json({
+      items: [{ id: 'cat-draft', name: null, status: 'draft' }],
+    })
+
+    const error = await failure(run((clients) => publish(clients)(acme, draft)))
+
+    expect(error.message).toBe('You cannot publish the draft of Acme')
+    expect(error.hint).toContain('manage products')
+  })
 
   test('asks for the products:write scope on 403', async () => {
     api.routes[`POST ${publishUrl}`] = Response.json(

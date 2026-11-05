@@ -335,9 +335,9 @@ describe('init', () => {
     test('names resources without an external ID, saves them and writes the full config', async () => {
       const offered: unknown[] = []
 
-      const result = await run({ format: 'json' }, (resources) => {
+      const result = await run({ format: 'json' }, (resources, catalog) => {
         offered.push(...resources)
-        return acceptSuggestions(resources)
+        return acceptSuggestions(resources, catalog)
       })
 
       expect(offered).toEqual([

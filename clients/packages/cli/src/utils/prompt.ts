@@ -26,14 +26,3 @@ const answered = (message: string, value: string) =>
   Console.log(
     `${ui.clearLines(2)}${ui.INDENT}${ui.green('✔')} ${message}\n${ui.INDENT}${ui.INDENT}${ui.dim(value)}`,
   )
-
-interface TextOptions {
-  readonly message: string
-  readonly default?: string
-  readonly validate?: (value: string) => Effect.Effect<string, string>
-}
-
-export const text = (options: TextOptions) =>
-  Prompt.run(Prompt.String({ ...options, theme })).pipe(
-    Effect.tap((value) => answered(options.message, value)),
-  )

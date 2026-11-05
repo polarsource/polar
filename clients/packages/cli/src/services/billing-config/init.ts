@@ -249,6 +249,7 @@ const packageToInstall = (
 
 export type NameResources<E, R> = (
   resources: ReadonlyArray<Unkeyed>,
+  catalog: ConfigExport,
 ) => Effect.Effect<ReadonlyArray<ExternalIdAssignment>, E, R>
 
 export const init =
@@ -268,7 +269,10 @@ export const init =
       }
       yield* enableConfig(clients, organization)
       let exported = yield* exportConfig(clients, organization)
-      const keyed = yield* name(unkeyed(exported.config, exported.skipped))
+      const keyed = yield* name(
+        unkeyed(exported.config, exported.skipped),
+        exported,
+      )
       if (keyed.length > 0) {
         yield* enableConfig(clients, organization, keyed)
         exported = yield* exportConfig(clients, organization)

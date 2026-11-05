@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { Cause, Effect, Exit } from 'effect'
 import { init } from '@/commands/config/init'
 import type { ActiveOrganization } from '@/schemas/Auth'
+import type { ConfigExport } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
 import {
   BillingConfig,
@@ -44,6 +45,7 @@ interface Setup {
   install?: boolean
   installs?: boolean
   unkeyed?: Unkeyed[]
+  catalog?: ConfigExport
 }
 
 let directory: string
@@ -85,7 +87,10 @@ const run = async (
           init: (organization, target, name) =>
             Effect.gen(function* () {
               calls.push({ organization, target })
-              const named = yield* name(setup.unkeyed ?? [])
+              const named = yield* name(
+                setup.unkeyed ?? [],
+                setup.catalog ?? { config: {}, skipped: [] },
+              )
               keyed.push(...named)
               const format = target.format ?? 'ts'
               return {
@@ -334,30 +339,144 @@ describe('polar config init', () => {
       { resource: 'product', id: 'p-2', name: 'Team', suggestion: 'team' },
     ]
 
-    test('asks for each external ID, suggesting one', async () => {
+    const catalog: ConfigExport = {
+      config: {
+        meters: [{ external_id: 'api-calls', name: 'API calls' }],
+        products: [{ external_id: 'starter', name: 'Starter' }],
+      },
+      skipped: [
+        {
+          resource: 'product',
+          id: 'p-9',
+          name: 'Legacy',
+          reason: 'invalid',
+        },
+      ],
+    }
+    const accept = keys.enter
+    const openEditor = [keys.down, keys.enter]
+    const externalIds = (keyed: unknown[]) =>
+      keyed.map((entry) => (entry as { external_id: string }).external_id)
+
+    test('previews the whole catalog and uses the suggestions', async () => {
+      const { keyed, output, terminal } = await run(
+        [],
+        { interactive: true, input: [accept] },
+        { unkeyed, catalog },
+      )
+
+      expect(output).toContain('1 meter, 0 benefits, 3 products')
+      expect(output).toMatch(/ {3}api-calls\s+API calls/)
+      expect(output).toMatch(/ {3}starter\s+Starter/)
+      expect(output).toMatch(/\+ pro-plan\s+Pro Plan/)
+      expect(output).toContain('Legacy (product p-9) cannot be expressed')
+      expect(terminal).toContain('2 resources need an external ID')
+      expect(externalIds(keyed)).toEqual(['pro-plan', 'team'])
+    })
+
+    test('flags suggestions that got a number to stay unique', async () => {
+      const { output } = await run(
+        [],
+        { interactive: true, input: [accept] },
+        {
+          unkeyed: [
+            {
+              resource: 'product',
+              id: 'p-1',
+              name: 'Pro',
+              suggestion: 'pro-2',
+            },
+          ],
+        },
+      )
+
+      expect(output).toContain('pro-2  Pro name taken, check this one')
+      expect(output).toContain('1 suggestion got a number')
+    })
+
+    test('edits external IDs in a table, then asks again', async () => {
       const { keyed, output, terminal } = await run(
         [],
         {
           interactive: true,
-          input: [keys.enter, keys.ctrlU, ...keys.type('teams'), keys.enter],
+          input: [
+            ...openEditor,
+            keys.down,
+            keys.ctrlU,
+            ...keys.type('teams'),
+            keys.enter,
+            accept,
+          ],
         },
-        { unkeyed },
+        { unkeyed, catalog },
       )
 
-      expect(terminal).toContain('External ID for product Pro Plan')
-      expect(keyed).toEqual([
+      expect(terminal).toContain('EXTERNAL ID')
+      expect(terminal).toMatch(/❯ product\s+Team\s+teams/)
+      expect(output).toMatch(/team → teams product Team/)
+      expect(externalIds(keyed)).toEqual(['pro-plan', 'teams'])
+    })
+
+    test('blocks saving on a duplicate until the row is reset', async () => {
+      const { keyed, terminal } = await run(
+        [],
         {
-          resource: 'product',
-          id: 'p-1',
-          name: 'Pro Plan',
-          external_id: 'pro-plan',
+          interactive: true,
+          input: [
+            ...openEditor,
+            keys.ctrlU,
+            ...keys.type('starter'),
+            keys.enter,
+            keys.down,
+            keys.ctrlU,
+            ...keys.type('pro-plan'),
+            keys.enter,
+            keys.escape,
+            keys.up,
+            keys.escape,
+            keys.enter,
+            accept,
+          ],
         },
-        { resource: 'product', id: 'p-2', name: 'Team', external_id: 'teams' },
-      ])
-      expect(output).toContain('+ pro-plan product Pro Plan')
-      expect(output).toContain(
-        'Review the meters, benefits and products in polar.config.ts',
+        { unkeyed, catalog },
       )
+
+      expect(terminal).toContain('another product uses starter')
+      expect(terminal).toContain('1 to fix before saving')
+      expect(externalIds(keyed)).toEqual(['pro-plan', 'team'])
+    })
+
+    test('filters the table by name', async () => {
+      const { keyed, terminal } = await run(
+        [],
+        {
+          interactive: true,
+          input: [
+            ...openEditor,
+            keys.ctrlF,
+            ...keys.type('team'),
+            keys.enter,
+            ...keys.type('-yearly'),
+            keys.enter,
+            accept,
+          ],
+        },
+        { unkeyed, catalog },
+      )
+
+      expect(terminal).toContain('filtered from 2')
+      expect(externalIds(keyed)).toEqual(['pro-plan', 'team-yearly'])
+    })
+
+    test('writes nothing when cancelled', async () => {
+      const { keyed, exit } = await run(
+        [],
+        { interactive: true, input: [keys.down, keys.down, keys.enter] },
+        { unkeyed, catalog },
+      )
+
+      expect(message(exit)).toBe('Cancelled: nothing was written')
+      expect(keyed).toEqual([])
     })
 
     test('lists the suggestions and writes nothing without --confirm outside a terminal', async () => {
@@ -407,18 +526,19 @@ describe('polar config init', () => {
       expect(keyed).toHaveLength(2)
     })
 
-    test('only asks for the resources not given an external ID', async () => {
+    test('only edits the resources not given an external ID', async () => {
       const { keyed, terminal } = await run(
         ['--external-id', 'p-1=pro'],
-        { interactive: true, input: [keys.enter] },
+        {
+          interactive: true,
+          input: [...openEditor, ...keys.type('s'), keys.enter, accept],
+        },
         { unkeyed },
       )
 
-      expect(terminal).not.toContain('External ID for product Pro Plan')
-      expect(terminal).toContain('External ID for product Team')
-      expect(
-        keyed.map((entry) => (entry as { external_id: string }).external_id),
-      ).toEqual(['pro', 'team'])
+      expect(terminal).toContain('1 resource needs an external ID')
+      expect(terminal).toContain('1–1 of 1')
+      expect(externalIds(keyed)).toEqual(['pro', 'teams'])
     })
 
     test('rejects unknown IDs, malformed values and duplicate external IDs', async () => {

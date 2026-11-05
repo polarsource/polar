@@ -1,12 +1,19 @@
 import { Data, Effect } from 'effect'
 import {
   BillingConfigError,
+  type ConfigExport,
   type ExternalIdAssignment,
 } from '@/schemas/BillingConfig'
-import type { Unkeyed } from '@/utils/billing-config/keys'
+import {
+  catalogPreview,
+  changes,
+  renamed,
+} from '@/utils/billing-config/catalog'
+import { takenKeys, type Unkeyed } from '@/utils/billing-config/keys'
 import { plural } from '@/utils/billing-config/problems'
 import type { Progress } from '@/utils/progress'
-import { text } from '@/utils/prompt'
+import { select } from '@/utils/prompt'
+import { editTable } from '@/utils/table-prompt'
 import * as ui from '@/utils/ui'
 
 export class ExternalIdsRequired extends Data.TaggedError(
@@ -56,40 +63,120 @@ const clash = (
     (other) => other.resource === resource && other.external_id === key,
   )
 
-const ask = (
-  resources: ReadonlyArray<Unkeyed>,
-  given: ReadonlyMap<string, string>,
+const problems =
+  (
+    editable: ReadonlyArray<Unkeyed>,
+    fixed: ReadonlyArray<ExternalIdAssignment>,
+    catalog: ConfigExport,
+  ) =>
+  (values: ReadonlyArray<string>) =>
+    values.map((value, index) => {
+      const key = value.trim()
+      if (key === '') return 'enter an external ID'
+      const { resource } = editable[index]!
+      const others = [
+        ...fixed,
+        ...editable.flatMap((other, position) =>
+          position === index
+            ? []
+            : [assignment(other, values[position]!.trim())],
+        ),
+      ]
+      return clash(others, resource, key) ||
+        takenKeys(catalog.config, resource).has(key)
+        ? `another ${resource} uses ${key}`
+        : undefined
+    })
+
+const edit = (
+  editable: ReadonlyArray<Unkeyed>,
+  chosen: ReadonlyArray<ExternalIdAssignment>,
+  catalog: ConfigExport,
 ) =>
   Effect.gen(function* () {
-    const chosen: ExternalIdAssignment[] = []
-    for (const [index, resource] of resources.entries()) {
-      const fixed = given.get(resource.id)
-      if (fixed !== undefined) {
-        chosen.push(assignment(resource, fixed))
-        continue
-      }
-      const others = [
-        ...chosen,
-        ...resources
-          .slice(index + 1)
-          .map((other) =>
-            assignment(other, given.get(other.id) ?? other.suggestion),
-          ),
-      ]
-      const external_id = yield* text({
-        message: `External ID for ${resource.resource} ${ui.bold(ui.printable(resource.name))}`,
-        default: resource.suggestion,
-        validate: (value) => {
-          const key = value.trim()
-          if (key === '') return Effect.fail('Enter an external ID')
-          return clash(others, resource.resource, key)
-            ? Effect.fail(`Another ${resource.resource} uses ${key}`)
-            : Effect.succeed(key)
+    const ids = new Set(editable.map(({ id }) => id))
+    const fixed = chosen.filter(({ id }) => !ids.has(id))
+    const current = (resource: Unkeyed) =>
+      chosen.find(({ id }) => id === resource.id)!.external_id
+    const values = yield* editTable({
+      message: 'Edit external IDs',
+      headers: ['TYPE', 'NAME'],
+      column: 'EXTERNAL ID',
+      rows: editable.map((resource) => ({
+        cells: [resource.resource, ui.printable(resource.name)],
+        value: current(resource),
+      })),
+      validate: problems(editable, fixed, catalog),
+    })
+    return chosen.map((entry) => {
+      const index = editable.findIndex(({ id }) => id === entry.id)
+      return index === -1
+        ? entry
+        : { ...entry, external_id: values[index]!.trim() }
+    })
+  })
+
+type Review = 'accept' | 'edit' | 'cancel'
+
+const REVIEW_LABELS: Record<Review, string> = {
+  accept: 'Use these external IDs',
+  edit: 'Edit external IDs',
+  cancel: 'Cancel',
+}
+
+const review = (
+  resources: ReadonlyArray<Unkeyed>,
+  proposed: ReadonlyArray<ExternalIdAssignment>,
+  given: ReadonlyMap<string, string>,
+  catalog: ConfigExport,
+  say: (lines: ReadonlyArray<string>) => Effect.Effect<void>,
+) =>
+  Effect.gen(function* () {
+    const editable = resources.filter(({ id }) => !given.has(id))
+    const flagged = editable.filter((resource) =>
+      renamed(resource, resource.suggestion),
+    ).length
+    yield* say([
+      ...catalogPreview(catalog, proposed, resources),
+      ui.step(
+        'Config matches meters, benefits and products by external ID. Use the suggestions, or edit them in a table.',
+      ),
+      ...(flagged > 0
+        ? [
+            ui.warning(
+              `${plural(flagged, 'suggestion')} got a number because another resource has the same name`,
+            ),
+          ]
+        : []),
+      ui.blank,
+    ])
+    let chosen = proposed
+    while (true) {
+      const choice = yield* select<Review>(
+        {
+          message: `${plural(editable.length, 'resource')} ${editable.length === 1 ? 'needs' : 'need'} an external ID`,
+          choices: (['accept', 'edit', 'cancel'] as const).map((value) => ({
+            value,
+            title: REVIEW_LABELS[value],
+          })),
         },
-      })
-      chosen.push(assignment(resource, external_id))
+        (value) => REVIEW_LABELS[value],
+      )
+      if (choice === 'accept') return chosen
+      if (choice === 'cancel') {
+        return yield* new BillingConfigError({
+          message: 'Cancelled: nothing was written',
+          hint: 'Run polar config init again when you are ready.',
+        })
+      }
+      chosen = yield* edit(editable, chosen, catalog)
+      const changed = changes(proposed, chosen)
+      yield* say(
+        changed.length === 0
+          ? [ui.step('Keeping the suggestions'), ui.blank]
+          : [ui.blank, ui.heading('Your edits'), ...changed, ui.blank],
+      )
     }
-    return chosen
   })
 
 const checkGiven = (
@@ -129,7 +216,7 @@ export const nameResources =
     progress: Progress,
     say: (lines: ReadonlyArray<string>) => Effect.Effect<void>,
   ) =>
-  (resources: ReadonlyArray<Unkeyed>) =>
+  (resources: ReadonlyArray<Unkeyed>, catalog: ConfigExport) =>
     Effect.gen(function* () {
       yield* checkGiven(resources, given)
       if (resources.length === 0) {
@@ -147,18 +234,9 @@ export const nameResources =
       if (!settled && !prompt) {
         return yield* new ExternalIdsRequired({ proposed })
       }
-      let chosen = proposed
-      if (!settled) {
-        yield* say([
-          ui.blank,
-          ui.step(
-            'Config matches meters, benefits and products by external ID. Confirm one for each, or type your own.',
-          ),
-          ui.blank,
-        ])
-        chosen = yield* ask(resources, given)
-        yield* say([ui.blank])
-      }
+      const chosen = settled
+        ? proposed
+        : yield* review(resources, proposed, given, catalog, say)
       yield* checkUnique(chosen)
       yield* progress.start('Saving external IDs')
       return chosen

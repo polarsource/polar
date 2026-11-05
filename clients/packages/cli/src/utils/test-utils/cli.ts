@@ -60,6 +60,7 @@ export const keys = {
   escape: key('escape'),
   ctrlC: key('c', { ctrl: true }),
   ctrlU: key('u', { ctrl: true }),
+  ctrlF: key('f', { ctrl: true }),
   type: (text: string): Terminal.UserInput[] =>
     [...text].map((character) => ({
       input: Option.some(character),

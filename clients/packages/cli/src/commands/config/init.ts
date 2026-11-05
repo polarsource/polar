@@ -16,6 +16,7 @@ import {
 import { Auth } from '@/services/auth'
 import { BillingConfig, type Run } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
+import { SKIP_REASONS } from '@/utils/billing-config/catalog'
 import { nameResources, parseExternalIds } from '@/utils/billing-config/name'
 import { findProjectRoot, PACKAGE } from '@/utils/billing-config/project'
 import { plural } from '@/utils/billing-config/problems'
@@ -231,12 +232,6 @@ const nextSteps = (result: Omit<Written, 'next' | 'status'>) => [
   configCommand('plan', result.file),
   configCommand('apply', result.file),
 ]
-
-const SKIP_REASONS: Record<string, string> = {
-  missing_external_id: 'has no external ID',
-  invalid: 'cannot be expressed as config yet',
-  over_limit: 'is over the config limit',
-}
 
 const importedSummary = ({ imported }: Pick<Written, 'imported'>) =>
   [

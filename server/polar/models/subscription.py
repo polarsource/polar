@@ -22,6 +22,7 @@ from sqlalchemy import (
     cast,
     event,
     select,
+    text,
     type_coerce,
 )
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -125,11 +126,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         ),
         Index(
             "ix_subscriptions_cycle_schedule",
-            "current_period_end",
-            postgresql_where=(
+            text("LEAST(current_period_end, current_meter_period_end)"),
+            postgresql_where=text(
                 "scheduler_locked_at IS NULL "
-                "AND status IN ('trialing', 'active') "
-                "AND current_period_end IS NOT NULL"
+                "AND status IN ("
+                + ", ".join(
+                    f"'{status}'"
+                    for status in sorted(SubscriptionStatus.billable_statuses())
+                )
+                + ") AND current_period_end IS NOT NULL"
             ),
         ),
         Index(

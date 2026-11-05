@@ -22,8 +22,8 @@ export const slugify = (name: string) =>
     .normalize('NFKD')
     .replace(/\p{M}/gu, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
 
 const isKeyed = (resource: string): resource is KeyedResource =>
   resource in SECTIONS
@@ -47,7 +47,7 @@ export const takenKeys = (
 
 const unique = (base: string, taken: Set<string>) => {
   let key = base
-  for (let n = 2; taken.has(key); n++) key = `${base}-${n}`
+  for (let n = 2; taken.has(key); n++) key = `${base}_${n}`
   taken.add(key)
   return key
 }

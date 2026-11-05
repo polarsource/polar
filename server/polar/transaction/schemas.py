@@ -83,8 +83,6 @@ class Transaction(TransactionEmbedded):
 class TransactionsBalance(Schema):
     currency: str
     amount: int
-    account_currency: str
-    account_amount: int
 
 
 class TransactionsHeldBalance(TransactionsBalance):

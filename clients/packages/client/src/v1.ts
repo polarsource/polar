@@ -40260,10 +40260,6 @@ export interface components {
       currency: string
       /** Amount */
       amount: number
-      /** Account Currency */
-      account_currency: string
-      /** Account Amount */
-      account_amount: number
     }
     /** TransactionsHeldBalance */
     TransactionsHeldBalance: {
@@ -40271,10 +40267,6 @@ export interface components {
       currency: string
       /** Amount */
       amount: number
-      /** Account Currency */
-      account_currency: string
-      /** Account Amount */
-      account_amount: number
       /**
        * Next Release At
        * @description When the next chunk of the held balance becomes available for payout.

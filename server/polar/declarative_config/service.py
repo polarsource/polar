@@ -14,11 +14,12 @@ from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
+from polar.catalog.service import CatalogMembers, CatalogRemovals
 from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Benefit, Organization, Product, User
+from polar.models import Agent, Benefit, Meter, Organization, Product, User
 from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -243,12 +244,15 @@ def _conflict(error: IntegrityError) -> PolarError:
     return conflict()
 
 
-def _removed_external_ids(
-    removed: Sequence[ConfigRemoval],
-) -> tuple[list[str], list[str]]:
-    return (
-        [r.external_id for r in removed if r.resource == ConfigResource.product],
-        [r.external_id for r in removed if r.resource == ConfigResource.benefit],
+def _removed_external_ids(removed: Sequence[ConfigRemoval]) -> CatalogRemovals:
+    return CatalogRemovals(
+        products=[
+            r.external_id for r in removed if r.resource == ConfigResource.product
+        ],
+        benefits=[
+            r.external_id for r in removed if r.resource == ConfigResource.benefit
+        ],
+        meters=[r.external_id for r in removed if r.resource == ConfigResource.meter],
     )
 
 
@@ -399,7 +403,7 @@ class DeclarativeConfigService:
         if errors:
             raise ConfigInvalid(errors)
 
-        removed_products, removed_benefits = _removed_external_ids(removed)
+        removed_external_ids = _removed_external_ids(removed)
         if draft is not None and publish:
             await catalog_service.discard_draft(session, draft)
         draft_benefits, draft_products = (
@@ -413,8 +417,7 @@ class DeclarativeConfigService:
             organization,
             live,
             catalogs.definitions(changes),
-            removed_products,
-            removed_benefits,
+            removed_external_ids,
         )
         settings_result = await self._apply_settings(
             session, organization, changes.settings
@@ -422,8 +425,8 @@ class DeclarativeConfigService:
         webhook_results = await self._apply_webhooks(
             session, auth_subject, organization, changes.webhooks
         )
-        meter_results, meter_ids = await self._apply_meters(
-            session, organization, changes.meters
+        meter_results, meter_ids, new_meters = await self._apply_meters(
+            session, organization, changes.meters, draft=not publish
         )
         benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
             session,
@@ -446,7 +449,7 @@ class DeclarativeConfigService:
             draft=not publish,
         )
         catalog: ConfigCatalogChange | None = None
-        if new_products or new_benefits or removed:
+        if new_products or new_benefits or new_meters or removed:
             assert version_hash is not None
             before = None if live is None else ConfigCatalog.model_validate(live)
             save = catalog_service.publish if publish else catalog_service.save_draft
@@ -454,11 +457,11 @@ class DeclarativeConfigService:
                 session,
                 organization,
                 live,
-                new_products,
-                new_benefits,
+                CatalogMembers(
+                    products=new_products, benefits=new_benefits, meters=new_meters
+                ),
                 version_hash,
-                removed_products,
-                removed_benefits,
+                removed_external_ids,
                 name=config.catalog_name,
             )
             catalog = ConfigCatalogChange(
@@ -467,7 +470,7 @@ class DeclarativeConfigService:
         elif (
             draft is not None
             and not publish
-            and {"products", "benefits"} & config.model_fields_set
+            and {"products", "benefits", "meters"} & config.model_fields_set
         ):
             # The config describes the catalog and matches live: no draft left.
             await catalog_service.discard_draft(session, draft)
@@ -542,7 +545,7 @@ class DeclarativeConfigService:
                 organization,
                 base,
                 catalogs.definitions(changes),
-                *_removed_external_ids(removed),
+                _removed_external_ids(removed),
             )
         )
         if catalog_after is not None and catalog_after != catalog_before:
@@ -841,24 +844,43 @@ class DeclarativeConfigService:
         session: AsyncSession,
         organization: Organization,
         changes: Sequence[MeterChange],
-    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+        *,
+        draft: bool,
+    ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Meter]]:
         repository = MeterRepository.from_session(session)
         results: list[ConfigResult] = []
         meter_ids: dict[str, UUID] = {}
+        new_meters: dict[str, Meter] = {}
         for change in changes:
             meter = change.existing
-            if meter is None:
+            if meter is None or change.update_dict:
                 try:
                     async with session.begin_nested():
+                        # A draft's new row isn't current, so the live one stays.
+                        if meter is not None and not draft:
+                            await repository.update(
+                                meter, update_dict={"is_current": False}, flush=True
+                            )
                         meter = await meter_service.create_for_organization(
-                            session, organization, change.config
+                            session, organization, change.config, draft=draft
                         )
+                        # Metadata left out of the config is kept, as on update.
+                        if (
+                            change.existing is not None
+                            and "metadata" not in change.config.model_fields_set
+                        ):
+                            await repository.update(
+                                meter,
+                                update_dict={
+                                    "user_metadata": change.existing.user_metadata
+                                },
+                                flush=True,
+                            )
                 except IntegrityError as e:
                     if _constraint_name(e) != _METER_EXTERNAL_ID_INDEX:
                         raise
                     raise ConfigMeterConflict() from e
-            elif change.update_dict:
-                await repository.update(meter, update_dict=change.update_dict)
+                new_meters[change.config.external_id] = meter
             meter_ids[change.config.external_id] = meter.id
             results.append(
                 ConfigResult(
@@ -867,7 +889,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results, meter_ids
+        return results, meter_ids, new_meters
 
     async def _apply_benefits(
         self,

@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
 from polar.enums import SubscriptionRecurringInterval
@@ -9,6 +10,7 @@ from polar.kit.utils import utc_now
 from polar.models import (
     Catalog,
     CatalogBenefit,
+    CatalogMeter,
     CatalogProduct,
     Customer,
     Organization,
@@ -22,6 +24,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
     create_benefit_grant,
+    create_meter,
     create_product,
 )
 
@@ -272,6 +275,25 @@ async def benefits_draft(
     return products_only_draft
 
 
+@pytest.fixture
+async def meters_draft(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    products_only_draft: Catalog,
+) -> Catalog:
+    meter = await create_meter(
+        save_fixture,
+        organization=organization,
+        external_id="tool-calls",
+        is_current=False,
+        catalog=products_only_draft,
+    )
+    await save_fixture(
+        CatalogMeter(catalog=products_only_draft, meter=meter, external_id="tool-calls")
+    )
+    return products_only_draft
+
+
 PUBLISHERS = (
     AuthSubjectFixture(subject="user"),
     AuthSubjectFixture(subject="organization"),
@@ -341,6 +363,26 @@ class TestPublish:
 
         assert response.status_code == 403
         assert response.json()["error"] == "insufficient_scope"
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.benefits_write))
+    async def test_meter_changes_without_meters_write(
+        self, client: AsyncClient, meters_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{meters_draft.id}/publish")
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.meters_write))
+    async def test_meter_changes(
+        self, mocker: MockerFixture, client: AsyncClient, meters_draft: Catalog
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
+        response = await client.post(f"/v1/catalogs/{meters_draft.id}/publish")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == CatalogStatus.live
 
     @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.benefits_write))
     async def test_benefit_changes(

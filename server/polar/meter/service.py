@@ -227,7 +227,11 @@ class MeterService:
         session: AsyncSession,
         organization: Organization,
         meter_create: MeterCreateBase,
+        *,
+        draft: bool = False,
     ) -> Meter:
+        """Create a meter. A draft's meter isn't current and matches no events
+        until `activate` runs when the draft is published."""
         repository = MeterRepository.from_session(session)
         meter = await repository.create(
             Meter(
@@ -237,12 +241,17 @@ class MeterService:
                 filter=meter_create.filter,
                 aggregation=meter_create.aggregation,
                 organization=organization,
+                is_current=not draft,
             ),
             flush=True,
         )
+        if not draft:
+            await self.activate(session, meter)
+        return meter
 
-        # Retrieve the latest matching event for the meter and set it as the last billed event
-        # This is done to ensure that the meter is billed from the last event onwards
+    async def activate(self, session: AsyncSession, meter: Meter) -> None:
+        """Start billing the meter from its latest matching event onwards."""
+        repository = MeterRepository.from_session(session)
         event_repository = EventRepository.from_session(session)
         statement = (
             event_repository.get_meter_statement(meter)
@@ -258,8 +267,6 @@ class MeterService:
 
         enqueue_job("reducer.invalidate_cache", meter.organization_id)
         enqueue_job("meter.backfill_events", meter.id)
-
-        return meter
 
     async def update(
         self,

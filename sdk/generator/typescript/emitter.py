@@ -61,6 +61,10 @@ class TypeScriptEmitter(EmitterBase):
             self.templates_dir / "vitest.config.mts",
             root_directory / "vitest.config.mts",
         )
+        self.copy_file(
+            self.templates_dir / "vitest.workers.config.mts",
+            root_directory / "vitest.workers.config.mts",
+        )
         self.copy_file(self.templates_dir / "LICENSE", root_directory / "LICENSE")
 
         for skill_file in (

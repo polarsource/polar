@@ -22,6 +22,10 @@
     "./outpost": {
       "import": { "types": "./dist/outpost/index.d.mts", "default": "./dist/outpost/index.mjs" },
       "require": { "types": "./dist/outpost/index.d.cts", "default": "./dist/outpost/index.cjs" }
+    },
+    "./outpost/cloudflare": {
+      "import": { "types": "./dist/outpost/cloudflare.d.mts", "default": "./dist/outpost/cloudflare.mjs" },
+      "require": { "types": "./dist/outpost/cloudflare.d.cts", "default": "./dist/outpost/cloudflare.cjs" }
     }
 {% for version in ir.versions %}
     ,
@@ -53,6 +57,7 @@
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:workers": "vitest run --config vitest.workers.config.mts",
     "bench": "vitest bench --run"
   },
   "devDependencies": {
@@ -71,6 +76,8 @@
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
     "@codspeed/vitest-plugin": "^6.1.0",
+    "@cloudflare/vitest-plugin": "^1.4.10",
+    "@cloudflare/workers-types": "^5.20261028.1",
     "vitest": "^4.1.9"
   },
   "peerDependencies": {

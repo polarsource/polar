@@ -271,6 +271,48 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'custom fields',
+    api
+      .defineConfig({
+        meters: () => ({}),
+        customFields: ({ text, number, date, checkbox, select }) => ({
+          company: text('Company')
+            .label('Company name')
+            .help('Your legal name')
+            .placeholder('Acme')
+            .textarea()
+            .minLength(2)
+            .maxLength(100)
+            .metadata({ source: 'crm' }),
+          employees: number('Employees').min(1).max(100000),
+          start: date('Start date').min(0),
+          terms: checkbox('Terms').label('I accept the terms'),
+          'team-size': select('Team size').options({
+            small: '1-10',
+            '"\\\n` ${notCode}': 'Large',
+          }),
+          '10': select('Tens').options([
+            ['20', 'Twenty'],
+            ['10', 'Ten'],
+          ]),
+        }),
+        products: ({ product, free }) => ({
+          pro: product('Pro')
+            .prices(free())
+            .recurring('monthly')
+            .asks({ terms: 'required', 'team-size': 'optional' }),
+          tens: product('Tens')
+            .prices(free())
+            .once()
+            .asks([
+              ['team-size', 'optional'],
+              ['10', 'required'],
+            ]),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'private resources',
     api
       .defineConfig({

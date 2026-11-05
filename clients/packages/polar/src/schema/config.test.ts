@@ -958,3 +958,58 @@ test('metadata follows the API limits', () => {
     ).toJSON().meters[0]?.metadata,
   ).toHaveProperty('key49', 49)
 })
+
+test('products ask for declared custom fields in order', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    customFields: ({ text, checkbox }) => ({
+      company: text(),
+      terms: checkbox('Terms'),
+    }),
+    products: ({ product, fixed }) => ({
+      pro: product('Pro')
+        .prices(fixed().amount(usd(10)))
+        .once()
+        .asks({ terms: 'required', company: 'optional' }),
+      plain: product('Plain')
+        .prices(fixed().amount(usd(5)))
+        .once(),
+    }),
+  }).toJSON()
+
+  expect(config.custom_fields).toEqual([
+    { type: 'text', slug: 'company', name: 'company', properties: {} },
+    { type: 'checkbox', slug: 'terms', name: 'Terms', properties: {} },
+  ])
+  expect(config.products?.[0]?.custom_fields).toEqual([
+    { field: 'terms', required: true },
+    { field: 'company', required: false },
+  ])
+  expect(config.products?.[1]).not.toHaveProperty('custom_fields')
+
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({ company: text() }),
+      products: ({ product, free }) => ({
+        // @ts-expect-error undeclared custom field
+        pro: product().prices(free()).once().asks({ vat: 'required' }),
+      }),
+    }),
+  ).toThrow('Product "pro" references unknown custom field "vat".')
+})
+
+test('custom fields reject invalid slugs and empty selects', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({ 'Company Name': text() }),
+    }),
+  ).toThrow()
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ select }) => ({ size: select('Size') }),
+    }),
+  ).toThrow()
+})

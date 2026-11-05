@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, Query
+from fastapi import Depends, Query, status
 from pydantic import UUID4
 
 from polar.catalog.service import CatalogNotFound
@@ -15,11 +15,12 @@ from polar.postgres import (
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
-from .auth import ConfigRead, ConfigWrite
+from .auth import ConfigOrganizationWrite, ConfigRead, ConfigWrite
 from .schemas import (
     Config,
     ConfigApplyResult,
     ConfigExport,
+    ConfigInit,
     ConfigPlan,
     ConfigPrune,
     DeclarativeConfigExportParams,
@@ -91,6 +92,26 @@ async def export(
     return await declarative_config_service.export(
         session, auth_subject, filters.organization_id, catalog_id
     )
+
+
+@router.post(
+    "/init",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Init Config",
+    responses={
+        204: {"description": "Config as code enabled."},
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+    },
+)
+async def init(
+    config_init: ConfigInit,
+    auth_subject: ConfigOrganizationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    await declarative_config_service.init(session, auth_subject, config_init)
 
 
 @router.post(

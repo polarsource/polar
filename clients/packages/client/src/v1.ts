@@ -6318,6 +6318,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/init': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Init Config
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['config:init']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/config/apply': {
     parameters: {
       query?: never
@@ -16652,6 +16672,14 @@ export interface components {
        * @description Value after applying the config.
        */
       after: unknown | null
+    }
+    /** ConfigInit */
+    ConfigInit: {
+      /**
+       * Organization Id
+       * @description The ID of the organization to opt in. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
     }
     /** ConfigInvalid */
     ConfigInvalid: {
@@ -63128,6 +63156,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:init': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfigInit']
+      }
+    }
+    responses: {
+      /** @description Config as code enabled. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */

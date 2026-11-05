@@ -8,6 +8,8 @@ from pytest_mock import MockerFixture
 from polar.kit.utils import utc_now
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
+from polar.organization.repository import OrganizationRepository
+from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -27,6 +29,28 @@ METER = {
     "unit": "custom",
     "custom_label": "call",
 }
+
+
+@pytest.mark.anyio
+class TestInit:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/init", json={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 204
+        updated_organization = await OrganizationRepository.from_session(
+            session
+        ).get_by_id(organization.id)
+        assert updated_organization is not None
+        assert updated_organization.is_config_as_code_enabled
 
 
 @pytest.mark.anyio

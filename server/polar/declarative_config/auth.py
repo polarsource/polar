@@ -26,3 +26,11 @@ _ConfigWrite = Authenticator(
     allowed_subjects={User, Organization, Agent},
 )
 ConfigWrite = Annotated[AuthSubject[User | Organization | Agent], Depends(_ConfigWrite)]
+
+_ConfigOrganizationWrite = Authenticator(
+    required_scopes={Scope.organizations_write},
+    allowed_subjects={User, Organization, Agent},
+)
+ConfigOrganizationWrite = Annotated[
+    AuthSubject[User | Organization | Agent], Depends(_ConfigOrganizationWrite)
+]

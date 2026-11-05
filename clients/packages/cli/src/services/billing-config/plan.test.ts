@@ -13,6 +13,7 @@ import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
 const planUrl = 'https://sandbox-api.polar.sh/v1/config/plan'
+const organizationUrl = 'https://sandbox-api.polar.sh/v1/organizations/org-1'
 
 const acme: ActiveOrganization = {
   id: 'org-1',
@@ -162,6 +163,78 @@ describe('plan', () => {
         diff: [],
       },
     ])
+  })
+
+  test('prices without a currency get the organization default', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [
+        {
+          resource: 'product',
+          external_id: 'starter',
+          action: 'created',
+          diff: [
+            {
+              field: 'prices',
+              before: null,
+              after: [
+                { amount_type: 'fixed', price_amount: 1000 },
+                {
+                  amount_type: 'metered_unit',
+                  meter: 'api-calls',
+                  unit_amount: '0.5',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      issues: [],
+    })
+    api.routes[`GET ${organizationUrl}`] = Response.json({
+      default_presentment_currency: 'eur',
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.entries[0]?.diff).toEqual([
+      {
+        field: 'prices',
+        before: null,
+        after: [
+          { amount_type: 'fixed', price_amount: 1000, price_currency: 'eur' },
+          {
+            amount_type: 'metered_unit',
+            meter: 'api-calls',
+            unit_amount: '0.5',
+            price_currency: 'eur',
+          },
+        ],
+      },
+    ])
+  })
+
+  test('skips the organization lookup when every price has a currency', async () => {
+    const prices = [
+      { amount_type: 'fixed', price_currency: 'usd', price_amount: 1000 },
+    ]
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [
+        {
+          resource: 'product',
+          external_id: 'starter',
+          action: 'created',
+          diff: [{ field: 'prices', before: null, after: prices }],
+        },
+      ],
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.entries[0]?.diff).toEqual([
+      { field: 'prices', before: null, after: prices },
+    ])
+    expect(api.urls()).toEqual([planUrl])
   })
 
   test('keeps the catalog the plan publishes', async () => {

@@ -357,6 +357,21 @@ describe('formatTree', () => {
   })
 
   test('shows the tiers of a created seat- or unit-based product', () => {
+    const seatPrices = [
+      {
+        amount_type: 'seat_based',
+        price_currency: 'usd',
+        tax_behavior: 'exclusive',
+        minimum_units: 2,
+        tiers: {
+          type: 'graduated',
+          tiers: [
+            { bound: 10, unit_amount: 1000 },
+            { bound: null, unit_amount: 800 },
+          ],
+        },
+      },
+    ]
     const output = stripAnsi(
       formatTree(
         {
@@ -367,21 +382,7 @@ describe('formatTree', () => {
               name: 'Seats',
               recurring_interval: 'month',
               recurring_interval_count: 1,
-              prices: [
-                {
-                  amount_type: 'seat_based',
-                  price_currency: 'usd',
-                  tax_behavior: 'exclusive',
-                  minimum_units: 2,
-                  tiers: {
-                    type: 'graduated',
-                    tiers: [
-                      { bound: 10, unit_amount: 1000 },
-                      { bound: null, unit_amount: 800 },
-                    ],
-                  },
-                },
-              ],
+              prices: seatPrices,
               benefits: [],
             },
             {
@@ -406,7 +407,7 @@ describe('formatTree', () => {
         },
         [
           entry('products', 'seats', 'created', [
-            { field: 'prices', before: null, after: [] },
+            { field: 'prices', before: null, after: seatPrices },
           ]),
           entry('products', 'credits', 'created'),
         ],
@@ -707,5 +708,64 @@ describe('formatTree', () => {
       '$10 (tax inclusive) / €9 (tax exclusive) per month',
     )
     expect(output).toMatch(/\$0\.10 \/ €0\.09 per units\n\s+tax exclusive$/)
+  })
+
+  test('prices a new product in the currency the API planned when the config has none', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          meters: input.meters,
+          products: [
+            {
+              external_id: 'starter',
+              name: 'Starter',
+              recurring_interval: 'month',
+              prices: [
+                { amount_type: 'fixed', price_amount: 1000 },
+                {
+                  amount_type: 'metered_unit',
+                  meter: 'tool_call',
+                  unit_amount: '0.5',
+                },
+              ],
+              benefits: [],
+            },
+          ],
+        },
+        [
+          entry('products', 'starter', 'created', [
+            {
+              field: 'prices',
+              before: null,
+              after: [
+                {
+                  amount_type: 'fixed',
+                  price_currency: 'usd',
+                  tax_behavior: null,
+                  price_amount: 1000,
+                },
+                {
+                  amount_type: 'metered_unit',
+                  price_currency: 'usd',
+                  tax_behavior: null,
+                  meter: 'tool_call',
+                  unit_amount: '0.5',
+                  cap_amount: null,
+                },
+              ],
+            },
+          ]),
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  products',
+        '  + starter',
+        '      $10 per month',
+        '      └ + meter tool_call',
+        '            $5 per 1,000 tool calls',
+      ].join('\n'),
+    )
   })
 })

@@ -16,6 +16,7 @@ import {
   requiredScopes,
   transportErrors,
   unexpected,
+  withDefaultCurrency,
 } from '@/services/billing-config/api'
 import { issues } from '@/services/billing-config/issues'
 
@@ -39,7 +40,11 @@ export const apply =
           yield* HttpClientResponse.schemaBodyJson(ApplyResponse)(response)
         return {
           status: 'applied',
-          entries: entries(body.changes, body.settings, body.removed),
+          entries: yield* withDefaultCurrency(
+            clients,
+            organization,
+            entries(body.changes, body.settings, body.removed),
+          ),
           ...(body.catalog && { draft: body.catalog.after }),
         } satisfies ApplyResult
       }

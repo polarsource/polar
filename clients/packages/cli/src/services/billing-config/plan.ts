@@ -15,6 +15,7 @@ import {
   requiredScopes,
   transportErrors,
   unexpected,
+  withDefaultCurrency,
 } from '@/services/billing-config/api'
 import { issues } from '@/services/billing-config/issues'
 
@@ -39,7 +40,11 @@ export const plan =
         const body =
           yield* HttpClientResponse.schemaBodyJson(PlanResponse)(response)
         return {
-          entries: entries(body.changes, body.settings, body.removed),
+          entries: yield* withDefaultCurrency(
+            clients,
+            organization,
+            entries(body.changes, body.settings, body.removed),
+          ),
           ...(body.catalog ? { catalog: body.catalog } : {}),
           issues: issues(config, body.issues),
         } satisfies PlanResult

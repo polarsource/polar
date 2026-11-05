@@ -171,13 +171,12 @@ const organizationCurrency = (
         `/organizations/${organization.id}`,
       ),
     )
-    if (response.status !== 200) return undefined
     const body =
       yield* HttpClientResponse.schemaBodyJson(OrganizationCurrency)(response)
     return body.default_presentment_currency
   }).pipe(Effect.orElseSucceed(() => undefined))
 
-// The API sets every price's currency; the organization's default covers one it leaves out
+// A planned price without a currency is shown in the organization's default one
 export const withDefaultCurrency = (
   clients: Clients,
   organization: ActiveOrganization,

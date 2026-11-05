@@ -103,7 +103,7 @@ const grants = (
   ]
 }
 
-// The config may leave out a price's currency; the API's prices always carry one
+// The config may leave out a price's currency, the planned prices carry it
 const withPlannedPrices = (document: unknown, entry: AppliedEntry) => {
   const prices = entry.diff.find(({ field }) => field === 'prices')
   return prices === undefined

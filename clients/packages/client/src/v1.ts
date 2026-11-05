@@ -36794,7 +36794,6 @@ export interface components {
       | 'MX'
       | 'MD'
       | 'MN'
-      | 'MA'
       | 'NA'
       | 'NL'
       | 'NZ'
@@ -74646,7 +74645,6 @@ export const stripeAccountCountryValues: ReadonlyArray<
   'MX',
   'MD',
   'MN',
-  'MA',
   'NA',
   'NL',
   'NZ',

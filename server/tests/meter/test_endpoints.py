@@ -93,6 +93,33 @@ class TestListMeters:
             str(archived_meter.id),
         }
 
+    @pytest.mark.auth
+    async def test_lists_current_versions(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tokens",
+            is_current=False,
+        )
+        current = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tokens",
+        )
+
+        response = await client.get("/v1/meters/")
+
+        assert response.status_code == 200
+        assert [item["id"] for item in response.json()["items"]] == [str(current.id)]
+
 
 @pytest.mark.anyio
 class TestGetMeter:
@@ -138,6 +165,34 @@ class TestGetExternalMeter:
 
         assert response.status_code == 200
         assert response.json()["id"] == str(meter.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_returns_the_current_version(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tool_call",
+            is_current=False,
+        )
+        current = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tool_call",
+        )
+
+        response = await client.get("/v1/meters/external/tool_call")
+
+        assert response.status_code == 200
+        assert response.json()["id"] == str(current.id)
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth

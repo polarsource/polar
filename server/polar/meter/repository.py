@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, exists, select
+from sqlalchemy import ColumnElement, Select, case, exists, or_, select
 from sqlalchemy.orm import undefer
 
 from polar.authz.types import AccessibleOrganizationID
@@ -10,7 +10,14 @@ from polar.kit.repository import (
     RepositoryExternalIDMixin,
     RepositoryIDMixin,
 )
-from polar.models import Meter, ProductPrice, Subscription, SubscriptionProductPrice
+from polar.models import (
+    Catalog,
+    Meter,
+    ProductPrice,
+    Subscription,
+    SubscriptionProductPrice,
+)
+from polar.models.catalog import CatalogStatus
 from polar.models.subscription import SubscriptionStatus
 
 
@@ -20,6 +27,36 @@ class MeterRepository(
     RepositoryIDMixin[Meter, UUID],
 ):
     model = Meter
+
+    @staticmethod
+    def get_active_clause() -> ColumnElement[bool]:
+        """Meters that match events and bill: not archived, not deleted, and not
+        a draft's new version, which only goes live when the draft is published."""
+        in_draft = (
+            select(Catalog.id)
+            .where(
+                Catalog.id == Meter.catalog_id, Catalog.status == CatalogStatus.draft
+            )
+            .exists()
+        )
+        return (
+            Meter.archived_at.is_(None)
+            & Meter.deleted_at.is_(None)
+            & or_(Meter.is_current, ~in_draft)
+        )
+
+    def get_active_statement(self) -> Select[Meter]:
+        return self.get_base_statement().where(self.get_active_clause())
+
+    async def get_by_external_id_and_organization(
+        self, external_id: str, organization_id: UUID
+    ) -> Meter | None:
+        statement = self.get_base_statement().where(
+            Meter.external_id == external_id,
+            Meter.organization_id == organization_id,
+            Meter.is_current,
+        )
+        return await self.get_one_or_none(statement)
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
@@ -47,6 +84,7 @@ class MeterRepository(
                 Meter.organization_id == organization_id,
                 Meter.external_id.in_(external_ids),
                 Meter.deleted_at.is_(None),
+                Meter.is_current,
             )
             .options(undefer(Meter.external_id))
         )
@@ -60,10 +98,40 @@ class MeterRepository(
             .where(
                 Meter.organization_id == organization_id,
                 Meter.deleted_at.is_(None),
+                Meter.is_current,
             )
             .order_by(Meter.created_at, Meter.id)
             .options(undefer(Meter.external_id))
         )
+
+    async def get_billed_by_external_id(
+        self, organization_id: UUID, external_id: str, customer_id: UUID
+    ) -> Meter | None:
+        """The version of the meter the customer's subscription bills, or the
+        current version when it bills none."""
+        billed = exists().where(
+            SubscriptionProductPrice.subscription_id == Subscription.id,
+            ProductPrice.id == SubscriptionProductPrice.product_price_id,
+            ProductPrice.is_metered,
+            # The subclass attribute would add a polymorphic filter and drop tiered prices.
+            ProductPrice.__table__.c.meter_id == Meter.id,
+            Subscription.customer_id == customer_id,
+            Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+            ~Subscription.is_deleted,
+            ~SubscriptionProductPrice.is_deleted,
+        )
+        statement = (
+            self.get_base_statement()
+            .where(
+                Meter.organization_id == organization_id,
+                Meter.external_id == external_id,
+                Meter.deleted_at.is_(None),
+                or_(Meter.is_current, billed),
+            )
+            .order_by(case((billed, 0), else_=1), Meter.created_at.desc())
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement)
 
     async def has_billable_subscriptions(self, meter_id: UUID) -> bool:
         statement = select(

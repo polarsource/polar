@@ -33,6 +33,7 @@ from polar.meter.unit import MeterUnit
 from polar.models import (
     Account,
     BillingEntry,
+    Catalog,
     Customer,
     Event,
     Meter,
@@ -46,6 +47,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.billing_entry import BillingEntryDirection
+from polar.models.catalog import CatalogStatus
 from polar.models.customer_seat import SeatStatus
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
@@ -1602,6 +1604,44 @@ class TestEnqueueBilling:
 
         await meter_service.enqueue_billing(session)
         enqueue_job_mock.assert_not_called()
+
+    async def test_draft_meters_match_no_events_and_bill_nothing(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        draft = Catalog(organization=organization, status=CatalogStatus.draft)
+        await save_fixture(draft)
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            filter=meter.filter,
+            aggregation=meter.aggregation,
+            is_current=False,
+            catalog=draft,
+        )
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+
+        await event_service._create_meter_events(session, [event])
+        await meter_service.enqueue_billing(session)
+
+        meter_ids = await session.scalars(
+            select(MeterEvent.meter_id).where(MeterEvent.event_id == event.id)
+        )
+        assert list(meter_ids) == [meter.id]
+        assert [call.args[:2] for call in enqueue_job_mock.call_args_list] == [
+            ("meter.billing_entries", meter.id)
+        ]
 
 
 @pytest.mark.anyio

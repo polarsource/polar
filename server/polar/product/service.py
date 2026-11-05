@@ -150,7 +150,7 @@ class ProductService:
 
         if catalog_id is not None or catalog_status is not None:
             statement = repository.apply_catalog_filter(
-                statement, catalog_id, catalog_status
+                statement, org_ids, catalog_id, catalog_status
             )
         elif id is None:
             statement = statement.where(Product.is_current)

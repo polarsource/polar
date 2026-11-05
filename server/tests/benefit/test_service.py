@@ -277,7 +277,7 @@ class TestList:
         assert await ids() == {a2.id, b.id}
         assert await ids(catalog_status=[CatalogStatus.live]) == {a2.id, b.id}
         assert await ids(catalog_status=[CatalogStatus.draft]) == {a3.id, b.id}
-        assert await ids(catalog_status=[CatalogStatus.archived]) == {a1.id}
+        assert await ids(catalog_status=[CatalogStatus.archived]) == {a1.id, b.id}
         assert await ids(
             catalog_status=[CatalogStatus.draft, CatalogStatus.archived]
         ) == {a1.id, a3.id, b.id}

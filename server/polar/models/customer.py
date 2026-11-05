@@ -148,6 +148,30 @@ class Customer(MetadataMixin, RecordModel):
             postgresql_using="gin",
         ),
         Index(
+            "ix_customers_email_trgm",
+            "email",
+            postgresql_using="gin",
+            postgresql_ops={"email": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_customers_name_trgm",
+            "name",
+            postgresql_using="gin",
+            postgresql_ops={"name": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_customers_billing_name_trgm",
+            "billing_name",
+            postgresql_using="gin",
+            postgresql_ops={"billing_name": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_customers_external_id_trgm",
+            "external_id",
+            postgresql_using="gin",
+            postgresql_ops={"external_id": "gin_trgm_ops"},
+        ),
+        Index(
             "ix_customers_deleted_at_id",
             "deleted_at",
             "id",

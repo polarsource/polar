@@ -29,6 +29,10 @@ locals {
     }
 
     prometheus.remote_write "grafana_cloud" {
+      external_labels = {
+        env = "${var.environment}",
+      }
+
       endpoint {
         url = "${var.prometheus.url}/api/prom/push"
 

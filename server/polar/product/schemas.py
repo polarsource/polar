@@ -23,7 +23,6 @@ from pydantic.json_schema import SkipJsonSchema
 from pydantic_core import PydanticCustomError
 
 from polar.benefit.schemas import Benefit, BenefitID, BenefitPublic
-from polar.catalog.schemas import CATALOG_FILTER_DESCRIPTION
 from polar.custom_field.schemas import (
     AttachedCustomField,
     AttachedCustomFieldListCreate,
@@ -1254,7 +1253,13 @@ class ProductListParams(QuerySchema):
     )
     catalog: Annotated[
         CatalogStatus | UUID4 | None, Version(starting_from=V2027_01)
-    ] = Field(None, description=CATALOG_FILTER_DESCRIPTION)
+    ] = Field(
+        None,
+        description=(
+            "Filter by catalog status (`live`, `draft`, `archived`) or catalog ID. "
+            "Defaults to `live` unless filtering by ID."
+        ),
+    )
     query: str | None = Field(None, description="Filter by product name.")
     is_archived: bool | None = Field(None, description="Filter on archived products.")
     is_recurring: bool | None = Field(

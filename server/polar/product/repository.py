@@ -318,7 +318,11 @@ class ProductRepository(
         members = (
             select(CatalogProduct.product_id)
             .join(CatalogProduct.catalog)
-            .where(CatalogProduct.deleted_at.is_(None), Catalog.deleted_at.is_(None))
+            .where(
+                CatalogProduct.deleted_at.is_(None),
+                Catalog.deleted_at.is_(None),
+                Catalog.organization_id == Product.organization_id,
+            )
         )
         if isinstance(catalog, CatalogStatus):
             members = members.where(Catalog.status == catalog)

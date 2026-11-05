@@ -22,7 +22,6 @@ from polar.benefit.strategies.meter_credit.properties import (
 from polar.benefit.strategies.slack_shared_channel.properties import (
     BenefitGrantSlackSharedChannelProperties,
 )
-from polar.catalog.schemas import CATALOG_FILTER_DESCRIPTION
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
@@ -283,7 +282,13 @@ class BenefitListParams(QuerySchema):
     )
     catalog: Annotated[
         CatalogStatus | UUID4 | None, Version(starting_from=V2027_01)
-    ] = Field(None, description=CATALOG_FILTER_DESCRIPTION)
+    ] = Field(
+        None,
+        description=(
+            "Filter by catalog status (`live`, `draft`, `archived`) or catalog ID. "
+            "Defaults to `live` unless filtering by ID."
+        ),
+    )
     query: str | None = Field(None, title="Query", description="Filter by description.")
 
 

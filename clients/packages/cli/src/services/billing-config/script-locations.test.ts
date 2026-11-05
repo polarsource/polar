@@ -274,4 +274,29 @@ describe('locateInScript with a settings section', () => {
       ),
     ).toEqual({ line: 4, column: 45, length: 8 })
   })
+
+  test('finds custom fields under customFields, by slug', () => {
+    const source = [
+      "import { defineConfig } from '@polar-sh/polar'",
+      '',
+      'export default defineConfig({',
+      '  meters: () => ({}),',
+      '  customFields: ({ text, select }) => ({',
+      "    company: text('Company'),",
+      "    team_size: select('Team size').options({ small: '1-10' }),",
+      '  }),',
+      '})',
+    ].join('\n')
+    const fields = {
+      meters: [],
+      custom_fields: [{ slug: 'company' }, { slug: 'team_size' }],
+    }
+
+    expect(
+      locateInScript(source, fields, ['custom_fields', 1, 'name'], undefined),
+    ).toEqual({ line: 7, column: 5, length: 9 })
+    expect(
+      locateInScript(source, fields, ['custom_fields'], undefined),
+    ).toEqual({ line: 5, column: 3, length: 12 })
+  })
 })

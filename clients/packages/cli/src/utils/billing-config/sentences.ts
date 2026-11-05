@@ -219,6 +219,11 @@ export const benefitSentence = (input: unknown) => {
   ])
 }
 
+export const customFieldSentence = (input: unknown) => {
+  const field = record(input)
+  return field && fields([['type', name(field['type'])]])
+}
+
 // Slack and Discord carry their credential in the path, so only the host is shown.
 export const webhookUrl = (url: unknown, format: unknown) => {
   const shown = redactUrl(name(url))

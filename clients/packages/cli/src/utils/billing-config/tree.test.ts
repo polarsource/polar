@@ -768,4 +768,43 @@ describe('formatTree', () => {
       ].join('\n'),
     )
   })
+
+  test('lists custom fields, matched by slug, and the ones it deletes', () => {
+    const output = stripAnsi(
+      formatTree(
+        {
+          meters: [],
+          custom_fields: [
+            {
+              type: 'text',
+              slug: 'company',
+              name: 'Company',
+              properties: { form_label: 'Company name' },
+            },
+          ],
+        },
+        [
+          entry('custom_fields', 'company', 'created', [
+            { field: 'type', after: 'text' },
+            { field: 'name', after: 'Company' },
+            { field: 'properties', after: { form_label: 'Company name' } },
+          ]),
+          {
+            ...entry('custom_fields', 'vat', 'removed'),
+            reason: 'missing',
+          },
+        ],
+      ),
+    )
+    expect(output).toBe(
+      [
+        '  custom_fields',
+        '  + company',
+        '      type  text',
+        '      name        "Company"',
+        '      properties  {"form_label":"Company name"}',
+        '  - vat  not in config',
+      ].join('\n'),
+    )
+  })
 })

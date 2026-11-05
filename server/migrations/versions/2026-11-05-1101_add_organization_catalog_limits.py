@@ -1,7 +1,7 @@
 """add organization catalog limits
 
 Revision ID: 75d8dde067fa
-Revises: edad465d12f6
+Revises: 3f9c1a7e2b4d
 Create Date: 2026-11-05 10:22:43.480174
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "75d8dde067fa"
-down_revision = "edad465d12f6"
+down_revision = "3f9c1a7e2b4d"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

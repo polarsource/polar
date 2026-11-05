@@ -6,6 +6,7 @@ import {
 import { Check as CheckIcon, ExpandMoreOutlined } from '@polar-sh/orbit/icons'
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Command,
   CommandEmpty,
@@ -25,8 +26,10 @@ import { twMerge } from 'tailwind-merge'
 import ProductPriceTypeLabel, {
   type ProductPriceType,
 } from './ProductPriceTypeLabel'
+import { ProductVersionLabel } from './ProductVersionLabel'
 
 const ProductsCommandGroup = ({
+  organization,
   groupedProducts,
   productPriceType,
   onSelectProduct,
@@ -34,6 +37,7 @@ const ProductsCommandGroup = ({
   selectedProducts,
   className,
 }: {
+  organization: schemas['Organization']
   groupedProducts: Record<ProductPriceType, schemas['Product'][]>
   productPriceType: ProductPriceType
   onSelectProduct: (product: schemas['Product']) => void
@@ -76,12 +80,19 @@ const ProductsCommandGroup = ({
 
         return (
           <CommandItem
-            className="flex flex-row items-center justify-between text-black dark:text-white"
+            className="flex flex-row items-center justify-between text-black dark:text-white [&_span_svg]:size-3"
             key={product.id}
             value={product.id}
             onSelect={() => onSelectProduct(product)}
           >
-            {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
+            <Box alignItems="center" columnGap="s">
+              {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
+              <ProductVersionLabel
+                organization={organization}
+                product={product}
+                label="Archived"
+              />
+            </Box>
             <CheckIcon
               className={twMerge(
                 'h-4 w-4',
@@ -259,6 +270,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
             {queriedProducts?.items && queriedProducts.items.length ? (
               <>
                 <ProductsCommandGroup
+                  organization={organization}
                   groupedProducts={groupedProducts}
                   productPriceType="one_time"
                   onSelectProduct={onSelectProduct}
@@ -270,6 +282,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                 {groupedProducts.one_time.length > 0 &&
                   groupedProducts.recurring.length > 0 && <CommandSeparator />}
                 <ProductsCommandGroup
+                  organization={organization}
                   groupedProducts={groupedProducts}
                   productPriceType="recurring"
                   onSelectProduct={onSelectProduct}

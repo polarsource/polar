@@ -6,9 +6,11 @@ import { History } from '@polar-sh/orbit/icons'
 export const ProductVersionLabel = ({
   organization,
   product,
+  label,
 }: {
   organization: schemas['Organization']
   product: { catalog_id?: string | null }
+  label?: string
 }) => {
   // Every table row calls this, but React Query sends one request per organization and all rows share it.
   const { data: labels } = useCatalogVersionLabels(organization)
@@ -27,7 +29,7 @@ export const ProductVersionLabel = ({
       className="shrink-0 space-x-1 rounded-sm py-0.5 pr-1.5 pl-1 font-normal"
     >
       <History size={12} aria-hidden />
-      <span>{catalog.name}</span>
+      <span>{label ?? catalog.name}</span>
     </Pill>
   )
 }

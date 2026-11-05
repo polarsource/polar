@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 
 import structlog
 from sqlalchemy import select
-from sqlalchemy.orm import contains_eager, joinedload, selectinload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -678,6 +678,7 @@ class SubscriptionService:
 
         statement = statement.options(
             contains_eager(Subscription.product).options(
+                undefer(Product.is_deletable),
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),
@@ -1870,7 +1871,10 @@ class SubscriptionService:
         product = await product_repository.get_by_id_and_organization(
             product_id,
             subscription.product.organization_id,
-            options=product_repository.get_eager_options(),
+            options=(
+                undefer(Product.is_deletable),
+                *product_repository.get_eager_options(),
+            ),
         )
 
         if product is None:

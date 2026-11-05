@@ -178,6 +178,7 @@ class ProductService:
         statement = repository.apply_sorting(statement, sorting)
 
         statement = statement.options(
+            undefer(Product.is_deletable),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),
         )
@@ -199,7 +200,7 @@ class ProductService:
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Product.id == id)
-            .options(*repository.get_eager_options())
+            .options(undefer(Product.is_deletable), *repository.get_eager_options())
         )
         return await repository.get_one_or_none(statement)
 

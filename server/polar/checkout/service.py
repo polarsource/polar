@@ -2668,6 +2668,7 @@ class CheckoutService:
             raise DiscountRedemptionLimitReached(checkout)
 
         await self._validate_subscription_uniqueness(session, checkout)
+        await self._validate_meter_versions(session, checkout)
 
         return checkout
 
@@ -2928,6 +2929,20 @@ class CheckoutService:
 
         if len(existing_subscriptions) > 0:
             raise AlreadyActiveSubscriptionError()
+
+    async def _validate_meter_versions(
+        self, session: AsyncReadSession, checkout: Checkout
+    ) -> None:
+        if not has_product_checkout(checkout) or not checkout.product.is_recurring:
+            return
+        await subscription_service.validate_meter_versions(
+            session,
+            checkout.organization.id,
+            checkout.product.prices,
+            customer_id=checkout.customer_id,
+            customer_email=checkout.customer_email,
+            exclude_subscription_id=checkout.subscription_id,
+        )
 
     def _validate_seat_limits(
         self,

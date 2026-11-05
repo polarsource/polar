@@ -6,7 +6,7 @@ from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy import ColumnElement, Select, and_, case, func, or_, select
-from sqlalchemy.orm import contains_eager, undefer
+from sqlalchemy.orm import aliased, contains_eager, undefer
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.strategy_options import joinedload, raiseload, selectinload
 
@@ -44,6 +44,7 @@ from polar.models import (
     Customer,
     CustomerSeat,
     Discount,
+    Meter,
     Product,
     ProductPrice,
     Subscription,
@@ -333,6 +334,69 @@ class SubscriptionRepository(
             statement = statement.limit(limit)
         result = await self.session.execute(statement)
         return result.scalars().all()
+
+    async def get_other_meter_versions(
+        self,
+        organization_id: UUID,
+        meter_ids: Sequence[UUID],
+        *,
+        customer_id: UUID | None = None,
+        customer_email: str | None = None,
+        exclude_subscription_id: UUID | None = None,
+    ) -> Sequence[str]:
+        """`external_id`s of the meters among `meter_ids` that another billable
+        subscription of the customer bills in a different version."""
+        if not meter_ids:
+            return []
+        new_meter = aliased(Meter)
+        statement = (
+            select(Meter.external_id)
+            .select_from(Subscription)
+            .join(
+                SubscriptionProductPrice,
+                SubscriptionProductPrice.subscription_id == Subscription.id,
+            )
+            .join(
+                ProductPrice,
+                ProductPrice.id == SubscriptionProductPrice.product_price_id,
+            )
+            # The subclass attribute would add a polymorphic filter and drop tiered prices.
+            .join(Meter, Meter.id == ProductPrice.__table__.c.meter_id)
+            .join(
+                new_meter,
+                and_(
+                    new_meter.organization_id == Meter.organization_id,
+                    new_meter.external_id == Meter.external_id,
+                ),
+            )
+            .where(
+                Subscription.organization_id == organization_id,
+                Subscription.billable,
+                ~Subscription.is_deleted,
+                ~SubscriptionProductPrice.is_deleted,
+                ProductPrice.is_metered,
+                new_meter.id.in_(meter_ids),
+                Meter.id.not_in(meter_ids),
+            )
+            .distinct()
+        )
+        if customer_id is not None:
+            statement = statement.where(Subscription.customer_id == customer_id)
+        elif customer_email is not None:
+            statement = statement.join(
+                Customer, Customer.id == Subscription.customer_id
+            ).where(
+                func.lower(Customer.email) == customer_email.lower(),
+                ~Customer.is_deleted,
+            )
+        else:
+            return []
+        if exclude_subscription_id is not None:
+            statement = statement.where(Subscription.id != exclude_subscription_id)
+        result = await self.session.execute(statement)
+        return [
+            external_id for external_id in result.scalars() if external_id is not None
+        ]
 
     async def count_customers_by_meters(
         self, organization_id: UUID, meter_ids: Sequence[UUID]
